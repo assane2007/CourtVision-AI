@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CourtVision AI — Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;font-family:'Inter',sans-serif;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;padding:30px 20px;gap:20px;flex-wrap:wrap}
+.phone{width:375px;background:#0D1117;border-radius:40px;overflow:hidden;border:2px solid #333;box-shadow:0 30px 80px rgba(0,0,0,0.8);position:relative;flex-shrink:0}
+.phone-header{background:#0D1117;padding:12px 20px 0;display:flex;justify-content:space-between;align-items:center}
+.phone-header span{color:#E6EDF3;font-size:12px;font-weight:600}
+.screen{display:none;padding:0 0 70px}
+.screen.active{display:block}
+.tab-bar{position:absolute;bottom:0;left:0;right:0;background:#161B22;border-top:1px solid #0D1117;display:flex;padding:8px 0 20px}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:4px 0}
+.tab-icon{font-size:20px}
+.tab-label{font-size:10px;color:#8B949E;font-weight:600}
+.tab.active .tab-label{color:#00D4FF}
+.tab.active .tab-icon{filter:brightness(2)}
+.btn-primary{background:#1A73E8;color:#fff;border:none;border-radius:25px;padding:14px 30px;font-size:16px;font-weight:700;cursor:pointer;width:100%;font-family:'Inter',sans-serif}
+.btn-primary:hover{background:#1557b0}
+.card{background:#161B22;border-radius:18px;padding:18px;margin-bottom:14px}
+.stat-num{font-size:32px;font-weight:800;font-family:'Roboto Mono',monospace}
+.badge{background:rgba(26,115,232,0.2);color:#1A73E8;border-radius:8px;padding:3px 10px;font-size:11px;font-weight:700}
+h1{color:#E6EDF3;font-size:24px;font-weight:800;padding:20px 20px 4px}
+h2{color:#E6EDF3;font-size:18px;font-weight:700;padding:0 20px 12px}
+p.sub{color:#8B949E;font-size:13px;padding:0 20px 16px}
+.live-dot{width:8px;height:8px;background:#FF3D57;border-radius:50%;display:inline-block;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.progress-bar{height:8px;background:#161B22;border-radius:4px;overflow:hidden;margin:8px 0}
+.progress-fill{height:100%;background:linear-gradient(90deg,#1A73E8,#00D4FF);border-radius:4px;transition:width 0.5s}
+.nav-buttons{display:flex;gap:10px;padding:0 20px 20px;flex-wrap:wrap}
+.nav-btn{background:#161B22;color:#E6EDF3;border:1px solid #333;border-radius:12px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;flex:1;min-width:100px;text-align:center}
+.nav-btn:hover{border-color:#1A73E8;color:#1A73E8}
+.scroll-area{max-height:580px;overflow-y:auto;padding-bottom:10px}
+.scroll-area::-webkit-scrollbar{width:3px}
+.scroll-area::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+</style>
+</head>
+<body>
+
+<div style="max-width:420px;padding:20px 0">
+  <div style="color:#00D4FF;font-size:28px;font-weight:800;margin-bottom:8px">🏀 CourtVision AI</div>
+  <div style="color:#8B949E;font-size:14px;margin-bottom:20px">Preview interactive des écrans</div>
+  <div style="display:flex;flex-direction:column;gap:10px" id="screen-list">
+    <button class="nav-btn" onclick="showScreen('onboarding')" style="text-align:left;padding:14px">🚀 Onboarding — Accueil</button>
+    <button class="nav-btn" onclick="showScreen('dashboard')" style="text-align:left;padding:14px">🏠 Dashboard Principal</button>
+    <button class="nav-btn" onclick="showScreen('upload')" style="text-align:left;padding:14px">📹 Upload &amp; Analyse</button>
+    <button class="nav-btn" onclick="showScreen('report')" style="text-align:left;padding:14px">📊 Rapport d'Analyse</button>
+    <button class="nav-btn" onclick="showScreen('live')" style="text-align:left;padding:14px">🔴 Coach Live</button>
+    <button class="nav-btn" onclick="showScreen('community')" style="text-align:left;padding:14px">🌍 Communauté</button>
+    <button class="nav-btn" onclick="showScreen('program')" style="text-align:left;padding:14px">📅 Programme 7 Jours</button>
+    <button class="nav-btn" onclick="showScreen('twin')" style="text-align:left;padding:14px">🤖 Digital Twin</button>
+    <button class="nav-btn" onclick="showScreen('profile')" style="text-align:left;padding:14px">👤 Profil Joueur</button>
+  </div>
+</div>
+
+<div class="phone">
+  <div class="phone-header">
+    <span>9:41</span>
+    <span>●●●</span>
+  </div>
+
+  <!-- ONBOARDING -->
+  <div class="screen active" id="screen-onboarding">
+    <div style="padding:60px 30px 40px;display:flex;flex-direction:column;align-items:center;text-align:center;min-height:620px;justify-content:center">
+      <div style="width:120px;height:120px;background:radial-gradient(circle,#1A73E8,#0d3b8c);border-radius:60px;display:flex;align-items:center;justify-content:center;font-size:55px;margin-bottom:35px;box-shadow:0 20px 50px rgba(26,115,232,0.5)">🏀</div>
+      <div style="color:#E6EDF3;font-size:30px;font-weight:800;line-height:1.2;margin-bottom:12px">Joue comme<br>un pro.</div>
+      <div style="color:#8B949E;font-size:15px;line-height:1.6;margin-bottom:50px">L'IA analyse ton match.<br>Tu reçois le rapport d'un vrai coach.</div>
+      <button class="btn-primary" onclick="showScreen('dashboard')">Commencer maintenant →</button>
+      <div style="color:#8B949E;font-size:12px;margin-top:20px">Déjà un compte ? <span style="color:#1A73E8;cursor:pointer">Se connecter</span></div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="screen" id="screen-dashboard">
+    <div class="scroll-area">
+      <div style="padding:20px 20px 8px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="color:#E6EDF3;font-size:22px;font-weight:800">Bonjour, Kylian 👋</div>
+          <div style="color:#8B949E;font-size:13px">🔥 Streak : 5 jours consécutifs</div>
+        </div>
+        <div style="width:44px;height:44px;background:#1A73E8;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:20px">K</div>
+      </div>
+
+      <div style="padding:0 20px 16px">
+        <button class="btn-primary" onclick="showScreen('upload')" style="border-radius:20px;padding:22px;font-size:18px;background:linear-gradient(135deg,#1A73E8,#00D4FF);box-shadow:0 15px 40px rgba(26,115,232,0.4)">📹 Analyser un match</button>
+      </div>
+
+      <h2>Progression Cette Semaine</h2>
+      <div style="padding:0 20px 16px">
+        <div class="card" style="padding:16px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+            <span style="color:#8B949E;font-size:12px">Lun</span><span style="color:#8B949E;font-size:12px">Mar</span><span style="color:#8B949E;font-size:12px">Mer</span><span style="color:#8B949E;font-size:12px">Jeu</span><span style="color:#8B949E;font-size:12px">Ven</span><span style="color:#8B949E;font-size:12px">Sam</span><span style="color:#8B949E;font-size:12px">Dim</span>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:6px;height:60px">
+            <div style="flex:1;background:#1A73E8;border-radius:3px;height:70%"></div>
+            <div style="flex:1;background:#1A73E8;border-radius:3px;height:85%"></div>
+            <div style="flex:1;background:#1A73E8;border-radius:3px;height:60%"></div>
+            <div style="flex:1;background:#1A73E8;border-radius:3px;height:95%"></div>
+            <div style="flex:1;background:#1A73E8;border-radius:3px;height:75%"></div>
+            <div style="flex:1;background:#333;border-radius:3px;height:30%"></div>
+            <div style="flex:1;background:#333;border-radius:3px;height:30%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:0 20px;display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div class="card" style="text-align:center">
+          <div style="color:#8B949E;font-size:11px;margin-bottom:6px">Mental Score</div>
+          <div class="stat-num" style="color:#00C853">85</div>
+          <div style="color:#00C853;font-size:11px">+5% ↑</div>
+        </div>
+        <div class="card" style="text-align:center">
+          <div style="color:#8B949E;font-size:11px;margin-bottom:6px">Shooting %</div>
+          <div class="stat-num" style="color:#FFB300">63%</div>
+          <div style="color:#FFB300;font-size:11px">+12% ↑</div>
+        </div>
+      </div>
+
+      <h2>Séance du Jour</h2>
+      <div style="padding:0 20px 16px">
+        <div class="card" onclick="showScreen('program')" style="cursor:pointer;border:1px solid #1A73E8">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="color:#1A73E8;font-size:11px;font-weight:700;margin-bottom:4px">PROGRAMME J3</div>
+              <div style="color:#E6EDF3;font-weight:700">Récupération active</div>
+              <div style="color:#8B949E;font-size:12px">30 min · 3 exercices</div>
+            </div>
+            <div style="color:#1A73E8;font-size:24px">→</div>
+          </div>
+        </div>
+      </div>
+
+      <h2>Derniers Highlights</h2>
+      <div style="display:flex;gap:12px;padding:0 20px 20px;overflow-x:auto">
+        <div onclick="showScreen('report')" style="min-width:120px;height:180px;background:linear-gradient(180deg,#1A73E820,#0D1117);border-radius:14px;border:1px solid #333;cursor:pointer;display:flex;flex-direction:column;justify-content:flex-end;padding:12px">
+          <div style="color:#E6EDF3;font-size:11px;font-weight:700">Match vs Eagles</div>
+          <div style="color:#8B949E;font-size:10px">14 Pts · 3 Ast</div>
+        </div>
+        <div style="min-width:120px;height:180px;background:linear-gradient(180deg,#00C85320,#0D1117);border-radius:14px;border:1px solid #333;display:flex;flex-direction:column;justify-content:flex-end;padding:12px">
+          <div style="color:#E6EDF3;font-size:11px;font-weight:700">Training Shot</div>
+          <div style="color:#8B949E;font-size:10px">8 Pts · 5 Ast</div>
+        </div>
+        <div style="min-width:120px;height:180px;background:linear-gradient(180deg,#FF3D5720,#0D1117);border-radius:14px;border:1px solid #333;display:flex;flex-direction:column;justify-content:flex-end;padding:12px">
+          <div style="color:#E6EDF3;font-size:11px;font-weight:700">Match vs Lions</div>
+          <div style="color:#8B949E;font-size:10px">22 Pts · 7 Ast</div>
+        </div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab active"><span class="tab-icon">🏠</span><span class="tab-label">Accueil</span></div>
+      <div class="tab" onclick="showScreen('upload')"><span class="tab-icon">➕</span><span class="tab-label">Analyser</span></div>
+      <div class="tab" onclick="showScreen('community')"><span class="tab-icon">👥</span><span class="tab-label">Communauté</span></div>
+      <div class="tab" onclick="showScreen('twin')"><span class="tab-icon">🤖</span><span class="tab-label">Mon Twin</span></div>
+      <div class="tab" onclick="showScreen('profile')"><span class="tab-icon">👤</span><span class="tab-label">Profil</span></div>
+    </div>
+  </div>
+
+  <!-- UPLOAD -->
+  <div class="screen" id="screen-upload">
+    <h1>Upload & Analyse</h1>
+    <p class="sub">Importe une vidéo ou filme directement</p>
+    <div style="padding:0 20px;display:flex;flex-direction:column;gap:14px">
+      <div onclick="startAnalysis()" class="card" style="border:2px dashed #1A73E8;text-align:center;padding:40px 20px;cursor:pointer">
+        <div style="font-size:40px;margin-bottom:12px">🎬</div>
+        <div style="color:#E6EDF3;font-weight:700;font-size:16px">Choisir dans la galerie</div>
+        <div style="color:#8B949E;font-size:12px;margin-top:4px">MP4, MOV · Max 2GB</div>
+      </div>
+      <div onclick="startAnalysis()" class="card" style="text-align:center;padding:40px 20px;cursor:pointer">
+        <div style="font-size:40px;margin-bottom:12px">📷</div>
+        <div style="color:#E6EDF3;font-weight:700;font-size:16px">Filmer un match</div>
+        <div style="color:#8B949E;font-size:12px;margin-top:4px">Mode caméra directe</div>
+      </div>
+      <button class="btn-primary" style="background:transparent;border:1px solid #333;color:#8B949E" onclick="showScreen('live')">🔴 Démarrer Coach Live</button>
+    </div>
+    <!-- Processing state (hidden by default) -->
+    <div id="analyzing-state" style="display:none;padding:40px 20px;text-align:center">
+      <div style="font-size:50px;margin-bottom:20px;animation:pulse 1s infinite">📡</div>
+      <div style="color:#E6EDF3;font-size:20px;font-weight:700;margin-bottom:8px">Analyse IA en cours...</div>
+      <div id="step-label" style="color:#8B949E;font-size:13px;margin-bottom:20px">Étape 1/7 : Extraction des frames</div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      <div id="progress-pct" style="color:#00D4FF;font-size:13px;margin-top:8px">0%</div>
+    </div>
+  </div>
+
+  <!-- RAPPORT -->
+  <div class="screen" id="screen-report">
+    <div style="display:flex;align-items:center;padding:16px 20px;border-bottom:1px solid #161B22;gap:14px">
+      <span onclick="showScreen('dashboard')" style="color:#E6EDF3;cursor:pointer;font-size:20px">←</span>
+      <div style="color:#E6EDF3;font-weight:700;font-size:18px">Rapport d'Analyse</div>
+    </div>
+    <div class="scroll-area">
+      <div style="padding:16px 20px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="card" style="background:#1A73E8;text-align:center">
+          <div style="color:rgba(255,255,255,0.7);font-size:11px">Tirs Made/Att</div>
+          <div class="stat-num" style="color:#fff">14/22</div>
+          <div style="color:rgba(255,255,255,0.7);font-size:11px">+12% vs moy.</div>
+        </div>
+        <div class="card" style="text-align:center">
+          <div style="color:#8B949E;font-size:11px">Mental Score</div>
+          <div class="stat-num" style="color:#00C853">85</div>
+          <div style="color:#00C853;font-size:11px">Ice in veins 🧊</div>
+        </div>
+      </div>
+      <h2>Heatmap Terrain</h2>
+      <div style="padding:0 20px 16px">
+        <div class="card" style="height:160px;position:relative;overflow:hidden;border:1px solid #1A73E850">
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px">
+            <div style="color:#8B949E;font-size:24px">🏀</div>
+            <div style="color:#8B949E;font-size:11px">Heatmap interactive terrain</div>
+          </div>
+          <div style="position:absolute;bottom:20px;left:20px;width:50px;height:50px;background:rgba(255,61,87,0.5);border-radius:50%;filter:blur(15px)"></div>
+          <div style="position:absolute;top:30px;right:30px;width:40px;height:40px;background:rgba(26,115,232,0.6);border-radius:50%;filter:blur(12px)"></div>
+          <div style="position:absolute;top:50%;left:50%;width:60px;height:60px;background:rgba(0,200,83,0.4);border-radius:50%;filter:blur(16px);transform:translate(-50%,-50%)"></div>
+        </div>
+      </div>
+      <h2>Rapport Coach IA</h2>
+      <div style="padding:0 20px 16px">
+        <div class="card" style="border-left:4px solid #00D4FF">
+          <div style="color:#00D4FF;font-size:11px;font-weight:700;margin-bottom:10px">🤖 Groq Llama 3.3 · généré en 0.4s</div>
+          <div style="color:#E6EDF3;font-size:14px;line-height:1.7">Excellente lecture de jeu aujourd'hui. Ton temps de décision sur pick-and-roll a baissé de 15%.<br><br>Points forts : mécanique de tir très fluide, angle du coude à 92°. Body language positif même après tes deux ratés au Q3.<br><br>👉 Travaille tes reprises d'appui côté gauche. Programme mis à jour.</div>
+        </div>
+      </div>
+      <div style="padding:0 20px 80px">
+        <button class="btn-primary" onclick="showScreen('program')">📅 Voir mon programme 7 jours</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COACH LIVE -->
+  <div class="screen" id="screen-live">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #161B22">
+      <span onclick="showScreen('dashboard')" style="color:#8B949E;cursor:pointer">✕</span>
+      <div style="display:inline-flex;align-items:center;gap:8px;background:#FF3D5730;border-radius:10px;padding:5px 12px">
+        <span class="live-dot"></span>
+        <span style="color:#FF3D57;font-weight:700;font-size:12px">LIVE — Q2</span>
+      </div>
+      <span style="color:#00C853;font-size:22px;font-weight:800;font-family:'Roboto Mono'">78</span>
+    </div>
+    <div style="display:flex;justify-content:center;gap:20px;padding:30px 20px">
+      <div id="make-btn" onclick="countMake()" style="width:110px;height:110px;background:#00C853;border-radius:55px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 10px 30px rgba(0,200,83,0.4)">
+        <span style="color:#fff;font-size:30px;font-weight:800">+</span>
+        <span id="make-count" style="color:#fff;font-weight:700;font-size:13px">0 IN</span>
+      </div>
+      <div onclick="countMiss()" style="width:110px;height:110px;background:#FF3D57;border-radius:55px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 10px 30px rgba(255,61,87,0.4)">
+        <span style="color:#fff;font-size:30px;font-weight:800">—</span>
+        <span id="miss-count" style="color:#fff;font-weight:700;font-size:13px">0 OUT</span>
+      </div>
+    </div>
+    <div style="padding:0 20px">
+      <div style="color:#8B949E;font-size:12px;margin-bottom:10px">Alertes Coach (vibration discrète)</div>
+      <div id="alerts-feed">
+        <div class="card" style="border-left:3px solid #1A73E8;margin-bottom:10px">
+          <div style="color:#E6EDF3;font-size:13px">Tu as raté 2 tirs de mi-distance — cherche le layup</div>
+          <div style="color:#8B949E;font-size:11px;margin-top:4px">Il y a 8s</div>
+        </div>
+        <div class="card" style="border-left:3px solid #00C853;margin-bottom:10px">
+          <div style="color:#E6EDF3;font-size:13px">Mental Score stable — continue comme ça 💪</div>
+          <div style="color:#8B949E;font-size:11px;margin-top:4px">Il y a 16s</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMMUNITY -->
+  <div class="screen" id="screen-community">
+    <h1>Communauté</h1>
+    <p class="sub">Le Strava du basket 🏀</p>
+    <div style="display:flex;border-bottom:1px solid #161B22;margin:0 20px 16px">
+      <div id="tab-lb" onclick="setCommTab('lb')" style="flex:1;text-align:center;padding:10px;border-bottom:2px solid #1A73E8;color:#1A73E8;font-weight:700;cursor:pointer;font-size:13px">Classement</div>
+      <div id="tab-ch" onclick="setCommTab('ch')" style="flex:1;text-align:center;padding:10px;border-bottom:2px solid transparent;color:#8B949E;font-weight:700;cursor:pointer;font-size:13px">Défis (3)</div>
+    </div>
+    <div class="scroll-area" id="comm-lb">
+      <div style="padding:0 20px;display:flex;flex-direction:column;gap:10px">
+        <div class="card" style="display:flex;align-items:center;gap:12px">
+          <span style="color:#FFB300;font-weight:800;font-size:18px;width:28px">#1</span>
+          <div style="width:40px;height:40px;background:#1A73E8;border-radius:20px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff">K</div>
+          <div style="flex:1"><div style="color:#E6EDF3;font-weight:700">Kylian B.</div><div style="color:#8B949E;font-size:11px">PG</div></div>
+          <div style="text-align:right"><div style="color:#00D4FF;font-weight:800;font-size:20px;font-family:'Roboto Mono'">94</div><div style="color:#00C853;font-size:11px">↑</div></div>
+        </div>
+        <div class="card" style="display:flex;align-items:center;gap:12px">
+          <span style="color:#999;font-weight:800;font-size:18px;width:28px">#2</span>
+          <div style="width:40px;height:40px;background:#333;border-radius:20px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff">A</div>
+          <div style="flex:1"><div style="color:#E6EDF3;font-weight:700">Amine O.</div><div style="color:#8B949E;font-size:11px">SG</div></div>
+          <div style="text-align:right"><div style="color:#00D4FF;font-weight:800;font-size:20px;font-family:'Roboto Mono'">88</div><div style="color:#00C853;font-size:11px">↑</div></div>
+        </div>
+        <div class="card" style="display:flex;align-items:center;gap:12px;border:1px solid #1A73E8;background:rgba(26,115,232,0.1)">
+          <span style="color:#8B949E;font-weight:800;font-size:18px;width:28px">#4</span>
+          <div style="width:40px;height:40px;background:#1A73E8;border-radius:20px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff">T</div>
+          <div style="flex:1"><div style="color:#1A73E8;font-weight:700">Toi ✦</div><div style="color:#8B949E;font-size:11px">PG</div></div>
+          <div style="text-align:right"><div style="color:#00D4FF;font-weight:800;font-size:20px;font-family:'Roboto Mono'">79</div><div style="color:#00C853;font-size:11px">↑</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="scroll-area" id="comm-ch" style="display:none">
+      <div style="padding:0 20px;display:flex;flex-direction:column;gap:12px">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;margin-bottom:10px"><span style="color:#E6EDF3;font-weight:700">Meilleur % de 3pts</span><span style="background:#FF3D57;color:#fff;border-radius:8px;padding:3px 10px;font-size:11px;font-weight:700">⏱ 2j 14h</span></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+            <div><div style="color:#8B949E;font-size:11px">🥇 Leader</div><div style="color:#FFB300;font-weight:700">Kylian — 58%</div></div>
+            <div style="text-align:right"><div style="color:#8B949E;font-size:11px">Toi — #4</div><div style="color:#00D4FF;font-weight:700">41%</div></div>
+          </div>
+          <div style="color:#8B949E;font-size:11px;margin-bottom:10px">Récompense : 🏆 Badge "Sniper"</div>
+          <button class="btn-primary" style="padding:10px;font-size:13px">Participer</button>
+        </div>
+        <div class="card" style="border:1px solid #00C853">
+          <div style="display:flex;justify-content:space-between;margin-bottom:10px"><span style="color:#E6EDF3;font-weight:700">Max sessions filmées</span><span style="background:#FF3D57;color:#fff;border-radius:8px;padding:3px 10px;font-size:11px;font-weight:700">⏱ 4j 09h</span></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+            <div><div style="color:#8B949E;font-size:11px">🥇 Leader</div><div style="color:#FFB300;font-weight:700">Toi — 7</div></div>
+            <div style="text-align:right"><div style="color:#00C853;font-size:11px">#1 ✓</div><div style="color:#00D4FF;font-weight:700">7</div></div>
+          </div>
+          <button class="btn-primary" style="padding:10px;font-size:13px;background:#00C853">Leader ! 🏆</button>
+        </div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab" onclick="showScreen('dashboard')"><span class="tab-icon">🏠</span><span class="tab-label">Accueil</span></div>
+      <div class="tab" onclick="showScreen('upload')"><span class="tab-icon">➕</span><span class="tab-label">Analyser</span></div>
+      <div class="tab active"><span class="tab-icon">👥</span><span class="tab-label">Communauté</span></div>
+      <div class="tab" onclick="showScreen('twin')"><span class="tab-icon">🤖</span><span class="tab-label">Mon Twin</span></div>
+      <div class="tab" onclick="showScreen('profile')"><span class="tab-icon">👤</span><span class="tab-label">Profil</span></div>
+    </div>
+  </div>
+
+  <!-- PROGRAMME -->
+  <div class="screen" id="screen-program">
+    <div style="display:flex;align-items:center;padding:16px 20px;gap:12px;border-bottom:1px solid #161B22">
+      <span onclick="showScreen('report')" style="cursor:pointer;color:#E6EDF3;font-size:20px">←</span>
+      <div><div style="color:#E6EDF3;font-weight:700;font-size:18px">Programme 7 Jours</div><div style="color:#8B949E;font-size:12px">Généré par Groq — basé sur tes faiblesses</div></div>
+    </div>
+    <div class="scroll-area">
+      <div style="margin:16px 20px;background:rgba(26,115,232,0.1);border:1px solid #1A73E8;border-radius:14px;padding:14px">
+        <div style="color:#1A73E8;font-weight:700;margin-bottom:6px">🎯 Objectif semaine</div>
+        <div style="color:#E6EDF3;font-size:13px;line-height:1.6">Reconstruire ta confiance et stabiliser ton mental. Focus tirs de mi-distance après drive côté faible.</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:0 20px 16px">
+        <div onclick="checkDay(0)" id="day0" style="text-align:center;cursor:pointer"><div style="color:#8B949E;font-size:10px;margin-bottom:4px">Lun</div><div style="width:36px;height:36px;border-radius:18px;background:#00C853;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px">✓</div></div>
+        <div onclick="checkDay(1)" id="day1" style="text-align:center;cursor:pointer"><div style="color:#8B949E;font-size:10px;margin-bottom:4px">Mar</div><div style="width:36px;height:36px;border-radius:18px;background:#00C853;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px">✓</div></div>
+        <div onclick="checkDay(2)" id="day2" style="text-align:center;cursor:pointer"><div style="color:#8B949E;font-size:10px;margin-bottom:4px">Mer</div><div id="day2-circle" style="width:36px;height:36px;border-radius:18px;background:#1A73E8;border:2px solid #00D4FF;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px">3</div></div>
+        <div style="text-align:center"><div style="color:#8B949E;font-size:10px;margin-bottom:4px">Jeu</div><div style="width:36px;height:36px;border-radius:18px;background:#161B22;display:flex;align-items:center;justify-content:center;color:#8B949E;font-size:13px">4</div></div>
+        <div style="text-align:center"><div style="color:#8B949E;font-size:10px;margin-bottom:4px">Ven</div><div style="width:36px;height:36px;border-radius:18px;background:#161B22;display:flex;align-items:center;justify-content:center;color:#8B949E;font-size:13px">5</div></div>
+        <div style="text-align:center"><div style="color:#8B949E;font-size:10px;margin-bottom:4px">Sam</div><div style="width:36px;height:36px;border-radius:18px;background:#161B22;display:flex;align-items:center;justify-content:center;color:#8B949E;font-size:13px">6</div></div>
+        <div style="text-align:center"><div style="color:#8B949E;font-size:10px;margin-bottom:4px">Dim</div><div style="width:36px;height:36px;border-radius:18px;background:#161B22;display:flex;align-items:center;justify-content:center;color:#8B949E;font-size:13px">7</div></div>
+      </div>
+      <h2>Séance J3 — Récupération</h2>
+      <div style="padding:0 20px 80px;display:flex;flex-direction:column;gap:10px" id="exercise-list">
+        <div onclick="toggleEx(0)" class="card" id="ex-0" style="display:flex;align-items:center;gap:14px;cursor:pointer">
+          <div style="width:26px;height:26px;border-radius:13px;border:2px solid #8B949E;display:flex;align-items:center;justify-content:center" id="ex-0-check"></div>
+          <div><div style="color:#E6EDF3;font-weight:600">Navettes terrain complet</div><div style="color:#8B949E;font-size:12px;margin-top:2px">10 allers-retours · Modérée</div></div>
+        </div>
+        <div onclick="toggleEx(1)" class="card" id="ex-1" style="display:flex;align-items:center;gap:14px;cursor:pointer">
+          <div style="width:26px;height:26px;border-radius:13px;border:2px solid #8B949E;display:flex;align-items:center;justify-content:center" id="ex-1-check"></div>
+          <div><div style="color:#E6EDF3;font-weight:600">Visualisation mentale</div><div style="color:#8B949E;font-size:12px;margin-top:2px">15 minutes · Faible</div></div>
+        </div>
+        <div onclick="toggleEx(2)" class="card" id="ex-2" style="display:flex;align-items:center;gap:14px;cursor:pointer">
+          <div style="width:26px;height:26px;border-radius:13px;border:2px solid #8B949E;display:flex;align-items:center;justify-content:center" id="ex-2-check"></div>
+          <div><div style="color:#E6EDF3;font-weight:600">Dribbles côté faible</div><div style="color:#8B949E;font-size:12px;margin-top:2px">4 séries x 5 min · Modérée</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIGITAL TWIN -->
+  <div class="screen" id="screen-twin">
+    <h1>Jumeau Numérique</h1>
+    <p class="sub">Basé sur 14 matchs analysés</p>
+    <div class="scroll-area">
+      <div style="margin:0 20px 16px;height:220px;background:linear-gradient(135deg,#161B22,#0D1117);border-radius:20px;border:2px solid #00D4FF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px">
+        <div style="font-size:60px">🤸</div>
+        <div style="color:#00D4FF;font-size:13px;font-weight:600">Avatar 3D animé — Mouvements reproduits</div>
+        <div class="badge" style="background:rgba(0,212,255,0.15);color:#00D4FF">Tu joues comme Steph Curry à 34% 🏆</div>
+      </div>
+      <div style="padding:0 20px;display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div class="card" style="background:rgba(0,200,83,0.1);border:1px solid #00C853">
+          <div style="color:#00C853;font-weight:700;margin-bottom:8px">💪 Points Forts</div>
+          <div style="color:#E6EDF3;font-size:12px;line-height:1.7">• Quick release<br>• Pression résistance<br>• Lecture défense</div>
+        </div>
+        <div class="card" style="background:rgba(255,61,87,0.1);border:1px solid #FF3D57">
+          <div style="color:#FF3D57;font-weight:700;margin-bottom:8px">⚠️ Points Faibles</div>
+          <div style="color:#E6EDF3;font-size:12px;line-height:1.7">• Drive main gauche<br>• Repli défensif<br>• 3pts à droite</div>
+        </div>
+      </div>
+      <div style="padding:0 20px 80px">
+        <button class="btn-primary" style="background:linear-gradient(135deg,#00D4FF,#1A73E8)">Lancer Simulateur ↗</button>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab" onclick="showScreen('dashboard')"><span class="tab-icon">🏠</span><span class="tab-label">Accueil</span></div>
+      <div class="tab" onclick="showScreen('upload')"><span class="tab-icon">➕</span><span class="tab-label">Analyser</span></div>
+      <div class="tab" onclick="showScreen('community')"><span class="tab-icon">👥</span><span class="tab-label">Communauté</span></div>
+      <div class="tab active"><span class="tab-icon">🤖</span><span class="tab-label">Mon Twin</span></div>
+      <div class="tab" onclick="showScreen('profile')"><span class="tab-icon">👤</span><span class="tab-label">Profil</span></div>
+    </div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="screen" id="screen-profile">
+    <div class="scroll-area">
+      <div style="margin:20px;background:linear-gradient(135deg,#161B22,#0a1628);border-radius:20px;padding:24px;border:1px solid #1A73E8">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <div style="width:70px;height:70px;background:#1A73E8;border-radius:35px;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;color:#fff">K</div>
+          <div style="text-align:right">
+            <div style="color:#E6EDF3;font-size:20px;font-weight:800">Kylian B.</div>
+            <div style="color:#00D4FF;font-size:14px">Meneur (PG)</div>
+            <div style="color:#8B949E;font-size:12px">188cm · 84kg</div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><div style="color:#8B949E;font-size:11px">ABONNEMENT</div><div style="color:#FFB300;font-weight:700">Plan Coach 👑</div></div>
+          <button style="background:rgba(26,115,232,0.2);color:#1A73E8;border:1px solid #1A73E8;border-radius:10px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:700">Gérer</button>
+        </div>
+      </div>
+      <div style="padding:0 20px;display:flex;flex-direction:column;gap:10px;padding-bottom:80px">
+        <div class="card" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span>📄</span>
+            <div style="color:#E6EDF3;font-weight:600">Générer ma fiche recrutement</div>
+          </div>
+          <span style="color:#8B949E">›</span>
+        </div>
+        <div class="card" style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span>📊</span>
+            <div style="color:#E6EDF3;font-weight:600">Historique complet</div>
+          </div>
+          <span style="color:#8B949E">›</span>
+        </div>
+        <div class="card" style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span>⚙️</span>
+            <div style="color:#E6EDF3;font-weight:600">Réglages compte</div>
+          </div>
+          <span style="color:#8B949E">›</span>
+        </div>
+        <div style="text-align:center;color:#8B949E;font-size:12px;margin-top:10px">CourtVision AI v2.0</div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab" onclick="showScreen('dashboard')"><span class="tab-icon">🏠</span><span class="tab-label">Accueil</span></div>
+      <div class="tab" onclick="showScreen('upload')"><span class="tab-icon">➕</span><span class="tab-label">Analyser</span></div>
+      <div class="tab" onclick="showScreen('community')"><span class="tab-icon">👥</span><span class="tab-label">Communauté</span></div>
+      <div class="tab" onclick="showScreen('twin')"><span class="tab-icon">🤖</span><span class="tab-label">Mon Twin</span></div>
+      <div class="tab active"><span class="tab-icon">👤</span><span class="tab-label">Profil</span></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let makes=0,misses=0,exStates=[false,false,false];
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el=document.getElementById('screen-'+id);
+  if(el){el.classList.add('active');el.scrollTop=0;}
+}
+function startAnalysis(){
+  const steps=['Étape 1/7 : Extraction frames (FFmpeg)','Étape 2/7 : Détection MediaPipe Pose','Étape 3/7 : Reconstruction 3D','Étape 4/7 : Analyse des tirs','Étape 5/7 : Analyse psychologique','Étape 6/7 : Génération rapport Groq','Étape 7/7 : Montage Highlight Reel'];
+  document.querySelectorAll('#screen-upload > *:not(#analyzing-state)').forEach(e=>e.style.display='none');
+  document.getElementById('analyzing-state').style.display='block';
+  let step=0;
+  const iv=setInterval(()=>{
+    if(step>=7){clearInterval(iv);showScreen('report');return;}
+    document.getElementById('step-label').textContent=steps[step];
+    const pct=Math.round((step+1)/7*100);
+    document.getElementById('progress-fill').style.width=pct+'%';
+    document.getElementById('progress-pct').textContent=pct+'%';
+    step++;
+  },800);
+}
+function countMake(){makes++;document.getElementById('make-count').textContent=makes+' IN';}
+function countMiss(){misses++;document.getElementById('miss-count').textContent=misses+' OUT';}
+function setCommTab(t){
+  ['lb','ch'].forEach(id=>{
+    const tab=document.getElementById('tab-'+id);
+    const panel=document.getElementById('comm-'+id);
+    if(id===t){tab.style.borderBottomColor='#1A73E8';tab.style.color='#1A73E8';panel.style.display='block';}
+    else{tab.style.borderBottomColor='transparent';tab.style.color='#8B949E';panel.style.display='none';}
+  });
+}
+function toggleEx(i){
+  exStates[i]=!exStates[i];
+  const card=document.getElementById('ex-'+i);
+  const check=document.getElementById('ex-'+i+'-check');
+  if(exStates[i]){check.innerHTML='✓';check.style.background='#00C853';check.style.borderColor='#00C853';check.style.color='#fff';card.style.opacity='0.6';}
+  else{check.innerHTML='';check.style.background='transparent';check.style.borderColor='#8B949E';card.style.opacity='1';}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,394 @@
+🏀 CourtVision AI
+PROMPT MAÎTRE — VERSION 2.0
+Le coach IA qui te transforme. Pas juste qui te compte.
+Document confidentiel — Tous droits réservés
+
+
+🎯 POSITIONNEMENT & MISSION
+
+
+Tu es un développeur full-stack senior expert en Computer Vision, Intelligence Artificielle, et développement mobile. Ta mission est de construire CourtVision AI de zéro, en production, sans aucun trou, dans l'ordre exact de ce document.
+
+Règle absolue : ne passe jamais à l'étape suivante sans avoir terminé et validé la précédente. Chaque fichier créé doit être complet, fonctionnel, et prêt pour la production.
+
+
+🚀 CE QUI NOUS DIFFÉRENCIE (à construire absolument)
+
+
+
+⚙️ LES 8 FONCTIONNALITÉS RÉVOLUTIONNAIRES
+
+1. 🧠 Mental AI — Psychologie du joueur
+Détection de la confiance via la gestuelle : posture, démarche, position des épaules
+Mental Fragility Score (0–100) : détecte si tu joues sous pression ou détendu
+Message pré-match personnalisé basé sur tes dernières sessions
+Analyse du langage corporel après chaque tir raté — patterns détectés sur la durée
+IMPORTANT : base le score sur des recherches académiques réelles en psychologie sportive pour être crédible
+
+2. 🌐 Reconstruction 3D depuis un seul téléphone
+DepthAnything v2 + calibration terrain obligatoire au premier lancement
+L'utilisateur place 4 points sur les lignes du terrain = précision x10
+Sans calibration, les coordonnées terrain ne sont pas fiables
+Vue aérienne générée automatiquement avec positions en temps réel
+Carte de chaleur 3D de toutes les positions sur le terrain
+Simulation des trajectoires de passes optimales
+
+3. 👥 Jumeau Numérique — Digital Twin évolutif
+Avatar IA construit et affiné de manière incrémentale à chaque match
+Pose estimation comparée à une base de données de mouvements NBA open source
+Simulation de situations contre ta propre version améliorée
+Les coachs testent des tactiques avec ton jumeau sans que tu sois présent
+
+4. 🔴 Coach Live — Analyse en temps réel
+Mode "Live Coach" : l'IA analyse pendant le match et envoie des alertes pendant les pauses
+"Tu as raté 3 tirs de mi-distance ce quart — cherche le layup"
+"Ton Mental Score chute depuis 10 minutes — respire, joue simple"
+Notification push instantanée à la fin de chaque quart-temps
+Mode discret : vibration uniquement, pas de son pendant le match
+
+5. 📈 Programme 30 jours — Progression structurée
+L'IA génère automatiquement un programme d'entraînement sur 30 jours basé sur tes faiblesses
+Chaque séance est générée en fonction de ta progression réelle
+Streak système gamifié (inspiration Duolingo) pour maintenir la motivation
+Objectifs hebdomadaires mesurables + rapport de fin de semaine automatique
+
+6. 🌍 Communauté & Social — Le "Strava du basket"
+Classements entre amis et équipes locales
+Défis hebdomadaires communautaires : "Meilleur % de 3 points cette semaine"
+Profils publics avec stats et highlights — partage organique
+Mode Scouting : un coach peut suivre un joueur et lui envoyer des retours annotés directement
+
+7. 🎬 Production Cinématique Automatique
+Highlight reel niveau ESPN généré en 2 minutes après le match
+3 templates au choix : cinéma, ESPN broadcast, hype TikTok
+Bibliothèque musicale libre de droits intégrée — l'utilisateur choisit le style
+Commentaire IA dynamique via Coqui TTS sur les meilleures actions
+Watermark CourtVision AI discret — levier viral organique
+Partage direct Instagram Story, TikTok, YouTube Shorts, WhatsApp
+
+8. 🎯 Scout IA — Analyse des adversaires
+Scan des anciens matchs de l'équipe adverse
+Plan de jeu personnalisé généré automatiquement contre cette équipe
+Failles tactiques identifiées pour chaque adversaire individuel
+Mode recrutement : fiche joueur PDF professionnelle générée automatiquement
+
+
+🛠️ STACK TECHNIQUE COMPLET
+
+Frontend Mobile
+
+Backend & API
+
+Intelligence Artificielle
+
+Paiements & Infrastructure
+
+
+📁 STRUCTURE DU PROJET
+
+
+
+🗄️ SCHÉMA BASE DE DONNÉES SUPABASE
+
+Crée exactement ces tables SQL dans Supabase. Active Row Level Security sur chaque table.
+
+Table users
+
+Table sessions (matchs / entraînements)
+
+Table analyses
+
+Table digital_twins
+
+Table community_challenges
+
+Table subscriptions
+
+
+🤖 PIPELINE IA — 7 ÉTAPES (BullMQ)
+
+Ce pipeline se déclenche après chaque upload vidéo. Il tourne en arrière-plan via BullMQ. Construis chaque étape dans l'ordre exact. Chaque étape émet un événement SSE pour la progression en temps réel.
+
+Étape 1 — Prétraitement vidéo
+Fichier : packages/ai/src/preprocessing.ts
+Extraire les frames à 30fps avec FFmpeg
+Détecter automatiquement les dimensions du terrain
+Si calibration terrain disponible : mapper les 4 points pour la 3D
+Normaliser la perspective (correction fisheye si nécessaire)
+Séparer segments actifs vs inactifs (temps morts, coulisses)
+
+Étape 2 — Détection et Tracking
+Fichier : packages/ai/src/tracking.ts
+MediaPipe Pose : détecter les 33 landmarks corporels sur chaque frame
+ByteTrack : assigner un ID unique à chaque joueur et le tracker sur toute la durée
+YOLOv8 custom fine-tuné : détecter le ballon frame par frame
+Identifier le numéro de maillot de l'utilisateur principal
+
+Étape 3 — Reconstruction 3D
+Fichier : packages/ai/src/reconstruction3d.ts
+DepthAnything v2 : estimer la profondeur depuis la caméra monoculaire
+Si calibration disponible : mapper coordonnées 2D → 3D terrain normalisé
+Générer la vue aérienne du terrain avec positions en temps réel
+Calculer les distances réelles entre joueurs
+
+Étape 4 — Analyse des tirs
+Fichier : packages/ai/src/shotAnalysis.ts
+Détecter chaque tentative de tir (mouvement bras + trajectoire ballon)
+Classifier : panier réussi, raté, contré, faute
+Assigner la zone terrain : corner 3pts, mi-distance, raquette, etc.
+Analyser la posture de tir : angle coude, hauteur release, arc du ballon
+Comparer la posture avec la base de données NBA open source
+
+Étape 5 — Analyse Psychologique
+Fichier : packages/ai/src/mentalAnalysis.ts
+Calculer le Mental Fragility Score basé sur les changements de posture (sourced académiquement)
+Détecter les patterns : baisse de tête après erreur, épaules tombantes, etc.
+Analyser la vitesse de déplacement comme indicateur d'intensité et de fatigue
+Comparer comportement début vs fin de match (fatigue mentale)
+Si données HealthKit disponibles : croiser avec le HRV pour plus de précision
+
+Étape 6 — Génération du Rapport + Programme
+Fichier : packages/ai/src/reportGenerator.ts
+Compiler toutes les données étapes 1-5 en JSON structuré
+Envoyer à Groq (Llama 3.3 70B) avec prompt spécialisé coaching basket
+Fallback automatique vers Ollama local si Groq indisponible
+Rapport 500-800 mots : points forts, points faibles, exercices recommandés
+Générer le programme d'entraînement des 7 prochains jours basé sur les faiblesses
+
+Étape 7 — Montage Highlight Reel
+Fichier : packages/ai/src/highlightEditor.ts
+Scorer chaque action : tir marqué = 10pts, passe décisive = 8pts, etc.
+Sélectionner les 10-15 meilleures actions du match
+FFmpeg : couper, assembler, transitions cinématiques
+Template au choix : cinéma / ESPN broadcast / hype TikTok
+Coqui TTS : commentaire vocal IA sur les meilleures actions
+Overlay stats : nom, score, statistiques clés + watermark CourtVision AI
+Exporter en 1080p optimisé réseaux sociaux
+
+
+🔌 API ENDPOINTS FASTIFY
+
+Auth — /api/auth
+POST /signup — Inscription + création profil Supabase
+POST /login — Connexion, retourne JWT
+POST /logout — Invalidation session
+POST /refresh — Refresh JWT token
+GET /me — Profil utilisateur connecté
+
+Sessions — /api/sessions
+POST /upload — Upload vidéo + démarrer analyse async via BullMQ
+GET / — Liste des sessions de l'utilisateur
+GET /:id — Détail session + analyse complète
+DELETE /:id — Supprimer session et vidéo du Storage
+GET /:id/status — Statut du traitement en temps réel (SSE)
+POST /:id/live — Démarrer le mode Coach Live (streaming)
+
+Analyses — /api/analyses
+GET /:sessionId — Récupérer analyse complète
+GET /:sessionId/heatmap — Données heatmap JSON
+GET /:sessionId/report — Rapport IA texte complet
+GET /:sessionId/highlights — Timestamps des meilleures actions
+GET /:sessionId/program — Programme entraînement 7 jours
+
+Digital Twin — /api/twin
+GET /me — Récupérer son jumeau numérique + comparaison NBA
+POST /simulate — Simuler une situation avec son twin
+GET /compare/:userId — Comparer deux jumeaux
+
+Community — /api/community
+GET /leaderboard — Classement hebdomadaire par métrique
+GET /challenges — Défis actifs cette semaine
+POST /challenges/:id/submit — Soumettre une performance
+GET /friends — Stats des amis
+
+Billing — /api/billing
+POST /create-checkout — Créer session Stripe Checkout
+POST /webhook — Webhook Stripe (vérification signature cryptographique obligatoire)
+GET /portal — Portail client Stripe
+GET /plans — Liste des plans et prix
+
+
+📱 ÉCRANS APPLICATION MOBILE
+
+Onboarding (3 écrans)
+Écran 1 : Animation intro avec terrain qui s'illumine, tagline "Joue comme un pro"
+Écran 2 : Sélection du poste (meneur, ailier, pivot...) avec avatars 3D
+Écran 3 : Apple Sign In + Google Sign In + calibration terrain optionnelle
+
+Dashboard — Écran principal
+Carte de progression hebdomadaire (graphique courbe)
+Mental Score du dernier match avec indicateur coloré
+Bouton central animé "Analyser un match" (action principale)
+Feed des derniers highlights générés avec vues et likes
+Streak d'entraînement (comme Duolingo) + objectif du jour
+Widget programme : prochaine séance recommandée par l'IA
+
+Upload & Analyse
+Sélecteur vidéo depuis galerie ou caméra directe
+Écran de progression temps réel avec les 7 étapes du pipeline
+Animation radar qui pulse pendant le traitement
+Notification push quand l'analyse est terminée
+
+Rapport d'Analyse
+Résumé visuel : stats clés en gros chiffres
+Heatmap interactive du terrain (touch pour zoomer une zone)
+Graphique radar : vitesse, précision, lecture du jeu, mental, etc.
+Rapport texte complet avec sections dépliables
+Programme 7 jours avec séances détaillées
+Comparaison avec ta session précédente
+
+Coach Live
+Démarrer le mode depuis la caméra directement
+Alertes vibrantes discrètes pendant les pauses
+Tableau de bord minimal : mental score + stats en cours
+Fin de quart-temps : résumé rapide en 3 points clés
+
+Communauté
+Classement hebdomadaire avec filtres : amis / région / global
+Défis actifs : décompte temps restant + ta position actuelle
+Feed des highlights des joueurs que tu suis
+Mode Coach : suivi de plusieurs joueurs + envoi de retours annotés
+
+Digital Twin
+Avatar 3D animé qui reproduit tes mouvements caractéristiques
+Comparaison NBA : "Tu joues comme Steph Curry à 34%"
+Panneau Forces vs Faiblesses avec évolution sur 6 mois
+Simulateur : choisir une situation de jeu, voir comment ton twin réagit
+
+Highlights
+Lecteur vidéo plein écran avec contrôles stylisés
+Choix du template : cinéma / ESPN / TikTok
+Choix de la musique dans la bibliothèque intégrée
+Boutons de partage direct : Instagram Story, TikTok, YouTube Shorts, WhatsApp
+Galerie de tous tes highlights classés par match
+
+Profil Joueur
+Fiche joueur style carte NBA : photo, stats, position
+Bouton "Générer ma fiche recrutement" (PDF professionnel)
+Historique complet de progression avec graphiques
+Gestion de l'abonnement et facturation
+
+
+🎨 DESIGN SYSTEM
+
+Palette de couleurs
+
+Composants UI à créer
+StatCard — chiffre principal + label + tendance (↑↓)
+HeatmapCanvas — terrain de basket interactif avec zones colorées
+MentalGauge — jauge circulaire animée pour le Mental Score
+RadarChart — graphique araignée pour les 6 dimensions du joueur
+HighlightPlayer — lecteur vidéo full-screen avec overlay stats
+PipelineProgress — progression animée des 7 étapes d'analyse
+PlayerCard — carte joueur style NBA avec glassmorphism
+LiveCoachBadge — badge discret mode coaching live actif
+ChallengeCard — carte défi avec compte à rebours et ta position
+ProgramDay — carte séance du jour avec exercices détaillés
+
+
+💰 MODÈLE ÉCONOMIQUE
+
+Plan Joueur — 9€/mois
+5 analyses vidéo par mois
+Rapport IA complet + programme 7 jours
+Highlight reel automatique (template standard)
+Accès communauté + défis hebdomadaires
+Digital Twin basique
+
+Plan Coach — 29€/mois
+Analyses illimitées
+Jusqu'à 15 joueurs en simultané
+Dashboard équipe complet
+Annotation vidéo + envoi de retours aux joueurs
+Analyse tactique adversaires
+Digital Twin pour chaque joueur
+Tous les templates highlight
+
+Plan Académie — 99€/mois
+Tout du plan Coach
+Joueurs illimités
+API access pour intégration externe
+Rapports PDF exportables avec branding du club
+Support prioritaire
+Accès bêta aux nouvelles fonctionnalités
+
+
+🆓 CONFIGURATION IA — COÛT TOTAL : 0€
+
+Groq — LLM Principal (ultra rapide)
+Crée un compte sur groq.com, génère une clé API. C'est tout.
+Modèle : llama-3.3-70b-versatile
+Limite gratuite : 14 400 requêtes/jour — suffisant pour démarrer
+Latence : ~0.5 seconde par rapport
+
+
+Ollama — Fallback 100% Local
+
+
+Système de Fallback Automatique
+
+Coqui TTS — Voix IA Gratuite
+
+
+🔑 VARIABLES D'ENVIRONNEMENT
+
+Crée un fichier .env.example complet avec exactement ces variables :
+
+
+
+🔒 SÉCURITÉ — RÈGLES NON-NÉGOCIABLES
+
+Toutes les routes API nécessitent un JWT valide Supabase
+Row Level Security (RLS) activé sur TOUTES les tables Supabase
+Un utilisateur ne peut accéder qu'à ses propres données
+Vidéos stockées en privé — URLs signées temporaires 15 min uniquement
+Rate limiting : 100 requêtes/minute par IP
+Validation Zod sur tous les inputs sans exception
+Aucune donnée sensible dans les logs (Pino uniquement, zéro console.log)
+Webhook Stripe : vérification signature cryptographique obligatoire
+Variables d'environnement : jamais dans le code, toujours en .env
+
+
+🧪 TESTS À ÉCRIRE
+
+Tests unitaires pour chaque fonction du pipeline IA
+Tests d'intégration pour tous les endpoints API
+Tests end-to-end : upload vidéo → analyse → rapport
+Test de charge : simuler 50 analyses simultanées
+Tests de sécurité : vérifier que RLS bloque les accès non autorisés
+Tests de fallback IA : simuler une panne Groq → vérifier Ollama prend le relais
+
+
+🏗️ ORDRE DE CONSTRUCTION — RESPECTE-LE EXACTEMENT
+
+Valide chaque étape avant de passer à la suivante. Ne saute aucune étape.
+
+Setup monorepo : yarn workspaces + TypeScript strict + ESLint + Pino logger
+Configurer Supabase : tables + RLS + Storage buckets + politiques d'accès
+Construire l'API Fastify avec auth + toutes les routes + validation Zod
+Implémenter le pipeline IA étape par étape (1 à 7)
+Intégrer BullMQ pour le traitement async des vidéos + SSE pour la progression
+Construire l'app mobile React Native : tous les écrans dans l'ordre
+Intégrer le mode Coach Live (streaming vidéo + alertes temps réel)
+Intégrer le module Communauté (classements, défis, profils publics)
+Intégrer Stripe : checkout + webhook + portail client
+Écrire tous les tests et corriger les bugs
+Déployer : Railway (API) + EAS Build (mobile) + Vercel (web)
+Soumettre sur l'App Store et Google Play
+
+
+⚠️ RÈGLES STRICTES DE QUALITÉ
+
+TypeScript strict sur tout le projet — aucun "any" autorisé
+Aucun console.log en production — utiliser Pino structuré
+Chaque fonction doit avoir une responsabilité unique (SRP)
+Documenter toutes les fonctions publiques avec JSDoc
+Gestion d'erreurs complète : try/catch partout, messages d'erreur clairs
+Toutes les images et vidéos doivent être optimisées avant envoi
+L'app doit fonctionner hors ligne pour les fonctionnalités de base
+Respecter les guidelines App Store et Google Play dès le début
+Le Mental Score doit être sourcé sur des recherches académiques réelles
+La calibration terrain est obligatoire pour les fonctionnalités 3D — ne pas la rendre optionnelle
+
+🚀 Lance la construction maintenant.
+Commence par l'étape 1. Ne passe pas à l'étape 2 sans avoir terminé l'étape 1.

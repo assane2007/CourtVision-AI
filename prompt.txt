@@ -1,0 +1,418 @@
+🏀 CourtVision AI
+PROMPT MAÎTRE — CONSTRUCTION COMPLÈTE DE L'APP
+Document confidentiel — Version 1.0
+📋 CONTEXTE & MISSION
+Tu es un développeur full-stack senior expert en Computer Vision, Intelligence Artificielle, et développement mobile. Ta mission est de construire CourtVision AI — une application révolutionnaire qui démocratise l'analyse basket niveau NBA pour tous les joueurs amateurs du monde.
+Cette app n'existe pas encore. Elle doit être construite de zéro, en production, sans aucun trou. Suis ce prompt étape par étape, dans l'ordre exact. Ne passe jamais à l'étape suivante sans avoir terminé et validé la précédente.
+🔮 VISION PRODUIT
+Ce que l'app fait
+CourtVision AI transforme n'importe quel smartphone en analyste personnel de basket niveau professionnel. L'utilisateur filme son match ou son entraînement. L'IA analyse tout automatiquement et retourne un rapport complet, des conseils personnalisés, et un highlight reel cinématique.
+Les 5 fonctionnalités révolutionnaires
+1. Psychologie du joueur — Mental AI
+Détection de la confiance via la gestuelle (posture, démarche, position des épaules)
+Mental Fragility Score : l'IA détecte si tu joues sous pression ou détendu
+Avant chaque match, message personnalisé : 'Ce soir, joue simple. Ton niveau de confiance est bas.'
+Analyse du langage corporel après chaque tir raté
+2. Reconstruction 3D depuis un seul téléphone
+L'app reconstruit l'espace 3D complet du terrain depuis une seule caméra
+Vue aérienne générée automatiquement : espaces, angles, trajectoires
+Carte de chaleur 3D de toutes tes positions sur le terrain
+Simulation des trajectoires de passes optimales
+3. Jumeau Numérique — Digital Twin
+L'app crée un avatar IA complet de toi basé sur tous tes matchs
+Tu peux simuler des situations contre ta propre version améliorée
+Les coachs testent des tactiques avec ton jumeau sans que tu sois présent
+Comparaison automatique de ta technique vs les pros (pose estimation)
+4. Scout IA — Analyse des adversaires
+Tu scannes les anciens matchs de l'équipe adverse
+L'IA génère un plan de jeu personnalisé contre cette équipe précise
+Failles tactiques identifiées pour chaque adversaire
+Mode recrutement : fiche joueur pro générée automatiquement
+5. Production Cinématique Automatique
+Highlight reel niveau ESPN généré en 2 minutes après le match
+Commentaire IA dynamique sur tes meilleures actions
+Musique adaptée automatiquement à l'intensité des actions
+Partage direct sur Instagram, TikTok, YouTube
+⚙️ STACK TECHNIQUE COMPLET
+Frontend Mobile
+Framework   : React Native (Expo SDK 51)
+UI Library  : NativeWind (Tailwind pour React Native)
+Navigation  : Expo Router (file-based routing)
+State       : Zustand + React Query
+Animation   : React Native Reanimated 3
+Camera      : Expo Camera + Vision Camera
+Backend & API
+Runtime     : Node.js 20 + TypeScript
+Framework   : Fastify (plus rapide qu'Express)
+Auth        : Supabase Auth (JWT)
+Database    : Supabase (PostgreSQL)
+Storage     : Supabase Storage (vidéos)
+Queue       : BullMQ + Redis (traitement vidéo async)
+Hosting     : Railway.app
+Intelligence Artificielle
+Vision      : MediaPipe Pose (détection corps)
+Tracking    : ByteTrack (tracking multi-joueurs)
+3D Recon    : DepthAnything v2 (profondeur monoculaire)
+LLM Primary : Groq API — Llama 3.3 70B (rapports IA, ultra rapide, gratuit)
+LLM Local   : Ollama — Llama 3.2 (fallback hors ligne, 100% gratuit)
+TTS         : Coqui TTS (commentaire vocal — 100% gratuit open source)
+Video Edit  : FFmpeg (montage automatique)
+Paiements & Business
+Payments    : Stripe (abonnements récurrents)
+Analytics   : PostHog (comportement utilisateur)
+Emails      : Resend (transactionnel)
+Deploy      : Vercel (web) + EAS Build (mobile)
+📁 STRUCTURE DU PROJET
+Crée exactement cette structure de fichiers :
+courtvision-ai/
+├── apps/
+│   ├── mobile/              (React Native Expo)
+│   └── web/                 (Next.js landing page)
+├── packages/
+│   ├── api/                 (Fastify backend)
+│   ├── ai/                  (Tous les modèles IA)
+│   ├── database/            (Schemas Supabase)
+│   └── shared/              (Types TypeScript partagés)
+├── infra/                   (Docker, configs)
+└── docs/                    (Documentation)
+🗄️ SCHÉMA BASE DE DONNÉES
+Crée exactement ces tables Supabase en SQL :
+Table users
+id            UUID PRIMARY KEY DEFAULT gen_random_uuid()
+email         TEXT UNIQUE NOT NULL
+username      TEXT UNIQUE NOT NULL
+full_name     TEXT
+avatar_url    TEXT
+position      TEXT CHECK (position IN ('PG','SG','SF','PF','C'))
+height_cm     INTEGER
+weight_kg     INTEGER
+plan          TEXT DEFAULT 'free' CHECK (plan IN ('free','player','coach','academy'))
+stripe_customer_id TEXT
+created_at    TIMESTAMPTZ DEFAULT NOW()
+Table sessions (matchs/entraînements)
+id            UUID PRIMARY KEY DEFAULT gen_random_uuid()
+user_id       UUID REFERENCES users(id) ON DELETE CASCADE
+type          TEXT CHECK (type IN ('match','training','shootaround'))
+video_url     TEXT NOT NULL
+duration_sec  INTEGER
+status        TEXT DEFAULT 'processing'
+              -- processing, analyzing, complete, failed
+created_at    TIMESTAMPTZ DEFAULT NOW()
+Table analyses
+id            UUID PRIMARY KEY DEFAULT gen_random_uuid()
+session_id    UUID REFERENCES sessions(id) ON DELETE CASCADE
+shot_attempts INTEGER DEFAULT 0
+shot_made     INTEGER DEFAULT 0
+shot_zones    JSONB    -- zones du terrain avec % réussite
+heatmap_data  JSONB    -- positions sur le terrain
+mental_score  FLOAT    -- 0-100 score confiance
+body_language JSONB    -- données gestuelle
+highlights    JSONB    -- timestamps des meilleures actions
+ai_report     TEXT     -- rapport complet généré par GPT-4o
+created_at    TIMESTAMPTZ DEFAULT NOW()
+Table digital_twins
+id            UUID PRIMARY KEY DEFAULT gen_random_uuid()
+user_id       UUID REFERENCES users(id) ON DELETE CASCADE
+model_version TEXT DEFAULT 'v1'
+pose_data     JSONB    -- données morphologie et mouvement
+play_style    JSONB    -- style de jeu appris
+strengths     TEXT[]
+weaknesses    TEXT[]
+updated_at    TIMESTAMPTZ DEFAULT NOW()
+Table subscriptions
+id                    UUID PRIMARY KEY
+user_id               UUID REFERENCES users(id)
+stripe_subscription_id TEXT UNIQUE
+plan                  TEXT NOT NULL
+status                TEXT NOT NULL
+current_period_end    TIMESTAMPTZ
+created_at            TIMESTAMPTZ DEFAULT NOW()
+🔌 API ENDPOINTS À CONSTRUIRE
+Construis exactement ces routes Fastify avec TypeScript :
+Auth Routes — /api/auth
+POST /signup — Inscription + création profil Supabase
+POST /login — Connexion, retourne JWT
+POST /logout — Invalidation session
+POST /refresh — Refresh JWT token
+GET /me — Profil utilisateur connecté
+Session Routes — /api/sessions
+POST /upload — Upload vidéo + démarrer analyse async
+GET / — Liste des sessions de l'utilisateur
+GET /:id — Détail d'une session + analyse
+DELETE /:id — Supprimer session et vidéo
+GET /:id/status — Statut du traitement en temps réel (SSE)
+Analysis Routes — /api/analyses
+GET /:sessionId — Récupérer analyse complète
+GET /:sessionId/heatmap — Données heatmap JSON
+GET /:sessionId/report — Rapport IA texte complet
+GET /:sessionId/highlights — Timestamps des meilleures actions
+Digital Twin Routes — /api/twin
+GET /me — Récupérer son jumeau numérique
+POST /simulate — Simuler une situation avec son twin
+GET /compare/:userId — Comparer deux jumeaux
+Billing Routes — /api/billing
+POST /create-checkout — Créer session Stripe Checkout
+POST /webhook — Webhook Stripe (mise à jour plan)
+GET /portal — Portail client Stripe
+GET /plans — Liste des plans et prix
+🤖 PIPELINE IA — ÉTAPE PAR ÉTAPE
+Ce pipeline se déclenche après chaque upload vidéo. Il tourne en background via BullMQ. Construis chaque étape dans l'ordre exact.
+Étape 1 — Prétraitement vidéo
+Fichier : packages/ai/src/preprocessing.ts
+Extraire les frames à 30fps avec FFmpeg
+Détecter automatiquement les dimensions du terrain
+Normaliser la perspective (correction fisheye si nécessaire)
+Séparer les segments actifs vs inactifs (temps morts, coulisses)
+Étape 2 — Détection et Tracking
+Fichier : packages/ai/src/tracking.ts
+MediaPipe Pose : détecter les 33 landmarks corporels sur chaque frame
+ByteTrack : assigner un ID unique à chaque joueur et le tracker
+Détecter le ballon avec un modèle YOLOv8 custom fine-tuné sur basket
+Identifier le numéro de maillot de l'utilisateur principal
+Étape 3 — Reconstruction 3D
+Fichier : packages/ai/src/reconstruction3d.ts
+DepthAnything v2 : estimer la profondeur depuis la caméra monoculaire
+Mapper les coordonnées 2D vers coordonnées 3D terrain normalisé
+Générer la vue aérienne du terrain avec positions en temps réel
+Calculer les distances réelles entre joueurs
+Étape 4 — Analyse des tirs
+Fichier : packages/ai/src/shotAnalysis.ts
+Détecter chaque tentative de tir (mouvement bras + trajectoire ballon)
+Classifier : panier réussi, raté, contré, faute
+Assigner la zone du terrain : corner 3pts, mi-distance, raquette, etc.
+Analyser la posture de tir : angle coude, hauteur release, arc du ballon
+Comparer la posture avec une base de données de tirs pro
+Étape 5 — Analyse Psychologique
+Fichier : packages/ai/src/mentalAnalysis.ts
+Calculer le Mental Fragility Score basé sur les changements de posture
+Détecter les patterns : baisse de tête après erreur, épaules tombantes, etc.
+Analyser la vitesse de déplacement comme indicateur d'intensité
+Comparer comportement début vs fin de match (fatigue mentale)
+Étape 6 — Génération du Rapport IA
+Fichier : packages/ai/src/reportGenerator.ts
+Compiler toutes les données des étapes 1-5 en JSON structuré
+Envoyer à Groq (Llama 3.3 70B) avec un prompt spécialisé coaching basket
+Fallback automatique vers Ollama local si Groq est indisponible
+Générer un rapport de 500-800 mots comme un vrai coach
+Inclure : points forts, points faibles, exercices recommandés, objectifs
+Étape 7 — Montage Highlight Reel
+Fichier : packages/ai/src/highlightEditor.ts
+Scorer chaque action : tir marqué = 10pts, passe décisive = 8pts, etc.
+Sélectionner les 10-15 meilleures actions du match
+FFmpeg : couper, assembler, ajouter transitions cinématiques
+Coqui TTS : générer commentaire vocal IA sur les meilleures actions (open source, gratuit)
+Ajouter overlay stats : nom, score, statistiques clés
+Exporter en 1080p optimisé pour les réseaux sociaux
+📱 ÉCRANS APPLICATION MOBILE
+Construis exactement ces écrans dans React Native :
+Onboarding (3 écrans)
+Screen 1 : Animation intro avec terrain qui s'illumine, tagline 'Joue comme un pro'
+Screen 2 : Sélection du poste (meneur, ailier, pivot, etc.) avec avatars 3D
+Screen 3 : Connexion/Inscription avec Apple Sign In + Google Sign In
+Dashboard — Écran principal
+Carte de progression hebdomadaire (graphique courbe)
+Mental Score du dernier match avec indicateur coloré
+Bouton central animé 'Analyser un match' (action principale)
+Feed des derniers highlights générés
+Streak d'entraînement (comme Duolingo)
+Upload & Analyse
+Sélecteur vidéo depuis galerie ou caméra directe
+Écran de progression temps réel avec les 7 étapes du pipeline
+Animation radar qui pulse pendant le traitement
+Notification push quand l'analyse est terminée
+Rapport d'Analyse
+Résumé visuel : stats clés en gros chiffres
+Heatmap interactive du terrain (touch pour zoomer une zone)
+Graphique radar : vitesse, précision, lecture du jeu, mental, etc.
+Rapport texte complet avec sections dépliables
+Comparaison avec ta session précédente
+Digital Twin
+Avatar 3D animé qui reproduit tes mouvements
+Panneau : Forces vs Faiblesses de ton twin
+Simulateur : choisir une situation, voir comment ton twin réagit
+Timeline d'évolution de ton twin sur 6 mois
+Highlights
+Lecteur vidéo plein écran avec contrôles stylisés
+Boutons de partage direct : Instagram Story, TikTok, WhatsApp
+Galerie de tous tes highlights classés par match
+Option : re-générer avec une autre musique
+Profil Joueur
+Fiche joueur style carte NBA : photo, stats, position
+Bouton 'Générer ma fiche recrutement' (PDF professionnel)
+Historique complet de progression avec graphiques
+Gestion de l'abonnement et facturation
+🎨 DESIGN SYSTEM
+Couleurs
+Primary     : #1A73E8  (Bleu électrique — futuriste)
+Background  : #0D1117  (Noir profond — comme la nuit)
+Surface     : #161B22  (Cartes et panneaux)
+Accent      : #00D4FF  (Cyan — éléments IA)
+Success     : #00C853  (Vert — tirs réussis)
+Warning     : #FFB300  (Orange — zone d'amélioration)
+Error       : #FF3D57  (Rouge — tirs manqués)
+Text        : #E6EDF3  (Blanc doux)
+Muted       : #8B949E  (Texte secondaire)
+Typographie
+Display     : SF Pro Display Bold (titres)
+Body        : SF Pro Text Regular (texte)
+Stats       : Roboto Mono (chiffres et données)
+Composants UI à créer
+StatCard : carte avec chiffre principal + label + tendance (↑↓)
+HeatmapCanvas : terrain de basket interactif avec zones colorées
+MentalGauge : jauge circulaire animée pour le Mental Score
+RadarChart : graphique araignée pour les 6 dimensions du joueur
+HighlightPlayer : lecteur vidéo full-screen avec overlay stats
+PipelineProgress : progression animée des 7 étapes d'analyse
+PlayerCard : carte joueur style NBA avec glassmorphism
+💰 MODÈLE ÉCONOMIQUE
+Plans et prix — à configurer dans Stripe
+Plan Joueur — 9€/mois
+5 analyses vidéo par mois
+Rapport IA complet
+Highlight reel automatique
+Accès Digital Twin basique
+Plan Coach — 29€/mois
+Analyses illimitées
+Jusqu'à 15 joueurs en simultané
+Dashboard équipe complet
+Analyse tactique adversaires
+Digital Twin pour chaque joueur
+Plan Académie — 99€/mois
+Tout du plan Coach
+Joueurs illimités
+API access pour intégration
+Support prioritaire
+Rapports PDF exportables
+🔒 SÉCURITÉ — RÈGLES STRICTES
+Toutes les routes API nécessitent un JWT valide Supabase
+Row Level Security (RLS) activé sur toutes les tables Supabase
+Un utilisateur ne peut accéder qu'à ses propres données
+Les vidéos sont stockées en privé sur Supabase Storage (pas d'URL publiques)
+URLs signées temporaires (15 min) pour accéder aux vidéos
+Rate limiting : 100 requêtes/minute par IP
+Validation de tous les inputs avec Zod
+Variables d'environnement : jamais dans le code, toujours en .env
+Webhook Stripe : vérifier la signature cryptographique
+🧪 TESTS À ÉCRIRE
+Tests unitaires pour chaque fonction du pipeline IA
+Tests d'intégration pour tous les endpoints API
+Tests end-to-end : upload vidéo → analyse → rapport
+Test de charge : simuler 50 analyses simultanées
+Tests de sécurité : vérifier que RLS bloque les accès non autorisés
+🏗️ ORDRE DE CONSTRUCTION
+Respecte cet ordre exact. Valide chaque étape avant de passer à la suivante.
+Setup monorepo : yarn workspaces + TypeScript strict + ESLint
+Configurer Supabase : tables + RLS + Storage buckets
+Construire l'API Fastify avec auth + toutes les routes
+Implémenter le pipeline IA (étapes 1 à 7)
+Intégrer BullMQ pour le traitement async des vidéos
+Construire l'app mobile React Native avec tous les écrans
+Intégrer Stripe : checkout + webhook + portail
+Écrire tous les tests et corriger les bugs
+Déployer : Railway (API) + EAS Build (mobile) + Vercel (web)
+Soumettre sur l'App Store et Google Play
+⚠️ RÈGLES STRICTES
+Ces règles sont non-négociables. Elles garantissent un code de qualité production.
+TypeScript strict sur tout le projet — aucun 'any' autorisé
+Aucun console.log en production — utiliser un logger structuré (pino)
+Chaque fonction doit avoir une responsabilité unique
+Documenter toutes les fonctions publiques avec JSDoc
+Gestion d'erreurs complète : try/catch partout, messages d'erreur clairs
+Aucune donnée sensible dans les logs
+Toutes les images et vidéos doivent être optimisées avant envoi
+L'app doit fonctionner hors ligne pour les fonctionnalités de base
+Respecter les guidelines App Store et Google Play dès le début
+🔑 VARIABLES D'ENVIRONNEMENT REQUISES
+Crée un fichier .env.example complet avec toutes ces variables :
+# Supabase
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+# Stripe
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_PRICE_PLAYER=
+STRIPE_PRICE_COACH=
+STRIPE_PRICE_ACADEMY=
+# Groq (gratuit — crée un compte sur groq.com)
+GROQ_API_KEY=
+GROQ_MODEL=llama-3.3-70b-versatile
+# Ollama (100% local, aucune clé requise)
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2
+# Coqui TTS (open source, aucune clé requise)
+COQUI_MODEL=tts_models/fr/css10/vits
+# Redis
+REDIS_URL=
+# App
+JWT_SECRET=
+NODE_ENV=development
+PORT=3000
+🆓 CONFIGURATION IA GRATUITE — GROQ + OLLAMA
+Cette app est 100% gratuite grâce à Groq et Ollama. Voici comment les configurer correctement.
+Groq — LLM principal (ultra rapide)
+Groq est gratuit. Crée un compte sur groq.com, génère une clé API, c'est tout.
+Modèle recommandé : llama-3.3-70b-versatile (meilleur rapport qualité/vitesse)
+Limite gratuite : 14 400 requêtes/jour — largement suffisant pour débuter
+Latence : ~0.5 seconde par rapport — beaucoup plus rapide que GPT-4o
+Code d'intégration Groq — packages/ai/src/llm/groq.ts
+import Groq from 'groq-sdk'
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+export async function generateReport(analysisData: object): Promise<string> {
+  const completion = await groq.chat.completions.create({
+    model: 'llama-3.3-70b-versatile',
+    messages: [{
+      role: 'system',
+      content: 'Tu es un coach basket professionnel niveau NBA.'
+    }, {
+      role: 'user',
+      content: `Analyse ces données et génère un rapport: ${JSON.stringify(analysisData)}`
+    }],
+    max_tokens: 1000
+  })
+  return completion.choices[0].message.content ?? ''
+}
+Ollama — Fallback 100% local
+Ollama tourne sur l'ordinateur du développeur. Aucune connexion internet requise, aucune clé API.
+Installer : curl -fsSL https://ollama.com/install.sh | sh
+Télécharger le modèle : ollama pull llama3.2
+Lancer : ollama serve (tourne en arrière-plan)
+Code d'intégration Ollama — packages/ai/src/llm/ollama.ts
+export async function generateReportLocal(analysisData: object): Promise<string> {
+  const response = await fetch('http://localhost:11434/api/generate', {
+    method: 'POST',
+    body: JSON.stringify({
+      model: 'llama3.2',
+      prompt: `Coach basket: ${JSON.stringify(analysisData)}`,
+      stream: false
+    })
+  })
+  const data = await response.json()
+  return data.response
+}
+Système de fallback automatique
+Crée un fichier packages/ai/src/llm/index.ts qui gère automatiquement les deux :
+export async function generateReport(data: object): Promise<string> {
+  try {
+    return await generateReportGroq(data)   // Essaie Groq d'abord
+  } catch {
+    return await generateReportLocal(data)  // Fallback Ollama
+  }
+}
+Coqui TTS — Voix IA gratuite
+Installation : pip install TTS
+Commande : tts --text 'Super action!' --model_name tts_models/fr/css10/vits --out_path output.wav
+Intégrer via un script Python appelé par Node.js avec child_process
+Alternative encore plus simple : Web Speech API (natif dans le navigateur, zéro installation)
+Récapitulatif — Coût total de l'app
+Groq API — 0€ (gratuit)
+Ollama — 0€ (gratuit, local)
+Coqui TTS — 0€ (open source)
+Supabase — 0€ (plan free)
+Vercel — 0€ (plan free)
+Railway — 0€ (5$ de crédit offert/mois)
+React Native / Expo — 0€
+TOTAL : 0€ pour construire et lancer l'app. Tu paies seulement si tu dépasses les limites gratuites, ce qui n'arrivera pas avant d'avoir des centaines d'utilisateurs actifs.
+🚀 Lance la construction maintenant.
+Commence par l'étape 1. Ne passe pas à l'étape 2 sans avoir terminé l'étape 1.
+Chaque fichier créé doit être complet, fonctionnel, et prêt pour la production.
