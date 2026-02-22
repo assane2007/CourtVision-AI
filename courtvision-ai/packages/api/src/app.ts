@@ -10,6 +10,8 @@ import sessionRoutes from './routes/sessions'
 import analysisRoutes from './routes/analyses'
 import twinRoutes from './routes/twin'
 import billingRoutes from './routes/billing'
+import communityRoutes from './routes/community'
+import liveRoutes from './routes/live'
 
 export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     const app = fastify(opts)
@@ -35,6 +37,8 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     app.register(analysisRoutes, { prefix: '/api/analyses' })
     app.register(twinRoutes, { prefix: '/api/twin' })
     app.register(billingRoutes, { prefix: '/api/billing' })
+    app.register(communityRoutes, { prefix: '/api/community' })
+    app.register(liveRoutes, { prefix: '/api/sessions' })
 
     // Route fallback
     app.get('/health', async () => {
