@@ -30,7 +30,12 @@
         },
         "plugins": [
             "expo-router",
-            "react-native-vision-camera"
+            [
+                "expo-camera",
+                {
+                    "cameraPermission": "CourtVision AI utilise la caméra pour analyser ton jeu en temps réel."
+                }
+            ]
         ],
         "experiments": {
             "typedRoutes": true

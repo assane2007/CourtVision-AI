@@ -1,60 +1,232 @@
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons'
+import { MaterialIcons, FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
+import { useEffect, useRef } from 'react'
 
-export default function Profile() {
+// ─────────────────────────────────────────────
+const C = {
+    bg: '#0D1117', card: '#161B22', border: '#21262D',
+    accent: '#00D4FF', blue: '#1A73E8',
+    green: '#00C853', orange: '#FFB300', red: '#FF3D57',
+    white: '#E6EDF3', muted: '#8B949E', dim: '#484F58',
+}
+
+const SEASON_STATS = [
+    { label: 'Sessions', value: '24',  sub: 'analysées' },
+    { label: 'Mental Avg', value: '81', sub: '/ 100' },
+    { label: 'FG%', value: '62%', sub: 'saison' },
+    { label: 'Overall', value: '78',  sub: 'Digital Twin' },
+]
+
+const EARNED_BADGES = [
+    { emoji: '🎯', name: 'Sniper', rarity: 'epic' },
+    { emoji: '🔥', name: 'Streak 7j', rarity: 'rare' },
+    { emoji: '🧠', name: 'Mental Pro', rarity: 'legendary' },
+    { emoji: '⚡', name: 'Quick Release', rarity: 'rare' },
+    { emoji: '🛡️', name: 'Lock Down', rarity: 'common' },
+]
+
+const RARITY_COLORS: Record<string, string> = {
+    common: C.muted,
+    rare: C.blue,
+    epic: '#9C27B0',
+    legendary: C.orange,
+}
+
+const MENU_ITEMS = [
+    { icon: 'picture-as-pdf', iconLib: 'material', color: C.red, label: 'Générer ma fiche recrutement', sub: 'Export PDF · Partage directement' },
+    { icon: 'star-outline', iconLib: 'ionicons', color: C.orange, label: 'Gérer mon abonnement', sub: 'Plan Coach · Actif' },
+    { icon: 'settings', iconLib: 'material', color: C.muted, label: 'Réglages Compte', sub: 'Notifications, confidentialité…' },
+    { icon: 'help-circle-outline', iconLib: 'ionicons', color: C.accent, label: 'Aide & Support', sub: 'FAQ, contacter l\'équipe' },
+    { icon: 'log-out-outline', iconLib: 'ionicons', color: C.red, label: 'Se déconnecter', sub: null },
+]
+
+// ── Animated stat tile ────────────────────────────────────────
+function StatTile({ label, value, sub, delay }: { label: string; value: string; sub: string; delay: number }) {
+    const anim = useRef(new Animated.Value(0)).current
+    useEffect(() => {
+        Animated.timing(anim, { toValue: 1, duration: 500, delay, useNativeDriver: true }).start()
+    }, [])
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#0D1117' }}>
-            <ScrollView contentContainerStyle={{ padding: 20 }}>
+        <Animated.View style={{
+            flex: 1,
+            backgroundColor: C.card,
+            borderRadius: 14, padding: 14, alignItems: 'center',
+            borderWidth: 1, borderColor: C.border,
+            opacity: anim, transform: [{ scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }],
+        }}>
+            <Text style={{ color: C.white, fontSize: 20, fontWeight: '900' }}>{value}</Text>
+            <Text style={{ color: C.muted, fontSize: 10, marginTop: 2 }}>{label}</Text>
+            <Text style={{ color: C.dim, fontSize: 9, marginTop: 1 }}>{sub}</Text>
+        </Animated.View>
+    )
+}
 
-                {/* Player Card (Glassmorphism effect placeholder) */}
-                <View style={{ backgroundColor: '#161B22', borderRadius: 20, padding: 25, shadowColor: '#1A73E8', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20, borderWidth: 1, borderColor: '#1A73E8', marginBottom: 30 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                        <View style={{ width: 80, height: 80, backgroundColor: '#8B949E', borderRadius: 40 }} />
-                        <View style={{ alignItems: 'flex-end' }}>
-                            <Text style={{ color: '#E6EDF3', fontSize: 24, fontWeight: 'bold' }}>S. Curry #30</Text>
-                            <Text style={{ color: '#00D4FF', fontSize: 16 }}>Meneur (PG)</Text>
-                            <Text style={{ color: '#8B949E', fontSize: 14 }}>188cm • 84kg</Text>
+// ── Menu Row ──────────────────────────────────────────────────
+function MenuItem({ item }: { item: typeof MENU_ITEMS[0] }) {
+    const IconComp = item.iconLib === 'ionicons' ? Ionicons : MaterialIcons
+    return (
+        <TouchableOpacity
+            style={{
+                backgroundColor: C.card, flexDirection: 'row', alignItems: 'center',
+                justifyContent: 'space-between', padding: 18, borderRadius: 15,
+                marginBottom: 10, borderWidth: 1, borderColor: C.border,
+            }}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel={item.label}
+        >
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                <View style={{
+                    width: 38, height: 38, borderRadius: 10,
+                    backgroundColor: `${item.color}18`,
+                    justifyContent: 'center', alignItems: 'center',
+                    marginRight: 14,
+                }}>
+                    <IconComp name={item.icon as any} size={20} color={item.color} />
+                </View>
+                <View style={{ flex: 1 }}>
+                    <Text style={{ color: item.label === 'Se déconnecter' ? C.red : C.white, fontSize: 15, fontWeight: '600' }}>
+                        {item.label}
+                    </Text>
+                    {item.sub && (
+                        <Text style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>{item.sub}</Text>
+                    )}
+                </View>
+            </View>
+            {item.label !== 'Se déconnecter' && (
+                <FontAwesome5 name="chevron-right" size={13} color={C.dim} />
+            )}
+        </TouchableOpacity>
+    )
+}
+
+// ── Main ──────────────────────────────────────────────────────
+export default function Profile() {
+    const fadeAnim = useRef(new Animated.Value(0)).current
+
+    useEffect(() => {
+        Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start()
+    }, [])
+
+    return (
+        <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
+            <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+
+                {/* ── Player Card ── */}
+                <Animated.View style={{
+                    backgroundColor: C.card, borderRadius: 22, padding: 22,
+                    borderWidth: 1, borderColor: 'rgba(26,115,232,0.35)',
+                    marginBottom: 20, opacity: fadeAnim,
+                    shadowColor: C.blue, shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.2, shadowRadius: 16,
+                }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 18 }}>
+                        {/* Avatar */}
+                        <View style={{
+                            width: 72, height: 72, borderRadius: 36,
+                            backgroundColor: '#1C2333',
+                            borderWidth: 2.5, borderColor: C.blue,
+                            justifyContent: 'center', alignItems: 'center',
+                            marginRight: 16,
+                            shadowColor: C.blue, shadowOffset: { width: 0, height: 0 },
+                            shadowOpacity: 0.4, shadowRadius: 8,
+                        }}>
+                            <Text style={{ fontSize: 32 }}>🏀</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ color: C.white, fontSize: 20, fontWeight: '800' }}>
+                                S. Curry #30
+                            </Text>
+                            <Text style={{ color: C.accent, fontSize: 14, fontWeight: '600', marginTop: 2 }}>
+                                Meneur (PG)
+                            </Text>
+                            <Text style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>
+                                188 cm · 84 kg
+                            </Text>
+                        </View>
+                        {/* Overall badge */}
+                        <View style={{
+                            backgroundColor: 'rgba(26,115,232,0.15)',
+                            borderRadius: 14, paddingHorizontal: 10, paddingVertical: 8,
+                            borderWidth: 1.5, borderColor: C.blue, alignItems: 'center',
+                        }}>
+                            <Text style={{ color: C.blue, fontSize: 22, fontWeight: '900' }}>78</Text>
+                            <Text style={{ color: C.blue, fontSize: 9, fontWeight: '700' }}>OVR</Text>
                         </View>
                     </View>
 
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <View>
-                            <Text style={{ color: '#8B949E', fontSize: 12 }}>PRO PLAN</Text>
-                            <Text style={{ color: '#E6EDF3', fontSize: 14, fontWeight: '600' }}>Coach</Text>
+                    {/* Plan + Edit */}
+                    <View style={{
+                        flexDirection: 'row', justifyContent: 'space-between',
+                        alignItems: 'center', paddingTop: 14,
+                        borderTopWidth: 1, borderTopColor: C.border,
+                    }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <View style={{
+                                backgroundColor: 'rgba(255,179,0,0.15)',
+                                borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4,
+                                flexDirection: 'row', alignItems: 'center', gap: 4,
+                            }}>
+                                <Ionicons name="star" size={12} color={C.orange} />
+                                <Text style={{ color: C.orange, fontSize: 11, fontWeight: '700' }}>COACH</Text>
+                            </View>
+                            <Text style={{ color: C.muted, fontSize: 12 }}>Plan Actif</Text>
                         </View>
-                        <TouchableOpacity style={{ backgroundColor: 'rgba(26,115,232,0.2)', paddingHorizontal: 15, paddingVertical: 5, borderRadius: 10 }}>
-                            <Text style={{ color: '#1A73E8', fontWeight: 'bold' }}>Gérer</Text>
+                        <TouchableOpacity style={{
+                            backgroundColor: 'rgba(26,115,232,0.15)',
+                            paddingHorizontal: 16, paddingVertical: 7,
+                            borderRadius: 10, borderWidth: 1, borderColor: 'rgba(26,115,232,0.4)',
+                        }}>
+                            <Text style={{ color: C.blue, fontWeight: '700', fontSize: 13 }}>Modifier</Text>
                         </TouchableOpacity>
                     </View>
+                </Animated.View>
+
+                {/* ── Season Stats ── */}
+                <Text style={{ color: C.white, fontSize: 16, fontWeight: '700', marginBottom: 10 }}>
+                    Stats Saison
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 22 }}>
+                    {SEASON_STATS.map((s, i) => (
+                        <StatTile key={s.label} label={s.label} value={s.value} sub={s.sub} delay={i * 70} />
+                    ))}
                 </View>
 
-                <TouchableOpacity
-                    style={{ backgroundColor: '#161B22', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, borderRadius: 15, marginBottom: 15 }}
-                    accessibilityLabel="Générer ma fiche de recrutement en PDF"
-                    accessibilityRole="button"
-                >
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <MaterialIcons name="picture-as-pdf" size={24} color="#FF3D57" style={{ marginRight: 15 }} />
-                        <Text style={{ color: '#E6EDF3', fontSize: 16, fontWeight: '600' }}>Générer ma fiche recrutement</Text>
-                    </View>
-                    <FontAwesome5 name="chevron-right" size={16} color="#8B949E" />
-                </TouchableOpacity>
+                {/* ── Badges ── */}
+                <Text style={{ color: C.white, fontSize: 16, fontWeight: '700', marginBottom: 10 }}>
+                    Badges Débloqués
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 22, marginHorizontal: -4 }}>
+                    {EARNED_BADGES.map(badge => (
+                        <View key={badge.name} style={{
+                            backgroundColor: C.card, borderRadius: 14,
+                            paddingHorizontal: 12, paddingVertical: 10,
+                            marginHorizontal: 4, alignItems: 'center',
+                            borderWidth: 1.5, borderColor: RARITY_COLORS[badge.rarity],
+                            minWidth: 80,
+                        }}>
+                            <Text style={{ fontSize: 24, marginBottom: 4 }}>{badge.emoji}</Text>
+                            <Text style={{ color: RARITY_COLORS[badge.rarity], fontSize: 10, fontWeight: '700' }}>
+                                {badge.name}
+                            </Text>
+                            <Text style={{ color: C.dim, fontSize: 9, marginTop: 1, textTransform: 'capitalize' }}>
+                                {badge.rarity}
+                            </Text>
+                        </View>
+                    ))}
+                </ScrollView>
 
-                <TouchableOpacity
-                    style={{ backgroundColor: '#161B22', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, borderRadius: 15, marginBottom: 15 }}
-                    accessibilityLabel="Ouvrir les réglages du compte"
-                    accessibilityRole="button"
-                >
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <MaterialIcons name="settings" size={24} color="#8B949E" style={{ marginRight: 15 }} />
-                        <Text style={{ color: '#E6EDF3', fontSize: 16, fontWeight: '600' }}>Réglages Compte</Text>
-                    </View>
-                    <FontAwesome5 name="chevron-right" size={16} color="#8B949E" />
-                </TouchableOpacity>
+                {/* ── Menu ── */}
+                <Text style={{ color: C.white, fontSize: 16, fontWeight: '700', marginBottom: 10 }}>
+                    Compte
+                </Text>
+                {MENU_ITEMS.map(item => (
+                    <MenuItem key={item.label} item={item} />
+                ))}
 
-                <Text style={{ color: '#8B949E', textAlign: 'center', marginTop: 50, fontSize: 12 }}>
-                    CourtVision AI v1.0.0
+                <Text style={{ color: C.dim, textAlign: 'center', marginTop: 24, fontSize: 11 }}>
+                    CourtVision AI v1.0.0 · Fait avec ❤️
                 </Text>
 
             </ScrollView>
