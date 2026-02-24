@@ -1,25 +1,10 @@
-import { View, Text, ScrollView, TouchableOpacity, Animated } from 'react-native'
+import { View, Text, ScrollView, FlatList, TouchableOpacity, Animated, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { useEffect, useRef } from 'react'
-
-// ── Weekly data ──────────────────────────────────────────────
-const WEEKLY_DATA = [
-    { day: 'L', mental: 72, shooting: 58, hasSession: true },
-    { day: 'M', mental: 80, shooting: 64, hasSession: true },
-    { day: 'M', mental: 0,  shooting: 0,  hasSession: false },
-    { day: 'J', mental: 85, shooting: 70, hasSession: true },
-    { day: 'V', mental: 78, shooting: 62, hasSession: true },
-    { day: 'S', mental: 0,  shooting: 0,  hasSession: false },
-    { day: 'D', mental: 91, shooting: 75, hasSession: true },
-]
-
-const HIGHLIGHT_CLIPS = [
-    { id: '1', label: 'Match 1', pts: '14 Pts',   daysAgo: 1 },
-    { id: '2', label: 'Match 2', pts: '22 Pts',   daysAgo: 3 },
-    { id: '3', label: 'Match 3', pts: '9 Pts',    daysAgo: 6 },
-]
+import { useStore, selectWeekly, selectHighlights, selectStreak } from '../../lib/store'
+import type { HighlightClip } from '../../lib/store'
 
 // ── Animated bar ─────────────────────────────────────────────
 function WeekBar({ value, color, delay }: { value: number; color: string; delay: number }) {
@@ -44,12 +29,76 @@ function WeekBar({ value, color, delay }: { value: number; color: string; delay:
     )
 }
 
+// ── Highlight card (memoized for FlatList) ───────────────────
+function HighlightCard({ clip, onPress }: { clip: HighlightClip; onPress: () => void }) {
+    return (
+        <TouchableOpacity
+            style={{
+                width: 120, height: 180,
+                backgroundColor: '#161B22',
+                borderRadius: 16, marginHorizontal: 4,
+                overflow: 'hidden',
+                borderWidth: 1, borderColor: '#21262D',
+                justifyContent: 'space-between',
+                padding: 12,
+            }}
+            onPress={onPress}
+            activeOpacity={0.8}
+            accessibilityLabel={`Voir le highlight ${clip.label}`}
+        >
+            {/* Fake thumbnail gradient */}
+            <View style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: 120,
+                backgroundColor: 'rgba(26,115,232,0.08)',
+                justifyContent: 'center', alignItems: 'center',
+            }}>
+                <Ionicons name="play-circle" size={36} color="rgba(255,255,255,0.5)" />
+            </View>
+
+            {/* AI badge */}
+            <View style={{
+                alignSelf: 'flex-end',
+                backgroundColor: 'rgba(0,212,255,0.2)',
+                borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2,
+                borderWidth: 1, borderColor: 'rgba(0,212,255,0.35)',
+            }}>
+                <Text style={{ color: '#00D4FF', fontSize: 9, fontWeight: '700' }}>AI</Text>
+            </View>
+
+            <View style={{ marginTop: 'auto' as any }}>
+                <Text style={{ color: '#E6EDF3', fontSize: 12, fontWeight: '700' }}>{clip.label}</Text>
+                <Text style={{ color: '#00C853', fontSize: 11, fontWeight: '600', marginTop: 2 }}>{clip.pts}</Text>
+                <Text style={{ color: '#484F58', fontSize: 10, marginTop: 2 }}>Il y a {clip.daysAgo}j</Text>
+            </View>
+        </TouchableOpacity>
+    )
+}
+
 // ── Main ─────────────────────────────────────────────────────
 export default function DashboardIndex() {
     const router = useRouter()
 
-    const today = new Date()
+    // Store
+    const weeklyData       = useStore(selectWeekly)
+    const highlights       = useStore(selectHighlights)
+    const streak           = useStore(selectStreak)
+    const user             = useStore(s => s.user)
+    const weeklyLoading    = useStore(s => s.weeklyLoading)
+    const highlightsLoading = useStore(s => s.highlightsLoading)
+    const loadWeeklyData   = useStore(s => s.loadWeeklyData)
+    const loadHighlights   = useStore(s => s.loadHighlights)
+
+    const today    = new Date()
     const greeting = today.getHours() < 12 ? 'Bonjour' : today.getHours() < 18 ? 'Bonne séance' : 'Bonsoir'
+
+    useEffect(() => {
+        loadWeeklyData()
+        loadHighlights()
+    }, [])
+
+    const mentalScore    = user?.mental_score    ?? 85
+    const shootingGrade  = user?.shooting_grade  ?? 'B-'
+    const shootingFgPct  = user?.shooting_fg_pct ?? 63.6
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: '#0D1117' }}>
@@ -71,7 +120,7 @@ export default function DashboardIndex() {
                     }}>
                         <Text style={{ fontSize: 16 }}>🔥</Text>
                         <View>
-                            <Text style={{ color: '#FF9800', fontWeight: '800', fontSize: 15 }}>3</Text>
+                            <Text style={{ color: '#FF9800', fontWeight: '800', fontSize: 15 }}>{streak}</Text>
                             <Text style={{ color: '#8B949E', fontSize: 10 }}>jours</Text>
                         </View>
                     </View>
@@ -141,7 +190,10 @@ export default function DashboardIndex() {
                 </View>
 
                 {/* ── Progression Hebdo ── */}
-                <Text style={{ color: '#E6EDF3', fontSize: 18, fontWeight: '700', marginBottom: 12 }}>Progression Hebdo</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <Text style={{ color: '#E6EDF3', fontSize: 18, fontWeight: '700' }}>Progression Hebdo</Text>
+                    {weeklyLoading && <ActivityIndicator size="small" color="#1A73E8" />}
+                </View>
                 <View style={{
                     backgroundColor: '#161B22', borderRadius: 18,
                     padding: 16, marginBottom: 24,
@@ -161,7 +213,7 @@ export default function DashboardIndex() {
 
                     {/* Bars */}
                     <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 70 }}>
-                        {WEEKLY_DATA.map((d, i) => (
+                        {weeklyData.map((d, i) => (
                             <View key={i} style={{ flex: 1, alignItems: 'center' }}>
                                 {d.hasSession ? (
                                     <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', gap: 2, width: '100%' }}>
@@ -179,7 +231,7 @@ export default function DashboardIndex() {
 
                     {/* Day labels */}
                     <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
-                        {WEEKLY_DATA.map((d, i) => (
+                        {weeklyData.map((d, i) => (
                             <View key={i} style={{ flex: 1, alignItems: 'center' }}>
                                 <Text style={{ color: d.hasSession ? '#8B949E' : '#30363D', fontSize: 10 }}>{d.day}</Text>
                             </View>
@@ -195,7 +247,7 @@ export default function DashboardIndex() {
                         padding: 16, borderWidth: 1, borderColor: 'rgba(0,200,83,0.25)',
                     }}>
                         <Text style={{ color: '#8B949E', fontSize: 11, marginBottom: 4 }}>Mental Score</Text>
-                        <Text style={{ color: '#00C853', fontSize: 30, fontWeight: '900' }}>85</Text>
+                        <Text style={{ color: '#00C853', fontSize: 30, fontWeight: '900' }}>{mentalScore}</Text>
                         <Text style={{ color: '#8B949E', fontSize: 11, marginTop: 2 }}>/ 100</Text>
                         <View style={{
                             flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8,
@@ -212,8 +264,8 @@ export default function DashboardIndex() {
                         padding: 16, borderWidth: 1, borderColor: 'rgba(255,179,0,0.25)',
                     }}>
                         <Text style={{ color: '#8B949E', fontSize: 11, marginBottom: 4 }}>Shooting Form</Text>
-                        <Text style={{ color: '#FFB300', fontSize: 30, fontWeight: '900' }}>B-</Text>
-                        <Text style={{ color: '#8B949E', fontSize: 11, marginTop: 2 }}>63.6 FG%</Text>
+                        <Text style={{ color: '#FFB300', fontSize: 30, fontWeight: '900' }}>{shootingGrade}</Text>
+                        <Text style={{ color: '#8B949E', fontSize: 11, marginTop: 2 }}>{shootingFgPct.toFixed(1)} FG%</Text>
                         <View style={{
                             flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8,
                             backgroundColor: 'rgba(255,179,0,0.1)',
@@ -225,59 +277,53 @@ export default function DashboardIndex() {
                 </View>
 
                 {/* ── Highlights ── */}
-                <Text style={{ color: '#E6EDF3', fontSize: 18, fontWeight: '700', marginBottom: 12 }}>
-                    Derniers Highlights
-                </Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -4 }}>
-                    {HIGHLIGHT_CLIPS.map(clip => (
-                        <TouchableOpacity
-                            key={clip.id}
-                            style={{
-                                width: 120, height: 180,
-                                backgroundColor: '#161B22',
-                                borderRadius: 16, marginHorizontal: 4,
-                                overflow: 'hidden',
-                                borderWidth: 1, borderColor: '#21262D',
-                                justifyContent: 'space-between',
-                                padding: 12,
-                            }}
-                            onPress={() => router.push(`/highlight/${clip.id}`)}
-                            activeOpacity={0.8}
-                            accessibilityLabel={`Voir le highlight ${clip.label}`}
-                        >
-                            {/* Fake thumbnail gradient */}
-                            <View style={{
-                                position: 'absolute', top: 0, left: 0, right: 0, height: 120,
-                                backgroundColor: 'rgba(26,115,232,0.08)',
-                                justifyContent: 'center', alignItems: 'center',
-                            }}>
-                                <Ionicons name="play-circle" size={36} color="rgba(255,255,255,0.5)" />
-                            </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <Text style={{ color: '#E6EDF3', fontSize: 18, fontWeight: '700' }}>Derniers Highlights</Text>
+                    {highlightsLoading && <ActivityIndicator size="small" color="#1A73E8" />}
+                </View>
 
-                            {/* AI badge */}
-                            <View style={{
-                                alignSelf: 'flex-end',
-                                backgroundColor: 'rgba(0,212,255,0.2)',
-                                borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2,
-                                borderWidth: 1, borderColor: 'rgba(0,212,255,0.35)',
-                            }}>
-                                <Text style={{ color: '#00D4FF', fontSize: 9, fontWeight: '700' }}>AI</Text>
-                            </View>
-
-                            <View style={{ marginTop: 'auto' as any }}>
-                                <Text style={{ color: '#E6EDF3', fontSize: 12, fontWeight: '700' }}>
-                                    {clip.label}
-                                </Text>
-                                <Text style={{ color: '#00C853', fontSize: 11, fontWeight: '600', marginTop: 2 }}>
-                                    {clip.pts}
-                                </Text>
-                                <Text style={{ color: '#484F58', fontSize: 10, marginTop: 2 }}>
-                                    Il y a {clip.daysAgo}j
-                                </Text>
-                            </View>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
+                {highlights.length === 0 && !highlightsLoading ? (
+                    // Empty state
+                    <View style={{
+                        backgroundColor: '#161B22', borderRadius: 16,
+                        padding: 32, alignItems: 'center',
+                        borderWidth: 1, borderColor: '#21262D',
+                    }}>
+                        <Ionicons name="film-outline" size={40} color="#30363D" />
+                        <Text style={{ color: '#484F58', fontSize: 14, marginTop: 12, textAlign: 'center' }}>
+                            Aucun highlight pour l'instant.{'\n'}Analyse un match pour commencer !
+                        </Text>
+                    </View>
+                ) : (
+                    <FlatList
+                        horizontal
+                        data={highlights}
+                        keyExtractor={item => item.id}
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingHorizontal: 4 }}
+                        renderItem={({ item }) => (
+                            <HighlightCard
+                                clip={item}
+                                onPress={() => router.push(`/highlight/${item.id}`)}
+                            />
+                        )}
+                        ListEmptyComponent={
+                            highlightsLoading ? (
+                                // Loading placeholders
+                                <View style={{ flexDirection: 'row', gap: 8 }}>
+                                    {[1, 2, 3].map(i => (
+                                        <View key={i} style={{
+                                            width: 120, height: 180,
+                                            backgroundColor: '#161B22',
+                                            borderRadius: 16,
+                                            borderWidth: 1, borderColor: '#21262D',
+                                        }} />
+                                    ))}
+                                </View>
+                            ) : null
+                        }
+                    />
+                )}
 
             </ScrollView>
         </SafeAreaView>

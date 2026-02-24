@@ -1,7 +1,9 @@
-import { View, Text, ScrollView, TouchableOpacity, Animated } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Animated, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { MaterialIcons, FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
+import { MaterialIcons, FontAwesome5, Ionicons } from '@expo/vector-icons'
 import { useEffect, useRef } from 'react'
+import { useRouter } from 'expo-router'
+import { useStore } from '../../lib/store'
 
 // ─────────────────────────────────────────────
 const C = {
@@ -10,13 +12,6 @@ const C = {
     green: '#00C853', orange: '#FFB300', red: '#FF3D57',
     white: '#E6EDF3', muted: '#8B949E', dim: '#484F58',
 }
-
-const SEASON_STATS = [
-    { label: 'Sessions', value: '24',  sub: 'analysées' },
-    { label: 'Mental Avg', value: '81', sub: '/ 100' },
-    { label: 'FG%', value: '62%', sub: 'saison' },
-    { label: 'Overall', value: '78',  sub: 'Digital Twin' },
-]
 
 const EARNED_BADGES = [
     { emoji: '🎯', name: 'Sniper', rarity: 'epic' },
@@ -33,12 +28,11 @@ const RARITY_COLORS: Record<string, string> = {
     legendary: C.orange,
 }
 
-const MENU_ITEMS = [
-    { icon: 'picture-as-pdf', iconLib: 'material', color: C.red, label: 'Générer ma fiche recrutement', sub: 'Export PDF · Partage directement' },
-    { icon: 'star-outline', iconLib: 'ionicons', color: C.orange, label: 'Gérer mon abonnement', sub: 'Plan Coach · Actif' },
-    { icon: 'settings', iconLib: 'material', color: C.muted, label: 'Réglages Compte', sub: 'Notifications, confidentialité…' },
-    { icon: 'help-circle-outline', iconLib: 'ionicons', color: C.accent, label: 'Aide & Support', sub: 'FAQ, contacter l\'équipe' },
-    { icon: 'log-out-outline', iconLib: 'ionicons', color: C.red, label: 'Se déconnecter', sub: null },
+const STATIC_MENU = [
+    { icon: 'picture-as-pdf', iconLib: 'material', color: C.red,    label: 'Générer ma fiche recrutement', sub: 'Export PDF · Partage directement' },
+    { icon: 'star-outline',   iconLib: 'ionicons',  color: C.orange, label: 'Gérer mon abonnement',          sub: 'Plan Coach · Actif' },
+    { icon: 'settings',       iconLib: 'material',  color: C.muted,  label: 'Réglages Compte',               sub: 'Notifications, confidentialité…' },
+    { icon: 'help-circle-outline', iconLib: 'ionicons', color: C.accent, label: 'Aide & Support',            sub: "FAQ, contacter l'équipe" },
 ]
 
 // ── Animated stat tile ────────────────────────────────────────
@@ -63,7 +57,7 @@ function StatTile({ label, value, sub, delay }: { label: string; value: string; 
 }
 
 // ── Menu Row ──────────────────────────────────────────────────
-function MenuItem({ item }: { item: typeof MENU_ITEMS[0] }) {
+function MenuItem({ item, onPress }: { item: typeof STATIC_MENU[0]; onPress?: () => void }) {
     const IconComp = item.iconLib === 'ionicons' ? Ionicons : MaterialIcons
     return (
         <TouchableOpacity
@@ -72,6 +66,7 @@ function MenuItem({ item }: { item: typeof MENU_ITEMS[0] }) {
                 justifyContent: 'space-between', padding: 18, borderRadius: 15,
                 marginBottom: 10, borderWidth: 1, borderColor: C.border,
             }}
+            onPress={onPress}
             activeOpacity={0.75}
             accessibilityRole="button"
             accessibilityLabel={item.label}
@@ -103,11 +98,36 @@ function MenuItem({ item }: { item: typeof MENU_ITEMS[0] }) {
 
 // ── Main ──────────────────────────────────────────────────────
 export default function Profile() {
-    const fadeAnim = useRef(new Animated.Value(0)).current
+    const router     = useRouter()
+    const user       = useStore(s => s.user)
+    const userLoading = useStore(s => s.userLoading)
+    const loadProfile = useStore(s => s.loadProfile)
+    const logout     = useStore(s => s.logout)
+    const fadeAnim   = useRef(new Animated.Value(0)).current
 
     useEffect(() => {
         Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start()
+        if (!user) loadProfile()
     }, [])
+
+    const displayName    = user?.full_name ?? user?.username ?? 'Joueur'
+    const displayPos     = user?.position  ?? 'Meneur (PG)'
+    const overallRating  = user?.level === 'Pro' ? 88 : 78
+    const mentalAvg      = user?.mental_score    ?? 81
+    const shootingFgPct  = user?.shooting_fg_pct ?? 62
+    const sessionCount   = 24        // real count comes from sessions store
+
+    const SEASON_STATS = [
+        { label: 'Sessions',   value: String(sessionCount), sub: 'analysées' },
+        { label: 'Mental Avg', value: String(mentalAvg),    sub: '/ 100' },
+        { label: 'FG%',        value: `${shootingFgPct}%`,  sub: 'saison' },
+        { label: 'Overall',    value: String(overallRating), sub: 'Digital Twin' },
+    ]
+
+    const handleLogout = async () => {
+        await logout()
+        router.replace('/')
+    }
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
@@ -135,15 +155,18 @@ export default function Profile() {
                             <Text style={{ fontSize: 32 }}>🏀</Text>
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={{ color: C.white, fontSize: 20, fontWeight: '800' }}>
-                                S. Curry #30
-                            </Text>
-                            <Text style={{ color: C.accent, fontSize: 14, fontWeight: '600', marginTop: 2 }}>
-                                Meneur (PG)
-                            </Text>
-                            <Text style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>
-                                188 cm · 84 kg
-                            </Text>
+                            {userLoading ? (
+                                <ActivityIndicator size="small" color={C.blue} />
+                            ) : (
+                                <>
+                                    <Text style={{ color: C.white, fontSize: 20, fontWeight: '800' }}>
+                                        {displayName}
+                                    </Text>
+                                    <Text style={{ color: C.accent, fontSize: 14, fontWeight: '600', marginTop: 2 }}>
+                                        {displayPos}
+                                    </Text>
+                                </>
+                            )}
                         </View>
                         {/* Overall badge */}
                         <View style={{
@@ -151,7 +174,7 @@ export default function Profile() {
                             borderRadius: 14, paddingHorizontal: 10, paddingVertical: 8,
                             borderWidth: 1.5, borderColor: C.blue, alignItems: 'center',
                         }}>
-                            <Text style={{ color: C.blue, fontSize: 22, fontWeight: '900' }}>78</Text>
+                            <Text style={{ color: C.blue, fontSize: 22, fontWeight: '900' }}>{overallRating}</Text>
                             <Text style={{ color: C.blue, fontSize: 9, fontWeight: '700' }}>OVR</Text>
                         </View>
                     </View>
@@ -221,9 +244,31 @@ export default function Profile() {
                 <Text style={{ color: C.white, fontSize: 16, fontWeight: '700', marginBottom: 10 }}>
                     Compte
                 </Text>
-                {MENU_ITEMS.map(item => (
+                {STATIC_MENU.map(item => (
                     <MenuItem key={item.label} item={item} />
                 ))}
+                {/* Logout — separate so it gets the real handler */}
+                <TouchableOpacity
+                    style={{
+                        backgroundColor: C.card, flexDirection: 'row', alignItems: 'center',
+                        padding: 18, borderRadius: 15,
+                        marginBottom: 10, borderWidth: 1, borderColor: C.border,
+                    }}
+                    onPress={handleLogout}
+                    activeOpacity={0.75}
+                    accessibilityRole="button"
+                    accessibilityLabel="Se déconnecter"
+                >
+                    <View style={{
+                        width: 38, height: 38, borderRadius: 10,
+                        backgroundColor: `${C.red}18`,
+                        justifyContent: 'center', alignItems: 'center',
+                        marginRight: 14,
+                    }}>
+                        <Ionicons name="log-out-outline" size={20} color={C.red} />
+                    </View>
+                    <Text style={{ color: C.red, fontSize: 15, fontWeight: '600' }}>Se déconnecter</Text>
+                </TouchableOpacity>
 
                 <Text style={{ color: C.dim, textAlign: 'center', marginTop: 24, fontSize: 11 }}>
                     CourtVision AI v1.0.0 · Fait avec ❤️
