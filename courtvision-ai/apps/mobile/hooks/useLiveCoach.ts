@@ -20,6 +20,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Vibration, AppState, AppStateStatus } from 'react-native'
 import { LiveCoachService } from '../lib/liveCoachService'
+import { toast } from '../lib/toast'
+import { useStore } from '../lib/store'
 import type {
     LiveAlertPayload,
     LiveStatsPayload,
@@ -206,6 +208,12 @@ export function useLiveCoach(sessionId: string): UseLiveCoachReturn {
         } else {
             Vibration.vibrate(VIBRATION_PATTERNS[alert.severity] || 100)
         }
+        // Toast pour les alertes critiques ou importantes
+        if (alert.severity === 'critical') {
+            toast.error(alert.message, undefined, 4000)
+        } else if (alert.severity === 'warning') {
+            toast.warning(alert.message, undefined, 3000)
+        }
     }, [])
 
     // ---- SSE handler ----
@@ -267,9 +275,13 @@ export function useLiveCoach(sessionId: string): UseLiveCoachReturn {
 
             // Connecter SSE pour les alertes push
             serviceRef.current.connectSSE(handleSSEEvent)
+
+            toast.success('Coach Live démarré', 'Analyse en temps réel active')
         } catch (err: any) {
             setPhase('error')
-            setError(err.message || 'Impossible de démarrer le Coach Live')
+            const msg = err.message || 'Impossible de démarrer le Coach Live'
+            setError(msg)
+            toast.error('Erreur de connexion', msg)
         }
     }, [handleSSEEvent, startElapsedTimer, startFrameTimer])
 
@@ -355,10 +367,15 @@ export function useLiveCoach(sessionId: string): UseLiveCoachReturn {
     }, [quarter, clearTimers])
 
     const nextQuarter = useCallback(async () => {
-        setQuarter(prev => prev + 1)
+        if (!serviceRef.current) return
+        const nextQ = quarter + 1
+        setQuarter(nextQ)
         setElapsedTime(0)
-        await start()
-    }, [start])
+        startTimeRef.current = Date.now()
+        setPhase('active')
+        startElapsedTimer()
+        startFrameTimer()
+    }, [quarter, startElapsedTimer, startFrameTimer])
 
     const end = useCallback(async () => {
         if (!serviceRef.current) return
@@ -374,10 +391,12 @@ export function useLiveCoach(sessionId: string): UseLiveCoachReturn {
             if (response.mentalTimeline) {
                 setMentalHistory(response.mentalTimeline)
             }
+            toast.success('Match terminé !', 'Rapport IA en cours de génération', 4000)
         } catch (err: any) {
             // Fin locale en cas d'erreur réseau
             setPhase('ended')
             setRecommendations(generateLocalRecommendations())
+            toast.warning('Rapport en mode hors-ligne', 'Reconnecte-toi pour l\'analyse complète')
         }
     }, [clearTimers, makeCount, missCount, mentalScore, fatigueIndex])
 

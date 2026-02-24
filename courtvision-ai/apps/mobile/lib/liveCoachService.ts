@@ -116,17 +116,18 @@ export class LiveCoachService {
 
         if (this.eventSource) return // déjà connecté
 
-        const token = getAuthToken()
-        const url = `${API_BASE_URL}${this.basePath}/stream${token ? `?token=${token}` : ''}`
-
-        try {
-            // Note: En React Native, EventSource n'est pas nativement supporté.
-            // On utilise un polyfill simple basé sur fetch + ReadableStream.
-            this.startSSEPolyfill(url)
-        } catch (error) {
-            console.warn('[LiveCoach SSE] Connection error:', error)
-            this.scheduleSSEReconnect()
-        }
+        // getAuthToken() est async — on résout le token avant de construire l'URL
+        getAuthToken().then(token => {
+            const url = `${API_BASE_URL}${this.basePath}/stream${token ? `?token=${encodeURIComponent(token)}` : ''}`
+            this.startSSEPolyfill(url).catch(error => {
+                console.warn('[LiveCoach SSE] Connection error:', error)
+                this.scheduleSSEReconnect()
+            })
+        }).catch(() => {
+            // Pas de token — tenter quand même sans auth
+            const url = `${API_BASE_URL}${this.basePath}/stream`
+            this.startSSEPolyfill(url).catch(() => this.scheduleSSEReconnect())
+        })
     }
 
     /**
@@ -149,7 +150,7 @@ export class LiveCoachService {
      * React Native n'a pas d'EventSource natif, on simule avec un fetch long-polling.
      */
     private async startSSEPolyfill(url: string): Promise<void> {
-        const token = getAuthToken()
+        const token = await getAuthToken()
         try {
             const response = await fetch(url, {
                 headers: {
@@ -208,9 +209,12 @@ export class LiveCoachService {
         this.sseReconnectTimer = setTimeout(() => {
             this.sseReconnectTimer = null
             if (this.sseListeners.size > 0) {
-                const token = getAuthToken()
-                const url = `${API_BASE_URL}${this.basePath}/stream${token ? `?token=${token}` : ''}`
-                this.startSSEPolyfill(url)
+                getAuthToken().then(token => {
+                    const url = `${API_BASE_URL}${this.basePath}/stream${token ? `?token=${encodeURIComponent(token)}` : ''}`
+                    this.startSSEPolyfill(url)
+                }).catch(() => {
+                    this.startSSEPolyfill(`${API_BASE_URL}${this.basePath}/stream`)
+                })
             }
         }, 5000)
     }

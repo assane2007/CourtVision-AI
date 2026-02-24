@@ -1,9 +1,16 @@
-import { View, Text, ScrollView, FlatList, TouchableOpacity, Animated, ActivityIndicator } from 'react-native'
+import {
+    View, Text, ScrollView, FlatList, TouchableOpacity,
+    Animated, ActivityIndicator, RefreshControl,
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
-import { useEffect, useRef } from 'react'
-import { useStore, selectWeekly, selectHighlights, selectStreak } from '../../lib/store'
+import { useEffect, useRef, useCallback, useState, memo } from 'react'
+import { useStore, selectWeekly, selectHighlights, selectStreak, selectXP } from '../../lib/store'
+import { SkeletonHighlight, SkeletonStatCard, SkeletonWeeklyChart } from '../../components/SkeletonLoader'
+import { XPLevelBar } from '../../components/XPBadge'
+import { DailyChallengeCard } from '../../components/DailyChallengeCard'
+import { StreakReminderBanner } from '../../components/StreakReminderBanner'
 import type { HighlightClip } from '../../lib/store'
 
 // ── Animated bar ─────────────────────────────────────────────
@@ -16,7 +23,7 @@ function WeekBar({ value, color, delay }: { value: number; color: string; delay:
             delay,
             useNativeDriver: false,
         }).start()
-    }, [])
+    }, [value])
     return (
         <View style={{ flex: 1, height: 60, justifyContent: 'flex-end' }}>
             <Animated.View style={{
@@ -30,7 +37,7 @@ function WeekBar({ value, color, delay }: { value: number; color: string; delay:
 }
 
 // ── Highlight card (memoized for FlatList) ───────────────────
-function HighlightCard({ clip, onPress }: { clip: HighlightClip; onPress: () => void }) {
+const HighlightCard = memo(function HighlightCard({ clip, onPress }: { clip: HighlightClip; onPress: () => void }) {
     return (
         <TouchableOpacity
             style={{
@@ -45,8 +52,9 @@ function HighlightCard({ clip, onPress }: { clip: HighlightClip; onPress: () => 
             onPress={onPress}
             activeOpacity={0.8}
             accessibilityLabel={`Voir le highlight ${clip.label}`}
+            accessibilityRole="button"
         >
-            {/* Fake thumbnail gradient */}
+            {/* Thumbnail gradient */}
             <View style={{
                 position: 'absolute', top: 0, left: 0, right: 0, height: 120,
                 backgroundColor: 'rgba(26,115,232,0.08)',
@@ -66,65 +74,117 @@ function HighlightCard({ clip, onPress }: { clip: HighlightClip; onPress: () => 
             </View>
 
             <View style={{ marginTop: 'auto' as any }}>
-                <Text style={{ color: '#E6EDF3', fontSize: 12, fontWeight: '700' }}>{clip.label}</Text>
+                <Text style={{ color: '#E6EDF3', fontSize: 12, fontWeight: '700' }} numberOfLines={1}>{clip.label}</Text>
                 <Text style={{ color: '#00C853', fontSize: 11, fontWeight: '600', marginTop: 2 }}>{clip.pts}</Text>
                 <Text style={{ color: '#484F58', fontSize: 10, marginTop: 2 }}>Il y a {clip.daysAgo}j</Text>
             </View>
         </TouchableOpacity>
+    )
+})
+
+// ── Streak badge animé ────────────────────────────────────────
+function StreakBadge({ streak }: { streak: number }) {
+    const pulseAnim = useRef(new Animated.Value(1)).current
+    useEffect(() => {
+        if (streak > 0) {
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(pulseAnim, { toValue: 1.08, duration: 1200, useNativeDriver: true }),
+                    Animated.timing(pulseAnim, { toValue: 1,    duration: 1200, useNativeDriver: true }),
+                ])
+            ).start()
+        }
+    }, [streak])
+
+    return (
+        <Animated.View style={{
+            backgroundColor: '#161B22', borderRadius: 14,
+            paddingHorizontal: 12, paddingVertical: 8,
+            borderWidth: 1, borderColor: streak >= 7 ? 'rgba(255,152,0,0.6)' : '#21262D',
+            flexDirection: 'row', alignItems: 'center', gap: 6,
+            transform: [{ scale: streak >= 3 ? pulseAnim : new Animated.Value(1) }],
+        }}>
+            <Text style={{ fontSize: 16 }}>🔥</Text>
+            <View>
+                <Text style={{ color: '#FF9800', fontWeight: '800', fontSize: 15 }}>{streak}</Text>
+                <Text style={{ color: '#8B949E', fontSize: 10 }}>jours</Text>
+            </View>
+        </Animated.View>
     )
 }
 
 // ── Main ─────────────────────────────────────────────────────
 export default function DashboardIndex() {
     const router = useRouter()
+    const [refreshing, setRefreshing] = useState(false)
 
     // Store
-    const weeklyData       = useStore(selectWeekly)
-    const highlights       = useStore(selectHighlights)
-    const streak           = useStore(selectStreak)
-    const user             = useStore(s => s.user)
-    const weeklyLoading    = useStore(s => s.weeklyLoading)
+    const weeklyData        = useStore(selectWeekly)
+    const highlights        = useStore(selectHighlights)
+    const streak            = useStore(selectStreak)
+    const xp                = useStore(selectXP)
+    const user              = useStore(s => s.user)
+    const weeklyLoading     = useStore(s => s.weeklyLoading)
     const highlightsLoading = useStore(s => s.highlightsLoading)
-    const loadWeeklyData   = useStore(s => s.loadWeeklyData)
-    const loadHighlights   = useStore(s => s.loadHighlights)
+    const userLoading       = useStore(s => s.userLoading)
+    const loadWeeklyData    = useStore(s => s.loadWeeklyData)
+    const loadHighlights    = useStore(s => s.loadHighlights)
+    const refreshProfile    = useStore(s => s.refreshProfile)
 
     const today    = new Date()
-    const greeting = today.getHours() < 12 ? 'Bonjour' : today.getHours() < 18 ? 'Bonne séance' : 'Bonsoir'
+    const hour     = today.getHours()
+    const greeting = hour < 12 ? 'Bonjour' : hour < 18 ? 'Bonne séance' : 'Bonsoir'
 
     useEffect(() => {
         loadWeeklyData()
         loadHighlights()
     }, [])
 
-    const mentalScore    = user?.mental_score    ?? 85
-    const shootingGrade  = user?.shooting_grade  ?? 'B-'
-    const shootingFgPct  = user?.shooting_fg_pct ?? 63.6
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true)
+        await Promise.all([refreshProfile(), loadWeeklyData(), loadHighlights()])
+        setRefreshing(false)
+    }, [refreshProfile, loadWeeklyData, loadHighlights])
+
+    const mentalScore   = user?.mental_score    ?? 85
+    const shootingGrade = user?.shooting_grade  ?? 'B-'
+    const shootingFgPct = user?.shooting_fg_pct ?? 63.6
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: '#0D1117' }}>
-            <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
-
+            <ScrollView
+                contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor="#1A73E8"
+                        colors={['#1A73E8']}
+                    />
+                }
+                showsVerticalScrollIndicator={false}
+            >
                 {/* ── Header ── */}
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
                     <View>
                         <Text style={{ color: '#8B949E', fontSize: 13 }}>{greeting} 👋</Text>
                         <Text style={{ color: '#E6EDF3', fontSize: 26, fontWeight: '800', letterSpacing: -0.3, marginTop: 2 }}>
-                            Dashboard
+                            {user?.full_name ? user.full_name.split(' ')[0] : 'Dashboard'}
                         </Text>
                     </View>
-                    <View style={{
-                        backgroundColor: '#161B22', borderRadius: 14,
-                        paddingHorizontal: 12, paddingVertical: 8,
-                        borderWidth: 1, borderColor: '#21262D',
-                        flexDirection: 'row', alignItems: 'center', gap: 6,
-                    }}>
-                        <Text style={{ fontSize: 16 }}>🔥</Text>
-                        <View>
-                            <Text style={{ color: '#FF9800', fontWeight: '800', fontSize: 15 }}>{streak}</Text>
-                            <Text style={{ color: '#8B949E', fontSize: 10 }}>jours</Text>
-                        </View>
-                    </View>
+                    <StreakBadge streak={streak} />
                 </View>
+
+                {/* ── Streak reminder banner ── */}
+                <StreakReminderBanner />
+
+                {/* ── XP Level Bar ── */}
+                <View style={{ marginBottom: 16 }}>
+                    <XPLevelBar xp={xp} compact />
+                </View>
+
+                {/* ── Défi quotidien ── */}
+                <DailyChallengeCard />
 
                 {/* ── CTA Principal ── */}
                 <TouchableOpacity
@@ -146,6 +206,7 @@ export default function DashboardIndex() {
                     onPress={() => router.push('/(dashboard)/upload')}
                     activeOpacity={0.85}
                     accessibilityLabel="Analyser un match — importer une vidéo"
+                    accessibilityRole="button"
                 >
                     <Ionicons name="scan-circle" size={44} color="#FFF" />
                     <View>
@@ -167,6 +228,7 @@ export default function DashboardIndex() {
                         onPress={() => router.push('/live')}
                         activeOpacity={0.85}
                         accessibilityLabel="Lancer le Coach Live en temps réel"
+                        accessibilityRole="button"
                     >
                         <MaterialCommunityIcons name="radar" size={28} color="#FF3D57" />
                         <Text style={{ color: '#E6EDF3', fontSize: 13, fontWeight: '700', marginTop: 6 }}>Coach Live</Text>
@@ -182,108 +244,145 @@ export default function DashboardIndex() {
                         onPress={() => router.push('/program')}
                         activeOpacity={0.85}
                         accessibilityLabel="Voir le programme d'entraînement"
+                        accessibilityRole="button"
                     >
                         <Ionicons name="fitness" size={28} color="#00C853" />
                         <Text style={{ color: '#E6EDF3', fontSize: 13, fontWeight: '700', marginTop: 6 }}>Programme</Text>
                         <Text style={{ color: '#8B949E', fontSize: 10, marginTop: 2 }}>7 jours</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={{
+                            flex: 1, backgroundColor: '#161B22', borderRadius: 16,
+                            padding: 18, alignItems: 'center',
+                            borderWidth: 1, borderColor: 'rgba(0,212,255,0.3)',
+                        }}
+                        onPress={() => router.push('/(dashboard)/twin')}
+                        activeOpacity={0.85}
+                        accessibilityLabel="Voir le Digital Twin"
+                        accessibilityRole="button"
+                    >
+                        <Ionicons name="body" size={28} color="#00D4FF" />
+                        <Text style={{ color: '#E6EDF3', fontSize: 13, fontWeight: '700', marginTop: 6 }}>Twin</Text>
+                        <Text style={{ color: '#8B949E', fontSize: 10, marginTop: 2 }}>Digital</Text>
                     </TouchableOpacity>
                 </View>
 
                 {/* ── Progression Hebdo ── */}
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <Text style={{ color: '#E6EDF3', fontSize: 18, fontWeight: '700' }}>Progression Hebdo</Text>
-                    {weeklyLoading && <ActivityIndicator size="small" color="#1A73E8" />}
                 </View>
-                <View style={{
-                    backgroundColor: '#161B22', borderRadius: 18,
-                    padding: 16, marginBottom: 24,
-                    borderWidth: 1, borderColor: '#21262D',
-                }}>
-                    {/* Legend */}
-                    <View style={{ flexDirection: 'row', gap: 14, marginBottom: 12 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#00D4FF' }} />
-                            <Text style={{ color: '#8B949E', fontSize: 11 }}>Mental</Text>
-                        </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#1A73E8' }} />
-                            <Text style={{ color: '#8B949E', fontSize: 11 }}>Tir</Text>
-                        </View>
-                    </View>
 
-                    {/* Bars */}
-                    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 70 }}>
-                        {weeklyData.map((d, i) => (
-                            <View key={i} style={{ flex: 1, alignItems: 'center' }}>
-                                {d.hasSession ? (
-                                    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', gap: 2, width: '100%' }}>
-                                        <WeekBar value={d.mental} color="#00D4FF" delay={i * 60} />
-                                        <WeekBar value={d.shooting} color="#1A73E8" delay={i * 60 + 80} />
-                                    </View>
-                                ) : (
-                                    <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-                                        <View style={{ height: 4, backgroundColor: '#21262D', borderRadius: 2 }} />
-                                    </View>
-                                )}
-                            </View>
-                        ))}
+                {weeklyLoading && weeklyData.every(d => !d.hasSession) ? (
+                    <View style={{ marginBottom: 24 }}>
+                        <SkeletonWeeklyChart />
                     </View>
+                ) : (
+                    <View style={{
+                        backgroundColor: '#161B22', borderRadius: 18,
+                        padding: 16, marginBottom: 24,
+                        borderWidth: 1, borderColor: '#21262D',
+                    }}>
+                        {/* Legend */}
+                        <View style={{ flexDirection: 'row', gap: 14, marginBottom: 12 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#00D4FF' }} />
+                                <Text style={{ color: '#8B949E', fontSize: 11 }}>Mental</Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#1A73E8' }} />
+                                <Text style={{ color: '#8B949E', fontSize: 11 }}>Tir</Text>
+                            </View>
+                        </View>
 
-                    {/* Day labels */}
-                    <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
-                        {weeklyData.map((d, i) => (
-                            <View key={i} style={{ flex: 1, alignItems: 'center' }}>
-                                <Text style={{ color: d.hasSession ? '#8B949E' : '#30363D', fontSize: 10 }}>{d.day}</Text>
-                            </View>
-                        ))}
+                        {/* Bars */}
+                        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 70 }}>
+                            {weeklyData.map((d, i) => (
+                                <View key={i} style={{ flex: 1, alignItems: 'center' }}>
+                                    {d.hasSession ? (
+                                        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', gap: 2, width: '100%' }}>
+                                            <WeekBar value={d.mental}   color="#00D4FF" delay={i * 60} />
+                                            <WeekBar value={d.shooting} color="#1A73E8" delay={i * 60 + 80} />
+                                        </View>
+                                    ) : (
+                                        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+                                            <View style={{ height: 4, backgroundColor: '#21262D', borderRadius: 2 }} />
+                                        </View>
+                                    )}
+                                </View>
+                            ))}
+                        </View>
+
+                        {/* Day labels */}
+                        <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
+                            {weeklyData.map((d, i) => (
+                                <View key={i} style={{ flex: 1, alignItems: 'center' }}>
+                                    <Text style={{ color: d.hasSession ? '#8B949E' : '#30363D', fontSize: 10 }}>{d.day}</Text>
+                                </View>
+                            ))}
+                        </View>
                     </View>
-                </View>
+                )}
 
                 {/* ── Quick Stats ── */}
-                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24 }}>
-                    {/* Mental Score */}
-                    <View style={{
-                        flex: 1, backgroundColor: '#161B22', borderRadius: 16,
-                        padding: 16, borderWidth: 1, borderColor: 'rgba(0,200,83,0.25)',
-                    }}>
-                        <Text style={{ color: '#8B949E', fontSize: 11, marginBottom: 4 }}>Mental Score</Text>
-                        <Text style={{ color: '#00C853', fontSize: 30, fontWeight: '900' }}>{mentalScore}</Text>
-                        <Text style={{ color: '#8B949E', fontSize: 11, marginTop: 2 }}>/ 100</Text>
-                        <View style={{
-                            flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8,
-                            backgroundColor: 'rgba(0,200,83,0.1)',
-                            borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start',
-                        }}>
-                            <Text style={{ color: '#00C853', fontSize: 11, fontWeight: '700' }}>+5% ↑</Text>
-                        </View>
+                {userLoading ? (
+                    <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24 }}>
+                        <SkeletonStatCard />
+                        <SkeletonStatCard />
                     </View>
+                ) : (
+                    <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24 }}>
+                        {/* Mental Score */}
+                        <View style={{
+                            flex: 1, backgroundColor: '#161B22', borderRadius: 16,
+                            padding: 16, borderWidth: 1, borderColor: 'rgba(0,200,83,0.25)',
+                        }}>
+                            <Text style={{ color: '#8B949E', fontSize: 11, marginBottom: 4 }}>Mental Score</Text>
+                            <Text style={{ color: '#00C853', fontSize: 30, fontWeight: '900' }}>{mentalScore}</Text>
+                            <Text style={{ color: '#8B949E', fontSize: 11, marginTop: 2 }}>/ 100</Text>
+                            <View style={{
+                                flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8,
+                                backgroundColor: 'rgba(0,200,83,0.1)',
+                                borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start',
+                            }}>
+                                <Text style={{ color: '#00C853', fontSize: 11, fontWeight: '700' }}>+5% ↑</Text>
+                            </View>
+                        </View>
 
-                    {/* Shooting Form */}
-                    <View style={{
-                        flex: 1, backgroundColor: '#161B22', borderRadius: 16,
-                        padding: 16, borderWidth: 1, borderColor: 'rgba(255,179,0,0.25)',
-                    }}>
-                        <Text style={{ color: '#8B949E', fontSize: 11, marginBottom: 4 }}>Shooting Form</Text>
-                        <Text style={{ color: '#FFB300', fontSize: 30, fontWeight: '900' }}>{shootingGrade}</Text>
-                        <Text style={{ color: '#8B949E', fontSize: 11, marginTop: 2 }}>{shootingFgPct.toFixed(1)} FG%</Text>
+                        {/* Shooting Form */}
                         <View style={{
-                            flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8,
-                            backgroundColor: 'rgba(255,179,0,0.1)',
-                            borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start',
+                            flex: 1, backgroundColor: '#161B22', borderRadius: 16,
+                            padding: 16, borderWidth: 1, borderColor: 'rgba(255,179,0,0.25)',
                         }}>
-                            <Text style={{ color: '#FFB300', fontSize: 11 }}>Release ↓</Text>
+                            <Text style={{ color: '#8B949E', fontSize: 11, marginBottom: 4 }}>Shooting Form</Text>
+                            <Text style={{ color: '#FFB300', fontSize: 30, fontWeight: '900' }}>{shootingGrade}</Text>
+                            <Text style={{ color: '#8B949E', fontSize: 11, marginTop: 2 }}>{shootingFgPct.toFixed(1)} FG%</Text>
+                            <View style={{
+                                flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8,
+                                backgroundColor: 'rgba(255,179,0,0.1)',
+                                borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start',
+                            }}>
+                                <Text style={{ color: '#FFB300', fontSize: 11 }}>Release ↓</Text>
+                            </View>
                         </View>
                     </View>
-                </View>
+                )}
 
                 {/* ── Highlights ── */}
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <Text style={{ color: '#E6EDF3', fontSize: 18, fontWeight: '700' }}>Derniers Highlights</Text>
-                    {highlightsLoading && <ActivityIndicator size="small" color="#1A73E8" />}
+                    {highlights.length > 0 && (
+                        <TouchableOpacity onPress={() => router.push('/(dashboard)/upload')} accessibilityRole="link">
+                            <Text style={{ color: '#1A73E8', fontSize: 12, fontWeight: '600' }}>Voir tout →</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
-                {highlights.length === 0 && !highlightsLoading ? (
-                    // Empty state
+                {highlightsLoading && highlights.length === 0 ? (
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                        {[1, 2, 3].map(i => <SkeletonHighlight key={i} />)}
+                    </View>
+                ) : highlights.length === 0 ? (
                     <View style={{
                         backgroundColor: '#161B22', borderRadius: 16,
                         padding: 32, alignItems: 'center',
@@ -293,6 +392,16 @@ export default function DashboardIndex() {
                         <Text style={{ color: '#484F58', fontSize: 14, marginTop: 12, textAlign: 'center' }}>
                             Aucun highlight pour l'instant.{'\n'}Analyse un match pour commencer !
                         </Text>
+                        <TouchableOpacity
+                            style={{
+                                marginTop: 16, backgroundColor: '#1A73E8',
+                                borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10,
+                            }}
+                            onPress={() => router.push('/(dashboard)/upload')}
+                            accessibilityRole="button"
+                        >
+                            <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 13 }}>Importer une vidéo</Text>
+                        </TouchableOpacity>
                     </View>
                 ) : (
                     <FlatList
@@ -307,21 +416,6 @@ export default function DashboardIndex() {
                                 onPress={() => router.push(`/highlight/${item.id}`)}
                             />
                         )}
-                        ListEmptyComponent={
-                            highlightsLoading ? (
-                                // Loading placeholders
-                                <View style={{ flexDirection: 'row', gap: 8 }}>
-                                    {[1, 2, 3].map(i => (
-                                        <View key={i} style={{
-                                            width: 120, height: 180,
-                                            backgroundColor: '#161B22',
-                                            borderRadius: 16,
-                                            borderWidth: 1, borderColor: '#21262D',
-                                        }} />
-                                    ))}
-                                </View>
-                            ) : null
-                        }
                     />
                 )}
 

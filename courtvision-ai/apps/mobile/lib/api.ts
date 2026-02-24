@@ -2,6 +2,12 @@
  * Client API CourtVision — Configuration de base.
  * Toutes les requêtes passent par ce module.
  * Les tokens d'auth sont stockés dans SecureStore (jamais en mémoire seule).
+ * 
+ * AMÉLIORATIONS v2:
+ * - Auto-refresh du token JWT sur 401 (une seule tentative, sans boucle infinie)
+ * - File d'attente des requêtes pendant le refresh
+ * - Timeout configurable par requête
+ * - Retry automatique sur erreur réseau (max 2 fois)
  */
 
 import Constants from 'expo-constants'
@@ -10,7 +16,7 @@ import * as SecureStore from 'expo-secure-store'
 const AUTH_TOKEN_KEY = 'courtvision_auth_token'
 const REFRESH_TOKEN_KEY = 'courtvision_refresh_token'
 
-const API_BASE_URL =
+export const API_BASE_URL =
     Constants.expoConfig?.extra?.apiUrl
     ?? process.env.EXPO_PUBLIC_API_URL
     ?? 'http://localhost:3001'
@@ -68,58 +74,137 @@ export class NetworkError extends Error {
     }
 }
 
+// ─── Token refresh queue ──────────────────────────────────────
+// Évite plusieurs refresh simultanés (tous les appels 401 attendent le même refresh)
+
+let isRefreshing = false
+let refreshSubscribers: Array<(token: string | null) => void> = []
+
+function subscribeToRefresh(cb: (token: string | null) => void) {
+    refreshSubscribers.push(cb)
+}
+
+function onRefreshed(token: string | null) {
+    refreshSubscribers.forEach(cb => cb(token))
+    refreshSubscribers = []
+}
+
+async function attemptTokenRefresh(): Promise<string | null> {
+    const refreshToken = await getRefreshToken()
+    if (!refreshToken) return null
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: refreshToken }),
+        })
+        if (!response.ok) return null
+        const data = await response.json() as { access_token?: string; token?: string }
+        const newToken = data.access_token ?? data.token ?? null
+        if (newToken) await setAuthToken(newToken)
+        return newToken
+    } catch {
+        return null
+    }
+}
+
 // ─── HTTP client ──────────────────────────────────────────────
 
 const DEFAULT_TIMEOUT_MS = 15_000
+const MAX_RETRIES = 2
+const RETRY_DELAY_MS = 800
+
+async function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+}
 
 export async function apiFetch<T = unknown>(
     path: string,
-    options: RequestInit = {}
+    options: RequestInit & { timeoutMs?: number; _isRetry?: boolean } = {}
 ): Promise<T> {
     const token = await getAuthToken()
     const url = `${API_BASE_URL}${path}`
+    const { timeoutMs = DEFAULT_TIMEOUT_MS, _isRetry = false, ...fetchOptions } = options
 
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        ...(options.headers as Record<string, string> ?? {}),
+        ...(fetchOptions.headers as Record<string, string> ?? {}),
     }
     if (token) headers['Authorization'] = `Bearer ${token}`
 
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS)
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
-    try {
-        const response = await fetch(url, { ...options, headers, signal: controller.signal })
-        clearTimeout(timeoutId)
+    let lastError: Error | null = null
 
-        if (response.status === 401) {
-            await clearTokens()
-            throw new ApiError(401, 'Session expirée, veuillez vous reconnecter')
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            const response = await fetch(url, { ...fetchOptions, headers, signal: controller.signal })
+            clearTimeout(timeoutId)
+
+            // ── 401 : tenter le refresh token ──────────────────
+            if (response.status === 401 && !_isRetry) {
+                let newToken: string | null
+
+                if (isRefreshing) {
+                    // Attendre que le refresh en cours se termine
+                    newToken = await new Promise<string | null>(resolve => {
+                        subscribeToRefresh(resolve)
+                    })
+                } else {
+                    isRefreshing = true
+                    newToken = await attemptTokenRefresh()
+                    isRefreshing = false
+                    onRefreshed(newToken)
+                }
+
+                if (newToken) {
+                    // Réessayer avec le nouveau token
+                    return apiFetch<T>(path, { ...options, _isRetry: true })
+                } else {
+                    await clearTokens()
+                    throw new ApiError(401, 'Session expirée, veuillez vous reconnecter')
+                }
+            }
+
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({ error: response.statusText }))
+                throw new ApiError(
+                    response.status,
+                    (err as Record<string, string>).error ?? (err as Record<string, string>).message ?? 'Erreur inconnue',
+                    err
+                )
+            }
+
+            // 204 No Content
+            if (response.status === 204) return undefined as unknown as T
+
+            return response.json() as Promise<T>
+        } catch (err) {
+            clearTimeout(timeoutId)
+            if (err instanceof ApiError) throw err
+            if ((err as Error).name === 'AbortError') throw new NetworkError('La requête a expiré')
+
+            lastError = err as Error
+
+            // Retry uniquement sur erreur réseau, pas sur les dernières tentatives
+            if (attempt < MAX_RETRIES) {
+                await sleep(RETRY_DELAY_MS * (attempt + 1))
+                continue
+            }
         }
-        if (!response.ok) {
-            const err = await response.json().catch(() => ({ error: response.statusText }))
-            throw new ApiError(
-                response.status,
-                (err as Record<string, string>).error ?? (err as Record<string, string>).message ?? 'Erreur inconnue',
-                err
-            )
-        }
-        return response.json() as Promise<T>
-    } catch (err) {
-        clearTimeout(timeoutId)
-        if (err instanceof ApiError) throw err
-        if ((err as Error).name === 'AbortError') throw new NetworkError('La requête a expiré')
-        throw new NetworkError()
     }
+
+    throw lastError instanceof NetworkError ? lastError : new NetworkError(lastError?.message)
 }
 
 // ─── Shorthand helpers ─────────────────────────────────────────
 
 export const api = {
-    get:    <T>(path: string)              => apiFetch<T>(path, { method: 'GET' }),
+    get:    <T>(path: string)               => apiFetch<T>(path, { method: 'GET' }),
     post:   <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'POST',  body: JSON.stringify(body) }),
     patch:  <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
-    delete: <T>(path: string)              => apiFetch<T>(path, { method: 'DELETE' }),
+    put:    <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'PUT',   body: JSON.stringify(body) }),
+    delete: <T>(path: string)               => apiFetch<T>(path, { method: 'DELETE' }),
 }
-
-export { API_BASE_URL }

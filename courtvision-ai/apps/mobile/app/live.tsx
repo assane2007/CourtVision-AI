@@ -8,6 +8,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons'
 import { useLiveCoach } from '../hooks/useLiveCoach'
 import { LiveCamera } from '../components/LiveCamera'
+import { useStore } from '../lib/store'
+import { XPBadge } from '../components/XPBadge'
 
 // ==========================================
 // Constants & Helpers
@@ -250,13 +252,15 @@ function EndReportModal({ visible, report, onClose }: { visible: boolean; report
 // ==========================================
 
 export default function LiveCoachScreen() {
-    const router = useRouter()
+    const router    = useRouter()
+    const addXP     = useStore(s => s.addXP)
     const sessionId = `session_${Date.now()}`
-    const live = useLiveCoach(sessionId)
-    const [showZonePicker, setShowZonePicker] = useState(false)
-    const [pendingOutcome, setPendingOutcome] = useState<'made' | 'missed' | null>(null)
-    const [showEndReport, setShowEndReport] = useState(false)
-    const [cameraVisible, setCameraVisible] = useState(true)
+    const live      = useLiveCoach(sessionId)
+    const [showZonePicker, setShowZonePicker]   = useState(false)
+    const [pendingOutcome, setPendingOutcome]   = useState<'made' | 'missed' | null>(null)
+    const [showEndReport, setShowEndReport]     = useState(false)
+    const [cameraVisible, setCameraVisible]     = useState(true)
+    const [xpPopup, setXpPopup]                = useState<{ amount: number; label: string } | null>(null)
 
     const headerAnim = useRef(new Animated.Value(0)).current
 
@@ -264,9 +268,18 @@ export default function LiveCoachScreen() {
         Animated.timing(headerAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start()
     }, [])
 
-    // Show end report modal when session ends
+    // Show end report modal when session ends + reward XP
     useEffect(() => {
         if (live.phase === 'ended' && live.endReport) {
+            // Calculer XP de la session
+            const totalShots = live.makeCount + live.missCount
+            const baseXP     = 30
+            const shotXP     = Math.min(totalShots * 2, 60)
+            const mentalXP   = live.mentalScore >= 75 ? 20 : live.mentalScore >= 50 ? 10 : 0
+            const totalXP    = baseXP + shotXP + mentalXP
+
+            addXP(totalXP, 'Session Coach Live')
+            setXpPopup({ amount: totalXP, label: 'Session complétée !' })
             setShowEndReport(true)
         }
     }, [live.phase, live.endReport])
@@ -305,6 +318,20 @@ export default function LiveCoachScreen() {
     return (
         <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
             <StatusBar barStyle="light-content" />
+
+            {/* XP Popup */}
+            {xpPopup && (
+                <View style={{
+                    position: 'absolute', zIndex: 9999,
+                    left: 0, right: 0, top: '30%', alignItems: 'center',
+                }}>
+                    <XPBadge
+                        amount={xpPopup.amount}
+                        label={xpPopup.label}
+                        onDone={() => setXpPopup(null)}
+                    />
+                </View>
+            )}
 
             {/* Camera Zone */}
             <View style={{ height: '38%', backgroundColor: '#000', position: 'relative' }}>
