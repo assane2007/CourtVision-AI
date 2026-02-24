@@ -457,7 +457,7 @@ describe('CourtVision API', () => {
             expect(response.statusCode).toBe(401)
         })
 
-        it('POST /api/sessions/:id/live/frame avec auth devrait retourner 200', async () => {
+        it('POST /api/sessions/:id/live/frame sans session active devrait retourner 404', async () => {
             const response = await app.inject({
                 method: 'POST',
                 url: '/api/sessions/123e4567-e89b-12d3-a456-426614174000/live/frame',
@@ -465,13 +465,94 @@ describe('CourtVision API', () => {
                 payload: { timestamp: 120, quarter: 2 },
             })
 
-            expect(response.statusCode).toBe(200)
+            expect(response.statusCode).toBe(404)
             const body = JSON.parse(response.body)
-            expect(body.sessionId).toBeDefined()
-            expect(body.timestamp).toBe(120)
-            expect(body.quarter).toBe(2)
-            expect(body.mentalScore).toBeDefined()
-            expect(body.alerts).toBeInstanceOf(Array)
+            expect(body.error).toBeDefined()
+        })
+
+        it('POST /api/sessions/:id/live → frame → end (flow complet)', async () => {
+            const sessionId = '123e4567-e89b-12d3-a456-426614174000'
+
+            // Mock Supabase pour retourner une session valide
+            const mockFrom = (app as any).supabase.from
+            const originalImpl = mockFrom.getMockImplementation?.()
+            mockFrom.mockReturnValue({
+                select: jest.fn().mockReturnThis(),
+                insert: jest.fn().mockReturnThis(),
+                update: jest.fn().mockReturnThis(),
+                delete: jest.fn().mockReturnThis(),
+                eq: jest.fn().mockReturnThis(),
+                gte: jest.fn().mockReturnThis(),
+                order: jest.fn().mockReturnThis(),
+                limit: jest.fn().mockReturnThis(),
+                upsert: jest.fn().mockReturnThis(),
+                single: jest.fn().mockResolvedValue({
+                    data: { id: sessionId, type: 'match', status: 'pending' },
+                    error: null
+                }),
+            })
+
+            // 1. Démarrer la session live
+            const startRes = await app.inject({
+                method: 'POST',
+                url: `/api/sessions/${sessionId}/live`,
+                headers: authHeaders,
+                payload: { alertSensitivity: 'medium' },
+            })
+            expect(startRes.statusCode).toBe(200)
+            const startBody = JSON.parse(startRes.body)
+            expect(startBody.status).toBe('live')
+            expect(startBody.endpoints).toBeDefined()
+
+            // 2. Envoyer une frame
+            const frameRes = await app.inject({
+                method: 'POST',
+                url: `/api/sessions/${sessionId}/live/frame`,
+                headers: authHeaders,
+                payload: { timestamp: 120, quarter: 1 },
+            })
+            expect(frameRes.statusCode).toBe(200)
+            const frameBody = JSON.parse(frameRes.body)
+            expect(frameBody.sessionId).toBe(sessionId)
+            expect(frameBody.mentalScore).toBeDefined()
+            expect(frameBody.fatigueIndex).toBeDefined()
+            expect(frameBody.alerts).toBeInstanceOf(Array)
+            expect(frameBody.stats).toBeDefined()
+
+            // 3. Enregistrer un tir
+            const shotRes = await app.inject({
+                method: 'POST',
+                url: `/api/sessions/${sessionId}/live/shot`,
+                headers: authHeaders,
+                payload: { outcome: 'made', zone: 'midrange' },
+            })
+            expect(shotRes.statusCode).toBe(200)
+            const shotBody = JSON.parse(shotRes.body)
+            expect(shotBody.recorded).toBe(true)
+            expect(shotBody.currentStats.shotsMade).toBeGreaterThanOrEqual(1)
+
+            // 4. Vérifier le status
+            const statusRes = await app.inject({
+                method: 'GET',
+                url: `/api/sessions/${sessionId}/live/status`,
+                headers: authHeaders,
+            })
+            expect(statusRes.statusCode).toBe(200)
+            const statusBody = JSON.parse(statusRes.body)
+            expect(statusBody.active).toBe(true)
+
+            // 5. Terminer la session
+            const endRes = await app.inject({
+                method: 'POST',
+                url: `/api/sessions/${sessionId}/live/end`,
+                headers: authHeaders,
+            })
+            expect(endRes.statusCode).toBe(200)
+            const endBody = JSON.parse(endRes.body)
+            expect(endBody.status).toBe('complete')
+            expect(endBody.stats).toBeDefined()
+            expect(endBody.recommendations).toBeInstanceOf(Array)
+            expect(endBody.mentalTimeline).toBeInstanceOf(Array)
         })
     })
 

@@ -10,6 +10,7 @@
         "web": "expo start --web"
     },
     "dependencies": {
+        "@courtvision/shared": "*",
         "@expo/metro-runtime": "^3.2.3",
         "@expo/vector-icons": "^14.0.0",
         "@react-navigation/native": "^6.0.22",
