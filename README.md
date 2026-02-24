@@ -193,7 +193,7 @@ Toute l'app utilise une palette dark sombre cohérente :
 - **`highlight/[id].tsx`** : Modal partage multi-plateformes (TikTok, Instagram, Twitter, WhatsApp), publication communauté avec XP, commentary IA animée par clip
 - **`(dashboard)/_layout.tsx`** : FAB Upload bleu flottant, notification dot XP sur l'onglet Profil
 - **`StreakReminderBanner`** : Bannière slide-in si streak > 0, CTA direct upload, dismissable
-- **`usePushNotifications`** : Enregistrement token + rappels streak et daily challenge (pluggable expo-notifications)
+- **`usePushNotifications`** : Intégration **expo-notifications** complète — token Expo réel, canal Android haute priorité (`courtvision`), rappel streak planifié à 20h, rappel défi planifié à 9h, listener foreground (toast in-app), listener tap (deep link), badge reset au retour au premier plan, envoi token au backend
 - **`store.ts`** : Ajout `updateUser()`, persistance AsyncStorage, sélecteurs complets
 
 ---
@@ -612,6 +612,7 @@ npm run typecheck                   # Vérification TypeScript (0 erreurs)
 - [x] **v2.0 — Store persistant** (Zustand + AsyncStorage, hydration, `updateUser`)
 - [x] **v2.0 — Push Notifications** (hook `usePushNotifications`, rappels streak/défi)
 - [x] **v2.0 — Tab bar redesignée** (FAB Upload, notification dot XP)
+- [x] **v2.1 — expo-notifications réel** (token Expo réel, canal Android haute priorité, planification daily 9h/20h, listeners foreground + tap deep-link, badge reset, envoi token backend)
 
 ### 🔜 À venir
 
@@ -619,7 +620,6 @@ npm run typecheck                   # Vérification TypeScript (0 erreurs)
 - [ ] Multi-joueurs tracking (équipe entière)
 - [ ] Export PDF rapports de recrutement (génération serveur)
 - [ ] App Store / Play Store (EAS submit)
-- [ ] Intégration expo-notifications complète (tokens réels)
 - [ ] Clip vidéo réel (expo-image-picker + upload S3)
 - [ ] Internationalisation (EN, ES, PT)
 

@@ -37,8 +37,22 @@
         }
       ],
       "expo-font",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#1A73E8",
+          "sounds": [],
+          "iosDisplayInForeground": true
+        }
+      ]
     ],
+    "notification": {
+      "icon": "./assets/icon.png",
+      "color": "#1A73E8",
+      "iosDisplayInForeground": true
+    },
     "experiments": {
       "typedRoutes": true
     }
