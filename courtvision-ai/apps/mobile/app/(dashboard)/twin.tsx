@@ -3,6 +3,9 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRef, useEffect, useMemo, useState, useCallback } from 'react'
 import { FontAwesome5, Foundation, Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons'
 import { useDigitalTwin } from '../../hooks/useDigitalTwin'
+import { useViralShare } from '../../hooks/useViralShare'
+import { ShareButton, ShareModal, TwinCard } from '../../components/ShareCard'
+import type { TwinCardData } from '../../hooks/useViralShare'
 import type { TwinTab, TwinAttributeCategory, TwinTrait, NBAComparison, ComfortZone, TwinEvolutionPoint, MatchupSimulation } from '../../hooks/useDigitalTwin'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
@@ -63,10 +66,12 @@ const NBA_PLAYERS_FOR_SIMULATION = [
 // ==========================================
 export default function DigitalTwin() {
     const twin = useDigitalTwin()
+    const viralShare = useViralShare()
     const pulseAnim = useRef(new Animated.Value(1)).current
     const fadeAnim = useRef(new Animated.Value(0)).current
     const [showSimModal, setShowSimModal] = useState(false)
     const [selectedNBA, setSelectedNBA] = useState<string | null>(null)
+    const [showShareModal, setShowShareModal] = useState(false)
 
     // Pulse animation pour le rating central
     useEffect(() => {
@@ -134,12 +139,15 @@ export default function DigitalTwin() {
                                     Modèle {p.modelVersion} • {p.sessionCount} sessions analysées
                                 </Text>
                             </View>
-                            <TouchableOpacity onPress={twin.rebuild} disabled={twin.rebuilding}>
-                                {twin.rebuilding
-                                    ? <ActivityIndicator size="small" color={COLORS.accent} />
-                                    : <Ionicons name="refresh" size={22} color={COLORS.accent} />
-                                }
-                            </TouchableOpacity>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                                <TouchableOpacity onPress={twin.rebuild} disabled={twin.rebuilding}>
+                                    {twin.rebuilding
+                                        ? <ActivityIndicator size="small" color={COLORS.accent} />
+                                        : <Ionicons name="refresh" size={22} color={COLORS.accent} />
+                                    }
+                                </TouchableOpacity>
+                                <ShareButton onPress={() => setShowShareModal(true)} compact />
+                            </View>
                         </View>
                     </View>
 
@@ -229,7 +237,49 @@ export default function DigitalTwin() {
                         <EvolutionTab evolution={p.evolution} />
                     )}
 
+                    {/* ======= Share CTA Banner ======= */}
+                    <View style={{
+                        marginHorizontal: 20, marginTop: 10, marginBottom: 10,
+                        backgroundColor: 'rgba(0,212,255,0.08)',
+                        borderRadius: 16, padding: 18,
+                        borderWidth: 1, borderColor: 'rgba(0,212,255,0.15)',
+                        flexDirection: 'row', alignItems: 'center',
+                    }}>
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ color: COLORS.white, fontSize: 14, fontWeight: '700' }}>
+                                🔥 Partage ta Twin Card
+                            </Text>
+                            <Text style={{ color: COLORS.muted, fontSize: 12, marginTop: 2 }}>
+                                Montre ton profil sur TikTok ou Instagram • +10 XP
+                            </Text>
+                        </View>
+                        <TouchableOpacity
+                            onPress={() => setShowShareModal(true)}
+                            style={{
+                                backgroundColor: COLORS.accent,
+                                borderRadius: 10,
+                                paddingHorizontal: 14,
+                                paddingVertical: 8,
+                            }}
+                        >
+                            <Text style={{ color: COLORS.bg, fontSize: 12, fontWeight: '700' }}>Partager</Text>
+                        </TouchableOpacity>
+                    </View>
+
                 </ScrollView>
+
+                {/* ======= Share Modal ======= */}
+                <ShareModal
+                    visible={showShareModal}
+                    onClose={() => setShowShareModal(false)}
+                    onShare={async (platform) => {
+                        await viralShare.shareTwinCard(platform)
+                        setShowShareModal(false)
+                    }}
+                    sharing={viralShare.sharing}
+                    cardData={buildTwinCardForShare(p)}
+                    shareType="twin_card"
+                />
             </Animated.View>
         </SafeAreaView>
     )
@@ -669,4 +719,49 @@ function ratingColor(rating: number): string {
     if (rating >= 60) return '#00D4FF'
     if (rating >= 40) return '#FF9800'
     return '#FF3D57'
+}
+
+/**
+ * Convertit un TwinProfile local en TwinCardData pour le composant de partage.
+ */
+function buildTwinCardForShare(profile: any): TwinCardData {
+    const topCategory = [...(profile.attributeCategories || [])]
+        .sort((a: TwinAttributeCategory, b: TwinAttributeCategory) => b.overallScore - a.overallScore)[0]
+
+    const topNBA = profile.nbaComparisons?.[0] ?? null
+
+    const allAttrs: { name: string; value: number; emoji: string }[] = []
+    for (const cat of profile.attributeCategories ?? []) {
+        for (const attr of cat.attributes ?? []) {
+            allAttrs.push({ name: attr.name, value: attr.value, emoji: cat.emoji })
+        }
+    }
+    const keyAttributes = allAttrs.sort((a, b) => b.value - a.value).slice(0, 4)
+
+    return {
+        username: 'Player',
+        fullName: 'Player',
+        avatarUrl: null,
+        position: null,
+        overallRating: profile.overallRating,
+        playStyle: profile.playStyle.primary,
+        playStyleLabel: STYLE_LABELS[profile.playStyle.primary] ?? profile.playStyle.primary,
+        playStyleDescription: profile.playStyle.description,
+        nbaArchetype: profile.playStyle.nbaArchetype,
+        topCategoryName: topCategory?.category ?? 'N/A',
+        topCategoryEmoji: topCategory?.emoji ?? '🏀',
+        topCategoryScore: topCategory?.overallScore ?? 0,
+        nbaCompPlayer: topNBA?.playerName ?? null,
+        nbaCompSimilarity: topNBA?.similarity ?? 0,
+        nbaCompTraits: topNBA?.matchingTraits ?? [],
+        keyAttributes,
+        mentalResilience: profile.mentalProfile.resilience,
+        clutchFactor: profile.mentalProfile.clutchFactor,
+        pressureResponse: profile.mentalProfile.pressureResponse,
+        strengths: profile.strengths.slice(0, 3).map((s: TwinTrait) => s.label),
+        weaknesses: profile.weaknesses.slice(0, 2).map((w: TwinTrait) => w.label),
+        modelVersion: profile.modelVersion,
+        sessionCount: profile.sessionCount,
+        generatedAt: new Date().toISOString(),
+    }
 }

@@ -38,8 +38,8 @@ export default function Onboarding2() {
     }
 
     const handleContinue = () => {
-        // TODO: Sauvegarder le poste dans le store (Zustand) ou le contexte utilisateur
-        router.push('/onboarding3')
+        // Sauvegarder le poste, puis aller au tutoriel caméra
+        router.push('/onboarding-camera')
     }
 
     return (
@@ -58,6 +58,7 @@ export default function Onboarding2() {
                 <View style={{ flexDirection: 'row', gap: 6, marginBottom: 30 }}>
                     <View style={{ flex: 1, height: 3, backgroundColor: '#1A73E8', borderRadius: 2 }} />
                     <View style={{ flex: 1, height: 3, backgroundColor: '#1A73E8', borderRadius: 2 }} />
+                    <View style={{ flex: 1, height: 3, backgroundColor: '#161B22', borderRadius: 2 }} />
                     <View style={{ flex: 1, height: 3, backgroundColor: '#161B22', borderRadius: 2 }} />
                 </View>
 

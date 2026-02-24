@@ -183,6 +183,19 @@ CREATE TABLE public.notifications (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Shared Cards (partage viral)
+CREATE TABLE public.shared_cards (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  share_id TEXT UNIQUE NOT NULL,
+  user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+  type TEXT CHECK (type IN ('twin_card', 'highlight_reel', 'session_recap', 'badge', 'challenge_win')),
+  platform TEXT DEFAULT 'generic',
+  card_data JSONB NOT NULL,
+  caption TEXT DEFAULT '',
+  views_count INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ==========================================
 -- Coach Live Tables
 -- ==========================================
@@ -249,6 +262,8 @@ ALTER TABLE public.public_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_badges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activity_feed ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.shared_cards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.shared_cards ENABLE ROW LEVEL SECURITY;
 
 -- Un utilisateur ne peut accéder qu'à ses propres données
 CREATE POLICY "Users can manage their own profile" 
@@ -317,7 +332,7 @@ CREATE POLICY "Anyone can view public profiles"
 ON public.public_profiles FOR SELECT
 USING (true);
 
-CREATE POLICY "Users can update their own profile"
+CREATE POLICY "Users can update leur propre profil"
 ON public.public_profiles FOR UPDATE
 USING (user_id = auth.uid());
 
@@ -338,6 +353,15 @@ USING (user_id = auth.uid());
 -- Notifications : accès aux notifications de l'utilisateur
 CREATE POLICY "Users can view their own notifications"
 ON public.notifications FOR SELECT
+USING (user_id = auth.uid());
+
+-- Shared Cards : publiques en lecture, privées en écriture
+CREATE POLICY "Anyone can view shared cards"
+ON public.shared_cards FOR SELECT
+USING (true);
+
+CREATE POLICY "Users can manage their own shared cards"
+ON public.shared_cards FOR ALL
 USING (user_id = auth.uid());
 
 
@@ -365,6 +389,8 @@ CREATE INDEX idx_public_profiles_user_id ON public.public_profiles(user_id);
 CREATE INDEX idx_user_badges_user_id ON public.user_badges(user_id);
 CREATE INDEX idx_activity_feed_user_id ON public.activity_feed(user_id);
 CREATE INDEX idx_notifications_user_id ON public.notifications(user_id);
+CREATE INDEX idx_shared_cards_user_id ON public.shared_cards(user_id);
+CREATE INDEX idx_shared_cards_share_id ON public.shared_cards(share_id);
 
 
 -- ==========================================

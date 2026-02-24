@@ -37,6 +37,7 @@ export default function Onboarding1() {
                 <View style={{ flex: 1, height: 3, backgroundColor: '#1A73E8', borderRadius: 2 }} />
                 <View style={{ flex: 1, height: 3, backgroundColor: '#161B22', borderRadius: 2 }} />
                 <View style={{ flex: 1, height: 3, backgroundColor: '#161B22', borderRadius: 2 }} />
+                <View style={{ flex: 1, height: 3, backgroundColor: '#161B22', borderRadius: 2 }} />
             </View>
 
             {/* Logo animé */}

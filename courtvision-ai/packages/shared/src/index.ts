@@ -323,6 +323,57 @@ export interface ActivityFeedResponse {
 }
 
 // ==========================================
+// Viral Sharing
+// ==========================================
+
+export const SHARE_TYPES = ['twin_card', 'highlight_reel', 'session_recap', 'badge', 'challenge_win'] as const
+export type ShareType = (typeof SHARE_TYPES)[number]
+
+export const SHARE_PLATFORMS = ['tiktok', 'instagram', 'twitter', 'generic'] as const
+export type SharePlatform = (typeof SHARE_PLATFORMS)[number]
+
+export interface SharedCard {
+    id: string
+    share_id: string
+    user_id: string
+    type: ShareType
+    platform: SharePlatform
+    card_data: Record<string, any>
+    caption: string
+    views_count: number
+    created_at: string
+}
+
+export interface TwinCardShareData {
+    username: string
+    fullName: string
+    avatarUrl: string | null
+    position: string | null
+    overallRating: number
+    playStyle: string
+    playStyleLabel: string
+    nbaArchetype: string
+    topCategoryName: string
+    topCategoryScore: number
+    nbaCompPlayer: string | null
+    nbaCompSimilarity: number
+    keyAttributes: { name: string; value: number; emoji: string }[]
+    strengths: string[]
+    weaknesses: string[]
+    sessionCount: number
+    generatedAt: string
+}
+
+export interface ShareGenerateResponse {
+    shareId: string
+    shareUrl: string
+    caption: string
+    cardData: TwinCardShareData | Record<string, any>
+    platform: SharePlatform
+    deepLink: string
+}
+
+// ==========================================
 // API Response helpers
 // ==========================================
 

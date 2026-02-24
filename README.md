@@ -94,6 +94,75 @@ Follow → user_follows → notifications → activity_feed
 
 ---
 
+## 🚀 Partage Viral — Machine à Viralité
+
+Le système de partage viral permet aux joueurs d'exporter et partager leur Twin Card, leurs highlights et leurs recaps de session sur les réseaux sociaux. Chaque partage est optimisé par plateforme (TikTok, Instagram, Twitter) et génère un lien public traçable.
+
+### Architecture
+
+```
+Twin / Session / Badge → API /share/generate → SharedCard (DB) → Share URL + Deep Link
+Vue publique → /share/card/:shareId → Card Data + Analytics (views)
+Partage → +10 XP → Activity Feed → Badges sociaux
+```
+
+### Endpoints
+
+| Méthode | Route | Description |
+|---|---|---|
+| `POST` | `/api/share/generate` | Générer un partage (twin_card, session_recap, highlight_reel, badge, challenge_win) |
+| `GET` | `/api/share/card/:shareId` | Récupérer les données d'une card partagée (public) |
+| `GET` | `/api/share/my-shares` | Historique de mes partages avec vues |
+| `POST` | `/api/share/track-view` | Tracker une vue de card partagée (analytics) |
+
+### Types de partage
+
+| Type | Contenu | Plateformes |
+|---|---|---|
+| 🏀 **Twin Card** | Note globale, style, NBA comparaison, stats clés, mental | TikTok, Instagram, Twitter |
+| 🎬 **Highlight Reel** | Clips vidéo automatiques de la session | TikTok, Instagram |
+| 📊 **Session Recap** | Stats de session, % tir, mental score | Instagram, Twitter |
+| 🎖️ **Badge** | Badge débloqué avec description | Tous |
+| 🏆 **Challenge Win** | Victoire d'un défi communautaire | Tous |
+
+### Exemple de réponse (generate)
+
+```json
+{
+  "shareId": "a7bx9k2qm3",
+  "shareUrl": "https://courtvision.ai/s/a7bx9k2qm3",
+  "caption": "Mon Digital Twin est noté 78/100 🏀 | Style : Sharpshooter 🎯 | #CourtVisionAI",
+  "platform": "instagram",
+  "deepLink": "courtvision://share/a7bx9k2qm3",
+  "cardData": { "overallRating": 78, "playStyle": "sharpshooter", "..." : "..." }
+}
+```
+
+---
+
+## 📱 Onboarding Caméra — Tutoriel Setup
+
+Un tutoriel interactif en 4 étapes guide le joueur pour positionner correctement son téléphone avant sa première session. C'est le facteur #1 de rétention en première session.
+
+### Les 4 étapes
+
+| Étape | Titre | Contenu |
+|---|---|---|
+| 📱 **Placement** | Place ton téléphone | Distance 3-5m, mode paysage, terrain visible |
+| 🔒 **Stabilité** | Stabilise l'image | Trépied vs support vs main (DO/DON'T visuel) |
+| 💡 **Éclairage** | Éclairage & Cadrage | Soleil dans le dos, gym éclairé, pas de contre-jour |
+| 🚀 **Prêt** | Tu es prêt ! | Confirmation avec rappel des tips clés |
+
+### UX Design
+
+- Diagrammes interactifs animés pour chaque étape
+- Tips classés par importance (badge "IMPORTANT" sur les tips critiques)
+- Navigation par dots + bouton "Passer" pour les utilisateurs avancés
+- Barre de progression animée
+- Intégré dans le flux onboarding : `Accueil → Position → 📱 Caméra → Login`
+
+---
+
 ## 🧠 Pipeline IA (7 étapes)
 
 Chaque vidéo uploadée passe par un pipeline complet en **< 2 minutes** : Native](https://img.shields.io/badge/React_Native-Expo-blue?logo=expo)](https://expo.dev)
@@ -140,7 +209,9 @@ détection de tirs, analyse mentale, reconstruction 3D, highlights automatiques,
 | ⚡ **Coach Live** | Analyse temps réel, alertes vibrantes | ✅ |
 | 🤖 **Digital Twin** | Avatar IA évolutif, comparaison pros | ✅ |
 | 🏆 **Communauté** | Classements, défis, profils publics, badges, XP, feed | ✅ |
-| 💳 **Billing** | Stripe intégré, plans Joueur/Coach/Académie | ✅ |
+| � **Partage Viral** | Twin Card, highlight reel, recap partageable | ✅ |
+| 📱 **Onboarding Caméra** | Tutoriel setup interactif (position, stabilité, éclairage) | ✅ |
+| �💳 **Billing** | Stripe intégré, plans Joueur/Coach/Académie | ✅ |
 
 ---
 
@@ -356,7 +427,7 @@ courtvision-ai/
 │   │       └── llm/                  # Groq + Ollama
 │   ├── api/             # Backend Fastify
 │   │   └── src/
-│   │       ├── routes/  # Endpoints REST
+│   │       ├── routes/  # Endpoints REST (auth, sessions, twin, community, share, live, billing)
 │   │       ├── queue/   # BullMQ video processor
 │   │       └── plugins/ # Auth, Supabase
 │   ├── database/        # Schema SQL + RLS
@@ -461,6 +532,8 @@ cd apps/mobile && npx expo start
 - [x] Coach Live (temps réel)
 - [x] Digital Twin complet
 - [x] Communauté (classements, défis, badges, XP, feed, profils publics)
+- [x] Partage viral (Twin Card, highlights, recap sur TikTok/Instagram/Twitter)
+- [x] Onboarding caméra (tutoriel setup interactif 4 étapes)
 - [ ] Mode hors-ligne (analyse locale)
 - [ ] Multi-joueurs tracking
 - [ ] Export PDF rapports

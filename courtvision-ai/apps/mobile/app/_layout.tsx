@@ -5,6 +5,7 @@ export default function RootLayout() {
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#0D1117' }, animation: 'slide_from_right' }}>
             <Stack.Screen name="index" />
             <Stack.Screen name="onboarding2" />
+            <Stack.Screen name="onboarding-camera" />
             <Stack.Screen name="onboarding3" />
             <Stack.Screen name="(dashboard)" />
             <Stack.Screen name="live" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />

@@ -13,6 +13,7 @@ import billingRoutes from './routes/billing'
 import communityRoutes from './routes/community'
 import liveRoutes from './routes/live'
 import waitlistRoutes from './routes/waitlist'
+import shareRoutes from './routes/share'
 
 export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     const app = fastify(opts)
@@ -41,6 +42,7 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     app.register(communityRoutes, { prefix: '/api/community' })
     app.register(liveRoutes, { prefix: '/api/sessions' })
     app.register(waitlistRoutes, { prefix: '/api' })
+    app.register(shareRoutes, { prefix: '/api/share' })
 
     // Health check
     app.get('/health', async () => {
