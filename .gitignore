@@ -17,6 +17,8 @@ web-build/
 # Build
 build/
 dist/
+.next/
+out/
 
 # Environment variables
 .env
@@ -35,10 +37,16 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
+next-env.d.ts
+
+# IDE
+.vscode/
+.idea/
 
 # Python scripts helpers
 read_docx.py
-prompt_v2.txt
+__pycache__/
+*.pyc
 
 # Large binary files
 *.zip

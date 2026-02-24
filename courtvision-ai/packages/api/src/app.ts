@@ -12,6 +12,7 @@ import twinRoutes from './routes/twin'
 import billingRoutes from './routes/billing'
 import communityRoutes from './routes/community'
 import liveRoutes from './routes/live'
+import waitlistRoutes from './routes/waitlist'
 
 export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     const app = fastify(opts)
@@ -39,10 +40,17 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     app.register(billingRoutes, { prefix: '/api/billing' })
     app.register(communityRoutes, { prefix: '/api/community' })
     app.register(liveRoutes, { prefix: '/api/sessions' })
+    app.register(waitlistRoutes, { prefix: '/api' })
 
-    // Route fallback
+    // Health check
     app.get('/health', async () => {
-        return { status: 'ok', time: new Date().toISOString() }
+        return {
+            status: 'ok',
+            service: 'courtvision-api',
+            version: '1.0.0',
+            time: new Date().toISOString(),
+            uptime: process.uptime(),
+        }
     })
 
     return app

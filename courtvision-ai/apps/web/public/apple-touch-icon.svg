@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0D1117"/>
+      <stop offset="100%" style="stop-color:#161B22"/>
+    </linearGradient>
+  </defs>
+  <rect width="180" height="180" rx="40" fill="url(#bg)"/>
+  <circle cx="90" cy="90" r="50" fill="none" stroke="#1A73E8" stroke-width="3" opacity="0.3"/>
+  <text x="90" y="105" font-family="Arial, sans-serif" font-size="60" text-anchor="middle">🏀</text>
+</svg>

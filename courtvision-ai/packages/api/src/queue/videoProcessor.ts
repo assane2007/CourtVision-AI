@@ -26,38 +26,49 @@ export interface VideoProcessingJobData {
     sessionId: string
     videoUrl: string
     userId: string
+    calibration?: {
+        topLeft: { x: number; y: number }
+        topRight: { x: number; y: number }
+        bottomLeft: { x: number; y: number }
+        bottomRight: { x: number; y: number }
+    }
 }
 
 export const initWorker = () => {
     const worker = new Worker('video-processing', async (job: Job<VideoProcessingJobData>) => {
-        const { sessionId, videoUrl, userId } = job.data
+        const { sessionId, videoUrl, userId, calibration } = job.data
 
         try {
             // 1. Update status to analyzing
             await supabase.from('sessions').update({ status: 'analyzing' }).eq('id', sessionId)
 
-            // 2. Etape 1 - Pretraitement
-            const prepRes = await preprocessVideo(videoUrl)
+            // 2. Étape 1 — Prétraitement vidéo
+            const prepRes = await preprocessVideo(videoUrl, calibration)
             await job.updateProgress(15)
 
-            // 3. Etape 2 - Tracking
+            // 3. Étape 2 — Tracking (MediaPipe + YOLOv8 + ByteTrack)
             const trackingRes = await runTracking(prepRes.framesDir)
             await job.updateProgress(30)
 
-            // 4. Etape 3 - 3D Recon
-            const reconRes = await reconstruct3DSpace(trackingRes)
+            // 4. Étape 3 — Reconstruction 3D
+            const reconRes = await reconstruct3DSpace(
+                trackingRes,
+                prepRes.homographyMatrix,
+                prepRes.resolution,
+                prepRes.fps
+            )
             await job.updateProgress(45)
 
-            // 5. Etape 4 - Shot Analysis
+            // 5. Étape 4 — Analyse des tirs
             const shotsRes = await analyzeShots(trackingRes, reconRes)
             await job.updateProgress(60)
 
-            // 6. Etape 5 - Mental Analysis
-            const mentalRes = await analyzeMentality(trackingRes)
+            // 6. Étape 5 — Analyse psychologique
+            const mentalRes = await analyzeMentality(trackingRes, shotsRes)
             await job.updateProgress(75)
 
-            // 7. Etape 6 - AI Report
-            const reportStr = await createAiReport({
+            // 7. Étape 6 — Rapport IA + Programme 7 jours
+            const report = await createAiReport({
                 tracking: trackingRes,
                 reconstruction: reconRes,
                 shots: shotsRes,
@@ -65,21 +76,36 @@ export const initWorker = () => {
             })
             await job.updateProgress(85)
 
-            // 8. Etape 7 - Highlight Reel
-            const highlightUrl = await createHighlightReel(videoUrl, shotsRes)
+            // 8. Étape 7 — Highlight Reel
+            const highlight = await createHighlightReel(videoUrl, shotsRes, 'espn')
             await job.updateProgress(95)
 
-            // 9. Save all data to the analyses table
+            // 9. Sauvegarder toutes les données dans la table analyses
             const { error: analysisError } = await supabase.from('analyses').insert({
                 session_id: sessionId,
                 shot_attempts: shotsRes.length,
-                shot_made: shotsRes.filter((s: any) => s.outcome === 'made').length,
-                shot_zones: shotsRes.map((s: any) => s.zone), // simplified
+                shot_made: shotsRes.filter((s) => s.outcome === 'made').length,
+                shot_zones: shotsRes.map((s) => ({ zone: s.zone, outcome: s.outcome, posture: s.posture })),
                 heatmap_data: reconRes.heatmapData,
                 mental_score: mentalRes.mentalFragilityScore,
-                body_language: mentalRes.detectedPatterns,
-                highlights: { url: highlightUrl }, // simplified
-                ai_report: reportStr
+                body_language: {
+                    patterns: mentalRes.detectedPatterns,
+                    insights: mentalRes.insights,
+                    timeline: mentalRes.timeline,
+                    quarterComparison: mentalRes.quarterComparison,
+                    fatigueIndex: mentalRes.fatigueIndex,
+                    bodyLanguageScore: mentalRes.bodyLanguageScore
+                },
+                highlights: {
+                    url: highlight.outputPath,
+                    clips: highlight.clips,
+                    duration: highlight.durationSec,
+                    template: highlight.template
+                },
+                ai_report: JSON.stringify({
+                    text: report.reportText,
+                    trainingProgram: report.trainingProgram
+                })
             })
 
             if (analysisError) {

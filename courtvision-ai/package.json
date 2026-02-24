@@ -8,9 +8,23 @@
   "engines": {
     "node": ">=20.0.0"
   },
+  "overrides": {
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
   "scripts": {
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
+    "test": "npm run test:api && npm run test:ai",
+    "test:api": "npm -w @courtvision/api run test",
+    "test:ai": "npm -w @courtvision/ai run test",
+    "dev:web": "npm -w @courtvision/web run dev",
+    "dev:api": "npm -w @courtvision/api run dev",
+    "build": "npm run build:shared && npm run build:ai && npm run build:api && npm run build:web",
+    "build:shared": "npm -w @courtvision/shared run build",
+    "build:web": "npm -w @courtvision/web run build",
+    "build:api": "npm -w @courtvision/api run build",
+    "build:ai": "npm -w @courtvision/ai run build",
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules"
   },
   "devDependencies": {

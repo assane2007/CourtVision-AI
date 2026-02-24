@@ -15,7 +15,7 @@ export default async function billingRoutes(fastify: FastifyInstance) {
     fastify.post('/create-checkout', { preValidation: [fastify.authenticate] }, async (request, reply) => {
         try {
             const body = checkoutSchema.parse(request.body)
-            const user = (request as any).user
+            const user = request.user!
 
             // On récupère ou créé l'ID client Stripe dans la base (si manquant)
             const { data: dbUser, error: fetchError } = await fastify.supabase
@@ -147,7 +147,7 @@ export default async function billingRoutes(fastify: FastifyInstance) {
 
     fastify.get('/portal', { preValidation: [fastify.authenticate] }, async (request, reply) => {
         try {
-            const user = (request as any).user
+            const user = request.user!
             const { data: dbUser, error: fetchError } = await fastify.supabase
                 .from('users').select('stripe_customer_id').eq('id', user.id).single()
 

@@ -1,7 +1,10 @@
 [build]
 builder = "nixpacks"
-buildCommand = "npm run build"
+buildCommand = "npm install && npm run build:shared && npm run build:ai && npm run build:api"
 
 [deploy]
 startCommand = "npm start --workspace=@courtvision/api"
 restartPolicyType = "ON_FAILURE"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+numReplicas = 1

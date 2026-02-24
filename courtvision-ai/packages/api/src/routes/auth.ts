@@ -96,7 +96,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
     });
 
     fastify.get('/me', { preValidation: [fastify.authenticate] }, async (request, reply) => {
-        const user = (request as any).user
+        const user = request.user!
         const { data, error } = await fastify.supabase.from('users').select('*').eq('id', user.id).single()
         if (error) return reply.code(400).send({ error: error.message })
         return { data }

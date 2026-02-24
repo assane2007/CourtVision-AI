@@ -23,7 +23,7 @@ export const authPlugin = fp(async (fastify, opts) => {
             }
 
             // Inject user on request to use it in routes
-            ; (request as any).user = data.user
+            request.user = data.user
         } catch (err) {
             reply.code(401).send({ error: 'Unauthorized' })
         }

@@ -62,6 +62,8 @@ export default function LiveCoach() {
             <TouchableOpacity
                 style={{ backgroundColor: '#1A73E8', paddingVertical: 18, paddingHorizontal: 50, borderRadius: 30, shadowColor: '#1A73E8', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20 }}
                 onPress={startLive}
+                accessibilityLabel={`Démarrer le quart-temps ${quarter}`}
+                accessibilityRole="button"
             >
                 <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>🏀 Démarrer Q{quarter}</Text>
             </TouchableOpacity>
@@ -70,7 +72,7 @@ export default function LiveCoach() {
 
     if (phase === 'break') return (
         <SafeAreaView style={{ flex: 1, backgroundColor: '#0D1117', justifyContent: 'center', alignItems: 'center', padding: 30 }}>
-            <Text style={{ color: '#FFB300', fontSize: 20, fontWeight: 'bold', marginBottom: 20 }}>⏸ Fin du Q{quarter}</Text>
+            <Text accessibilityRole="header" style={{ color: '#FFB300', fontSize: 20, fontWeight: 'bold', marginBottom: 20 }}>⏸ Fin du Q{quarter}</Text>
             <Text style={{ color: '#E6EDF3', fontSize: 16, textAlign: 'center', lineHeight: 24, marginBottom: 10 }}>
                 Points du quart : {makeCount * 2} pts
             </Text>
@@ -85,7 +87,10 @@ export default function LiveCoach() {
                 <Text style={{ color: '#E6EDF3' }}>• Ton tempo est bon, ne t'emballe pas en Q{quarter + 1}</Text>
             </View>
 
-            <TouchableOpacity style={{ backgroundColor: '#00C853', paddingVertical: 15, paddingHorizontal: 40, borderRadius: 25 }} onPress={nextQuarter}>
+            <TouchableOpacity style={{ backgroundColor: '#00C853', paddingVertical: 15, paddingHorizontal: 40, borderRadius: 25 }} onPress={nextQuarter}
+                accessibilityLabel={`Démarrer le quart-temps ${quarter + 1}`}
+                accessibilityRole="button"
+            >
                 <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16 }}>Démarrer Q{quarter + 1}</Text>
             </TouchableOpacity>
         </SafeAreaView>
@@ -93,9 +98,12 @@ export default function LiveCoach() {
 
     if (phase === 'ended') return (
         <SafeAreaView style={{ flex: 1, backgroundColor: '#0D1117', justifyContent: 'center', alignItems: 'center', padding: 30 }}>
-            <Text style={{ color: '#E6EDF3', fontSize: 26, fontWeight: 'bold', marginBottom: 10 }}>Match terminé ✅</Text>
+            <Text accessibilityRole="header" style={{ color: '#E6EDF3', fontSize: 26, fontWeight: 'bold', marginBottom: 10 }}>Match terminé ✅</Text>
             <Text style={{ color: '#8B949E', marginBottom: 40 }}>L'analyse complète est en cours de traitement</Text>
-            <TouchableOpacity style={{ backgroundColor: '#1A73E8', paddingVertical: 15, paddingHorizontal: 40, borderRadius: 25 }} onPress={() => router.replace('/(dashboard)')}>
+            <TouchableOpacity style={{ backgroundColor: '#1A73E8', paddingVertical: 15, paddingHorizontal: 40, borderRadius: 25 }} onPress={() => router.replace('/(dashboard)')}
+                accessibilityLabel="Voir le rapport complet du match"
+                accessibilityRole="button"
+            >
                 <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Voir le rapport complet</Text>
             </TouchableOpacity>
         </SafeAreaView>
@@ -112,7 +120,10 @@ export default function LiveCoach() {
                         <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>LIVE — Q{quarter}</Text>
                     </View>
                     <Text style={{ color: mentalColor, fontWeight: 'bold', fontSize: 22 }}>{mentalScore}</Text>
-                    <TouchableOpacity onPress={endQuarter} style={{ backgroundColor: '#161B22', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 10 }}>
+                    <TouchableOpacity onPress={endQuarter} style={{ backgroundColor: '#161B22', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 10 }}
+                        accessibilityLabel={`Terminer le quart-temps ${quarter}`}
+                        accessibilityRole="button"
+                    >
                         <Text style={{ color: '#8B949E', fontSize: 12 }}>Fin Q{quarter}</Text>
                     </TouchableOpacity>
                 </View>
@@ -122,6 +133,8 @@ export default function LiveCoach() {
                     <TouchableOpacity
                         style={{ backgroundColor: '#00C853', width: 100, height: 100, borderRadius: 50, justifyContent: 'center', alignItems: 'center' }}
                         onPress={() => setMakeCount(p => p + 1)}
+                        accessibilityLabel={`Tir réussi. Total: ${makeCount}`}
+                        accessibilityRole="button"
                     >
                         <Text style={{ color: '#FFF', fontSize: 32 }}>+</Text>
                         <Text style={{ color: '#FFF', fontWeight: 'bold' }}>{makeCount} IN</Text>
@@ -129,6 +142,8 @@ export default function LiveCoach() {
                     <TouchableOpacity
                         style={{ backgroundColor: '#FF3D57', width: 100, height: 100, borderRadius: 50, justifyContent: 'center', alignItems: 'center' }}
                         onPress={() => setMissCount(p => p + 1)}
+                        accessibilityLabel={`Tir raté. Total: ${missCount}`}
+                        accessibilityRole="button"
                     >
                         <Text style={{ color: '#FFF', fontSize: 32 }}>—</Text>
                         <Text style={{ color: '#FFF', fontWeight: 'bold' }}>{missCount} OUT</Text>

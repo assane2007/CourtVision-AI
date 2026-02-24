@@ -1,8 +1,14 @@
 import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 
-const liveSessionSchema = z.object({
-    sessionId: z.string().uuid()
+const liveParamsSchema = z.object({
+    id: z.string().uuid()
+})
+
+const liveFrameSchema = z.object({
+    frameBase64: z.string().optional(),
+    timestamp: z.number(),
+    quarter: z.number().int().min(1).max(4).optional()
 })
 
 /**
@@ -17,8 +23,8 @@ export default async function liveRoutes(fastify: FastifyInstance) {
         preValidation: [fastify.authenticate]
     }, async (request, reply) => {
         try {
-            const user = (request as any).user
-            const { id } = request.params as { id: string }
+            const user = request.user!
+            const { id } = liveParamsSchema.parse(request.params)
 
             // Vérifier que la session existe et appartient à l'utilisateur
             const { data: session, error } = await fastify.supabase
@@ -53,9 +59,9 @@ export default async function liveRoutes(fastify: FastifyInstance) {
         preValidation: [fastify.authenticate]
     }, async (request, reply) => {
         try {
-            const user = (request as any).user
-            const { id } = request.params as { id: string }
-            const body = request.body as { frameBase64?: string; timestamp: number; quarter?: number }
+            const user = request.user!
+            const { id } = liveParamsSchema.parse(request.params)
+            const body = liveFrameSchema.parse(request.body)
 
             // Analyse légère de la frame (en production: appel vers le pipeline IA partiel)
             // Pour l'instant, on simule une analyse mentale simple basée sur les données historiques
@@ -90,6 +96,7 @@ export default async function liveRoutes(fastify: FastifyInstance) {
                 vibrate: alerts.length > 0
             }
         } catch (error: any) {
+            if (error instanceof z.ZodError) return reply.code(400).send({ error: error.errors })
             return reply.code(400).send({ error: error.message })
         }
     })

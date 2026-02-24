@@ -33,14 +33,16 @@ export default function DigitalTwin() {
                     <View style={{ flex: 1, backgroundColor: 'rgba(255, 61, 87, 0.1)', padding: 15, borderRadius: 15, marginLeft: 10 }}>
                         <Text style={{ color: '#FF3D57', fontSize: 16, fontWeight: 'bold', marginBottom: 5 }}>Points Faibles</Text>
                         <Text style={{ color: '#E6EDF3', fontSize: 12 }}>• Drives main gauche</Text>
-                        <Text style={{ color: '#E6EDF3', fontSize: 12 }}>• Repli defensif lent</Text>
+                        <Text style={{ color: '#E6EDF3', fontSize: 12 }}>• Repli défensif lent</Text>
                     </View>
                 </View>
 
                 <TouchableOpacity
                     style={{ backgroundColor: '#00D4FF', borderRadius: 15, padding: 20, alignItems: 'center', marginTop: 20 }}
+                    accessibilityLabel="Lancer le simulateur de match"
+                    accessibilityRole="button"
                 >
-                    <Text style={{ color: '#0D1117', fontSize: 16, fontWeight: 'bold' }}>Lancer Simualteur de Match</Text>
+                    <Text style={{ color: '#0D1117', fontSize: 16, fontWeight: 'bold' }}>Lancer Simulateur de Match</Text>
                 </TouchableOpacity>
 
             </ScrollView>

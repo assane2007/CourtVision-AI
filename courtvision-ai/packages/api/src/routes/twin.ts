@@ -15,7 +15,7 @@ export default async function twinRoutes(fastify: FastifyInstance) {
 
     fastify.get('/me', async (request, reply) => {
         try {
-            const user = (request as any).user
+            const user = request.user!
             const { data, error } = await fastify.supabase.from('digital_twins')
                 .select('*')
                 .eq('user_id', user.id)
@@ -31,7 +31,7 @@ export default async function twinRoutes(fastify: FastifyInstance) {
     fastify.post('/simulate', async (request, reply) => {
         try {
             const body = simulateSchema.parse(request.body)
-            const user = (request as any).user
+            const user = request.user!
 
             // Ici: appler LLM/IA pour renvoyer une simulation contre son Twin
             const simulationResult = { outcome: 'Simulated outcome based on user twin.' }
@@ -46,7 +46,7 @@ export default async function twinRoutes(fastify: FastifyInstance) {
     fastify.get('/compare/:userId', async (request, reply) => {
         try {
             const params = getCompareSchema.parse(request.params)
-            const user = (request as any).user
+            const user = request.user!
 
             // Recuperer notre twin + le twin de target
             const { data: myTwin, error: myError } = await fastify.supabase.from('digital_twins')

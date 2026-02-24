@@ -24,13 +24,15 @@ export default function Profile() {
                             <Text style={{ color: '#E6EDF3', fontSize: 14, fontWeight: '600' }}>Coach</Text>
                         </View>
                         <TouchableOpacity style={{ backgroundColor: 'rgba(26,115,232,0.2)', paddingHorizontal: 15, paddingVertical: 5, borderRadius: 10 }}>
-                            <Text style={{ color: '#1A73E8', fontWeight: 'bold' }}>Gerer</Text>
+                            <Text style={{ color: '#1A73E8', fontWeight: 'bold' }}>Gérer</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
 
                 <TouchableOpacity
                     style={{ backgroundColor: '#161B22', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, borderRadius: 15, marginBottom: 15 }}
+                    accessibilityLabel="Générer ma fiche de recrutement en PDF"
+                    accessibilityRole="button"
                 >
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <MaterialIcons name="picture-as-pdf" size={24} color="#FF3D57" style={{ marginRight: 15 }} />
@@ -41,6 +43,8 @@ export default function Profile() {
 
                 <TouchableOpacity
                     style={{ backgroundColor: '#161B22', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, borderRadius: 15, marginBottom: 15 }}
+                    accessibilityLabel="Ouvrir les réglages du compte"
+                    accessibilityRole="button"
                 >
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <MaterialIcons name="settings" size={24} color="#8B949E" style={{ marginRight: 15 }} />

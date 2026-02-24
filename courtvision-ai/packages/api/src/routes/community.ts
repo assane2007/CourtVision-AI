@@ -67,7 +67,7 @@ export default async function communityRoutes(fastify: FastifyInstance) {
         preValidation: [fastify.authenticate]
     }, async (request, reply) => {
         try {
-            const user = (request as any).user
+            const user = request.user!
             const { id } = request.params as { id: string }
             const body = submitSchema.parse(request.body)
 
@@ -109,7 +109,7 @@ export default async function communityRoutes(fastify: FastifyInstance) {
         preValidation: [fastify.authenticate]
     }, async (request, reply) => {
         try {
-            const user = (request as any).user
+            const user = request.user!
 
             const { data, error } = await fastify.supabase
                 .from('user_follows')

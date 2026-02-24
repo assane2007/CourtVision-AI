@@ -6,3 +6,12 @@ export * from './mentalAnalysis'
 export * from './llm'
 export * from './reportGenerator'
 export * from './highlightEditor'
+
+// Re-export des types importants pour l'API
+export type { PreprocessingResult, CalibrationPoints } from './preprocessing'
+export type { TrackingResult, TrackedPlayer, Landmark, BallDetection } from './tracking'
+export type { Reconstruction3DResult, PlayerPosition3D, HeatmapPoint, CourtZone } from './reconstruction3d'
+export type { ShotResult, ShotStats, ShotZone } from './shotAnalysis'
+export type { MentalAnalysisResult, MentalPattern, MentalTimeline } from './mentalAnalysis'
+export type { FullAnalysisData, AIReport, TrainingDay } from './reportGenerator'
+export type { HighlightResult, HighlightClip, HighlightTemplate } from './highlightEditor'

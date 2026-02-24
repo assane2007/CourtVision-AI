@@ -1,0 +1,16 @@
+{
+  "name": "CourtVision AI",
+  "short_name": "CourtVision",
+  "description": "Le coach IA qui te transforme. Analyse basket par Intelligence Artificielle.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D1117",
+  "theme_color": "#1A73E8",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

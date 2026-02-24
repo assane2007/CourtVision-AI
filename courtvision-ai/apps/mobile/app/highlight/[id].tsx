@@ -21,7 +21,10 @@ export default function HighlightPlayer() {
 
                 {/* Header (Back button) */}
                 <View style={{ flexDirection: 'row', padding: 20, justifyContent: 'space-between', alignItems: 'center' }}>
-                    <TouchableOpacity onPress={() => router.back()} style={{ backgroundColor: 'rgba(0,0,0,0.5)', padding: 10, borderRadius: 20 }}>
+                    <TouchableOpacity onPress={() => router.back()} style={{ backgroundColor: 'rgba(0,0,0,0.5)', padding: 10, borderRadius: 20 }}
+                        accessibilityLabel="Fermer le lecteur de highlights"
+                        accessibilityRole="button"
+                    >
                         <Ionicons name="close" size={24} color="#FFF" />
                     </TouchableOpacity>
                     <View style={{ backgroundColor: 'rgba(26,115,232,0.8)', paddingHorizontal: 15, paddingVertical: 5, borderRadius: 15 }}>
@@ -35,7 +38,10 @@ export default function HighlightPlayer() {
                 <View style={{ padding: 20 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 20 }}>
                         <View style={{ alignItems: 'center', marginBottom: 20 }}>
-                            <TouchableOpacity style={{ backgroundColor: 'rgba(0,0,0,0.5)', padding: 15, borderRadius: 30, marginBottom: 5 }}>
+                            <TouchableOpacity style={{ backgroundColor: 'rgba(0,0,0,0.5)', padding: 15, borderRadius: 30, marginBottom: 5 }}
+                                accessibilityLabel="Partager le highlight"
+                                accessibilityRole="button"
+                            >
                                 <Ionicons name="share-social" size={24} color="#FFF" />
                             </TouchableOpacity>
                             <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>1.2k</Text>
@@ -47,7 +53,10 @@ export default function HighlightPlayer() {
                             <Text style={{ color: '#FFF', fontSize: 20, fontWeight: 'bold' }}>Highlight Reel #{id}</Text>
                             <Text style={{ color: '#8B949E', fontSize: 14, marginTop: 5 }}>14 Pts • 3 Ast • Généré en 2min</Text>
                         </View>
-                        <TouchableOpacity style={{ backgroundColor: '#1A73E8', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 25 }}>
+                        <TouchableOpacity style={{ backgroundColor: '#1A73E8', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 25 }}
+                            accessibilityLabel="Publier le highlight sur la communauté"
+                            accessibilityRole="button"
+                        >
                             <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Publier</Text>
                         </TouchableOpacity>
                     </View>
