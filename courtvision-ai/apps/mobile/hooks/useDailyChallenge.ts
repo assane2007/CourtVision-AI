@@ -12,6 +12,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { apiFetch } from '../lib/api'
 import { useStore } from '../lib/store'
 import { toast } from '../lib/toast'
+import { T } from '../lib/theme'
 
 export interface DailyChallenge {
     id: string
@@ -42,10 +43,10 @@ export interface DailyChallengeState {
 // ── Couleurs par difficulté ─────────────────────────────────────
 
 export const DIFFICULTY_COLORS: Record<string, string> = {
-    easy:       '#00C853',
-    medium:     '#00D4FF',
-    hard:       '#FF9800',
-    legendary:  '#FFD700',
+    easy:       T.colors.green,
+    medium:     T.colors.accent,
+    hard:       T.colors.orange,
+    legendary:  T.colors.gold,
 }
 
 export const DIFFICULTY_LABELS: Record<string, string> = {

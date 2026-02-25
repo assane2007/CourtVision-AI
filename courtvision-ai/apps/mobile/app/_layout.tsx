@@ -1,12 +1,13 @@
 import { Stack, useRouter, useSegments } from 'expo-router'
 import { useEffect } from 'react'
-import { AppState, AppStateStatus } from 'react-native'
+import { AppState, AppStateStatus, StatusBar } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import * as Notifications from 'expo-notifications'
 import { getAuthToken } from '../lib/api'
 import { useStore } from '../lib/store'
 import { ToastContainer } from '../components/Toast'
 import { usePushNotifications } from '../hooks/usePushNotifications'
+import { T } from '../lib/theme'
 
 // Configurer le comportement des notifications en foreground (une seule fois, au niveau module)
 Notifications.setNotificationHandler({
@@ -35,13 +36,12 @@ function AuthGuard() {
                 Notifications.setBadgeCountAsync(0).catch(() => {})
             }
         })
-        // Aussi au premier lancement
         Notifications.setBadgeCountAsync(0).catch(() => {})
         return () => subscription.remove()
     }, [])
 
     useEffect(() => {
-        if (!hydrated) return   // attendre que le store soit réhydraté avant de router
+        if (!hydrated) return
 
         let cancelled = false
 
@@ -53,7 +53,6 @@ function AuthGuard() {
             const inDashboard = first === '(dashboard)'
 
             if (token && !inDashboard) {
-                // Restore session — login will load profile + weekly data
                 await login(token)
                 if (!cancelled) {
                     await registerForPushNotifications()
@@ -62,7 +61,6 @@ function AuthGuard() {
             } else if (!token && inDashboard) {
                 if (!cancelled) router.replace('/')
             } else if (token && inDashboard) {
-                // Enregistrer les push notifications au lancement
                 registerForPushNotifications()
             }
         })()
@@ -76,11 +74,12 @@ function AuthGuard() {
 export default function RootLayout() {
     return (
         <SafeAreaProvider>
+            <StatusBar barStyle="light-content" backgroundColor={T.colors.bg} />
             <AuthGuard />
             <Stack
                 screenOptions={{
                     headerShown: false,
-                    contentStyle: { backgroundColor: '#0D1117' },
+                    contentStyle: { backgroundColor: T.colors.bg },
                     animation: 'slide_from_right',
                 }}
             >
@@ -94,7 +93,6 @@ export default function RootLayout() {
                 <Stack.Screen name="analysis/[id]" />
                 <Stack.Screen name="highlight/[id]" options={{ animation: 'fade' }} />
             </Stack>
-            {/* Toast notifications — visible above everything */}
             <ToastContainer />
         </SafeAreaProvider>
     )

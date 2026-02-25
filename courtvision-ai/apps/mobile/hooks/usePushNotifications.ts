@@ -21,6 +21,7 @@ import { useRouter } from 'expo-router'
 import { useStore } from '../lib/store'
 import { api } from '../lib/api'
 import { toast } from '../lib/toast'
+import { T } from '../lib/theme'
 
 // ── Configuration globale des notifications ───────────────────
 // À placer AVANT le premier rendu de l'app (dans _layout.tsx idéalement,
@@ -61,12 +62,15 @@ async function ensureAndroidChannel() {
         name: 'CourtVision AI',
         importance: Notifications.AndroidImportance.HIGH,
         vibrationPattern: [0, 250, 150, 250],
-        lightColor: '#1A73E8',
+        lightColor: T.colors.primary,
         sound: 'default',
         enableVibrate: true,
         showBadge: true,
     })
 }
+
+// ── Helpers web-safe (expo-notifications n'existe pas sur web) ──
+const isWeb = Platform.OS === 'web'
 
 // ── Hook principal ─────────────────────────────────────────────
 export function usePushNotifications() {
@@ -80,6 +84,7 @@ export function usePushNotifications() {
 
     // ── 1. Demande de permission + récupération du token ──────
     const registerForPushNotifications = useCallback(async (): Promise<string | null> => {
+        if (isWeb) return null
         try {
             await ensureAndroidChannel()
 
@@ -128,6 +133,7 @@ export function usePushNotifications() {
 
     // ── 2. Planifier le rappel streak (chaque soir à 20h) ─────
     const scheduleStreakReminder = useCallback(async (streak: number) => {
+        if (isWeb) return
         // Annuler l'ancien rappel streak avant d'en replanifier un
         await Notifications.cancelScheduledNotificationAsync(NOTIF_ID_STREAK).catch(() => {})
 
@@ -146,6 +152,7 @@ export function usePushNotifications() {
 
     // ── 3. Planifier le rappel daily challenge (chaque matin à 9h) ─
     const scheduleDailyChallengeReminder = useCallback(async () => {
+        if (isWeb) return
         await Notifications.cancelScheduledNotificationAsync(NOTIF_ID_CHALLENGE).catch(() => {})
 
         await Notifications.scheduleNotificationAsync({
@@ -163,6 +170,7 @@ export function usePushNotifications() {
 
     // ── 4. Annuler toutes les notifications planifiées ────────
     const cancelAllReminders = useCallback(async () => {
+        if (isWeb) return
         await Notifications.cancelAllScheduledNotificationsAsync()
         console.log('[PushNotifications] Toutes les notifications annulées')
     }, [])
@@ -173,6 +181,7 @@ export function usePushNotifications() {
         body: string,
         data?: Record<string, unknown>
     ) => {
+        if (isWeb) return
         await Notifications.scheduleNotificationAsync({
             content: { title, body, data, sound: true },
             trigger: null, // immédiate
@@ -181,6 +190,8 @@ export function usePushNotifications() {
 
     // ── 6. Listeners ─────────────────────────────────────────
     useEffect(() => {
+        if (isWeb) return
+
         // Foreground : afficher un toast in-app au lieu du bandeau système
         foregroundSub.current = Notifications.addNotificationReceivedListener(notification => {
             const { title, body, data } = notification.request.content

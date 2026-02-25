@@ -16,6 +16,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera'
 import { Ionicons } from '@expo/vector-icons'
 import type { LiveFramePayload } from '@courtvision/shared'
+import { T } from '../lib/theme'
 
 const FRAME_CAPTURE_INTERVAL_MS = 3000 // Capture toutes les 3 secondes
 
@@ -117,7 +118,7 @@ export function LiveCamera({ active, quarter, onFrame, compact = true }: LiveCam
         return (
             <View style={[styles.container, compact && styles.compact]}>
                 <View style={styles.permissionBox}>
-                    <Ionicons name="camera-outline" size={24} color="#8B949E" />
+                    <Ionicons name="camera-outline" size={24} color={T.colors.muted} />
                     <Text style={styles.permissionText}>
                         La caméra permet au Coach Live d'analyser ta posture en temps réel.
                     </Text>
@@ -144,7 +145,7 @@ export function LiveCamera({ active, quarter, onFrame, compact = true }: LiveCam
                 <View style={styles.overlay}>
                     {/* Status indicator */}
                     <View style={styles.statusRow}>
-                        <View style={[styles.statusDot, { backgroundColor: capturing ? '#FFB300' : '#00C853' }]} />
+                        <View style={[styles.statusDot, { backgroundColor: capturing ? T.colors.orange : T.colors.green }]} />
                         <Text style={styles.statusText}>
                             {capturing ? 'Capture...' : 'En veille'}
                         </Text>
@@ -152,7 +153,7 @@ export function LiveCamera({ active, quarter, onFrame, compact = true }: LiveCam
 
                     {/* Flip camera button */}
                     <TouchableOpacity style={styles.flipBtn} onPress={toggleFacing}>
-                        <Ionicons name="camera-reverse-outline" size={compact ? 16 : 22} color="#FFF" />
+                        <Ionicons name="camera-reverse-outline" size={compact ? 16 : 22} color={T.colors.white} />
                     </TouchableOpacity>
                 </View>
             </CameraView>
@@ -164,13 +165,13 @@ const styles = StyleSheet.create({
     container: {
         width: '100%',
         height: 200,
-        borderRadius: 12,
+        borderRadius: T.radius.md,
         overflow: 'hidden',
-        backgroundColor: '#000',
+        backgroundColor: T.colors.bg,
     },
     compact: {
         height: 100,
-        borderRadius: 10,
+        borderRadius: T.radius.sm,
     },
     camera: {
         flex: 1,
@@ -180,15 +181,17 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-end',
-        padding: 8,
+        padding: T.space.sm,
     },
     statusRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 6,
+        backgroundColor: 'rgba(5,10,18,0.65)',
+        paddingHorizontal: T.space.sm,
+        paddingVertical: T.space.xs,
+        borderRadius: T.radius.sm,
+        borderWidth: 1,
+        borderColor: T.colors.border,
     },
     statusDot: {
         width: 6,
@@ -197,37 +200,39 @@ const styles = StyleSheet.create({
         marginRight: 4,
     },
     statusText: {
-        color: '#FFF',
-        fontSize: 10,
+        color: T.colors.white,
+        fontSize: T.font.xs,
         fontWeight: '600',
     },
     flipBtn: {
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        padding: 6,
-        borderRadius: 6,
+        backgroundColor: 'rgba(5,10,18,0.65)',
+        padding: T.space.sm,
+        borderRadius: T.radius.sm,
+        borderWidth: 1,
+        borderColor: T.colors.border,
     },
     permissionBox: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 16,
-        backgroundColor: '#161B22',
+        padding: T.space.lg,
+        backgroundColor: T.colors.card,
     },
     permissionText: {
-        color: '#8B949E',
-        fontSize: 12,
+        color: T.colors.textSecondary,
+        fontSize: T.font.sm,
         textAlign: 'center',
-        marginVertical: 8,
+        marginVertical: T.space.sm,
     },
     permissionBtn: {
-        backgroundColor: '#1A73E8',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 8,
+        backgroundColor: T.colors.primary,
+        paddingHorizontal: T.space.lg,
+        paddingVertical: T.space.sm,
+        borderRadius: T.radius.sm,
     },
     permissionBtnText: {
-        color: '#FFF',
-        fontWeight: '600',
-        fontSize: 12,
+        color: T.colors.white,
+        fontWeight: '700',
+        fontSize: T.font.sm,
     },
 })

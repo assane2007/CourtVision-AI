@@ -1,42 +1,20 @@
 import {
     View, Text, TouchableOpacity, Animated,
-    ScrollView, StatusBar, Vibration, Modal,
+    ScrollView, StatusBar, Vibration, Modal, Platform,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons'
 import { useLiveCoach } from '../hooks/useLiveCoach'
 import { LiveCamera } from '../components/LiveCamera'
 import { useStore } from '../lib/store'
 import { XPBadge } from '../components/XPBadge'
+import { T } from '../lib/theme'
 
 // ==========================================
 // Constants & Helpers
 // ==========================================
-
-const COLORS = {
-    bg: '#0D1117',
-    card: '#161B22',
-    border: '#21262D',
-    accent: '#00D4FF',
-    accentDim: 'rgba(0,212,255,0.12)',
-    green: '#00C853',
-    greenDim: 'rgba(0,200,83,0.12)',
-    red: '#FF3D57',
-    redDim: 'rgba(255,61,87,0.12)',
-    orange: '#FF9800',
-    orangeDim: 'rgba(255,152,0,0.12)',
-    white: '#E6EDF3',
-    muted: '#8B949E',
-    dimText: '#484F58',
-}
-
-const ALERT_COLORS: Record<string, string> = {
-    info: COLORS.accent,
-    warning: COLORS.orange,
-    critical: COLORS.red,
-}
 
 const SHOT_ZONES = ['Paint', 'Mid-Range', '3-Pt', 'Floater']
 
@@ -47,13 +25,11 @@ function formatTime(sec: number): string {
 }
 
 function scoreColor(v: number): string {
-    if (v >= 80) return COLORS.green
-    if (v >= 60) return COLORS.orange
-    return COLORS.red
+    return T.scoreColor(v)
 }
 
 // ==========================================
-// MiniBar — thin animated bar
+// MiniBar — animated thin bar
 // ==========================================
 
 function MiniBar({ value, color, max = 100 }: { value: number; color: string; max?: number }) {
@@ -62,11 +38,9 @@ function MiniBar({ value, color, max = 100 }: { value: number; color: string; ma
         Animated.timing(anim, { toValue: value / max, duration: 500, useNativeDriver: false }).start()
     }, [value])
     return (
-        <View style={{ height: 4, backgroundColor: COLORS.border, borderRadius: 2, overflow: 'hidden', flex: 1 }}>
+        <View style={{ height: 4, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden', flex: 1 }}>
             <Animated.View style={{
-                height: 4,
-                borderRadius: 2,
-                backgroundColor: color,
+                height: 4, borderRadius: 2, backgroundColor: color,
                 width: anim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
             }} />
         </View>
@@ -74,150 +48,191 @@ function MiniBar({ value, color, max = 100 }: { value: number; color: string; ma
 }
 
 // ==========================================
-// StatChip — single stat card
+// StatChip — glass stat card
 // ==========================================
 
 function StatChip({ label, value, color, sub }: { label: string; value: string | number; color: string; sub?: string }) {
     return (
         <View style={{
-            flex: 1,
-            backgroundColor: COLORS.card,
-            borderRadius: 14,
-            paddingVertical: 12,
-            paddingHorizontal: 10,
+            flex: 1, borderRadius: T.radius.md,
+            paddingVertical: 14, paddingHorizontal: 12,
             alignItems: 'center',
-            borderWidth: 1,
-            borderColor: COLORS.border,
+            ...T.glass.light,
         }}>
-            <Text style={{ color: COLORS.muted, fontSize: 10, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <Text style={{ color: T.colors.muted, fontSize: 9, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: '700' }}>
                 {label}
             </Text>
-            <Text style={{ color, fontSize: 22, fontWeight: '800' }}>{value}</Text>
-            {sub ? <Text style={{ color: COLORS.dimText, fontSize: 10, marginTop: 2 }}>{sub}</Text> : null}
+            <Text style={{ color, fontSize: 24, fontWeight: '900' }}>{value}</Text>
+            {sub ? <Text style={{ color: T.colors.dim, fontSize: 10, marginTop: 2 }}>{sub}</Text> : null}
         </View>
     )
 }
 
 // ==========================================
-// AlertBanner
+// AlertBanner — glass style
 // ==========================================
 
 function AlertBanner({ alert }: { alert: any }) {
     const fadeAnim = useRef(new Animated.Value(0)).current
-    const translateY = useRef(new Animated.Value(-10)).current
+    const translateX = useRef(new Animated.Value(-20)).current
 
     useEffect(() => {
         Animated.parallel([
-            Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
-            Animated.timing(translateY, { toValue: 0, duration: 300, useNativeDriver: true }),
+            Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+            Animated.spring(translateX, { toValue: 0, useNativeDriver: true, tension: 80, friction: 10 }),
         ]).start()
     }, [alert])
 
-    const color = ALERT_COLORS[alert.severity] ?? COLORS.accent
+    const sevColors: Record<string, string> = {
+        info: T.colors.accent,
+        warning: T.colors.orange,
+        critical: T.colors.red,
+    }
+    const color = sevColors[alert.severity] ?? T.colors.accent
 
     return (
         <Animated.View style={{
             opacity: fadeAnim,
-            transform: [{ translateY }],
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: `${color}18`,
-            borderRadius: 12,
-            padding: 12,
-            marginBottom: 8,
-            borderLeftWidth: 3,
-            borderLeftColor: color,
+            transform: [{ translateX }],
+            flexDirection: 'row', alignItems: 'center',
+            borderRadius: T.radius.md,
+            padding: 14, marginBottom: 8,
+            backgroundColor: `${color}10`,
+            borderLeftWidth: 3, borderLeftColor: color,
+            borderWidth: 1, borderRightColor: 'transparent',
+            borderTopColor: 'transparent', borderBottomColor: 'transparent',
         }}>
             <View style={{
                 width: 8, height: 8, borderRadius: 4,
-                backgroundColor: color, marginRight: 10,
+                backgroundColor: color, marginRight: 12,
+                ...T.glow(color, 0.5),
             }} />
-            <Text style={{ color: COLORS.white, fontSize: 13, flex: 1, lineHeight: 18 }}>
+            <Text style={{ color: T.colors.white, fontSize: 13, flex: 1, lineHeight: 19, fontWeight: '500' }}>
                 {alert.message}
             </Text>
-            <Text style={{ color: COLORS.dimText, fontSize: 10, marginLeft: 8 }}>
-                {alert.severity?.toUpperCase()}
-            </Text>
+            <View style={{
+                backgroundColor: `${color}20`, borderRadius: 6,
+                paddingHorizontal: 8, paddingVertical: 2, marginLeft: 8,
+            }}>
+                <Text style={{ color, fontSize: 9, fontWeight: '800', letterSpacing: 0.5 }}>
+                    {alert.severity?.toUpperCase()}
+                </Text>
+            </View>
         </Animated.View>
     )
 }
 
 // ==========================================
-// Mental Pulse Ring
+// Mental Pulse Ring — futuristic
 // ==========================================
 
 function MentalRing({ score }: { score: number }) {
     const pulseAnim = useRef(new Animated.Value(1)).current
+    const rotateAnim = useRef(new Animated.Value(0)).current
     const color = scoreColor(score)
 
     useEffect(() => {
+        Animated.loop(Animated.sequence([
+            Animated.timing(pulseAnim, { toValue: 1.05, duration: 1400, useNativeDriver: true }),
+            Animated.timing(pulseAnim, { toValue: 1, duration: 1400, useNativeDriver: true }),
+        ])).start()
         Animated.loop(
-            Animated.sequence([
-                Animated.timing(pulseAnim, { toValue: 1.06, duration: 1400, useNativeDriver: true }),
-                Animated.timing(pulseAnim, { toValue: 1, duration: 1400, useNativeDriver: true }),
-            ])
+            Animated.timing(rotateAnim, { toValue: 1, duration: 6000, useNativeDriver: true })
         ).start()
     }, [])
 
+    const rotate = rotateAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] })
+
     return (
-        <Animated.View style={{
-            transform: [{ scale: pulseAnim }],
-            width: 90, height: 90, borderRadius: 45,
-            backgroundColor: `${color}18`,
-            borderWidth: 2.5, borderColor: color,
-            justifyContent: 'center', alignItems: 'center',
-            shadowColor: color, shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: 0.4, shadowRadius: 12,
-        }}>
-            <Text style={{ color, fontSize: 26, fontWeight: '900' }}>{score}</Text>
-            <Text style={{ color: COLORS.muted, fontSize: 9, fontWeight: '600' }}>MENTAL</Text>
-        </Animated.View>
+        <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+            {/* Outer rotating ring */}
+            <Animated.View style={{
+                position: 'absolute',
+                width: 100, height: 100, borderRadius: 50,
+                borderWidth: 1, borderColor: `${color}20`,
+                borderTopColor: `${color}60`,
+                transform: [{ rotate }],
+            }} />
+            {/* Main ring */}
+            <Animated.View style={{
+                transform: [{ scale: pulseAnim }],
+                width: 90, height: 90, borderRadius: 45,
+                backgroundColor: `${color}10`,
+                borderWidth: 2.5, borderColor: `${color}50`,
+                justifyContent: 'center', alignItems: 'center',
+                ...T.glow(color, 0.3),
+            }}>
+                <Text style={{ color, fontSize: 28, fontWeight: '900' }}>{score}</Text>
+                <Text style={{ color: T.colors.muted, fontSize: 8, fontWeight: '800', letterSpacing: 1 }}>MENTAL</Text>
+            </Animated.View>
+        </View>
     )
 }
 
 // ==========================================
-// End Report Modal
+// End Report Modal — Premium
 // ==========================================
 
 function EndReportModal({ visible, report, onClose }: { visible: boolean; report: any; onClose: () => void }) {
     if (!report) return null
     return (
         <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-            <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.bg }}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: T.colors.bg }}>
                 <ScrollView contentContainerStyle={{ padding: 24 }}>
+                    {/* Ambient glow */}
+                    <View style={{
+                        position: 'absolute', top: -80, alignSelf: 'center',
+                        width: 200, height: 200, borderRadius: 100,
+                        backgroundColor: 'rgba(0,229,255,0.05)',
+                    }} />
+
                     {/* Title */}
-                    <View style={{ alignItems: 'center', marginBottom: 24 }}>
-                        <Text style={{ fontSize: 40, marginBottom: 10 }}>🏀</Text>
-                        <Text style={{ color: COLORS.white, fontSize: 24, fontWeight: '900' }}>
-                            Match terminé
+                    <View style={{ alignItems: 'center', marginBottom: 28 }}>
+                        <View style={{
+                            width: 80, height: 80, borderRadius: 40,
+                            backgroundColor: 'rgba(0,229,255,0.08)',
+                            justifyContent: 'center', alignItems: 'center',
+                            marginBottom: 16,
+                            ...T.glow(T.colors.accent, 0.2),
+                        }}>
+                            <Text style={{ fontSize: 38 }}>🏀</Text>
+                        </View>
+                        <Text style={{ color: T.colors.white, fontSize: 26, fontWeight: '900', letterSpacing: -0.5 }}>
+                            Session terminée
                         </Text>
-                        <Text style={{ color: COLORS.muted, fontSize: 14, marginTop: 4 }}>
+                        <Text style={{ color: T.colors.muted, fontSize: 14, marginTop: 6 }}>
                             Rapport de fin de session
                         </Text>
                     </View>
 
-                    {/* Main stats row */}
-                    <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
-                        <StatChip label="Mental Final" value={report.mentalScore ?? '--'} color={scoreColor(report.mentalScore ?? 0)} sub="/ 100" />
-                        <StatChip label="Shooting %" value={`${report.shootingPct ?? 0}%`} color={COLORS.accent} sub={`${report.makes ?? 0}/${report.attempts ?? 0}`} />
-                        <StatChip label="Quarters" value={`Q${report.quarter ?? 1}`} color={COLORS.orange} />
+                    {/* Main stats */}
+                    <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+                        <StatChip label="Mental" value={report.mentalScore ?? '--'} color={scoreColor(report.mentalScore ?? 0)} sub="/ 100" />
+                        <StatChip label="Shooting" value={`${report.shootingPct ?? 0}%`} color={T.colors.accent} sub={`${report.makes ?? 0}/${report.attempts ?? 0}`} />
+                        <StatChip label="Quarter" value={`Q${report.quarter ?? 1}`} color={T.colors.orange} />
                     </View>
 
                     {/* Recommendations */}
                     {report.recommendations?.length > 0 && (
-                        <View style={{ marginBottom: 20 }}>
-                            <Text style={{ color: COLORS.white, fontWeight: '700', fontSize: 16, marginBottom: 10 }}>
+                        <View style={{ marginBottom: 24 }}>
+                            <Text style={{ color: T.colors.white, fontWeight: '800', fontSize: 16, marginBottom: 12, letterSpacing: -0.3 }}>
                                 💡 Recommandations IA
                             </Text>
                             {report.recommendations.map((rec: string, i: number) => (
                                 <View key={i} style={{
-                                    backgroundColor: COLORS.accentDim,
-                                    borderRadius: 12, padding: 14,
+                                    ...T.glass.accent,
+                                    borderRadius: T.radius.md, padding: 16,
                                     marginBottom: 8, flexDirection: 'row', alignItems: 'flex-start',
-                                    borderLeftWidth: 3, borderLeftColor: COLORS.accent,
                                 }}>
-                                    <Text style={{ color: COLORS.accent, fontSize: 13, marginRight: 8 }}>›</Text>
-                                    <Text style={{ color: COLORS.white, fontSize: 14, flex: 1, lineHeight: 20 }}>{rec}</Text>
+                                    <View style={{
+                                        width: 20, height: 20, borderRadius: 10,
+                                        backgroundColor: `${T.colors.accent}15`,
+                                        justifyContent: 'center', alignItems: 'center',
+                                        marginRight: 12, marginTop: 1,
+                                    }}>
+                                        <Text style={{ color: T.colors.accent, fontSize: 11, fontWeight: '800' }}>{i + 1}</Text>
+                                    </View>
+                                    <Text style={{ color: T.colors.white, fontSize: 14, flex: 1, lineHeight: 21 }}>{rec}</Text>
                                 </View>
                             ))}
                         </View>
@@ -225,19 +240,15 @@ function EndReportModal({ visible, report, onClose }: { visible: boolean; report
 
                     <TouchableOpacity
                         style={{
-                            backgroundColor: COLORS.accent,
-                            paddingVertical: 16,
-                            borderRadius: 28,
+                            backgroundColor: T.colors.accent,
+                            paddingVertical: 17, borderRadius: T.radius.pill,
                             alignItems: 'center',
-                            shadowColor: COLORS.accent,
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.3,
-                            shadowRadius: 10,
+                            ...T.glow(T.colors.accent, 0.3),
                         }}
                         onPress={onClose}
                         activeOpacity={0.85}
                     >
-                        <Text style={{ color: COLORS.bg, fontWeight: '800', fontSize: 17 }}>
+                        <Text style={{ color: T.colors.bg, fontWeight: '800', fontSize: 17 }}>
                             Retour au Dashboard
                         </Text>
                     </TouchableOpacity>
@@ -254,7 +265,7 @@ function EndReportModal({ visible, report, onClose }: { visible: boolean; report
 export default function LiveCoachScreen() {
     const router    = useRouter()
     const addXP     = useStore(s => s.addXP)
-    const sessionId = `session_${Date.now()}`
+    const sessionId = useRef(`session_${Date.now()}`).current  // FIX: useRef to avoid re-creating on every render
     const live      = useLiveCoach(sessionId)
     const [showZonePicker, setShowZonePicker]   = useState(false)
     const [pendingOutcome, setPendingOutcome]   = useState<'made' | 'missed' | null>(null)
@@ -269,9 +280,11 @@ export default function LiveCoachScreen() {
     }, [])
 
     // Show end report modal when session ends + reward XP
+    // FIX: Added ref to prevent double XP award
+    const xpAwarded = useRef(false)
     useEffect(() => {
-        if (live.phase === 'ended' && live.endReport) {
-            // Calculer XP de la session
+        if (live.phase === 'ended' && live.endReport && !xpAwarded.current) {
+            xpAwarded.current = true
             const totalShots = live.makeCount + live.missCount
             const baseXP     = 30
             const shotXP     = Math.min(totalShots * 2, 60)
@@ -284,77 +297,91 @@ export default function LiveCoachScreen() {
         }
     }, [live.phase, live.endReport])
 
-    const handleShotPress = (outcome: 'made' | 'missed') => {
+    const handleShotPress = useCallback((outcome: 'made' | 'missed') => {
         setPendingOutcome(outcome)
         setShowZonePicker(true)
-    }
+    }, [])
 
-    const handleZoneSelect = async (zone: string) => {
+    const handleZoneSelect = useCallback(async (zone: string) => {
         setShowZonePicker(false)
         if (pendingOutcome) {
-            await live.recordShot(pendingOutcome, zone as any)
-            Vibration.vibrate(pendingOutcome === 'made' ? 60 : [0, 80, 60, 80])
+            try {
+                await live.recordShot(pendingOutcome, zone as any)
+                Vibration.vibrate(pendingOutcome === 'made' ? 60 : [0, 80, 60, 80])
+            } catch (err) {
+                // FIX: Don't crash if recordShot fails
+                console.warn('[LiveCoach] Shot recording failed:', err)
+            }
         }
         setPendingOutcome(null)
-    }
+    }, [pendingOutcome, live.recordShot])
 
-    const handleClose = async () => {
+    const handleClose = useCallback(async () => {
         if (live.phase === 'active' || live.phase === 'break') {
-            await live.end()
+            try {
+                await live.end()
+            } catch {
+                // FIX: Navigate back even if end() fails
+                router.back()
+            }
         } else {
             router.back()
         }
-    }
+    }, [live.phase, live.end, router])
 
-    const handleEndReport = () => {
+    const handleEndReport = useCallback(() => {
         setShowEndReport(false)
         live.reset()
+        xpAwarded.current = false
         router.back()
-    }
+    }, [live.reset, router])
 
     const isActive = live.phase === 'active'
-    const isIdle = live.phase === 'idle'
+    const isIdle   = live.phase === 'idle'
 
     return (
-        <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
+        <View style={{ flex: 1, backgroundColor: T.colors.bg }}>
             <StatusBar barStyle="light-content" />
 
             {/* XP Popup */}
             {xpPopup && (
-                <View style={{
-                    position: 'absolute', zIndex: 9999,
-                    left: 0, right: 0, top: '30%', alignItems: 'center',
-                }}>
-                    <XPBadge
-                        amount={xpPopup.amount}
-                        label={xpPopup.label}
-                        onDone={() => setXpPopup(null)}
-                    />
+                <View style={{ position: 'absolute', zIndex: 9999, left: 0, right: 0, top: '30%', alignItems: 'center' }}>
+                    <XPBadge amount={xpPopup.amount} label={xpPopup.label} onDone={() => setXpPopup(null)} />
                 </View>
             )}
 
-            {/* Camera Zone */}
-            <View style={{ height: '38%', backgroundColor: '#000', position: 'relative' }}>
+            {/* ── Camera Zone ── */}
+            <View style={{ height: '38%', backgroundColor: '#000', position: 'relative', overflow: 'hidden' }}>
+                {/* Camera ambient glow */}
+                <View style={{
+                    position: 'absolute', bottom: -50, left: '25%',
+                    width: 200, height: 100, borderRadius: 100,
+                    backgroundColor: isActive ? 'rgba(255,59,92,0.08)' : 'rgba(0,229,255,0.05)',
+                    zIndex: 0,
+                }} />
+
                 {cameraVisible && (isActive || live.phase === 'break') ? (
-                    <LiveCamera
-                        active={isActive}
-                        quarter={live.quarter}
-                        onFrame={live.sendFrame}
-                        compact={false}
-                    />
+                    <LiveCamera active={isActive} quarter={live.quarter} onFrame={live.sendFrame} compact={false} />
                 ) : (
                     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                         {isIdle ? (
                             <View style={{ alignItems: 'center' }}>
-                                <MaterialCommunityIcons name="radar" size={60} color={`${COLORS.accent}60`} />
-                                <Text style={{ color: `${COLORS.accent}60`, marginTop: 10, fontSize: 13 }}>
+                                <View style={{
+                                    width: 80, height: 80, borderRadius: 40,
+                                    backgroundColor: 'rgba(0,229,255,0.06)',
+                                    justifyContent: 'center', alignItems: 'center',
+                                    ...T.glow(T.colors.accent, 0.15),
+                                }}>
+                                    <MaterialCommunityIcons name="radar" size={40} color={`${T.colors.accent}60`} />
+                                </View>
+                                <Text style={{ color: `${T.colors.accent}80`, marginTop: 14, fontSize: 13, fontWeight: '600' }}>
                                     Prêt à analyser
                                 </Text>
                             </View>
                         ) : (
                             <View style={{ alignItems: 'center' }}>
-                                <MaterialCommunityIcons name="radar" size={50} color={COLORS.accent} />
-                                <Text style={{ color: COLORS.muted, marginTop: 10, fontSize: 13 }}>
+                                <MaterialCommunityIcons name="radar" size={40} color={T.colors.accent} />
+                                <Text style={{ color: T.colors.muted, marginTop: 12, fontSize: 13 }}>
                                     {live.phase === 'connecting' ? 'Connexion...' : 'Session en pause'}
                                 </Text>
                             </View>
@@ -362,65 +389,64 @@ export default function LiveCoachScreen() {
                     </View>
                 )}
 
-                {/* Header Overlay */}
-                <SafeAreaView
-                    style={{ position: 'absolute', top: 0, left: 0, right: 0 }}
-                    pointerEvents="box-none"
-                >
+                {/* Header Overlay — HUD style */}
+                <SafeAreaView style={{ position: 'absolute', top: 0, left: 0, right: 0 }} pointerEvents="box-none">
                     <Animated.View style={{
                         opacity: headerAnim,
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        paddingHorizontal: 16,
-                        paddingTop: 10,
+                        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+                        paddingHorizontal: 16, paddingTop: 10,
                     }}>
                         {/* Close */}
                         <TouchableOpacity
                             onPress={handleClose}
                             style={{
-                                backgroundColor: 'rgba(0,0,0,0.5)',
-                                padding: 10,
-                                borderRadius: 20,
+                                backgroundColor: 'rgba(0,0,0,0.5)', padding: 10, borderRadius: 20,
+                                borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
                             }}
                             accessibilityLabel="Fermer le Coach Live"
                         >
                             <Ionicons name="close" size={22} color="#FFF" />
                         </TouchableOpacity>
 
-                        {/* Timer + Quarter */}
+                        {/* Timer + Quarter — HUD Badge */}
                         <View style={{
-                            backgroundColor: 'rgba(0,0,0,0.55)',
-                            paddingHorizontal: 16, paddingVertical: 8,
-                            borderRadius: 20, flexDirection: 'row',
-                            alignItems: 'center', gap: 10,
+                            backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 18, paddingVertical: 10,
+                            borderRadius: 24, flexDirection: 'row', alignItems: 'center', gap: 10,
+                            borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
                         }}>
                             {isActive && (
-                                <View style={{
+                                <Animated.View style={{
                                     width: 8, height: 8, borderRadius: 4,
-                                    backgroundColor: COLORS.red,
+                                    backgroundColor: T.colors.red,
+                                    ...T.glow(T.colors.red, 0.6),
                                 }} />
                             )}
-                            <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 15 }}>
+                            <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 16, fontVariant: ['tabular-nums'] }}>
                                 {formatTime(live.elapsedTime)}
                             </Text>
-                            <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
-                                Q{live.quarter}
-                            </Text>
+                            <View style={{
+                                backgroundColor: 'rgba(255,255,255,0.1)',
+                                borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2,
+                            }}>
+                                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '700' }}>
+                                    Q{live.quarter}
+                                </Text>
+                            </View>
                         </View>
 
-                        {/* SSE Indicator */}
+                        {/* SSE Status */}
                         <View style={{
-                            backgroundColor: 'rgba(0,0,0,0.5)',
-                            paddingHorizontal: 10, paddingVertical: 6,
-                            borderRadius: 14, flexDirection: 'row', alignItems: 'center',
+                            backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 12, paddingVertical: 8,
+                            borderRadius: 16, flexDirection: 'row', alignItems: 'center',
+                            borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
                         }}>
                             <View style={{
                                 width: 6, height: 6, borderRadius: 3,
-                                backgroundColor: live.sseConnected ? COLORS.green : COLORS.dimText,
-                                marginRight: 5,
+                                backgroundColor: live.sseConnected ? T.colors.green : T.colors.dim,
+                                marginRight: 6,
+                                ...live.sseConnected ? T.glow(T.colors.green, 0.5) : {},
                             }} />
-                            <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>
+                            <Text style={{ color: live.sseConnected ? T.colors.green : T.colors.dim, fontSize: 10, fontWeight: '800', letterSpacing: 1 }}>
                                 {live.sseConnected ? 'LIVE' : 'OFF'}
                             </Text>
                         </View>
@@ -428,55 +454,82 @@ export default function LiveCoachScreen() {
                 </SafeAreaView>
             </View>
 
-            {/* Main Panel */}
+            {/* ── Main Panel ── */}
             <ScrollView
                 style={{ flex: 1 }}
-                contentContainerStyle={{ padding: 16, paddingBottom: 30 }}
+                contentContainerStyle={{ padding: 16, paddingBottom: Platform.OS === 'ios' ? 40 : 30 }}
                 showsVerticalScrollIndicator={false}
             >
-
                 {/* ── Idle State ── */}
                 {isIdle && (
-                    <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-                        <Text style={{ color: COLORS.white, fontSize: 22, fontWeight: '800', marginBottom: 8 }}>
+                    <View style={{ alignItems: 'center', paddingVertical: 24 }}>
+                        <Text style={{ color: T.colors.white, fontSize: 24, fontWeight: '900', marginBottom: 8, letterSpacing: -0.5 }}>
                             Coach Live
                         </Text>
-                        <Text style={{ color: COLORS.muted, fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 28 }}>
+                        <Text style={{ color: T.colors.muted, fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 32 }}>
                             Lance une session pour recevoir des{'\n'}feedbacks IA en temps réel.
                         </Text>
+
+                        {/* Animated start button */}
                         <TouchableOpacity
                             style={{
-                                backgroundColor: COLORS.red,
-                                paddingVertical: 16,
-                                paddingHorizontal: 48,
-                                borderRadius: 30,
-                                flexDirection: 'row', alignItems: 'center', gap: 10,
-                                shadowColor: COLORS.red,
-                                shadowOffset: { width: 0, height: 6 },
-                                shadowOpacity: 0.4,
-                                shadowRadius: 12,
-                                elevation: 8,
+                                backgroundColor: T.colors.red,
+                                paddingVertical: 18, paddingHorizontal: 52,
+                                borderRadius: T.radius.pill,
+                                flexDirection: 'row', alignItems: 'center', gap: 12,
+                                ...T.glow(T.colors.red, 0.4),
                             }}
                             onPress={live.start}
                             activeOpacity={0.85}
                             accessibilityLabel="Démarrer le Coach Live"
                         >
-                            <MaterialCommunityIcons name="radar" size={22} color="#FFF" />
-                            <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 18 }}>
+                            <View style={{
+                                width: 36, height: 36, borderRadius: 18,
+                                backgroundColor: 'rgba(255,255,255,0.15)',
+                                justifyContent: 'center', alignItems: 'center',
+                            }}>
+                                <MaterialCommunityIcons name="radar" size={20} color="#FFF" />
+                            </View>
+                            <Text style={{ color: '#FFF', fontWeight: '900', fontSize: 18, letterSpacing: 0.3 }}>
                                 Lancer la session
                             </Text>
                         </TouchableOpacity>
+
+                        {/* Features list */}
+                        <View style={{ marginTop: 36, width: '100%', gap: 10 }}>
+                            {[
+                                { icon: '🧠', text: 'Analyse mentale en temps réel' },
+                                { icon: '🎯', text: 'Tracking de tes tirs et stats' },
+                                { icon: '⚡', text: 'Alertes IA instantanées' },
+                            ].map((feat, i) => (
+                                <View key={i} style={{
+                                    ...T.glass.light,
+                                    borderRadius: T.radius.md,
+                                    padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12,
+                                }}>
+                                    <Text style={{ fontSize: 18 }}>{feat.icon}</Text>
+                                    <Text style={{ color: T.colors.textSecondary, fontSize: 13, fontWeight: '500' }}>{feat.text}</Text>
+                                </View>
+                            ))}
+                        </View>
                     </View>
                 )}
 
                 {/* ── Connecting ── */}
                 {live.phase === 'connecting' && (
-                    <View style={{ alignItems: 'center', paddingVertical: 24 }}>
-                        <MaterialCommunityIcons name="radar" size={50} color={COLORS.accent} />
-                        <Text style={{ color: COLORS.white, fontSize: 18, fontWeight: '700', marginTop: 14 }}>
+                    <View style={{ alignItems: 'center', paddingVertical: 30 }}>
+                        <View style={{
+                            width: 80, height: 80, borderRadius: 40,
+                            backgroundColor: 'rgba(0,229,255,0.08)',
+                            justifyContent: 'center', alignItems: 'center',
+                            ...T.glow(T.colors.accent, 0.2),
+                        }}>
+                            <MaterialCommunityIcons name="radar" size={40} color={T.colors.accent} />
+                        </View>
+                        <Text style={{ color: T.colors.white, fontSize: 18, fontWeight: '800', marginTop: 16 }}>
                             Connexion au serveur IA...
                         </Text>
-                        <Text style={{ color: COLORS.muted, fontSize: 13, marginTop: 6 }}>
+                        <Text style={{ color: T.colors.muted, fontSize: 13, marginTop: 6 }}>
                             Initialisation de la session
                         </Text>
                     </View>
@@ -486,15 +539,14 @@ export default function LiveCoachScreen() {
                 {(isActive || live.phase === 'break') && (
                     <>
                         {/* Stats Row */}
-                        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
                             <MentalRing score={live.mentalScore} />
                             <View style={{ flex: 1, gap: 8 }}>
-                                {/* Shooting row */}
                                 <View style={{ flexDirection: 'row', gap: 8 }}>
                                     <StatChip
                                         label="Tirs"
                                         value={`${live.makeCount}/${live.makeCount + live.missCount}`}
-                                        color={COLORS.accent}
+                                        color={T.colors.accent}
                                         sub={`${live.shootingPct}%`}
                                     />
                                     <StatChip
@@ -506,17 +558,16 @@ export default function LiveCoachScreen() {
                                 </View>
                                 {/* Fatigue */}
                                 <View style={{
-                                    backgroundColor: COLORS.card,
-                                    borderRadius: 12, padding: 10,
+                                    ...T.glass.light,
+                                    borderRadius: T.radius.md, padding: 12,
                                     flexDirection: 'row', alignItems: 'center', gap: 10,
-                                    borderWidth: 1, borderColor: COLORS.border,
                                 }}>
-                                    <Text style={{ color: COLORS.muted, fontSize: 11 }}>Fatigue</Text>
+                                    <Text style={{ color: T.colors.muted, fontSize: 10, fontWeight: '700', letterSpacing: 0.5 }}>FATIGUE</Text>
                                     <MiniBar
                                         value={live.fatigueIndex}
-                                        color={live.fatigueIndex > 70 ? COLORS.red : live.fatigueIndex > 40 ? COLORS.orange : COLORS.green}
+                                        color={live.fatigueIndex > 70 ? T.colors.red : live.fatigueIndex > 40 ? T.colors.orange : T.colors.green}
                                     />
-                                    <Text style={{ color: COLORS.white, fontSize: 12, fontWeight: '700', minWidth: 28, textAlign: 'right' }}>
+                                    <Text style={{ color: T.colors.white, fontSize: 13, fontWeight: '800', minWidth: 32, textAlign: 'right' }}>
                                         {live.fatigueIndex}%
                                     </Text>
                                 </View>
@@ -525,15 +576,21 @@ export default function LiveCoachScreen() {
 
                         {/* Confidence */}
                         <View style={{
-                            backgroundColor: COLORS.card, borderRadius: 12,
+                            ...T.glass.accent,
+                            borderRadius: T.radius.md,
                             padding: 12, marginBottom: 12,
                             flexDirection: 'row', alignItems: 'center', gap: 12,
-                            borderWidth: 1, borderColor: COLORS.border,
                         }}>
-                            <FontAwesome5 name="brain" size={16} color={COLORS.accent} />
-                            <Text style={{ color: COLORS.muted, fontSize: 12 }}>Confiance IA</Text>
-                            <MiniBar value={live.confidence * 100} color={COLORS.accent} />
-                            <Text style={{ color: COLORS.accent, fontSize: 12, fontWeight: '700', minWidth: 36, textAlign: 'right' }}>
+                            <View style={{
+                                width: 32, height: 32, borderRadius: 16,
+                                backgroundColor: `${T.colors.accent}12`,
+                                justifyContent: 'center', alignItems: 'center',
+                            }}>
+                                <FontAwesome5 name="brain" size={14} color={T.colors.accent} />
+                            </View>
+                            <Text style={{ color: T.colors.muted, fontSize: 12, fontWeight: '600' }}>Confiance IA</Text>
+                            <MiniBar value={live.confidence * 100} color={T.colors.accent} />
+                            <Text style={{ color: T.colors.accent, fontSize: 13, fontWeight: '800', minWidth: 36, textAlign: 'right' }}>
                                 {Math.round(live.confidence * 100)}%
                             </Text>
                         </View>
@@ -541,23 +598,23 @@ export default function LiveCoachScreen() {
                         {/* Mental Trend */}
                         {live.mentalHistory.length > 1 && (
                             <View style={{
-                                backgroundColor: COLORS.card, borderRadius: 14,
+                                ...T.glass.light,
+                                borderRadius: T.radius.md,
                                 padding: 14, marginBottom: 12,
-                                borderWidth: 1, borderColor: COLORS.border,
                             }}>
-                                <Text style={{ color: COLORS.muted, fontSize: 11, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                    Tendance mentale
+                                <Text style={{ color: T.colors.muted, fontSize: 9, marginBottom: 10, fontWeight: '800', letterSpacing: 1 }}>
+                                    TENDANCE MENTALE
                                 </Text>
-                                <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 30, gap: 3 }}>
-                                    {live.mentalHistory.slice(-12).map((v, i) => (
+                                <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 32, gap: 3 }}>
+                                    {live.mentalHistory.slice(-12).map((v, i, arr) => (
                                         <View
                                             key={i}
                                             style={{
                                                 flex: 1,
-                                                height: `${Math.max(10, v)}%`,
-                                                borderRadius: 3,
+                                                height: `${Math.max(12, v)}%`,
+                                                borderRadius: 4,
                                                 backgroundColor: scoreColor(v),
-                                                opacity: 0.6 + (i / 12) * 0.4,
+                                                opacity: 0.5 + (i / arr.length) * 0.5,
                                             }}
                                         />
                                     ))}
@@ -566,129 +623,118 @@ export default function LiveCoachScreen() {
                         )}
 
                         {/* Shot Buttons */}
-                        <View style={{ marginBottom: 12 }}>
-                            <Text style={{ color: COLORS.muted, fontSize: 11, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                Enregistrer un tir
+                        <View style={{ marginBottom: 14 }}>
+                            <Text style={{ color: T.colors.muted, fontSize: 9, marginBottom: 10, fontWeight: '800', letterSpacing: 1 }}>
+                                ENREGISTRER UN TIR
                             </Text>
                             <View style={{ flexDirection: 'row', gap: 10 }}>
                                 <TouchableOpacity
                                     style={{
-                                        flex: 1, paddingVertical: 16, borderRadius: 16,
-                                        backgroundColor: COLORS.greenDim,
-                                        borderWidth: 1.5, borderColor: COLORS.green,
+                                        flex: 1, paddingVertical: 16, borderRadius: T.radius.lg,
+                                        backgroundColor: `${T.colors.green}10`,
+                                        borderWidth: 1.5, borderColor: `${T.colors.green}40`,
                                         alignItems: 'center', flexDirection: 'row',
                                         justifyContent: 'center', gap: 8,
                                     }}
                                     onPress={() => handleShotPress('made')}
                                     activeOpacity={0.75}
-                                    accessibilityLabel="Tir réussi"
                                 >
-                                    <Ionicons name="checkmark-circle" size={22} color={COLORS.green} />
-                                    <Text style={{ color: COLORS.green, fontWeight: '800', fontSize: 16 }}>Réussi</Text>
+                                    <Ionicons name="checkmark-circle" size={22} color={T.colors.green} />
+                                    <Text style={{ color: T.colors.green, fontWeight: '800', fontSize: 16 }}>Réussi</Text>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
                                     style={{
-                                        flex: 1, paddingVertical: 16, borderRadius: 16,
-                                        backgroundColor: COLORS.redDim,
-                                        borderWidth: 1.5, borderColor: COLORS.red,
+                                        flex: 1, paddingVertical: 16, borderRadius: T.radius.lg,
+                                        backgroundColor: `${T.colors.red}10`,
+                                        borderWidth: 1.5, borderColor: `${T.colors.red}40`,
                                         alignItems: 'center', flexDirection: 'row',
                                         justifyContent: 'center', gap: 8,
                                     }}
                                     onPress={() => handleShotPress('missed')}
                                     activeOpacity={0.75}
-                                    accessibilityLabel="Tir raté"
                                 >
-                                    <Ionicons name="close-circle" size={22} color={COLORS.red} />
-                                    <Text style={{ color: COLORS.red, fontWeight: '800', fontSize: 16 }}>Raté</Text>
+                                    <Ionicons name="close-circle" size={22} color={T.colors.red} />
+                                    <Text style={{ color: T.colors.red, fontWeight: '800', fontSize: 16 }}>Raté</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
 
                         {/* Alerts Feed */}
                         {live.alerts.length > 0 && (
-                            <View style={{ marginBottom: 12 }}>
-                                <Text style={{ color: COLORS.muted, fontSize: 11, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                    Feedback IA
+                            <View style={{ marginBottom: 14 }}>
+                                <Text style={{ color: T.colors.muted, fontSize: 9, marginBottom: 10, fontWeight: '800', letterSpacing: 1 }}>
+                                    FEEDBACK IA
                                 </Text>
                                 {live.alerts.slice(0, 3).map((alert, i) => (
-                                    <AlertBanner key={i} alert={alert} />
+                                    <AlertBanner key={`${i}-${alert.message}`} alert={alert} />
                                 ))}
                             </View>
                         )}
 
                         {/* Quarter Controls */}
                         <View style={{
-                            backgroundColor: COLORS.card, borderRadius: 16,
-                            padding: 14, marginBottom: 12,
-                            borderWidth: 1, borderColor: COLORS.border,
+                            ...T.glass.light,
+                            borderRadius: T.radius.lg, padding: 16, marginBottom: 14,
                         }}>
-                            <Text style={{ color: COLORS.muted, fontSize: 11, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                Quart-temps — Q{live.quarter}
+                            <Text style={{ color: T.colors.muted, fontSize: 9, marginBottom: 12, fontWeight: '800', letterSpacing: 1 }}>
+                                QUART-TEMPS — Q{live.quarter}
                             </Text>
                             <View style={{ flexDirection: 'row', gap: 8 }}>
                                 <TouchableOpacity
                                     style={{
-                                        flex: 1, paddingVertical: 12, borderRadius: 12,
-                                        backgroundColor: COLORS.orangeDim,
-                                        borderWidth: 1, borderColor: COLORS.orange,
+                                        flex: 1, paddingVertical: 13, borderRadius: T.radius.md,
+                                        backgroundColor: `${T.colors.orange}10`,
+                                        borderWidth: 1, borderColor: `${T.colors.orange}30`,
                                         alignItems: 'center',
                                     }}
                                     onPress={live.endQuarter}
                                     activeOpacity={0.8}
-                                    accessibilityLabel="Terminer ce quart-temps"
                                 >
-                                    <Text style={{ color: COLORS.orange, fontWeight: '700', fontSize: 13 }}>
-                                        ⏸ Pause QT
-                                    </Text>
+                                    <Text style={{ color: T.colors.orange, fontWeight: '700', fontSize: 13 }}>⏸ Pause</Text>
                                 </TouchableOpacity>
 
                                 {live.phase === 'break' && (
                                     <TouchableOpacity
                                         style={{
-                                            flex: 1, paddingVertical: 12, borderRadius: 12,
-                                            backgroundColor: COLORS.accentDim,
-                                            borderWidth: 1, borderColor: COLORS.accent,
+                                            flex: 1, paddingVertical: 13, borderRadius: T.radius.md,
+                                            backgroundColor: `${T.colors.accent}10`,
+                                            borderWidth: 1, borderColor: `${T.colors.accent}30`,
                                             alignItems: 'center',
                                         }}
                                         onPress={live.nextQuarter}
                                         activeOpacity={0.8}
-                                        accessibilityLabel="Démarrer le prochain quart-temps"
                                     >
-                                        <Text style={{ color: COLORS.accent, fontWeight: '700', fontSize: 13 }}>
-                                            ▶ Q{live.quarter + 1}
-                                        </Text>
+                                        <Text style={{ color: T.colors.accent, fontWeight: '700', fontSize: 13 }}>▶ Q{live.quarter + 1}</Text>
                                     </TouchableOpacity>
                                 )}
 
                                 <TouchableOpacity
                                     style={{
-                                        flex: 1, paddingVertical: 12, borderRadius: 12,
-                                        backgroundColor: COLORS.redDim,
-                                        borderWidth: 1, borderColor: COLORS.red,
+                                        flex: 1, paddingVertical: 13, borderRadius: T.radius.md,
+                                        backgroundColor: `${T.colors.red}10`,
+                                        borderWidth: 1, borderColor: `${T.colors.red}30`,
                                         alignItems: 'center',
                                     }}
                                     onPress={live.end}
                                     activeOpacity={0.8}
-                                    accessibilityLabel="Terminer le match"
                                 >
-                                    <Text style={{ color: COLORS.red, fontWeight: '700', fontSize: 13 }}>
-                                        ⏹ Fin match
-                                    </Text>
+                                    <Text style={{ color: T.colors.red, fontWeight: '700', fontSize: 13 }}>⏹ Fin match</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
 
-                        {/* Error */}
+                        {/* Error inline */}
                         {live.error && (
                             <View style={{
-                                backgroundColor: COLORS.redDim, borderRadius: 12,
-                                padding: 12, marginBottom: 12,
-                                borderWidth: 1, borderColor: COLORS.red,
+                                ...T.glass.light,
+                                borderRadius: T.radius.md,
+                                padding: 14, marginBottom: 12,
+                                borderColor: `${T.colors.red}30`,
                                 flexDirection: 'row', alignItems: 'center',
                             }}>
-                                <Ionicons name="warning-outline" size={18} color={COLORS.red} style={{ marginRight: 8 }} />
-                                <Text style={{ color: COLORS.red, fontSize: 13, flex: 1 }}>{live.error}</Text>
+                                <Ionicons name="warning-outline" size={18} color={T.colors.red} style={{ marginRight: 10 }} />
+                                <Text style={{ color: T.colors.red, fontSize: 13, flex: 1 }}>{live.error}</Text>
                             </View>
                         )}
                     </>
@@ -696,78 +742,87 @@ export default function LiveCoachScreen() {
 
                 {/* Error Phase */}
                 {live.phase === 'error' && (
-                    <View style={{ alignItems: 'center', paddingVertical: 24 }}>
-                        <Ionicons name="warning-outline" size={50} color={COLORS.red} />
-                        <Text style={{ color: COLORS.white, fontSize: 18, fontWeight: '700', marginTop: 14 }}>
+                    <View style={{ alignItems: 'center', paddingVertical: 30 }}>
+                        <View style={{
+                            width: 72, height: 72, borderRadius: 36,
+                            backgroundColor: `${T.colors.red}10`,
+                            justifyContent: 'center', alignItems: 'center',
+                            marginBottom: 16,
+                        }}>
+                            <Ionicons name="warning-outline" size={32} color={T.colors.red} />
+                        </View>
+                        <Text style={{ color: T.colors.white, fontSize: 18, fontWeight: '800' }}>
                             Connexion perdue
                         </Text>
-                        <Text style={{ color: COLORS.muted, fontSize: 13, marginTop: 6, textAlign: 'center', lineHeight: 20 }}>
+                        <Text style={{ color: T.colors.muted, fontSize: 13, marginTop: 8, textAlign: 'center', lineHeight: 20 }}>
                             {live.error ?? 'Erreur de connexion au serveur IA.'}
                         </Text>
                         <TouchableOpacity
                             style={{
-                                backgroundColor: COLORS.accent, borderRadius: 14,
-                                paddingHorizontal: 28, paddingVertical: 12, marginTop: 20,
+                                backgroundColor: T.colors.accent, borderRadius: T.radius.md,
+                                paddingHorizontal: 32, paddingVertical: 14, marginTop: 24,
+                                ...T.glow(T.colors.accent, 0.2),
                             }}
                             onPress={live.reset}
                         >
-                            <Text style={{ color: COLORS.bg, fontWeight: '700' }}>
-                                Réessayer
-                            </Text>
+                            <Text style={{ color: T.colors.bg, fontWeight: '800' }}>Réessayer</Text>
                         </TouchableOpacity>
                     </View>
                 )}
-
             </ScrollView>
 
-            {/* Zone Picker Modal */}
+            {/* ── Zone Picker Modal ── */}
             <Modal visible={showZonePicker} transparent animationType="fade">
                 <TouchableOpacity
-                    style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}
+                    style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}
                     activeOpacity={1}
-                    onPress={() => setShowZonePicker(false)}
+                    onPress={() => { setShowZonePicker(false); setPendingOutcome(null) }}
                 >
                     <View style={{
-                        backgroundColor: COLORS.card, borderTopLeftRadius: 24,
-                        borderTopRightRadius: 24, padding: 24,
-                        borderTopWidth: 1, borderTopColor: COLORS.border,
+                        backgroundColor: T.colors.card,
+                        borderTopLeftRadius: T.radius.xxl,
+                        borderTopRightRadius: T.radius.xxl,
+                        padding: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+                        borderTopWidth: 1, borderTopColor: T.colors.border,
                     }}>
-                        <Text style={{ color: COLORS.white, fontSize: 16, fontWeight: '700', marginBottom: 16, textAlign: 'center' }}>
+                        {/* Handle */}
+                        <View style={{ width: 40, height: 4, backgroundColor: T.colors.dimmer, borderRadius: 2, alignSelf: 'center', marginBottom: 20 }} />
+
+                        <Text style={{ color: T.colors.white, fontSize: 18, fontWeight: '800', marginBottom: 18, textAlign: 'center', letterSpacing: -0.3 }}>
                             Zone de tir
                         </Text>
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
-                            {SHOT_ZONES.map(zone => (
-                                <TouchableOpacity
-                                    key={zone}
-                                    style={{
-                                        paddingHorizontal: 22, paddingVertical: 12,
-                                        borderRadius: 14, borderWidth: 1.5,
-                                        borderColor: pendingOutcome === 'made' ? COLORS.green : COLORS.red,
-                                        backgroundColor: pendingOutcome === 'made' ? COLORS.greenDim : COLORS.redDim,
-                                    }}
-                                    onPress={() => handleZoneSelect(zone.toLowerCase().replace('-', '_'))}
-                                    activeOpacity={0.75}
-                                >
-                                    <Text style={{
-                                        color: pendingOutcome === 'made' ? COLORS.green : COLORS.red,
-                                        fontWeight: '700', fontSize: 14,
-                                    }}>
-                                        {zone}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
+                            {SHOT_ZONES.map(zone => {
+                                const isMade = pendingOutcome === 'made'
+                                const color = isMade ? T.colors.green : T.colors.red
+                                return (
+                                    <TouchableOpacity
+                                        key={zone}
+                                        style={{
+                                            paddingHorizontal: 24, paddingVertical: 14,
+                                            borderRadius: T.radius.md,
+                                            borderWidth: 1.5, borderColor: `${color}40`,
+                                            backgroundColor: `${color}10`,
+                                        }}
+                                        onPress={() => handleZoneSelect(zone.toLowerCase().replace('-', '_'))}
+                                        activeOpacity={0.75}
+                                    >
+                                        <Text style={{ color, fontWeight: '700', fontSize: 14 }}>{zone}</Text>
+                                    </TouchableOpacity>
+                                )
+                            })}
                         </View>
                         <TouchableOpacity
-                            style={{ marginTop: 16, alignItems: 'center', padding: 10 }}
+                            style={{ marginTop: 18, alignItems: 'center', padding: 12 }}
                             onPress={() => handleZoneSelect('unspecified')}
                         >
-                            <Text style={{ color: COLORS.muted, fontSize: 13 }}>Zone non précisée</Text>
+                            <Text style={{ color: T.colors.muted, fontSize: 13 }}>Zone non précisée</Text>
                         </TouchableOpacity>
                     </View>
                 </TouchableOpacity>
             </Modal>
 
-            {/* End Report Modal */}
+            {/* ── End Report Modal ── */}
             <EndReportModal
                 visible={showEndReport}
                 report={live.endReport ? {

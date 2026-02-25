@@ -9,11 +9,7 @@ import { useEffect, useRef } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { useStore, selectStreak } from '../lib/store'
-
-const C = {
-    bg: '#1A0A00', border: '#FF6B00', orange: '#FFB300',
-    white: '#E6EDF3', muted: '#8B949E',
-}
+import { T } from '../lib/theme'
 
 interface StreakReminderBannerProps {
     onDismiss?: () => void
@@ -47,33 +43,34 @@ export function StreakReminderBanner({ onDismiss }: StreakReminderBannerProps) {
         <Animated.View style={{
             transform: [{ translateY: slideAnim }],
             opacity: opacAnim,
-            backgroundColor: '#1A0A00',
-            borderRadius: 16, marginHorizontal: 16, marginBottom: 12,
-            padding: 14, flexDirection: 'row', alignItems: 'center',
-            borderWidth: 1.5, borderColor: '#FF6B00',
-            shadowColor: '#FF6B00', shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.3, shadowRadius: 10,
+            borderRadius: T.radius.lg, marginHorizontal: T.space.lg, marginBottom: T.space.md,
+            padding: T.space.md, flexDirection: 'row', alignItems: 'center',
+            ...T.glass.light,
+            borderWidth: 1.5, borderColor: T.colors.orange,
+            ...T.glow(T.colors.orange, 0.2),
         }}>
-            <Text style={{ fontSize: 28, marginRight: 12 }}>🔥</Text>
+            <Text style={{ fontSize: 28, marginRight: T.space.md }}>🔥</Text>
             <View style={{ flex: 1 }}>
-                <Text style={{ color: C.orange, fontSize: 14, fontWeight: '800' }}>
+                <Text style={{ color: T.colors.orange, fontSize: T.font.md, fontWeight: '800' }}>
                     Streak {streak}j en danger !
                 </Text>
-                <Text style={{ color: '#B06020', fontSize: 12, marginTop: 2 }}>
+                <Text style={{ color: T.colors.muted, fontSize: T.font.sm, marginTop: 2 }}>
                     Lance une session pour ne pas le perdre
                 </Text>
             </View>
             <TouchableOpacity
                 onPress={() => { dismiss(); router.push('/(dashboard)/upload') }}
+                activeOpacity={0.8}
                 style={{
-                    backgroundColor: '#FF6B00', borderRadius: 12,
-                    paddingHorizontal: 12, paddingVertical: 7, marginRight: 8,
+                    backgroundColor: T.colors.orange, borderRadius: T.radius.sm,
+                    paddingHorizontal: 12, paddingVertical: 7, marginRight: T.space.sm,
+                    ...T.shadow(T.colors.orange, 0.3, 8),
                 }}
             >
-                <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 12 }}>Jouer →</Text>
+                <Text style={{ color: T.colors.bg, fontWeight: '800', fontSize: T.font.sm }}>Jouer →</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={dismiss}>
-                <Ionicons name="close" size={18} color="#B06020" />
+                <Ionicons name="close" size={18} color={T.colors.muted} />
             </TouchableOpacity>
         </Animated.View>
     )

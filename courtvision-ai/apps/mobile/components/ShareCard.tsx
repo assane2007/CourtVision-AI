@@ -2,30 +2,32 @@ import { View, Text, TouchableOpacity, Animated, ActivityIndicator, Modal, Dimen
 import { useRef, useEffect, useState } from 'react'
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons'
 import type { TwinCardData, SharePlatform } from '../hooks/useViralShare'
+import { T } from '../lib/theme'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const CARD_WIDTH = SCREEN_WIDTH - 48
 const CARD_HEIGHT = CARD_WIDTH * 1.45
 
-// ==========================================
-// Couleurs
-// ==========================================
-const COLORS = {
-    bg: '#0D1117',
-    card: '#161B22',
-    cardLight: '#1C2333',
-    border: '#30363D',
-    accent: '#00D4FF',
-    accentDim: 'rgba(0,212,255,0.15)',
-    green: '#00C853',
-    greenDim: 'rgba(0,200,83,0.15)',
-    red: '#FF3D57',
-    orange: '#FF9800',
-    purple: '#B388FF',
-    purpleDim: 'rgba(179,136,255,0.15)',
-    white: '#E6EDF3',
-    muted: '#8B949E',
-    gold: '#FFD700',
+// Alias for backward compatibility within this file
+const COLORS = T.colors as any
+// Add missing aliases
+const _COLORS = {
+    ...T.colors,
+    accentDim: T.colors.accentDim,
+    greenDim: T.colors.greenDim,
+    purpleDim: T.colors.purpleDim,
+    bg: T.colors.bg,
+    card: T.colors.card,
+    cardLight: T.colors.cardElevated,
+    border: T.colors.border,
+    accent: T.colors.accent,
+    green: T.colors.green,
+    red: T.colors.red,
+    orange: T.colors.orange,
+    purple: T.colors.purple,
+    white: T.colors.white,
+    muted: T.colors.muted,
+    gold: T.colors.gold,
 }
 
 const STYLE_EMOJIS: Record<string, string> = {
@@ -37,7 +39,7 @@ const PLATFORM_ICONS: Record<SharePlatform, { name: string; color: string; label
     tiktok: { name: 'musical-notes', color: '#EE1D52', label: 'TikTok' },
     instagram: { name: 'logo-instagram', color: '#E4405F', label: 'Instagram' },
     twitter: { name: 'logo-twitter', color: '#1DA1F2', label: 'Twitter/X' },
-    generic: { name: 'share-outline', color: COLORS.accent, label: 'Partager' },
+    generic: { name: 'share-outline', color: T.colors.accent, label: 'Partager' },
 }
 
 // ==========================================
@@ -61,70 +63,66 @@ export function TwinCard({ data, compact }: TwinCardProps) {
         ).start()
     }, [])
 
-    const ratingColor = data.overallRating >= 80 ? COLORS.green : data.overallRating >= 60 ? COLORS.accent : data.overallRating >= 40 ? COLORS.orange : COLORS.red
+    const ratingColor = T.ratingColor(data.overallRating)
 
     return (
         <View style={{
             width: compact ? CARD_WIDTH * 0.85 : CARD_WIDTH,
-            backgroundColor: '#0A0E14',
-            borderRadius: 20,
+            backgroundColor: T.colors.bg,
+            borderRadius: T.radius.xl,
             overflow: 'hidden',
             borderWidth: 1.5,
-            borderColor: ratingColor,
-            shadowColor: ratingColor,
-            shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: 0.4,
-            shadowRadius: 20,
-            elevation: 10,
+            borderColor: `${ratingColor}40`,
+            ...T.glow(ratingColor, 0.3),
         }}>
             {/* ── Header gradient zone ── */}
             <View style={{
                 paddingHorizontal: 20,
                 paddingTop: 20,
                 paddingBottom: 14,
-                backgroundColor: 'rgba(0,212,255,0.05)',
+                ...T.glass.accent,
                 borderBottomWidth: 1,
-                borderBottomColor: 'rgba(255,255,255,0.06)',
+                borderBottomColor: T.colors.border,
             }}>
                 {/* Top Row: Logo + Badge */}
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <Text style={{ fontSize: 16 }}>🏀</Text>
-                        <Text style={{ color: COLORS.accent, fontSize: 12, fontWeight: '800', marginLeft: 6, letterSpacing: 1 }}>
+                        <Text style={{ color: T.colors.accent, fontSize: 12, fontWeight: '800', marginLeft: 6, letterSpacing: 1 }}>
                             COURTVISION AI
                         </Text>
                     </View>
                     <View style={{
-                        backgroundColor: 'rgba(255,255,255,0.06)',
-                        borderRadius: 8,
+                        ...T.glass.light,
+                        borderRadius: T.radius.sm,
                         paddingHorizontal: 8,
                         paddingVertical: 3,
                     }}>
-                        <Text style={{ color: COLORS.muted, fontSize: 9, fontWeight: '600' }}>
+                        <Text style={{ color: T.colors.muted, fontSize: 9, fontWeight: '600' }}>
                             DIGITAL TWIN {data.modelVersion}
                         </Text>
                     </View>
                 </View>
 
                 {/* Player Name + Position */}
-                <Text style={{ color: COLORS.white, fontSize: compact ? 20 : 24, fontWeight: '900', letterSpacing: -0.5 }}>
+                <Text style={{ color: T.colors.white, fontSize: compact ? 20 : 24, fontWeight: '900', letterSpacing: -0.5 }}>
                     {data.fullName}
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
                     {data.position && (
                         <View style={{
-                            backgroundColor: COLORS.accentDim,
+                            backgroundColor: T.colors.accentDim,
                             borderRadius: 6,
                             paddingHorizontal: 8,
                             paddingVertical: 2,
                             marginRight: 8,
                         }}>
-                            <Text style={{ color: COLORS.accent, fontSize: 11, fontWeight: 'bold' }}>
+                            <Text style={{ color: T.colors.accent, fontSize: 11, fontWeight: 'bold' }}>
                                 {data.position}
                             </Text>
                         </View>
                     )}
-                    <Text style={{ color: COLORS.muted, fontSize: 11 }}>
+                    <Text style={{ color: T.colors.muted, fontSize: 11 }}>
                         @{data.username} • {data.sessionCount} sessions
                     </Text>
                 </View>
@@ -136,26 +134,25 @@ export function TwinCard({ data, compact }: TwinCardProps) {
                 alignItems: 'center',
                 justifyContent: 'center',
                 paddingVertical: compact ? 14 : 18,
-                backgroundColor: 'rgba(0,0,0,0.3)',
+                ...T.glass.light,
             }}>
                 {/* Rating Circle */}
                 <Animated.View style={{
                     width: compact ? 70 : 85,
                     height: compact ? 70 : 85,
                     borderRadius: compact ? 35 : 42.5,
-                    backgroundColor: ratingColor,
+                    backgroundColor: T.colors.card,
                     justifyContent: 'center',
                     alignItems: 'center',
-                    shadowColor: ratingColor,
-                    shadowOffset: { width: 0, height: 0 },
-                    shadowOpacity: 0.6,
-                    shadowRadius: 15,
+                    ...T.glow(ratingColor, 0.4),
+                    borderWidth: 2,
+                    borderColor: `${ratingColor}40`,
                     opacity: shimmerAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }),
                 }}>
-                    <Text style={{ color: '#FFF', fontSize: compact ? 28 : 34, fontWeight: '900' }}>
+                    <Text style={{ color: ratingColor, fontSize: compact ? 28 : 34, fontWeight: '900' }}>
                         {data.overallRating}
                     </Text>
-                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 8, fontWeight: '700' }}>
+                    <Text style={{ color: T.colors.muted, fontSize: 8, fontWeight: '700' }}>
                         OVERALL
                     </Text>
                 </Animated.View>
@@ -166,14 +163,14 @@ export function TwinCard({ data, compact }: TwinCardProps) {
                         <Text style={{ fontSize: 20 }}>
                             {STYLE_EMOJIS[data.playStyle] ?? '🏀'}
                         </Text>
-                        <Text style={{ color: COLORS.white, fontSize: 16, fontWeight: '800', marginLeft: 6 }}>
+                        <Text style={{ color: T.colors.white, fontSize: 16, fontWeight: '800', marginLeft: 6 }}>
                             {data.playStyleLabel}
                         </Text>
                     </View>
-                    <Text style={{ color: COLORS.muted, fontSize: 10, lineHeight: 14 }} numberOfLines={2}>
+                    <Text style={{ color: T.colors.muted, fontSize: 10, lineHeight: 14 }} numberOfLines={2}>
                         {data.playStyleDescription}
                     </Text>
-                    <Text style={{ color: COLORS.accent, fontSize: 10, fontWeight: '600', marginTop: 3 }}>
+                    <Text style={{ color: T.colors.accent, fontSize: 10, fontWeight: '600', marginTop: 3 }}>
                         Archétype : {data.nbaArchetype}
                     </Text>
                 </View>
@@ -183,7 +180,7 @@ export function TwinCard({ data, compact }: TwinCardProps) {
             <View style={{
                 flexDirection: 'row', flexWrap: 'wrap',
                 paddingHorizontal: 12, paddingVertical: 10,
-                borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.04)',
+                borderTopWidth: 1, borderTopColor: T.colors.border,
             }}>
                 {data.keyAttributes.map((attr: { name: string; value: number; emoji: string }, i: number) => (
                     <View key={i} style={{
@@ -194,11 +191,11 @@ export function TwinCard({ data, compact }: TwinCardProps) {
                         paddingHorizontal: 6,
                     }}>
                         <Text style={{ fontSize: 12, marginRight: 6 }}>{attr.emoji}</Text>
-                        <Text style={{ color: COLORS.muted, fontSize: 11, flex: 1 }} numberOfLines={1}>
+                        <Text style={{ color: T.colors.muted, fontSize: 11, flex: 1 }} numberOfLines={1}>
                             {attr.name}
                         </Text>
                         <Text style={{
-                            color: attr.value >= 80 ? COLORS.green : attr.value >= 60 ? COLORS.accent : COLORS.orange,
+                            color: T.ratingColor(attr.value),
                             fontSize: 13,
                             fontWeight: '800',
                         }}>
@@ -215,19 +212,19 @@ export function TwinCard({ data, compact }: TwinCardProps) {
                     alignItems: 'center',
                     paddingHorizontal: 16,
                     paddingVertical: 8,
-                    backgroundColor: 'rgba(255,215,0,0.06)',
+                    backgroundColor: T.colors.goldDim,
                     borderTopWidth: 1,
-                    borderTopColor: 'rgba(255,255,255,0.04)',
+                    borderTopColor: T.colors.border,
                 }}>
                     <Text style={{ fontSize: 14 }}>🏀</Text>
-                    <Text style={{ color: COLORS.muted, fontSize: 11, marginLeft: 6 }}>
+                    <Text style={{ color: T.colors.muted, fontSize: 11, marginLeft: 6 }}>
                         Comparable à
                     </Text>
-                    <Text style={{ color: COLORS.gold, fontSize: 12, fontWeight: '800', marginLeft: 4 }}>
+                    <Text style={{ color: T.colors.gold, fontSize: 12, fontWeight: '800', marginLeft: 4 }}>
                         {data.nbaCompPlayer}
                     </Text>
                     <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                        <Text style={{ color: COLORS.gold, fontSize: 11, fontWeight: 'bold' }}>
+                        <Text style={{ color: T.colors.gold, fontSize: 11, fontWeight: 'bold' }}>
                             {data.nbaCompSimilarity}% match
                         </Text>
                     </View>

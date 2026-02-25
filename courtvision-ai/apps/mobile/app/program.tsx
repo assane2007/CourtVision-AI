@@ -6,6 +6,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useStore } from '../lib/store'
 import { toast } from '../lib/toast'
 import { XPBadge } from '../components/XPBadge'
+import { T } from '../lib/theme'
 
 const WEEKLY_PROGRAM = [
     { day: 1, label: 'Lun', focus: 'Mécanique de tir',   duration: 45, done: true,  xp: 20 },
@@ -24,9 +25,9 @@ const TODAY_EXERCISES = [
 ]
 
 const INTENSITY_COLORS: Record<string, string> = {
-    Faible:  '#00C853',
-    Modérée: '#FF9800',
-    Haute:   '#FF3D57',
+    Faible:  T.colors.green,
+    Modérée: T.colors.orange,
+    Haute:   T.colors.red,
 }
 
 export default function TrainingProgram() {
@@ -38,6 +39,11 @@ export default function TrainingProgram() {
     const completedCount = exercises.filter(e => e.done).length
     const progressPct    = (completedCount / exercises.length) * 100
     const progressAnim   = useRef(new Animated.Value(0)).current
+    const fadeAnim       = useRef(new Animated.Value(0)).current
+
+    useEffect(() => {
+        Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start()
+    }, [])
 
     useEffect(() => {
         Animated.timing(progressAnim, {
@@ -50,9 +56,7 @@ export default function TrainingProgram() {
     const toggleExercise = useCallback((i: number) => {
         const ex = exercises[i]
         const nowDone = !ex.done
-
         setExercises(prev => prev.map((e, idx) => idx === i ? { ...e, done: !e.done } : e))
-
         if (nowDone) {
             addXP(ex.xp, ex.name)
             setXpPopup({ amount: ex.xp, label: ex.name })
@@ -63,71 +67,78 @@ export default function TrainingProgram() {
     const allDone = completedCount === exercises.length
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#0D1117' }}>
-            <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: T.colors.bg }}>
+            <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+            <ScrollView contentContainerStyle={{ padding: T.space.xl, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
 
                 {/* Header */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: T.space.xl }}>
                     <TouchableOpacity
                         onPress={() => router.back()}
                         style={{
-                            width: 38, height: 38, borderRadius: 12,
-                            backgroundColor: '#161B22', borderWidth: 1, borderColor: '#21262D',
+                            width: 42, height: 42, borderRadius: T.radius.md,
+                            ...T.glass.light,
                             justifyContent: 'center', alignItems: 'center', marginRight: 14,
                         }}
                         accessibilityRole="button"
                         accessibilityLabel="Retour"
                     >
-                        <Ionicons name="arrow-back" size={20} color="#E6EDF3" />
+                        <Ionicons name="arrow-back" size={20} color={T.colors.white} />
                     </TouchableOpacity>
                     <View style={{ flex: 1 }}>
-                        <Text style={{ color: '#E6EDF3', fontSize: 22, fontWeight: '800' }}>Programme 7 Jours</Text>
-                        <Text style={{ color: '#8B949E', fontSize: 12 }}>Généré par IA · basé sur tes faiblesses</Text>
+                        <Text style={{ color: T.colors.white, fontSize: T.font.xl, fontWeight: '900', letterSpacing: -0.3 }}>
+                            Programme 7 Jours
+                        </Text>
+                        <Text style={{ color: T.colors.textSecondary, fontSize: T.font.sm }}>
+                            Généré par IA · basé sur tes faiblesses
+                        </Text>
                     </View>
                 </View>
 
                 {/* XP popup */}
                 {xpPopup && (
-                    <XPBadge
-                        amount={xpPopup.amount}
-                        label={xpPopup.label}
-                        onDone={() => setXpPopup(null)}
-                    />
+                    <XPBadge amount={xpPopup.amount} label={xpPopup.label} onDone={() => setXpPopup(null)} />
                 )}
 
                 {/* Objectif semaine */}
                 <View style={{
-                    backgroundColor: 'rgba(26,115,232,0.12)', borderRadius: 16,
-                    padding: 16, borderWidth: 1, borderColor: 'rgba(26,115,232,0.4)',
-                    marginBottom: 24,
+                    ...T.glass.accent,
+                    borderRadius: T.radius.lg, padding: T.space.lg, marginBottom: T.space.xxl,
+                    ...T.glow(T.colors.accent, 0.08),
                 }}>
-                    <Text style={{ color: '#1A73E8', fontWeight: '700', marginBottom: 6, fontSize: 14 }}>
+                    <Text style={{ color: T.colors.accent, fontWeight: '700', marginBottom: 6, fontSize: T.font.md }}>
                         🎯 Objectif de la semaine
                     </Text>
-                    <Text style={{ color: '#E6EDF3', lineHeight: 22, fontSize: 13 }}>
+                    <Text style={{ color: T.colors.white, lineHeight: 22, fontSize: T.font.md }}>
                         Reconstruire ta confiance et stabiliser ton mental sous pression. Focus sur les tirs de mi-distance après drive.
                     </Text>
                 </View>
 
                 {/* Calendrier hebdo */}
-                <Text style={{ color: '#E6EDF3', fontWeight: '700', fontSize: 17, marginBottom: 12 }}>Cette semaine</Text>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 }}>
+                <Text style={{ color: T.colors.white, fontWeight: '800', fontSize: T.font.lg, marginBottom: T.space.md }}>
+                    Cette semaine
+                </Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: T.space.xxl }}>
                     {WEEKLY_PROGRAM.map(day => (
                         <View key={day.day} style={{ alignItems: 'center', flex: 1 }}>
-                            <Text style={{ color: '#8B949E', fontSize: 10, marginBottom: 4 }}>{day.label}</Text>
+                            <Text style={{ color: T.colors.muted, fontSize: T.font.xs + 1, marginBottom: 4 }}>{day.label}</Text>
                             <View style={{
-                                width: 36, height: 36, borderRadius: 18,
-                                backgroundColor: day.done ? '#00C853' : day.isToday ? '#1A73E8' : '#161B22',
+                                width: 38, height: 38, borderRadius: 19,
+                                backgroundColor: day.done ? T.colors.green : day.isToday ? T.colors.primary : T.colors.dimmer,
                                 justifyContent: 'center', alignItems: 'center',
                                 borderWidth: day.isToday ? 2 : 0,
-                                borderColor: '#00D4FF',
+                                borderColor: T.colors.accent,
+                                ...(day.done ? T.glow(T.colors.green, 0.2) : day.isToday ? T.glow(T.colors.accent, 0.2) : {}),
                             }}>
                                 {day.done
                                     ? <Ionicons name="checkmark" size={16} color="#FFF" />
-                                    : <Text style={{ color: day.isToday ? '#FFF' : '#8B949E', fontWeight: '700', fontSize: 12 }}>{day.day}</Text>
+                                    : <Text style={{
+                                        color: day.isToday ? '#FFF' : T.colors.muted,
+                                        fontWeight: '700', fontSize: T.font.sm + 1,
+                                    }}>{day.day}</Text>
                                 }
                             </View>
-                            <Text style={{ color: '#484F58', fontSize: 8, marginTop: 3, textAlign: 'center' }}>
+                            <Text style={{ color: T.colors.dim, fontSize: T.font.xs, marginTop: 3, textAlign: 'center' }}>
                                 +{day.xp}xp
                             </Text>
                         </View>
@@ -135,21 +146,30 @@ export default function TrainingProgram() {
                 </View>
 
                 {/* Séance du jour */}
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                    <Text style={{ color: '#E6EDF3', fontWeight: '700', fontSize: 17 }}>Séance d'aujourd'hui</Text>
-                    <View style={{ backgroundColor: '#161B22', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1, borderColor: '#21262D' }}>
-                        <Text style={{ color: '#8B949E', fontSize: 12 }}>⏱ 30 min</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: T.space.sm }}>
+                    <Text style={{ color: T.colors.white, fontWeight: '800', fontSize: T.font.lg }}>
+                        Séance d'aujourd'hui
+                    </Text>
+                    <View style={{
+                        ...T.glass.light,
+                        paddingHorizontal: 10, paddingVertical: 4, borderRadius: T.radius.sm,
+                    }}>
+                        <Text style={{ color: T.colors.textSecondary, fontSize: T.font.sm }}>⏱ 30 min</Text>
                     </View>
                 </View>
 
                 {/* Progress Bar animée */}
-                <View style={{ height: 8, backgroundColor: '#161B22', borderRadius: 4, marginBottom: 6, overflow: 'hidden', borderWidth: 1, borderColor: '#21262D' }}>
+                <View style={{
+                    height: 8, backgroundColor: T.colors.dimmer, borderRadius: 4,
+                    marginBottom: 6, overflow: 'hidden',
+                    borderWidth: 1, borderColor: T.colors.border,
+                }}>
                     <Animated.View style={{
-                        height: 8, borderRadius: 4, backgroundColor: '#00C853',
+                        height: 8, borderRadius: 4, backgroundColor: T.colors.green,
                         width: progressAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
                     }} />
                 </View>
-                <Text style={{ color: '#8B949E', fontSize: 12, marginBottom: 16 }}>
+                <Text style={{ color: T.colors.textSecondary, fontSize: T.font.sm, marginBottom: T.space.lg }}>
                     {completedCount}/{exercises.length} exercices · +{exercises.filter(e => e.done).reduce((a, e) => a + e.xp, 0)} XP gagnés
                 </Text>
 
@@ -157,15 +177,13 @@ export default function TrainingProgram() {
                     <TouchableOpacity
                         key={i}
                         style={{
-                            backgroundColor: '#161B22',
-                            borderRadius: 15,
-                            padding: 18,
-                            marginBottom: 10,
-                            flexDirection: 'row',
-                            alignItems: 'center',
+                            ...T.glass.light,
+                            borderRadius: T.radius.lg, padding: T.space.lg + 2, marginBottom: 10,
+                            flexDirection: 'row', alignItems: 'center',
                             opacity: ex.done ? 0.6 : 1,
                             borderWidth: 1,
-                            borderColor: ex.done ? 'rgba(0,200,83,0.25)' : '#21262D',
+                            borderColor: ex.done ? `${T.colors.green}40` : T.colors.border,
+                            ...(ex.done ? T.glow(T.colors.green, 0.06) : {}),
                         }}
                         onPress={() => toggleExercise(i)}
                         accessibilityRole="checkbox"
@@ -173,36 +191,40 @@ export default function TrainingProgram() {
                         accessibilityLabel={`${ex.done ? 'Décocher' : 'Cocher'} : ${ex.name}`}
                     >
                         <View style={{
-                            width: 28, height: 28, borderRadius: 14,
-                            backgroundColor: ex.done ? '#00C853' : 'transparent',
+                            width: 30, height: 30, borderRadius: 15,
+                            backgroundColor: ex.done ? T.colors.green : 'transparent',
                             borderWidth: 2,
-                            borderColor: ex.done ? '#00C853' : '#8B949E',
+                            borderColor: ex.done ? T.colors.green : T.colors.muted,
                             justifyContent: 'center', alignItems: 'center',
                             marginRight: 14,
+                            ...(ex.done ? T.glow(T.colors.green, 0.25) : {}),
                         }}>
                             {ex.done && <Ionicons name="checkmark" size={16} color="#FFF" />}
                         </View>
                         <View style={{ flex: 1 }}>
                             <Text style={{
-                                color: '#E6EDF3', fontWeight: '600', fontSize: 14,
+                                color: T.colors.white, fontWeight: '600', fontSize: T.font.md + 1,
                                 textDecorationLine: ex.done ? 'line-through' : 'none',
                             }}>
                                 {ex.name}
                             </Text>
-                            <Text style={{ color: '#8B949E', fontSize: 12, marginTop: 3 }}>
+                            <Text style={{ color: T.colors.textSecondary, fontSize: T.font.sm + 1, marginTop: 3 }}>
                                 {ex.reps}
                             </Text>
                         </View>
                         <View style={{ alignItems: 'flex-end', gap: 4 }}>
                             <View style={{
-                                backgroundColor: `${INTENSITY_COLORS[ex.intensity] ?? '#8B949E'}18`,
+                                backgroundColor: `${INTENSITY_COLORS[ex.intensity] ?? T.colors.muted}18`,
                                 borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2,
                             }}>
-                                <Text style={{ color: INTENSITY_COLORS[ex.intensity] ?? '#8B949E', fontSize: 10, fontWeight: '600' }}>
+                                <Text style={{
+                                    color: INTENSITY_COLORS[ex.intensity] ?? T.colors.muted,
+                                    fontSize: T.font.xs + 1, fontWeight: '600',
+                                }}>
                                     {ex.intensity}
                                 </Text>
                             </View>
-                            <Text style={{ color: '#B388FF', fontSize: 10, fontWeight: '700' }}>+{ex.xp} XP</Text>
+                            <Text style={{ color: T.colors.purple, fontSize: T.font.xs + 1, fontWeight: '700' }}>+{ex.xp} XP</Text>
                         </View>
                     </TouchableOpacity>
                 ))}
@@ -210,24 +232,28 @@ export default function TrainingProgram() {
                 {/* Completion card */}
                 {allDone && (
                     <Animated.View style={{
-                        backgroundColor: 'rgba(0,200,83,0.12)', borderRadius: 18,
-                        padding: 24, alignItems: 'center', marginTop: 8,
-                        borderWidth: 1, borderColor: 'rgba(0,200,83,0.35)',
+                        backgroundColor: T.colors.greenDim, borderRadius: T.radius.xl,
+                        padding: 24, alignItems: 'center', marginTop: T.space.sm,
+                        borderWidth: 1, borderColor: `${T.colors.green}50`,
+                        ...T.glow(T.colors.green, 0.15),
                     }}>
                         <Text style={{ fontSize: 36, marginBottom: 10 }}>🎉</Text>
-                        <Text style={{ color: '#00C853', fontWeight: '800', fontSize: 20 }}>Séance complétée !</Text>
-                        <Text style={{ color: '#8B949E', marginTop: 6, textAlign: 'center', fontSize: 13 }}>
+                        <Text style={{ color: T.colors.green, fontWeight: '900', fontSize: T.font.xl }}>
+                            Séance complétée !
+                        </Text>
+                        <Text style={{ color: T.colors.textSecondary, marginTop: 6, textAlign: 'center', fontSize: T.font.md }}>
                             +{TODAY_EXERCISES.reduce((a, e) => a + e.xp, 0)} XP · Streak maintenu 🔥
                         </Text>
                         <TouchableOpacity
                             style={{
-                                marginTop: 16, backgroundColor: '#00C853',
-                                borderRadius: 12, paddingHorizontal: 24, paddingVertical: 11,
+                                marginTop: 16, backgroundColor: T.colors.green,
+                                borderRadius: T.radius.md, paddingHorizontal: 24, paddingVertical: 11,
+                                ...T.glow(T.colors.green, 0.25),
                             }}
                             onPress={() => router.back()}
                             accessibilityRole="button"
                         >
-                            <Text style={{ color: '#0D1117', fontWeight: '800', fontSize: 14 }}>
+                            <Text style={{ color: T.colors.bg, fontWeight: '800', fontSize: T.font.md + 1 }}>
                                 Retour au Dashboard
                             </Text>
                         </TouchableOpacity>
@@ -235,6 +261,7 @@ export default function TrainingProgram() {
                 )}
 
             </ScrollView>
+            </Animated.View>
         </SafeAreaView>
     )
 }

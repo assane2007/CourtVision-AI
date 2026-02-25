@@ -1,17 +1,12 @@
 /**
- * XPBadge — Badge animé montrant un gain d'XP.
- * Apparaît avec une animation bounce, puis disparaît.
- * 
- * Usage :
- *   <XPBadge amount={25} label="Tir enregistré" onDone={() => {}} />
- * 
- * XPLevelBar — Barre de progression XP avec animation.
- *   <XPLevelBar xp={450} />
+ * XPBadge — Badge animé premium pour les gains d'XP.
+ * XPLevelBar — Barre de progression XP avec glow.
  */
 
 import React, { useEffect, useRef } from 'react'
 import { Animated, Text, View } from 'react-native'
 import { xpToNextLevel, xpToLevel } from '../lib/store'
+import { T } from '../lib/theme'
 
 // ─── XP Badge (popup) ─────────────────────────────────────────
 
@@ -28,15 +23,13 @@ export function XPBadge({ amount, label, onDone }: XPBadgeProps) {
 
     useEffect(() => {
         Animated.sequence([
-            // Pop in
             Animated.parallel([
                 Animated.spring(scale, { toValue: 1, tension: 100, friction: 8, useNativeDriver: true }),
                 Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
             ]),
-            // Float up + fade out
-            Animated.delay(1000),
+            Animated.delay(1200),
             Animated.parallel([
-                Animated.timing(translateY, { toValue: -30, duration: 500, useNativeDriver: true }),
+                Animated.timing(translateY, { toValue: -40, duration: 500, useNativeDriver: true }),
                 Animated.timing(opacity, { toValue: 0, duration: 500, useNativeDriver: true }),
             ]),
         ]).start(() => onDone?.())
@@ -44,30 +37,20 @@ export function XPBadge({ amount, label, onDone }: XPBadgeProps) {
 
     return (
         <Animated.View style={{
-            position: 'absolute',
-            alignSelf: 'center',
-            zIndex: 100,
+            position: 'absolute', alignSelf: 'center', zIndex: 100,
             transform: [{ scale }, { translateY }],
             opacity,
-            backgroundColor: 'rgba(179,136,255,0.2)',
-            borderRadius: 20,
-            paddingHorizontal: 14,
-            paddingVertical: 8,
-            borderWidth: 1.5,
-            borderColor: '#B388FF',
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6,
-            shadowColor: '#B388FF',
-            shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: 0.5,
-            shadowRadius: 10,
+            backgroundColor: `${T.colors.purple}18`,
+            borderRadius: T.radius.xl,
+            paddingHorizontal: 18,
+            paddingVertical: 10,
+            borderWidth: 1.5, borderColor: `${T.colors.purple}50`,
+            flexDirection: 'row', alignItems: 'center', gap: 8,
+            ...T.glow(T.colors.purple, 0.4),
         }}>
-            <Text style={{ fontSize: 14 }}>⚡</Text>
-            <Text style={{ color: '#B388FF', fontWeight: '800', fontSize: 15 }}>+{amount} XP</Text>
-            {label && (
-                <Text style={{ color: '#8B949E', fontSize: 12 }}>{label}</Text>
-            )}
+            <Text style={{ fontSize: 16 }}>⚡</Text>
+            <Text style={{ color: T.colors.purple, fontWeight: '900', fontSize: 16 }}>+{amount} XP</Text>
+            {label && <Text style={{ color: T.colors.muted, fontSize: 12 }}>{label}</Text>}
         </Animated.View>
     )
 }
@@ -94,58 +77,51 @@ export function XPLevelBar({ xp, compact = false }: XPLevelBarProps) {
 
     if (compact) {
         return (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <View style={{
-                    backgroundColor: 'rgba(179,136,255,0.2)',
-                    borderRadius: 10,
-                    paddingHorizontal: 8,
-                    paddingVertical: 3,
-                    borderWidth: 1,
-                    borderColor: 'rgba(179,136,255,0.4)',
+                    ...T.glass.light,
+                    backgroundColor: `${T.colors.purple}15`,
+                    borderColor: `${T.colors.purple}30`,
+                    borderRadius: T.radius.sm,
+                    paddingHorizontal: 10, paddingVertical: 4,
                 }}>
-                    <Text style={{ color: '#B388FF', fontSize: 11, fontWeight: '800' }}>LVL {level}</Text>
+                    <Text style={{ color: T.colors.purple, fontSize: 11, fontWeight: '900', letterSpacing: 0.5 }}>LVL {level}</Text>
                 </View>
-                <View style={{ flex: 1, height: 4, backgroundColor: '#21262D', borderRadius: 2, overflow: 'hidden' }}>
+                <View style={{ flex: 1, height: 4, backgroundColor: T.colors.dimmer, borderRadius: 2, overflow: 'hidden' }}>
                     <Animated.View style={{
-                        height: 4,
-                        borderRadius: 2,
-                        backgroundColor: '#B388FF',
+                        height: 4, borderRadius: 2,
+                        backgroundColor: T.colors.purple,
                         width: progressAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
+                        ...T.glow(T.colors.purple, 0.3),
                     }} />
                 </View>
-                <Text style={{ color: '#8B949E', fontSize: 10 }}>{current}/{needed}</Text>
+                <Text style={{ color: T.colors.muted, fontSize: 10, fontWeight: '600' }}>{current}/{needed}</Text>
             </View>
         )
     }
 
     return (
         <View style={{
-            backgroundColor: '#161B22',
-            borderRadius: 16,
-            padding: 14,
-            borderWidth: 1,
-            borderColor: '#21262D',
+            ...T.glass.light,
+            borderRadius: T.radius.lg,
+            padding: 16,
         }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <Text style={{ fontSize: 16 }}>⚡</Text>
-                    <Text style={{ color: '#E6EDF3', fontWeight: '700', fontSize: 15 }}>Niveau {level}</Text>
+                    <Text style={{ color: T.colors.white, fontWeight: '800', fontSize: 15 }}>Niveau {level}</Text>
                 </View>
-                <Text style={{ color: '#8B949E', fontSize: 12 }}>{current} / {needed} XP</Text>
+                <Text style={{ color: T.colors.muted, fontSize: 12, fontWeight: '600' }}>{current} / {needed} XP</Text>
             </View>
-            <View style={{ height: 8, backgroundColor: '#21262D', borderRadius: 4, overflow: 'hidden' }}>
+            <View style={{ height: 8, backgroundColor: T.colors.dimmer, borderRadius: 4, overflow: 'hidden' }}>
                 <Animated.View style={{
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: '#B388FF',
+                    height: 8, borderRadius: 4,
+                    backgroundColor: T.colors.purple,
                     width: progressAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
-                    shadowColor: '#B388FF',
-                    shadowOffset: { width: 0, height: 0 },
-                    shadowOpacity: 0.6,
-                    shadowRadius: 4,
+                    ...T.glow(T.colors.purple, 0.4),
                 }} />
             </View>
-            <Text style={{ color: '#484F58', fontSize: 10, marginTop: 6, textAlign: 'right' }}>
+            <Text style={{ color: T.colors.dim, fontSize: 10, marginTop: 6, textAlign: 'right' }}>
                 {Math.round(pct)}% vers le niveau {level + 1}
             </Text>
         </View>

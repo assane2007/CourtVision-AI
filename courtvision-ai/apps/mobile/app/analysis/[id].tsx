@@ -5,23 +5,16 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../lib/store'
 import { toast } from '../../lib/toast'
-
-// ── Colors ────────────────────────────────────────────────────
-const C = {
-    bg: '#0D1117', card: '#161B22', border: '#21262D',
-    accent: '#00D4FF', blue: '#1A73E8',
-    green: '#00C853', orange: '#FFB300', red: '#FF3D57', purple: '#B388FF',
-    white: '#E6EDF3', muted: '#8B949E', dim: '#484F58',
-}
+import { T } from '../../lib/theme'
 
 // ── Stat bars ─────────────────────────────────────────────────
 const RADAR_STATS = [
-    { label: 'Vitesse de tir', value: 78, color: C.accent },
-    { label: 'Précision (FG%)', value: 85, color: C.blue },
-    { label: 'Lecture du jeu',  value: 72, color: C.green },
-    { label: 'Score Mental',    value: 85, color: C.orange },
-    { label: 'Défense',         value: 60, color: C.red },
-    { label: 'Clutch Factor',   value: 90, color: C.purple },
+    { label: 'Vitesse de tir', value: 78, color: T.colors.accent },
+    { label: 'Précision (FG%)', value: 85, color: T.colors.primary },
+    { label: 'Lecture du jeu',  value: 72, color: T.colors.green },
+    { label: 'Score Mental',    value: 85, color: T.colors.orange },
+    { label: 'Défense',         value: 60, color: T.colors.red },
+    { label: 'Clutch Factor',   value: 90, color: T.colors.purple },
 ]
 
 // ── Heatmap ───────────────────────────────────────────────────
@@ -43,18 +36,25 @@ function RadarBar({ label, value, color, delay }: { label: string; value: number
     }, [])
     const grade = value >= 85 ? 'A+' : value >= 75 ? 'A' : value >= 65 ? 'B+' : value >= 55 ? 'B' : 'C'
     return (
-        <View style={{ marginBottom: 12 }}>
+        <View style={{ marginBottom: 14 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-                <Text style={{ color: C.muted, fontSize: 13 }}>{label}</Text>
+                <Text style={{ color: T.colors.textSecondary, fontSize: T.font.md }}>{label}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Text style={{ color: C.dim, fontSize: 11 }}>{grade}</Text>
-                    <Text style={{ color, fontSize: 14, fontWeight: '800' }}>{value}</Text>
+                    <View style={{
+                        backgroundColor: `${color}15`,
+                        paddingHorizontal: 6, paddingVertical: 2,
+                        borderRadius: T.radius.sm,
+                    }}>
+                        <Text style={{ color, fontSize: T.font.xs, fontWeight: '700' }}>{grade}</Text>
+                    </View>
+                    <Text style={{ color, fontSize: T.font.md, fontWeight: '900' }}>{value}</Text>
                 </View>
             </View>
-            <View style={{ height: 7, backgroundColor: C.border, borderRadius: 4, overflow: 'hidden' }}>
+            <View style={{ height: 6, backgroundColor: T.colors.dimmer, borderRadius: T.radius.sm, overflow: 'hidden' }}>
                 <Animated.View style={{
-                    height: 7, borderRadius: 4, backgroundColor: color,
+                    height: 6, borderRadius: T.radius.sm, backgroundColor: color,
                     width: anim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
+                    ...T.glow(color, 0.3),
                 }} />
             </View>
         </View>
@@ -64,16 +64,18 @@ function RadarBar({ label, value, color, delay }: { label: string; value: number
 // ── Insight row ───────────────────────────────────────────────
 function InsightRow({ text, type }: { text: string; type: 'good' | 'tip' | 'warn' }) {
     const icon = type === 'good' ? 'checkmark-circle' : type === 'tip' ? 'bulb-outline' : 'trending-up-outline'
-    const color = type === 'good' ? C.green : type === 'tip' ? C.accent : C.orange
+    const color = type === 'good' ? T.colors.green : type === 'tip' ? T.colors.accent : T.colors.orange
     return (
         <View style={{
             flexDirection: 'row', alignItems: 'flex-start',
-            backgroundColor: `${color}10`, borderRadius: 14,
-            padding: 13, marginBottom: 9,
+            ...T.glass.light,
+            backgroundColor: `${color}08`,
+            borderRadius: T.radius.md,
+            padding: T.space.lg, marginBottom: T.space.sm,
             borderLeftWidth: 3, borderLeftColor: color,
         }}>
             <Ionicons name={icon as any} size={18} color={color} style={{ marginRight: 10, marginTop: 1 }} />
-            <Text style={{ color: C.white, fontSize: 13, flex: 1, lineHeight: 20 }}>{text}</Text>
+            <Text style={{ color: T.colors.white, fontSize: T.font.md, flex: 1, lineHeight: 20 }}>{text}</Text>
         </View>
     )
 }
@@ -105,93 +107,108 @@ export default function AnalysisReport() {
     }
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: T.colors.bg }}>
             {/* Header */}
             <View style={{
                 flexDirection: 'row', alignItems: 'center',
-                paddingHorizontal: 20, paddingVertical: 14,
-                borderBottomWidth: 1, borderBottomColor: C.border,
+                paddingHorizontal: T.space.xl, paddingVertical: T.space.md,
+                borderBottomWidth: 1, borderBottomColor: T.colors.border,
             }}>
-                <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 14 }}>
-                    <Ionicons name="arrow-back" size={24} color={C.white} />
+                <TouchableOpacity onPress={() => router.back()} style={{
+                    marginRight: T.space.md,
+                    width: 38, height: 38, borderRadius: T.radius.sm,
+                    ...T.glass.light,
+                    justifyContent: 'center', alignItems: 'center',
+                }}>
+                    <Ionicons name="arrow-back" size={22} color={T.colors.white} />
                 </TouchableOpacity>
                 <View style={{ flex: 1 }}>
-                    <Text style={{ color: C.white, fontSize: 19, fontWeight: '800' }}>Rapport d'Analyse</Text>
-                    <Text style={{ color: C.muted, fontSize: 12, marginTop: 1 }}>Session #{id}</Text>
+                    <Text style={{ color: T.colors.white, fontSize: T.font.xl, fontWeight: '800', letterSpacing: -0.3 }}>
+                        Rapport d'Analyse
+                    </Text>
+                    <Text style={{ color: T.colors.muted, fontSize: T.font.sm, marginTop: 2 }}>Session #{id}</Text>
                 </View>
                 <TouchableOpacity
                     onPress={handleShare}
                     style={{
-                        backgroundColor: `${C.blue}20`, borderRadius: 10,
-                        paddingHorizontal: 10, paddingVertical: 6,
-                        flexDirection: 'row', alignItems: 'center', gap: 4,
+                        ...T.glass.primary,
+                        borderRadius: T.radius.sm,
+                        paddingHorizontal: 12, paddingVertical: 8,
+                        flexDirection: 'row', alignItems: 'center', gap: 5,
                     }}
                 >
-                    <Ionicons name="share-outline" size={16} color={C.blue} />
-                    <Text style={{ color: C.blue, fontSize: 12, fontWeight: '700' }}>Partager</Text>
+                    <Ionicons name="share-outline" size={16} color={T.colors.primaryLight} />
+                    <Text style={{ color: T.colors.primaryLight, fontSize: T.font.sm, fontWeight: '700' }}>Partager</Text>
                 </TouchableOpacity>
             </View>
 
             {/* Score Hero */}
             <View style={{
-                flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 16, gap: 10,
-                borderBottomWidth: 1, borderBottomColor: C.border,
+                flexDirection: 'row', paddingHorizontal: T.space.xl, paddingVertical: T.space.lg, gap: 10,
+                borderBottomWidth: 1, borderBottomColor: T.colors.border,
             }}>
                 <View style={{
-                    flex: 1.5, backgroundColor: C.blue, borderRadius: 18,
-                    padding: 18, alignItems: 'center',
-                    shadowColor: C.blue, shadowOffset: { width: 0, height: 6 },
-                    shadowOpacity: 0.4, shadowRadius: 12,
+                    flex: 1.5, backgroundColor: T.colors.primary, borderRadius: T.radius.lg,
+                    padding: T.space.lg, alignItems: 'center',
+                    ...T.glow(T.colors.primary, 0.45),
                 }}>
-                    <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12 }}>Tirs (Made/Att)</Text>
-                    <Text style={{ color: '#FFF', fontSize: 34, fontWeight: '900', marginVertical: 4 }}>14/22</Text>
-                    <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
-                        <Text style={{ color: '#FFF', fontSize: 11, fontWeight: '700' }}>63.6% · +12% vs Moy.</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: T.font.sm }}>Tirs (Made/Att)</Text>
+                    <Text style={{ color: '#FFF', fontSize: T.font.hero, fontWeight: '900', marginVertical: 4, letterSpacing: -1 }}>
+                        14/22
+                    </Text>
+                    <View style={{
+                        backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: T.radius.sm,
+                        paddingHorizontal: 10, paddingVertical: 4,
+                    }}>
+                        <Text style={{ color: '#FFF', fontSize: T.font.sm, fontWeight: '700' }}>63.6% · +12% vs Moy.</Text>
                     </View>
                 </View>
                 <View style={{ flex: 1, gap: 10 }}>
                     <View style={{
-                        backgroundColor: C.card, borderRadius: 14, padding: 14, alignItems: 'center', flex: 1,
-                        borderWidth: 1, borderColor: `${C.green}30`,
+                        ...T.glass.light,
+                        borderColor: `${T.colors.green}25`,
+                        borderRadius: T.radius.md, padding: T.space.md, alignItems: 'center', flex: 1,
                     }}>
-                        <Text style={{ color: C.muted, fontSize: 11 }}>Mental</Text>
-                        <Text style={{ color: C.green, fontSize: 24, fontWeight: '900' }}>
+                        <Text style={{ color: T.colors.muted, fontSize: T.font.sm }}>Mental</Text>
+                        <Text style={{ color: T.colors.green, fontSize: T.font.xxl, fontWeight: '900' }}>
                             {session?.mental_score ?? 85}
                         </Text>
-                        <Text style={{ color: C.green, fontSize: 9, fontWeight: '600', textAlign: 'center' }}>
+                        <Text style={{ color: T.colors.greenLight, fontSize: T.font.xs, fontWeight: '600', textAlign: 'center' }}>
                             {mentalLabel(session?.mental_score ?? 85)}
                         </Text>
                     </View>
                     <View style={{
-                        backgroundColor: C.card, borderRadius: 14, padding: 14, alignItems: 'center', flex: 1,
-                        borderWidth: 1, borderColor: C.border,
+                        ...T.glass.light,
+                        borderRadius: T.radius.md, padding: T.space.md, alignItems: 'center', flex: 1,
                     }}>
-                        <Text style={{ color: C.muted, fontSize: 11 }}>Grade</Text>
-                        <Text style={{ color: C.orange, fontSize: 24, fontWeight: '900' }}>
+                        <Text style={{ color: T.colors.muted, fontSize: T.font.sm }}>Grade</Text>
+                        <Text style={{ color: T.colors.orange, fontSize: T.font.xxl, fontWeight: '900' }}>
                             {session?.shooting_grade ?? 'A'}
                         </Text>
-                        <Text style={{ color: C.muted, fontSize: 9 }}>FG Grade</Text>
+                        <Text style={{ color: T.colors.muted, fontSize: T.font.xs }}>FG Grade</Text>
                     </View>
                 </View>
             </View>
 
-            {/* Tabs */}
+            {/* Tabs — Premium Glassmorphism Pill */}
             <View style={{
-                flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 10,
-                borderBottomWidth: 1, borderBottomColor: C.border, gap: 6,
+                flexDirection: 'row', marginHorizontal: T.space.xl, marginVertical: T.space.md,
+                ...T.glass.light,
+                borderRadius: T.radius.md, padding: 3, gap: 3,
             }}>
                 {(['stats', 'heatmap', 'report'] as const).map(tab => (
                     <TouchableOpacity
                         key={tab}
                         onPress={() => setActiveTab(tab)}
                         style={{
-                            flex: 1, paddingVertical: 9, borderRadius: 12, alignItems: 'center',
-                            backgroundColor: activeTab === tab ? C.blue : C.card,
+                            flex: 1, paddingVertical: 10, borderRadius: T.radius.sm, alignItems: 'center',
+                            backgroundColor: activeTab === tab ? T.colors.primary : 'transparent',
+                            ...(activeTab === tab ? T.glow(T.colors.primary, 0.25) : {}),
                         }}
                     >
                         <Text style={{
-                            color: activeTab === tab ? C.white : C.muted,
-                            fontWeight: '700', fontSize: 12,
+                            color: activeTab === tab ? T.colors.white : T.colors.muted,
+                            fontWeight: '700', fontSize: T.font.sm,
                         }}>
                             {tab === 'stats' ? '📊 Stats' : tab === 'heatmap' ? '🗺 Terrain' : '🤖 Coach IA'}
                         </Text>
@@ -201,17 +218,18 @@ export default function AnalysisReport() {
 
             <Animated.ScrollView
                 style={{ opacity: fadeAnim }}
-                contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
+                contentContainerStyle={{ padding: T.space.xl, paddingBottom: 120 }}
                 showsVerticalScrollIndicator={false}
             >
                 {activeTab === 'stats' && (
                     <>
-                        <Text style={{ color: C.white, fontSize: 16, fontWeight: '800', marginBottom: 14 }}>
+                        <Text style={{ color: T.colors.white, fontSize: T.font.lg, fontWeight: '800', marginBottom: T.space.md, letterSpacing: -0.3 }}>
                             📊 Radar des Compétences
                         </Text>
                         <View style={{
-                            backgroundColor: C.card, borderRadius: 18, padding: 18,
-                            marginBottom: 20, borderWidth: 1, borderColor: C.border,
+                            ...T.glass.medium,
+                            borderRadius: T.radius.lg, padding: T.space.lg,
+                            marginBottom: T.space.xl,
                         }}>
                             {RADAR_STATS.map((s, i) => (
                                 <RadarBar key={s.label} {...s} delay={i * 80} />
@@ -220,10 +238,10 @@ export default function AnalysisReport() {
 
                         {/* Comparaison */}
                         <View style={{
-                            backgroundColor: C.card, borderRadius: 18, padding: 18,
-                            borderWidth: 1, borderColor: `${C.accent}25`,
+                            ...T.glass.accent,
+                            borderRadius: T.radius.lg, padding: T.space.lg,
                         }}>
-                            <Text style={{ color: C.accent, fontSize: 14, fontWeight: '800', marginBottom: 12 }}>
+                            <Text style={{ color: T.colors.accent, fontSize: T.font.md, fontWeight: '800', marginBottom: T.space.md }}>
                                 ⚡ Évolution depuis la dernière session
                             </Text>
                             {/*
@@ -231,14 +249,18 @@ export default function AnalysisReport() {
                                 { label: 'Mental', prev: '80', now: '85', up: true },
                                 { label: 'Vitesse', prev: '80', now: '78', up: false },
                             ].map(row => (
-                                <View key={row.label} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                                    <Text style={{ color: C.muted, width: 80, fontSize: 13 }}>{row.label}</Text>
-                                    <Text style={{ color: C.dim, fontSize: 13 }}>{row.prev}</Text>
+                                <View key={row.label} style={{
+                                    flexDirection: 'row', alignItems: 'center', marginBottom: 10,
+                                    ...T.glass.light,
+                                    borderRadius: T.radius.sm, paddingHorizontal: T.space.md, paddingVertical: T.space.sm,
+                                }}>
+                                    <Text style={{ color: T.colors.textSecondary, width: 70, fontSize: T.font.md, fontWeight: '600' }}>{row.label}</Text>
+                                    <Text style={{ color: T.colors.dim, fontSize: T.font.md }}>{row.prev}</Text>
                                     <Ionicons
-                                        name={row.up ? 'arrow-forward' : 'arrow-forward'}
-                                        size={14} color={C.muted} style={{ marginHorizontal: 8 }}
+                                        name="arrow-forward"
+                                        size={14} color={T.colors.muted} style={{ marginHorizontal: 8 }}
                                     />
-                                    <Text style={{ color: row.up ? C.green : C.red, fontSize: 13, fontWeight: '700' }}>
+                                    <Text style={{ color: row.up ? T.colors.green : T.colors.red, fontSize: T.font.md, fontWeight: '700' }}>
                                         {row.now} {row.up ? '↑' : '↓'}
                                     </Text>
                                 </View>
@@ -249,27 +271,38 @@ export default function AnalysisReport() {
 
                 {activeTab === 'heatmap' && (
                     <>
-                        <Text style={{ color: C.white, fontSize: 16, fontWeight: '800', marginBottom: 12 }}>
+                        <Text style={{ color: T.colors.white, fontSize: T.font.lg, fontWeight: '800', marginBottom: T.space.md, letterSpacing: -0.3 }}>
                             🗺 Heatmap Terrain
                         </Text>
                         <View style={{
-                            height: 260, backgroundColor: C.card, borderRadius: 18,
-                            marginBottom: 16, borderWidth: 1, borderColor: C.border,
+                            height: 260, ...T.glass.medium,
+                            borderRadius: T.radius.lg,
+                            marginBottom: T.space.lg,
                             overflow: 'hidden', position: 'relative',
                         }}>
                             {/* Court lines */}
-                            <View style={{ position: 'absolute', top: 20, left: 20, right: 20, bottom: 20, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 8 }} />
-                            <View style={{ position: 'absolute', bottom: 20, left: '30%', right: '30%', height: '40%', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', borderBottomWidth: 0 }} />
-                            <View style={{ position: 'absolute', bottom: '35%', left: '25%', right: '25%', height: 50, borderTopLeftRadius: 60, borderTopRightRadius: 60, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', borderBottomWidth: 0 }} />
-                            <View style={{ position: 'absolute', bottom: 20, left: '5%', right: '5%', height: '70%', borderTopLeftRadius: 200, borderTopRightRadius: 200, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', borderBottomWidth: 0 }} />
+                            <View style={{ position: 'absolute', top: 20, left: 20, right: 20, bottom: 20, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.06)', borderRadius: 8 }} />
+                            <View style={{ position: 'absolute', bottom: 20, left: '30%', right: '30%', height: '40%', borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)', borderBottomWidth: 0 }} />
+                            <View style={{ position: 'absolute', bottom: '35%', left: '25%', right: '25%', height: 50, borderTopLeftRadius: 60, borderTopRightRadius: 60, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)', borderBottomWidth: 0 }} />
+                            <View style={{ position: 'absolute', bottom: 20, left: '5%', right: '5%', height: '70%', borderTopLeftRadius: 200, borderTopRightRadius: 200, borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)', borderBottomWidth: 0 }} />
 
                             {HEATMAP_ZONES.map((z, i) => {
                                 const pct = z.made / z.att
-                                const color = pct >= 0.7 ? C.green : pct >= 0.5 ? C.orange : C.red
+                                const color = pct >= 0.7 ? T.colors.green : pct >= 0.5 ? T.colors.orange : T.colors.red
                                 return (
                                     <View key={i} style={{ position: 'absolute', left: z.left, top: z.top, transform: [{ translateX: -14 }, { translateY: -14 }] }}>
-                                        <View style={{ position: 'absolute', width: 28, height: 28, borderRadius: 14, backgroundColor: color, opacity: z.intensity * 0.3, transform: [{ scale: 2.2 }] }} />
-                                        <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: color, opacity: z.intensity, borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' }}>
+                                        <View style={{
+                                            position: 'absolute', width: 28, height: 28, borderRadius: 14,
+                                            backgroundColor: color, opacity: z.intensity * 0.25,
+                                            transform: [{ scale: 2.4 }],
+                                        }} />
+                                        <View style={{
+                                            width: 26, height: 26, borderRadius: 13,
+                                            backgroundColor: color, opacity: z.intensity,
+                                            borderWidth: 2, borderColor: 'rgba(255,255,255,0.15)',
+                                            justifyContent: 'center', alignItems: 'center',
+                                            ...T.glow(color, 0.3),
+                                        }}>
                                             <Text style={{ color: '#FFF', fontSize: 7, fontWeight: '900' }}>{z.made}/{z.att}</Text>
                                         </View>
                                     </View>
@@ -277,18 +310,23 @@ export default function AnalysisReport() {
                             })}
 
                             <View style={{ position: 'absolute', top: 10, right: 12, flexDirection: 'row', gap: 10 }}>
-                                {[{ c: C.green, l: '≥70%' }, { c: C.orange, l: '≥50%' }, { c: C.red, l: '<50%' }].map(({ c, l }) => (
-                                    <View key={l} style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                                        <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: c }} />
-                                        <Text style={{ color: C.muted, fontSize: 9 }}>{l}</Text>
+                                {[{ c: T.colors.green, l: '≥70%' }, { c: T.colors.orange, l: '≥50%' }, { c: T.colors.red, l: '<50%' }].map(({ c, l }) => (
+                                    <View key={l} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                        <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: c, ...T.glow(c, 0.4) }} />
+                                        <Text style={{ color: T.colors.muted, fontSize: T.font.xs }}>{l}</Text>
                                     </View>
                                 ))}
                             </View>
                         </View>
 
-                        <View style={{ backgroundColor: C.card, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: C.border }}>
-                            <Text style={{ color: C.accent, fontWeight: '700', fontSize: 13, marginBottom: 8 }}>Zone chaude du match</Text>
-                            <Text style={{ color: C.white, fontSize: 13, lineHeight: 20 }}>
+                        <View style={{
+                            ...T.glass.accent,
+                            borderRadius: T.radius.md, padding: T.space.lg,
+                        }}>
+                            <Text style={{ color: T.colors.accent, fontWeight: '700', fontSize: T.font.md, marginBottom: T.space.sm }}>
+                                Zone chaude du match
+                            </Text>
+                            <Text style={{ color: T.colors.white, fontSize: T.font.md, lineHeight: 20 }}>
                                 5/6 dans le corner gauche (83% FG) — Ta zone de prédilection. Continue à créer dans cet espace.
                             </Text>
                         </View>
@@ -298,26 +336,27 @@ export default function AnalysisReport() {
                 {activeTab === 'report' && (
                     <>
                         <View style={{
-                            backgroundColor: C.card, borderRadius: 18, padding: 18,
-                            marginBottom: 20, borderWidth: 1, borderColor: `${C.accent}30`,
-                            borderLeftWidth: 4, borderLeftColor: C.accent,
+                            ...T.glass.accent,
+                            borderRadius: T.radius.lg, padding: T.space.lg,
+                            marginBottom: T.space.xl,
+                            borderLeftWidth: 4, borderLeftColor: T.colors.accent,
                         }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: T.space.md }}>
                                 <Text style={{ fontSize: 18, marginRight: 8 }}>🤖</Text>
-                                <Text style={{ color: C.accent, fontSize: 15, fontWeight: '800' }}>Analyse Coach IA (Groq)</Text>
+                                <Text style={{ color: T.colors.accent, fontSize: T.font.base, fontWeight: '800' }}>Analyse Coach IA (Groq)</Text>
                             </View>
-                            <Text style={{ color: C.white, fontSize: 14, lineHeight: 24, marginBottom: 12 }}>
-                                Excellente lecture de jeu aujourd'hui. Ton temps de prise de décision sur pick-and-roll a baissé de <Text style={{ color: C.green, fontWeight: '700' }}>15%</Text> — c'est significatif.
+                            <Text style={{ color: T.colors.white, fontSize: T.font.md, lineHeight: 24, marginBottom: T.space.md }}>
+                                Excellente lecture de jeu aujourd'hui. Ton temps de prise de décision sur pick-and-roll a baissé de <Text style={{ color: T.colors.green, fontWeight: '700' }}>15%</Text> — c'est significatif.
                             </Text>
-                            <Text style={{ color: C.white, fontSize: 14, lineHeight: 24, marginBottom: 12 }}>
-                                Mécanique de tir très fluide — angle du coude constant à <Text style={{ color: C.blue, fontWeight: '700' }}>92°</Text>. Ton body language est resté positif même après tes deux ratés consécutifs au Q3.
+                            <Text style={{ color: T.colors.white, fontSize: T.font.md, lineHeight: 24, marginBottom: T.space.md }}>
+                                Mécanique de tir très fluide — angle du coude constant à <Text style={{ color: T.colors.primaryLight, fontWeight: '700' }}>92°</Text>. Ton body language est resté positif même après tes deux ratés consécutifs au Q3.
                             </Text>
-                            <Text style={{ color: C.white, fontSize: 14, lineHeight: 24 }}>
+                            <Text style={{ color: T.colors.white, fontSize: T.font.md, lineHeight: 24 }}>
                                 Conseil : Travaille ta reprise d'appuis sur les tirs en sortie de dribble côté faible. 3 exercices ajoutés dans ton programme.
                             </Text>
                         </View>
 
-                        <Text style={{ color: C.white, fontSize: 16, fontWeight: '800', marginBottom: 10 }}>
+                        <Text style={{ color: T.colors.white, fontSize: T.font.lg, fontWeight: '800', marginBottom: T.space.sm, letterSpacing: -0.3 }}>
                             💡 Points Clés
                         </Text>
                         <InsightRow type="good" text="Mécanique de tir : coude à 92° constant — au-dessus de ta moyenne sur 30 dernières sessions." />
@@ -326,13 +365,15 @@ export default function AnalysisReport() {
                         <InsightRow type="tip"  text="Temps de décision en sortie de pick-and-roll encore perfectible (-15% → vise -25% d'ici 2 semaines)." />
 
                         <View style={{
-                            backgroundColor: `${C.purple}10`, borderRadius: 14, padding: 14,
-                            borderWidth: 1, borderColor: `${C.purple}30`, marginTop: 6,
+                            ...T.glass.light,
+                            backgroundColor: T.colors.purpleDim,
+                            borderColor: `${T.colors.purple}30`,
+                            borderRadius: T.radius.md, padding: T.space.lg, marginTop: T.space.sm,
                         }}>
-                            <Text style={{ color: C.purple, fontWeight: '700', fontSize: 13, marginBottom: 6 }}>
+                            <Text style={{ color: T.colors.purple, fontWeight: '700', fontSize: T.font.md, marginBottom: T.space.sm }}>
                                 🎯 Objectif pour la prochaine session
                             </Text>
-                            <Text style={{ color: C.white, fontSize: 13, lineHeight: 20 }}>
+                            <Text style={{ color: T.colors.white, fontSize: T.font.md, lineHeight: 20 }}>
                                 Atteindre 70% FG depuis le corner gauche et réduire le temps de décision pick-and-roll à moins de 1.2s.
                             </Text>
                         </View>
@@ -343,21 +384,22 @@ export default function AnalysisReport() {
             {/* ── Sticky CTA ── */}
             <View style={{
                 position: 'absolute', bottom: 0, left: 0, right: 0,
-                paddingHorizontal: 20, paddingBottom: 30, paddingTop: 12,
-                backgroundColor: C.bg, borderTopWidth: 1, borderTopColor: C.border,
+                paddingHorizontal: T.space.xl, paddingBottom: 30, paddingTop: T.space.md,
+                backgroundColor: T.colors.bg, borderTopWidth: 1, borderTopColor: T.colors.border,
             }}>
                 <TouchableOpacity
                     style={{
-                        backgroundColor: C.blue, paddingVertical: 15, borderRadius: 30,
+                        backgroundColor: T.colors.primary, paddingVertical: 16, borderRadius: T.radius.pill,
                         alignItems: 'center', flexDirection: 'row', justifyContent: 'center',
-                        shadowColor: C.blue, shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.4, shadowRadius: 10,
+                        ...T.glow(T.colors.primary, 0.45),
                     }}
                     onPress={() => router.push(`/highlight/${id}`)}
                     activeOpacity={0.85}
                 >
                     <Ionicons name="play" size={20} color="#FFF" style={{ marginRight: 10 }} />
-                    <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 17 }}>🎬 Regarder le Highlight Reel</Text>
+                    <Text style={{ color: '#FFF', fontWeight: '800', fontSize: T.font.lg, letterSpacing: 0.3 }}>
+                        🎬 Regarder le Highlight Reel
+                    </Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>

@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import { Ionicons, MaterialCommunityIcons, FontAwesome5, Feather } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { useCommunity, LeaderboardEntry, ChallengeItem, ActivityItem, SearchResult } from '../../hooks/useCommunity'
+import { T } from '../../lib/theme'
 
 // ==========================================
 // Constants
@@ -30,21 +31,16 @@ const SCOPES = [
 ]
 
 const BADGE_RARITY_COLORS: Record<string, string> = {
-    common: '#8B949E',
-    rare: '#1A73E8',
-    epic: '#9C27B0',
-    legendary: '#FFB300',
+    common: T.colors.muted,
+    rare: T.colors.primary,
+    epic: T.colors.purple,
+    legendary: T.colors.orange,
 }
 
 const ACTIVITY_EMOJIS: Record<string, string> = {
-    session_complete: '🏀',
-    badge_earned: '🎖️',
-    challenge_won: '🏆',
-    challenge_joined: '⚔️',
-    follow: '👥',
-    highlight_shared: '🎬',
-    level_up: '⬆️',
-    new_record: '🔥',
+    session_complete: '🏀', badge_earned: '🎖️', challenge_won: '🏆',
+    challenge_joined: '⚔️', follow: '👥', highlight_shared: '🎬',
+    level_up: '⬆️', new_record: '🔥',
 }
 
 // ==========================================
@@ -99,26 +95,37 @@ export default function Community() {
     }
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#0D1117' }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: T.colors.bg }}>
             {/* Header */}
-            <View style={{ padding: 20, paddingBottom: 5 }}>
+            <View style={{ padding: T.space.xl, paddingBottom: 5 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <View>
-                        <Text style={{ color: '#E6EDF3', fontSize: 28, fontWeight: 'bold' }}>Communauté</Text>
-                        <Text style={{ color: '#8B949E', fontSize: 14, marginTop: 2 }}>Le Strava du basket 🏀</Text>
+                        <Text style={{
+                            color: T.colors.white, fontSize: T.font.xxl + 2,
+                            fontWeight: '900', letterSpacing: -0.5,
+                        }}>Communauté</Text>
+                        <Text style={{ color: T.colors.textSecondary, fontSize: T.font.md + 1, marginTop: 2 }}>
+                            Le Strava du basket 🏀
+                        </Text>
                     </View>
                     <TouchableOpacity
-                        style={{ position: 'relative' }}
-                        onPress={() => { /* TODO: notifications screen */ }}
+                        style={{
+                            position: 'relative',
+                            width: 44, height: 44, borderRadius: T.radius.md,
+                            ...T.glass.light,
+                            justifyContent: 'center', alignItems: 'center',
+                        }}
+                        onPress={() => {}}
                     >
-                        <Ionicons name="notifications-outline" size={26} color="#E6EDF3" />
+                        <Ionicons name="notifications-outline" size={22} color={T.colors.white} />
                         {unreadCount > 0 && (
                             <View style={{
-                                position: 'absolute', top: -5, right: -5,
-                                backgroundColor: '#FF3D57', borderRadius: 10,
-                                minWidth: 18, height: 18, alignItems: 'center', justifyContent: 'center'
+                                position: 'absolute', top: -3, right: -3,
+                                backgroundColor: T.colors.red, borderRadius: 10,
+                                minWidth: 18, height: 18, alignItems: 'center', justifyContent: 'center',
+                                ...T.glow(T.colors.red, 0.3),
                             }}>
-                                <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold' }}>{unreadCount}</Text>
+                                <Text style={{ color: '#FFF', fontSize: T.font.xs + 1, fontWeight: 'bold' }}>{unreadCount}</Text>
                             </View>
                         )}
                     </TouchableOpacity>
@@ -129,13 +136,15 @@ export default function Community() {
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }}>
                         {myBadges.slice(0, 8).map(badge => (
                             <View key={badge.id} style={{
-                                backgroundColor: '#161B22', borderRadius: 12,
-                                paddingHorizontal: 10, paddingVertical: 6, marginRight: 8,
-                                borderWidth: 1, borderColor: BADGE_RARITY_COLORS[badge.rarity] || '#8B949E',
+                                ...T.glass.light,
+                                borderRadius: T.radius.sm, paddingHorizontal: 10, paddingVertical: 6, marginRight: 8,
+                                borderWidth: 1, borderColor: BADGE_RARITY_COLORS[badge.rarity] || T.colors.muted,
                                 flexDirection: 'row', alignItems: 'center',
                             }}>
                                 <Text style={{ fontSize: 14, marginRight: 4 }}>{badge.emoji}</Text>
-                                <Text style={{ color: BADGE_RARITY_COLORS[badge.rarity], fontSize: 11, fontWeight: '600' }}>{badge.name}</Text>
+                                <Text style={{ color: BADGE_RARITY_COLORS[badge.rarity], fontSize: T.font.sm, fontWeight: '600' }}>
+                                    {badge.name}
+                                </Text>
                             </View>
                         ))}
                     </ScrollView>
@@ -150,13 +159,15 @@ export default function Community() {
                         onPress={() => setActiveTab(tab.key)}
                         style={{
                             paddingHorizontal: 16, paddingVertical: 10, marginRight: 6,
-                            borderRadius: 20,
-                            backgroundColor: activeTab === tab.key ? '#1A73E8' : '#161B22',
+                            borderRadius: T.radius.pill,
+                            backgroundColor: activeTab === tab.key ? T.colors.accent : 'transparent',
+                            ...(activeTab !== tab.key ? T.glass.light : {}),
+                            ...(activeTab === tab.key ? T.glow(T.colors.accent, 0.15) : {}),
                         }}
                     >
                         <Text style={{
-                            color: activeTab === tab.key ? '#FFF' : '#8B949E',
-                            fontWeight: '600', fontSize: 13,
+                            color: activeTab === tab.key ? T.colors.bg : T.colors.muted,
+                            fontWeight: activeTab === tab.key ? '700' : '500', fontSize: T.font.md,
                         }}>{tab.label}</Text>
                     </TouchableOpacity>
                 ))}
@@ -165,50 +176,32 @@ export default function Community() {
             {/* Content */}
             <ScrollView
                 style={{ flex: 1 }}
-                contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#1A73E8" />}
+                contentContainerStyle={{ paddingHorizontal: T.space.xl, paddingBottom: 40 }}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.colors.accent} />}
             >
                 {activeTab === 'leaderboard' && (
                     <LeaderboardTab
-                        entries={leaderboard}
-                        metric={leaderboardMetric}
-                        scope={leaderboardScope}
-                        myRank={myRank}
+                        entries={leaderboard} metric={leaderboardMetric}
+                        scope={leaderboardScope} myRank={myRank}
                         onChangeMetric={(m) => fetchLeaderboard(m)}
                         onChangeScope={(s) => fetchLeaderboard(undefined, s)}
                     />
                 )}
-
                 {activeTab === 'challenges' && (
-                    <ChallengesTab
-                        challenges={challenges}
-                        formatTimeLeft={formatTimeLeft}
-                    />
+                    <ChallengesTab challenges={challenges} formatTimeLeft={formatTimeLeft} />
                 )}
-
                 {activeTab === 'feed' && (
-                    <FeedTab
-                        items={feed}
-                        hasMore={feedHasMore}
-                        onLoadMore={loadMoreFeed}
-                        formatTimeAgo={formatTimeAgo}
-                        loading={loading}
-                    />
+                    <FeedTab items={feed} hasMore={feedHasMore} onLoadMore={loadMoreFeed}
+                        formatTimeAgo={formatTimeAgo} loading={loading} />
                 )}
-
                 {activeTab === 'search' && (
-                    <SearchTab
-                        query={searchQuery}
+                    <SearchTab query={searchQuery}
                         onQueryChange={(q) => { setSearchQuery(q); searchPlayers(q) }}
-                        results={searchResults}
-                        onFollow={followUser}
-                        onUnfollow={unfollowUser}
-                    />
+                        results={searchResults} onFollow={followUser} onUnfollow={unfollowUser} />
                 )}
-
                 {error && (
-                    <View style={{ backgroundColor: 'rgba(255,61,87,0.1)', padding: 12, borderRadius: 10, marginTop: 15 }}>
-                        <Text style={{ color: '#FF3D57', fontSize: 13 }}>⚠️ {error}</Text>
+                    <View style={{ ...T.glass.light, borderColor: `${T.colors.red}30`, borderWidth: 1, padding: 12, borderRadius: T.radius.sm, marginTop: 15 }}>
+                        <Text style={{ color: T.colors.red, fontSize: T.font.md }}>⚠️ {error}</Text>
                     </View>
                 )}
             </ScrollView>
@@ -216,95 +209,73 @@ export default function Community() {
     )
 }
 
-// ==========================================
-// Leaderboard Tab
-// ==========================================
-
+// ── Leaderboard Tab ──
 function LeaderboardTab({ entries, metric, scope, myRank, onChangeMetric, onChangeScope }: {
-    entries: LeaderboardEntry[]
-    metric: string
-    scope: string
-    myRank?: number
-    onChangeMetric: (m: string) => void
-    onChangeScope: (s: string) => void
+    entries: LeaderboardEntry[]; metric: string; scope: string; myRank?: number;
+    onChangeMetric: (m: string) => void; onChangeScope: (s: string) => void
 }) {
     return (
         <View style={{ marginTop: 10 }}>
-            {/* Scope selector */}
             <View style={{ flexDirection: 'row', marginBottom: 12 }}>
                 {SCOPES.map(s => (
-                    <TouchableOpacity
-                        key={s.key}
-                        onPress={() => onChangeScope(s.key)}
-                        style={{
-                            paddingHorizontal: 18, paddingVertical: 8, borderRadius: 20, marginRight: 8,
-                            backgroundColor: scope === s.key ? '#1A73E8' : '#161B22',
-                        }}
-                    >
-                        <Text style={{ color: scope === s.key ? '#FFF' : '#8B949E', fontWeight: '600', fontSize: 13 }}>{s.label}</Text>
+                    <TouchableOpacity key={s.key} onPress={() => onChangeScope(s.key)} style={{
+                        paddingHorizontal: 18, paddingVertical: 8, borderRadius: T.radius.pill, marginRight: 8,
+                        backgroundColor: scope === s.key ? T.colors.primary : 'transparent',
+                        ...(scope !== s.key ? T.glass.light : {}),
+                    }}>
+                        <Text style={{
+                            color: scope === s.key ? '#FFF' : T.colors.muted,
+                            fontWeight: '600', fontSize: T.font.md,
+                        }}>{s.label}</Text>
                     </TouchableOpacity>
                 ))}
             </View>
-
-            {/* Metric selector */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 15 }}>
                 {METRICS.map(m => (
-                    <TouchableOpacity
-                        key={m.key}
-                        onPress={() => onChangeMetric(m.key)}
-                        style={{
-                            paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, marginRight: 8,
-                            backgroundColor: metric === m.key ? 'rgba(26,115,232,0.2)' : '#161B22',
-                            borderWidth: 1, borderColor: metric === m.key ? '#1A73E8' : '#161B22',
-                        }}
-                    >
-                        <Text style={{ color: metric === m.key ? '#1A73E8' : '#8B949E', fontSize: 12, fontWeight: '600' }}>
-                            {m.emoji} {m.label}
-                        </Text>
+                    <TouchableOpacity key={m.key} onPress={() => onChangeMetric(m.key)} style={{
+                        paddingHorizontal: 14, paddingVertical: 8, borderRadius: T.radius.md, marginRight: 8,
+                        ...(metric === m.key ? T.glass.primary : T.glass.light),
+                    }}>
+                        <Text style={{
+                            color: metric === m.key ? T.colors.primaryLight : T.colors.muted,
+                            fontSize: T.font.sm + 1, fontWeight: '600',
+                        }}>{m.emoji} {m.label}</Text>
                     </TouchableOpacity>
                 ))}
             </ScrollView>
-
-            {/* My rank card */}
             {myRank && (
                 <View style={{
-                    backgroundColor: 'rgba(26,115,232,0.1)', borderRadius: 15, padding: 15, marginBottom: 15,
-                    borderWidth: 1, borderColor: '#1A73E8', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'
+                    ...T.glass.primary, borderRadius: T.radius.lg,
+                    padding: 15, marginBottom: 15, flexDirection: 'row',
+                    alignItems: 'center', justifyContent: 'space-between',
+                    ...T.glow(T.colors.primary, 0.08),
                 }}>
                     <View>
-                        <Text style={{ color: '#8B949E', fontSize: 12 }}>Ta position</Text>
-                        <Text style={{ color: '#1A73E8', fontSize: 24, fontWeight: 'bold' }}>#{myRank}</Text>
+                        <Text style={{ color: T.colors.muted, fontSize: T.font.sm + 1 }}>Ta position</Text>
+                        <Text style={{ color: T.colors.primaryLight, fontSize: T.font.xxl, fontWeight: '900' }}>#{myRank}</Text>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={{ color: '#8B949E', fontSize: 12 }}>sur {entries.length} joueurs</Text>
-                        <Text style={{ color: '#00D4FF', fontSize: 14, fontWeight: '600' }}>
+                        <Text style={{ color: T.colors.muted, fontSize: T.font.sm + 1 }}>sur {entries.length} joueurs</Text>
+                        <Text style={{ color: T.colors.accent, fontSize: T.font.md + 1, fontWeight: '600' }}>
                             {METRICS.find(m => m.key === metric)?.emoji} {METRICS.find(m => m.key === metric)?.label}
                         </Text>
                     </View>
                 </View>
             )}
-
-            {/* Podium (top 3) */}
             {entries.length >= 3 && (
-                <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', marginBottom: 20 }}>
-                    {/* 2nd */}
+                <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', marginBottom: T.space.xl }}>
                     <PodiumItem entry={entries[1]} position={2} />
-                    {/* 1st */}
                     <PodiumItem entry={entries[0]} position={1} />
-                    {/* 3rd */}
                     <PodiumItem entry={entries[2]} position={3} />
                 </View>
             )}
-
-            {/* Rest of the list */}
             {entries.slice(3).map(entry => (
                 <LeaderboardRow key={entry.user_id} entry={entry} />
             ))}
-
             {entries.length === 0 && (
                 <View style={{ alignItems: 'center', padding: 40 }}>
                     <Text style={{ fontSize: 40, marginBottom: 10 }}>🏆</Text>
-                    <Text style={{ color: '#8B949E', fontSize: 15, textAlign: 'center' }}>
+                    <Text style={{ color: T.colors.muted, fontSize: T.font.base, textAlign: 'center' }}>
                         Aucun joueur dans le classement.{'\n'}Sois le premier !
                     </Text>
                 </View>
@@ -316,109 +287,96 @@ function LeaderboardTab({ entries, metric, scope, myRank, onChangeMetric, onChan
 function PodiumItem({ entry, position }: { entry: LeaderboardEntry; position: 1 | 2 | 3 }) {
     const heights = { 1: 100, 2: 75, 3: 60 }
     const medals = { 1: '🥇', 2: '🥈', 3: '🥉' }
-    const colors = { 1: '#FFB300', 2: '#C0C0C0', 3: '#CD7F32' }
+    const colors = { 1: T.colors.gold, 2: '#C0C0C0', 3: '#CD7F32' }
 
     return (
         <View style={{ alignItems: 'center', marginHorizontal: 8 }}>
-            {/* Avatar */}
             <View style={{
-                width: position === 1 ? 60 : 48, height: position === 1 ? 60 : 48,
-                backgroundColor: entry.is_me ? '#1A73E8' : '#30363D',
-                borderRadius: 30, marginBottom: 6,
+                width: position === 1 ? 64 : 50, height: position === 1 ? 64 : 50,
+                backgroundColor: entry.is_me ? T.colors.primaryDim : T.colors.dimmer,
+                borderRadius: 32, marginBottom: 6,
                 borderWidth: 2, borderColor: colors[position],
-                alignItems: 'center', justifyContent: 'center'
+                alignItems: 'center', justifyContent: 'center',
+                ...(position === 1 ? T.glow(colors[position], 0.2) : {}),
             }}>
-                <Text style={{ color: '#E6EDF3', fontWeight: 'bold', fontSize: position === 1 ? 18 : 14 }}>
+                <Text style={{ color: T.colors.white, fontWeight: 'bold', fontSize: position === 1 ? 20 : 15 }}>
                     {entry.username?.charAt(0).toUpperCase()}
                 </Text>
             </View>
-            <Text style={{ color: '#E6EDF3', fontWeight: 'bold', fontSize: 12, marginBottom: 2 }} numberOfLines={1}>
+            <Text style={{ color: T.colors.white, fontWeight: 'bold', fontSize: T.font.sm + 1, marginBottom: 2 }} numberOfLines={1}>
                 {entry.is_me ? 'Toi' : entry.username}
             </Text>
-            <Text style={{ color: '#00D4FF', fontWeight: 'bold', fontSize: 14 }}>{entry.score}</Text>
-
-            {/* Podium bar */}
+            <Text style={{ color: T.colors.accent, fontWeight: 'bold', fontSize: T.font.md + 1 }}>{entry.score}</Text>
             <View style={{
                 width: 70, height: heights[position], marginTop: 6,
-                backgroundColor: colors[position], borderTopLeftRadius: 10, borderTopRightRadius: 10,
-                alignItems: 'center', justifyContent: 'flex-start', paddingTop: 8,
-                opacity: 0.8,
+                backgroundColor: colors[position], borderTopLeftRadius: T.radius.sm, borderTopRightRadius: T.radius.sm,
+                alignItems: 'center', justifyContent: 'flex-start', paddingTop: 8, opacity: 0.85,
             }}>
                 <Text style={{ fontSize: 22 }}>{medals[position]}</Text>
-                <Text style={{ color: '#0D1117', fontSize: 11, fontWeight: 'bold', marginTop: 2 }}>Nv.{entry.level}</Text>
+                <Text style={{ color: T.colors.bg, fontSize: T.font.sm, fontWeight: 'bold', marginTop: 2 }}>Nv.{entry.level}</Text>
             </View>
         </View>
     )
 }
 
 function LeaderboardRow({ entry }: { entry: LeaderboardEntry }) {
-    const trendColor = entry.trend === 'up' ? '#00C853' : entry.trend === 'down' ? '#FF3D57' : '#8B949E'
+    const trendColor = entry.trend === 'up' ? T.colors.green : entry.trend === 'down' ? T.colors.red : T.colors.muted
     const trendIcon = entry.trend === 'up' ? '↑' : entry.trend === 'down' ? '↓' : '—'
-
     return (
         <View style={{
             flexDirection: 'row', alignItems: 'center',
-            backgroundColor: entry.is_me ? 'rgba(26,115,232,0.12)' : '#161B22',
-            borderRadius: 15, padding: 14, marginBottom: 8,
-            borderWidth: entry.is_me ? 1 : 0, borderColor: '#1A73E8',
+            ...(entry.is_me ? T.glass.primary : T.glass.light),
+            borderRadius: T.radius.lg, padding: 14, marginBottom: 8,
+            ...(entry.is_me ? T.glow(T.colors.primary, 0.06) : {}),
         }}>
             <Text style={{
-                color: entry.rank <= 5 ? '#FFB300' : '#8B949E',
-                fontWeight: 'bold', fontSize: 16, width: 35
+                color: entry.rank <= 5 ? T.colors.gold : T.colors.muted,
+                fontWeight: 'bold', fontSize: T.font.lg, width: 35,
             }}>#{entry.rank}</Text>
-
             <View style={{
-                width: 40, height: 40, backgroundColor: entry.is_me ? '#1A73E8' : '#30363D',
-                borderRadius: 20, marginRight: 12, alignItems: 'center', justifyContent: 'center'
+                width: 40, height: 40,
+                backgroundColor: entry.is_me ? T.colors.primaryDim : T.colors.dimmer,
+                borderRadius: 20, marginRight: 12, alignItems: 'center', justifyContent: 'center',
             }}>
-                <Text style={{ color: '#E6EDF3', fontWeight: 'bold' }}>
+                <Text style={{ color: T.colors.white, fontWeight: 'bold' }}>
                     {entry.username?.charAt(0).toUpperCase()}
                 </Text>
             </View>
-
             <View style={{ flex: 1 }}>
-                <Text style={{ color: '#E6EDF3', fontWeight: 'bold', fontSize: 15 }}>
+                <Text style={{ color: T.colors.white, fontWeight: 'bold', fontSize: T.font.base }}>
                     {entry.is_me ? 'Toi' : entry.username}
                 </Text>
-                <Text style={{ color: '#8B949E', fontSize: 11 }}>
+                <Text style={{ color: T.colors.muted, fontSize: T.font.sm }}>
                     {entry.position || '—'} · Nv.{entry.level}
                 </Text>
             </View>
-
             <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ color: '#00D4FF', fontWeight: 'bold', fontSize: 17 }}>{entry.score}</Text>
-                <Text style={{ color: trendColor, fontSize: 12 }}>{trendIcon}</Text>
+                <Text style={{ color: T.colors.accent, fontWeight: 'bold', fontSize: T.font.lg }}>{entry.score}</Text>
+                <Text style={{ color: trendColor, fontSize: T.font.sm + 1 }}>{trendIcon}</Text>
             </View>
         </View>
     )
 }
 
-// ==========================================
-// Challenges Tab
-// ==========================================
-
+// ── Challenges Tab ──
 function ChallengesTab({ challenges, formatTimeLeft }: {
-    challenges: ChallengeItem[]
-    formatTimeLeft: (s: string) => string
+    challenges: ChallengeItem[]; formatTimeLeft: (s: string) => string
 }) {
     return (
         <View style={{ marginTop: 10 }}>
-            {/* Active challenges header */}
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}>
-                <MaterialCommunityIcons name="sword-cross" size={20} color="#FFB300" />
-                <Text style={{ color: '#E6EDF3', fontSize: 16, fontWeight: 'bold', marginLeft: 8 }}>
+                <MaterialCommunityIcons name="sword-cross" size={20} color={T.colors.gold} />
+                <Text style={{ color: T.colors.white, fontSize: T.font.lg, fontWeight: '800', marginLeft: 8 }}>
                     {challenges.length} défi{challenges.length !== 1 ? 's' : ''} actif{challenges.length !== 1 ? 's' : ''}
                 </Text>
             </View>
-
             {challenges.map(challenge => (
                 <ChallengeCard key={challenge.id} challenge={challenge} formatTimeLeft={formatTimeLeft} />
             ))}
-
             {challenges.length === 0 && (
                 <View style={{ alignItems: 'center', padding: 40 }}>
                     <Text style={{ fontSize: 40, marginBottom: 10 }}>⚔️</Text>
-                    <Text style={{ color: '#8B949E', fontSize: 15, textAlign: 'center' }}>
+                    <Text style={{ color: T.colors.muted, fontSize: T.font.base, textAlign: 'center' }}>
                         Aucun défi actif pour le moment.{'\n'}Reviens bientôt !
                     </Text>
                 </View>
@@ -434,69 +392,62 @@ function ChallengeCard({ challenge, formatTimeLeft }: { challenge: ChallengeItem
 
     return (
         <View style={{
-            backgroundColor: '#161B22', borderRadius: 20, padding: 20, marginBottom: 15,
-            borderWidth: 1, borderColor: isLeader ? '#00C853' : '#21262D',
+            ...T.glass.light,
+            borderRadius: T.radius.xl, padding: T.space.xl, marginBottom: 15,
+            borderWidth: 1, borderColor: isLeader ? `${T.colors.green}50` : T.colors.border,
+            ...(isLeader ? T.glow(T.colors.green, 0.06) : {}),
         }}>
-            {/* Header */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 }}>
                 <View style={{ flex: 1 }}>
-                    <Text style={{ color: '#E6EDF3', fontWeight: 'bold', fontSize: 16 }}>{challenge.title}</Text>
+                    <Text style={{ color: T.colors.white, fontWeight: '800', fontSize: T.font.lg }}>{challenge.title}</Text>
                     {challenge.description && (
-                        <Text style={{ color: '#8B949E', fontSize: 12, marginTop: 2 }}>{challenge.description}</Text>
+                        <Text style={{ color: T.colors.muted, fontSize: T.font.sm + 1, marginTop: 2 }}>{challenge.description}</Text>
                     )}
                 </View>
                 <View style={{
-                    backgroundColor: isExpiringSoon ? '#FF3D57' : '#30363D',
-                    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, alignSelf: 'flex-start'
+                    backgroundColor: isExpiringSoon ? T.colors.red : T.colors.dimmer,
+                    paddingHorizontal: 10, paddingVertical: 4, borderRadius: T.radius.sm, alignSelf: 'flex-start',
+                    ...(isExpiringSoon ? T.glow(T.colors.red, 0.15) : {}),
                 }}>
-                    <Text style={{ color: '#FFF', fontSize: 11, fontWeight: 'bold' }}>⏱ {timeLeft}</Text>
+                    <Text style={{ color: '#FFF', fontSize: T.font.sm, fontWeight: 'bold' }}>⏱ {timeLeft}</Text>
                 </View>
             </View>
-
-            {/* Stats */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 }}>
                 <View>
-                    <Text style={{ color: '#8B949E', fontSize: 11 }}>🥇 Leader</Text>
-                    <Text style={{ color: '#FFB300', fontSize: 14, fontWeight: 'bold' }}>
+                    <Text style={{ color: T.colors.muted, fontSize: T.font.sm }}>🥇 Leader</Text>
+                    <Text style={{ color: T.colors.gold, fontSize: T.font.md + 1, fontWeight: 'bold' }}>
                         {challenge.leader_name || '—'} — {challenge.leader_value ?? '—'}
                     </Text>
                 </View>
                 <View style={{ alignItems: 'center' }}>
-                    <Text style={{ color: '#8B949E', fontSize: 11 }}>👥 Participants</Text>
-                    <Text style={{ color: '#E6EDF3', fontSize: 14, fontWeight: 'bold' }}>{challenge.participants_count}</Text>
+                    <Text style={{ color: T.colors.muted, fontSize: T.font.sm }}>👥 Participants</Text>
+                    <Text style={{ color: T.colors.white, fontSize: T.font.md + 1, fontWeight: 'bold' }}>{challenge.participants_count}</Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ color: '#8B949E', fontSize: 11 }}>Toi — #{challenge.my_rank || '—'}</Text>
-                    <Text style={{ color: '#00D4FF', fontSize: 14, fontWeight: 'bold' }}>{challenge.my_value ?? '—'}</Text>
+                    <Text style={{ color: T.colors.muted, fontSize: T.font.sm }}>Toi — #{challenge.my_rank || '—'}</Text>
+                    <Text style={{ color: T.colors.accent, fontSize: T.font.md + 1, fontWeight: 'bold' }}>{challenge.my_value ?? '—'}</Text>
                 </View>
             </View>
-
-            {/* Reward */}
             {challenge.reward && (
-                <Text style={{ color: '#8B949E', fontSize: 12, marginBottom: 12 }}>
-                    🎁 Récompense : {challenge.reward}
-                </Text>
+                <Text style={{ color: T.colors.muted, fontSize: T.font.sm + 1, marginBottom: 12 }}>🎁 Récompense : {challenge.reward}</Text>
             )}
-
-            {/* Progress bar (my rank vs total) */}
             {challenge.my_rank && challenge.participants_count > 0 && (
                 <View style={{ marginBottom: 14 }}>
-                    <View style={{ height: 6, backgroundColor: '#21262D', borderRadius: 3 }}>
+                    <View style={{ height: 6, backgroundColor: T.colors.dimmer, borderRadius: 3 }}>
                         <View style={{
                             height: 6, borderRadius: 3,
-                            backgroundColor: isLeader ? '#00C853' : '#1A73E8',
+                            backgroundColor: isLeader ? T.colors.green : T.colors.primary,
                             width: `${Math.max(5, (1 - (challenge.my_rank - 1) / challenge.participants_count) * 100)}%`,
                         }} />
                     </View>
                 </View>
             )}
-
-            {/* CTA */}
             <TouchableOpacity style={{
-                backgroundColor: isLeader ? '#00C853' : '#1A73E8',
-                paddingVertical: 11, borderRadius: 12, alignItems: 'center',
+                backgroundColor: isLeader ? T.colors.green : T.colors.accent,
+                paddingVertical: 11, borderRadius: T.radius.md, alignItems: 'center',
+                ...(isLeader ? T.glow(T.colors.green, 0.15) : T.glow(T.colors.accent, 0.15)),
             }}>
-                <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 14 }}>
+                <Text style={{ color: T.colors.bg, fontWeight: '800', fontSize: T.font.md + 1 }}>
                     {isLeader ? '👑 Tu es en tête !' : challenge.my_rank ? 'Améliorer mon score' : 'Participer'}
                 </Text>
             </TouchableOpacity>
@@ -504,42 +455,30 @@ function ChallengeCard({ challenge, formatTimeLeft }: { challenge: ChallengeItem
     )
 }
 
-// ==========================================
-// Feed Tab
-// ==========================================
-
+// ── Feed Tab ──
 function FeedTab({ items, hasMore, onLoadMore, formatTimeAgo, loading }: {
-    items: ActivityItem[]
-    hasMore: boolean
-    onLoadMore: () => void
-    formatTimeAgo: (s: string) => string
-    loading: boolean
+    items: ActivityItem[]; hasMore: boolean; onLoadMore: () => void;
+    formatTimeAgo: (s: string) => string; loading: boolean
 }) {
     return (
         <View style={{ marginTop: 10 }}>
             {items.map(item => (
                 <FeedItem key={item.id} item={item} formatTimeAgo={formatTimeAgo} />
             ))}
-
             {hasMore && (
-                <TouchableOpacity
-                    onPress={onLoadMore}
-                    style={{
-                        backgroundColor: '#161B22', padding: 14, borderRadius: 12, alignItems: 'center', marginTop: 8,
-                    }}
-                >
-                    {loading ? (
-                        <ActivityIndicator color="#1A73E8" size="small" />
-                    ) : (
-                        <Text style={{ color: '#1A73E8', fontWeight: '600' }}>Charger plus</Text>
-                    )}
+                <TouchableOpacity onPress={onLoadMore} style={{
+                    ...T.glass.light, padding: 14, borderRadius: T.radius.md, alignItems: 'center', marginTop: 8,
+                }}>
+                    {loading
+                        ? <ActivityIndicator color={T.colors.accent} size="small" />
+                        : <Text style={{ color: T.colors.accent, fontWeight: '600' }}>Charger plus</Text>
+                    }
                 </TouchableOpacity>
             )}
-
             {items.length === 0 && !loading && (
                 <View style={{ alignItems: 'center', padding: 40 }}>
                     <Text style={{ fontSize: 40, marginBottom: 10 }}>📡</Text>
-                    <Text style={{ color: '#8B949E', fontSize: 15, textAlign: 'center' }}>
+                    <Text style={{ color: T.colors.muted, fontSize: T.font.base, textAlign: 'center' }}>
                         Rien dans le feed pour le moment.{'\n'}Suis des joueurs pour voir leur activité !
                     </Text>
                 </View>
@@ -550,62 +489,50 @@ function FeedTab({ items, hasMore, onLoadMore, formatTimeAgo, loading }: {
 
 function FeedItem({ item, formatTimeAgo }: { item: ActivityItem; formatTimeAgo: (s: string) => string }) {
     const emoji = ACTIVITY_EMOJIS[item.type] || '📌'
-
     return (
         <View style={{
-            backgroundColor: '#161B22', borderRadius: 15, padding: 15, marginBottom: 10,
+            ...T.glass.light, borderRadius: T.radius.lg, padding: 15, marginBottom: 10,
             flexDirection: 'row', alignItems: 'flex-start',
         }}>
-            {/* Avatar */}
             <View style={{
-                width: 42, height: 42, backgroundColor: '#30363D', borderRadius: 21,
-                marginRight: 12, alignItems: 'center', justifyContent: 'center'
+                width: 42, height: 42, backgroundColor: T.colors.dimmer, borderRadius: T.radius.md,
+                marginRight: 12, alignItems: 'center', justifyContent: 'center',
             }}>
                 <Text style={{ fontSize: 16 }}>{emoji}</Text>
             </View>
-
-            {/* Content */}
             <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 3 }}>
-                    <Text style={{ color: '#1A73E8', fontWeight: 'bold', fontSize: 13 }}>{item.username}</Text>
-                    <Text style={{ color: '#30363D', marginHorizontal: 6 }}>·</Text>
-                    <Text style={{ color: '#484F58', fontSize: 11 }}>{formatTimeAgo(item.created_at)}</Text>
+                    <Text style={{ color: T.colors.accent, fontWeight: 'bold', fontSize: T.font.md }}>
+                        {item.username}
+                    </Text>
+                    <Text style={{ color: T.colors.dimmer, marginHorizontal: 6 }}>·</Text>
+                    <Text style={{ color: T.colors.dim, fontSize: T.font.sm }}>{formatTimeAgo(item.created_at)}</Text>
                 </View>
-                <Text style={{ color: '#E6EDF3', fontSize: 14 }}>{item.title}</Text>
+                <Text style={{ color: T.colors.white, fontSize: T.font.md + 1 }}>{item.title}</Text>
                 {item.description && (
-                    <Text style={{ color: '#8B949E', fontSize: 12, marginTop: 3 }}>{item.description}</Text>
+                    <Text style={{ color: T.colors.muted, fontSize: T.font.sm + 1, marginTop: 3 }}>{item.description}</Text>
                 )}
             </View>
         </View>
     )
 }
 
-// ==========================================
-// Search Tab
-// ==========================================
-
+// ── Search Tab ──
 function SearchTab({ query, onQueryChange, results, onFollow, onUnfollow }: {
-    query: string
-    onQueryChange: (q: string) => void
-    results: SearchResult[]
-    onFollow: (id: string) => void
-    onUnfollow: (id: string) => void
+    query: string; onQueryChange: (q: string) => void; results: SearchResult[];
+    onFollow: (id: string) => void; onUnfollow: (id: string) => void
 }) {
     return (
         <View style={{ marginTop: 10 }}>
-            {/* Search bar */}
             <View style={{
                 flexDirection: 'row', alignItems: 'center',
-                backgroundColor: '#161B22', borderRadius: 15, paddingHorizontal: 15, marginBottom: 20,
-                borderWidth: 1, borderColor: '#21262D',
+                ...T.glass.light, borderRadius: T.radius.lg, paddingHorizontal: 15, marginBottom: T.space.xl,
             }}>
-                <Feather name="search" size={18} color="#8B949E" />
+                <Feather name="search" size={18} color={T.colors.muted} />
                 <TextInput
-                    style={{
-                        flex: 1, color: '#E6EDF3', fontSize: 15, paddingVertical: 14, marginLeft: 10,
-                    }}
+                    style={{ flex: 1, color: T.colors.white, fontSize: T.font.base, paddingVertical: 14, marginLeft: 10 }}
                     placeholder="Rechercher un joueur..."
-                    placeholderTextColor="#484F58"
+                    placeholderTextColor={T.colors.dim}
                     value={query}
                     onChangeText={onQueryChange}
                     autoCapitalize="none"
@@ -613,63 +540,57 @@ function SearchTab({ query, onQueryChange, results, onFollow, onUnfollow }: {
                 />
                 {query.length > 0 && (
                     <TouchableOpacity onPress={() => onQueryChange('')}>
-                        <Ionicons name="close-circle" size={20} color="#8B949E" />
+                        <Ionicons name="close-circle" size={20} color={T.colors.muted} />
                     </TouchableOpacity>
                 )}
             </View>
-
-            {/* Results */}
             {results.map(player => (
                 <View key={player.user_id} style={{
                     flexDirection: 'row', alignItems: 'center',
-                    backgroundColor: '#161B22', borderRadius: 15, padding: 14, marginBottom: 8,
+                    ...T.glass.light, borderRadius: T.radius.lg, padding: 14, marginBottom: 8,
                 }}>
                     <View style={{
-                        width: 44, height: 44, backgroundColor: '#30363D', borderRadius: 22,
-                        marginRight: 12, alignItems: 'center', justifyContent: 'center'
+                        width: 44, height: 44, backgroundColor: T.colors.dimmer, borderRadius: 22,
+                        marginRight: 12, alignItems: 'center', justifyContent: 'center',
                     }}>
-                        <Text style={{ color: '#E6EDF3', fontWeight: 'bold', fontSize: 16 }}>
+                        <Text style={{ color: T.colors.white, fontWeight: 'bold', fontSize: T.font.lg }}>
                             {player.username?.charAt(0).toUpperCase()}
                         </Text>
                     </View>
-
                     <View style={{ flex: 1 }}>
-                        <Text style={{ color: '#E6EDF3', fontWeight: 'bold', fontSize: 15 }}>{player.username}</Text>
-                        <Text style={{ color: '#8B949E', fontSize: 12 }}>
+                        <Text style={{ color: T.colors.white, fontWeight: 'bold', fontSize: T.font.base }}>{player.username}</Text>
+                        <Text style={{ color: T.colors.muted, fontSize: T.font.sm + 1 }}>
                             {player.position || '—'} · Nv.{player.level} · {player.xp} XP
                         </Text>
                     </View>
-
                     <TouchableOpacity
                         onPress={() => player.is_following ? onUnfollow(player.user_id) : onFollow(player.user_id)}
                         style={{
-                            paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-                            backgroundColor: player.is_following ? '#21262D' : '#1A73E8',
+                            paddingHorizontal: 16, paddingVertical: 8, borderRadius: T.radius.pill,
+                            backgroundColor: player.is_following ? T.colors.dimmer : T.colors.accent,
                         }}
                     >
                         <Text style={{
-                            color: player.is_following ? '#8B949E' : '#FFF',
-                            fontWeight: '600', fontSize: 12,
+                            color: player.is_following ? T.colors.muted : T.colors.bg,
+                            fontWeight: '600', fontSize: T.font.sm + 1,
                         }}>
                             {player.is_following ? 'Suivi ✓' : 'Suivre'}
                         </Text>
                     </TouchableOpacity>
                 </View>
             ))}
-
             {query.length > 0 && results.length === 0 && (
                 <View style={{ alignItems: 'center', padding: 40 }}>
                     <Text style={{ fontSize: 32, marginBottom: 10 }}>🔍</Text>
-                    <Text style={{ color: '#8B949E', fontSize: 14, textAlign: 'center' }}>
+                    <Text style={{ color: T.colors.muted, fontSize: T.font.md + 1, textAlign: 'center' }}>
                         Aucun joueur trouvé pour "{query}"
                     </Text>
                 </View>
             )}
-
             {query.length === 0 && (
                 <View style={{ alignItems: 'center', padding: 40 }}>
                     <Text style={{ fontSize: 32, marginBottom: 10 }}>👥</Text>
-                    <Text style={{ color: '#8B949E', fontSize: 14, textAlign: 'center' }}>
+                    <Text style={{ color: T.colors.muted, fontSize: T.font.md + 1, textAlign: 'center' }}>
                         Recherche un joueur par nom{'\n'}ou pseudo pour le suivre
                     </Text>
                 </View>
