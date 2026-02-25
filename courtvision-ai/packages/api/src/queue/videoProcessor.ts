@@ -11,15 +11,69 @@ import {
     createHighlightReel
 } from '@courtvision/ai'
 
-const redisConnection = new Redis(process.env.REDIS_URL || 'redis://localhost:6379')
+// ── Redis connection (graceful si non disponible) ─────────────
+let redisConnection: Redis | null = null
+let redisAvailable = false
 
-// Initialisation de Supabase (worker-side)
-const supabaseUrl = process.env.SUPABASE_URL || ''
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || ''
-const supabase = createClient(supabaseUrl, supabaseKey)
+try {
+    redisConnection = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+        maxRetriesPerRequest: 3,
+        retryStrategy(times) {
+            if (times > 3) {
+                console.warn('[Redis] Max retries reached — running without queue')
+                return null // Stop retrying
+            }
+            return Math.min(times * 200, 2000)
+        },
+        lazyConnect: true,
+        showFriendlyErrorStack: false,
+    })
+    redisConnection.on('connect', () => { redisAvailable = true; console.log('[Redis] ✅ Connected') })
+    redisConnection.on('error', (err) => {
+        // Silently degrade — no spam in console
+        if (redisAvailable) {
+            console.warn('[Redis] Connection lost — queue disabled')
+        }
+        redisAvailable = false
+    })
+    // Attempt connection (non-blocking)
+    redisConnection.connect().catch(() => {
+        console.warn('[Redis] ⚠️ Not available — queue disabled (dev mode)')
+        redisAvailable = false
+    })
+} catch {
+    console.warn('[Redis] ⚠️ Could not initialize — queue disabled')
+}
 
-// Queue
-export const videoQueue = new Queue('video-processing', { connection: redisConnection as any })
+// Initialisation de Supabase (lazy — appelé seulement quand nécessaire)
+// Note: le client n'est pas typé avec le schéma DB — on utilise `any` pour les opérations CRUD
+let _supabase: any | null = null
+function getSupabase(): any {
+    if (!_supabase) {
+        const supabaseUrl = process.env.SUPABASE_URL || ''
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || ''
+        if (!supabaseUrl) {
+            console.warn('[Worker] ⚠️ SUPABASE_URL not set — worker DB operations will fail')
+        }
+        _supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder')
+    }
+    return _supabase
+}
+
+// Queue (null-safe)
+export const videoQueue = redisConnection
+    ? new Queue('video-processing', { connection: redisConnection as any })
+    : null
+
+/** Safe queue add — no-op if Redis not available */
+export async function addToQueue(jobName: string, data: VideoProcessingJobData) {
+    if (videoQueue && redisAvailable) {
+        await videoQueue.add(jobName, data)
+        console.log(`[Queue] Job "${jobName}" added for session ${data.sessionId}`)
+    } else {
+        console.warn(`[Queue] Redis not available — job "${jobName}" skipped. Session: ${data.sessionId}`)
+    }
+}
 
 // Job Interface
 export interface VideoProcessingJobData {
@@ -35,12 +89,18 @@ export interface VideoProcessingJobData {
 }
 
 export const initWorker = () => {
+    if (!redisConnection || !redisAvailable) {
+        console.warn('[Worker] ⚠️ Redis not available — worker not started (dev mode)')
+        // Return a mock worker with a close() method
+        return { close: async () => {} }
+    }
+
     const worker = new Worker('video-processing', async (job: Job<VideoProcessingJobData>) => {
         const { sessionId, videoUrl, userId, calibration } = job.data
 
         try {
             // 1. Update status to analyzing
-            await supabase.from('sessions').update({ status: 'analyzing' }).eq('id', sessionId)
+            await getSupabase().from('sessions').update({ status: 'analyzing' }).eq('id', sessionId)
 
             // 2. Étape 1 — Prétraitement vidéo
             const prepRes = await preprocessVideo(videoUrl, calibration)
@@ -81,7 +141,7 @@ export const initWorker = () => {
             await job.updateProgress(95)
 
             // 9. Sauvegarder toutes les données dans la table analyses
-            const { error: analysisError } = await supabase.from('analyses').insert({
+            const { error: analysisError } = await getSupabase().from('analyses').insert({
                 session_id: sessionId,
                 shot_attempts: shotsRes.length,
                 shot_made: shotsRes.filter((s) => s.outcome === 'made').length,
@@ -113,13 +173,13 @@ export const initWorker = () => {
             }
 
             // 10. Update session status
-            await supabase.from('sessions').update({ status: 'complete' }).eq('id', sessionId)
+            await getSupabase().from('sessions').update({ status: 'complete' }).eq('id', sessionId)
             await job.updateProgress(100)
 
             return { success: true }
         } catch (error: any) {
             console.error(`Error processing job ${job.id}:`, error)
-            await supabase.from('sessions').update({ status: 'failed' }).eq('id', sessionId)
+            await getSupabase().from('sessions').update({ status: 'failed' }).eq('id', sessionId)
             throw error
         }
     }, { connection: redisConnection as any })

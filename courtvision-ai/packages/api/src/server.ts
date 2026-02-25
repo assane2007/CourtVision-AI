@@ -5,7 +5,14 @@ import { initWorker } from './queue/videoProcessor'
 dotenv.config({ path: '../../.env' })
 
 const start = async () => {
-    const worker = initWorker()
+    // Init worker (graceful — no-op if Redis not available)
+    let worker: { close: () => Promise<void> }
+    try {
+        worker = initWorker()
+    } catch {
+        console.warn('[Server] Worker init skipped (no Redis)')
+        worker = { close: async () => {} }
+    }
 
     const server = buildApp({
         logger: {

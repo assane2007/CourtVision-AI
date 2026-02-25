@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { videoQueue } from '../queue/videoProcessor'
+import { addToQueue } from '../queue/videoProcessor'
 
 const uploadSchema = z.object({
     type: z.enum(['match', 'training', 'shootaround']),
@@ -29,7 +29,7 @@ export default async function sessionRoutes(fastify: FastifyInstance) {
             if (error) throw error
 
             // Envoyer vers la queue (BullMQ) pour lancer l'async IA
-            await videoQueue.add('process-video', {
+            await addToQueue('process-video', {
                 sessionId: data.id,
                 videoUrl: data.video_url,
                 userId: user.id

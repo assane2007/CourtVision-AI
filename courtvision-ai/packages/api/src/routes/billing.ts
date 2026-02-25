@@ -2,10 +2,18 @@ import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import Stripe from 'stripe'
 
-// Initialisation de Stripe avec la clé secrète
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-    apiVersion: '2023-10-16' as any // Version par défaut
-})
+// Initialisation lazy de Stripe (évite crash si clé non configurée en dev)
+let _stripe: Stripe | null = null
+function getStripe(): Stripe {
+    if (!_stripe) {
+        const key = process.env.STRIPE_SECRET_KEY
+        if (!key) {
+            throw new Error('STRIPE_SECRET_KEY is not configured')
+        }
+        _stripe = new Stripe(key, { apiVersion: '2023-10-16' as any })
+    }
+    return _stripe
+}
 
 const checkoutSchema = z.object({
     planName: z.enum(['player', 'coach', 'academy'])
@@ -30,7 +38,7 @@ export default async function billingRoutes(fastify: FastifyInstance) {
 
             if (!customerId) {
                 // Crée le customer Stripe
-                const customer = await stripe.customers.create({
+                const customer = await getStripe().customers.create({
                     email: dbUser.email,
                     name: dbUser.full_name,
                     metadata: { supabase_id: user.id }
@@ -54,7 +62,7 @@ export default async function billingRoutes(fastify: FastifyInstance) {
             }
 
             // Création de la Checkout Session
-            const session = await stripe.checkout.sessions.create({
+            const session = await getStripe().checkout.sessions.create({
                 customer: customerId,
                 payment_method_types: ['card'],
                 line_items: [{ price: priceId, quantity: 1 }],
@@ -85,7 +93,7 @@ export default async function billingRoutes(fastify: FastifyInstance) {
             let event: Stripe.Event
 
             try {
-                event = stripe.webhooks.constructEvent(payload, sig, endpointSecret)
+                event = getStripe().webhooks.constructEvent(payload, sig, endpointSecret)
             } catch (err: any) {
                 fastify.log.warn(`Webhook Error: ${err.message}`)
                 return reply.code(400).send(`Webhook Error: ${err.message}`)
@@ -155,7 +163,7 @@ export default async function billingRoutes(fastify: FastifyInstance) {
                 throw new Error('No stripe customer ID found for this user.')
             }
 
-            const session = await stripe.billingPortal.sessions.create({
+            const session = await getStripe().billingPortal.sessions.create({
                 customer: dbUser.stripe_customer_id,
                 return_url: 'https://courtvision.ai/dashboard/profile'
             })

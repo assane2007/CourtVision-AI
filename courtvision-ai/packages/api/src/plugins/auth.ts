@@ -5,6 +5,13 @@ declare module 'fastify' {
     interface FastifyInstance {
         authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
     }
+    interface FastifyRequest {
+        user?: {
+            id: string
+            email?: string
+            [key: string]: any
+        }
+    }
 }
 
 export const authPlugin = fp(async (fastify, opts) => {
@@ -23,7 +30,7 @@ export const authPlugin = fp(async (fastify, opts) => {
             }
 
             // Inject user on request to use it in routes
-            request.user = data.user
+            request.user = { id: data.user.id, email: data.user.email ?? undefined }
         } catch (err) {
             reply.code(401).send({ error: 'Unauthorized' })
         }
