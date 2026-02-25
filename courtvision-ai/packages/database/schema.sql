@@ -396,6 +396,25 @@ CREATE INDEX idx_shared_cards_share_id ON public.shared_cards(share_id);
 -- ==========================================
 -- 4. STORAGE & BUCKETS
 -- ==========================================
+
+-- ── Atomic increment functions (avoid read-then-write race conditions) ──
+
+CREATE OR REPLACE FUNCTION public.increment_views_count(card_share_id TEXT)
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    new_count INTEGER;
+BEGIN
+    UPDATE public.shared_cards
+    SET views_count = COALESCE(views_count, 0) + 1
+    WHERE share_id = card_share_id
+    RETURNING views_count INTO new_count;
+    RETURN COALESCE(new_count, 0);
+END;
+$$;
+
 -- Note: Les buckets nécessitent l'extension pgcrypto ou l'API Supabase,
 -- mais on peut l'insérer directement si on utilise la console SQL Supabase.
 

@@ -40,16 +40,16 @@ const NOTIF_ID_CHALLENGE = 'cv-challenge-reminder'
 
 // ── Contenu des notifications ─────────────────────────────────
 const streakContent = (streak: number): Notifications.NotificationContentInput => ({
-    title: '🔥 Streak en danger !',
-    body: `Tu as une série de ${streak} jour${streak > 1 ? 's' : ''} — lance une session pour ne pas la perdre.`,
+    title: '🔥 Streak at risk!',
+    body: `You have a ${streak}-day streak — start a session to keep it alive.`,
     data: { screen: '/(dashboard)/upload', type: 'streak' },
     sound: true,
     badge: 1,
 })
 
 const challengeContent = (): Notifications.NotificationContentInput => ({
-    title: '🎯 Défi quotidien disponible !',
-    body: 'Nouveau défi du jour — 5 tirs pour gagner des XP et grimper au classement.',
+    title: '🎯 Daily challenge available!',
+    body: 'New daily challenge — make 5 shots to earn XP and climb the leaderboard.',
     data: { screen: '/(dashboard)', type: 'challenge' },
     sound: true,
     badge: 1,
@@ -90,7 +90,7 @@ export function usePushNotifications() {
 
             // Les tokens push ne fonctionnent que sur un vrai appareil
             if (!Device.isDevice) {
-                console.log('[PushNotifications] Simulateur détecté — token push non disponible.')
+                console.log('[PushNotifications] Simulator detected — push token unavailable.')
                 return null
             }
 
@@ -104,8 +104,8 @@ export function usePushNotifications() {
             }
 
             if (finalStatus !== 'granted') {
-                console.warn('[PushNotifications] Permission refusée.')
-                toast.info('Active les notifications pour recevoir tes rappels d\'entraînement 🔔')
+                console.warn('[PushNotifications] Permission denied.')
+                toast.info('Enable notifications to receive training reminders 🔔')
                 return null
             }
 
@@ -121,12 +121,12 @@ export function usePushNotifications() {
                 await api.post('/api/auth/push-token', { token, platform: Platform.OS })
             } catch (apiErr) {
                 // Non-bloquant : le push local fonctionne sans ça
-                console.warn('[PushNotifications] Impossible d\'envoyer le token au backend:', apiErr)
+                console.warn('[PushNotifications] Failed to send token to backend:', apiErr)
             }
 
             return token
         } catch (err) {
-            console.warn('[PushNotifications] Erreur enregistrement:', err)
+            console.warn('[PushNotifications] Registration error:', err)
             return null
         }
     }, [])
@@ -198,11 +198,11 @@ export function usePushNotifications() {
             const type = (data as any)?.type ?? 'info'
 
             if (type === 'streak') {
-                toast.warning(body ?? title ?? '🔥 Streak en danger !')
+                toast.warning(body ?? title ?? '🔥 Streak at risk!')
             } else if (type === 'challenge') {
-                toast.success(body ?? title ?? '🎯 Nouveau défi !')
+                toast.success(body ?? title ?? '🎯 New challenge!')
             } else if (type === 'xp') {
-                toast.xp(body ?? title ?? '⚡ XP gagné !')
+                toast.xp(body ?? title ?? '⚡ XP earned!')
             } else {
                 toast.info(body ?? title ?? '🔔 Notification')
             }

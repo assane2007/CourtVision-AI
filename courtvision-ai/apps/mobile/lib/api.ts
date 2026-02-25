@@ -12,6 +12,7 @@
 
 import Constants from 'expo-constants'
 import * as SecureStore from 'expo-secure-store'
+import { supabase } from './supabase'
 
 const AUTH_TOKEN_KEY = 'courtvision_auth_token'
 const REFRESH_TOKEN_KEY = 'courtvision_refresh_token'
@@ -90,6 +91,20 @@ function onRefreshed(token: string | null) {
 }
 
 async function attemptTokenRefresh(): Promise<string | null> {
+    // Try Supabase session refresh first (primary auth)
+    try {
+        const { data, error } = await supabase.auth.refreshSession()
+        if (!error && data.session) {
+            const newToken = data.session.access_token
+            await setAuthToken(newToken)
+            await setRefreshToken(data.session.refresh_token)
+            return newToken
+        }
+    } catch {
+        // Fall through to legacy refresh
+    }
+
+    // Fallback: legacy API refresh
     const refreshToken = await getRefreshToken()
     if (!refreshToken) return null
 

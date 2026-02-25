@@ -1,99 +1,146 @@
-import { View, Text, TouchableOpacity, Animated, StatusBar, Share, Modal, Pressable } from 'react-native'
+/**
+ * Highlight Player — V3 Design
+ * Full-screen highlight reel viewer with AI commentary,
+ * clip selector, share CTA. Reanimated v3, Feather icons, English.
+ */
+import { View, Text, TouchableOpacity, StatusBar, Share, Modal, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
-import { useEffect, useRef, useState } from 'react'
+import { Feather } from '@expo/vector-icons'
+import { useState, useCallback } from 'react'
+import Animated, {
+    FadeIn,
+    FadeInDown,
+    FadeInUp,
+    FadeOut,
+    SlideInDown,
+    useSharedValue,
+    useAnimatedStyle,
+    withTiming,
+    withRepeat,
+    withSequence,
+    withDelay,
+    Easing,
+    runOnJS,
+} from 'react-native-reanimated'
 import { toast } from '../../lib/toast'
 import { useStore } from '../../lib/store'
 import { T } from '../../lib/theme'
 
+// ── Mock clips (replaced by API data in production) ───────────
 const CLIPS = [
-    { time: '00:14', label: '3-Pt Made · Q1', score: 96, comment: 'Release parfaitement haut — coude à 90°. Excellent catch-and-shoot.' },
-    { time: '01:32', label: 'Floater · Q2',   score: 88, comment: 'Bonne décision dans le couloir, floater maîtrisé.' },
-    { time: '02:45', label: 'And-1 Drive · Q3', score: 94, comment: 'Explosivité sur la première pas — body language de leader.' },
+    { time: '00:14', label: '3-Pt Made · Q1', score: 96, comment: 'Perfect high release — elbow at 90°. Excellent catch-and-shoot form.' },
+    { time: '01:32', label: 'Floater · Q2', score: 88, comment: 'Smart lane drive, well-controlled floater. Great decision-making.' },
+    { time: '02:45', label: 'And-1 Drive · Q3', score: 94, comment: 'Explosive first step — dominant body language under contact.' },
 ]
 
 const SHARE_PLATFORMS = [
-    { id: 'tiktok',     icon: '🎵', label: 'TikTok',     color: '#EE1D52' },
-    { id: 'instagram',  icon: '📸', label: 'Instagram',  color: '#E4405F' },
-    { id: 'twitter',    icon: '🐦', label: 'Twitter/X',  color: '#1DA1F2' },
-    { id: 'whatsapp',   icon: '💬', label: 'WhatsApp',   color: '#25D366' },
+    { id: 'tiktok', icon: 'video' as const, label: 'TikTok', color: '#EE1D52' },
+    { id: 'instagram', icon: 'camera' as const, label: 'Instagram', color: '#E4405F' },
+    { id: 'twitter', icon: 'twitter' as const, label: 'Twitter/X', color: '#1DA1F2' },
+    { id: 'whatsapp', icon: 'message-circle' as const, label: 'WhatsApp', color: '#25D366' },
 ]
 
+// ── Animated Play Button ──────────────────────────────────────
+function PlayButton({ onPress }: { onPress: () => void }) {
+    const pulse = useSharedValue(1)
+    pulse.value = withRepeat(
+        withSequence(
+            withTiming(1.08, { duration: 1200, easing: Easing.inOut(Easing.sin) }),
+            withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.sin) }),
+        ),
+        -1,
+        true,
+    )
+    const pulseStyle = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }] }))
+
+    return (
+        <View style={{ alignItems: 'center' }}>
+            <Animated.View style={pulseStyle}>
+                <TouchableOpacity
+                    onPress={onPress}
+                    activeOpacity={0.8}
+                    style={{
+                        width: 90, height: 90, borderRadius: 45,
+                        ...T.glass.accent, ...T.glow(T.colors.accent, 0.25),
+                        justifyContent: 'center', alignItems: 'center',
+                    }}
+                >
+                    <Feather name="play" size={38} color={T.colors.accent} style={{ marginLeft: 4 }} />
+                </TouchableOpacity>
+            </Animated.View>
+        </View>
+    )
+}
+
+// ── Main Component ────────────────────────────────────────────
 export default function HighlightPlayer() {
-    const { id }       = useLocalSearchParams<{ id: string }>()
+    const { id } = useLocalSearchParams<{ id: string }>()
+    const router = useRouter()
+    const addXP = useStore(s => s.addXP)
 
-    const router       = useRouter()
-    const addXP        = useStore(s => s.addXP)
-    const [playing, setPlaying]           = useState(false)
-    const [currentClip, setCurrentClip]   = useState(0)
+    const [playing, setPlaying] = useState(false)
+    const [currentClip, setCurrentClip] = useState(0)
     const [aiCommentary, setAiCommentary] = useState(true)
-    const [shareModal, setShareModal]     = useState(false)
-    const [published, setPublished]       = useState(false)
-    const fadeAnim      = useRef(new Animated.Value(0)).current
-    const controlsAnim  = useRef(new Animated.Value(1)).current
-    const progressAnim  = useRef(new Animated.Value(0)).current
-    const clipAnim      = useRef(new Animated.Value(0)).current
+    const [shareModal, setShareModal] = useState(false)
+    const [published, setPublished] = useState(false)
+    const [controlsVisible, setControlsVisible] = useState(true)
 
-    useEffect(() => {
-        Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start()
-    }, [])
+    // Progress animation
+    const progress = useSharedValue(0)
+    const progressStyle = useAnimatedStyle(() => ({
+        width: `${progress.value * 100}%`,
+    }))
 
-    useEffect(() => {
-        Animated.sequence([
-            Animated.timing(clipAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
-            Animated.timing(clipAnim, { toValue: 0, duration: 3000, delay: 500, useNativeDriver: true }),
-        ]).start()
-    }, [currentClip])
-
-    const togglePlay = () => {
-        setPlaying(p => !p)
+    const togglePlay = useCallback(() => {
         if (!playing) {
-            controlsAnim.setValue(1)
-            Animated.sequence([
-                Animated.delay(2500),
-                Animated.timing(controlsAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
-            ]).start()
-            Animated.timing(progressAnim, {
-                toValue: 1, duration: 30000, useNativeDriver: false,
-            }).start()
+            setPlaying(true)
+            progress.value = withTiming(1, { duration: 30000, easing: Easing.linear })
+            // Auto-hide controls after 2.5s
+            setTimeout(() => setControlsVisible(false), 2500)
         } else {
-            Animated.timing(controlsAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start()
-            progressAnim.stopAnimation()
+            setPlaying(false)
+            // Stop progress at current value
+            progress.value = progress.value
         }
-    }
+    }, [playing])
 
-    const showControls = () => {
-        Animated.timing(controlsAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start()
-    }
+    const showControls = useCallback(() => {
+        setControlsVisible(true)
+        if (playing) {
+            setTimeout(() => setControlsVisible(false), 3000)
+        }
+    }, [playing])
 
-    const handleNativeShare = async () => {
+    const handleNativeShare = useCallback(async () => {
         try {
             await Share.share({
-                title: `Mon Highlight Reel — CourtVision AI`,
-                message: `🏀 Regarde mon highlight reel IA — Session #${id}\n🎯 3 meilleures actions · Analysé par CourtVision AI\nhttps://courtvision.ai/highlight/${id}`,
+                title: `My Highlight Reel — CourtVision AI`,
+                message: `Check out my AI highlight reel — Session #${id}\n3 best plays analyzed by CourtVision AI\nhttps://courtvision.ai/highlight/${id}`,
             })
-            addXP(50, '🎬 Highlight partagé')
-            toast.success('+50 XP !', 'Highlight partagé avec succès')
-        } catch {}
-    }
+            addXP(50, 'Highlight shared')
+            toast.success('+50 XP!', 'Highlight shared successfully')
+        } catch { /* user cancelled */ }
+    }, [id])
 
-    const handlePlatformShare = async (platform: string) => {
+    const handlePlatformShare = useCallback(async (platform: string) => {
         setShareModal(false)
         await handleNativeShare()
-    }
+    }, [handleNativeShare])
 
-    const handlePublish = () => {
+    const handlePublish = useCallback(() => {
         setPublished(true)
-        addXP(100, '📡 Highlight publié sur la communauté')
-        toast.success('+100 XP !', 'Highlight publié dans la communauté')
-    }
+        addXP(100, 'Highlight published to community')
+        toast.success('+100 XP!', 'Highlight published to the community')
+    }, [])
+
+    const clip = CLIPS[currentClip]
 
     return (
         <View style={{ flex: 1, backgroundColor: T.colors.bg }}>
             <StatusBar hidden />
 
-            {/* ── Simulated video ── */}
+            {/* ── Simulated video area ── */}
             <TouchableOpacity
                 style={{ flex: 1 }}
                 onPress={playing ? showControls : togglePlay}
@@ -101,252 +148,327 @@ export default function HighlightPlayer() {
             >
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: T.colors.bg }}>
                     {/* Court art — subtle neon lines */}
-                    <View style={{ position: 'absolute', width: '72%', height: '58%', borderWidth: 1.5, borderColor: 'rgba(0,229,255,0.04)', borderRadius: 8 }} />
-                    <View style={{ position: 'absolute', width: '36%', height: '32%', borderTopLeftRadius: 80, borderTopRightRadius: 80, borderWidth: 1, borderColor: 'rgba(0,229,255,0.03)', borderBottomWidth: 0, top: '22%' }} />
-                    <View style={{ position: 'absolute', bottom: '22%', width: '22%', height: '18%', borderTopLeftRadius: 40, borderTopRightRadius: 40, borderWidth: 1, borderColor: 'rgba(0,229,255,0.03)', borderBottomWidth: 0 }} />
+                    <View style={{ position: 'absolute', width: '72%', height: '58%', borderWidth: 1.5, borderColor: 'rgba(255,107,0,0.04)', borderRadius: 8 }} />
+                    <View style={{ position: 'absolute', width: '36%', height: '32%', borderTopLeftRadius: 80, borderTopRightRadius: 80, borderWidth: 1, borderColor: 'rgba(255,107,0,0.03)', borderBottomWidth: 0, top: '22%' }} />
 
-                    {/* Ambient glow behind video */}
+                    {/* Ambient glow */}
                     <View style={{
                         position: 'absolute', width: 200, height: 200, borderRadius: 100,
                         backgroundColor: T.colors.accentGlow, opacity: 0.08,
                     }} />
 
                     {/* AI Score overlay */}
-                    <Animated.View style={{
-                        position: 'absolute', top: '28%', right: '8%',
-                        borderRadius: T.radius.md, paddingHorizontal: 14, paddingVertical: 10,
-                        opacity: clipAnim,
-                        ...T.glass.primary, ...T.glow(T.colors.primary, 0.3),
-                    }}>
-                        <Text style={{ color: T.colors.textSecondary, fontSize: T.font.sm, fontWeight: '600' }}>AI Score</Text>
-                        <Text style={{ color: T.colors.white, fontSize: 28, fontWeight: '900', letterSpacing: -1 }}>
-                            {CLIPS[currentClip]?.score}
-                        </Text>
-                    </Animated.View>
-
-                    {!playing && (
-                        <View style={{ alignItems: 'center' }}>
-                            <View style={{
-                                width: 90, height: 90, borderRadius: 45,
-                                ...T.glass.accent, ...T.glow(T.colors.accent, 0.25),
-                                justifyContent: 'center', alignItems: 'center',
-                            }}>
-                                <Ionicons name="play" size={40} color={T.colors.accent} style={{ marginLeft: 4 }} />
-                            </View>
-                            <Text style={{ color: T.colors.muted, marginTop: T.space.lg, fontSize: T.font.md, fontWeight: '600' }}>
-                                Highlight Reel #{id} · 1080p IA
-                            </Text>
-                        </View>
-                    )}
-                </View>
-            </TouchableOpacity>
-
-            {/* ── Overlay ── */}
-            <SafeAreaView
-                style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}
-                pointerEvents="box-none"
-            >
-                <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
-
-                    {/* Top bar */}
-                    <Animated.View style={{
-                        opacity: controlsAnim, flexDirection: 'row',
-                        justifyContent: 'space-between', alignItems: 'center',
-                        paddingHorizontal: T.space.lg, paddingTop: T.space.md,
-                    }}>
-                        <TouchableOpacity
-                            onPress={() => router.back()}
+                    {playing && (
+                        <Animated.View
+                            entering={FadeIn.duration(300)}
+                            exiting={FadeOut.duration(200)}
                             style={{
-                                width: 42, height: 42, borderRadius: 21,
-                                ...T.glass.medium, justifyContent: 'center', alignItems: 'center',
+                                position: 'absolute', top: '28%', right: '8%',
+                                borderRadius: T.radius.md, paddingHorizontal: 14, paddingVertical: 10,
+                                ...T.glass.primary, ...T.glow(T.colors.primary, 0.3),
                             }}
                         >
-                            <Ionicons name="close" size={22} color={T.colors.white} />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            onPress={() => setAiCommentary(v => !v)}
-                            style={{
-                                paddingHorizontal: 14, paddingVertical: 8,
-                                borderRadius: T.radius.pill, flexDirection: 'row', alignItems: 'center', gap: 5,
-                                ...(aiCommentary ? T.glass.primary : T.glass.medium),
-                                ...(aiCommentary ? T.glow(T.colors.primary, 0.15) : {}),
-                            }}
-                        >
-                            <Ionicons name="mic" size={14} color={aiCommentary ? T.colors.primaryLight : T.colors.muted} />
-                            <Text style={{ color: aiCommentary ? T.colors.primaryLight : T.colors.muted, fontSize: T.font.sm, fontWeight: '700' }}>
-                                Commentary IA {aiCommentary ? '🟢' : '⭕'}
+                            <Text style={{ color: T.colors.textSecondary, fontSize: T.font.sm, fontWeight: '600', fontFamily: T.fonts.body.medium }}>
+                                AI Score
                             </Text>
-                        </TouchableOpacity>
-                    </Animated.View>
-
-                    {/* AI Commentary banner */}
-                    {aiCommentary && (
-                        <Animated.View style={{
-                            opacity: clipAnim,
-                            marginTop: T.space.sm, marginHorizontal: T.space.lg,
-                            borderRadius: T.radius.md, padding: T.space.md,
-                            ...T.glass.accent, ...T.glow(T.colors.accent, 0.08),
-                        }}>
-                            <Text style={{ color: T.colors.accent, fontSize: T.font.sm, lineHeight: 19 }}>
-                                🤖 "{CLIPS[currentClip]?.comment}"
+                            <Text style={{ color: T.colors.white, fontSize: 28, fontWeight: '900', letterSpacing: -1, fontFamily: T.fonts.display.bold }}>
+                                {clip?.score}
                             </Text>
                         </Animated.View>
                     )}
 
-                    <View style={{ flex: 1 }} pointerEvents="none" />
+                    {/* Play button (when paused) */}
+                    {!playing && (
+                        <Animated.View entering={FadeIn.duration(300)}>
+                            <PlayButton onPress={togglePlay} />
+                            <Text style={{
+                                color: T.colors.muted, marginTop: T.space.lg,
+                                fontSize: T.font.md, fontWeight: '600', textAlign: 'center',
+                                fontFamily: T.fonts.body.medium,
+                            }}>
+                                Highlight Reel #{id} · 1080p AI
+                            </Text>
+                        </Animated.View>
+                    )}
+                </View>
+            </TouchableOpacity>
 
-                    {/* Bottom panel */}
-                    <Animated.View style={{ opacity: controlsAnim, paddingHorizontal: T.space.lg, paddingBottom: T.space.xl }}>
-                        {/* Progress */}
-                        <View style={{ height: 3, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 2, marginBottom: T.space.md, overflow: 'hidden' }}>
-                            <Animated.View style={{
-                                height: 3, borderRadius: 2,
-                                backgroundColor: T.colors.accent,
-                                width: progressAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
-                                ...T.shadow(T.colors.accent, 0.5, 4),
-                            }} />
-                        </View>
+            {/* ── Controls Overlay ── */}
+            <SafeAreaView
+                style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}
+                pointerEvents="box-none"
+            >
+                {controlsVisible && (
+                    <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(200)} style={{ flex: 1 }}>
 
-                        {/* Clips */}
-                        <View style={{ flexDirection: 'row', gap: 7, marginBottom: T.space.md }}>
-                            {CLIPS.map((clip, i) => {
-                                const isActive = currentClip === i
-                                return (
-                                    <TouchableOpacity
-                                        key={i}
-                                        onPress={() => setCurrentClip(i)}
-                                        activeOpacity={0.7}
-                                        style={{
-                                            flex: 1, borderRadius: T.radius.sm, padding: T.space.sm, alignItems: 'center',
-                                            ...(isActive ? T.glass.primary : T.glass.light),
-                                            ...(isActive ? T.glow(T.colors.primary, 0.12) : {}),
-                                        }}
-                                    >
-                                        <Text style={{ color: T.colors.accent, fontSize: T.font.sm, fontWeight: '800' }}>{clip.time}</Text>
-                                        <Text style={{ color: T.colors.muted, fontSize: 8.5, marginTop: 2, textAlign: 'center' }}>{clip.label}</Text>
-                                        <Text style={{ color: isActive ? T.colors.white : T.colors.muted, fontSize: T.font.xs, fontWeight: '700', marginTop: 2 }}>
-                                            {clip.score}pts
-                                        </Text>
-                                    </TouchableOpacity>
-                                )
-                            })}
-                        </View>
+                        {/* Top bar */}
+                        <Animated.View
+                            entering={FadeInDown.duration(300).delay(50)}
+                            style={{
+                                flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+                                paddingHorizontal: T.space.lg, paddingTop: T.space.md,
+                            }}
+                        >
+                            <TouchableOpacity
+                                onPress={() => router.back()}
+                                style={{
+                                    width: 42, height: 42, borderRadius: 21,
+                                    ...T.glass.medium, justifyContent: 'center', alignItems: 'center',
+                                }}
+                            >
+                                <Feather name="x" size={22} color={T.colors.white} />
+                            </TouchableOpacity>
 
-                        {/* Controls row */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <View style={{ flex: 1 }}>
-                                <Text style={{ color: T.colors.white, fontSize: T.font.lg, fontWeight: '800', letterSpacing: -0.5 }}>
-                                    Highlight Reel #{id}
+                            <TouchableOpacity
+                                onPress={() => setAiCommentary(v => !v)}
+                                style={{
+                                    paddingHorizontal: 14, paddingVertical: 8,
+                                    borderRadius: T.radius.pill, flexDirection: 'row', alignItems: 'center', gap: 5,
+                                    ...(aiCommentary ? T.glass.primary : T.glass.medium),
+                                    ...(aiCommentary ? T.glow(T.colors.primary, 0.15) : {}),
+                                }}
+                            >
+                                <Feather name={aiCommentary ? 'mic' : 'mic-off'} size={14} color={aiCommentary ? T.colors.primaryLight : T.colors.muted} />
+                                <Text style={{
+                                    color: aiCommentary ? T.colors.primaryLight : T.colors.muted,
+                                    fontSize: T.font.sm, fontWeight: '700', fontFamily: T.fonts.body.semibold,
+                                }}>
+                                    AI Commentary {aiCommentary ? 'ON' : 'OFF'}
                                 </Text>
-                                <Text style={{ color: T.colors.muted, fontSize: T.font.sm, marginTop: 2 }}>
-                                    3 actions clés · IA Groq · 1080p
+                            </TouchableOpacity>
+                        </Animated.View>
+
+                        {/* AI Commentary banner */}
+                        {aiCommentary && playing && (
+                            <Animated.View
+                                entering={FadeInDown.duration(300).delay(100)}
+                                exiting={FadeOut.duration(200)}
+                                style={{
+                                    marginTop: T.space.sm, marginHorizontal: T.space.lg,
+                                    borderRadius: T.radius.md, padding: T.space.md,
+                                    ...T.glass.accent, ...T.glow(T.colors.accent, 0.08),
+                                    flexDirection: 'row', alignItems: 'center', gap: 8,
+                                }}
+                            >
+                                <Feather name="cpu" size={14} color={T.colors.accent} />
+                                <Text style={{
+                                    color: T.colors.accent, fontSize: T.font.sm, lineHeight: 19,
+                                    flex: 1, fontFamily: T.fonts.body.regular,
+                                }}>
+                                    "{clip?.comment}"
                                 </Text>
+                            </Animated.View>
+                        )}
+
+                        <View style={{ flex: 1 }} pointerEvents="none" />
+
+                        {/* Bottom panel */}
+                        <Animated.View
+                            entering={FadeInUp.duration(300).delay(100)}
+                            style={{ paddingHorizontal: T.space.lg, paddingBottom: T.space.xl }}
+                        >
+                            {/* Progress bar */}
+                            <View style={{ height: 3, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 2, marginBottom: T.space.md, overflow: 'hidden' }}>
+                                <Animated.View style={[{
+                                    height: 3, borderRadius: 2,
+                                    backgroundColor: T.colors.accent,
+                                    ...T.shadow(T.colors.accent, 0.5, 4),
+                                }, progressStyle]} />
                             </View>
 
-                            <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-                                {/* Share */}
-                                <View style={{ alignItems: 'center' }}>
-                                    <TouchableOpacity
-                                        style={{
-                                            width: 46, height: 46, borderRadius: 23,
-                                            ...T.glass.medium, justifyContent: 'center', alignItems: 'center',
-                                        }}
-                                        onPress={() => setShareModal(true)}
-                                    >
-                                        <Ionicons name="share-social" size={20} color={T.colors.white} />
-                                    </TouchableOpacity>
-                                    <Text style={{ color: T.colors.muted, fontSize: T.font.xs, marginTop: 3 }}>Partager</Text>
+                            {/* Clip selector */}
+                            <View style={{ flexDirection: 'row', gap: 7, marginBottom: T.space.md }}>
+                                {CLIPS.map((c, i) => {
+                                    const isActive = currentClip === i
+                                    return (
+                                        <TouchableOpacity
+                                            key={i}
+                                            onPress={() => setCurrentClip(i)}
+                                            activeOpacity={0.7}
+                                            style={{
+                                                flex: 1, borderRadius: T.radius.sm, padding: T.space.sm, alignItems: 'center',
+                                                ...(isActive ? T.glass.primary : T.glass.light),
+                                                ...(isActive ? T.glow(T.colors.primary, 0.12) : {}),
+                                            }}
+                                        >
+                                            <Text style={{ color: T.colors.accent, fontSize: T.font.sm, fontWeight: '800', fontFamily: T.fonts.display.bold }}>
+                                                {c.time}
+                                            </Text>
+                                            <Text style={{ color: T.colors.muted, fontSize: 8.5, marginTop: 2, textAlign: 'center', fontFamily: T.fonts.body.regular }}>
+                                                {c.label}
+                                            </Text>
+                                            <Text style={{
+                                                color: isActive ? T.colors.white : T.colors.muted,
+                                                fontSize: T.font.xs, fontWeight: '700', marginTop: 2,
+                                                fontFamily: T.fonts.display.semibold,
+                                            }}>
+                                                {c.score}pts
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )
+                                })}
+                            </View>
+
+                            {/* Controls row */}
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{
+                                        color: T.colors.white, fontSize: T.font.lg, fontWeight: '800',
+                                        letterSpacing: -0.5, fontFamily: T.fonts.display.bold,
+                                    }}>
+                                        Highlight Reel #{id}
+                                    </Text>
+                                    <Text style={{
+                                        color: T.colors.muted, fontSize: T.font.sm, marginTop: 2,
+                                        fontFamily: T.fonts.body.regular,
+                                    }}>
+                                        3 key plays · AI Groq · 1080p
+                                    </Text>
                                 </View>
 
-                                {/* Play */}
-                                <TouchableOpacity
-                                    style={{
-                                        width: 56, height: 56, borderRadius: 28,
-                                        backgroundColor: T.colors.accent,
-                                        justifyContent: 'center', alignItems: 'center',
-                                        ...T.glow(T.colors.accent, 0.4),
-                                    }}
-                                    onPress={togglePlay}
-                                    activeOpacity={0.8}
-                                >
-                                    <Ionicons name={playing ? 'pause' : 'play'} size={24} color={T.colors.bg} />
-                                </TouchableOpacity>
+                                <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+                                    {/* Share */}
+                                    <View style={{ alignItems: 'center' }}>
+                                        <TouchableOpacity
+                                            style={{
+                                                width: 46, height: 46, borderRadius: 23,
+                                                ...T.glass.medium, justifyContent: 'center', alignItems: 'center',
+                                            }}
+                                            onPress={() => setShareModal(true)}
+                                        >
+                                            <Feather name="share-2" size={20} color={T.colors.white} />
+                                        </TouchableOpacity>
+                                        <Text style={{ color: T.colors.muted, fontSize: T.font.xs, marginTop: 3, fontFamily: T.fonts.body.regular }}>
+                                            Share
+                                        </Text>
+                                    </View>
 
-                                {/* Publish */}
-                                <View style={{ alignItems: 'center' }}>
+                                    {/* Play/Pause */}
                                     <TouchableOpacity
                                         style={{
-                                            paddingHorizontal: 14, paddingVertical: 12, borderRadius: T.radius.xl,
-                                            ...(published ? { ...T.glass.accent, borderColor: T.colors.green, borderWidth: 1 } : T.glass.medium),
+                                            width: 56, height: 56, borderRadius: 28,
+                                            backgroundColor: T.colors.accent,
+                                            justifyContent: 'center', alignItems: 'center',
+                                            ...T.glow(T.colors.accent, 0.4),
                                         }}
-                                        onPress={handlePublish}
-                                        disabled={published}
-                                        activeOpacity={0.7}
+                                        onPress={togglePlay}
+                                        activeOpacity={0.8}
                                     >
-                                        <Text style={{ color: published ? T.colors.green : T.colors.white, fontWeight: '700', fontSize: T.font.sm }}>
-                                            {published ? '✅ Publié' : 'Publier'}
-                                        </Text>
+                                        <Feather name={playing ? 'pause' : 'play'} size={24} color={T.colors.bg} />
                                     </TouchableOpacity>
-                                    {!published && <Text style={{ color: T.colors.dim, fontSize: T.font.xs, marginTop: 3 }}>+100 XP</Text>}
+
+                                    {/* Publish */}
+                                    <View style={{ alignItems: 'center' }}>
+                                        <TouchableOpacity
+                                            style={{
+                                                paddingHorizontal: 14, paddingVertical: 12, borderRadius: T.radius.xl,
+                                                ...(published
+                                                    ? { ...T.glass.accent, borderColor: T.colors.green, borderWidth: 1 }
+                                                    : T.glass.medium),
+                                            }}
+                                            onPress={handlePublish}
+                                            disabled={published}
+                                            activeOpacity={0.7}
+                                        >
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                <Feather
+                                                    name={published ? 'check-circle' : 'upload-cloud'}
+                                                    size={14}
+                                                    color={published ? T.colors.green : T.colors.white}
+                                                />
+                                                <Text style={{
+                                                    color: published ? T.colors.green : T.colors.white,
+                                                    fontWeight: '700', fontSize: T.font.sm,
+                                                    fontFamily: T.fonts.body.semibold,
+                                                }}>
+                                                    {published ? 'Published' : 'Publish'}
+                                                </Text>
+                                            </View>
+                                        </TouchableOpacity>
+                                        {!published && (
+                                            <Text style={{ color: T.colors.dim, fontSize: T.font.xs, marginTop: 3, fontFamily: T.fonts.body.regular }}>
+                                                +100 XP
+                                            </Text>
+                                        )}
+                                    </View>
                                 </View>
                             </View>
-                        </View>
+                        </Animated.View>
                     </Animated.View>
-                </Animated.View>
+                )}
             </SafeAreaView>
 
             {/* ── Share Modal ── */}
-            <Modal visible={shareModal} transparent animationType="slide" onRequestClose={() => setShareModal(false)}>
+            <Modal visible={shareModal} transparent animationType="none" onRequestClose={() => setShareModal(false)}>
                 <Pressable
                     style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' }}
                     onPress={() => setShareModal(false)}
                 >
                     <Pressable onPress={() => {}}>
-                        <View style={{
-                            backgroundColor: T.colors.card, borderTopLeftRadius: T.radius.xxl, borderTopRightRadius: T.radius.xxl,
-                            padding: T.space.xxl, paddingBottom: 44,
-                            borderTopWidth: 1, borderColor: T.colors.borderLight,
-                        }}>
+                        <Animated.View
+                            entering={SlideInDown.duration(350).damping(18)}
+                            style={{
+                                backgroundColor: T.colors.card, borderTopLeftRadius: T.radius.xxl, borderTopRightRadius: T.radius.xxl,
+                                padding: T.space.xxl, paddingBottom: 44,
+                                borderTopWidth: 1, borderColor: T.colors.borderLight,
+                            }}
+                        >
                             <View style={{ width: 40, height: 4, backgroundColor: T.colors.dim, borderRadius: 2, alignSelf: 'center', marginBottom: T.space.xl }} />
-                            <Text style={{ color: T.colors.white, fontSize: T.font.xl, fontWeight: '800', marginBottom: T.space.xs, letterSpacing: -0.5 }}>
-                                Partager le Highlight
+
+                            <Text style={{
+                                color: T.colors.white, fontSize: T.font.xl, fontWeight: '800',
+                                marginBottom: T.space.xs, letterSpacing: -0.5,
+                                fontFamily: T.fonts.display.bold,
+                            }}>
+                                Share Highlight
                             </Text>
-                            <Text style={{ color: T.colors.textSecondary, fontSize: T.font.md, marginBottom: T.space.xxl }}>
-                                Montre ton talent au monde entier 🔥
+                            <Text style={{
+                                color: T.colors.textSecondary, fontSize: T.font.md, marginBottom: T.space.xxl,
+                                fontFamily: T.fonts.body.regular,
+                            }}>
+                                Show the world what you can do
                             </Text>
+
                             <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: T.space.xl }}>
-                                {SHARE_PLATFORMS.map(p => (
-                                    <TouchableOpacity
-                                        key={p.id}
-                                        onPress={() => handlePlatformShare(p.id)}
-                                        activeOpacity={0.7}
-                                        style={{ alignItems: 'center', gap: 8 }}
-                                    >
-                                        <View style={{
-                                            width: 60, height: 60, borderRadius: T.radius.xl,
-                                            backgroundColor: `${p.color}15`, justifyContent: 'center', alignItems: 'center',
-                                            borderWidth: 1.5, borderColor: `${p.color}30`,
-                                            ...T.shadow(p.color, 0.15, 8),
-                                        }}>
-                                            <Text style={{ fontSize: 28 }}>{p.icon}</Text>
-                                        </View>
-                                        <Text style={{ color: T.colors.textSecondary, fontSize: T.font.sm, fontWeight: '600' }}>{p.label}</Text>
-                                    </TouchableOpacity>
+                                {SHARE_PLATFORMS.map((p, i) => (
+                                    <Animated.View key={p.id} entering={FadeInUp.duration(300).delay(i * 60)}>
+                                        <TouchableOpacity
+                                            onPress={() => handlePlatformShare(p.id)}
+                                            activeOpacity={0.7}
+                                            style={{ alignItems: 'center', gap: 8 }}
+                                        >
+                                            <View style={{
+                                                width: 60, height: 60, borderRadius: T.radius.xl,
+                                                backgroundColor: `${p.color}15`, justifyContent: 'center', alignItems: 'center',
+                                                borderWidth: 1.5, borderColor: `${p.color}30`,
+                                                ...T.shadow(p.color, 0.15, 8),
+                                            }}>
+                                                <Feather name={p.icon} size={26} color={p.color} />
+                                            </View>
+                                            <Text style={{ color: T.colors.textSecondary, fontSize: T.font.sm, fontWeight: '600', fontFamily: T.fonts.body.medium }}>
+                                                {p.label}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </Animated.View>
                                 ))}
                             </View>
+
                             <TouchableOpacity
                                 style={{
                                     borderRadius: T.radius.lg, paddingVertical: 16, alignItems: 'center',
+                                    flexDirection: 'row', justifyContent: 'center', gap: 8,
                                     ...T.glass.accent, ...T.glow(T.colors.accent, 0.15),
                                     borderWidth: 1.5, borderColor: `${T.colors.accent}30`,
                                 }}
                                 onPress={handleNativeShare}
                                 activeOpacity={0.8}
                             >
-                                <Text style={{ color: T.colors.accent, fontWeight: '800', fontSize: T.font.lg }}>📤 Partage Rapide</Text>
+                                <Feather name="share" size={18} color={T.colors.accent} />
+                                <Text style={{ color: T.colors.accent, fontWeight: '800', fontSize: T.font.lg, fontFamily: T.fonts.display.bold }}>
+                                    Quick Share
+                                </Text>
                             </TouchableOpacity>
-                        </View>
+                        </Animated.View>
                     </Pressable>
                 </Pressable>
             </Modal>

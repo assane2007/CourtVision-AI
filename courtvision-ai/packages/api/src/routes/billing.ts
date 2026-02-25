@@ -20,6 +20,22 @@ const checkoutSchema = z.object({
 })
 
 export default async function billingRoutes(fastify: FastifyInstance) {
+    // ── Raw body parser for Stripe webhook signature verification ──
+    // Scoped to this plugin only — doesn't affect other routes.
+    // Stores the raw Buffer on request.rawBody while still parsing JSON normally.
+    fastify.addContentTypeParser(
+        'application/json',
+        { parseAs: 'buffer' },
+        (req: any, body: Buffer, done: (err: Error | null, result?: any) => void) => {
+            req.rawBody = body
+            try {
+                done(null, JSON.parse(body.toString()))
+            } catch (err: any) {
+                done(err)
+            }
+        }
+    )
+
     fastify.post('/create-checkout', { preValidation: [fastify.authenticate] }, async (request, reply) => {
         try {
             const body = checkoutSchema.parse(request.body)
@@ -83,9 +99,11 @@ export default async function billingRoutes(fastify: FastifyInstance) {
     // Utilise fastify.post avec le content type raw pour la signature webhook
     fastify.post('/webhook', { config: { rawBody: true } }, async (request, reply) => {
         try {
-            // Note: Fastify requires raw body plugin or special config to get raw string for stripe signature.
-            // This is simulated using the raw request body. In strict production, body parser needs raw text configuration for this route.
-            const payload = (request.raw as any).body || JSON.stringify(request.body)
+            // Raw body is stored by our custom content type parser above
+            const payload = (request.raw as any).rawBody as Buffer
+            if (!payload) {
+                return reply.code(400).send({ error: 'Missing raw body for webhook signature verification' })
+            }
             const sig = request.headers['stripe-signature'] as string
 
             const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET || ''

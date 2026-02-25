@@ -1,179 +1,202 @@
-import { View, Text, TouchableOpacity, Animated, Dimensions } from 'react-native'
+﻿import { View, Text, TouchableOpacity, Dimensions, StyleSheet } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
+import Animated, {
+    useSharedValue, useAnimatedStyle, withTiming, withSpring,
+    withSequence, withDelay, withRepeat, Easing, interpolate,
+} from 'react-native-reanimated'
 import { T } from '../lib/theme'
 
-const { width: SCREEN_W } = Dimensions.get('window')
+const { width: W } = Dimensions.get('window')
 
-// Animated particle ring for hero
+//  Animated Particle Ring 
+
 function ParticleRing() {
-    const rotateAnim = useRef(new Animated.Value(0)).current
+    const rotation = useSharedValue(0)
+
     useEffect(() => {
-        Animated.loop(
-            Animated.timing(rotateAnim, { toValue: 1, duration: 8000, useNativeDriver: true })
-        ).start()
+        rotation.value = withRepeat(
+            withTiming(360, { duration: 10000, easing: Easing.linear }),
+            -1, false,
+        )
     }, [])
-    const rotate = rotateAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] })
+
+    const ringStyle = useAnimatedStyle(() => ({
+        transform: [{ rotate: `${rotation.value}deg` }],
+    }))
+
+    const DOTS = [0, 60, 120, 180, 240, 300]
+
     return (
-        <Animated.View style={{
-            position: 'absolute', width: 220, height: 220,
-            borderRadius: 110,
-            borderWidth: 1,
-            borderColor: 'rgba(0,229,255,0.08)',
-            transform: [{ rotate }],
-        }}>
-            {/* Dots on the ring */}
-            {[0, 60, 120, 180, 240, 300].map((deg, i) => (
-                <View key={i} style={{
-                    position: 'absolute',
-                    width: i % 2 === 0 ? 6 : 4,
-                    height: i % 2 === 0 ? 6 : 4,
-                    borderRadius: 3,
-                    backgroundColor: i % 2 === 0 ? T.colors.accent : T.colors.primary,
-                    opacity: 0.5 + (i % 3) * 0.2,
-                    top: 110 + Math.sin(deg * Math.PI / 180) * 110 - 3,
-                    left: 110 + Math.cos(deg * Math.PI / 180) * 110 - 3,
-                }} />
-            ))}
+        <Animated.View style={[{
+            position: 'absolute', width: 240, height: 240, borderRadius: 120,
+            borderWidth: 1, borderColor: `${T.colors.accent}12`,
+        }, ringStyle]}>
+            {DOTS.map((deg, i) => {
+                const rad = (deg * Math.PI) / 180
+                const size = i % 2 === 0 ? 6 : 4
+                return (
+                    <View key={i} style={{
+                        position: 'absolute',
+                        width: size, height: size, borderRadius: size / 2,
+                        backgroundColor: i % 2 === 0 ? T.colors.accent : T.colors.white,
+                        opacity: 0.4 + (i % 3) * 0.2,
+                        top: 120 + Math.sin(rad) * 120 - size / 2,
+                        left: 120 + Math.cos(rad) * 120 - size / 2,
+                    }} />
+                )
+            })}
         </Animated.View>
     )
 }
 
+//  Screen 
+
 export default function Onboarding1() {
     const router = useRouter()
-    const fadeAnim = useRef(new Animated.Value(0)).current
-    const slideAnim = useRef(new Animated.Value(50)).current
-    const scaleAnim = useRef(new Animated.Value(0.6)).current
-    const glowAnim = useRef(new Animated.Value(0.2)).current
-    const btnSlide = useRef(new Animated.Value(80)).current
+
+    // Shared values
+    const logoScale = useSharedValue(0.5)
+    const logoOpacity = useSharedValue(0)
+    const textY = useSharedValue(40)
+    const textOpacity = useSharedValue(0)
+    const btnY = useSharedValue(60)
+    const btnOpacity = useSharedValue(0)
+    const glowOpacity = useSharedValue(0.15)
 
     useEffect(() => {
-        // Staggered entrance
-        Animated.sequence([
-            Animated.parallel([
-                Animated.spring(scaleAnim, { toValue: 1, tension: 40, friction: 7, useNativeDriver: true }),
-                Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
-            ]),
-            Animated.parallel([
-                Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
-                Animated.timing(btnSlide, { toValue: 0, duration: 600, useNativeDriver: true }),
-            ]),
-        ]).start()
-
-        // Pulsing glow
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(glowAnim, { toValue: 0.5, duration: 2000, useNativeDriver: false }),
-                Animated.timing(glowAnim, { toValue: 0.2, duration: 2000, useNativeDriver: false }),
-            ])
-        ).start()
+        // Logo entrance
+        logoScale.value = withSpring(1, { damping: 12, stiffness: 100 })
+        logoOpacity.value = withTiming(1, { duration: 600 })
+        // Text entrance (staggered)
+        textY.value = withDelay(300, withTiming(0, { duration: 500, easing: Easing.out(Easing.quad) }))
+        textOpacity.value = withDelay(300, withTiming(1, { duration: 500 }))
+        // Button entrance
+        btnY.value = withDelay(600, withTiming(0, { duration: 500, easing: Easing.out(Easing.quad) }))
+        btnOpacity.value = withDelay(600, withTiming(1, { duration: 500 }))
+        // Glow pulse
+        glowOpacity.value = withRepeat(
+            withSequence(
+                withTiming(0.45, { duration: 2000 }),
+                withTiming(0.15, { duration: 2000 }),
+            ),
+            -1, true,
+        )
     }, [])
+
+    const logoAnimStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: logoScale.value }],
+        opacity: logoOpacity.value,
+    }))
+
+    const textAnimStyle = useAnimatedStyle(() => ({
+        transform: [{ translateY: textY.value }],
+        opacity: textOpacity.value,
+    }))
+
+    const btnAnimStyle = useAnimatedStyle(() => ({
+        transform: [{ translateY: btnY.value }],
+        opacity: btnOpacity.value,
+    }))
+
+    const glowStyle = useAnimatedStyle(() => ({
+        opacity: glowOpacity.value,
+    }))
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: T.colors.bg }}>
-            {/* Background gradient overlay */}
-            <View style={{
-                position: 'absolute', top: 0, left: 0, right: 0, height: '60%',
-                backgroundColor: 'rgba(0,229,255,0.02)',
-                borderBottomLeftRadius: 200,
-                borderBottomRightRadius: 200,
-            }} />
+            {/* Ambient glow */}
+            <Animated.View style={[{
+                position: 'absolute', top: -80, left: W / 2 - 160,
+                width: 320, height: 320, borderRadius: 160,
+                backgroundColor: T.colors.accent,
+            }, glowStyle]} />
 
-            {/* Progress dots */}
+            {/* Progress bar */}
             <View style={{ paddingTop: 20, paddingHorizontal: 32 }}>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <View style={{ flex: 1, height: 3, backgroundColor: T.colors.accent, borderRadius: 2, ...T.glow(T.colors.accent, 0.3) }} />
-                    <View style={{ flex: 1, height: 3, backgroundColor: T.colors.dimmer, borderRadius: 2 }} />
-                    <View style={{ flex: 1, height: 3, backgroundColor: T.colors.dimmer, borderRadius: 2 }} />
-                    <View style={{ flex: 1, height: 3, backgroundColor: T.colors.dimmer, borderRadius: 2 }} />
+                    <View style={{
+                        flex: 1, height: 3, borderRadius: 2,
+                        backgroundColor: T.colors.accent,
+                        ...T.glow(T.colors.accent, 0.3),
+                    }} />
+                    {[1, 2, 3].map(i => (
+                        <View key={i} style={{
+                            flex: 1, height: 3, borderRadius: 2,
+                            backgroundColor: T.colors.dimmer,
+                        }} />
+                    ))}
                 </View>
             </View>
 
-            {/* Main content */}
+            {/* Hero section */}
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 }}>
-                {/* Hero Logo */}
                 <View style={{ alignItems: 'center', justifyContent: 'center', marginBottom: 56 }}>
                     <ParticleRing />
-                    <Animated.View style={{
-                        width: 140, height: 140,
-                        borderRadius: 70,
+                    <Animated.View style={[{
+                        width: 140, height: 140, borderRadius: 70,
                         justifyContent: 'center', alignItems: 'center',
-                        transform: [{ scale: scaleAnim }],
-                        opacity: fadeAnim,
                         ...T.glass.accent,
-                        ...T.glow(T.colors.accent, 0.3),
-                    }}>
+                        ...T.glow(T.colors.accent, 0.35),
+                    }, logoAnimStyle]}>
                         <View style={{
                             width: 110, height: 110, borderRadius: 55,
-                            backgroundColor: 'rgba(0,229,255,0.08)',
+                            backgroundColor: `${T.colors.accent}15`,
                             justifyContent: 'center', alignItems: 'center',
                         }}>
-                            <Text style={{ fontSize: 56 }}>🏀</Text>
+                            <Text style={{ fontSize: 56 }}></Text>
                         </View>
                     </Animated.View>
                 </View>
 
-                {/* Text content */}
-                <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+                <Animated.View style={[{ alignItems: 'center' }, textAnimStyle]}>
                     <Text style={{
-                        color: T.colors.white,
-                        fontSize: T.font.hero,
-                        fontWeight: '900',
-                        textAlign: 'center',
-                        letterSpacing: -1.5,
-                        lineHeight: 48,
+                        color: T.colors.white, fontSize: T.font.hero,
+                        fontWeight: '900', textAlign: 'center',
+                        letterSpacing: -1.5, lineHeight: 48,
                     }}>
-                        Joue comme{'\n'}
-                        <Text style={{ color: T.colors.accent }}>un pro.</Text>
+                        Play like{'\n'}
+                        <Text style={{ color: T.colors.accent }}>a pro.</Text>
                     </Text>
 
                     <Text style={{
-                        color: T.colors.textSecondary,
-                        fontSize: T.font.base,
-                        marginTop: 20,
-                        textAlign: 'center',
-                        lineHeight: 24,
-                        letterSpacing: 0.2,
+                        color: T.colors.textSecondary, fontSize: T.font.base,
+                        marginTop: 20, textAlign: 'center',
+                        lineHeight: 24, letterSpacing: 0.2,
                     }}>
-                        Analyse ton jeu avec l'Intelligence{'\n'}Artificielle. Ton coach dans ta poche.
+                        Analyze your game with AI.{'\n'}Your coach, in your pocket.
                     </Text>
                 </Animated.View>
             </View>
 
             {/* CTA */}
-            <Animated.View style={{
-                paddingHorizontal: 32,
-                paddingBottom: 40,
-                opacity: fadeAnim,
-                transform: [{ translateY: btnSlide }],
-            }}>
+            <Animated.View style={[{ paddingHorizontal: 32, paddingBottom: 40 }, btnAnimStyle]}>
                 <TouchableOpacity
                     style={{
                         backgroundColor: T.colors.accent,
-                        paddingVertical: 18,
-                        borderRadius: T.radius.pill,
+                        paddingVertical: 18, borderRadius: T.radius.pill,
                         alignItems: 'center',
                         ...T.glow(T.colors.accent, 0.4),
                     }}
                     onPress={() => router.push('/onboarding2')}
                     activeOpacity={0.85}
-                    accessibilityLabel="Commencer l'onboarding"
+                    accessibilityLabel="Get started"
                     accessibilityRole="button"
                 >
-                    <Text style={{ color: T.colors.bg, fontWeight: '800', fontSize: 18, letterSpacing: 0.5 }}>
-                        Commencer
+                    <Text style={{
+                        color: T.colors.bg, fontWeight: '800',
+                        fontSize: 18, letterSpacing: 0.5,
+                    }}>
+                        Get Started
                     </Text>
                 </TouchableOpacity>
 
                 <Text style={{
-                    color: T.colors.dim,
-                    fontSize: 12,
-                    textAlign: 'center',
-                    marginTop: 16,
-                    letterSpacing: 0.3,
+                    color: T.colors.dim, fontSize: 12,
+                    textAlign: 'center', marginTop: 16, letterSpacing: 0.3,
                 }}>
-                    Gratuit pendant la beta • Pas de carte requise
+                    Free during beta  No credit card required
                 </Text>
             </Animated.View>
         </SafeAreaView>

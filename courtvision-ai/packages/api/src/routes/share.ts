@@ -439,11 +439,9 @@ export default async function shareRoutes(fastify: FastifyInstance) {
                 return reply.code(404).send({ error: 'Card non trouvée' })
             }
 
-            // Incrémenter les vues
-            await fastify.supabase
-                .from('shared_cards')
-                .update({ views_count: (share.views_count || 0) + 1 })
-                .eq('share_id', shareId)
+            // Atomic increment — avoids read-then-write race condition
+            const { data: newCount } = await fastify.supabase
+                .rpc('increment_views_count', { card_share_id: shareId })
 
             return {
                 data: {
@@ -451,7 +449,7 @@ export default async function shareRoutes(fastify: FastifyInstance) {
                     type: share.type,
                     cardData: share.card_data,
                     caption: share.caption,
-                    viewsCount: (share.views_count || 0) + 1,
+                    viewsCount: newCount ?? (share.views_count || 0) + 1,
                     createdAt: share.created_at,
                     downloadUrl: `https://courtvision.ai/s/${shareId}`,
                     ctaUrl: 'https://courtvision.ai',
@@ -512,10 +510,9 @@ export default async function shareRoutes(fastify: FastifyInstance) {
                 .single()
 
             if (card) {
+                // Atomic increment — avoids read-then-write race condition
                 await fastify.supabase
-                    .from('shared_cards')
-                    .update({ views_count: (card.views_count || 0) + 1 })
-                    .eq('share_id', body.shareId)
+                    .rpc('increment_views_count', { card_share_id: body.shareId })
             }
 
             return { success: true }

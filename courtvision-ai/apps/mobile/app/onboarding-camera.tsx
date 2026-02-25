@@ -1,99 +1,294 @@
-import { View, Text, TouchableOpacity, Animated, Dimensions, ScrollView } from 'react-native'
+﻿import { View, Text, TouchableOpacity, Dimensions, ScrollView } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useEffect, useRef, useState } from 'react'
-import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons'
+import { useEffect, useState } from 'react'
+import Animated, {
+    useSharedValue, useAnimatedStyle, withTiming, withRepeat,
+    withSequence, Easing, FadeIn,
+} from 'react-native-reanimated'
+import { Feather } from '@expo/vector-icons'
 import { T } from '../lib/theme'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
+//  Camera Setup Steps 
+
 const CAMERA_STEPS = [
     {
-        id: 'placement', emoji: '📱',
-        title: 'Place ton téléphone',
-        subtitle: 'Position idéale pour l\'analyse IA',
-        description: 'Pose ton téléphone en format paysage, à hauteur de poitrine, entre 3 et 5 mètres du terrain.',
+        id: 'placement', emoji: '',
+        title: 'Place Your Phone',
+        subtitle: 'Optimal position for AI analysis',
+        description: 'Set your phone in landscape mode, at chest height, 3 to 5 meters from the court.',
         tips: [
-            { icon: 'resize', text: 'Distance : 3–5 mètres du terrain', important: true },
-            { icon: 'phone-landscape-outline', text: 'Mode paysage obligatoire', important: true },
-            { icon: 'eye-outline', text: 'Le terrain doit être visible en entier', important: false },
-            { icon: 'alert-circle-outline', text: 'Évite les contre-jours directs', important: false },
+            { icon: 'maximize-2' as const, text: 'Distance: 35 meters from court', important: true },
+            { icon: 'smartphone' as const, text: 'Landscape mode required', important: true },
+            { icon: 'eye' as const, text: 'Full court should be visible', important: false },
+            { icon: 'alert-circle' as const, text: 'Avoid direct backlight', important: false },
         ],
         diagram: 'placement',
     },
     {
-        id: 'stability', emoji: '🔒',
-        title: 'Stabilise l\'image',
-        subtitle: 'L\'IA a besoin d\'une image stable',
-        description: 'Utilise un trépied, un banc, ou cale ton téléphone contre un mur. L\'IA perd en précision si l\'image bouge.',
+        id: 'stability', emoji: '',
+        title: 'Stabilize the Shot',
+        subtitle: 'AI needs a steady frame',
+        description: 'Use a tripod, bench, or prop your phone against a wall. Shaky footage reduces accuracy.',
         tips: [
-            { icon: 'easel-outline', text: 'Idéal : trépied ou support', important: true },
-            { icon: 'cube-outline', text: 'Alternative : banc, mur, sac', important: false },
-            { icon: 'hand-left-outline', text: 'Évite de filmer à main levée', important: true },
-            { icon: 'timer-outline', text: 'Laisse le téléphone fixe pendant toute la session', important: false },
+            { icon: 'triangle' as const, text: 'Best: tripod or phone mount', important: true },
+            { icon: 'box' as const, text: 'Alternative: bench, wall, bag', important: false },
+            { icon: 'x-circle' as const, text: 'Avoid handheld filming', important: true },
+            { icon: 'clock' as const, text: 'Keep the phone still the entire session', important: false },
         ],
         diagram: 'stability',
     },
     {
-        id: 'lighting', emoji: '💡',
-        title: 'Éclairage & Cadrage',
-        subtitle: 'Optimise la qualité vidéo',
-        description: 'L\'IA détecte mieux tes mouvements avec un bon éclairage. Évite les ombres dures et les reflets.',
+        id: 'lighting', emoji: '',
+        title: 'Lighting & Framing',
+        subtitle: 'Optimize video quality',
+        description: 'Good lighting helps the AI track your movements. Avoid harsh shadows and reflections.',
         tips: [
-            { icon: 'sunny-outline', text: 'Extérieur : soleil dans le dos', important: true },
-            { icon: 'bulb-outline', text: 'Intérieur : lumière uniforme', important: false },
-            { icon: 'contrast-outline', text: 'Évite les zones de fort contraste', important: false },
-            { icon: 'shirt-outline', text: 'Porte des vêtements visibles (pas blanc sur blanc)', important: false },
+            { icon: 'sun' as const, text: 'Outdoor: sun behind you', important: true },
+            { icon: 'zap' as const, text: 'Indoor: uniform lighting', important: false },
+            { icon: 'sliders' as const, text: 'Avoid high-contrast areas', important: false },
+            { icon: 'user' as const, text: 'Wear visible clothing (no white-on-white)', important: false },
         ],
         diagram: 'lighting',
     },
     {
-        id: 'ready', emoji: '🚀',
-        title: 'Tu es prêt !',
-        subtitle: 'L\'IA fait le reste',
-        description: 'Lance une session et joue naturellement. CourtVision AI analyse tes tirs, tes déplacements et ton mental en temps réel.',
+        id: 'ready', emoji: '',
+        title: 'You`re Ready!',
+        subtitle: 'AI does the rest',
+        description: 'Start a session and play naturally. CourtVision AI analyzes your shots, movement, and focus in real time.',
         tips: [
-            { icon: 'basketball-outline', text: 'Joue normalement — l\'IA s\'adapte', important: false },
-            { icon: 'analytics-outline', text: 'Résultats disponibles en ~2 minutes', important: false },
-            { icon: 'notifications-outline', text: 'Active les notifs pour ton rapport', important: false },
-            { icon: 'infinite-outline', text: 'Plus tu joues, plus ton Twin est précis', important: true },
+            { icon: 'activity' as const, text: 'Play naturally  AI adapts to you', important: false },
+            { icon: 'bar-chart-2' as const, text: 'Results available in ~2 minutes', important: false },
+            { icon: 'bell' as const, text: 'Turn on notifications for your report', important: false },
+            { icon: 'trending-up' as const, text: 'More sessions = smarter Twin', important: true },
         ],
         diagram: 'ready',
     },
 ]
 
+//  Camera Diagram Component 
+
+function CameraDiagram({ type }: { type: string }) {
+    const pulse = useSharedValue(0.8)
+
+    useEffect(() => {
+        pulse.value = withRepeat(
+            withSequence(
+                withTiming(1, { duration: 1200 }),
+                withTiming(0.8, { duration: 1200 }),
+            ),
+            -1, true,
+        )
+    }, [])
+
+    const pulseStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: pulse.value }],
+        opacity: 0.6 + pulse.value * 0.4,
+    }))
+
+    if (type === 'placement') {
+        return (
+            <View style={{
+                height: 180, marginBottom: T.space.xl,
+                ...T.glass.light, borderRadius: T.radius.lg,
+                justifyContent: 'center', alignItems: 'center', overflow: 'hidden',
+            }}>
+                <View style={{
+                    width: SCREEN_WIDTH - 80, height: 100,
+                    borderWidth: 2, borderColor: T.colors.borderAccent,
+                    borderRadius: 8, justifyContent: 'center', alignItems: 'center',
+                    position: 'relative',
+                }}>
+                    <View style={{
+                        width: '40%', height: '60%',
+                        borderWidth: 1, borderColor: `${T.colors.accent}20`, borderRadius: 4,
+                    }} />
+                    <Animated.View style={[{
+                        position: 'absolute', top: 20,
+                        width: 20, height: 20, borderRadius: 10,
+                        backgroundColor: T.colors.accent,
+                        ...T.glow(T.colors.accent, 0.3),
+                    }, pulseStyle]} />
+                    <Text style={{ position: 'absolute', top: 45, color: T.colors.muted, fontSize: T.font.xs }}>Player</Text>
+                </View>
+                <View style={{ position: 'absolute', bottom: 12, flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 20 }}></Text>
+                    <View style={{ marginLeft: 8 }}>
+                        <Text style={{ color: T.colors.accent, fontSize: T.font.xs + 1, fontWeight: '700' }}>35m</Text>
+                        <Text style={{ color: T.colors.dim, fontSize: T.font.xs - 1 }}>Landscape  Steady</Text>
+                    </View>
+                </View>
+            </View>
+        )
+    }
+
+    if (type === 'stability') {
+        return (
+            <View style={{
+                height: 160, marginBottom: T.space.xl,
+                ...T.glass.light, borderRadius: T.radius.lg,
+                flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center',
+                paddingHorizontal: T.space.xl,
+            }}>
+                <View style={{ alignItems: 'center' }}>
+                    <View style={{
+                        width: 50, height: 60, backgroundColor: T.colors.greenDim,
+                        borderRadius: 8, justifyContent: 'center', alignItems: 'center',
+                        borderWidth: 1, borderColor: `${T.colors.green}40`,
+                    }}>
+                        <Text style={{ fontSize: 24 }}></Text>
+                        <View style={{ width: 2, height: 20, backgroundColor: T.colors.muted, marginTop: 2 }} />
+                    </View>
+                    <Text style={{ color: T.colors.green, fontSize: T.font.sm, fontWeight: '700', marginTop: 8 }}> Tripod</Text>
+                </View>
+                <View style={{ alignItems: 'center' }}>
+                    <View style={{
+                        width: 50, height: 60, backgroundColor: T.colors.orangeDim,
+                        borderRadius: 8, justifyContent: 'center', alignItems: 'center',
+                        borderWidth: 1, borderColor: `${T.colors.orange}40`,
+                    }}>
+                        <Text style={{ fontSize: 24 }}></Text>
+                        <View style={{ width: 40, height: 8, backgroundColor: T.colors.muted, borderRadius: 2, marginTop: 4 }} />
+                    </View>
+                    <Text style={{ color: T.colors.orange, fontSize: T.font.sm, fontWeight: '700', marginTop: 8 }}> Prop</Text>
+                </View>
+                <View style={{ alignItems: 'center' }}>
+                    <Animated.View style={[{
+                        width: 50, height: 60, backgroundColor: T.colors.redDim,
+                        borderRadius: 8, justifyContent: 'center', alignItems: 'center',
+                        borderWidth: 1, borderColor: `${T.colors.red}40`,
+                        transform: [{ rotate: '5deg' }],
+                    }, pulseStyle]}>
+                        <Text style={{ fontSize: 24 }}></Text>
+                        <Text style={{ fontSize: 10 }}></Text>
+                    </Animated.View>
+                    <Text style={{ color: T.colors.red, fontSize: T.font.sm, fontWeight: '700', marginTop: 8 }}> Hand</Text>
+                </View>
+            </View>
+        )
+    }
+
+    if (type === 'lighting') {
+        return (
+            <View style={{
+                height: 140, marginBottom: T.space.xl,
+                ...T.glass.light, borderRadius: T.radius.lg,
+                flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center',
+                paddingHorizontal: T.space.xl,
+            }}>
+                <View style={{ alignItems: 'center' }}>
+                    <View style={{
+                        width: 70, height: 70, borderRadius: T.radius.md,
+                        backgroundColor: T.colors.greenDim,
+                        justifyContent: 'center', alignItems: 'center',
+                        borderWidth: 1, borderColor: `${T.colors.green}30`,
+                    }}>
+                        <Text style={{ fontSize: 20 }}></Text>
+                        <Text style={{ fontSize: 8, color: T.colors.muted, marginTop: 2 }}></Text>
+                        <Text style={{ fontSize: 16 }}></Text>
+                    </View>
+                    <Text style={{ color: T.colors.green, fontSize: T.font.xs + 1, fontWeight: '600', marginTop: 6 }}> Sun behind</Text>
+                </View>
+                <View style={{ alignItems: 'center' }}>
+                    <View style={{
+                        width: 70, height: 70, borderRadius: T.radius.md,
+                        backgroundColor: T.colors.redDim,
+                        justifyContent: 'center', alignItems: 'center',
+                        borderWidth: 1, borderColor: `${T.colors.red}30`,
+                    }}>
+                        <Text style={{ fontSize: 16 }}></Text>
+                        <Text style={{ fontSize: 8, color: T.colors.muted, marginTop: 2 }}></Text>
+                        <Text style={{ fontSize: 20 }}></Text>
+                    </View>
+                    <Text style={{ color: T.colors.red, fontSize: T.font.xs + 1, fontWeight: '600', marginTop: 6 }}> Backlight</Text>
+                </View>
+                <View style={{ alignItems: 'center' }}>
+                    <View style={{
+                        width: 70, height: 70, borderRadius: T.radius.md,
+                        backgroundColor: T.colors.accentDim,
+                        justifyContent: 'center', alignItems: 'center',
+                        borderWidth: 1, borderColor: T.colors.borderAccent,
+                    }}>
+                        <Text style={{ fontSize: 20 }}></Text>
+                        <Text style={{ fontSize: 16, marginTop: 4 }}></Text>
+                    </View>
+                    <Text style={{ color: T.colors.accent, fontSize: T.font.xs + 1, fontWeight: '600', marginTop: 6 }}> Gym lights</Text>
+                </View>
+            </View>
+        )
+    }
+
+    // Ready diagram
+    return (
+        <Animated.View entering={FadeIn.duration(500)} style={{
+            height: 160, marginBottom: T.space.xl,
+            ...T.glass.accent, borderRadius: T.radius.lg,
+            justifyContent: 'center', alignItems: 'center',
+        }}>
+            <Animated.View style={[{
+                width: 80, height: 80, borderRadius: 40,
+                backgroundColor: T.colors.accentDim,
+                justifyContent: 'center', alignItems: 'center',
+                borderWidth: 2, borderColor: T.colors.borderAccent,
+                ...T.glow(T.colors.accent, 0.2),
+            }, pulseStyle]}>
+                <Text style={{ fontSize: 40 }}></Text>
+            </Animated.View>
+            <Text style={{ color: T.colors.accent, fontSize: T.font.md, fontWeight: '700', marginTop: 12 }}>
+                Your AI coach is ready
+            </Text>
+            <Text style={{ color: T.colors.dim, fontSize: T.font.sm }}>
+                Analysis  Digital Twin  Highlights
+            </Text>
+        </Animated.View>
+    )
+}
+
+//  Screen 
+
 export default function OnboardingCamera() {
     const router = useRouter()
     const [currentStep, setCurrentStep] = useState(0)
-    const fadeAnim = useRef(new Animated.Value(0)).current
-    const slideAnim = useRef(new Animated.Value(30)).current
-    const progressAnim = useRef(new Animated.Value(0)).current
 
     const step = CAMERA_STEPS[currentStep]
     const isLastStep = currentStep === CAMERA_STEPS.length - 1
 
+    // Step transition
+    const contentOpacity = useSharedValue(1)
+    const contentY = useSharedValue(0)
+
     useEffect(() => {
-        fadeAnim.setValue(0)
-        slideAnim.setValue(30)
-        Animated.parallel([
-            Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
-            Animated.timing(slideAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
-        ]).start()
-        Animated.timing(progressAnim, {
-            toValue: (currentStep + 1) / CAMERA_STEPS.length,
-            duration: 300,
-            useNativeDriver: false,
-        }).start()
+        contentOpacity.value = 0
+        contentY.value = 20
+        contentOpacity.value = withTiming(1, { duration: 350, easing: Easing.out(Easing.quad) })
+        contentY.value = withTiming(0, { duration: 350, easing: Easing.out(Easing.quad) })
     }, [currentStep])
 
+    const contentStyle = useAnimatedStyle(() => ({
+        opacity: contentOpacity.value,
+        transform: [{ translateY: contentY.value }],
+    }))
+
+    // Progress bar width
+    const progressWidth = useSharedValue(0)
+    useEffect(() => {
+        progressWidth.value = withTiming((currentStep + 1) / CAMERA_STEPS.length, { duration: 300 })
+    }, [currentStep])
+
+    const progressStyle = useAnimatedStyle(() => ({
+        width: `${progressWidth.value * 100}%` as any,
+    }))
+
     const handleNext = () => {
-        if (isLastStep) { router.push('/onboarding3') }
-        else { setCurrentStep(prev => prev + 1) }
+        if (isLastStep) router.push('/onboarding3')
+        else setCurrentStep(prev => prev + 1)
     }
-    const handleSkip = () => { router.push('/onboarding3') }
+    const handleSkip = () => router.push('/onboarding3')
     const handleBack = () => {
-        if (currentStep > 0) { setCurrentStep(prev => prev - 1) }
-        else { router.back() }
+        if (currentStep > 0) setCurrentStep(prev => prev - 1)
+        else router.back()
     }
 
     return (
@@ -101,30 +296,26 @@ export default function OnboardingCamera() {
             {/* Header */}
             <View style={{ paddingHorizontal: T.space.xl, paddingTop: 10 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: T.space.md }}>
-                    <TouchableOpacity onPress={handleBack} accessibilityLabel="Retour">
+                    <TouchableOpacity onPress={handleBack} accessibilityLabel="Back">
                         <View style={{
                             width: 40, height: 40, borderRadius: T.radius.md,
                             ...T.glass.light,
                             justifyContent: 'center', alignItems: 'center',
                         }}>
-                            <Ionicons name="arrow-back" size={20} color={T.colors.textSecondary} />
+                            <Feather name="arrow-left" size={20} color={T.colors.textSecondary} />
                         </View>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={handleSkip}>
-                        <Text style={{ color: T.colors.muted, fontSize: T.font.md + 1 }}>Passer</Text>
+                        <Text style={{ color: T.colors.muted, fontSize: T.font.md + 1 }}>Skip</Text>
                     </TouchableOpacity>
                 </View>
 
-                {/* Progress Bar */}
-                <View style={{
-                    height: 4, backgroundColor: T.colors.dimmer,
-                    borderRadius: 2, marginBottom: 6,
-                }}>
-                    <Animated.View style={{
+                {/* Progress bar */}
+                <View style={{ height: 4, backgroundColor: T.colors.dimmer, borderRadius: 2, marginBottom: 6 }}>
+                    <Animated.View style={[{
                         height: 4, backgroundColor: T.colors.accent, borderRadius: 2,
-                        width: progressAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
                         ...T.glow(T.colors.accent, 0.15),
-                    }} />
+                    }, progressStyle]} />
                 </View>
                 <Text style={{ color: T.colors.dim, fontSize: T.font.sm, textAlign: 'right', marginBottom: 4 }}>
                     {currentStep + 1}/{CAMERA_STEPS.length}
@@ -136,8 +327,7 @@ export default function OnboardingCamera() {
                 contentContainerStyle={{ paddingHorizontal: T.space.xl, paddingBottom: 30, flexGrow: 1 }}
                 showsVerticalScrollIndicator={false}
             >
-                <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }], flex: 1 }}>
-
+                <Animated.View style={[{ flex: 1 }, contentStyle]}>
                     {/* Emoji + Title */}
                     <View style={{ alignItems: 'center', marginTop: 10, marginBottom: T.space.xl }}>
                         <View style={{
@@ -182,9 +372,9 @@ export default function OnboardingCamera() {
                                 ...(tip.important ? T.glass.accent : T.glass.light),
                                 borderRadius: T.radius.md, padding: 14, marginBottom: 8,
                             }}>
-                                <Ionicons
-                                    name={tip.icon as any}
-                                    size={20}
+                                <Feather
+                                    name={tip.icon}
+                                    size={18}
                                     color={tip.important ? T.colors.accent : T.colors.muted}
                                 />
                                 <Text style={{
@@ -199,7 +389,7 @@ export default function OnboardingCamera() {
                                         backgroundColor: T.colors.accentDim,
                                         borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2,
                                     }}>
-                                        <Text style={{ color: T.colors.accent, fontSize: T.font.xs, fontWeight: '700' }}>CLÉ</Text>
+                                        <Text style={{ color: T.colors.accent, fontSize: T.font.xs, fontWeight: '700' }}>KEY</Text>
                                     </View>
                                 )}
                             </View>
@@ -221,7 +411,7 @@ export default function OnboardingCamera() {
                     activeOpacity={0.85}
                 >
                     <Text style={{ color: T.colors.bg, fontWeight: '800', fontSize: T.font.lg }}>
-                        {isLastStep ? '🏀 Commencer' : 'Suivant →'}
+                        {isLastStep ? ' Get Started' : 'Next '}
                     </Text>
                 </TouchableOpacity>
 
@@ -243,178 +433,5 @@ export default function OnboardingCamera() {
                 </View>
             </View>
         </SafeAreaView>
-    )
-}
-
-// ── Camera Diagram ──
-function CameraDiagram({ type }: { type: string }) {
-    const pulseAnim = useRef(new Animated.Value(0.8)).current
-    useEffect(() => {
-        Animated.loop(Animated.sequence([
-            Animated.timing(pulseAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
-            Animated.timing(pulseAnim, { toValue: 0.8, duration: 1200, useNativeDriver: true }),
-        ])).start()
-    }, [])
-
-    if (type === 'placement') {
-        return (
-            <View style={{
-                height: 180, marginBottom: T.space.xl,
-                ...T.glass.light, borderRadius: T.radius.lg,
-                justifyContent: 'center', alignItems: 'center', overflow: 'hidden',
-            }}>
-                <View style={{
-                    width: SCREEN_WIDTH - 80, height: 100,
-                    borderWidth: 2, borderColor: T.colors.borderAccent,
-                    borderRadius: 8, justifyContent: 'center', alignItems: 'center',
-                    position: 'relative',
-                }}>
-                    <View style={{
-                        width: '40%', height: '60%',
-                        borderWidth: 1, borderColor: `${T.colors.accent}20`, borderRadius: 4,
-                    }} />
-                    <View style={{
-                        width: 30, height: 30, borderRadius: 15,
-                        borderWidth: 1, borderColor: `${T.colors.accent}20`, position: 'absolute',
-                    }} />
-                    <Animated.View style={{
-                        position: 'absolute', top: 20,
-                        width: 20, height: 20, borderRadius: 10,
-                        backgroundColor: T.colors.accent, opacity: pulseAnim,
-                        ...T.glow(T.colors.accent, 0.3),
-                    }} />
-                    <Text style={{ position: 'absolute', top: 45, color: T.colors.muted, fontSize: T.font.xs }}>Joueur</Text>
-                </View>
-                <View style={{ position: 'absolute', bottom: 12, flexDirection: 'row', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 20 }}>📱</Text>
-                    <View style={{ marginLeft: 8 }}>
-                        <Text style={{ color: T.colors.accent, fontSize: T.font.xs + 1, fontWeight: '700' }}>3–5m</Text>
-                        <Text style={{ color: T.colors.dim, fontSize: T.font.xs - 1 }}>Paysage • Fixe</Text>
-                    </View>
-                </View>
-            </View>
-        )
-    }
-
-    if (type === 'stability') {
-        return (
-            <View style={{
-                height: 160, marginBottom: T.space.xl,
-                ...T.glass.light, borderRadius: T.radius.lg,
-                flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center',
-                paddingHorizontal: T.space.xl,
-            }}>
-                <View style={{ alignItems: 'center' }}>
-                    <View style={{
-                        width: 50, height: 60, backgroundColor: T.colors.greenDim,
-                        borderRadius: 8, justifyContent: 'center', alignItems: 'center',
-                        borderWidth: 1, borderColor: `${T.colors.green}40`,
-                    }}>
-                        <Text style={{ fontSize: 24 }}>📱</Text>
-                        <View style={{ width: 2, height: 20, backgroundColor: T.colors.muted, marginTop: 2 }} />
-                    </View>
-                    <Text style={{ color: T.colors.green, fontSize: T.font.sm, fontWeight: '700', marginTop: 8 }}>✅ Trépied</Text>
-                </View>
-                <View style={{ alignItems: 'center' }}>
-                    <View style={{
-                        width: 50, height: 60, backgroundColor: T.colors.orangeDim,
-                        borderRadius: 8, justifyContent: 'center', alignItems: 'center',
-                        borderWidth: 1, borderColor: `${T.colors.orange}40`,
-                    }}>
-                        <Text style={{ fontSize: 24 }}>📱</Text>
-                        <View style={{ width: 40, height: 8, backgroundColor: T.colors.muted, borderRadius: 2, marginTop: 4 }} />
-                    </View>
-                    <Text style={{ color: T.colors.orange, fontSize: T.font.sm, fontWeight: '700', marginTop: 8 }}>⚠️ Support</Text>
-                </View>
-                <View style={{ alignItems: 'center' }}>
-                    <Animated.View style={{
-                        width: 50, height: 60, backgroundColor: T.colors.redDim,
-                        borderRadius: 8, justifyContent: 'center', alignItems: 'center',
-                        borderWidth: 1, borderColor: `${T.colors.red}40`,
-                        transform: [{ rotate: '5deg' }, { scale: pulseAnim }],
-                    }}>
-                        <Text style={{ fontSize: 24 }}>📱</Text>
-                        <Text style={{ fontSize: 10 }}>🤚</Text>
-                    </Animated.View>
-                    <Text style={{ color: T.colors.red, fontSize: T.font.sm, fontWeight: '700', marginTop: 8 }}>❌ Main</Text>
-                </View>
-            </View>
-        )
-    }
-
-    if (type === 'lighting') {
-        return (
-            <View style={{
-                height: 140, marginBottom: T.space.xl,
-                ...T.glass.light, borderRadius: T.radius.lg,
-                flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center',
-                paddingHorizontal: T.space.xl,
-            }}>
-                <View style={{ alignItems: 'center' }}>
-                    <View style={{
-                        width: 70, height: 70, borderRadius: T.radius.md,
-                        backgroundColor: T.colors.greenDim,
-                        justifyContent: 'center', alignItems: 'center',
-                        borderWidth: 1, borderColor: `${T.colors.green}30`,
-                    }}>
-                        <Text style={{ fontSize: 20 }}>☀️</Text>
-                        <Text style={{ fontSize: 8, color: T.colors.muted, marginTop: 2 }}>↓</Text>
-                        <Text style={{ fontSize: 16 }}>📱</Text>
-                    </View>
-                    <Text style={{ color: T.colors.green, fontSize: T.font.xs + 1, fontWeight: '600', marginTop: 6 }}>✅ Soleil derrière</Text>
-                </View>
-                <View style={{ alignItems: 'center' }}>
-                    <View style={{
-                        width: 70, height: 70, borderRadius: T.radius.md,
-                        backgroundColor: T.colors.redDim,
-                        justifyContent: 'center', alignItems: 'center',
-                        borderWidth: 1, borderColor: `${T.colors.red}30`,
-                    }}>
-                        <Text style={{ fontSize: 16 }}>📱</Text>
-                        <Text style={{ fontSize: 8, color: T.colors.muted, marginTop: 2 }}>↓</Text>
-                        <Text style={{ fontSize: 20 }}>☀️</Text>
-                    </View>
-                    <Text style={{ color: T.colors.red, fontSize: T.font.xs + 1, fontWeight: '600', marginTop: 6 }}>❌ Contre-jour</Text>
-                </View>
-                <View style={{ alignItems: 'center' }}>
-                    <View style={{
-                        width: 70, height: 70, borderRadius: T.radius.md,
-                        backgroundColor: T.colors.accentDim,
-                        justifyContent: 'center', alignItems: 'center',
-                        borderWidth: 1, borderColor: T.colors.borderAccent,
-                    }}>
-                        <Text style={{ fontSize: 20 }}>💡</Text>
-                        <Text style={{ fontSize: 16, marginTop: 4 }}>🏟️</Text>
-                    </View>
-                    <Text style={{ color: T.colors.accent, fontSize: T.font.xs + 1, fontWeight: '600', marginTop: 6 }}>✅ Gym éclairé</Text>
-                </View>
-            </View>
-        )
-    }
-
-    // Ready state
-    return (
-        <View style={{
-            height: 160, marginBottom: T.space.xl,
-            ...T.glass.accent, borderRadius: T.radius.lg,
-            justifyContent: 'center', alignItems: 'center',
-        }}>
-            <Animated.View style={{
-                transform: [{ scale: pulseAnim }],
-                width: 80, height: 80, borderRadius: 40,
-                backgroundColor: T.colors.accentDim,
-                justifyContent: 'center', alignItems: 'center',
-                borderWidth: 2, borderColor: T.colors.borderAccent,
-                ...T.glow(T.colors.accent, 0.2),
-            }}>
-                <Text style={{ fontSize: 40 }}>🏀</Text>
-            </Animated.View>
-            <Text style={{ color: T.colors.accent, fontSize: T.font.md, fontWeight: '700', marginTop: 12 }}>
-                Ton coach IA est prêt
-            </Text>
-            <Text style={{ color: T.colors.dim, fontSize: T.font.sm }}>
-                Analyse • Digital Twin • Highlights
-            </Text>
-        </View>
     )
 }

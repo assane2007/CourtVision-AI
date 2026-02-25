@@ -4,7 +4,7 @@
 version: '3.8'
 
 services:
-  # Redis — File d'attente BullMQ pour le traitement vidéo
+  # Redis — File d'attente BullMQ pour le traitement vidéo + Live Session store
   redis:
     image: redis:7-alpine
     container_name: courtvision-redis
@@ -20,6 +20,41 @@ services:
       retries: 3
     restart: unless-stopped
 
+  # API — Fastify server (routes + live coach SSE)
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: courtvision-api
+    ports:
+      - "3001:3001"
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - REDIS_URL=redis://redis:6379
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+    restart: unless-stopped
+
+  # Python Tracker — MediaPipe + YOLOv8 for pose/ball tracking
+  tracker:
+    build:
+      context: .
+      dockerfile: packages/python/Dockerfile
+    container_name: courtvision-tracker
+    volumes:
+      - tracker-models:/app/models
+    restart: unless-stopped
+
 volumes:
   redis-data:
+    driver: local
+  tracker-models:
     driver: local

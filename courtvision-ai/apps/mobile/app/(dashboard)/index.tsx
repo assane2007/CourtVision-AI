@@ -1,67 +1,289 @@
+/**
+ * CourtVision AI  Dashboard V3
+ * 
+ * "Court" tab  the WOW screen.
+ *
+ * SECTIONS :
+ *   1. Hero (greeting + streak + avatar with XP ring)
+ *   2. Today's Stats (headline stat or elegant empty state)
+ *   3. Daily Challenge (timer + progress + CTA)
+ *   4. Weekly Progress (7 dots with session markers)
+ *   5. Quick Highlights feed (horizontal scroll)
+ * 
+ */
+
 import {
     View, Text, ScrollView, FlatList, TouchableOpacity,
-    Animated, RefreshControl, Dimensions, Platform,
+    RefreshControl, Dimensions, Platform,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons'
+import { Feather } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
-import { useEffect, useRef, useCallback, useState, memo } from 'react'
-import { useStore, selectWeekly, selectHighlights, selectStreak, selectXP } from '../../lib/store'
+import { useEffect, useCallback, useState, memo } from 'react'
+import Animated, {
+    FadeInDown, FadeInRight,
+} from 'react-native-reanimated'
+import { useStore, selectWeekly, selectHighlights, selectStreak, selectXP, xpToLevel, xpToNextLevel } from '../../lib/store'
 import { SkeletonHighlight, SkeletonStatCard, SkeletonWeeklyChart } from '../../components/SkeletonLoader'
 import { XPLevelBar } from '../../components/XPBadge'
 import { DailyChallengeCard } from '../../components/DailyChallengeCard'
 import { StreakReminderBanner } from '../../components/StreakReminderBanner'
+import { ScoreRing } from '../../components/ScoreRing'
+import { PrimaryButton } from '../../components/PrimaryButton'
 import { T } from '../../lib/theme'
 import type { HighlightClip } from '../../lib/store'
 
 const { width: SCREEN_W } = Dimensions.get('window')
 
-// ── Glass Card wrapper ───────────────────────────────────────
+//  Greeting logic 
+
+function getGreeting(): string {
+    const h = new Date().getHours()
+    if (h < 12) return 'Good morning'
+    if (h < 18) return 'Good afternoon'
+    return 'Good evening'
+}
+
+function getStreakMessage(streak: number): string {
+    if (streak === 0) return 'Ready to start your streak?'
+    if (streak < 7) return `Day ${streak}  Keep the momentum`
+    const weeks = Math.floor(streak / 7)
+    return `Week ${weeks} streak  You're locked in`
+}
+
+//  Glass Card 
+
 function GlassCard({ children, style, accent = false }: any) {
     return (
-        <View style={[
-            {
-                borderRadius: T.radius.lg,
-                padding: 16,
-                ...(accent ? T.glass.accent : T.glass.light),
-            },
-            style,
-        ]}>
+        <View style={[{
+            borderRadius: T.radius.lg,
+            padding: 16,
+            ...(accent ? T.glass.accent : T.glass.light),
+        }, style]}>
             {children}
         </View>
     )
 }
 
-// ── Animated weekly bar ──────────────────────────────────────
-function WeekBar({ value, color, delay }: { value: number; color: string; delay: number }) {
-    const anim = useRef(new Animated.Value(0)).current
-    useEffect(() => {
-        Animated.timing(anim, {
-            toValue: value / 100,
-            duration: 700,
-            delay,
-            useNativeDriver: false,
-        }).start()
-    }, [value])
+//  Avatar with XP Ring 
+
+function AvatarXPRing({ name, xp }: { name: string; xp: number }) {
+    const level = xpToLevel(xp)
+    const { pct } = xpToNextLevel(xp)
+    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?'
+
     return (
-        <View style={{ flex: 1, height: 60, justifyContent: 'flex-end' }}>
-            <Animated.View style={{
-                borderRadius: 6,
-                backgroundColor: color,
-                height: anim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
+        <View style={{ width: 56, height: 56, justifyContent: 'center', alignItems: 'center' }}>
+            {/* Outer ring bg */}
+            <View style={{
+                position: 'absolute', width: 56, height: 56,
+                borderRadius: 28, borderWidth: 2.5,
+                borderColor: `${T.colors.accent}30`,
             }} />
+            {/* Progress ring */}
+            <View style={{
+                position: 'absolute', width: 56, height: 56,
+                borderRadius: 28, borderWidth: 2.5,
+                borderColor: T.colors.accent,
+                borderTopColor: pct > 25 ? T.colors.accent : 'transparent',
+                borderRightColor: pct > 50 ? T.colors.accent : 'transparent',
+                borderBottomColor: pct > 75 ? T.colors.accent : 'transparent',
+                borderLeftColor: 'transparent',
+                transform: [{ rotate: '-90deg' }],
+            }} />
+            {/* Avatar center */}
+            <View style={{
+                width: 44, height: 44, borderRadius: 22,
+                backgroundColor: T.color.background.tertiary,
+                justifyContent: 'center', alignItems: 'center',
+            }}>
+                <Text style={{ color: T.colors.white, fontSize: 16, fontWeight: '800', fontFamily: T.fonts.display.bold }}>{initials}</Text>
+            </View>
+            {/* Level badge */}
+            <View style={{
+                position: 'absolute', bottom: -4, right: -4,
+                backgroundColor: T.colors.accent, borderRadius: 8,
+                width: 20, height: 20,
+                justifyContent: 'center', alignItems: 'center',
+                borderWidth: 2, borderColor: T.color.background.primary,
+            }}>
+                <Text style={{ color: '#fff', fontSize: 9, fontWeight: '900', fontFamily: T.fonts.display.black }}>{level}</Text>
+            </View>
         </View>
     )
 }
 
-// ── Highlight card (premium) ─────────────────────────────────
+//  Streak Badge (compact) 
+
+function StreakBadge({ streak }: { streak: number }) {
+    if (streak === 0) return null
+
+    const borderCol = streak >= 7 ? `${T.colors.accent}50` : T.glass.light.borderColor
+
+    return (
+        <Animated.View
+            entering={FadeInRight.delay(200).duration(400)}
+            style={{
+                ...T.glass.light, borderRadius: T.radius.md,
+                paddingHorizontal: 12, paddingVertical: 8,
+                flexDirection: 'row', alignItems: 'center', gap: 6,
+                borderColor: borderCol, borderWidth: 1,
+            }}
+        >
+            <Text style={{ fontSize: 16 }}></Text>
+            <Text style={{ color: T.colors.accent, fontWeight: '900', fontFamily: T.fonts.display.black, fontSize: 16, fontVariant: ['tabular-nums'] }}>
+                {streak}
+            </Text>
+        </Animated.View>
+    )
+}
+
+//  Weekly dots 
+
+function WeeklyProgress({ data }: { data: Array<{ day: string; mental: number; shooting: number; hasSession: boolean }> }) {
+    const today = new Date().getDay() // 0=Sun, 1=Mon...
+
+    return (
+        <GlassCard style={{ paddingVertical: 20, paddingHorizontal: 16 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <Text style={{ color: T.colors.white, fontSize: 15, fontWeight: '700', fontFamily: T.fonts.display.bold }}>This Week</Text>
+                <Text style={{ color: T.colors.muted, fontSize: 11, fontWeight: '500', fontFamily: T.fonts.body.medium }}>
+                    {data.filter(d => d.hasSession).length}/7 sessions
+                </Text>
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 70 }}>
+                {data.map((d, i) => {
+                    const isToday = i === (today === 0 ? 6 : today - 1)
+                    const barH = d.hasSession ? Math.max(d.mental, d.shooting, 20) : 8
+
+                    return (
+                        <View key={i} style={{ flex: 1, alignItems: 'center', gap: 6 }}>
+                            <Animated.View
+                                entering={FadeInDown.delay(i * 60).duration(300)}
+                                style={{
+                                    width: d.hasSession ? 6 : 4,
+                                    height: (barH / 100) * 55 + 4,
+                                    borderRadius: 4,
+                                    backgroundColor: d.hasSession
+                                        ? T.colors.accent
+                                        : `${T.colors.dim}40`,
+                                }}
+                            />
+                            <Text style={{
+                                fontSize: 10, fontWeight: isToday ? '800' : '500',
+                                color: isToday ? T.colors.accent : d.hasSession ? T.colors.textSecondary : T.colors.dim,
+                            }}>
+                                {d.day}
+                            </Text>
+                            {isToday && (
+                                <View style={{
+                                    width: 4, height: 4, borderRadius: 2,
+                                    backgroundColor: T.colors.accent,
+                                    marginTop: -2,
+                                }} />
+                            )}
+                        </View>
+                    )
+                })}
+            </View>
+        </GlassCard>
+    )
+}
+
+//  Today's Stats (session today or empty state) 
+
+function TodayStats({ user, onUpload, onViewDetails }: {
+    user: any; onUpload: () => void; onViewDetails: () => void
+}) {
+    const hasSession = !!user?.shooting_fg_pct || !!user?.mental_score
+
+    if (!hasSession) {
+        return (
+            <Animated.View entering={FadeInDown.delay(200).duration(500)}>
+                <GlassCard accent style={{ alignItems: 'center', paddingVertical: 32, paddingHorizontal: 24, gap: 16 }}>
+                    <View style={{
+                        width: 72, height: 72, borderRadius: 36,
+                        backgroundColor: T.color.signature.dim,
+                        justifyContent: 'center', alignItems: 'center',
+                    }}>
+                        <Text style={{ fontSize: 32 }}></Text>
+                    </View>
+
+                    <View style={{ alignItems: 'center', gap: 4 }}>
+                        <Text style={{ color: T.colors.white, fontSize: 18, fontWeight: '800', fontFamily: T.fonts.display.black }}>
+                            No session today  yet
+                        </Text>
+                        <Text style={{ color: T.colors.muted, fontSize: 13, fontFamily: T.fonts.body.regular, textAlign: 'center', lineHeight: 20 }}>
+                            {'Film your game and let AI break down\nevery shot, every detail.'}
+                        </Text>
+                    </View>
+
+                    <PrimaryButton
+                        label="Start Today's Session"
+                        icon="video"
+                        onPress={onUpload}
+                        size="md"
+                    />
+                </GlassCard>
+            </Animated.View>
+        )
+    }
+
+    const mentalScore = user?.mental_score ?? 0
+    const shootingFgPct = user?.shooting_fg_pct ?? 0
+    const headlineStat = shootingFgPct > 0 ? shootingFgPct : mentalScore
+    const headlineLabel = shootingFgPct > 0 ? 'FG%' : 'Mental'
+
+    return (
+        <Animated.View entering={FadeInDown.delay(200).duration(500)}>
+            <GlassCard accent style={{ gap: 16 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                    <ScoreRing value={headlineStat} size={90} strokeWidth={7} label={headlineLabel} />
+
+                    <View style={{ flex: 1, gap: 8 }}>
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                            {shootingFgPct > 0 && (
+                                <View style={{ flex: 1, ...T.glass.light, borderRadius: T.radius.sm, padding: 10 }}>
+                                    <Text style={{ color: T.colors.muted, fontSize: 10, fontWeight: '600', fontFamily: T.fonts.body.semibold }}>Shooting</Text>
+                                    <Text style={{ color: T.colors.accent, fontSize: 18, fontWeight: '900', fontFamily: T.fonts.display.black }}>
+                                        {Math.round(shootingFgPct)}%
+                                    </Text>
+                                </View>
+                            )}
+                            {mentalScore > 0 && (
+                                <View style={{ flex: 1, ...T.glass.light, borderRadius: T.radius.sm, padding: 10 }}>
+                                    <Text style={{ color: T.colors.muted, fontSize: 10, fontWeight: '600', fontFamily: T.fonts.body.semibold }}>Mental</Text>
+                                    <Text style={{ color: T.colors.green, fontSize: 18, fontWeight: '900', fontFamily: T.fonts.display.black }}>
+                                        {Math.round(mentalScore)}
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
+
+                        <TouchableOpacity
+                            onPress={onViewDetails}
+                            style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                        >
+                            <Text style={{ color: T.colors.accent, fontSize: 12, fontWeight: '700', fontFamily: T.fonts.body.bold }}>View Details</Text>
+                            <Feather name="arrow-right" size={12} color={T.colors.accent} />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </GlassCard>
+        </Animated.View>
+    )
+}
+
+//  Highlight Card (horizontal scroll) 
+
 const HighlightCard = memo(function HighlightCard({ clip, onPress }: { clip: HighlightClip; onPress: () => void }) {
     return (
         <TouchableOpacity
             style={{
-                width: 140, height: 200,
+                width: 140, height: 190,
                 borderRadius: T.radius.lg,
-                marginHorizontal: 5,
+                marginRight: 10,
                 overflow: 'hidden',
                 ...T.glass.light,
                 justifyContent: 'space-between',
@@ -69,186 +291,108 @@ const HighlightCard = memo(function HighlightCard({ clip, onPress }: { clip: Hig
             }}
             onPress={onPress}
             activeOpacity={0.8}
-            accessibilityLabel={`Voir le highlight ${clip.label}`}
+            accessibilityLabel={`View highlight ${clip.label}`}
             accessibilityRole="button"
         >
-            {/* Thumbnail gradient bg */}
             <View style={{
-                position: 'absolute', top: 0, left: 0, right: 0, height: 120,
-                backgroundColor: 'rgba(0,229,255,0.04)',
+                position: 'absolute', top: 0, left: 0, right: 0, height: 110,
+                backgroundColor: T.color.signature.dim,
                 justifyContent: 'center', alignItems: 'center',
             }}>
                 <View style={{
-                    width: 48, height: 48, borderRadius: 24,
-                    backgroundColor: 'rgba(0,229,255,0.12)',
+                    width: 44, height: 44, borderRadius: 22,
+                    backgroundColor: `${T.colors.accent}20`,
                     justifyContent: 'center', alignItems: 'center',
                 }}>
-                    <Ionicons name="play" size={20} color={T.colors.accent} />
+                    <Feather name="play" size={18} color={T.colors.accent} />
                 </View>
             </View>
 
-            {/* AI badge */}
             <View style={{
                 alignSelf: 'flex-end',
                 ...T.glass.accent,
-                borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3,
+                borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2,
             }}>
-                <Text style={{ color: T.colors.accent, fontSize: 9, fontWeight: '800', letterSpacing: 1 }}>AI</Text>
+                <Text style={{ color: T.colors.accent, fontSize: 9, fontWeight: '800', letterSpacing: 0.8, fontFamily: T.fonts.display.bold }}>AI</Text>
             </View>
 
             <View>
-                <Text style={{ color: T.colors.white, fontSize: 13, fontWeight: '700' }} numberOfLines={1}>{clip.label}</Text>
-                <Text style={{ color: T.colors.green, fontSize: 12, fontWeight: '700', marginTop: 3 }}>{clip.pts}</Text>
-                <Text style={{ color: T.colors.dim, fontSize: 10, marginTop: 2 }}>Il y a {clip.daysAgo}j</Text>
+                <Text style={{ color: T.colors.white, fontSize: 13, fontWeight: '700', fontFamily: T.fonts.display.bold }} numberOfLines={1}>{clip.label}</Text>
+                <Text style={{ color: T.colors.green, fontSize: 12, fontWeight: '700', marginTop: 2, fontFamily: T.fonts.display.bold }}>{clip.pts}</Text>
+                <Text style={{ color: T.colors.dim, fontSize: 10, marginTop: 2 }}>{clip.daysAgo}d ago</Text>
             </View>
         </TouchableOpacity>
     )
 })
 
-// ── Animated Streak badge ─────────────────────────────────────
-function StreakBadge({ streak }: { streak: number }) {
-    const pulseAnim = useRef(new Animated.Value(1)).current
-    useEffect(() => {
-        if (streak >= 3) {
-            Animated.loop(Animated.sequence([
-                Animated.timing(pulseAnim, { toValue: 1.06, duration: 1200, useNativeDriver: true }),
-                Animated.timing(pulseAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
-            ])).start()
-        }
-    }, [streak])
+//  Section Header 
 
-    return (
-        <Animated.View style={{
-            ...T.glass.light,
-            borderRadius: T.radius.md,
-            paddingHorizontal: 14, paddingVertical: 10,
-            flexDirection: 'row', alignItems: 'center', gap: 8,
-            borderColor: streak >= 7 ? 'rgba(255,145,0,0.4)' : T.glass.light.borderColor,
-            transform: [{ scale: streak >= 3 ? pulseAnim : 1 as any }],
-            ...streak >= 7 ? T.glow(T.colors.orange, 0.2) : {},
-        }}>
-            <Text style={{ fontSize: 18 }}>🔥</Text>
-            <View>
-                <Text style={{ color: T.colors.orange, fontWeight: '900', fontSize: 16 }}>{streak}</Text>
-                <Text style={{ color: T.colors.muted, fontSize: 9, fontWeight: '600' }}>jours</Text>
-            </View>
-        </Animated.View>
-    )
-}
-
-// ── Score Ring (mini) ─────────────────────────────────────────
-function ScoreRing({ value, label, color, icon }: { value: string | number; label: string; color: string; icon?: string }) {
-    const enterAnim = useRef(new Animated.Value(0)).current
-    useEffect(() => {
-        Animated.spring(enterAnim, { toValue: 1, useNativeDriver: true, tension: 60, friction: 8, delay: 100 }).start()
-    }, [])
-    return (
-        <Animated.View style={{
-            flex: 1,
-            ...T.glass.light,
-            borderRadius: T.radius.lg,
-            padding: 16,
-            alignItems: 'center',
-            borderColor: `${color}20`,
-            opacity: enterAnim,
-            transform: [{ scale: enterAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }],
-        }}>
-            <View style={{
-                width: 56, height: 56, borderRadius: 28,
-                backgroundColor: `${color}12`,
-                borderWidth: 2.5, borderColor: `${color}40`,
-                justifyContent: 'center', alignItems: 'center',
-                marginBottom: 10,
-                ...T.glow(color, 0.15),
-            }}>
-                <Text style={{ color, fontSize: 18, fontWeight: '900' }}>{value}</Text>
-            </View>
-            <Text style={{ color: T.colors.textSecondary, fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                {label}
-            </Text>
-        </Animated.View>
-    )
-}
-
-// ── Quick Action Button ───────────────────────────────────────
-function QuickAction({ icon, iconLib: IconLib, label, sub, color, borderColor, onPress }: any) {
-    const scaleAnim = useRef(new Animated.Value(1)).current
-    return (
-        <TouchableOpacity
-            style={{
-                flex: 1,
-                ...T.glass.light,
-                borderRadius: T.radius.lg,
-                padding: 18,
-                alignItems: 'center',
-                borderColor: borderColor || T.glass.light.borderColor,
-                borderWidth: 1,
-            }}
-            onPress={onPress}
-            activeOpacity={0.75}
-            onPressIn={() => Animated.spring(scaleAnim, { toValue: 0.95, useNativeDriver: true }).start()}
-            onPressOut={() => Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start()}
-        >
-            <Animated.View style={{ transform: [{ scale: scaleAnim }], alignItems: 'center' }}>
-                <View style={{
-                    width: 44, height: 44, borderRadius: 22,
-                    backgroundColor: `${color}12`,
-                    justifyContent: 'center', alignItems: 'center',
-                    marginBottom: 10,
-                    ...T.glow(color, 0.15),
-                }}>
-                    <IconLib name={icon} size={22} color={color} />
-                </View>
-                <Text style={{ color: T.colors.white, fontSize: 12, fontWeight: '700' }}>{label}</Text>
-                <Text style={{ color: T.colors.muted, fontSize: 10, marginTop: 2 }}>{sub}</Text>
-            </Animated.View>
-        </TouchableOpacity>
-    )
-}
-
-// ── Section Header ────────────────────────────────────────────
 function SectionHeader({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) {
     return (
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, marginTop: 8 }}>
-            <Text style={{ color: T.colors.white, fontSize: 19, fontWeight: '800', letterSpacing: -0.3 }}>{title}</Text>
+        <View style={{
+            flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+            marginBottom: 12, marginTop: 4,
+        }}>
+            <Text style={{ color: T.colors.white, fontSize: 17, fontWeight: '800', fontFamily: T.fonts.display.black, letterSpacing: -0.3 }}>{title}</Text>
             {action && onAction && (
                 <TouchableOpacity onPress={onAction} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Text style={{ color: T.colors.primary, fontSize: 12, fontWeight: '700' }}>{action}</Text>
+                    <Text style={{ color: T.colors.accent, fontSize: 12, fontWeight: '600', fontFamily: T.fonts.body.semibold }}>{action}</Text>
                 </TouchableOpacity>
             )}
         </View>
     )
 }
 
-// ══════════════════════════════════════════════════════════════
+//  Quick Action row 
+
+function QuickAction({ icon, label, color, onPress }: {
+    icon: keyof typeof Feather.glyphMap; label: string; color: string; onPress: () => void
+}) {
+    return (
+        <TouchableOpacity
+            style={{
+                flex: 1, ...T.glass.light, borderRadius: T.radius.md,
+                padding: 14, alignItems: 'center', gap: 8,
+                borderColor: `${color}18`, borderWidth: 1,
+            }}
+            onPress={onPress}
+            activeOpacity={0.75}
+        >
+            <View style={{
+                width: 40, height: 40, borderRadius: 20,
+                backgroundColor: `${color}10`,
+                justifyContent: 'center', alignItems: 'center',
+            }}>
+                <Feather name={icon} size={18} color={color} />
+            </View>
+            <Text style={{ color: T.colors.textSecondary, fontSize: 11, fontWeight: '600', fontFamily: T.fonts.body.semibold }}>{label}</Text>
+        </TouchableOpacity>
+    )
+}
+
+// 
 // MAIN DASHBOARD
-// ══════════════════════════════════════════════════════════════
+// 
 
 export default function DashboardIndex() {
     const router = useRouter()
     const [refreshing, setRefreshing] = useState(false)
 
-    const weeklyData        = useStore(selectWeekly)
-    const highlights        = useStore(selectHighlights)
-    const streak            = useStore(selectStreak)
-    const xp                = useStore(selectXP)
-    const user              = useStore(s => s.user)
-    const weeklyLoading     = useStore(s => s.weeklyLoading)
+    const weeklyData = useStore(selectWeekly)
+    const highlights = useStore(selectHighlights)
+    const streak = useStore(selectStreak)
+    const xp = useStore(selectXP)
+    const user = useStore(s => s.user)
+    const weeklyLoading = useStore(s => s.weeklyLoading)
     const highlightsLoading = useStore(s => s.highlightsLoading)
-    const userLoading       = useStore(s => s.userLoading)
-    const loadWeeklyData    = useStore(s => s.loadWeeklyData)
-    const loadHighlights    = useStore(s => s.loadHighlights)
-    const refreshProfile    = useStore(s => s.refreshProfile)
+    const userLoading = useStore(s => s.userLoading)
+    const loadWeeklyData = useStore(s => s.loadWeeklyData)
+    const loadHighlights = useStore(s => s.loadHighlights)
+    const refreshProfile = useStore(s => s.refreshProfile)
 
-    const today    = new Date()
-    const hour     = today.getHours()
-    const greeting = hour < 12 ? 'Bonjour' : hour < 18 ? 'Bonne séance' : 'Bonsoir'
-
-    const fadeIn = useRef(new Animated.Value(0)).current
     useEffect(() => {
         loadWeeklyData()
         loadHighlights()
-        Animated.timing(fadeIn, { toValue: 1, duration: 500, useNativeDriver: true }).start()
     }, [])
 
     const onRefresh = useCallback(async () => {
@@ -257,183 +401,145 @@ export default function DashboardIndex() {
         setRefreshing(false)
     }, [refreshProfile, loadWeeklyData, loadHighlights])
 
-    const mentalScore   = user?.mental_score    ?? 85
-    const shootingGrade = user?.shooting_grade  ?? 'B-'
-    const shootingFgPct = user?.shooting_fg_pct ?? 63.6
+    const firstName = user?.full_name ? user.full_name.split(' ')[0] : 'Player'
+    const greeting = getGreeting()
+    const streakMsg = getStreakMessage(streak)
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: T.colors.bg }}>
-            {/* Ambient glow at top */}
+            {/* Ambient glow */}
             <View style={{
-                position: 'absolute', top: -100, left: '20%', width: 250, height: 250,
-                borderRadius: 125, backgroundColor: 'rgba(0,229,255,0.03)',
+                position: 'absolute', top: -120, left: '15%', width: 280, height: 280,
+                borderRadius: 140, backgroundColor: 'rgba(255,107,0,0.025)',
             }} />
             <View style={{
-                position: 'absolute', top: -50, right: '-10%', width: 200, height: 200,
-                borderRadius: 100, backgroundColor: 'rgba(0,122,255,0.03)',
+                position: 'absolute', top: -60, right: '-12%', width: 200, height: 200,
+                borderRadius: 100, backgroundColor: 'rgba(10,132,255,0.02)',
             }} />
 
-            <Animated.ScrollView
-                style={{ opacity: fadeIn }}
-                contentContainerStyle={{ padding: 20, paddingBottom: Platform.OS === 'ios' ? 110 : 90 }}
+            <ScrollView
+                contentContainerStyle={{ padding: 20, paddingBottom: Platform.OS === 'ios' ? 120 : 100 }}
                 refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.colors.accent} colors={[T.colors.accent]} />
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor={T.colors.accent}
+                        colors={[T.colors.accent]}
+                    />
                 }
                 showsVerticalScrollIndicator={false}
             >
-                {/* ── Header ── */}
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-                    <View>
-                        <Text style={{ color: T.colors.muted, fontSize: 13, fontWeight: '500' }}>{greeting} 👋</Text>
-                        <Text style={{ color: T.colors.white, fontSize: 28, fontWeight: '900', letterSpacing: -0.5, marginTop: 2 }}>
-                            {user?.full_name ? user.full_name.split(' ')[0] : 'Dashboard'}
+
+                {/* 
+                    SECTION 1  HERO HEADER
+                     */}
+
+                <Animated.View
+                    entering={FadeInDown.duration(500)}
+                    style={{
+                        flexDirection: 'row', justifyContent: 'space-between',
+                        alignItems: 'flex-start', marginBottom: 6,
+                    }}
+                >
+                    <View style={{ flex: 1, gap: 2 }}>
+                        <Text style={{ color: T.colors.muted, fontSize: 13, fontWeight: '500', fontFamily: T.fonts.body.medium }}>
+                            {greeting}
+                        </Text>
+                        <Text style={{
+                            color: T.colors.white, fontSize: 28, fontWeight: '900',
+                            fontFamily: T.fonts.display.black, letterSpacing: -0.5,
+                        }}>
+                            {firstName}
+                        </Text>
+                        <Text style={{ color: T.colors.textSecondary, fontSize: 12, fontWeight: '500', fontFamily: T.fonts.body.medium, marginTop: 2 }}>
+                            {streakMsg}
                         </Text>
                     </View>
-                    <StreakBadge streak={streak} />
-                </View>
 
-                {/* ── Streak reminder ── */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                        <StreakBadge streak={streak} />
+                        <AvatarXPRing name={user?.full_name ?? 'Player'} xp={xp} />
+                    </View>
+                </Animated.View>
+
+                {/* XP Level Bar */}
+                <Animated.View entering={FadeInDown.delay(100).duration(400)} style={{ marginBottom: 20 }}>
+                    <XPLevelBar xp={xp} compact />
+                </Animated.View>
+
+                {/* Streak Reminder */}
                 <StreakReminderBanner />
 
-                {/* ── XP Level Bar ── */}
-                <View style={{ marginBottom: 18 }}>
-                    <XPLevelBar xp={xp} compact />
-                </View>
+                {/* 
+                    SECTION 2  TODAY'S STATS
+                     */}
 
-                {/* ── Daily Challenge ── */}
+                <SectionHeader title="Today" />
+
+                {userLoading ? (
+                    <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+                        <SkeletonStatCard />
+                        <SkeletonStatCard />
+                    </View>
+                ) : (
+                    <View style={{ marginBottom: 20 }}>
+                        <TodayStats
+                            user={user}
+                            onUpload={() => router.push('/(dashboard)/upload')}
+                            onViewDetails={() => router.push('/analysis/123')}
+                        />
+                    </View>
+                )}
+
+                {/* 
+                    SECTION 3  DAILY CHALLENGE
+                     */}
+
                 <DailyChallengeCard />
 
-                {/* ── Hero CTA — Analyze a game ── */}
-                <TouchableOpacity
-                    style={{
-                        borderRadius: T.radius.xl,
-                        padding: 28,
-                        alignItems: 'center',
-                        marginBottom: 14,
-                        flexDirection: 'row',
-                        justifyContent: 'center',
-                        gap: 14,
-                        backgroundColor: T.colors.primary,
-                        ...T.glow(T.colors.primary, 0.35),
-                    }}
-                    onPress={() => router.push('/(dashboard)/upload')}
-                    activeOpacity={0.85}
-                    accessibilityLabel="Analyser un match — importer une vidéo"
-                    accessibilityRole="button"
-                >
-                    <View style={{
-                        width: 52, height: 52, borderRadius: 26,
-                        backgroundColor: 'rgba(255,255,255,0.15)',
-                        justifyContent: 'center', alignItems: 'center',
-                    }}>
-                        <Ionicons name="scan" size={28} color="#FFF" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={{ color: '#FFF', fontSize: 19, fontWeight: '900', letterSpacing: -0.3 }}>Analyser un match</Text>
-                        <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 3 }}>
-                            Importer une vidéo ou filmer
-                        </Text>
-                    </View>
-                    <Feather name="arrow-right" size={22} color="rgba(255,255,255,0.5)" />
-                </TouchableOpacity>
+                {/* 
+                    SECTION 4  WEEKLY PROGRESS
+                     */}
 
-                {/* ── Quick Actions ── */}
+                <SectionHeader title="Weekly Progress" />
+
+                {weeklyLoading && weeklyData.every(d => !d.hasSession) ? (
+                    <View style={{ marginBottom: 20 }}><SkeletonWeeklyChart /></View>
+                ) : (
+                    <View style={{ marginBottom: 20 }}>
+                        <WeeklyProgress data={weeklyData} />
+                    </View>
+                )}
+
+                {/* Quick Actions */}
                 <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24 }}>
                     <QuickAction
-                        icon="radar" iconLib={MaterialCommunityIcons}
-                        label="Coach Live" sub="Temps réel"
-                        color={T.colors.red} borderColor="rgba(255,59,92,0.2)"
+                        icon="radio"
+                        label="Live Coach"
+                        color={T.colors.red}
                         onPress={() => router.push('/live')}
                     />
                     <QuickAction
-                        icon="fitness" iconLib={Ionicons}
-                        label="Programme" sub="7 jours"
-                        color={T.colors.green} borderColor="rgba(0,230,118,0.2)"
+                        icon="calendar"
+                        label="Program"
+                        color={T.colors.green}
                         onPress={() => router.push('/program')}
                     />
                     <QuickAction
-                        icon="body" iconLib={Ionicons}
-                        label="Twin" sub="Digital"
-                        color={T.colors.accent} borderColor="rgba(0,229,255,0.15)"
+                        icon="cpu"
+                        label="Digital Twin"
+                        color={T.colors.accent}
                         onPress={() => router.push('/(dashboard)/twin')}
                     />
                 </View>
 
-                {/* ── Weekly Progress ── */}
-                <SectionHeader title="Progression Hebdo" />
+                {/* 
+                    SECTION 5  HIGHLIGHTS FEED
+                     */}
 
-                {weeklyLoading && weeklyData.every(d => !d.hasSession) ? (
-                    <View style={{ marginBottom: 24 }}><SkeletonWeeklyChart /></View>
-                ) : (
-                    <GlassCard style={{ marginBottom: 24 }}>
-                        {/* Legend */}
-                        <View style={{ flexDirection: 'row', gap: 16, marginBottom: 14 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: T.colors.accent }} />
-                                <Text style={{ color: T.colors.muted, fontSize: 11 }}>Mental</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: T.colors.primary }} />
-                                <Text style={{ color: T.colors.muted, fontSize: 11 }}>Tir</Text>
-                            </View>
-                        </View>
-
-                        {/* Bars */}
-                        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 70 }}>
-                            {weeklyData.map((d, i) => (
-                                <View key={i} style={{ flex: 1, alignItems: 'center' }}>
-                                    {d.hasSession ? (
-                                        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', gap: 2, width: '100%' }}>
-                                            <WeekBar value={d.mental} color={T.colors.accent} delay={i * 60} />
-                                            <WeekBar value={d.shooting} color={T.colors.primary} delay={i * 60 + 80} />
-                                        </View>
-                                    ) : (
-                                        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-                                            <View style={{ height: 4, backgroundColor: T.colors.dimmer, borderRadius: 2 }} />
-                                        </View>
-                                    )}
-                                </View>
-                            ))}
-                        </View>
-
-                        {/* Day labels */}
-                        <View style={{ flexDirection: 'row', gap: 6, marginTop: 8 }}>
-                            {weeklyData.map((d, i) => (
-                                <View key={i} style={{ flex: 1, alignItems: 'center' }}>
-                                    <Text style={{ color: d.hasSession ? T.colors.muted : T.colors.dimmer, fontSize: 10, fontWeight: '600' }}>
-                                        {d.day}
-                                    </Text>
-                                </View>
-                            ))}
-                        </View>
-                    </GlassCard>
-                )}
-
-                {/* ── Quick Stats ── */}
-                {userLoading ? (
-                    <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24 }}>
-                        <SkeletonStatCard />
-                        <SkeletonStatCard />
-                    </View>
-                ) : (
-                    <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24 }}>
-                        <ScoreRing
-                            value={mentalScore}
-                            label="Mental Score"
-                            color={T.colors.green}
-                        />
-                        <ScoreRing
-                            value={shootingGrade}
-                            label="Shooting Form"
-                            color={T.colors.orange}
-                        />
-                    </View>
-                )}
-
-                {/* ── Highlights ── */}
                 <SectionHeader
-                    title="Derniers Highlights"
-                    action={highlights.length > 0 ? 'Voir tout →' : undefined}
+                    title="Recent Highlights"
+                    action={highlights.length > 0 ? 'See all' : undefined}
                     onAction={() => router.push('/(dashboard)/upload')}
                 />
 
@@ -442,28 +548,26 @@ export default function DashboardIndex() {
                         {[1, 2, 3].map(i => <SkeletonHighlight key={i} />)}
                     </View>
                 ) : highlights.length === 0 ? (
-                    <GlassCard style={{ padding: 32, alignItems: 'center' }}>
+                    <GlassCard style={{ padding: 28, alignItems: 'center', gap: 12 }}>
                         <View style={{
-                            width: 64, height: 64, borderRadius: 32,
-                            backgroundColor: 'rgba(0,229,255,0.06)',
+                            width: 56, height: 56, borderRadius: 28,
+                            backgroundColor: T.color.signature.dim,
                             justifyContent: 'center', alignItems: 'center',
-                            marginBottom: 16,
                         }}>
-                            <Ionicons name="film-outline" size={28} color={T.colors.dim} />
+                            <Feather name="film" size={22} color={T.colors.dim} />
                         </View>
-                        <Text style={{ color: T.colors.muted, fontSize: 14, textAlign: 'center', lineHeight: 22 }}>
-                            Aucun highlight pour l'instant.{'\n'}Analyse un match pour commencer !
+                        <Text style={{ color: T.colors.muted, fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
+                            {'No highlights yet.\nAnalyze a game to generate AI clips.'}
                         </Text>
                         <TouchableOpacity
-                            style={{
-                                marginTop: 18, backgroundColor: T.colors.primary,
-                                borderRadius: T.radius.md, paddingHorizontal: 24, paddingVertical: 12,
-                                ...T.glow(T.colors.primary, 0.2),
-                            }}
                             onPress={() => router.push('/(dashboard)/upload')}
-                            accessibilityRole="button"
+                            style={{
+                                backgroundColor: T.color.signature.dim,
+                                borderRadius: T.radius.md, paddingHorizontal: 20, paddingVertical: 10,
+                                borderWidth: 1, borderColor: `${T.colors.accent}30`,
+                            }}
                         >
-                            <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 13 }}>Importer une vidéo</Text>
+                            <Text style={{ color: T.colors.accent, fontWeight: '700', fontSize: 13, fontFamily: T.fonts.body.bold }}>Upload a video</Text>
                         </TouchableOpacity>
                     </GlassCard>
                 ) : (
@@ -472,13 +576,13 @@ export default function DashboardIndex() {
                         data={highlights}
                         keyExtractor={item => item.id}
                         showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={{ paddingHorizontal: 2 }}
+                        contentContainerStyle={{ paddingRight: 20 }}
                         renderItem={({ item }) => (
                             <HighlightCard clip={item} onPress={() => router.push(`/highlight/${item.id}`)} />
                         )}
                     />
                 )}
-            </Animated.ScrollView>
+            </ScrollView>
         </SafeAreaView>
     )
 }

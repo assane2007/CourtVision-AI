@@ -1,14 +1,21 @@
-/**
- * XPBadge — Badge animé premium pour les gains d'XP.
- * XPLevelBar — Barre de progression XP avec glow.
+﻿/**
+ * XPBadge  Animated popup for XP gains.
+ * XPLevelBar  Level progression bar with glow + celebration.
+ *
+ * V3  Reanimated, English, premium design.
  */
 
-import React, { useEffect, useRef } from 'react'
-import { Animated, Text, View } from 'react-native'
+import React, { useEffect } from 'react'
+import { Text, View, StyleSheet } from 'react-native'
+import Animated, {
+    useSharedValue, useAnimatedStyle, withTiming,
+    withSpring, withSequence, withDelay, runOnJS,
+    Easing, interpolate, FadeIn,
+} from 'react-native-reanimated'
 import { xpToNextLevel, xpToLevel } from '../lib/store'
 import { T } from '../lib/theme'
 
-// ─── XP Badge (popup) ─────────────────────────────────────────
+//  XP Badge (popup toast) 
 
 interface XPBadgeProps {
     amount: number
@@ -17,113 +24,253 @@ interface XPBadgeProps {
 }
 
 export function XPBadge({ amount, label, onDone }: XPBadgeProps) {
-    const scale     = useRef(new Animated.Value(0)).current
-    const opacity   = useRef(new Animated.Value(0)).current
-    const translateY = useRef(new Animated.Value(0)).current
+    const progress = useSharedValue(0)
+    const opacity  = useSharedValue(0)
 
     useEffect(() => {
-        Animated.sequence([
-            Animated.parallel([
-                Animated.spring(scale, { toValue: 1, tension: 100, friction: 8, useNativeDriver: true }),
-                Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-            ]),
-            Animated.delay(1200),
-            Animated.parallel([
-                Animated.timing(translateY, { toValue: -40, duration: 500, useNativeDriver: true }),
-                Animated.timing(opacity, { toValue: 0, duration: 500, useNativeDriver: true }),
-            ]),
-        ]).start(() => onDone?.())
+        // Phase 1: spring in
+        opacity.value = withTiming(1, { duration: 200 })
+        progress.value = withSequence(
+            withSpring(1, { damping: 12, stiffness: 140 }),
+            withDelay(1200, withTiming(0, { duration: 400 }, (finished) => {
+                if (finished && onDone) runOnJS(onDone)()
+            })),
+        )
     }, [])
 
+    const animatedStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(progress.value, [0, 0.3, 1], [0, 1, 1]),
+        transform: [
+            { scale: progress.value },
+            { translateY: interpolate(progress.value, [0, 1], [10, 0]) },
+        ],
+    }))
+
     return (
-        <Animated.View style={{
-            position: 'absolute', alignSelf: 'center', zIndex: 100,
-            transform: [{ scale }, { translateY }],
-            opacity,
-            backgroundColor: `${T.colors.purple}18`,
-            borderRadius: T.radius.xl,
-            paddingHorizontal: 18,
-            paddingVertical: 10,
-            borderWidth: 1.5, borderColor: `${T.colors.purple}50`,
-            flexDirection: 'row', alignItems: 'center', gap: 8,
-            ...T.glow(T.colors.purple, 0.4),
-        }}>
-            <Text style={{ fontSize: 16 }}>⚡</Text>
-            <Text style={{ color: T.colors.purple, fontWeight: '900', fontSize: 16 }}>+{amount} XP</Text>
-            {label && <Text style={{ color: T.colors.muted, fontSize: 12 }}>{label}</Text>}
+        <Animated.View style={[styles.badge, animatedStyle]}>
+            <Text style={styles.badgeEmoji}></Text>
+            <Text style={styles.badgeAmount}>+{amount} XP</Text>
+            {label && <Text style={styles.badgeLabel}>{label}</Text>}
         </Animated.View>
     )
 }
 
-// ─── XP Level Bar ─────────────────────────────────────────────
+//  XP Level Bar 
 
 interface XPLevelBarProps {
     xp: number
     compact?: boolean
+    showCelebration?: boolean
 }
 
-export function XPLevelBar({ xp, compact = false }: XPLevelBarProps) {
+export function XPLevelBar({ xp, compact = false, showCelebration = false }: XPLevelBarProps) {
     const level = xpToLevel(xp)
     const { current, needed, pct } = xpToNextLevel(xp)
-    const progressAnim = useRef(new Animated.Value(0)).current
+
+    const barWidth = useSharedValue(0)
+    const glowPulse = useSharedValue(0)
+    const celebScale = useSharedValue(1)
 
     useEffect(() => {
-        Animated.timing(progressAnim, {
-            toValue: pct / 100,
-            duration: 800,
-            useNativeDriver: false,
-        }).start()
-    }, [pct])
+        barWidth.value = withDelay(300, withTiming(pct / 100, {
+            duration: 900,
+            easing: Easing.out(Easing.cubic),
+        }))
+
+        // Glow pulse when bar is nearly full
+        if (pct > 80) {
+            glowPulse.value = withSequence(
+                withTiming(1, { duration: 600 }),
+                withTiming(0.5, { duration: 600 }),
+                withTiming(1, { duration: 600 }),
+            )
+        }
+
+        // Level-up celebration
+        if (showCelebration) {
+            celebScale.value = withSequence(
+                withSpring(1.15, { damping: 8, stiffness: 180 }),
+                withSpring(1, { damping: 10 }),
+            )
+        }
+    }, [pct, showCelebration])
+
+    const barStyle = useAnimatedStyle(() => ({
+        width: `${barWidth.value * 100}%` as any,
+    }))
+
+    const containerScale = useAnimatedStyle(() => ({
+        transform: [{ scale: celebScale.value }],
+    }))
 
     if (compact) {
         return (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <View style={{
-                    ...T.glass.light,
-                    backgroundColor: `${T.colors.purple}15`,
-                    borderColor: `${T.colors.purple}30`,
-                    borderRadius: T.radius.sm,
-                    paddingHorizontal: 10, paddingVertical: 4,
-                }}>
-                    <Text style={{ color: T.colors.purple, fontSize: 11, fontWeight: '900', letterSpacing: 0.5 }}>LVL {level}</Text>
+            <View style={styles.compactRow}>
+                <Animated.View entering={FadeIn.duration(300)} style={styles.levelPill}>
+                    <Text style={styles.levelPillText}>LVL {level}</Text>
+                </Animated.View>
+                <View style={styles.compactTrack}>
+                    <Animated.View style={[styles.compactFill, barStyle]} />
                 </View>
-                <View style={{ flex: 1, height: 4, backgroundColor: T.colors.dimmer, borderRadius: 2, overflow: 'hidden' }}>
-                    <Animated.View style={{
-                        height: 4, borderRadius: 2,
-                        backgroundColor: T.colors.purple,
-                        width: progressAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
-                        ...T.glow(T.colors.purple, 0.3),
-                    }} />
-                </View>
-                <Text style={{ color: T.colors.muted, fontSize: 10, fontWeight: '600' }}>{current}/{needed}</Text>
+                <Text style={styles.compactLabel}>{current}/{needed}</Text>
             </View>
         )
     }
 
     return (
-        <View style={{
-            ...T.glass.light,
-            borderRadius: T.radius.lg,
-            padding: 16,
-        }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Text style={{ fontSize: 16 }}>⚡</Text>
-                    <Text style={{ color: T.colors.white, fontWeight: '800', fontSize: 15 }}>Niveau {level}</Text>
+        <Animated.View style={[styles.card, containerScale]}>
+            {/* Header row */}
+            <View style={styles.headerRow}>
+                <View style={styles.levelRow}>
+                    <Text style={styles.levelEmoji}></Text>
+                    <Text style={styles.levelText}>Level {level}</Text>
                 </View>
-                <Text style={{ color: T.colors.muted, fontSize: 12, fontWeight: '600' }}>{current} / {needed} XP</Text>
+                <Text style={styles.xpText}>{current} / {needed} XP</Text>
             </View>
-            <View style={{ height: 8, backgroundColor: T.colors.dimmer, borderRadius: 4, overflow: 'hidden' }}>
-                <Animated.View style={{
-                    height: 8, borderRadius: 4,
-                    backgroundColor: T.colors.purple,
-                    width: progressAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
-                    ...T.glow(T.colors.purple, 0.4),
-                }} />
+
+            {/* Progress track */}
+            <View style={styles.track}>
+                <Animated.View style={[styles.fill, barStyle]}>
+                    {/* Shimmer overlay */}
+                    <View style={styles.shimmer} />
+                </Animated.View>
             </View>
-            <Text style={{ color: T.colors.dim, fontSize: 10, marginTop: 6, textAlign: 'right' }}>
-                {Math.round(pct)}% vers le niveau {level + 1}
+
+            {/* Footer */}
+            <Text style={styles.footerText}>
+                {Math.round(pct)}% to Level {level + 1}
             </Text>
-        </View>
+        </Animated.View>
     )
 }
+
+//  Styles 
+
+const styles = StyleSheet.create({
+    // Badge
+    badge: {
+        position: 'absolute',
+        alignSelf: 'center',
+        zIndex: T.zIndex.toast,
+        backgroundColor: `${T.colors.purple}18`,
+        borderRadius: T.borderRadius.xl,
+        paddingHorizontal: 18,
+        paddingVertical: 10,
+        borderWidth: 1.5,
+        borderColor: `${T.colors.purple}50`,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        ...T.glow(T.colors.purple, 0.4),
+    },
+    badgeEmoji: { fontSize: 16 },
+    badgeAmount: {
+        color: T.colors.purple,
+        fontWeight: '900',
+        fontSize: T.fontSize.md,
+        letterSpacing: 0.3,
+    },
+    badgeLabel: {
+        color: T.colors.muted,
+        fontSize: T.fontSize.sm,
+    },
+
+    // Card (full variant)
+    card: {
+        ...T.glass.light,
+        borderRadius: T.borderRadius.xl,
+        padding: T.spacing[4],
+    },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    levelRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    levelEmoji: { fontSize: 16 },
+    levelText: {
+        color: T.colors.white,
+        fontWeight: '800',
+        fontSize: T.fontSize.base,
+        letterSpacing: 0.2,
+    },
+    xpText: {
+        color: T.colors.muted,
+        fontSize: T.fontSize.sm,
+        fontWeight: '600',
+    },
+
+    // Track (full)
+    track: {
+        height: 8,
+        backgroundColor: T.colors.dimmer,
+        borderRadius: 4,
+        overflow: 'hidden',
+    },
+    fill: {
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: T.colors.purple,
+        ...T.glow(T.colors.purple, 0.4),
+        overflow: 'hidden',
+    },
+    shimmer: {
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        width: 40,
+        height: 8,
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        borderRadius: 4,
+    },
+    footerText: {
+        color: T.colors.dim,
+        fontSize: T.fontSize.xs,
+        marginTop: 6,
+        textAlign: 'right',
+    },
+
+    // Compact variant
+    compactRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    levelPill: {
+        backgroundColor: `${T.colors.purple}15`,
+        borderColor: `${T.colors.purple}30`,
+        borderWidth: 1,
+        borderRadius: T.borderRadius.sm,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+    },
+    levelPillText: {
+        color: T.colors.purple,
+        fontSize: T.fontSize.xs,
+        fontWeight: '900',
+        letterSpacing: 0.5,
+    },
+    compactTrack: {
+        flex: 1,
+        height: 4,
+        backgroundColor: T.colors.dimmer,
+        borderRadius: 2,
+        overflow: 'hidden',
+    },
+    compactFill: {
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: T.colors.purple,
+        ...T.glow(T.colors.purple, 0.3),
+    },
+    compactLabel: {
+        color: T.colors.muted,
+        fontSize: T.fontSize.xs,
+        fontWeight: '600',
+    },
+})

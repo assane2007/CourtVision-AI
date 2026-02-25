@@ -16,6 +16,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { api, clearTokens, setAuthToken, setRefreshToken } from './api'
+import { supabase } from './supabase'
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -115,6 +116,9 @@ interface CourtVisionState {
 
     // Actions
     login: (token: string, refreshToken?: string) => Promise<void>
+    loginWithEmail: (email: string, password: string) => Promise<void>
+    signUpWithEmail: (email: string, password: string, username: string) => Promise<void>
+    loginWithOAuth: (provider: 'apple' | 'google') => Promise<void>
     logout: () => Promise<void>
     loadProfile: () => Promise<void>
     refreshProfile: () => Promise<void>
@@ -186,7 +190,69 @@ export const useStore = create<CourtVisionState>()(
                 ])
             },
 
+            async loginWithEmail(email: string, password: string) {
+                set({ authLoading: true })
+                try {
+                    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+                    if (error) throw error
+                    if (data.session) {
+                        await setAuthToken(data.session.access_token)
+                        await setRefreshToken(data.session.refresh_token)
+                        set({ isAuthenticated: true, authLoading: false })
+                        await Promise.all([
+                            get().loadProfile(),
+                            get().loadWeeklyData(),
+                            get().loadHighlights(),
+                        ])
+                    }
+                } catch (err) {
+                    set({ authLoading: false })
+                    throw err
+                }
+            },
+
+            async signUpWithEmail(email: string, password: string, username: string) {
+                set({ authLoading: true })
+                try {
+                    const { data, error } = await supabase.auth.signUp({
+                        email,
+                        password,
+                        options: { data: { username } },
+                    })
+                    if (error) throw error
+                    if (data.session) {
+                        await setAuthToken(data.session.access_token)
+                        await setRefreshToken(data.session.refresh_token)
+                        set({ isAuthenticated: true, authLoading: false })
+                        await Promise.all([
+                            get().loadProfile(),
+                            get().loadWeeklyData(),
+                            get().loadHighlights(),
+                        ])
+                    } else {
+                        // Email confirmation required
+                        set({ authLoading: false })
+                    }
+                } catch (err) {
+                    set({ authLoading: false })
+                    throw err
+                }
+            },
+
+            async loginWithOAuth(provider: 'apple' | 'google') {
+                set({ authLoading: true })
+                try {
+                    const { error } = await supabase.auth.signInWithOAuth({ provider })
+                    if (error) throw error
+                    // Session will be handled by onAuthStateChange in _layout.tsx
+                } catch (err) {
+                    set({ authLoading: false })
+                    throw err
+                }
+            },
+
             async logout() {
+                await supabase.auth.signOut().catch(() => {})
                 await clearTokens()
                 set({
                     isAuthenticated: false,

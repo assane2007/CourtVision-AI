@@ -1,6 +1,9 @@
 import { Queue, Worker, Job } from 'bullmq'
 import Redis from 'ioredis'
 import { createClient } from '@supabase/supabase-js'
+import fs from 'fs'
+import os from 'os'
+import path from 'path'
 import {
     preprocessVideo,
     runTracking,
@@ -88,6 +91,41 @@ export interface VideoProcessingJobData {
     }
 }
 
+/**
+ * Download a video from a URL (Supabase Storage or external) to a local temp file.
+ * Returns the local file path. Caller is responsible for cleanup.
+ */
+async function downloadVideo(videoUrl: string): Promise<string> {
+    const tmpDir = path.join(os.tmpdir(), 'courtvision-videos')
+    if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
+
+    const ext = path.extname(new URL(videoUrl).pathname) || '.mp4'
+    const localPath = path.join(tmpDir, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`)
+
+    // Try Supabase Storage download first (signed URL or public bucket)
+    const response = await fetch(videoUrl)
+    if (!response.ok) {
+        throw new Error(`Failed to download video: HTTP ${response.status} from ${videoUrl}`)
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer())
+    fs.writeFileSync(localPath, buffer)
+    console.log(`[Worker] Downloaded video (${(buffer.length / 1024 / 1024).toFixed(1)}MB) → ${localPath}`)
+    return localPath
+}
+
+/** Clean up temp video file after processing */
+function cleanupTempFile(filePath: string): void {
+    try {
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath)
+            console.log(`[Worker] Cleaned up temp file: ${filePath}`)
+        }
+    } catch {
+        // Non-critical — temp file will be cleaned by OS eventually
+    }
+}
+
 export const initWorker = () => {
     if (!redisConnection || !redisAvailable) {
         console.warn('[Worker] ⚠️ Redis not available — worker not started (dev mode)')
@@ -97,13 +135,18 @@ export const initWorker = () => {
 
     const worker = new Worker('video-processing', async (job: Job<VideoProcessingJobData>) => {
         const { sessionId, videoUrl, userId, calibration } = job.data
+        let localVideoPath: string | null = null
 
         try {
             // 1. Update status to analyzing
             await getSupabase().from('sessions').update({ status: 'analyzing' }).eq('id', sessionId)
 
-            // 2. Étape 1 — Prétraitement vidéo
-            const prepRes = await preprocessVideo(videoUrl, calibration)
+            // 1.5 Download video from Supabase Storage / URL to local temp file
+            localVideoPath = await downloadVideo(videoUrl)
+            await job.updateProgress(5)
+
+            // 2. Étape 1 — Prétraitement vidéo (local file path)
+            const prepRes = await preprocessVideo(localVideoPath, calibration)
             await job.updateProgress(15)
 
             // 3. Étape 2 — Tracking (MediaPipe + YOLOv8 + ByteTrack)
@@ -181,6 +224,9 @@ export const initWorker = () => {
             console.error(`Error processing job ${job.id}:`, error)
             await getSupabase().from('sessions').update({ status: 'failed' }).eq('id', sessionId)
             throw error
+        } finally {
+            // Always clean up the downloaded temp video
+            if (localVideoPath) cleanupTempFile(localVideoPath)
         }
     }, { connection: redisConnection as any })
 

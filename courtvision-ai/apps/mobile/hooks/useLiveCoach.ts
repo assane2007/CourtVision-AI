@@ -276,12 +276,12 @@ export function useLiveCoach(sessionId: string): UseLiveCoachReturn {
             // Connecter SSE pour les alertes push
             serviceRef.current.connectSSE(handleSSEEvent)
 
-            toast.success('Coach Live démarré', 'Analyse en temps réel active')
+            toast.success('Live Coach started', 'Real-time analysis active')
         } catch (err: any) {
             setPhase('error')
-            const msg = err.message || 'Impossible de démarrer le Coach Live'
+            const msg = err.message || 'Unable to start Live Coach'
             setError(msg)
-            toast.error('Erreur de connexion', msg)
+            toast.error('Connection error', msg)
         }
     }, [handleSSEEvent, startElapsedTimer, startFrameTimer])
 
@@ -391,12 +391,12 @@ export function useLiveCoach(sessionId: string): UseLiveCoachReturn {
             if (response.mentalTimeline) {
                 setMentalHistory(response.mentalTimeline)
             }
-            toast.success('Match terminé !', 'Rapport IA en cours de génération', 4000)
+            toast.success('Game over!', 'AI report being generated', 4000)
         } catch (err: any) {
             // Fin locale en cas d'erreur réseau
             setPhase('ended')
             setRecommendations(generateLocalRecommendations())
-            toast.warning('Rapport en mode hors-ligne', 'Reconnecte-toi pour l\'analyse complète')
+            toast.warning('Offline report', 'Reconnect for full analysis')
         }
     }, [clearTimers, makeCount, missCount, mentalScore, fatigueIndex])
 
@@ -428,16 +428,16 @@ export function useLiveCoach(sessionId: string): UseLiveCoachReturn {
         const total = makeCount + missCount
         const pct = total > 0 ? Math.round((makeCount / total) * 100) : 0
 
-        if (pct >= 50) recs.push(`Excellent au tir (${pct}%) ! Travaille la constance.`)
-        else if (pct >= 35) recs.push(`Shooting correct (${pct}%). Ajoute 50 tirs de mi-distance.`)
-        else if (total > 0) recs.push(`Shooting en difficulté (${pct}%). Concentre-toi sur la mécanique.`)
+        if (pct >= 50) recs.push(`Great shooting (${pct}%)! Work on consistency.`)
+        else if (pct >= 35) recs.push(`Decent shooting (${pct}%). Add 50 mid-range shots.`)
+        else if (total > 0) recs.push(`Shooting struggles (${pct}%). Focus on mechanics.`)
 
-        if (mentalScore < 45) recs.push('Mental fragile — travaille la routine pré-tir.')
-        else if (mentalScore >= 75) recs.push('Force mentale excellente !')
+        if (mentalScore < 45) recs.push('Weak mental game — work on your pre-shot routine.')
+        else if (mentalScore >= 75) recs.push('Excellent mental strength!')
 
-        if (fatigueIndex > 50) recs.push(`Fatigue élevée (${Math.round(fatigueIndex)}%) — ajoute du HIIT.`)
+        if (fatigueIndex > 50) recs.push(`High fatigue (${Math.round(fatigueIndex)}%) — add HIIT training.`)
 
-        if (recs.length === 0) recs.push('Analyse la vidéo complète pour un rapport IA détaillé.')
+        if (recs.length === 0) recs.push('Analyze the full video for a detailed AI report.')
         return recs
     }
 

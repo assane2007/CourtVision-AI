@@ -96,7 +96,7 @@ export function useViralShare() {
 
             return result
         } catch (err: any) {
-            setError(err.message ?? 'Erreur lors du partage')
+            setError(err.message ?? 'Failed to share')
             return null
         } finally {
             setSharing(false)
@@ -104,7 +104,7 @@ export function useViralShare() {
     }, [])
 
     /**
-     * Partage un recap de session
+     * Share a session recap
      */
     const shareSessionRecap = useCallback(async (
         sessionId: string,
@@ -131,7 +131,7 @@ export function useViralShare() {
             await nativeShare(result.caption, result.shareUrl)
             return result
         } catch (err: any) {
-            setError(err.message ?? 'Erreur lors du partage')
+            setError(err.message ?? 'Failed to share')
             return null
         } finally {
             setSharing(false)
@@ -139,7 +139,7 @@ export function useViralShare() {
     }, [])
 
     /**
-     * Partage un highlight reel
+     * Share a highlight reel
      */
     const shareHighlightReel = useCallback(async (
         sessionId: string,
@@ -166,7 +166,7 @@ export function useViralShare() {
             await nativeShare(result.caption, result.shareUrl)
             return result
         } catch (err: any) {
-            setError(err.message ?? 'Erreur lors du partage')
+            setError(err.message ?? 'Failed to share')
             return null
         } finally {
             setSharing(false)
@@ -174,7 +174,7 @@ export function useViralShare() {
     }, [])
 
     /**
-     * Partage un badge gagné
+     * Share an earned badge
      */
     const shareBadge = useCallback(async (
         badgeSlug: string,
@@ -201,7 +201,7 @@ export function useViralShare() {
             await nativeShare(result.caption, result.shareUrl)
             return result
         } catch (err: any) {
-            setError(err.message ?? 'Erreur lors du partage')
+            setError(err.message ?? 'Failed to share')
             return null
         } finally {
             setSharing(false)
@@ -209,7 +209,7 @@ export function useViralShare() {
     }, [])
 
     /**
-     * Charger l'historique des partages
+     * Load share history
      */
     const fetchShareHistory = useCallback(async () => {
         try {
@@ -217,7 +217,7 @@ export function useViralShare() {
             const res = await apiFetch<{ data: ShareHistoryItem[] }>('/api/share/my-shares')
             setShareHistory(res.data ?? [])
         } catch (err: any) {
-            setError(err.message ?? 'Erreur lors du chargement de l\'historique')
+            setError(err.message ?? 'Failed to load share history')
         } finally {
             setLoadingHistory(false)
         }
@@ -250,7 +250,7 @@ async function nativeShare(text: string, url: string): Promise<void> {
         )
     } catch (err: any) {
         if (err.message !== 'User did not share') {
-            Alert.alert('Erreur', 'Impossible de partager pour le moment.')
+            Alert.alert('Error', 'Unable to share right now.')
         }
     }
 }

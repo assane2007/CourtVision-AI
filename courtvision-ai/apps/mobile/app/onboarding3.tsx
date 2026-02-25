@@ -1,71 +1,109 @@
-import { View, Text, TouchableOpacity, Animated, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native'
+﻿import {
+    View, Text, TouchableOpacity, TextInput,
+    KeyboardAvoidingView, Platform, ActivityIndicator,
+} from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { AntDesign, Ionicons } from '@expo/vector-icons'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import Animated, {
+    useSharedValue, useAnimatedStyle, withTiming, withSpring,
+    withRepeat, withSequence, Easing,
+} from 'react-native-reanimated'
+import { AntDesign, Feather } from '@expo/vector-icons'
 import { useStore } from '../lib/store'
-import { apiFetch } from '../lib/api'
 import { toast } from '../lib/toast'
 import { T } from '../lib/theme'
 
+//  Screen 
+
 export default function Onboarding3() {
-    const router     = useRouter()
-    const login      = useStore(s => s.login)
-    const fadeAnim   = useRef(new Animated.Value(0)).current
-    const slideAnim  = useRef(new Animated.Value(30)).current
-    const logoScale  = useRef(new Animated.Value(0.8)).current
-    const glowAnim   = useRef(new Animated.Value(0)).current
+    const router = useRouter()
+    const { loginWithEmail, signUpWithEmail, loginWithOAuth, authLoading } = useStore()
+
     const [mode, setMode]       = useState<'choice' | 'email'>('choice')
     const [email, setEmail]     = useState('')
     const [password, setPassword] = useState('')
+    const [username, setUsername] = useState('')
     const [isLogin, setIsLogin]  = useState(true)
     const [loading, setLoading]  = useState(false)
     const [showPass, setShowPass] = useState(false)
 
+    // Animations
+    const fadeOpacity = useSharedValue(0)
+    const slideY = useSharedValue(30)
+    const logoScale = useSharedValue(0.8)
+    const glowPulse = useSharedValue(0)
+
     useEffect(() => {
-        Animated.parallel([
-            Animated.timing(fadeAnim,  { toValue: 1, duration: 700, useNativeDriver: true }),
-            Animated.timing(slideAnim, { toValue: 0, duration: 700, useNativeDriver: true }),
-            Animated.spring(logoScale, { toValue: 1, friction: 8, tension: 40, useNativeDriver: true }),
-        ]).start()
-        // Logo glow pulse
-        Animated.loop(Animated.sequence([
-            Animated.timing(glowAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
-            Animated.timing(glowAnim, { toValue: 0, duration: 2000, useNativeDriver: true }),
-        ])).start()
+        fadeOpacity.value = withTiming(1, { duration: 600 })
+        slideY.value = withTiming(0, { duration: 600, easing: Easing.out(Easing.quad) })
+        logoScale.value = withSpring(1, { damping: 12, stiffness: 100 })
+        glowPulse.value = withRepeat(
+            withSequence(
+                withTiming(1, { duration: 2000 }),
+                withTiming(0, { duration: 2000 }),
+            ),
+            -1, true,
+        )
     }, [])
 
-    const handleMockLogin = async (provider: 'apple' | 'google') => {
+    const fadeStyle = useAnimatedStyle(() => ({
+        opacity: fadeOpacity.value,
+        transform: [{ translateY: slideY.value }],
+    }))
+
+    const logoStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: logoScale.value }],
+        opacity: fadeOpacity.value,
+    }))
+
+    //  Auth Handlers 
+
+    const handleOAuth = async (provider: 'apple' | 'google') => {
         setLoading(true)
         try {
-            await new Promise(r => setTimeout(r, 800))
-            await login('mock-token-' + provider, 'mock-refresh-' + provider)
+            await loginWithOAuth(provider)
             router.replace('/(dashboard)')
-        } catch {
-            toast.error('Connexion échouée', 'Réessaie dans un instant')
+        } catch (err: any) {
+            toast.error('Sign in failed', err?.message ?? 'Please try again')
         } finally {
             setLoading(false)
         }
     }
 
     const handleEmailAuth = async () => {
-        if (!email.includes('@')) { toast.error('Email invalide', 'Vérifie ton adresse'); return }
-        if (password.length < 6)  { toast.error('Mot de passe trop court', 'Min. 6 caractères'); return }
+        if (!email.includes('@')) {
+            toast.error('Invalid email', 'Please check your address')
+            return
+        }
+        if (password.length < 6) {
+            toast.error('Password too short', 'Minimum 6 characters')
+            return
+        }
+        if (!isLogin && username.length < 3) {
+            toast.error('Username too short', 'Minimum 3 characters')
+            return
+        }
+
         setLoading(true)
         try {
-            const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register'
-            const res = await apiFetch<{ token: string; refreshToken?: string }>(endpoint, {
-                method: 'POST',
-                body: JSON.stringify({ email, password }),
-            })
-            await login(res.token, res.refreshToken)
+            if (isLogin) {
+                await loginWithEmail(email, password)
+            } else {
+                await signUpWithEmail(email, password, username)
+            }
             router.replace('/(dashboard)')
         } catch (err: any) {
-            toast.error(isLogin ? 'Connexion échouée' : 'Inscription échouée', err?.message ?? 'Vérifie tes identifiants')
+            const title = isLogin ? 'Login failed' : 'Sign up failed'
+            toast.error(title, err?.message ?? 'Check your credentials')
         } finally {
             setLoading(false)
         }
     }
+
+    const isLoading = loading || authLoading
+
+    //  Render 
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: T.colors.bg }}>
@@ -75,13 +113,14 @@ export default function Onboarding3() {
                     <TouchableOpacity onPress={() => mode === 'email' ? setMode('choice') : router.back()}>
                         <View style={{
                             width: 40, height: 40, borderRadius: T.radius.md,
-                            ...T.glass.light, justifyContent: 'center', alignItems: 'center',
+                            ...T.glass.light,
+                            justifyContent: 'center', alignItems: 'center',
                         }}>
-                            <Ionicons name="arrow-back" size={20} color={T.colors.textSecondary} />
+                            <Feather name="arrow-left" size={20} color={T.colors.textSecondary} />
                         </View>
                     </TouchableOpacity>
 
-                    {/* Progress — all steps done */}
+                    {/* Progress  all steps filled */}
                     <View style={{ flexDirection: 'row', gap: 6, marginTop: T.space.md, marginBottom: 4 }}>
                         {[0, 1, 2, 3].map(i => (
                             <View key={i} style={{
@@ -94,19 +133,19 @@ export default function Onboarding3() {
                 </View>
 
                 {mode === 'choice' ? (
+                    /*  Provider Choice  */
                     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 28 }}>
                         {/* Logo */}
-                        <Animated.View style={{
+                        <Animated.View style={[{
                             width: 120, height: 120, borderRadius: T.radius.xxl,
                             ...T.glass.accent,
                             marginBottom: 28, justifyContent: 'center', alignItems: 'center',
-                            transform: [{ scale: logoScale }], opacity: fadeAnim,
                             ...T.glow(T.colors.accent, 0.35),
-                        }}>
-                            <Text style={{ fontSize: 56 }}>🏀</Text>
+                        }, logoStyle]}>
+                            <Text style={{ fontSize: 56 }}></Text>
                         </Animated.View>
 
-                        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }], alignItems: 'center', marginBottom: 40 }}>
+                        <Animated.View style={[{ alignItems: 'center', marginBottom: 40 }, fadeStyle]}>
                             <Text style={{
                                 color: T.colors.white, fontSize: T.font.xxxl + 4,
                                 fontWeight: '900', letterSpacing: -0.8,
@@ -117,12 +156,12 @@ export default function Onboarding3() {
                                 color: T.colors.textSecondary, fontSize: T.font.base,
                                 marginTop: 8, textAlign: 'center', lineHeight: 22,
                             }}>
-                                Ton coach IA basketball.{'\n'}Rejoins des milliers de joueurs.
+                                Your AI basketball coach.{'\n'}Join thousands of players.
                             </Text>
                         </Animated.View>
 
-                        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }], width: '100%' }}>
-                            {/* Apple */}
+                        <Animated.View style={[{ width: '100%' }, fadeStyle]}>
+                            {/* Apple Sign In */}
                             <TouchableOpacity
                                 style={{
                                     flexDirection: 'row', alignItems: 'center',
@@ -130,38 +169,40 @@ export default function Onboarding3() {
                                     borderRadius: T.radius.lg, marginBottom: 12,
                                     ...T.shadow('#000', 0.15, 8),
                                 }}
-                                onPress={() => handleMockLogin('apple')}
-                                disabled={loading}
+                                onPress={() => handleOAuth('apple')}
+                                disabled={isLoading}
                                 activeOpacity={0.85}
                             >
-                                {loading ? <ActivityIndicator size="small" color={T.colors.bg} style={{ marginRight: 15 }} />
+                                {isLoading
+                                    ? <ActivityIndicator size="small" color={T.colors.bg} style={{ marginRight: 15 }} />
                                     : <AntDesign name="apple1" size={22} color={T.colors.bg} style={{ marginRight: 15 }} />}
                                 <Text style={{
                                     color: T.colors.bg, fontSize: T.font.lg - 1,
                                     fontWeight: '700', flex: 1, textAlign: 'center', marginRight: 37,
                                 }}>
-                                    Continuer avec Apple
+                                    Continue with Apple
                                 </Text>
                             </TouchableOpacity>
 
-                            {/* Google */}
+                            {/* Google Sign In */}
                             <TouchableOpacity
                                 style={{
                                     flexDirection: 'row', alignItems: 'center',
                                     ...T.glass.medium,
                                     padding: T.space.lg + 1, borderRadius: T.radius.lg, marginBottom: 12,
                                 }}
-                                onPress={() => handleMockLogin('google')}
-                                disabled={loading}
+                                onPress={() => handleOAuth('google')}
+                                disabled={isLoading}
                                 activeOpacity={0.85}
                             >
-                                {loading ? <ActivityIndicator size="small" color={T.colors.white} style={{ marginRight: 15 }} />
+                                {isLoading
+                                    ? <ActivityIndicator size="small" color={T.colors.white} style={{ marginRight: 15 }} />
                                     : <AntDesign name="google" size={22} color={T.colors.white} style={{ marginRight: 15 }} />}
                                 <Text style={{
                                     color: T.colors.white, fontSize: T.font.lg - 1,
                                     fontWeight: '700', flex: 1, textAlign: 'center', marginRight: 37,
                                 }}>
-                                    Continuer avec Google
+                                    Continue with Google
                                 </Text>
                             </TouchableOpacity>
 
@@ -175,12 +216,12 @@ export default function Onboarding3() {
                                 onPress={() => setMode('email')}
                                 activeOpacity={0.85}
                             >
-                                <Ionicons name="mail-outline" size={22} color={T.colors.muted} style={{ marginRight: 15 }} />
+                                <Feather name="mail" size={22} color={T.colors.muted} style={{ marginRight: 15 }} />
                                 <Text style={{
                                     color: T.colors.muted, fontSize: T.font.lg - 1,
                                     fontWeight: '600', flex: 1, textAlign: 'center', marginRight: 37,
                                 }}>
-                                    Continuer avec l'email
+                                    Continue with Email
                                 </Text>
                             </TouchableOpacity>
 
@@ -188,49 +229,79 @@ export default function Onboarding3() {
                                 color: T.colors.dim, textAlign: 'center',
                                 marginTop: 22, fontSize: T.font.sm + 1, lineHeight: 18,
                             }}>
-                                En continuant, tu acceptes nos{' '}
-                                <Text style={{ color: T.colors.muted, textDecorationLine: 'underline' }}>CGV</Text>
-                                {' '}et notre{' '}
-                                <Text style={{ color: T.colors.muted, textDecorationLine: 'underline' }}>Politique de confidentialité</Text>.
+                                By continuing, you agree to our{' '}
+                                <Text style={{ color: T.colors.muted, textDecorationLine: 'underline' }}>Terms</Text>
+                                {' '}and{' '}
+                                <Text style={{ color: T.colors.muted, textDecorationLine: 'underline' }}>Privacy Policy</Text>.
                             </Text>
                         </Animated.View>
                     </View>
                 ) : (
-                    /* ── Formulaire email ── */
+                    /*  Email Form  */
                     <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 30 }}>
                         <Text style={{
                             color: T.colors.white, fontSize: T.font.xxl,
                             fontWeight: '900', marginBottom: 6, letterSpacing: -0.3,
                         }}>
-                            {isLogin ? 'Connexion' : 'Créer un compte'}
+                            {isLogin ? 'Welcome back' : 'Create account'}
                         </Text>
                         <Text style={{
                             color: T.colors.textSecondary, fontSize: T.font.md + 1,
                             marginBottom: T.space.xxl, lineHeight: 20,
                         }}>
                             {isLogin
-                                ? 'Ravi de te revoir ! Entre tes identifiants.'
-                                : 'Rejoins des milliers de joueurs qui s\'améliorent chaque jour.'}
+                                ? 'Good to see you again! Enter your credentials.'
+                                : 'Join thousands of players improving every day.'}
                         </Text>
 
-                        <Text style={{ color: T.colors.muted, fontSize: T.font.sm, marginBottom: 6, fontWeight: '600', letterSpacing: 1 }}>EMAIL</Text>
+                        {/* Username (sign up only) */}
+                        {!isLogin && (
+                            <>
+                                <Text style={{
+                                    color: T.colors.muted, fontSize: T.font.sm,
+                                    marginBottom: 6, fontWeight: '600', letterSpacing: 1,
+                                }}>USERNAME</Text>
+                                <TextInput
+                                    value={username}
+                                    onChangeText={setUsername}
+                                    style={{
+                                        ...T.glass.light,
+                                        color: T.colors.white, borderRadius: T.radius.md,
+                                        paddingHorizontal: 18, paddingVertical: 14,
+                                        fontSize: T.font.base, marginBottom: 14,
+                                    }}
+                                    placeholder="your_username"
+                                    placeholderTextColor={T.colors.dim}
+                                    autoCapitalize="none"
+                                    autoComplete="username"
+                                />
+                            </>
+                        )}
+
+                        <Text style={{
+                            color: T.colors.muted, fontSize: T.font.sm,
+                            marginBottom: 6, fontWeight: '600', letterSpacing: 1,
+                        }}>EMAIL</Text>
                         <TextInput
                             value={email}
                             onChangeText={setEmail}
                             style={{
                                 ...T.glass.light,
                                 color: T.colors.white, borderRadius: T.radius.md,
-                                paddingHorizontal: 18, paddingVertical: 14, fontSize: T.font.base,
-                                marginBottom: 14,
+                                paddingHorizontal: 18, paddingVertical: 14,
+                                fontSize: T.font.base, marginBottom: 14,
                             }}
-                            placeholder="ton@email.com"
+                            placeholder="you@email.com"
                             placeholderTextColor={T.colors.dim}
                             keyboardType="email-address"
                             autoCapitalize="none"
                             autoComplete="email"
                         />
 
-                        <Text style={{ color: T.colors.muted, fontSize: T.font.sm, marginBottom: 6, fontWeight: '600', letterSpacing: 1 }}>MOT DE PASSE</Text>
+                        <Text style={{
+                            color: T.colors.muted, fontSize: T.font.sm,
+                            marginBottom: 6, fontWeight: '600', letterSpacing: 1,
+                        }}>PASSWORD</Text>
                         <View style={{ position: 'relative', marginBottom: 24 }}>
                             <TextInput
                                 value={password}
@@ -238,10 +309,10 @@ export default function Onboarding3() {
                                 style={{
                                     ...T.glass.light,
                                     color: T.colors.white, borderRadius: T.radius.md,
-                                    paddingHorizontal: 18, paddingVertical: 14, fontSize: T.font.base,
-                                    paddingRight: 50,
+                                    paddingHorizontal: 18, paddingVertical: 14,
+                                    fontSize: T.font.base, paddingRight: 50,
                                 }}
-                                placeholder="••••••••"
+                                placeholder=""
                                 placeholderTextColor={T.colors.dim}
                                 secureTextEntry={!showPass}
                                 autoComplete={isLogin ? 'password' : 'new-password'}
@@ -250,34 +321,43 @@ export default function Onboarding3() {
                                 style={{ position: 'absolute', right: 16, top: 14 }}
                                 onPress={() => setShowPass(p => !p)}
                             >
-                                <Ionicons name={showPass ? 'eye-off-outline' : 'eye-outline'} size={22} color={T.colors.muted} />
+                                <Feather
+                                    name={showPass ? 'eye-off' : 'eye'}
+                                    size={22}
+                                    color={T.colors.muted}
+                                />
                             </TouchableOpacity>
                         </View>
 
+                        {/* Submit */}
                         <TouchableOpacity
                             style={{
                                 backgroundColor: T.colors.accent, borderRadius: T.radius.pill,
                                 paddingVertical: 18, alignItems: 'center',
-                                opacity: loading ? 0.7 : 1,
+                                opacity: isLoading ? 0.7 : 1,
                                 ...T.glow(T.colors.accent, 0.3),
                             }}
                             onPress={handleEmailAuth}
-                            disabled={loading}
+                            disabled={isLoading}
                             activeOpacity={0.85}
                         >
-                            {loading
+                            {isLoading
                                 ? <ActivityIndicator color={T.colors.bg} />
                                 : <Text style={{ color: T.colors.bg, fontWeight: '800', fontSize: T.font.lg }}>
-                                    {isLogin ? '🔑 Se connecter' : '🚀 Créer mon compte'}
+                                    {isLogin ? ' Sign In' : ' Create Account'}
                                 </Text>
                             }
                         </TouchableOpacity>
 
-                        <TouchableOpacity onPress={() => setIsLogin(p => !p)} style={{ marginTop: 20, alignItems: 'center' }}>
+                        {/* Toggle login / sign up */}
+                        <TouchableOpacity
+                            onPress={() => setIsLogin(p => !p)}
+                            style={{ marginTop: 20, alignItems: 'center' }}
+                        >
                             <Text style={{ color: T.colors.muted, fontSize: T.font.md + 1 }}>
-                                {isLogin ? "Pas encore de compte ? " : "Déjà inscrit ? "}
+                                {isLogin ? "Don't have an account? " : 'Already registered? '}
                                 <Text style={{ color: T.colors.accent, fontWeight: '700' }}>
-                                    {isLogin ? 'S\'inscrire' : 'Se connecter'}
+                                    {isLogin ? 'Sign Up' : 'Sign In'}
                                 </Text>
                             </Text>
                         </TouchableOpacity>

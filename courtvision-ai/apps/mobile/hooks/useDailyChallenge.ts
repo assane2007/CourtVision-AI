@@ -50,10 +50,10 @@ export const DIFFICULTY_COLORS: Record<string, string> = {
 }
 
 export const DIFFICULTY_LABELS: Record<string, string> = {
-    easy:       'Facile',
-    medium:     'Moyen',
-    hard:       'Difficile',
-    legendary:  '✨ Légendaire',
+    easy:       'Easy',
+    medium:     'Medium',
+    hard:       'Hard',
+    legendary:  '✨ Legendary',
 }
 
 // ── Défis locaux (fallback sans serveur) ─────────────────────────
@@ -65,8 +65,8 @@ function getLocalDailyChallenge(): DailyChallenge {
     const DAILY_CHALLENGES: DailyChallenge[] = [
         {
             id: `local-0`,
-            title: '50 Tirs de 3-pts',
-            description: 'Réalise 50 tentatives de 3-points lors de ta prochaine session.',
+            title: '50 Three-Pointers',
+            description: 'Attempt 50 three-point shots in your next session.',
             metric: 'shots_made',
             target: 50, current: 0,
             xp_reward: 75, bonus_xp: 25,
@@ -78,7 +78,7 @@ function getLocalDailyChallenge(): DailyChallenge {
         {
             id: `local-1`,
             title: 'Mental Score 80+',
-            description: 'Maintiens un mental score au-dessus de 80 pendant toute une session.',
+            description: 'Keep your mental score above 80 throughout an entire session.',
             metric: 'mental_score',
             target: 80, current: 0,
             xp_reward: 100, bonus_xp: 40,
@@ -89,8 +89,8 @@ function getLocalDailyChallenge(): DailyChallenge {
         },
         {
             id: `local-2`,
-            title: 'Session rapide',
-            description: 'Complète une session Coach Live de 20+ minutes.',
+            title: 'Quick Session',
+            description: 'Complete a 20+ minute Live Coach session.',
             metric: 'sessions',
             target: 1, current: 0,
             xp_reward: 50,
@@ -101,8 +101,8 @@ function getLocalDailyChallenge(): DailyChallenge {
         },
         {
             id: `local-3`,
-            title: 'Sniper du jour',
-            description: 'Réalise 60%+ de tirs réussis sur au moins 20 tentatives.',
+            title: 'Sharpshooter of the Day',
+            description: 'Hit 60%+ on at least 20 shot attempts.',
             metric: 'shooting_pct',
             target: 60, current: 0,
             xp_reward: 120, bonus_xp: 50,
@@ -113,8 +113,8 @@ function getLocalDailyChallenge(): DailyChallenge {
         },
         {
             id: `local-4`,
-            title: 'Streak maintenu',
-            description: 'Assure-toi de rester connecté et actif aujourd\'hui.',
+            title: 'Streak Maintained',
+            description: 'Stay connected and active today.',
             metric: 'streak',
             target: 1, current: 0,
             xp_reward: 30,
@@ -125,8 +125,8 @@ function getLocalDailyChallenge(): DailyChallenge {
         },
         {
             id: `local-5`,
-            title: 'Session double',
-            description: 'Fais 2 sessions dans la journée.',
+            title: 'Double Session',
+            description: 'Complete 2 sessions in a single day.',
             metric: 'sessions',
             target: 2, current: 0,
             xp_reward: 150, bonus_xp: 75,
@@ -137,8 +137,8 @@ function getLocalDailyChallenge(): DailyChallenge {
         },
         {
             id: `local-6`,
-            title: 'Analyse complète',
-            description: 'Analyse une vidéo de match complet (4 quarts).',
+            title: 'Full Analysis',
+            description: 'Analyze a full-game video (4 quarters).',
             metric: 'sessions',
             target: 1, current: 0,
             xp_reward: 80,
@@ -206,7 +206,7 @@ export function useDailyChallenge(): DailyChallengeState {
 
         const totalXP = challenge.xp_reward + (challenge.bonus_xp ?? 0)
         addXP(totalXP, challenge.title)
-        toast.xp(`+${totalXP} XP`, `Défi "${challenge.title}" réclamé !`, 4000)
+        toast.xp(`+${totalXP} XP`, `Challenge "${challenge.title}" claimed!`, 4000)
 
         setChallenge(prev => prev ? { ...prev, claimed: true } : prev)
     }, [challenge, addXP])
@@ -231,7 +231,7 @@ export function useDailyChallenge(): DailyChallengeState {
         const ONE_HOUR = 3_600_000
 
         if (diff > ONE_HOUR && diff < ONE_HOUR + 5000) {
-            toast.warning('⏰ Défi expire dans 1h !', challenge.title)
+            toast.warning('⏰ Challenge expires in 1h!', challenge.title)
         }
     }, [timeLeft])
 

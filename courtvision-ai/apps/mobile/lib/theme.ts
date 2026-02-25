@@ -1,159 +1,417 @@
 /**
- * CourtVision AI — Premium Design System V2
- * Inspiré par HomeCourt, Nike Training, et les apps sportives premium.
- * Glassmorphism, gradients, micro-animations, typographie sharp.
+ * CourtVision AI — Design System V3
+ * =============================================================
+ * Couleur signature : Amber #FF6B00 — couleur du ballon, unique
+ * dans l'univers sport. Jamais vu chez Nike, Apple Fitness,
+ * Whoop ou Strava. Identitaire et mémorable.
+ *
+ * Typographie :
+ *   Display — Sora (géométrique, sportif, impactant)
+ *   Body    — DM Sans (lisible, moderne, neutre)
+ *
+ * "If it doesn't make you say WOW, it's not done."
+ * =============================================================
  */
 
+// ─── Palette brute (source of truth) ─────────────────────────
+
+const palette = {
+    // Backgrounds — sombre sans être noir pur, préserve les yeux
+    black:      '#080C12',   // fond app principal
+    surface:    '#0D1119',   // cartes de premier niveau
+    elevated:   '#121922',   // cartes surélevées, sections
+    overlay:    '#171F2B',   // modales, drawers
+    // Signature — Amber Blaze (couleur du ballon de basket)
+    amber:      '#FF6B00',   // brand principale — wow factor
+    amberLight: '#FF8C36',   // version claire, états hover/active
+    amberDark:  '#CC5500',   // version sombre, états pressed
+    // Blue — fonctionnel, liens, éléments interactifs secondaires
+    blue:       '#0A84FF',   // bleu iOS, crédibilité et confiance
+    blueLight:  '#4DA6FF',   // hover/active
+    // Semantic — succès, erreur, avertissement, info
+    green:      '#00C67A',   // vert menthe — succès, performance
+    greenLight: '#4DEBA1',
+    red:        '#FF3A5E',   // rouge — erreur, danger
+    redLight:   '#FF6B8A',
+    yellow:     '#FFBA00',   // jaune ambré — warning, XP gold
+    yellowLight:'#FFD44D',
+    // Text — hiérarchie de 4 niveaux
+    white:      '#F2F6FC',   // texte principal — blanc chaud
+    slate:      '#7C8FA3',   // texte secondaire — info, labels
+    steel:      '#48596B',   // texte tertiaire — désactivé, hints
+    ink:        '#080C12',   // texte sur fond clair (inverse)
+    // Purple — XP, gamification, badges rares
+    violet:     '#A78BFA',
+    violetLight:'#C4B5FD',
+    // Gold — achievements, top 3 rankings, streaks
+    gold:       '#FFD700',
+    goldLight:  '#FFE55E',
+} as const
+
+// ─── Design Token Object ──────────────────────────────────────
+
 export const T = {
-    // ── Couleurs principales ──────────────────────────────────
-    colors: {
-        // Backgrounds
-        bg:           '#050A12',
-        bgSurface:    '#0A0F1A',
-        card:         '#0F1724',
-        cardElevated: '#141D2E',
-        cardGlass:    'rgba(15,23,36,0.75)',
 
-        // Borders
-        border:       'rgba(255,255,255,0.06)',
-        borderLight:  'rgba(255,255,255,0.10)',
-        borderAccent: 'rgba(0,212,255,0.20)',
+    // ══════════════════════════════════════════════════════════
+    // COULEURS
+    // ══════════════════════════════════════════════════════════
 
-        // Primary gradient
-        primary:      '#007AFF',
-        primaryLight: '#4DA3FF',
-        primaryDim:   'rgba(0,122,255,0.12)',
-
-        // Accent (cyan neon)
-        accent:       '#00E5FF',
-        accentLight:  '#66F0FF',
-        accentDim:    'rgba(0,229,255,0.10)',
-        accentGlow:   'rgba(0,229,255,0.25)',
-
-        // Success
-        green:        '#00E676',
-        greenLight:   '#69F0AE',
-        greenDim:     'rgba(0,230,118,0.10)',
-
-        // Danger
-        red:          '#FF3B5C',
-        redLight:     '#FF6B8A',
-        redDim:       'rgba(255,59,92,0.10)',
-
-        // Warning
-        orange:       '#FF9100',
-        orangeLight:  '#FFB74D',
-        orangeDim:    'rgba(255,145,0,0.10)',
-
-        // Purple (XP)
-        purple:       '#B388FF',
-        purpleLight:  '#CE9CFF',
-        purpleDim:    'rgba(179,136,255,0.10)',
-
-        // Gold
-        gold:         '#FFD740',
-        goldDim:      'rgba(255,215,64,0.10)',
-
-        // Text
-        white:        '#F0F6FC',
-        textPrimary:  '#F0F6FC',
-        textSecondary:'#8899A6',
-        muted:        '#6B7B8D',
-        dim:          '#3D4F5F',
-        dimmer:       '#1C2B3A',
+    /**
+     * Couleurs structurées par rôle sémantique.
+     * Ces buckets sont la référence — utilise-les plutôt que
+     * les aliases de compatibilité en bas du fichier.
+     */
+    color: {
+        background: {
+            primary:   palette.black,       // fond app
+            secondary: palette.surface,     // cartes
+            tertiary:  palette.elevated,    // éléments surélevés
+            overlay:   palette.overlay,     // modales
+        },
+        signature: {
+            primary:   palette.amber,       // amber #FF6B00
+            light:     palette.amberLight,  // états hover
+            dark:      palette.amberDark,   // états pressed
+            dim:       'rgba(255,107,0,0.10)' as string, // backgrounds tint
+            glow:      'rgba(255,107,0,0.28)' as string, // glow + shadows
+        },
+        semantic: {
+            success:   palette.green,
+            successDim:'rgba(0,198,122,0.10)' as string,
+            error:     palette.red,
+            errorDim:  'rgba(255,58,94,0.10)' as string,
+            warning:   palette.yellow,
+            warningDim:'rgba(255,186,0,0.10)' as string,
+            info:      palette.blue,
+            infoDim:   'rgba(10,132,255,0.10)' as string,
+        },
+        text: {
+            primary:   palette.white,    // F2F6FC — lisible sur dark
+            secondary: palette.slate,    // 7C8FA3 — labels, captions
+            tertiary:  palette.steel,    // 48596B — désactivé, muted
+            inverse:   palette.ink,      // sur fond clair
+        },
+        border: {
+            subtle:    'rgba(255,255,255,0.05)' as string,   // séparateurs
+            default:   'rgba(255,255,255,0.08)' as string,   // cards
+            strong:    'rgba(255,255,255,0.14)' as string,   // focus, active
+            accent:    'rgba(255,107,0,0.22)' as string,     // brand highlight
+        },
     },
 
-    // ── Glass effects ──────────────────────────────────────────
+    // ── Aliases de compatibilité (backward compat avec v2) ───
+    // Permet aux screens existants de ne pas casser
+    colors: {
+        // Backgrounds
+        bg:           palette.black,
+        bgSurface:    palette.surface,
+        card:         palette.elevated,
+        cardElevated: palette.overlay,
+        cardGlass:    'rgba(13,17,25,0.80)' as string,
+        // Borders
+        border:       'rgba(255,255,255,0.05)' as string,
+        borderLight:  'rgba(255,255,255,0.10)' as string,
+        borderAccent: 'rgba(255,107,0,0.22)' as string,
+        // Primary (bleu fonctionnel)
+        primary:      palette.blue,
+        primaryLight: palette.blueLight,
+        primaryDim:   'rgba(10,132,255,0.10)' as string,
+        // Accent = signature brand AMBER (remplace cyan)
+        accent:       palette.amber,
+        accentLight:  palette.amberLight,
+        accentDim:    'rgba(255,107,0,0.10)' as string,
+        accentGlow:   'rgba(255,107,0,0.28)' as string,
+        // Success
+        green:        palette.green,
+        greenLight:   palette.greenLight,
+        greenDim:     'rgba(0,198,122,0.10)' as string,
+        // Danger
+        red:          palette.red,
+        redLight:     palette.redLight,
+        redDim:       'rgba(255,58,94,0.10)' as string,
+        // Warning
+        orange:       palette.yellow,
+        orangeLight:  palette.yellowLight,
+        orangeDim:    'rgba(255,186,0,0.10)' as string,
+        // Purple (XP, gamification)
+        purple:       palette.violet,
+        purpleLight:  palette.violetLight,
+        purpleDim:    'rgba(167,139,250,0.10)' as string,
+        // Gold (achievements)
+        gold:         palette.gold,
+        goldDim:      'rgba(255,215,0,0.10)' as string,
+        // Text
+        white:        palette.white,
+        textPrimary:  palette.white,
+        textSecondary:palette.slate,
+        muted:        palette.slate,
+        dim:          palette.steel,
+        dimmer:       '#1A2535' as string,
+    },
+
+    // ══════════════════════════════════════════════════════════
+    // GLASS / GLASSMORPHISM
+    // ══════════════════════════════════════════════════════════
+
     glass: {
         light: {
-            backgroundColor: 'rgba(255,255,255,0.04)',
-            borderColor: 'rgba(255,255,255,0.08)',
+            backgroundColor: 'rgba(255,255,255,0.03)',
+            borderColor:     'rgba(255,255,255,0.07)',
             borderWidth: 1,
         },
         medium: {
             backgroundColor: 'rgba(255,255,255,0.06)',
-            borderColor: 'rgba(255,255,255,0.10)',
+            borderColor:     'rgba(255,255,255,0.10)',
             borderWidth: 1,
         },
         accent: {
-            backgroundColor: 'rgba(0,229,255,0.06)',
-            borderColor: 'rgba(0,229,255,0.15)',
+            // amber-tinted glass (remplace le cyan d'avant)
+            backgroundColor: 'rgba(255,107,0,0.06)',
+            borderColor:     'rgba(255,107,0,0.16)',
             borderWidth: 1,
         },
         primary: {
-            backgroundColor: 'rgba(0,122,255,0.08)',
-            borderColor: 'rgba(0,122,255,0.18)',
+            backgroundColor: 'rgba(10,132,255,0.07)',
+            borderColor:     'rgba(10,132,255,0.16)',
+            borderWidth: 1,
+        },
+        success: {
+            backgroundColor: 'rgba(0,198,122,0.07)',
+            borderColor:     'rgba(0,198,122,0.16)',
             borderWidth: 1,
         },
     },
 
-    // ── Spacing ────────────────────────────────────────────────
-    space: {
-        xs:  4,
-        sm:  8,
-        md:  12,
-        lg:  16,
-        xl:  20,
-        xxl: 28,
-        xxxl: 40,
+    // ══════════════════════════════════════════════════════════
+    // TYPOGRAPHIE
+    // ══════════════════════════════════════════════════════════
+
+    /**
+     * Familles de fonts (chargées via expo-google-fonts)
+     *   Display : Sora — géométrique, sportif, impactant pour les gros chiffres
+     *   Body    : DM Sans — lisible, moderne, excellent sur mobile
+     */
+    fonts: {
+        display: {
+            regular:  'Sora_400Regular',
+            medium:   'Sora_500Medium',
+            semibold: 'Sora_600SemiBold',
+            bold:     'Sora_700Bold',
+            black:    'Sora_800ExtraBold',
+        },
+        body: {
+            regular:  'DMSans_400Regular',
+            medium:   'DMSans_500Medium',
+            semibold: 'DMSans_600SemiBold',
+            bold:     'DMSans_700Bold',
+        },
     },
 
-    // ── Border Radius ──────────────────────────────────────────
-    radius: {
-        sm:    10,
-        md:    14,
-        lg:    18,
-        xl:    22,
-        xxl:   28,
-        pill:  50,
-        round: 9999,
+    /**
+     * Échelle typographique — 4px grid
+     * Règle : tout chiffre important → min xl (24px)
+     */
+    fontSize: {
+        xs:   11,   // captions, badges, timestamps
+        sm:   13,   // labels secondaires, sous-titres courts
+        base: 15,   // texte courant, description
+        md:   17,   // titres de section, valeurs importantes
+        lg:   20,   // sous-titres d'écrans, stats intermédiaires
+        xl:   24,   // stats headline, titres
+        '2xl': 32,  // chiffres clés (FG%, mental score)
+        '3xl': 42,  // hero stat secondaire
+        hero: 64,   // stat principale absolue (ne jamais descendre ici)
     },
 
-    // ── Typographie ────────────────────────────────────────────
+    /** Alias backward compat (v2 → v3) */
     font: {
-        xs:   9,
-        sm:   11,
-        md:   13,
+        xs:   11,
+        sm:   13,
+        md:   13,   // note: md était 13 en v2, inchangé
         base: 15,
         lg:   17,
         xl:   20,
-        xxl:  26,
+        xxl:  24,
         xxxl: 32,
         hero: 42,
     },
 
-    // ── Ombres premium ─────────────────────────────────────────
-    shadow: (color: string, opacity = 0.30, radius = 16) => ({
+    /** Weights comme constantes string pour StyleSheet */
+    weight: {
+        regular:  '400' as const,
+        medium:   '500' as const,
+        semibold: '600' as const,
+        bold:     '700' as const,
+        black:    '900' as const,
+    },
+
+    // ══════════════════════════════════════════════════════════
+    // ESPACEMENTS — grille 4px
+    // ══════════════════════════════════════════════════════════
+
+    spacing: {
+        1:  4,    // micro espacements, badges padding
+        2:  8,    // gaps entre éléments petits
+        3:  12,   // padding interne compact
+        4:  16,   // padding standard
+        5:  20,   // gap large
+        6:  24,   // section spacing compact
+        8:  32,   // section spacing normal
+        10: 40,   // section spacing large
+        12: 48,   // hero section spacing
+        16: 64,   // très grand
+        20: 80,   // spacing XL
+        24: 96,   // spacing XXL (hero sections)
+    } as const,
+
+    /** Alias backward compat */
+    space: {
+        xs:   4,
+        sm:   8,
+        md:   12,
+        lg:   16,
+        xl:   20,
+        xxl:  24,
+        xxxl: 32,
+    },
+
+    // ══════════════════════════════════════════════════════════
+    // BORDER RADIUS
+    // ══════════════════════════════════════════════════════════
+
+    /**
+     * Système de radius plus anguleux que v2.
+     * Résultat : identité plus "high-tech", moins bubbly.
+     */
+    borderRadius: {
+        sm:   4,     // boutons inline, badges petits
+        md:   8,     // chips, tags
+        lg:   12,    // cartes compactes
+        xl:   16,    // cartes standard
+        '2xl':24,    // cartes large, modales
+        full: 9999,  // pills, avatars ronds
+    } as const,
+
+    /** Alias backward compat (v2 avait des valeurs plus grandes) */
+    radius: {
+        sm:    8,    // légère augmentation pour softness
+        md:    12,
+        lg:    16,
+        xl:    20,
+        xxl:   24,
+        pill:  9999,
+        round: 9999,
+    },
+
+    // ══════════════════════════════════════════════════════════
+    // OMBRES ET GLOW
+    // ══════════════════════════════════════════════════════════
+
+    /** Ombre directionnelle premium (cartes, boutons) */
+    shadow: (color: string, opacity = 0.28, radius = 16) => ({
         shadowColor: color,
-        shadowOffset: { width: 0, height: 8 },
+        shadowOffset: { width: 0, height: 6 },
         shadowOpacity: opacity,
         shadowRadius: radius,
         elevation: 8,
     }),
 
-    // ── Glow effect ────────────────────────────────────────────
-    glow: (color: string, intensity = 0.4) => ({
+    /** Glow diffus omnidirectionnel (accents, stats importantes) */
+    glow: (color: string, intensity = 0.38) => ({
         shadowColor: color,
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: intensity,
-        shadowRadius: 20,
+        shadowRadius: 24,
         elevation: 10,
     }),
 
-    // ── Couleur de rating ──────────────────────────────────────
-    ratingColor: (v: number): string => {
-        if (v >= 85) return '#00E676'
-        if (v >= 70) return '#00E5FF'
-        if (v >= 50) return '#FF9100'
-        return '#FF3B5C'
+    /** Ombres prédéfinies par niveau */
+    shadows: {
+        sm:  (color = '#000') => ({ shadowColor: color, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.20, shadowRadius: 6,  elevation: 3 }),
+        md:  (color = '#000') => ({ shadowColor: color, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.24, shadowRadius: 12, elevation: 6 }),
+        lg:  (color = '#000') => ({ shadowColor: color, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.28, shadowRadius: 20, elevation: 10 }),
+        xl:  (color = '#000') => ({ shadowColor: color, shadowOffset: { width: 0, height: 12}, shadowOpacity: 0.32, shadowRadius: 28, elevation: 14 }),
     },
 
-    // ── Couleur de score (live) ────────────────────────────────
+    // ══════════════════════════════════════════════════════════
+    // Z-INDEX
+    // ══════════════════════════════════════════════════════════
+
+    zIndex: {
+        base:    0,
+        raised:  10,
+        dropdown:50,
+        modal:   100,
+        toast:   1000,
+    } as const,
+
+    // ══════════════════════════════════════════════════════════
+    // ANIMATION TOKENS
+    // ══════════════════════════════════════════════════════════
+
+    animation: {
+        duration: {
+            fast:      150,   // micro-interactions (press, tap)
+            normal:    300,   // transitions standard
+            slow:      500,   // reveals, count-ups
+            verySlow:  800,   // entrées d'écrans, celebrations
+        },
+        easing: {
+            // Utiliser avec Easing de react-native
+            spring:    { tension: 200, friction: 10 },
+            snappy:    { tension: 280, friction: 14 },
+            smooth:    { tension: 120, friction: 12 },
+        },
+    },
+
+    // ══════════════════════════════════════════════════════════
+    // HELPERS DYNAMIQUES
+    // ══════════════════════════════════════════════════════════
+
+    /**
+     * Couleur selon une valeur 0-100.
+     * red → orange → amber → green
+     * Note: on évite le rouge pur pour les valeurs moyennes —
+     * psychologiquement moins décourageant.
+     */
+    ratingColor: (v: number): string => {
+        if (v >= 85) return palette.green        // Elite
+        if (v >= 70) return palette.amber        // Great (amber brand!)
+        if (v >= 50) return palette.yellow       // Average
+        return palette.red                        // Needs work
+    },
+
+    /**
+     * Badge de performance textuel
+     */
+    performanceBadge: (v: number): { label: string; color: string } => {
+        if (v >= 85) return { label: 'Elite',    color: palette.green }
+        if (v >= 70) return { label: 'Great',    color: palette.amber }
+        if (v >= 55) return { label: 'Good',     color: palette.yellow }
+        return              { label: 'Keep Going', color: palette.red }
+    },
+
+    /** Couleur live-score (alias de ratingColor pour backward compat) */
     scoreColor: (v: number): string => {
-        if (v >= 75) return '#00E676'
-        if (v >= 50) return '#FF9100'
-        return '#FF3B5C'
+        if (v >= 85) return palette.green
+        if (v >= 70) return palette.amber
+        if (v >= 50) return palette.yellow
+        return palette.red
     },
 } as const
 
-export type ThemeColors = typeof T.colors
+// ─── Type helpers ─────────────────────────────────────────────
+export type ThemeColors   = typeof T.colors
+export type ThemeColor    = typeof T.color
+export type ThemeSpacing  = typeof T.spacing
+export type ThemeFontSize = typeof T.fontSize
+
+// ─── Export de la palette brute (pour usage avancé) ──────────
+export { palette }
+
+// ─── Helpers typés ───────────────────────────────────────────
+/** Retourne T.color.signature.primary — amber #FF6B00 */
+export const brand = T.color.signature.primary
+
+/** Constante sémantique : fond d'écran principal */
+export const screenBg = T.color.background.primary

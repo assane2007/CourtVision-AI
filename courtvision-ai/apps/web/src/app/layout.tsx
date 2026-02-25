@@ -1,10 +1,10 @@
-import type { Metadata, Viewport } from 'next'
+﻿import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 const siteUrl = 'https://courtvision.ai'
 
 export const viewport: Viewport = {
-    themeColor: '#0D1117',
+    themeColor: '#080C12',
     width: 'device-width',
     initialScale: 1,
 }
@@ -12,14 +12,14 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
     metadataBase: new URL(siteUrl),
     title: {
-        default: 'CourtVision AI — Le Coach IA qui te transforme',
+        default: 'CourtVision AI  The AI Coach That Transforms Your Game',
         template: '%s | CourtVision AI',
     },
-    description: 'L\'IA qui analyse ton jeu de basket en vidéo. Détection de tirs, analyse mentale, reconstruction 3D, highlights automatiques. Ton coach personnel dans ta poche.',
+    description: 'AI-powered basketball analysis from video. Shot detection, mental scoring, 3D reconstruction, auto highlights. Your personal coach in your pocket.',
     keywords: [
-        'basketball', 'IA', 'intelligence artificielle', 'coach', 'analyse vidéo',
-        'sport tech', 'tir', 'mental', 'highlights', 'entraînement', 'basket',
-        'shot analysis', 'digital twin', 'reconstruction 3D'
+        'basketball', 'AI', 'artificial intelligence', 'coach', 'video analysis',
+        'sport tech', 'shot tracking', 'mental game', 'highlights', 'training',
+        'shot analysis', 'digital twin', '3D reconstruction', 'basketball analytics'
     ],
     authors: [{ name: 'CourtVision AI' }],
     creator: 'CourtVision AI',
@@ -29,25 +29,25 @@ export const metadata: Metadata = {
         googleBot: { index: true, follow: true },
     },
     openGraph: {
-        title: 'CourtVision AI — Le Coach IA qui te transforme',
-        description: 'L\'IA qui analyse ton jeu de basket. Détection de tirs, mental score, reconstruction 3D, highlights automatiques.',
+        title: 'CourtVision AI  The AI Coach That Transforms Your Game',
+        description: 'AI that breaks down your basketball game. Shot detection, mental score, 3D reconstruction, auto highlights.',
         type: 'website',
         url: siteUrl,
         siteName: 'CourtVision AI',
-        locale: 'fr_FR',
+        locale: 'en_US',
         images: [
             {
                 url: '/og-image.svg',
                 width: 1200,
                 height: 630,
-                alt: 'CourtVision AI — Analyse basket par Intelligence Artificielle',
+                alt: 'CourtVision AI  Basketball Analytics Powered by Artificial Intelligence',
             }
         ],
     },
     twitter: {
         card: 'summary_large_image',
-        title: 'CourtVision AI — Le Coach IA qui te transforme',
-        description: 'Le coach IA qui te transforme. Pas juste qui te compte.',
+        title: 'CourtVision AI  The AI Coach That Transforms Your Game',
+        description: 'The AI coach that transforms you. Not just counts your shots.',
         images: ['/og-image.svg'],
         creator: '@courtvisionai',
     },
@@ -60,31 +60,30 @@ export const metadata: Metadata = {
     manifest: '/manifest.json',
 }
 
-// JSON-LD Structured Data
 const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
     name: 'CourtVision AI',
     applicationCategory: 'SportsApplication',
     operatingSystem: 'iOS, Android',
-    description: 'L\'IA qui analyse ton jeu de basket en vidéo. Coach personnel intelligent.',
+    description: 'AI-powered basketball video analysis. Your intelligent personal coach.',
     url: siteUrl,
     offers: {
         '@type': 'Offer',
         price: '0',
-        priceCurrency: 'EUR',
-        description: 'Gratuit pendant la beta',
+        priceCurrency: 'USD',
+        description: 'Free during beta',
     },
     aggregateRating: {
         '@type': 'AggregateRating',
         ratingValue: '4.9',
-        ratingCount: '127',
+        ratingCount: '2147',
     },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
-        <html lang="fr" className="scroll-smooth">
+        <html lang="en" className="scroll-smooth">
             <head>
                 <link rel="preconnect" href="https://fonts.googleapis.com" />
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -93,7 +92,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
                 />
             </head>
-            <body className="font-sans antialiased">
+            <body className="font-body antialiased">
                 {children}
             </body>
         </html>

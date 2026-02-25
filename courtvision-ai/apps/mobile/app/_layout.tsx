@@ -3,7 +3,8 @@ import { useEffect } from 'react'
 import { AppState, AppStateStatus, StatusBar } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import * as Notifications from 'expo-notifications'
-import { getAuthToken } from '../lib/api'
+import { getAuthToken, setAuthToken, setRefreshToken, clearTokens } from '../lib/api'
+import { supabase } from '../lib/supabase'
 import { useStore } from '../lib/store'
 import { ToastContainer } from '../components/Toast'
 import { usePushNotifications } from '../hooks/usePushNotifications'
@@ -19,17 +20,18 @@ Notifications.setNotificationHandler({
 })
 
 /**
- * Auth guard: re-directs to onboarding when no token is found,
- * and to the dashboard when a returning user opens the app.
- * Also resets the notification badge when the app comes to foreground.
+ * Auth guard: syncs Supabase session with SecureStore tokens,
+ * redirects to onboarding when no session, and to dashboard
+ * when a returning user opens the app.
+ * Resets notification badge on foreground.
  */
 function AuthGuard() {
     const router   = useRouter()
     const segments = useSegments()
-    const { isAuthenticated, hydrated, login } = useStore()
+    const { isAuthenticated, hydrated, login, logout } = useStore()
     const { registerForPushNotifications } = usePushNotifications()
 
-    // Remettre le badge à 0 quand l'app passe au premier plan
+    // Reset badge on foreground
     useEffect(() => {
         const subscription = AppState.addEventListener('change', (state: AppStateStatus) => {
             if (state === 'active') {
@@ -40,6 +42,32 @@ function AuthGuard() {
         return () => subscription.remove()
     }, [])
 
+    // Supabase auth state listener — keeps SecureStore in sync
+    useEffect(() => {
+        // Check initial session
+        supabase.auth.getSession().then(async ({ data: { session } }) => {
+            if (session) {
+                await setAuthToken(session.access_token)
+                await setRefreshToken(session.refresh_token)
+            }
+        })
+
+        // Listen for changes (sign in, sign out, token refresh)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+            async (event, session) => {
+                if (session) {
+                    await setAuthToken(session.access_token)
+                    await setRefreshToken(session.refresh_token)
+                } else if (event === 'SIGNED_OUT') {
+                    await clearTokens()
+                }
+            },
+        )
+
+        return () => subscription.unsubscribe()
+    }, [])
+
+    // Navigation guard — redirect based on auth state
     useEffect(() => {
         if (!hydrated) return
 

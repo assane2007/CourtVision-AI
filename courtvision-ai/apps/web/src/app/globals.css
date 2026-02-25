@@ -1,57 +1,60 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
 
 html {
     scroll-behavior: smooth;
 }
 
 body {
-    background-color: #0D1117;
-    color: #E6EDF3;
+    background-color: #080C12;
+    color: #F2F6FC;
 }
 
 /* ==========================================
    SCROLLBAR
    ========================================== */
-::-webkit-scrollbar {
-    width: 8px;
-}
-::-webkit-scrollbar-track {
-    background: #0D1117;
-}
-::-webkit-scrollbar-thumb {
-    background: #30363D;
-    border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: #484F58;
-}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #080C12; }
+::-webkit-scrollbar-thumb { background: #1A2333; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #2A3545; }
 
 /* ==========================================
    GLASS MORPHISM
    ========================================== */
 .glass {
-    background: rgba(22, 27, 34, 0.8);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+    background: rgba(13, 18, 25, 0.80);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.glass-amber {
+    background: rgba(255, 107, 0, 0.06);
+    border: 1px solid rgba(255, 107, 0, 0.16);
 }
 
 /* ==========================================
    GRADIENT TEXT
    ========================================== */
 .gradient-text {
-    background: linear-gradient(135deg, #1A73E8 0%, #00E676 100%);
+    background: linear-gradient(135deg, #FF6B00 0%, #FF8C36 50%, #FFBA00 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 
-.gradient-text-warm {
-    background: linear-gradient(135deg, #FFB300 0%, #FF5252 100%);
+.gradient-text-cool {
+    background: linear-gradient(135deg, #0A84FF 0%, #A78BFA 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -67,9 +70,7 @@ body {
 }
 
 @keyframes draw-line {
-    to {
-        stroke-dashoffset: 0;
-    }
+    to { stroke-dashoffset: 0; }
 }
 
 /* ==========================================
@@ -78,9 +79,8 @@ body {
 .reveal {
     opacity: 0;
     transform: translateY(40px);
-    transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
 }
-
 .reveal.visible {
     opacity: 1;
     transform: translateY(0);
@@ -90,9 +90,8 @@ body {
 .reveal-stagger > * {
     opacity: 0;
     transform: translateY(30px);
-    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
-
 .reveal-stagger.visible > *:nth-child(1) { transition-delay: 0.05s; }
 .reveal-stagger.visible > *:nth-child(2) { transition-delay: 0.10s; }
 .reveal-stagger.visible > *:nth-child(3) { transition-delay: 0.15s; }
@@ -101,7 +100,6 @@ body {
 .reveal-stagger.visible > *:nth-child(6) { transition-delay: 0.30s; }
 .reveal-stagger.visible > *:nth-child(7) { transition-delay: 0.35s; }
 .reveal-stagger.visible > *:nth-child(8) { transition-delay: 0.40s; }
-
 .reveal-stagger.visible > * {
     opacity: 1;
     transform: translateY(0);
@@ -114,7 +112,6 @@ body {
     position: relative;
     overflow: hidden;
 }
-
 .card-shine::after {
     content: '';
     position: absolute;
@@ -125,54 +122,53 @@ body {
     background: linear-gradient(
         to bottom right,
         rgba(255, 255, 255, 0) 0%,
-        rgba(255, 255, 255, 0.03) 50%,
+        rgba(255, 255, 255, 0.02) 50%,
         rgba(255, 255, 255, 0) 100%
     );
     transform: rotate(-45deg) translateY(-100%);
-    transition: transform 0.8s ease;
+    transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
     pointer-events: none;
 }
-
 .card-shine:hover::after {
     transform: rotate(-45deg) translateY(0%);
 }
 
 /* ==========================================
-   GLOW BUTTON
+   GLOW BUTTON (amber)
    ========================================== */
 .btn-glow {
     position: relative;
     z-index: 1;
 }
-
 .btn-glow::before {
     content: '';
     position: absolute;
     inset: -2px;
-    background: linear-gradient(135deg, #1A73E8, #00E676);
+    background: linear-gradient(135deg, #FF6B00, #FFBA00);
     border-radius: inherit;
     z-index: -1;
     opacity: 0;
     transition: opacity 0.3s;
-    filter: blur(12px);
+    filter: blur(14px);
+}
+.btn-glow:hover::before {
+    opacity: 0.55;
 }
 
-.btn-glow:hover::before {
-    opacity: 0.6;
+/* ==========================================
+   AMBIENT GLOW
+   ========================================== */
+.amber-glow {
+    box-shadow: 0 0 60px rgba(255, 107, 0, 0.12), 0 0 120px rgba(255, 107, 0, 0.06);
+}
+
+.amber-glow-strong {
+    box-shadow: 0 0 40px rgba(255, 107, 0, 0.25), 0 0 80px rgba(255, 107, 0, 0.12);
 }
 
 /* ==========================================
    MARQUEE (testimonials)
    ========================================== */
-@keyframes marquee {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-}
-
-.animate-marquee {
-    animation: marquee 30s linear infinite;
-}
-
 .animate-marquee:hover {
     animation-play-state: paused;
 }
@@ -181,7 +177,7 @@ body {
    FOCUS STYLES (a11y)
    ========================================== */
 *:focus-visible {
-    outline: 2px solid #1A73E8;
+    outline: 2px solid #FF6B00;
     outline-offset: 2px;
     border-radius: 4px;
 }
@@ -190,6 +186,19 @@ body {
    SELECTION
    ========================================== */
 ::selection {
-    background-color: rgba(26, 115, 232, 0.3);
-    color: #E6EDF3;
+    background-color: rgba(255, 107, 0, 0.25);
+    color: #F2F6FC;
+}
+
+/* ==========================================
+   NOISE TEXTURE OVERLAY
+   ========================================== */
+.noise-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.02;
+    pointer-events: none;
+    z-index: 0;
 }

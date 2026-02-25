@@ -1,10 +1,17 @@
 /**
- * ToastContainer — Premium toast notifications avec glassmorphism.
+ * ToastContainer — Premium toast notifications with glassmorphism.
+ * V3: Reanimated v3, fontFamily.
  */
 
-import React, { useEffect, useRef } from 'react'
-import { Animated, Text, TouchableOpacity, View, StyleSheet } from 'react-native'
+import React, { useEffect } from 'react'
+import { Text, TouchableOpacity, View, StyleSheet } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withSpring,
+    withTiming,
+} from 'react-native-reanimated'
 import { useToastStore, ToastMessage, ToastType } from '../lib/toast'
 import { T } from '../lib/theme'
 
@@ -17,17 +24,20 @@ const TOAST_STYLES: Record<ToastType, { bg: string; border: string; text: string
 }
 
 function ToastItem({ msg, onDismiss }: { msg: ToastMessage; onDismiss: () => void }) {
-    const translateY = useRef(new Animated.Value(-80)).current
-    const opacity    = useRef(new Animated.Value(0)).current
-    const scale      = useRef(new Animated.Value(0.9)).current
+    const translateY = useSharedValue(-80)
+    const opacity    = useSharedValue(0)
+    const scale      = useSharedValue(0.9)
 
     useEffect(() => {
-        Animated.parallel([
-            Animated.spring(translateY, { toValue: 0, useNativeDriver: true, tension: 80, friction: 12 }),
-            Animated.timing(opacity, { toValue: 1, duration: 250, useNativeDriver: true }),
-            Animated.spring(scale,   { toValue: 1, useNativeDriver: true, tension: 80, friction: 12 }),
-        ]).start()
+        translateY.value = withSpring(0, { damping: 12, stiffness: 120 })
+        opacity.value    = withTiming(1, { duration: 250 })
+        scale.value      = withSpring(1, { damping: 12, stiffness: 120 })
     }, [])
+
+    const animStyle = useAnimatedStyle(() => ({
+        opacity: opacity.value,
+        transform: [{ translateY: translateY.value }, { scale: scale.value }],
+    }))
 
     const style = TOAST_STYLES[msg.type]
 
@@ -35,7 +45,7 @@ function ToastItem({ msg, onDismiss }: { msg: ToastMessage; onDismiss: () => voi
         <Animated.View style={[
             styles.toast,
             { backgroundColor: style.bg, borderColor: style.border },
-            { opacity, transform: [{ translateY }, { scale }] },
+            animStyle,
         ]}>
             <TouchableOpacity
                 style={styles.toastInner}
@@ -90,7 +100,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', padding: 14, gap: 10,
     },
     emoji: { fontSize: 18 },
-    title: { fontSize: 14, fontWeight: '700' },
-    subtitle: { color: T.colors.muted, fontSize: 12, marginTop: 1 },
+    title: { fontSize: 14, fontWeight: '700', fontFamily: T.fonts.body.bold },
+    subtitle: { color: T.colors.muted, fontSize: 12, marginTop: 1, fontFamily: T.fonts.body.regular },
     dismiss: { fontSize: 12, opacity: 0.7, paddingLeft: 4 },
 })

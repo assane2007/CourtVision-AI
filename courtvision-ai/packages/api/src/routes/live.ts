@@ -1,7 +1,9 @@
 import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
+import Redis from 'ioredis'
 import { LiveCoachEngine, analyzeSingleFrame } from '@courtvision/ai'
 import type { Landmark } from '@courtvision/ai'
+import crypto from 'crypto'
 
 const liveParamsSchema = z.object({
     id: z.string().uuid()
@@ -50,11 +52,129 @@ const liveEndQuarterSchema = z.object({
  * 7. GET  /:id/live/stream   → SSE (Server-Sent Events) pour recevoir les alertes en push
  */
 
-// Store des sessions live actives (en production: Redis)
-const activeSessions = new Map<string, LiveCoachEngine>()
+// ── Redis-backed Live Session Store ────────────────────────────
+// Engines stay in-memory (hot path: <1ms frame analysis).
+// Redis stores session registry + metadata for:
+//   - Crash recovery (detect stale sessions on restart)
+//   - Horizontal scaling awareness (which server owns which session)
+//   - Session state snapshots for observability
+// Graceful degradation: falls back to memory-only if Redis unavailable.
+
+const REDIS_KEY_PREFIX = 'live:session:'
+const SERVER_ID = crypto.randomBytes(4).toString('hex') // unique per process
+
+class LiveSessionStore {
+    private engines = new Map<string, LiveCoachEngine>()
+    private redis: Redis | null = null
+    private redisAvailable = false
+
+    async connectRedis(): Promise<void> {
+        try {
+            this.redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+                maxRetriesPerRequest: 3,
+                retryStrategy(times) {
+                    if (times > 3) return null
+                    return Math.min(times * 200, 2000)
+                },
+                lazyConnect: true,
+            })
+            this.redis.on('connect', () => { this.redisAvailable = true })
+            this.redis.on('error', () => { this.redisAvailable = false })
+            await this.redis.connect()
+            this.redisAvailable = true
+            console.log('[LiveStore] Redis connected')
+        } catch {
+            console.warn('[LiveStore] Redis unavailable — memory-only mode')
+            this.redisAvailable = false
+        }
+    }
+
+    /** Recover stale sessions from a previous crash — mark them as 'crashed' in DB */
+    async recoverStaleSessions(supabase: any): Promise<void> {
+        if (!this.redisAvailable || !this.redis) return
+        try {
+            const keys = await this.redis.keys(`${REDIS_KEY_PREFIX}*`)
+            for (const key of keys) {
+                const meta = await this.redis.hgetall(key)
+                if (!meta || !meta.sessionId) continue
+                // Only clean sessions that belonged to THIS server (or any if serverId not set)
+                // On restart, our SERVER_ID changed, so all old sessions from this host are stale
+                if (meta.serverId && meta.serverId !== SERVER_ID) continue
+                // Mark as crashed in DB
+                await supabase
+                    .from('sessions')
+                    .update({ status: 'crashed' })
+                    .eq('id', meta.sessionId)
+                    .eq('status', 'live')
+                await this.redis.del(key)
+                console.log(`[LiveStore] Recovered stale session: ${meta.sessionId}`)
+            }
+        } catch (err) {
+            console.warn('[LiveStore] Stale session recovery failed:', err)
+        }
+    }
+
+    async set(id: string, engine: LiveCoachEngine, config: Record<string, any> = {}): Promise<void> {
+        this.engines.set(id, engine)
+        if (this.redisAvailable && this.redis) {
+            try {
+                await this.redis.hmset(`${REDIS_KEY_PREFIX}${id}`, {
+                    sessionId: id,
+                    serverId: SERVER_ID,
+                    startedAt: new Date().toISOString(),
+                    config: JSON.stringify(config),
+                })
+                // TTL 4 hours — safety net for leaked sessions
+                await this.redis.expire(`${REDIS_KEY_PREFIX}${id}`, 4 * 60 * 60)
+            } catch { /* Redis write failed — engine still in memory */ }
+        }
+    }
+
+    get(id: string): LiveCoachEngine | undefined {
+        return this.engines.get(id)
+    }
+
+    has(id: string): boolean {
+        return this.engines.has(id)
+    }
+
+    async delete(id: string): Promise<void> {
+        this.engines.delete(id)
+        if (this.redisAvailable && this.redis) {
+            try { await this.redis.del(`${REDIS_KEY_PREFIX}${id}`) } catch { /* ignore */ }
+        }
+    }
+
+    /** Snapshot current engine state to Redis for observability */
+    async snapshotState(id: string): Promise<void> {
+        const engine = this.engines.get(id)
+        if (!engine || !this.redisAvailable || !this.redis) return
+        try {
+            const state = engine.getSessionState()
+            await this.redis.hset(`${REDIS_KEY_PREFIX}${id}`, 'lastState', JSON.stringify(state))
+        } catch { /* ignore */ }
+    }
+
+    async disconnect(): Promise<void> {
+        if (this.redis) {
+            try { await this.redis.quit() } catch { /* ignore */ }
+        }
+    }
+}
+
+const sessionStore = new LiveSessionStore()
 const sseConnections = new Map<string, Set<any>>()
 
 export default async function liveRoutes(fastify: FastifyInstance) {
+
+    // ── Init Redis + recover stale sessions on startup ──
+    await sessionStore.connectRedis()
+    await sessionStore.recoverStaleSessions(fastify.supabase)
+
+    // Cleanup Redis on server shutdown
+    fastify.addHook('onClose', async () => {
+        await sessionStore.disconnect()
+    })
 
     // ==========================================
     // POST /:id/live — Démarrer le mode Coach Live
@@ -80,7 +200,7 @@ export default async function liveRoutes(fastify: FastifyInstance) {
             }
 
             // Vérifier qu'il n'y a pas déjà une session live active
-            if (activeSessions.has(id)) {
+            if (sessionStore.has(id)) {
                 return reply.code(409).send({
                     error: 'Live session already active',
                     message: 'Use POST /:id/live/end to stop the current session first'
@@ -90,7 +210,7 @@ export default async function liveRoutes(fastify: FastifyInstance) {
             // Créer et démarrer le moteur IA temps réel
             const engine = new LiveCoachEngine()
             engine.startSession(config)
-            activeSessions.set(id, engine)
+            await sessionStore.set(id, engine, config)
 
             // Marquer la session en mode live dans la DB
             await fastify.supabase
@@ -133,7 +253,7 @@ export default async function liveRoutes(fastify: FastifyInstance) {
             const { id } = liveParamsSchema.parse(request.params)
             const body = liveFrameSchema.parse(request.body)
 
-            const engine = activeSessions.get(id)
+            const engine = sessionStore.get(id)
             if (!engine) {
                 return reply.code(404).send({
                     error: 'No active live session',
@@ -207,7 +327,7 @@ export default async function liveRoutes(fastify: FastifyInstance) {
                 zone: z.enum(['paint', 'midrange', 'corner3', 'wing3', 'top3', 'restricted']).optional()
             }).parse(request.body)
 
-            const engine = activeSessions.get(id)
+            const engine = sessionStore.get(id)
             if (!engine) {
                 return reply.code(404).send({ error: 'No active live session' })
             }
@@ -247,7 +367,7 @@ export default async function liveRoutes(fastify: FastifyInstance) {
             const { id } = liveParamsSchema.parse(request.params)
             const { quarter } = liveEndQuarterSchema.parse(request.body)
 
-            const engine = activeSessions.get(id)
+            const engine = sessionStore.get(id)
             if (!engine) {
                 return reply.code(404).send({ error: 'No active live session' })
             }
@@ -300,7 +420,7 @@ export default async function liveRoutes(fastify: FastifyInstance) {
             const user = request.user!
             const { id } = liveParamsSchema.parse(request.params)
 
-            const engine = activeSessions.get(id)
+            const engine = sessionStore.get(id)
             if (!engine) {
                 return reply.code(404).send({ error: 'No active live session' })
             }
@@ -330,7 +450,7 @@ export default async function liveRoutes(fastify: FastifyInstance) {
                 .update({ status: 'complete' })
                 .eq('id', id)
 
-            activeSessions.delete(id)
+            await sessionStore.delete(id)
             const sseClients = sseConnections.get(id)
             if (sseClients) {
                 for (const client of sseClients) {
@@ -364,11 +484,13 @@ export default async function liveRoutes(fastify: FastifyInstance) {
     }, async (request, reply) => {
         try {
             const { id } = liveParamsSchema.parse(request.params)
-            const engine = activeSessions.get(id)
+            const engine = sessionStore.get(id)
             if (!engine) {
                 return reply.code(404).send({ error: 'No active live session' })
             }
             const state = engine.getSessionState()
+            // Snapshot state to Redis for observability
+            await sessionStore.snapshotState(id)
             return { sessionId: id, ...state }
         } catch (error: any) {
             return reply.code(400).send({ error: error.message })
@@ -383,7 +505,7 @@ export default async function liveRoutes(fastify: FastifyInstance) {
     }, async (request, reply) => {
         try {
             const { id } = liveParamsSchema.parse(request.params)
-            const engine = activeSessions.get(id)
+            const engine = sessionStore.get(id)
             if (!engine) {
                 return reply.code(404).send({ error: 'No active live session' })
             }

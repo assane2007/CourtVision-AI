@@ -1,10 +1,18 @@
 /**
- * SkeletonLoader — Composant d'animation shimmer premium.
- * Remplace les spinners pour un UX premium type HomeCourt/Nike.
+ * SkeletonLoader — Premium shimmer animation component.
+ * V3: Reanimated v3, fontFamily.
  */
 
-import React, { useEffect, useRef } from 'react'
-import { Animated, View, ViewStyle } from 'react-native'
+import React, { useEffect } from 'react'
+import { View, ViewStyle } from 'react-native'
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withRepeat,
+    withSequence,
+    withTiming,
+    interpolate,
+} from 'react-native-reanimated'
 import { T } from '../lib/theme'
 
 interface SkeletonProps {
@@ -15,21 +23,21 @@ interface SkeletonProps {
 }
 
 export function SkeletonLoader({ width = '100%', height = 16, borderRadius = 10, style }: SkeletonProps) {
-    const shimmerAnim = useRef(new Animated.Value(0)).current
+    const shimmer = useSharedValue(0)
 
     useEffect(() => {
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(shimmerAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
-                Animated.timing(shimmerAnim, { toValue: 0, duration: 1000, useNativeDriver: true }),
-            ])
-        ).start()
+        shimmer.value = withRepeat(
+            withSequence(
+                withTiming(1, { duration: 1000 }),
+                withTiming(0, { duration: 1000 }),
+            ),
+            -1,
+        )
     }, [])
 
-    const opacity = shimmerAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: [0.15, 0.35],
-    })
+    const animStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(shimmer.value, [0, 1], [0.15, 0.35]),
+    }))
 
     return (
         <Animated.View
@@ -39,15 +47,15 @@ export function SkeletonLoader({ width = '100%', height = 16, borderRadius = 10,
                     height,
                     borderRadius,
                     backgroundColor: T.colors.dimmer,
-                    opacity,
                 },
+                animStyle,
                 style,
             ]}
         />
     )
 }
 
-// ── Preset : dashboard stat card ──────────────────────────────
+// ── Preset: dashboard stat card ───────────────────────────────
 export function SkeletonStatCard() {
     return (
         <View style={{
@@ -63,7 +71,7 @@ export function SkeletonStatCard() {
     )
 }
 
-// ── Preset : highlight card ───────────────────────────────────
+// ── Preset: highlight card ────────────────────────────────────
 export function SkeletonHighlight() {
     return (
         <View style={{
@@ -80,7 +88,7 @@ export function SkeletonHighlight() {
     )
 }
 
-// ── Preset : leaderboard row ──────────────────────────────────
+// ── Preset: leaderboard row ───────────────────────────────────
 export function SkeletonLeaderboardRow() {
     return (
         <View style={{
@@ -100,7 +108,7 @@ export function SkeletonLeaderboardRow() {
     )
 }
 
-// ── Preset : weekly chart ─────────────────────────────────────
+// ── Preset: weekly chart ──────────────────────────────────────
 export function SkeletonWeeklyChart() {
     const HEIGHTS = [40, 55, 20, 65, 50, 15, 70]
     return (
