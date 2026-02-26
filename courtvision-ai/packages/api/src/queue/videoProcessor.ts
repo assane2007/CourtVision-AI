@@ -1,6 +1,6 @@
 import { Queue, Worker, Job } from 'bullmq'
 import Redis from 'ioredis'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
@@ -49,9 +49,8 @@ try {
 }
 
 // Initialisation de Supabase (lazy — appelé seulement quand nécessaire)
-// Note: le client n'est pas typé avec le schéma DB — on utilise `any` pour les opérations CRUD
-let _supabase: any | null = null
-function getSupabase(): any {
+let _supabase: SupabaseClient | null = null
+function getSupabase(): SupabaseClient {
     if (!_supabase) {
         const supabaseUrl = process.env.SUPABASE_URL || ''
         const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || ''

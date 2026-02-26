@@ -1,4 +1,4 @@
-﻿import {
+import {
     View, Text, TouchableOpacity, TextInput,
     KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native'
@@ -64,8 +64,9 @@ export default function Onboarding3() {
         try {
             await loginWithOAuth(provider)
             router.replace('/(dashboard)')
-        } catch (err: any) {
-            toast.error('Sign in failed', err?.message ?? 'Please try again')
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Please try again'
+            toast.error('Sign in failed', message)
         } finally {
             setLoading(false)
         }
@@ -93,9 +94,10 @@ export default function Onboarding3() {
                 await signUpWithEmail(email, password, username)
             }
             router.replace('/(dashboard)')
-        } catch (err: any) {
+        } catch (err: unknown) {
             const title = isLogin ? 'Login failed' : 'Sign up failed'
-            toast.error(title, err?.message ?? 'Check your credentials')
+            const message = err instanceof Error ? err.message : 'Check your credentials'
+            toast.error(title, message)
         } finally {
             setLoading(false)
         }

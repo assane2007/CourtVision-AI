@@ -45,9 +45,50 @@ export default async function sessionRoutes(fastify: FastifyInstance) {
     fastify.get('/', async (request, reply) => {
         try {
             const user = request.user!
-            const { data, error } = await fastify.supabase.from('sessions').select('*').eq('user_id', user.id)
+            const { data, error } = await fastify.supabase
+                .from('sessions')
+                .select(`
+          id,
+          user_id,
+          type,
+          video_url,
+          duration_sec,
+          status,
+          created_at,
+          analyses(shot_attempts, shot_made, mental_score, highlights)
+        `)
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+
             if (error) throw error
-            return { data }
+
+            // Normaliser la forme attendue par le mobile (SessionCard)
+            const sessions = (data ?? []).map((s: any) => {
+                const analysis = Array.isArray(s.analyses) ? s.analyses[0] : s.analyses
+                const attempts = analysis?.shot_attempts ?? 0
+                const made = analysis?.shot_made ?? 0
+                const shootingFgPct = attempts > 0 ? (made / attempts) * 100 : 0
+                const highlights = analysis?.highlights
+                const highlightCount = Array.isArray(highlights?.clips)
+                    ? highlights.clips.length
+                    : 0
+
+                return {
+                    id: s.id,
+                    created_at: s.created_at,
+                    type: s.type,
+                    status: s.status,
+                    video_url: s.video_url,
+                    duration_minutes: s.duration_sec ? Math.round(s.duration_sec / 60) : null,
+                    shooting_fg_pct: shootingFgPct,
+                    mental_score: analysis?.mental_score ?? null,
+                    shots_attempted: attempts,
+                    shots_made: made,
+                    highlight_count: highlightCount,
+                }
+            })
+
+            return sessions
         } catch (error: any) {
             return reply.code(400).send({ error: error.message })
         }
@@ -102,7 +143,7 @@ export default async function sessionRoutes(fastify: FastifyInstance) {
 
             const { data, error } = await fastify.supabase
                 .from('sessions')
-                .select('created_at, analyses(mental_score, shooting_fg_pct)')
+                .select('created_at, analyses(shot_attempts, shot_made, mental_score)')
                 .eq('user_id', user.id)
                 .eq('status', 'complete')
                 .gte('created_at', since.toISOString())
@@ -121,11 +162,14 @@ export default async function sessionRoutes(fastify: FastifyInstance) {
                 )
                 if (sessions.length === 0) return { day, mental: 0, shooting: 0, hasSession: false }
                 const latest = sessions[sessions.length - 1] as any
-                const analysis = Array.isArray(latest.analyses) ? latest.analyses[0] : null
+                const analysis = Array.isArray(latest.analyses) ? latest.analyses[0] : latest.analyses
+                const attempts = analysis?.shot_attempts ?? 0
+                const made = analysis?.shot_made ?? 0
+                const pct = attempts > 0 ? (made / attempts) * 100 : 0
                 return {
                     day,
                     mental:     analysis?.mental_score    ?? 0,
-                    shooting:   Math.round((analysis?.shooting_fg_pct ?? 0) * 100),
+                    shooting:   Math.round(pct),
                     hasSession: true,
                 }
             })

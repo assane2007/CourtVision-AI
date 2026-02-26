@@ -57,7 +57,7 @@ function bgColor(variant: ButtonVariant, state: ButtonState) {
     if (state === 'success')  return T.colors.green
     switch (variant) {
         case 'primary':   return T.colors.accent        // amber #FF6B00
-        case 'secondary': return 'rgba(255,107,0,0.10)'
+        case 'secondary': return T.colors.accentDim
         case 'ghost':     return 'transparent'
         case 'danger':    return T.colors.red
     }
@@ -65,12 +65,12 @@ function bgColor(variant: ButtonVariant, state: ButtonState) {
 
 function textColor(variant: ButtonVariant, state: ButtonState) {
     if (state === 'disabled') return T.colors.muted
-    if (state === 'success')  return '#fff'
+    if (state === 'success')  return T.colors.white
     switch (variant) {
-        case 'primary':  return '#fff'
+        case 'primary':  return T.colors.white
         case 'secondary':return T.colors.accent
         case 'ghost':    return T.colors.textSecondary
-        case 'danger':   return '#fff'
+        case 'danger':   return T.colors.white
     }
 }
 

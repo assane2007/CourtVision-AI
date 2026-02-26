@@ -22,6 +22,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useStore } from '../../lib/store'
 import { toast } from '../../lib/toast'
+import { api } from '../../lib/api'
 import { ScoreRing } from '../../components/ScoreRing'
 import { PrimaryButton } from '../../components/PrimaryButton'
 import { T } from '../../lib/theme'
@@ -49,6 +50,15 @@ const FUN_FACTS = [
 ]
 
 type FlowState = 'select' | 'processing' | 'result'
+
+type AnalysisSummary = {
+    session_id: string
+    shot_attempts: number | null
+    shot_made: number | null
+    mental_score: number | null
+}
+
+const SAMPLE_VIDEO_URL = process.env.EXPO_PUBLIC_SAMPLE_VIDEO_URL
 
 //  Pulsing Record Button 
 
@@ -187,9 +197,10 @@ export default function UploadAnalyze() {
     const [progress, setProgress] = useState(0)
     const [funFactIdx, setFunFactIdx] = useState(0)
     const [resultScore, setResultScore] = useState(0)
+    const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
 
     const progressBar = useSharedValue(0)
-    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+    const statusIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
     const progressStyle = useAnimatedStyle(() => ({
         width: `${progressBar.value}%` as any,
@@ -198,7 +209,7 @@ export default function UploadAnalyze() {
     // Cleanup on unmount
     useEffect(() => {
         return () => {
-            if (intervalRef.current) clearInterval(intervalRef.current)
+            if (statusIntervalRef.current) clearInterval(statusIntervalRef.current)
         }
     }, [])
 
@@ -211,47 +222,123 @@ export default function UploadAnalyze() {
         return () => clearInterval(timer)
     }, [flowState])
 
-    const handleUpload = useCallback((source: 'gallery' | 'camera') => {
+    const startPollingSession = useCallback((sessionId: string) => {
+        if (statusIntervalRef.current) clearInterval(statusIntervalRef.current)
+
+        const startedAt = Date.now()
+        let lastStep = -1
+        let currentProgress = 0
+        const ESTIMATED_MS = 90_000 // 90s estimés pour atteindre 95%
+
+        statusIntervalRef.current = setInterval(async () => {
+            try {
+                const res = await api.get<{ data: { status: string } }>(`/api/sessions/${sessionId}`)
+                const status = res.data.data.status
+
+                if (status === 'complete') {
+                    if (statusIntervalRef.current) clearInterval(statusIntervalRef.current)
+
+                    // Progress à 100%
+                    setProgress(100)
+                    progressBar.value = withTiming(100, { duration: 400 })
+
+                    // Charger le résumé d'analyse réel
+                    try {
+                        const analysisRes = await api.get<{ data: AnalysisSummary }>(`/api/analyses/${sessionId}`)
+                        const analysis = analysisRes.data.data
+                        const attempts = analysis.shot_attempts ?? 0
+                        const made = analysis.shot_made ?? 0
+                        const fgPct = attempts > 0 ? (made / attempts) * 100 : 0
+                        const mental = analysis.mental_score ?? 0
+                        const overall = Math.round((fgPct + mental) / 2)
+
+                        addXP(TOTAL_XP, 'Full game analysis')
+                        toast.success('Analysis complete!', `+${TOTAL_XP} XP earned`, 3500)
+
+                        setResultScore(Number.isFinite(overall) ? overall : 0)
+                    } catch {
+                        // En cas d’erreur, on affiche au moins un score neutre
+                        setResultScore(0)
+                    }
+
+                    setTimeout(() => setFlowState('result'), 800)
+                    return
+                }
+
+                if (status === 'failed') {
+                    if (statusIntervalRef.current) clearInterval(statusIntervalRef.current)
+                    toast.error('Analysis failed', 'Please try another clip')
+                    setFlowState('select')
+                    setProgress(0)
+                    progressBar.value = 0
+                    setCurrentSessionId(null)
+                    return
+                }
+
+                // Status still processing/analyzing → faire avancer la barre jusqu’à 95%
+                const elapsed = Date.now() - startedAt
+                const estimated = Math.min(95, Math.round((elapsed / ESTIMATED_MS) * 95))
+                if (estimated > currentProgress) {
+                    currentProgress = estimated
+                    setProgress(currentProgress)
+                    progressBar.value = withTiming(currentProgress, { duration: 400 })
+
+                    const step = Math.min(
+                        Math.floor((currentProgress / 100) * PIPELINE_STEPS.length),
+                        PIPELINE_STEPS.length - 1
+                    )
+                    if (step !== lastStep && PIPELINE_STEPS[step]) {
+                        lastStep = step
+                        const s = PIPELINE_STEPS[step]
+                        toast.xp(`+${s.xp} XP`, s.label, 1800)
+                    }
+                }
+            } catch {
+                // On laisse tourner un peu, mais on time-out si vraiment trop long
+            }
+
+            if (Date.now() - startedAt > ESTIMATED_MS * 2) {
+                if (statusIntervalRef.current) clearInterval(statusIntervalRef.current)
+                toast.error('Analysis timeout', 'Server took too long to respond')
+                setFlowState('select')
+                setProgress(0)
+                progressBar.value = 0
+                setCurrentSessionId(null)
+            }
+        }, 2000)
+    }, [addXP, progressBar])
+
+    const handleUpload = useCallback(async (source: 'gallery' | 'camera') => {
+        if (!SAMPLE_VIDEO_URL) {
+            toast.error('No video configured', 'Set EXPO_PUBLIC_SAMPLE_VIDEO_URL in your env.')
+            return
+        }
+
         setFlowState('processing')
         setProgress(0)
         progressBar.value = 0
+        setCurrentSessionId(null)
 
         toast.info(
             source === 'gallery' ? 'Video imported' : 'Camera ready',
             'AI analysis starting...'
         )
 
-        let p = 0
-        let lastStep = -1
-
-        intervalRef.current = setInterval(() => {
-            p += 3 + Math.random() * 5
-            if (p >= 100) p = 100
-            setProgress(Math.round(p))
-            progressBar.value = withTiming(p, { duration: 350 })
-
-            const step = Math.min(
-                Math.floor((p / 100) * PIPELINE_STEPS.length),
-                PIPELINE_STEPS.length - 1
-            )
-            if (step !== lastStep && PIPELINE_STEPS[step]) {
-                lastStep = step
-                const s = PIPELINE_STEPS[step]
-                toast.xp(`+${s.xp} XP`, s.label, 1800)
-            }
-
-            if (p >= 100) {
-                if (intervalRef.current) clearInterval(intervalRef.current)
-                addXP(TOTAL_XP, 'Full game analysis')
-                toast.success('Analysis complete!', `+${TOTAL_XP} XP earned`, 3500)
-
-                // Transition to result
-                const score = 60 + Math.floor(Math.random() * 30) // 60-89
-                setResultScore(score)
-                setTimeout(() => setFlowState('result'), 800)
-            }
-        }, 350)
-    }, [addXP])
+        try {
+            const res = await api.post<{ data: { id: string; video_url: string; status: string } }>('/api/sessions/upload', {
+                type: 'training',
+                video_url: SAMPLE_VIDEO_URL,
+            })
+            const sessionId = res.data.data.id
+            setCurrentSessionId(sessionId)
+            startPollingSession(sessionId)
+        } catch (err) {
+            toast.error('Upload failed', err instanceof Error ? err.message : 'Please try again')
+            setFlowState('select')
+            setProgress(0)
+            progressBar.value = 0
+        }
+    }, [progressBar, startPollingSession])
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: T.colors.bg }}>
@@ -457,14 +544,16 @@ export default function UploadAnalyze() {
                             <PrimaryButton
                                 label="View Full Report"
                                 icon="bar-chart-2"
-                                onPress={() => router.push('/analysis/123')}
+                                onPress={() => currentSessionId && router.push(`/analysis/${currentSessionId}`)}
                                 size="lg"
+                                state={currentSessionId ? 'default' : 'disabled'}
                             />
                             <TouchableOpacity
                                 onPress={() => {
                                     setFlowState('select')
                                     setProgress(0)
                                     progressBar.value = 0
+                                    setCurrentSessionId(null)
                                 }}
                                 style={{ alignItems: 'center', paddingVertical: 12 }}
                             >

@@ -1,4 +1,4 @@
-﻿import { View, Text, TouchableOpacity, Dimensions, ScrollView } from 'react-native'
+import { View, Text, TouchableOpacity, Dimensions, ScrollView } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useEffect, useState } from 'react'
@@ -20,7 +20,7 @@ const CAMERA_STEPS = [
         subtitle: 'Optimal position for AI analysis',
         description: 'Set your phone in landscape mode, at chest height, 3 to 5 meters from the court.',
         tips: [
-            { icon: 'maximize-2' as const, text: 'Distance: 35 meters from court', important: true },
+            { icon: 'maximize-2' as const, text: 'Distance: 3–5 meters from court', important: true },
             { icon: 'smartphone' as const, text: 'Landscape mode required', important: true },
             { icon: 'eye' as const, text: 'Full court should be visible', important: false },
             { icon: 'alert-circle' as const, text: 'Avoid direct backlight', important: false },

@@ -89,7 +89,7 @@ class LiveSessionStore {
         }
     }
 
-    /** Recover stale sessions from a previous crash — mark them as 'crashed' in DB */
+    /** Recover stale sessions from a previous crash — mark them as 'failed' in DB */
     async recoverStaleSessions(supabase: any): Promise<void> {
         if (!this.redisAvailable || !this.redis) return
         try {
@@ -100,10 +100,10 @@ class LiveSessionStore {
                 // Only clean sessions that belonged to THIS server (or any if serverId not set)
                 // On restart, our SERVER_ID changed, so all old sessions from this host are stale
                 if (meta.serverId && meta.serverId !== SERVER_ID) continue
-                // Mark as crashed in DB
+                // Mark as failed in DB (stale live session)
                 await supabase
                     .from('sessions')
-                    .update({ status: 'crashed' })
+                    .update({ status: 'failed' })
                     .eq('id', meta.sessionId)
                     .eq('status', 'live')
                 await this.redis.del(key)

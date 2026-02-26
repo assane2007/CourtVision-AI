@@ -415,3 +415,174 @@ export const brand = T.color.signature.primary
 
 /** Constante sémantique : fond d'écran principal */
 export const screenBg = T.color.background.primary
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Night Game Design System — exports pour les nouveaux écrans
+// (Palette, typo et tokens tels que décrits dans le prompt produit)
+// ──────────────────────────────────────────────────────────────────────────────
+
+export const colors = {
+    bg: {
+        primary: '#080C10', // Terrain la nuit — noir profond chaud
+        secondary: '#0F1923', // Cartes — bleu nuit
+        tertiary: '#162030', // Éléments surélevés
+        overlay: '#000000CC', // Modales (80% opacité)
+        glass: '#FFFFFF08', // Glassmorphism (4% blanc)
+    },
+    brand: {
+        primary: '#FF6B2C', // Orange ballon Spalding — LA couleur
+        secondary: '#FF9A5C', // Version claire
+        glow: '#FF6B2C40', // Halo orange (25% opacité)
+        muted: '#FF6B2C15', // Background subtil brand
+        dark: '#CC4A15', // Version sombre pour pressed states
+    },
+    semantic: {
+        success: '#00E676', // Vert néon — bon score, réussite
+        warning: '#FFB300', // Ambre — score moyen, attention
+        danger: '#FF3D57', // Rouge vif — erreur, mauvais score
+        info: '#40C4FF', // Bleu ciel — informations neutres
+    },
+    text: {
+        primary: '#F0F4F8', // Blanc légèrement chaud — titres
+        secondary: '#8B9BB4', // Gris bleuté — body text
+        tertiary: '#4A5568', // Gris foncé — hints, labels
+        disabled: '#2D3748', // Très foncé — éléments inactifs
+        inverse: '#080C10', // Texte sur fond clair
+    },
+    border: {
+        subtle: '#1A2535', // Séparateurs discrets
+        default: '#243044', // Bordures normales
+        strong: '#FF6B2C30', // Bordures actives (brand tinted)
+        glow: '#FF6B2C60', // Bordures lumineuses
+    },
+    gradient: {
+        brand: ['#FF6B2C', '#FF9A5C'],
+        dark: ['#080C10', '#0F1923'],
+        success: ['#00E676', '#00BFA5'],
+        card: ['#0F1923', '#162030'],
+        hero: ['#FF6B2C20', '#080C10'],
+    },
+    rarity: {
+        common: '#8B9BB4', // badges communs
+        rare: '#40C4FF', // badges rares
+        epic: '#CE93D8', // badges épiques
+        legendary: '#FFD700', // badges légendaires
+    },
+} as const
+
+export const typography = {
+    fonts: {
+        display: 'BarlowCondensed',
+        body: 'Outfit',
+    },
+    sizes: {
+        xs: 11,
+        sm: 13,
+        base: 15,
+        md: 17,
+        lg: 20,
+        xl: 24,
+        '2xl': 32,
+        '3xl': 42,
+        hero: 64,
+        mega: 96, // Pour les scores principaux
+    },
+    weights: {
+        regular: '400',
+        medium: '500',
+        semibold: '600',
+        bold: '700',
+        black: '900',
+    },
+    lineHeights: {
+        tight: 1.1,
+        normal: 1.4,
+        relaxed: 1.6,
+    },
+    letterSpacing: {
+        tight: -0.5,
+        normal: 0,
+        wide: 0.5,
+        wider: 1.5, // Pour les labels uppercase
+        widest: 3, // Pour les badges
+    },
+} as const
+
+export const spacing = {
+    0.5: 2,
+    1: 4,
+    1.5: 6,
+    2: 8,
+    3: 12,
+    4: 16,
+    5: 20,
+    6: 24,
+    7: 28,
+    8: 32,
+    10: 40,
+    12: 48,
+    14: 56,
+    16: 64,
+    20: 80,
+} as const
+
+export const radius = {
+    sm: 4,
+    md: 8,
+    lg: 12,
+    xl: 16,
+    '2xl': 20,
+    '3xl': 24,
+    full: 9999,
+} as const
+
+export const shadows = {
+    sm: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.3,
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    md: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    lg: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.5,
+        shadowRadius: 16,
+        elevation: 8,
+    },
+    brand: {
+        shadowColor: '#FF6B2C',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+        elevation: 8,
+    },
+    glow: {
+        shadowColor: '#FF6B2C',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.6,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+} as const
+
+export const animation = {
+    duration: {
+        fast: 150,
+        normal: 300,
+        slow: 500,
+        celebration: 800,
+    },
+    easing: {
+        spring: { damping: 15, stiffness: 150 },
+        smooth: { damping: 20, stiffness: 200 },
+    },
+} as const
