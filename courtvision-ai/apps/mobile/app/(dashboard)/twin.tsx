@@ -1,4 +1,13 @@
-import { View, Text, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native'
+/**
+ * CourtVision AI — Digital Twin V4 REDESIGN
+ * "My Digital Twin" — 2K MyPlayer × Apple Fitness × Whoop DNA
+ *
+ * Design rules: T.color.*, T.spacing, T.borderRadius, typePresets, glass V4, 4pt grid, 44px touch
+ */
+
+import {
+    View, Text, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator,
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useState, useEffect } from 'react'
 import { Feather } from '@expo/vector-icons'
@@ -14,13 +23,15 @@ import type {
     TwinTab, TwinAttributeCategory, TwinTrait,
     NBAComparison, ComfortZone, TwinEvolutionPoint, MatchupSimulation,
 } from '../../hooks/useDigitalTwin'
-import { T } from '../../lib/theme'
+import { T, typePresets } from '../../lib/theme'
 import { PrimaryButton } from '../../components/PrimaryButton'
 
+const type = typePresets
+const glass = (T as any).glass
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
 // ==========================================
-// Style Labels & Feather Icon Map
+// Constants
 // ==========================================
 const STYLE_LABELS: Record<string, string> = {
     sharpshooter: 'Sharpshooter', shot_creator: 'Shot Creator', slasher: 'Slasher',
@@ -36,7 +47,7 @@ const STYLE_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
 
 const NBA_PLAYERS_FOR_SIMULATION = [
     'Stephen Curry', 'LeBron James', 'Kevin Durant', 'Giannis Antetokounmpo',
-    'Luka DonÄiÄ‡', 'Kawhi Leonard', 'Ja Morant', 'Klay Thompson',
+    'Luka Dončić', 'Kawhi Leonard', 'Ja Morant', 'Klay Thompson',
     'Kyrie Irving', 'Karl-Anthony Towns',
 ]
 
@@ -55,7 +66,6 @@ export default function DigitalTwin() {
     const viralShare = useViralShare()
     const [showShareModal, setShowShareModal] = useState(false)
 
-    // Continuous Reanimated v3 animations
     const pulseScale = useSharedValue(1)
     const orbitRotation = useSharedValue(0)
 
@@ -64,12 +74,10 @@ export default function DigitalTwin() {
             withSequence(
                 withTiming(1.06, { duration: 2000, easing: Easing.inOut(Easing.sin) }),
                 withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.sin) }),
-            ),
-            -1,
+            ), -1,
         )
         orbitRotation.value = withRepeat(
-            withTiming(360, { duration: 8000, easing: Easing.linear }),
-            -1,
+            withTiming(360, { duration: 8000, easing: Easing.linear }), -1,
         )
     }, [])
 
@@ -83,18 +91,18 @@ export default function DigitalTwin() {
     // ======= Loading =======
     if (twin.loading) {
         return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: T.colors.bg, justifyContent: 'center', alignItems: 'center' }}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: T.color.background.primary, justifyContent: 'center', alignItems: 'center' }}>
                 <View style={{
                     width: 88, height: 88, borderRadius: 44,
-                    ...T.glass.accent, justifyContent: 'center', alignItems: 'center',
-                    ...T.glow(T.colors.accent, 0.3),
+                    ...glass.accent, justifyContent: 'center', alignItems: 'center',
+                    ...T.glow(T.color.signature.primary, 0.3),
                 }}>
-                    <ActivityIndicator size="large" color={T.colors.accent} />
+                    <ActivityIndicator size="large" color={T.color.signature.primary} />
                 </View>
-                <Text style={{ color: T.colors.textSecondary, marginTop: T.space.xl, fontSize: T.font.md, fontWeight: '600', fontFamily: T.fonts.body.semibold }}>
+                <Text style={{ ...type.bodySemibold, color: T.color.text.secondary, marginTop: T.spacing[5] }}>
                     Building Digital Twin...
                 </Text>
-                <Text style={{ color: T.colors.dim, marginTop: T.space.sm, fontSize: T.font.sm }}>
+                <Text style={{ ...type.caption, color: T.color.text.tertiary, marginTop: T.spacing[2] }}>
                     AI analysis in progress
                 </Text>
             </SafeAreaView>
@@ -104,27 +112,27 @@ export default function DigitalTwin() {
     // ======= Error / No profile =======
     if (twin.error || !twin.profile) {
         return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: T.colors.bg, justifyContent: 'center', alignItems: 'center', padding: 30 }}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: T.color.background.primary, justifyContent: 'center', alignItems: 'center', padding: T.spacing[8] }}>
                 <Animated.View entering={FadeInDown.duration(600)} style={{
                     width: 120, height: 120, borderRadius: 60,
-                    ...T.glass.accent, justifyContent: 'center', alignItems: 'center',
-                    ...T.glow(T.colors.accent, 0.15),
+                    ...glass.accent, justifyContent: 'center', alignItems: 'center',
+                    ...T.glow(T.color.signature.primary, 0.15),
                 }}>
-                    <Feather name="user" size={48} color={T.colors.accent} style={{ opacity: 0.6 }} />
+                    <Feather name="user" size={48} color={T.color.signature.primary} style={{ opacity: 0.6 }} />
                 </Animated.View>
                 <Animated.Text entering={FadeInDown.delay(100).duration(500)} style={{
-                    color: T.colors.white, fontSize: T.font.xl, fontWeight: '800',
-                    marginTop: T.space.xxl, textAlign: 'center', letterSpacing: -0.5, fontFamily: T.fonts.display.black,
+                    ...type.screenTitle, color: T.color.text.primary,
+                    marginTop: T.spacing[6], textAlign: 'center',
                 }}>
                     Your Digital Twin is{'\n'}being built
                 </Animated.Text>
                 <Animated.Text entering={FadeInDown.delay(200).duration(500)} style={{
-                    color: T.colors.textSecondary, fontSize: T.font.md, textAlign: 'center',
-                    marginTop: T.space.md, lineHeight: 22,
+                    ...type.body, color: T.color.text.secondary,
+                    textAlign: 'center', marginTop: T.spacing[4],
                 }}>
                     {twin.error ?? 'Analyze at least one video session to create your AI avatar.'}
                 </Animated.Text>
-                <Animated.View entering={FadeInDown.delay(300).duration(500)} style={{ marginTop: T.space.xxl }}>
+                <Animated.View entering={FadeInDown.delay(300).duration(500)} style={{ marginTop: T.spacing[6] }}>
                     <PrimaryButton
                         label={twin.rebuilding ? 'Building...' : 'Build my Twin'}
                         onPress={twin.rebuild}
@@ -140,35 +148,36 @@ export default function DigitalTwin() {
     const p = twin.profile
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: T.colors.bg }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: T.color.background.primary }}>
             <ScrollView contentContainerStyle={{ paddingBottom: 50 }} showsVerticalScrollIndicator={false}>
 
                 {/* ======= Header ======= */}
                 <Animated.View entering={FadeInDown.duration(500)} style={{
-                    paddingHorizontal: T.space.xl, paddingTop: T.space.lg, paddingBottom: 0,
+                    paddingHorizontal: T.spacing[5], paddingTop: T.spacing[4], paddingBottom: 0,
                 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <View>
-                            <Text style={{ color: T.colors.white, fontSize: T.font.xxl, fontWeight: '800', fontFamily: T.fonts.display.black, letterSpacing: -1 }}>
+                            <Text style={{ ...type.screenTitle, color: T.color.text.primary }}>
                                 Digital Twin
                             </Text>
-                            <Text style={{ color: T.colors.dim, fontSize: T.font.sm, fontFamily: T.fonts.body.regular, marginTop: 2 }}>
+                            <Text style={{ ...type.caption, color: T.color.text.tertiary, marginTop: T.spacing[1] }}>
                                 v{p.modelVersion}  {p.sessionCount} sessions
                             </Text>
                         </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: T.spacing[3] }}>
                             <TouchableOpacity
                                 onPress={twin.rebuild}
                                 disabled={twin.rebuilding}
                                 activeOpacity={0.7}
                                 style={{
-                                    width: 40, height: 40, borderRadius: 20,
-                                    ...T.glass.light, justifyContent: 'center', alignItems: 'center',
+                                    width: 44, height: 44, borderRadius: 22,
+                                    ...(glass.regular ?? T.glass.light),
+                                    justifyContent: 'center', alignItems: 'center',
                                 }}
                             >
                                 {twin.rebuilding
-                                    ? <ActivityIndicator size="small" color={T.colors.accent} />
-                                    : <Feather name="refresh-cw" size={16} color={T.colors.accent} />
+                                    ? <ActivityIndicator size="small" color={T.color.signature.primary} />
+                                    : <Feather name="refresh-cw" size={16} color={T.color.signature.primary} />
                                 }
                             </TouchableOpacity>
                             <ShareButton onPress={() => setShowShareModal(true)} compact />
@@ -178,33 +187,30 @@ export default function DigitalTwin() {
 
                 {/* ======= Overall Rating Hero ======= */}
                 <Animated.View entering={FadeInDown.delay(100).duration(600)} style={{
-                    alignItems: 'center', marginTop: 28, marginBottom: 8, position: 'relative',
+                    alignItems: 'center', marginTop: T.spacing[8], marginBottom: T.spacing[2], position: 'relative',
                 }}>
-                    {/* Orbital ring */}
                     <Animated.View style={[{
                         position: 'absolute', width: 156, height: 156, borderRadius: 78,
-                        borderWidth: 1.5, borderColor: 'rgba(255,107,0,0.10)',
-                        borderTopColor: T.colors.accent,
+                        borderWidth: 1.5, borderColor: `${T.color.signature.primary}10`,
+                        borderTopColor: T.color.signature.primary,
                     }, orbitStyle]} />
-                    {/* Outer glow ring */}
                     <View style={{
                         position: 'absolute', width: 146, height: 146, borderRadius: 73,
-                        borderWidth: 1, borderColor: 'rgba(255,107,0,0.05)',
+                        borderWidth: 1, borderColor: `${T.color.signature.primary}05`,
                     }} />
                     <Animated.View style={[{
                         width: 126, height: 126, borderRadius: 63,
-                        backgroundColor: T.colors.card,
+                        backgroundColor: T.color.background.tertiary,
                         justifyContent: 'center', alignItems: 'center',
                         ...T.glow(T.ratingColor(p.overallRating), 0.35),
                         borderWidth: 2, borderColor: `${T.ratingColor(p.overallRating)}40`,
                     }, pulseStyle]}>
                         <Text style={{
-                            color: T.ratingColor(p.overallRating), fontSize: 44,
-                            fontWeight: '900', fontFamily: T.fonts.display.black, letterSpacing: -2,
+                            ...type.heroStat, color: T.ratingColor(p.overallRating), fontSize: 44,
                         }}>
                             {p.overallRating}
                         </Text>
-                        <Text style={{ color: T.colors.dim, fontSize: 10, fontWeight: '700', fontFamily: T.fonts.display.bold, letterSpacing: 2 }}>
+                        <Text style={{ ...type.overline, color: T.color.text.tertiary, fontSize: 10, letterSpacing: 2 }}>
                             OVERALL
                         </Text>
                     </Animated.View>
@@ -212,48 +218,48 @@ export default function DigitalTwin() {
 
                 {/* ======= Play Style Badge ======= */}
                 <Animated.View entering={FadeInDown.delay(200).duration(500)} style={{
-                    alignItems: 'center', marginTop: T.space.lg, marginBottom: T.space.lg,
+                    alignItems: 'center', marginTop: T.spacing[4], marginBottom: T.spacing[4],
                 }}>
                     <View style={{
-                        borderRadius: T.radius.pill, paddingHorizontal: 20, paddingVertical: 10,
-                        flexDirection: 'row', alignItems: 'center', ...T.glass.accent,
+                        borderRadius: T.borderRadius.full, paddingHorizontal: T.spacing[5], paddingVertical: T.spacing[3],
+                        flexDirection: 'row', alignItems: 'center', ...glass.accent,
                     }}>
                         <Feather
                             name={STYLE_ICONS[p.playStyle.primary] ?? 'compass'}
-                            size={18} color={T.colors.accent}
-                            style={{ marginRight: 8 }}
+                            size={18} color={T.color.signature.primary}
+                            style={{ marginRight: T.spacing[2] }}
                         />
-                        <Text style={{ color: T.colors.accent, fontSize: T.font.base, fontWeight: '700', fontFamily: T.fonts.display.bold }}>
+                        <Text style={{ ...type.cardTitle, color: T.color.signature.primary }}>
                             {STYLE_LABELS[p.playStyle.primary] ?? p.playStyle.primary}
                         </Text>
                         {p.playStyle.secondary && (
-                            <Text style={{ color: T.colors.dim, fontSize: T.font.sm, marginLeft: 8 }}>
+                            <Text style={{ ...type.caption, color: T.color.text.tertiary, marginLeft: T.spacing[2] }}>
                                 / {STYLE_LABELS[p.playStyle.secondary] ?? p.playStyle.secondary}
                             </Text>
                         )}
                     </View>
                     <Text style={{
-                        color: T.colors.textSecondary, fontSize: T.font.sm, marginTop: T.space.sm,
-                        textAlign: 'center', paddingHorizontal: 40, lineHeight: 18,
+                        ...type.body, color: T.color.text.secondary,
+                        marginTop: T.spacing[2], textAlign: 'center', paddingHorizontal: T.spacing[10],
                     }}>
                         {p.playStyle.description}
                     </Text>
                     <View style={{
-                        marginTop: T.space.sm, flexDirection: 'row', alignItems: 'center',
-                        backgroundColor: T.colors.primaryDim, borderRadius: T.radius.pill,
-                        paddingHorizontal: 12, paddingVertical: 4,
+                        marginTop: T.spacing[2], flexDirection: 'row', alignItems: 'center',
+                        backgroundColor: T.color.semantic.infoDim, borderRadius: T.borderRadius.full,
+                        paddingHorizontal: T.spacing[3], paddingVertical: T.spacing[1],
                     }}>
-                        <Feather name="star" size={12} color={T.colors.primary} style={{ marginRight: 4 }} />
-                        <Text style={{ color: T.colors.primary, fontSize: T.font.sm, fontWeight: '600', fontFamily: T.fonts.body.semibold }}>
+                        <Feather name="star" size={12} color={T.color.semantic.info} style={{ marginRight: T.spacing[1] }} />
+                        <Text style={{ ...type.bodySemibold, color: T.color.semantic.info, fontSize: 13 }}>
                             NBA Archetype: {p.playStyle.nbaArchetype}
                         </Text>
                     </View>
                 </Animated.View>
 
-                {/* ======= Tab Bar (Premium Glass) ======= */}
+                {/* ======= Tab Bar ======= */}
                 <Animated.View entering={FadeInDown.delay(300).duration(500)} style={{
-                    flexDirection: 'row', marginHorizontal: T.space.xl, marginBottom: T.space.lg,
-                    borderRadius: T.radius.md, padding: 3, ...T.glass.light,
+                    flexDirection: 'row', marginHorizontal: T.spacing[5], marginBottom: T.spacing[4],
+                    borderRadius: T.borderRadius.lg, padding: 3, ...(glass.regular ?? T.glass.light),
                 }}>
                     {TAB_CONFIG.map(tab => {
                         const isActive = twin.activeTab === tab.key
@@ -263,16 +269,18 @@ export default function DigitalTwin() {
                                 onPress={() => twin.setActiveTab(tab.key)}
                                 activeOpacity={0.7}
                                 style={{
-                                    flex: 1, paddingVertical: 10, borderRadius: T.radius.sm,
-                                    alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 5,
-                                    backgroundColor: isActive ? T.colors.accent : 'transparent',
-                                    ...(isActive ? T.shadow(T.colors.accent, 0.3, 8) : {}),
+                                    flex: 1, paddingVertical: T.spacing[3], borderRadius: T.borderRadius.md,
+                                    alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: T.spacing[1],
+                                    backgroundColor: isActive ? T.color.signature.primary : 'transparent',
+                                    ...(isActive ? T.shadow(T.color.signature.primary, 0.3, 8) : {}),
+                                    minHeight: 44,
                                 }}
                             >
-                                <Feather name={tab.icon} size={12} color={isActive ? T.colors.bg : T.colors.dim} />
+                                <Feather name={tab.icon} size={12} color={isActive ? T.color.background.primary : T.color.text.tertiary} />
                                 <Text style={{
-                                    color: isActive ? T.colors.bg : T.colors.dim,
-                                    fontSize: T.font.xs, fontWeight: isActive ? '800' : '500',
+                                    ...type.overline, fontSize: 11,
+                                    color: isActive ? T.color.background.primary : T.color.text.tertiary,
+                                    fontWeight: isActive ? '800' : '500',
                                 }}>
                                     {tab.label}
                                 </Text>
@@ -297,35 +305,35 @@ export default function DigitalTwin() {
 
                 {/* ======= Share CTA Banner ======= */}
                 <Animated.View entering={FadeInDown.delay(400).duration(500)} style={{
-                    marginHorizontal: T.space.xl, marginTop: T.space.md, marginBottom: T.space.md,
-                    borderRadius: T.radius.lg, padding: T.space.lg,
+                    marginHorizontal: T.spacing[5], marginTop: T.spacing[4], marginBottom: T.spacing[4],
+                    borderRadius: T.borderRadius.xl, padding: T.spacing[4],
                     flexDirection: 'row', alignItems: 'center',
-                    ...T.glass.accent, ...T.glow(T.colors.accent, 0.06),
+                    ...glass.accent, ...T.glow(T.color.signature.primary, 0.06),
                 }}>
                     <View style={{ flex: 1 }}>
-                        <Text style={{ color: T.colors.white, fontSize: T.font.md, fontWeight: '700', fontFamily: T.fonts.display.bold }}>
+                        <Text style={{ ...type.cardTitle, color: T.color.text.primary }}>
                             Share your Twin Card
                         </Text>
-                        <Text style={{ color: T.colors.textSecondary, fontSize: T.font.sm, marginTop: 3 }}>
-                            Show off on TikTok or Instagram  +10 XP
+                        <Text style={{ ...type.caption, color: T.color.text.secondary, marginTop: T.spacing[1] }}>
+                            Show off on TikTok or Instagram · +10 XP
                         </Text>
                     </View>
                     <TouchableOpacity
                         onPress={() => setShowShareModal(true)}
                         activeOpacity={0.8}
                         style={{
-                            backgroundColor: T.colors.accent,
-                            borderRadius: T.radius.sm, paddingHorizontal: 16, paddingVertical: 10,
-                            ...T.shadow(T.colors.accent, 0.35, 10),
+                            backgroundColor: T.color.signature.primary,
+                            borderRadius: T.borderRadius.md, paddingHorizontal: T.spacing[4], paddingVertical: T.spacing[3],
+                            ...T.shadow(T.color.signature.primary, 0.35, 10),
+                            minHeight: 44, justifyContent: 'center',
                         }}
                     >
-                        <Text style={{ color: T.colors.bg, fontSize: T.font.sm, fontWeight: '800', fontFamily: T.fonts.display.bold }}>Share</Text>
+                        <Text style={{ ...type.bodySemibold, color: T.color.background.primary }}>Share</Text>
                     </TouchableOpacity>
                 </Animated.View>
 
             </ScrollView>
 
-            {/* ======= Share Modal ======= */}
             <ShareModal
                 visible={showShareModal}
                 onClose={() => setShowShareModal(false)}
@@ -346,26 +354,26 @@ export default function DigitalTwin() {
 // ==========================================
 function OverviewTab({ profile, insights }: { profile: any; insights: string | null }) {
     return (
-        <View style={{ paddingHorizontal: T.space.xl }}>
+        <View style={{ paddingHorizontal: T.spacing[5] }}>
             {/* Category Summary Cards */}
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: T.space.lg }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: T.spacing[4] }}>
                 {profile.attributeCategories.map((cat: TwinAttributeCategory, idx: number) => (
                     <Animated.View
                         key={cat.category}
                         entering={FadeInDown.delay(idx * 80).duration(400)}
                         style={{
                             width: (SCREEN_WIDTH - 50) / 2,
-                            borderRadius: T.radius.lg, padding: T.space.lg, marginBottom: T.space.md,
-                            ...T.glass.medium,
+                            borderRadius: T.borderRadius.xl, padding: T.spacing[4], marginBottom: T.spacing[3],
+                            ...(glass.regular ?? T.glass.medium),
                         }}
                     >
-                        <Text style={{ fontSize: T.font.md, marginBottom: T.space.xs }}>
-                            {cat.emoji} <Text style={{ color: T.colors.white, fontWeight: '600', fontFamily: T.fonts.body.semibold }}>{cat.category}</Text>
+                        <Text style={{ ...type.bodySemibold, marginBottom: T.spacing[1] }}>
+                            {cat.emoji} <Text style={{ color: T.color.text.primary }}>{cat.category}</Text>
                         </Text>
-                        <Text style={{ color: T.ratingColor(cat.overallScore), fontSize: 30, fontWeight: '900', fontFamily: T.fonts.display.black, letterSpacing: -1 }}>
+                        <Text style={{ ...type.mediumStat, color: T.ratingColor(cat.overallScore), fontSize: 30 }}>
                             {cat.overallScore}
                         </Text>
-                        <View style={{ height: 4, backgroundColor: T.colors.dimmer, borderRadius: 2, marginTop: T.space.sm }}>
+                        <View style={{ height: 4, backgroundColor: T.color.border.subtle, borderRadius: 2, marginTop: T.spacing[2] }}>
                             <View style={{
                                 height: 4, borderRadius: 2,
                                 backgroundColor: T.ratingColor(cat.overallScore),
@@ -379,36 +387,37 @@ function OverviewTab({ profile, insights }: { profile: any; insights: string | n
 
             {/* NBA Comparisons */}
             {profile.nbaComparisons.length > 0 && (
-                <View style={{ marginBottom: T.space.lg }}>
-                    <Text style={{ color: T.colors.white, fontSize: T.font.lg, fontWeight: '800', fontFamily: T.fonts.display.black, marginBottom: T.space.md, letterSpacing: -0.5 }}>
+                <View style={{ marginBottom: T.spacing[4] }}>
+                    <Text style={{ ...type.sectionTitle, color: T.color.text.primary, marginBottom: T.spacing[3] }}>
                         NBA Comparisons
                     </Text>
                     {profile.nbaComparisons.map((comp: NBAComparison, i: number) => {
-                        const accentColor = i === 0 ? T.colors.gold : i === 1 ? T.colors.accent : T.colors.dim
+                        const accentColor = i === 0 ? T.color.gamification.gold : i === 1 ? T.color.signature.primary : T.color.text.tertiary
                         return (
                             <Animated.View
                                 key={i}
                                 entering={FadeInRight.delay(i * 100).duration(400)}
                                 style={{
-                                    borderRadius: T.radius.md, padding: T.space.lg, marginBottom: T.space.sm,
+                                    borderRadius: T.borderRadius.lg, padding: T.spacing[4], marginBottom: T.spacing[2],
                                     flexDirection: 'row', alignItems: 'center',
-                                    ...T.glass.light, borderLeftWidth: 3, borderLeftColor: accentColor,
+                                    ...(glass.regular ?? T.glass.light),
+                                    borderLeftWidth: 3, borderLeftColor: accentColor,
                                 }}
                             >
                                 <View style={{ flex: 1 }}>
-                                    <Text style={{ color: T.colors.white, fontSize: T.font.base, fontWeight: '700', fontFamily: T.fonts.display.bold }}>
+                                    <Text style={{ ...type.cardTitle, color: T.color.text.primary }}>
                                         {comp.playerName}
                                     </Text>
-                                    <Text style={{ color: T.colors.muted, fontSize: T.font.sm, marginTop: 2 }}>
-                                        {comp.matchingTraits.join('  ')}
+                                    <Text style={{ ...type.caption, color: T.color.text.secondary, marginTop: T.spacing[1] }}>
+                                        {comp.matchingTraits.join(' · ')}
                                     </Text>
                                 </View>
                                 <View style={{
                                     backgroundColor: `${T.ratingColor(comp.similarity)}20`,
-                                    borderRadius: T.radius.sm, paddingHorizontal: 12, paddingVertical: 5,
+                                    borderRadius: T.borderRadius.md, paddingHorizontal: T.spacing[3], paddingVertical: T.spacing[1],
                                     borderWidth: 1, borderColor: `${T.ratingColor(comp.similarity)}30`,
                                 }}>
-                                    <Text style={{ color: T.ratingColor(comp.similarity), fontSize: T.font.md, fontWeight: '800', fontFamily: T.fonts.display.bold }}>
+                                    <Text style={{ ...type.cardTitle, color: T.ratingColor(comp.similarity) }}>
                                         {comp.similarity}%
                                     </Text>
                                 </View>
@@ -419,46 +428,48 @@ function OverviewTab({ profile, insights }: { profile: any; insights: string | n
             )}
 
             {/* Strengths & Weaknesses */}
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: T.space.lg }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: T.spacing[4] }}>
                 <Animated.View entering={FadeInDown.delay(100).duration(400)} style={{
-                    flex: 1, marginRight: 6, borderRadius: T.radius.md, padding: T.space.lg,
-                    ...T.glass.light, borderLeftWidth: 3, borderLeftColor: T.colors.green,
+                    flex: 1, marginRight: 6, borderRadius: T.borderRadius.lg, padding: T.spacing[4],
+                    ...(glass.regular ?? T.glass.light),
+                    borderLeftWidth: 3, borderLeftColor: T.color.semantic.success,
                 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: T.space.sm }}>
-                        <Feather name="arrow-up-circle" size={16} color={T.colors.green} style={{ marginRight: 6 }} />
-                        <Text style={{ color: T.colors.green, fontSize: T.font.md, fontWeight: '700', fontFamily: T.fonts.body.bold }}>Strengths</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: T.spacing[2] }}>
+                        <Feather name="arrow-up-circle" size={16} color={T.color.semantic.success} style={{ marginRight: T.spacing[2] }} />
+                        <Text style={{ ...type.cardTitle, color: T.color.semantic.success }}>Strengths</Text>
                     </View>
                     {profile.strengths.map((t: TwinTrait) => (
-                        <View key={t.id} style={{ marginBottom: T.space.sm }}>
-                            <Text style={{ color: T.colors.white, fontSize: T.font.sm, fontWeight: '600', fontFamily: T.fonts.body.semibold }}>
-                                 {t.label}
+                        <View key={t.id} style={{ marginBottom: T.spacing[2] }}>
+                            <Text style={{ ...type.bodySemibold, color: T.color.text.primary, fontSize: 13 }}>
+                                ✓ {t.label}
                             </Text>
-                            <Text style={{ color: T.colors.muted, fontSize: T.font.xs, marginLeft: 10 }}>
+                            <Text style={{ ...type.caption, color: T.color.text.secondary, marginLeft: T.spacing[3] }}>
                                 {t.description}
                             </Text>
                         </View>
                     ))}
                     {profile.strengths.length === 0 && (
-                        <Text style={{ color: T.colors.muted, fontSize: T.font.sm }}>Keep playing to discover your strengths</Text>
+                        <Text style={{ ...type.caption, color: T.color.text.secondary }}>Keep playing to discover your strengths</Text>
                     )}
                 </Animated.View>
                 <Animated.View entering={FadeInDown.delay(180).duration(400)} style={{
-                    flex: 1, marginLeft: 6, borderRadius: T.radius.md, padding: T.space.lg,
-                    ...T.glass.light, borderLeftWidth: 3, borderLeftColor: T.colors.red,
+                    flex: 1, marginLeft: 6, borderRadius: T.borderRadius.lg, padding: T.spacing[4],
+                    ...(glass.regular ?? T.glass.light),
+                    borderLeftWidth: 3, borderLeftColor: T.color.semantic.error,
                 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: T.space.sm }}>
-                        <Feather name="alert-triangle" size={16} color={T.colors.red} style={{ marginRight: 6 }} />
-                        <Text style={{ color: T.colors.red, fontSize: T.font.md, fontWeight: '700', fontFamily: T.fonts.body.bold }}>Work On</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: T.spacing[2] }}>
+                        <Feather name="alert-triangle" size={16} color={T.color.semantic.error} style={{ marginRight: T.spacing[2] }} />
+                        <Text style={{ ...type.cardTitle, color: T.color.semantic.error }}>Work On</Text>
                     </View>
                     {profile.weaknesses.map((t: TwinTrait) => (
-                        <View key={t.id} style={{ marginBottom: T.space.sm }}>
-                            <Text style={{ color: T.colors.white, fontSize: T.font.sm, fontWeight: '600', fontFamily: T.fonts.body.semibold }}>
-                                 {t.label}
+                        <View key={t.id} style={{ marginBottom: T.spacing[2] }}>
+                            <Text style={{ ...type.bodySemibold, color: T.color.text.primary, fontSize: 13 }}>
+                                ✗ {t.label}
                             </Text>
                             {t.drillRecommendation && (
-                                <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10, marginTop: 2 }}>
-                                    <Feather name="zap" size={10} color={T.colors.orange} style={{ marginRight: 3 }} />
-                                    <Text style={{ color: T.colors.orange, fontSize: T.font.xs, flex: 1 }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: T.spacing[3], marginTop: T.spacing[1] }}>
+                                    <Feather name="zap" size={10} color={T.color.semantic.warning} style={{ marginRight: T.spacing[1] }} />
+                                    <Text style={{ ...type.caption, color: T.color.semantic.warning, flex: 1 }}>
                                         {t.drillRecommendation}
                                     </Text>
                                 </View>
@@ -466,29 +477,32 @@ function OverviewTab({ profile, insights }: { profile: any; insights: string | n
                         </View>
                     ))}
                     {profile.weaknesses.length === 0 && (
-                        <Text style={{ color: T.colors.muted, fontSize: T.font.sm }}>No major weakness found</Text>
+                        <Text style={{ ...type.caption, color: T.color.text.secondary }}>No major weakness found</Text>
                     )}
                 </Animated.View>
             </View>
 
             {/* Comfort Zones */}
             {profile.comfortZones.length > 0 && (
-                <Animated.View entering={FadeInDown.duration(400)} style={{ marginBottom: T.space.lg }}>
-                    <Text style={{ color: T.colors.white, fontSize: T.font.lg, fontWeight: '800', fontFamily: T.fonts.display.black, marginBottom: T.space.md, letterSpacing: -0.5 }}>
+                <Animated.View entering={FadeInDown.duration(400)} style={{ marginBottom: T.spacing[4] }}>
+                    <Text style={{ ...type.sectionTitle, color: T.color.text.primary, marginBottom: T.spacing[3] }}>
                         Comfort Zones
                     </Text>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
                         {profile.comfortZones.filter((z: ComfortZone) => z.attempts > 0).map((z: ComfortZone, i: number) => (
                             <View key={i} style={{
-                                borderRadius: T.radius.sm, padding: T.space.md, margin: 3,
-                                ...(z.isComfort ? T.glass.accent : T.glass.light),
-                                ...(z.isComfort ? { borderColor: T.colors.green, borderWidth: 1 } : {}),
+                                borderRadius: T.borderRadius.md, padding: T.spacing[3], margin: 3,
+                                ...(z.isComfort ? glass.accent : (glass.regular ?? T.glass.light)),
+                                ...(z.isComfort ? { borderColor: T.color.semantic.success, borderWidth: 1 } : {}),
                             }}>
-                                <Text style={{ color: T.colors.white, fontSize: T.font.sm, fontWeight: '600', fontFamily: T.fonts.body.semibold }}>{z.zone}</Text>
-                                <Text style={{ color: z.isComfort ? T.colors.green : T.colors.muted, fontSize: T.font.md, fontWeight: '800', fontFamily: T.fonts.display.bold }}>
+                                <Text style={{ ...type.bodySemibold, color: T.color.text.primary, fontSize: 13 }}>{z.zone}</Text>
+                                <Text style={{
+                                    ...type.cardTitle,
+                                    color: z.isComfort ? T.color.semantic.success : T.color.text.secondary,
+                                }}>
                                     {Math.round(z.efficiency)}%
                                 </Text>
-                                <Text style={{ color: T.colors.dim, fontSize: T.font.xs }}>{z.attempts} shots</Text>
+                                <Text style={{ ...type.overline, color: T.color.text.tertiary, fontSize: 9 }}>{z.attempts} shots</Text>
                             </View>
                         ))}
                     </View>
@@ -497,11 +511,12 @@ function OverviewTab({ profile, insights }: { profile: any; insights: string | n
 
             {/* Mental Profile */}
             <Animated.View entering={FadeInDown.duration(400)} style={{
-                borderRadius: T.radius.lg, padding: T.space.lg, marginBottom: T.space.lg, ...T.glass.medium,
+                borderRadius: T.borderRadius.xl, padding: T.spacing[4], marginBottom: T.spacing[4],
+                ...(glass.regular ?? T.glass.medium),
             }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: T.space.md }}>
-                    <Feather name="activity" size={18} color={T.colors.purple} style={{ marginRight: 8 }} />
-                    <Text style={{ color: T.colors.white, fontSize: T.font.lg, fontWeight: '800', fontFamily: T.fonts.display.black, letterSpacing: -0.5 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: T.spacing[3] }}>
+                    <Feather name="activity" size={18} color={T.color.gamification.purple} style={{ marginRight: T.spacing[2] }} />
+                    <Text style={{ ...type.sectionTitle, color: T.color.text.primary, fontSize: 18 }}>
                         Mental Profile
                     </Text>
                 </View>
@@ -510,14 +525,15 @@ function OverviewTab({ profile, insights }: { profile: any; insights: string | n
                 <MentalBar label="Consistency" value={profile.mentalProfile.consistency} />
                 <MentalBar label="Fatigue Resist." value={profile.mentalProfile.fatigueResistance} />
                 <View style={{
-                    flexDirection: 'row', alignItems: 'center', marginTop: T.space.md,
-                    paddingTop: T.space.sm, borderTopWidth: 1, borderTopColor: T.colors.border,
+                    flexDirection: 'row', alignItems: 'center', marginTop: T.spacing[3],
+                    paddingTop: T.spacing[2], borderTopWidth: 1, borderTopColor: T.color.border.subtle,
                 }}>
-                    <Text style={{ color: T.colors.muted, fontSize: T.font.sm }}>Under pressure: </Text>
+                    <Text style={{ ...type.caption, color: T.color.text.secondary }}>Under pressure: </Text>
                     <Text style={{
-                        color: profile.mentalProfile.pressureResponse === 'thrives' ? T.colors.green
-                            : profile.mentalProfile.pressureResponse === 'struggles' ? T.colors.red : T.colors.orange,
-                        fontSize: T.font.sm, fontWeight: '700', fontFamily: T.fonts.body.bold,
+                        ...type.bodySemibold, fontSize: 13,
+                        color: profile.mentalProfile.pressureResponse === 'thrives' ? T.color.semantic.success
+                            : profile.mentalProfile.pressureResponse === 'struggles' ? T.color.semantic.error
+                            : T.color.semantic.warning,
                     }}>
                         {profile.mentalProfile.pressureResponse === 'thrives' ? 'Thrives'
                             : profile.mentalProfile.pressureResponse === 'struggles' ? 'Struggles' : 'Neutral'}
@@ -528,31 +544,30 @@ function OverviewTab({ profile, insights }: { profile: any; insights: string | n
             {/* AI Insights */}
             {insights && (
                 <Animated.View entering={FadeInDown.duration(400)} style={{
-                    borderRadius: T.radius.lg, padding: T.space.lg, marginBottom: T.space.lg,
-                    ...T.glass.primary, borderLeftWidth: 3, borderLeftColor: T.colors.purple,
+                    borderRadius: T.borderRadius.xl, padding: T.spacing[4], marginBottom: T.spacing[4],
+                    ...T.glass.primary, borderLeftWidth: 3, borderLeftColor: T.color.gamification.purple,
                 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: T.space.sm }}>
-                        <Feather name="cpu" size={16} color={T.colors.purple} style={{ marginRight: 6 }} />
-                        <Text style={{ color: T.colors.purple, fontSize: T.font.md, fontWeight: '700', fontFamily: T.fonts.display.bold }}>
-                            AI Analysis
-                        </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: T.spacing[2] }}>
+                        <Feather name="cpu" size={16} color={T.color.gamification.purple} style={{ marginRight: T.spacing[2] }} />
+                        <Text style={{ ...type.cardTitle, color: T.color.gamification.purple }}>AI Analysis</Text>
                     </View>
-                    <Text style={{ color: T.colors.white, fontSize: T.font.md, lineHeight: 22 }}>{insights}</Text>
+                    <Text style={{ ...type.body, color: T.color.text.primary }}>{insights}</Text>
                 </Animated.View>
             )}
 
             {/* Shot Signature */}
             <Animated.View entering={FadeInDown.duration(400)} style={{
-                borderRadius: T.radius.lg, padding: T.space.lg, marginBottom: T.space.lg, ...T.glass.medium,
+                borderRadius: T.borderRadius.xl, padding: T.spacing[4], marginBottom: T.spacing[4],
+                ...(glass.regular ?? T.glass.medium),
             }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: T.space.md }}>
-                    <Feather name="crosshair" size={18} color={T.colors.accent} style={{ marginRight: 8 }} />
-                    <Text style={{ color: T.colors.white, fontSize: T.font.lg, fontWeight: '800', fontFamily: T.fonts.display.black, letterSpacing: -0.5 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: T.spacing[3] }}>
+                    <Feather name="crosshair" size={18} color={T.color.signature.primary} style={{ marginRight: T.spacing[2] }} />
+                    <Text style={{ ...type.sectionTitle, color: T.color.text.primary, fontSize: 18 }}>
                         Shot Signature
                     </Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
-                    <PoseStatItem label="Elbow Angle" value={`${profile.poseSignature.avgElbowAngle}Â°`} ideal="90-95Â°" />
+                    <PoseStatItem label="Elbow Angle" value={`${profile.poseSignature.avgElbowAngle}°`} ideal="90-95°" />
                     <PoseStatItem label="Release Height" value={`${profile.poseSignature.avgReleaseHeight}`} ideal=">0.88" />
                     <PoseStatItem label="Hand" value={profile.poseSignature.dominantHand === 'right' ? 'Right' : 'Left'} />
                 </View>
@@ -566,49 +581,52 @@ function OverviewTab({ profile, insights }: { profile: any; insights: string | n
 // ==========================================
 function AttributesTab({ categories }: { categories: TwinAttributeCategory[] }) {
     return (
-        <View style={{ paddingHorizontal: T.space.xl }}>
+        <View style={{ paddingHorizontal: T.spacing[5] }}>
             {categories.map((cat, catIdx) => (
                 <Animated.View
                     key={cat.category}
                     entering={FadeInDown.delay(catIdx * 100).duration(400)}
                     style={{
-                        borderRadius: T.radius.lg, padding: T.space.lg, marginBottom: T.space.md,
-                        ...T.glass.medium,
+                        borderRadius: T.borderRadius.xl, padding: T.spacing[4], marginBottom: T.spacing[3],
+                        ...(glass.regular ?? T.glass.medium),
                     }}
                 >
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: T.space.md }}>
-                        <Text style={{ color: T.colors.white, fontSize: T.font.lg, fontWeight: '800', fontFamily: T.fonts.display.black }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: T.spacing[3] }}>
+                        <Text style={{ ...type.sectionTitle, color: T.color.text.primary, fontSize: 18 }}>
                             {cat.emoji} {cat.category}
                         </Text>
                         <View style={{
                             backgroundColor: `${T.ratingColor(cat.overallScore)}15`,
-                            borderRadius: T.radius.sm, paddingHorizontal: 10, paddingVertical: 3,
+                            borderRadius: T.borderRadius.md, paddingHorizontal: T.spacing[3], paddingVertical: T.spacing[1],
                             borderWidth: 1, borderColor: `${T.ratingColor(cat.overallScore)}25`,
                         }}>
-                            <Text style={{ color: T.ratingColor(cat.overallScore), fontSize: T.font.xl, fontWeight: '900', fontFamily: T.fonts.display.black }}>
+                            <Text style={{ ...type.smallStat, color: T.ratingColor(cat.overallScore), fontSize: 20 }}>
                                 {cat.overallScore}
                             </Text>
                         </View>
                     </View>
                     {cat.attributes.map((attr, i) => (
-                        <View key={i} style={{ marginBottom: T.space.md }}>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                                <Text style={{ color: T.colors.textSecondary, fontSize: T.font.md }}>{attr.name}</Text>
+                        <View key={i} style={{ marginBottom: T.spacing[3] }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: T.spacing[1] }}>
+                                <Text style={{ ...type.body, color: T.color.text.secondary }}>{attr.name}</Text>
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <Text style={{ color: T.ratingColor(attr.value), fontSize: T.font.md, fontWeight: '800', fontFamily: T.fonts.display.bold }}>
+                                    <Text style={{ ...type.cardTitle, color: T.ratingColor(attr.value) }}>
                                         {attr.value}
                                     </Text>
                                     {attr.delta !== 0 && (
                                         <Text style={{
-                                            color: attr.trend === 'up' ? T.colors.green : attr.trend === 'down' ? T.colors.red : T.colors.muted,
-                                            fontSize: T.font.xs, marginLeft: 4, fontWeight: '600',
+                                            ...type.overline, marginLeft: T.spacing[1],
+                                            color: attr.trend === 'up' ? T.color.semantic.success
+                                                : attr.trend === 'down' ? T.color.semantic.error
+                                                : T.color.text.secondary,
+                                            fontSize: 10,
                                         }}>
-                                            {attr.trend === 'up' ? '' : attr.trend === 'down' ? '' : ''}{Math.abs(attr.delta)}
+                                            {attr.trend === 'up' ? '↑' : attr.trend === 'down' ? '↓' : '→'}{Math.abs(attr.delta)}
                                         </Text>
                                     )}
                                 </View>
                             </View>
-                            <View style={{ height: 5, backgroundColor: T.colors.dimmer, borderRadius: 3, overflow: 'hidden' }}>
+                            <View style={{ height: 5, backgroundColor: T.color.border.subtle, borderRadius: 3, overflow: 'hidden' }}>
                                 <View style={{
                                     height: 5, borderRadius: 3,
                                     backgroundColor: T.ratingColor(attr.value),
@@ -634,18 +652,18 @@ function MatchupTab({ profile, simulation, simulating, onSimulateNBA, onClear }:
     onClear: () => void
 }) {
     return (
-        <View style={{ paddingHorizontal: T.space.xl }}>
+        <View style={{ paddingHorizontal: T.spacing[5] }}>
             <Animated.View entering={FadeInDown.duration(400)}>
-                <Text style={{ color: T.colors.white, fontSize: T.font.lg, fontWeight: '800', fontFamily: T.fonts.display.black, marginBottom: T.space.xs, letterSpacing: -0.5 }}>
+                <Text style={{ ...type.sectionTitle, color: T.color.text.primary, marginBottom: T.spacing[1] }}>
                     Matchup Simulator
                 </Text>
-                <Text style={{ color: T.colors.textSecondary, fontSize: T.font.sm, marginBottom: T.space.lg }}>
+                <Text style={{ ...type.caption, color: T.color.text.secondary, marginBottom: T.spacing[4] }}>
                     Your Twin vs an NBA player. Who wins?
                 </Text>
             </Animated.View>
 
             {/* NBA Player Grid */}
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: T.space.lg }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: T.spacing[4] }}>
                 {NBA_PLAYERS_FOR_SIMULATION.map((name, i) => (
                     <Animated.View key={name} entering={FadeInDown.delay(i * 40).duration(300)}>
                         <TouchableOpacity
@@ -653,92 +671,92 @@ function MatchupTab({ profile, simulation, simulating, onSimulateNBA, onClear }:
                             disabled={simulating}
                             activeOpacity={0.7}
                             style={{
-                                borderRadius: T.radius.sm, paddingHorizontal: 13, paddingVertical: 9, margin: 3,
-                                ...T.glass.light,
+                                borderRadius: T.borderRadius.md, paddingHorizontal: T.spacing[3], paddingVertical: T.spacing[2],
+                                margin: 3, ...(glass.regular ?? T.glass.light), minHeight: 44, justifyContent: 'center',
                             }}
                         >
-                            <Text style={{ color: T.colors.white, fontSize: T.font.sm, fontWeight: '500', fontFamily: T.fonts.body.medium }}>{name}</Text>
+                            <Text style={{ ...type.bodySemibold, color: T.color.text.primary, fontSize: 13 }}>{name}</Text>
                         </TouchableOpacity>
                     </Animated.View>
                 ))}
             </View>
 
             {simulating && (
-                <View style={{ alignItems: 'center', padding: 30 }}>
+                <View style={{ alignItems: 'center', padding: T.spacing[8] }}>
                     <View style={{
                         width: 60, height: 60, borderRadius: 30,
-                        ...T.glass.accent, justifyContent: 'center', alignItems: 'center',
-                        ...T.glow(T.colors.accent, 0.2),
+                        ...glass.accent, justifyContent: 'center', alignItems: 'center',
+                        ...T.glow(T.color.signature.primary, 0.2),
                     }}>
-                        <ActivityIndicator size="large" color={T.colors.accent} />
+                        <ActivityIndicator size="large" color={T.color.signature.primary} />
                     </View>
-                    <Text style={{ color: T.colors.textSecondary, marginTop: T.space.md, fontSize: T.font.md }}>
+                    <Text style={{ ...type.bodySemibold, color: T.color.text.secondary, marginTop: T.spacing[3] }}>
                         Simulating matchup...
                     </Text>
                 </View>
             )}
 
-            {/* Simulation Result */}
             {simulation && !simulating && (
                 <Animated.View entering={FadeInDown.duration(500)}>
                     {/* Win Probability */}
                     <View style={{
-                        borderRadius: T.radius.xl, padding: T.space.xxl, alignItems: 'center', marginBottom: T.space.lg,
-                        ...T.glass.medium,
+                        borderRadius: T.borderRadius['2xl'], padding: T.spacing[6], alignItems: 'center', marginBottom: T.spacing[4],
+                        ...(glass.regular ?? T.glass.medium),
                         borderWidth: 1.5,
-                        borderColor: simulation.winProbability >= 50 ? `${T.colors.green}30` : `${T.colors.red}30`,
-                        ...T.glow(simulation.winProbability >= 50 ? T.colors.green : T.colors.red, 0.12),
+                        borderColor: simulation.winProbability >= 50 ? `${T.color.semantic.success}30` : `${T.color.semantic.error}30`,
+                        ...T.glow(simulation.winProbability >= 50 ? T.color.semantic.success : T.color.semantic.error, 0.12),
                     }}>
-                        <Text style={{ color: T.colors.textSecondary, fontSize: T.font.sm, marginBottom: T.space.xs, fontWeight: '500', fontFamily: T.fonts.body.medium }}>
+                        <Text style={{ ...type.bodySemibold, color: T.color.text.secondary, marginBottom: T.spacing[1] }}>
                             vs {simulation.opponent}
                         </Text>
                         <Text style={{
-                            color: simulation.winProbability >= 50 ? T.colors.green : T.colors.red,
-                            fontSize: 52, fontWeight: '900', fontFamily: T.fonts.display.black, letterSpacing: -2,
+                            ...type.heroStat,
+                            color: simulation.winProbability >= 50 ? T.color.semantic.success : T.color.semantic.error,
+                            fontSize: 52,
                         }}>
                             {simulation.winProbability}%
                         </Text>
-                        <Text style={{ color: T.colors.muted, fontSize: T.font.sm, fontWeight: '500', fontFamily: T.fonts.body.medium }}>Win Probability</Text>
+                        <Text style={{ ...type.bodySemibold, color: T.color.text.secondary }}>Win Probability</Text>
 
                         <View style={{
-                            flexDirection: 'row', marginTop: T.space.lg, alignItems: 'center',
-                            backgroundColor: T.colors.dimmer, borderRadius: T.radius.pill,
-                            paddingHorizontal: 16, paddingVertical: 8,
+                            flexDirection: 'row', marginTop: T.spacing[4], alignItems: 'center',
+                            backgroundColor: T.color.border.subtle, borderRadius: T.borderRadius.full,
+                            paddingHorizontal: T.spacing[4], paddingVertical: T.spacing[2],
                         }}>
-                            <Text style={{ color: T.colors.accent, fontSize: T.font.xl, fontWeight: '800', fontFamily: T.fonts.display.bold }}>
+                            <Text style={{ ...type.smallStat, color: T.color.signature.primary, fontSize: 20 }}>
                                 {simulation.predictedScore.player}
                             </Text>
-                            <Text style={{ color: T.colors.dim, fontSize: T.font.md, marginHorizontal: 10, fontWeight: '600', fontFamily: T.fonts.body.semibold }}></Text>
-                            <Text style={{ color: T.colors.red, fontSize: T.font.xl, fontWeight: '800', fontFamily: T.fonts.display.bold }}>
+                            <Text style={{ ...type.bodySemibold, color: T.color.text.tertiary, marginHorizontal: T.spacing[3] }}>—</Text>
+                            <Text style={{ ...type.smallStat, color: T.color.semantic.error, fontSize: 20 }}>
                                 {simulation.predictedScore.opponent}
                             </Text>
                         </View>
                     </View>
 
                     {/* Key Matchups */}
-                    <View style={{ borderRadius: T.radius.lg, padding: T.space.lg, marginBottom: T.space.md, ...T.glass.medium }}>
-                        <Text style={{ color: T.colors.white, fontSize: T.font.md, fontWeight: '700', fontFamily: T.fonts.body.bold, marginBottom: T.space.md }}>
+                    <View style={{ borderRadius: T.borderRadius.xl, padding: T.spacing[4], marginBottom: T.spacing[3], ...(glass.regular ?? T.glass.medium) }}>
+                        <Text style={{ ...type.cardTitle, color: T.color.text.primary, marginBottom: T.spacing[3] }}>
                             Key Matchups
                         </Text>
                         {simulation.keyMatchups.map((km, i) => (
                             <View key={i} style={{
                                 flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-                                marginBottom: T.space.sm, paddingBottom: T.space.sm,
+                                marginBottom: T.spacing[2], paddingBottom: T.spacing[2],
                                 borderBottomWidth: i < simulation.keyMatchups.length - 1 ? 1 : 0,
-                                borderBottomColor: T.colors.border,
+                                borderBottomColor: T.color.border.subtle,
                             }}>
-                                <Text style={{ color: T.colors.textSecondary, fontSize: T.font.md }}>{km.area}</Text>
+                                <Text style={{ ...type.body, color: T.color.text.secondary }}>{km.area}</Text>
                                 <View style={{
-                                    borderRadius: T.radius.sm, paddingHorizontal: 10, paddingVertical: 3,
-                                    backgroundColor: km.edge === 'player' ? T.colors.greenDim
-                                        : km.edge === 'opponent' ? T.colors.redDim : T.colors.orangeDim,
+                                    borderRadius: T.borderRadius.md, paddingHorizontal: T.spacing[3], paddingVertical: T.spacing[1],
+                                    backgroundColor: km.edge === 'player' ? T.color.semantic.successDim
+                                        : km.edge === 'opponent' ? T.color.semantic.errorDim : T.color.semantic.warningDim,
                                 }}>
                                     <Text style={{
-                                        color: km.edge === 'player' ? T.colors.green
-                                            : km.edge === 'opponent' ? T.colors.red : T.colors.orange,
-                                        fontSize: T.font.sm, fontWeight: '700', fontFamily: T.fonts.body.bold,
+                                        ...type.overline, fontSize: 10,
+                                        color: km.edge === 'player' ? T.color.semantic.success
+                                            : km.edge === 'opponent' ? T.color.semantic.error : T.color.semantic.warning,
                                     }}>
-                                        {km.edge === 'player' ? 'Advantage' : km.edge === 'opponent' ? 'Disadvantage' : 'Even'}
+                                        {km.edge === 'player' ? 'ADVANTAGE' : km.edge === 'opponent' ? 'DISADVANTAGE' : 'EVEN'}
                                     </Text>
                                 </View>
                             </View>
@@ -748,54 +766,56 @@ function MatchupTab({ profile, simulation, simulating, onSimulateNBA, onClear }:
                     {/* Gameplan */}
                     {simulation.gameplan.length > 0 && (
                         <View style={{
-                            borderRadius: T.radius.lg, padding: T.space.lg, marginBottom: T.space.md, ...T.glass.accent,
+                            borderRadius: T.borderRadius.xl, padding: T.spacing[4], marginBottom: T.spacing[3], ...glass.accent,
                         }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: T.space.sm }}>
-                                <Feather name="clipboard" size={16} color={T.colors.accent} style={{ marginRight: 6 }} />
-                                <Text style={{ color: T.colors.accent, fontSize: T.font.md, fontWeight: '700', fontFamily: T.fonts.display.bold }}>Game Plan</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: T.spacing[2] }}>
+                                <Feather name="clipboard" size={16} color={T.color.signature.primary} style={{ marginRight: T.spacing[2] }} />
+                                <Text style={{ ...type.cardTitle, color: T.color.signature.primary }}>Game Plan</Text>
                             </View>
                             {simulation.gameplan.map((tip, i) => (
-                                <Text key={i} style={{ color: T.colors.white, fontSize: T.font.sm, marginBottom: 4, lineHeight: 18 }}>
-                                     {tip}
+                                <Text key={i} style={{ ...type.caption, color: T.color.text.primary, marginBottom: T.spacing[1] }}>
+                                    • {tip}
                                 </Text>
                             ))}
                         </View>
                     )}
 
                     {/* Advantages & Vulnerabilities */}
-                    <View style={{ flexDirection: 'row', marginBottom: T.space.lg }}>
+                    <View style={{ flexDirection: 'row', marginBottom: T.spacing[4] }}>
                         <View style={{
-                            flex: 1, marginRight: 5, borderRadius: T.radius.md, padding: T.space.md,
-                            ...T.glass.light, borderLeftWidth: 3, borderLeftColor: T.colors.green,
+                            flex: 1, marginRight: 5, borderRadius: T.borderRadius.lg, padding: T.spacing[3],
+                            ...(glass.regular ?? T.glass.light),
+                            borderLeftWidth: 3, borderLeftColor: T.color.semantic.success,
                         }}>
-                            <Text style={{ color: T.colors.green, fontSize: T.font.sm, fontWeight: '700', fontFamily: T.fonts.body.bold, marginBottom: T.space.xs }}>
+                            <Text style={{ ...type.bodySemibold, color: T.color.semantic.success, marginBottom: T.spacing[1], fontSize: 13 }}>
                                 Advantages
                             </Text>
                             {simulation.advantages.map((a, i) => (
-                                <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 3 }}>
-                                    <Feather name="check" size={12} color={T.colors.green} style={{ marginRight: 4, marginTop: 2 }} />
-                                    <Text style={{ color: T.colors.white, fontSize: T.font.sm, flex: 1 }}>{a}</Text>
+                                <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: T.spacing[1] }}>
+                                    <Feather name="check" size={12} color={T.color.semantic.success} style={{ marginRight: T.spacing[1], marginTop: 2 }} />
+                                    <Text style={{ ...type.caption, color: T.color.text.primary, flex: 1 }}>{a}</Text>
                                 </View>
                             ))}
                             {simulation.advantages.length === 0 && (
-                                <Text style={{ color: T.colors.muted, fontSize: T.font.sm }}>No clear advantage</Text>
+                                <Text style={{ ...type.caption, color: T.color.text.secondary }}>No clear advantage</Text>
                             )}
                         </View>
                         <View style={{
-                            flex: 1, marginLeft: 5, borderRadius: T.radius.md, padding: T.space.md,
-                            ...T.glass.light, borderLeftWidth: 3, borderLeftColor: T.colors.red,
+                            flex: 1, marginLeft: 5, borderRadius: T.borderRadius.lg, padding: T.spacing[3],
+                            ...(glass.regular ?? T.glass.light),
+                            borderLeftWidth: 3, borderLeftColor: T.color.semantic.error,
                         }}>
-                            <Text style={{ color: T.colors.red, fontSize: T.font.sm, fontWeight: '700', fontFamily: T.fonts.body.bold, marginBottom: T.space.xs }}>
+                            <Text style={{ ...type.bodySemibold, color: T.color.semantic.error, marginBottom: T.spacing[1], fontSize: 13 }}>
                                 Vulnerabilities
                             </Text>
                             {simulation.vulnerabilities.map((v, i) => (
-                                <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 3 }}>
-                                    <Feather name="alert-circle" size={12} color={T.colors.red} style={{ marginRight: 4, marginTop: 2 }} />
-                                    <Text style={{ color: T.colors.white, fontSize: T.font.sm, flex: 1 }}>{v}</Text>
+                                <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: T.spacing[1] }}>
+                                    <Feather name="alert-circle" size={12} color={T.color.semantic.error} style={{ marginRight: T.spacing[1], marginTop: 2 }} />
+                                    <Text style={{ ...type.caption, color: T.color.text.primary, flex: 1 }}>{v}</Text>
                                 </View>
                             ))}
                             {simulation.vulnerabilities.length === 0 && (
-                                <Text style={{ color: T.colors.muted, fontSize: T.font.sm }}>No major vulnerability</Text>
+                                <Text style={{ ...type.caption, color: T.color.text.secondary }}>No major vulnerability</Text>
                             )}
                         </View>
                     </View>
@@ -804,12 +824,13 @@ function MatchupTab({ profile, simulation, simulating, onSimulateNBA, onClear }:
                         onPress={onClear}
                         activeOpacity={0.7}
                         style={{
-                            borderRadius: T.radius.md, padding: T.space.md, alignItems: 'center', ...T.glass.light,
+                            borderRadius: T.borderRadius.lg, padding: T.spacing[3], alignItems: 'center',
+                            ...(glass.regular ?? T.glass.light), minHeight: 44, justifyContent: 'center',
                         }}
                     >
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Feather name="refresh-cw" size={14} color={T.colors.accent} style={{ marginRight: 6 }} />
-                            <Text style={{ color: T.colors.accent, fontSize: T.font.md, fontWeight: '600', fontFamily: T.fonts.body.semibold }}>
+                            <Feather name="refresh-cw" size={14} color={T.color.signature.primary} style={{ marginRight: T.spacing[2] }} />
+                            <Text style={{ ...type.bodySemibold, color: T.color.signature.primary }}>
                                 New Simulation
                             </Text>
                         </View>
@@ -826,16 +847,17 @@ function MatchupTab({ profile, simulation, simulating, onSimulateNBA, onClear }:
 function EvolutionTab({ evolution }: { evolution: TwinEvolutionPoint[] }) {
     if (evolution.length === 0) {
         return (
-            <View style={{ padding: 40, alignItems: 'center' }}>
+            <View style={{ padding: T.spacing[10], alignItems: 'center' }}>
                 <View style={{
                     width: 70, height: 70, borderRadius: 35,
-                    ...T.glass.light, justifyContent: 'center', alignItems: 'center',
+                    ...(glass.regular ?? T.glass.light),
+                    justifyContent: 'center', alignItems: 'center',
                 }}>
-                    <Feather name="trending-up" size={32} color={T.colors.dim} />
+                    <Feather name="trending-up" size={32} color={T.color.text.tertiary} />
                 </View>
                 <Text style={{
-                    color: T.colors.textSecondary, fontSize: T.font.md,
-                    marginTop: T.space.lg, textAlign: 'center', lineHeight: 22,
+                    ...type.body, color: T.color.text.secondary,
+                    marginTop: T.spacing[4], textAlign: 'center',
                 }}>
                     Not enough data yet.{'\n'}Keep playing to see your growth!
                 </Text>
@@ -848,18 +870,18 @@ function EvolutionTab({ evolution }: { evolution: TwinEvolutionPoint[] }) {
     const barWidth = Math.min((SCREEN_WIDTH - 80) / evolution.length, 28)
 
     return (
-        <View style={{ paddingHorizontal: T.space.xl }}>
+        <View style={{ paddingHorizontal: T.spacing[5] }}>
             <Animated.View entering={FadeInDown.duration(400)}>
-                <Text style={{ color: T.colors.white, fontSize: T.font.lg, fontWeight: '800', fontFamily: T.fonts.display.black, marginBottom: T.space.lg, letterSpacing: -0.5 }}>
+                <Text style={{ ...type.sectionTitle, color: T.color.text.primary, marginBottom: T.spacing[4] }}>
                     Growth
                 </Text>
             </Animated.View>
 
-            {/* Mini bar chart */}
             <Animated.View entering={FadeInDown.delay(100).duration(500)} style={{
-                borderRadius: T.radius.lg, padding: T.space.lg, marginBottom: T.space.lg, ...T.glass.medium,
+                borderRadius: T.borderRadius.xl, padding: T.spacing[4], marginBottom: T.spacing[4],
+                ...(glass.regular ?? T.glass.medium),
             }}>
-                <Text style={{ color: T.colors.textSecondary, fontSize: T.font.sm, marginBottom: T.space.md }}>
+                <Text style={{ ...type.caption, color: T.color.text.secondary, marginBottom: T.spacing[3] }}>
                     Overall rating per session
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: chartHeight, justifyContent: 'center' }}>
@@ -867,17 +889,17 @@ function EvolutionTab({ evolution }: { evolution: TwinEvolutionPoint[] }) {
                         const h = (point.overallRating / maxRating) * chartHeight
                         return (
                             <View key={i} style={{ alignItems: 'center', marginHorizontal: 2 }}>
-                                <Text style={{ color: T.colors.muted, fontSize: 8, marginBottom: 3, fontWeight: '600', fontFamily: T.fonts.display.semibold }}>
+                                <Text style={{ ...type.overline, color: T.color.text.secondary, fontSize: 8, marginBottom: 3 }}>
                                     {point.overallRating}
                                 </Text>
                                 <View style={{
-                                    width: barWidth, height: h, borderRadius: 4,
+                                    width: barWidth, height: h, borderRadius: T.borderRadius.sm,
                                     backgroundColor: T.ratingColor(point.overallRating),
                                     ...T.shadow(T.ratingColor(point.overallRating), 0.2, 4),
                                 }} />
                                 <Text style={{
-                                    color: T.colors.dim, fontSize: 7, marginTop: 4,
-                                    transform: [{ rotate: '-45deg' }], fontWeight: '500',
+                                    ...type.overline, color: T.color.text.tertiary, fontSize: 7, marginTop: T.spacing[1],
+                                    transform: [{ rotate: '-45deg' }],
                                 }}>
                                     {point.date.slice(5)}
                                 </Text>
@@ -887,30 +909,31 @@ function EvolutionTab({ evolution }: { evolution: TwinEvolutionPoint[] }) {
                 </View>
             </Animated.View>
 
-            {/* Session Breakdown */}
             <Animated.View entering={FadeInDown.delay(200).duration(500)} style={{
-                borderRadius: T.radius.lg, padding: T.space.lg, marginBottom: T.space.lg, ...T.glass.medium,
+                borderRadius: T.borderRadius.xl, padding: T.spacing[4], marginBottom: T.spacing[4],
+                ...(glass.regular ?? T.glass.medium),
             }}>
-                <Text style={{ color: T.colors.white, fontSize: T.font.md, fontWeight: '700', fontFamily: T.fonts.body.bold, marginBottom: T.space.md }}>
+                <Text style={{ ...type.cardTitle, color: T.color.text.primary, marginBottom: T.spacing[3] }}>
                     Recent Sessions
                 </Text>
                 {evolution.slice(-5).reverse().map((point, i) => (
                     <View key={i} style={{
                         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-                        paddingVertical: T.space.sm,
-                        borderBottomWidth: i < 4 ? 1 : 0, borderBottomColor: T.colors.border,
+                        paddingVertical: T.spacing[2],
+                        borderBottomWidth: i < 4 ? 1 : 0, borderBottomColor: T.color.border.subtle,
                     }}>
-                        <Text style={{ color: T.colors.muted, fontSize: T.font.sm }}>{point.date}</Text>
+                        <Text style={{ ...type.caption, color: T.color.text.secondary }}>{point.date}</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <MiniStat icon="target" value={point.shootingRating} />
                             <MiniStat icon="activity" value={point.mentalRating} />
                             <MiniStat icon="zap" value={point.physicalRating} />
                             <View style={{
                                 backgroundColor: `${T.ratingColor(point.overallRating)}20`,
-                                borderRadius: T.radius.sm, paddingHorizontal: 8, paddingVertical: 2, marginLeft: 6,
+                                borderRadius: T.borderRadius.md, paddingHorizontal: T.spacing[2], paddingVertical: T.spacing[1],
+                                marginLeft: T.spacing[2],
                                 borderWidth: 1, borderColor: `${T.ratingColor(point.overallRating)}30`,
                             }}>
-                                <Text style={{ color: T.ratingColor(point.overallRating), fontSize: T.font.sm, fontWeight: '800', fontFamily: T.fonts.display.bold }}>
+                                <Text style={{ ...type.bodySemibold, color: T.ratingColor(point.overallRating), fontSize: 13 }}>
                                     {point.overallRating}
                                 </Text>
                             </View>
@@ -928,12 +951,12 @@ function EvolutionTab({ evolution }: { evolution: TwinEvolutionPoint[] }) {
 
 function MentalBar({ label, value }: { label: string; value: number }) {
     return (
-        <View style={{ marginBottom: T.space.sm }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
-                <Text style={{ color: T.colors.textSecondary, fontSize: T.font.sm }}>{label}</Text>
-                <Text style={{ color: T.ratingColor(value), fontSize: T.font.sm, fontWeight: '800', fontFamily: T.fonts.display.bold }}>{value}</Text>
+        <View style={{ marginBottom: T.spacing[2] }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: T.spacing[1] }}>
+                <Text style={{ ...type.caption, color: T.color.text.secondary }}>{label}</Text>
+                <Text style={{ ...type.bodySemibold, color: T.ratingColor(value), fontSize: 13 }}>{value}</Text>
             </View>
-            <View style={{ height: 5, backgroundColor: T.colors.dimmer, borderRadius: 3, overflow: 'hidden' }}>
+            <View style={{ height: 5, backgroundColor: T.color.border.subtle, borderRadius: 3, overflow: 'hidden' }}>
                 <View style={{
                     height: 5, borderRadius: 3,
                     backgroundColor: T.ratingColor(value),
@@ -947,11 +970,14 @@ function MentalBar({ label, value }: { label: string; value: number }) {
 function PoseStatItem({ label, value, ideal }: { label: string; value: string; ideal?: string }) {
     return (
         <View style={{ alignItems: 'center' }}>
-            <Text style={{ color: T.colors.muted, fontSize: T.font.xs }}>{label}</Text>
-            <Text style={{ color: T.colors.white, fontSize: T.font.lg, fontWeight: '800', fontFamily: T.fonts.display.bold, marginVertical: 3 }}>{value}</Text>
+            <Text style={{ ...type.overline, color: T.color.text.secondary, fontSize: 9 }}>{label}</Text>
+            <Text style={{ ...type.cardTitle, color: T.color.text.primary, marginVertical: T.spacing[1] }}>{value}</Text>
             {ideal && (
-                <View style={{ backgroundColor: T.colors.accentDim, borderRadius: T.radius.pill, paddingHorizontal: 8, paddingVertical: 2 }}>
-                    <Text style={{ color: T.colors.accent, fontSize: T.font.xs }}>Ideal: {ideal}</Text>
+                <View style={{
+                    backgroundColor: T.color.signature.dim, borderRadius: T.borderRadius.full,
+                    paddingHorizontal: T.spacing[2], paddingVertical: T.spacing[1],
+                }}>
+                    <Text style={{ ...type.overline, color: T.color.signature.primary, fontSize: 9 }}>Ideal: {ideal}</Text>
                 </View>
             )}
         </View>
@@ -960,9 +986,9 @@ function PoseStatItem({ label, value, ideal }: { label: string; value: string; i
 
 function MiniStat({ icon, value }: { icon: keyof typeof Feather.glyphMap; value: number }) {
     return (
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 4 }}>
-            <Feather name={icon} size={10} color={T.colors.dim} style={{ marginRight: 2 }} />
-            <Text style={{ color: T.colors.muted, fontSize: T.font.sm, fontWeight: '500', fontFamily: T.fonts.body.medium }}>{value}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: T.spacing[1] }}>
+            <Feather name={icon} size={10} color={T.color.text.tertiary} style={{ marginRight: 2 }} />
+            <Text style={{ ...type.caption, color: T.color.text.secondary, fontSize: 11 }}>{value}</Text>
         </View>
     )
 }

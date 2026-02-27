@@ -72,7 +72,7 @@ function TabItem({
         transform: [{ scale: iconScale.value }],
     }))
 
-    const color = isFocused ? T.colors.accent : T.colors.dim
+    const color = isFocused ? T.color.signature.primary : T.color.text.tertiary
 
     const handlePressIn = () => {
         scale.value = withSpring(0.88, { damping: 15, stiffness: 300 })
@@ -237,22 +237,22 @@ const styles = StyleSheet.create({
         width: 4,
         height: 4,
         borderRadius: 2,
-        backgroundColor: T.colors.accent,
+        backgroundColor: T.color.signature.primary,
         marginTop: 5,
-        ...T.glow(T.colors.accent, 0.6),
+        ...T.glow(T.color.signature.primary, 0.6),
     },
     fabButton: {
         width: 54,
         height: 54,
         borderRadius: 27,
-        backgroundColor: T.colors.accent,
+        backgroundColor: T.color.signature.primary,
         justifyContent: 'center',
         alignItems: 'center',
         marginTop: -22,
-        ...T.glow(T.colors.accent, 0.45),
+        ...T.glow(T.color.signature.primary, 0.45),
     },
     fabButtonActive: {
-        ...T.glow(T.colors.accent, 0.65),
+        ...T.glow(T.color.signature.primary, 0.65),
     },
     notifDot: {
         position: 'absolute',
@@ -261,8 +261,8 @@ const styles = StyleSheet.create({
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: T.colors.red,
+        backgroundColor: T.color.semantic.error,
         borderWidth: 1.5,
-        borderColor: T.colors.bg,
+        borderColor: T.color.background.primary,
     },
 })

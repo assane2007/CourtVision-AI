@@ -46,7 +46,7 @@ export function SkeletonLoader({ width = '100%', height = 16, borderRadius = 10,
                     width: width as any,
                     height,
                     borderRadius,
-                    backgroundColor: T.colors.dimmer,
+                    backgroundColor: T.color.border.subtle,
                 },
                 animStyle,
                 style,
@@ -59,7 +59,7 @@ export function SkeletonLoader({ width = '100%', height = 16, borderRadius = 10,
 export function SkeletonStatCard() {
     return (
         <View style={{
-            flex: 1, borderRadius: T.radius.lg,
+            flex: 1, borderRadius: T.borderRadius.lg,
             padding: 16,
             ...T.glass.light,
             gap: 10,
@@ -76,7 +76,7 @@ export function SkeletonHighlight() {
     return (
         <View style={{
             width: 140, height: 200,
-            borderRadius: T.radius.lg,
+            borderRadius: T.borderRadius.lg,
             marginHorizontal: 5,
             ...T.glass.light,
             padding: 14, justifyContent: 'flex-end', gap: 8,
@@ -93,7 +93,7 @@ export function SkeletonLeaderboardRow() {
     return (
         <View style={{
             flexDirection: 'row', alignItems: 'center',
-            borderRadius: T.radius.md,
+            borderRadius: T.borderRadius.md,
             padding: 14, marginBottom: 8, gap: 12,
             ...T.glass.light,
         }}>
@@ -113,7 +113,7 @@ export function SkeletonWeeklyChart() {
     const HEIGHTS = [40, 55, 20, 65, 50, 15, 70]
     return (
         <View style={{
-            borderRadius: T.radius.lg,
+            borderRadius: T.borderRadius.lg,
             padding: 16,
             ...T.glass.light,
         }}>

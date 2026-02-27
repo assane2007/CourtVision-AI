@@ -43,10 +43,10 @@ export interface ScoreRingProps {
 
 /** Couleur dynamique : rouge → amber brand → vert */
 function scoreColor(v: number) {
-    if (v >= 85) return T.colors.green         // Elite
-    if (v >= 70) return T.colors.accent        // Great — AMBER brand
-    if (v >= 50) return T.colors.orange        // Solid
-    return T.colors.red                         // Needs work
+    if (v >= 85) return T.color.semantic.success       // Elite
+    if (v >= 70) return T.color.signature.primary      // Great — AMBER brand
+    if (v >= 50) return T.color.semantic.warning       // Solid
+    return T.color.semantic.error                       // Needs work
 }
 
 /** Gradient ID unique par instance */
@@ -126,7 +126,7 @@ export function ScoreRing({
                 <Defs>
                     <LinearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
                         <Stop offset="0%" stopColor={color} stopOpacity="1" />
-                        <Stop offset="100%" stopColor={color === T.colors.accent ? '#FFB347' : color} stopOpacity="0.85" />
+                        <Stop offset="100%" stopColor={color === T.color.signature.primary ? '#FFB347' : color} stopOpacity="0.85" />
                     </LinearGradient>
                 </Defs>
 
@@ -136,7 +136,7 @@ export function ScoreRing({
                         cx={center}
                         cy={center}
                         r={radius}
-                        stroke={T.colors.dimmer}
+                        stroke={T.color.border.subtle}
                         strokeWidth={strokeWidth - 2}
                         fill="none"
                     />
@@ -192,14 +192,14 @@ const styles = StyleSheet.create({
         gap: 2,
     },
     valueText: {
-        fontSize: T.font.xxxl, // 32
+        fontSize: T.fontSize['2xl'], // 32
         fontWeight: '900',
         letterSpacing: -1.5,
         fontVariant: ['tabular-nums'],
     },
     labelText: {
-        fontSize: T.font.xs,
-        color: T.colors.textSecondary,
+        fontSize: T.fontSize.xs,
+        color: T.color.text.secondary,
         fontWeight: '600',
         letterSpacing: 0.3,
         textAlign: 'center',
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     },
     sublabelText: {
         fontSize: 10,
-        color: T.colors.muted,
+        color: T.color.text.secondary,
         fontWeight: '500',
         textAlign: 'center',
         maxWidth: 80,

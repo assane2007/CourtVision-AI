@@ -537,3 +537,240 @@ export type LiveSSEEvent =
     | { type: 'quarter_end'; quarter: number; summary: LiveAlertPayload }
     | { type: 'session_end'; result: LiveEndResponse }
     | { type: 'heartbeat'; time: number }
+
+// ==========================================
+// V5 Apex Types
+// ==========================================
+
+/** Apex Score — the ONE number that represents the player */
+export interface ApexScore {
+    overall: number
+    shooting: number
+    mental: number
+    consistency: number
+    clutch: number
+    improvement: number
+    grade: string
+    rank?: number
+    percentile?: number
+    trend: 'rising' | 'stable' | 'declining'
+}
+
+/** Shot DNA™ — Biomechanical fingerprint */
+export interface ShotDNASummary {
+    purityScore: number
+    closestNBA: string
+    nbaSimilarity: number
+    avgShotQuality: number
+    mechanicalDriftCount: number
+    optimalZone: string
+}
+
+/** Predictive Engine — Pre-game prediction */
+export interface PredictionSummary {
+    predictedFGPct: number
+    readinessScore: number
+    readinessGrade: string
+    riskFactors: { type: string; severity: string; description: string }[]
+    preGameTips: string[]
+    confidence: number
+}
+
+/** Smart Training Plan summary */
+export interface TrainingPlanSummary {
+    id: string
+    name: string
+    objective: string
+    completionPct: number
+    daysRemaining: number
+    todayFocus: string | null
+    difficultyLevel: number
+    isActive: boolean
+}
+
+/** Coach Chat Message (for mobile rendering) */
+export interface CoachChatMessagePayload {
+    id: string
+    role: 'user' | 'assistant' | 'system'
+    content: string
+    attachments: {
+        type: 'chart' | 'drill' | 'highlight' | 'shot_data' | 'zone_map' | 'comparison'
+        title: string
+        data: Record<string, any>
+    }[]
+    suggestedActions: {
+        label: string
+        emoji: string
+        action: string
+        params?: Record<string, any>
+    }[]
+    createdAt: string
+}
+
+/** Recovery & Wellness */
+export interface RecoveryLogPayload {
+    date: string
+    sleepHours: number
+    sleepQuality: number
+    energyLevel: number
+    muscleSoreness: number
+    stressLevel: number
+    hrv?: number
+    restingHR?: number
+    hydrationLiters?: number
+    mealsQuality?: number
+    mood?: number
+}
+
+export interface RecoveryScoreResponse {
+    recoveryScore: number
+    readinessScore: number
+    grade: string
+    recommendation: string
+    trainingIntensity: 'rest' | 'light' | 'moderate' | 'normal' | 'push'
+    tips: string[]
+    riskFactors: string[]
+}
+
+/** Quest / Gamification */
+export interface QuestPayload {
+    id: string
+    slug: string
+    title: string
+    description: string
+    emoji: string
+    questType: 'daily' | 'weekly' | 'monthly' | 'seasonal' | 'legendary'
+    category: string
+    xpReward: number
+    difficulty: number
+    progress: {
+        currentValue: number
+        targetValue: number
+        progressPct: number
+        status: 'active' | 'completed' | 'expired' | 'claimed'
+    }
+}
+
+/** Skill Tree Node */
+export interface SkillTreeNode {
+    id: string
+    slug: string
+    name: string
+    description: string
+    emoji: string
+    category: 'shooting' | 'mental' | 'physical' | 'tactical' | 'leadership'
+    tier: number
+    unlocked: boolean
+    unlockedAt?: string
+    prerequisites: string[]
+}
+
+/** Crew / Social Team */
+export interface CrewPayload {
+    id: string
+    name: string
+    tag: string
+    description?: string
+    avatarUrl?: string
+    totalXP: number
+    avgRating: number
+    totalSessions: number
+    memberCount: number
+    maxMembers: number
+    isPublic: boolean
+    myRole?: string
+    members: CrewMemberPayload[]
+}
+
+export interface CrewMemberPayload {
+    userId: string
+    username: string
+    avatarUrl?: string
+    role: 'captain' | 'co-captain' | 'member'
+    overallRating: number
+    joinedAt: string
+}
+
+/** Season */
+export interface SeasonPayload {
+    id: string
+    name: string
+    theme?: string
+    startsAt: string
+    endsAt: string
+    myProgress: {
+        seasonXP: number
+        seasonLevel: number
+        tier: 'bronze' | 'silver' | 'gold' | 'diamond' | 'elite'
+        rank?: number
+    } | null
+}
+
+/** V5 Dashboard — Single API call payload for home screen */
+export interface V5DashboardPayload {
+    apexScore: ApexScore
+    shotDna: ShotDNASummary | null
+    predictions: PredictionSummary | null
+    training: TrainingPlanSummary | null
+    streaks: {
+        currentStreak: number
+        longestStreak: number
+        sessionThisWeek: number
+        shotsThisWeek: number
+    }
+    quests: {
+        activeCount: number
+        completedToday: number
+        nextReward: string | null
+    }
+    recovery: RecoveryScoreResponse | null
+    crew: {
+        name: string | null
+        tag: string | null
+        role: string | null
+        rankInCrew: number | null
+    } | null
+}
+
+/** Advanced Analytics Session Result */
+export interface AdvancedAnalyticsPayload {
+    trueShooting: number
+    effectiveFG: number
+    shotQualityAvg: number
+    clutchRating: number
+    courtBalanceIndex: number
+    offensiveRating: number
+    overallGrade: string
+    longestMakeStreak: number
+    longestMissStreak: number
+    hotZones: string[]
+    coldZones: string[]
+    momentumShifts: {
+        minute: number
+        direction: 'up' | 'down'
+        trigger: string
+    }[]
+    peakPerformanceWindow: {
+        startMinute: number
+        endMinute: number
+        fgPct: number
+        mentalScore: number
+    } | null
+}
+
+/** Weekly Digest for push notification */
+export interface WeeklyDigestPayload {
+    period: string
+    sessions: number
+    totalShots: number
+    avgFGPct: number
+    avgMentalScore: number
+    improvement: {
+        fgPctDelta: number
+        mentalDelta: number
+        bestZoneImproved: string | null
+    }
+    highlights: string[]
+    apexScore: ApexScore
+    nextWeekFocus: string[]
+}

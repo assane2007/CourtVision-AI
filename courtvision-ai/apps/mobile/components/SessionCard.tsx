@@ -62,7 +62,7 @@ function formatTime(iso: string) {
 
 // ─── MiniStat ────────────────────────────────────────────────
 
-function MiniStat({ icon, label, value, color = T.colors.textSecondary }: {
+function MiniStat({ icon, label, value, color = T.color.text.secondary }: {
     icon: keyof typeof Feather.glyphMap
     label: string
     value: string
@@ -128,7 +128,7 @@ export function SessionCard({ session, onPress, delay = 0, style, compact = fals
                         <View style={styles.compactStats}>
                             {session.shooting_fg_pct != null && (
                                 <Text style={styles.compactStat}>
-                                    <Text style={{ color: T.colors.accent, fontWeight: '800' }}>
+                                    <Text style={{ color: T.color.signature.primary, fontWeight: '800' }}>
                                         {Math.round(session.shooting_fg_pct)}%
                                     </Text>
                                     {' FG'}
@@ -136,7 +136,7 @@ export function SessionCard({ session, onPress, delay = 0, style, compact = fals
                             )}
                             {session.mental_score != null && (
                                 <Text style={styles.compactStat}>
-                                    <Text style={{ color: T.colors.green, fontWeight: '800' }}>
+                                    <Text style={{ color: T.color.semantic.success, fontWeight: '800' }}>
                                         {Math.round(session.mental_score)}
                                     </Text>
                                     {' Mental'}
@@ -146,7 +146,7 @@ export function SessionCard({ session, onPress, delay = 0, style, compact = fals
                         </View>
                     </View>
 
-                    <Feather name="chevron-right" size={16} color={T.colors.dim} />
+                    <Feather name="chevron-right" size={16} color={T.color.text.tertiary} />
                 </TouchableOpacity>
             </Animated.View>
         )
@@ -178,7 +178,7 @@ export function SessionCard({ session, onPress, delay = 0, style, compact = fals
                             icon="crosshair"
                             label="FG%"
                             value={`${Math.round(session.shooting_fg_pct)}%`}
-                            color={T.colors.accent}
+                            color={T.color.signature.primary}
                         />
                     )}
                     {session.shots_made != null && session.shots_attempted != null && (
@@ -193,7 +193,7 @@ export function SessionCard({ session, onPress, delay = 0, style, compact = fals
                             icon="activity"
                             label="Mental"
                             value={`${Math.round(session.mental_score)}`}
-                            color={T.colors.green}
+                            color={T.color.semantic.success}
                         />
                     )}
                     {session.distance_km != null && (
@@ -208,7 +208,7 @@ export function SessionCard({ session, onPress, delay = 0, style, compact = fals
                             icon="play-circle"
                             label="clips"
                             value={`${session.highlight_count}`}
-                            color={T.colors.purple}
+                            color={T.color.gamification.purple}
                         />
                     )}
                 </View>
@@ -216,7 +216,7 @@ export function SessionCard({ session, onPress, delay = 0, style, compact = fals
                 {/* Footer arrow */}
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>View full report</Text>
-                    <Feather name="arrow-right" size={14} color={T.colors.accent} />
+                    <Feather name="arrow-right" size={14} color={T.color.signature.primary} />
                 </View>
             </TouchableOpacity>
         </Animated.View>
@@ -228,7 +228,7 @@ export function SessionCard({ session, onPress, delay = 0, style, compact = fals
 const styles = StyleSheet.create({
     container: {
         ...T.glass.light,
-        borderRadius: T.radius.lg,
+        borderRadius: T.borderRadius.lg,
         padding: 16,
         gap: 12,
     },
@@ -238,19 +238,19 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
     },
     dateText: {
-        color: T.colors.textPrimary,
-        fontSize: T.font.base,
+        color: T.color.text.primary,
+        fontSize: T.fontSize.base,
         fontWeight: '700',
     },
     timeText: {
-        color: T.colors.muted,
-        fontSize: T.font.xs,
+        color: T.color.text.secondary,
+        fontSize: T.fontSize.xs,
         fontWeight: '500',
         marginTop: 2,
     },
     divider: {
         height: 1,
-        backgroundColor: T.colors.border,
+        backgroundColor: T.color.border.default,
     },
     statsRow: {
         flexDirection: 'row',
@@ -263,18 +263,18 @@ const styles = StyleSheet.create({
         gap: 4,
     },
     miniStatValue: {
-        fontSize: T.font.sm,
+        fontSize: T.fontSize.sm,
         fontWeight: '800',
     },
     miniStatLabel: {
-        fontSize: T.font.xs,
-        color: T.colors.muted,
+        fontSize: T.fontSize.xs,
+        color: T.color.text.secondary,
         fontWeight: '500',
     },
     badge: {
         paddingHorizontal: 10,
         paddingVertical: 4,
-        borderRadius: T.radius.pill,
+        borderRadius: T.borderRadius.full,
         borderWidth: 1,
     },
     badgeText: {
@@ -289,15 +289,15 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     footerText: {
-        color: T.colors.accent,
-        fontSize: T.font.sm,
+        color: T.color.signature.primary,
+        fontSize: T.fontSize.sm,
         fontWeight: '600',
     },
 
     // Compact variant
     compactContainer: {
         ...T.glass.light,
-        borderRadius: T.radius.md,
+        borderRadius: T.borderRadius.md,
         padding: 14,
         flexDirection: 'row',
         alignItems: 'center',
@@ -324,8 +324,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     compactDate: {
-        color: T.colors.textSecondary,
-        fontSize: T.font.xs,
+        color: T.color.text.secondary,
+        fontSize: T.fontSize.xs,
         fontWeight: '600',
     },
     compactStats: {
@@ -333,8 +333,8 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     compactStat: {
-        color: T.colors.muted,
-        fontSize: T.font.xs,
+        color: T.color.text.secondary,
+        fontSize: T.fontSize.xs,
         fontWeight: '500',
     },
 })

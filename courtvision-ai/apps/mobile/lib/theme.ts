@@ -97,6 +97,12 @@ export const T = {
             strong:    'rgba(255,255,255,0.14)' as string,   // focus, active
             accent:    'rgba(255,107,0,0.22)' as string,     // brand highlight
         },
+        gamification: {
+            purple:    palette.violet,       // XP, badges rares, gamification
+            purpleDim: 'rgba(167,139,250,0.10)' as string,
+            gold:      palette.gold,         // achievements, top 3 rankings, streaks
+            goldDim:   'rgba(255,215,0,0.10)' as string,
+        },
     },
 
     // ── Aliases de compatibilité (backward compat avec v2) ───
@@ -401,6 +407,131 @@ export const T = {
 } as const
 
 // ─── Type helpers ─────────────────────────────────────────────
+
+// ─── V4 Presets (REDESIGN) ────────────────────────────────────
+
+/** Typographic presets — use these everywhere instead of raw fontSize/fontWeight */
+export const typePresets = {
+    heroStat: {
+        fontSize: 64,
+        fontFamily: 'Sora_800ExtraBold',
+        letterSpacing: -2,
+        lineHeight: 68,
+    },
+    bigStat: {
+        fontSize: 48,
+        fontFamily: 'Sora_800ExtraBold',
+        letterSpacing: -1.5,
+        lineHeight: 52,
+    },
+    mediumStat: {
+        fontSize: 36,
+        fontFamily: 'Sora_800ExtraBold',
+        letterSpacing: -1,
+        lineHeight: 40,
+    },
+    smallStat: {
+        fontSize: 28,
+        fontFamily: 'Sora_700Bold',
+        letterSpacing: -0.5,
+        lineHeight: 32,
+    },
+    screenTitle: {
+        fontSize: 32,
+        fontFamily: 'Sora_800ExtraBold',
+        letterSpacing: -0.8,
+        lineHeight: 36,
+    },
+    sectionTitle: {
+        fontSize: 22,
+        fontFamily: 'Sora_700Bold',
+        letterSpacing: -0.4,
+        lineHeight: 26,
+    },
+    cardTitle: {
+        fontSize: 17,
+        fontFamily: 'Sora_700Bold',
+        letterSpacing: -0.3,
+        lineHeight: 22,
+    },
+    body: {
+        fontSize: 15,
+        fontFamily: 'DMSans_400Regular',
+        letterSpacing: 0,
+        lineHeight: 22,
+    },
+    bodySemibold: {
+        fontSize: 15,
+        fontFamily: 'DMSans_600SemiBold',
+        letterSpacing: 0,
+        lineHeight: 22,
+    },
+    caption: {
+        fontSize: 13,
+        fontFamily: 'DMSans_400Regular',
+        letterSpacing: 0,
+        lineHeight: 18,
+    },
+    overline: {
+        fontSize: 11,
+        fontFamily: 'DMSans_700Bold',
+        letterSpacing: 1.2,
+        textTransform: 'uppercase' as const,
+        lineHeight: 14,
+    },
+} as const
+
+// Attach to T for convenience
+;(T as any).type = typePresets
+
+// Glass V4 additions
+;(T as any).glass.regular = {
+    backgroundColor: 'rgba(18,24,32,0.88)',
+    borderColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+}
+;(T as any).glass.gold = {
+    backgroundColor: 'rgba(255,214,10,0.08)',
+    borderColor: 'rgba(255,214,10,0.16)',
+    borderWidth: 1,
+}
+;(T as any).glass.danger = {
+    backgroundColor: 'rgba(255,58,94,0.08)',
+    borderColor: 'rgba(255,58,94,0.16)',
+    borderWidth: 1,
+}
+;(T as any).glass.thin = {
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    borderColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+}
+
+// Glows V4
+;(T as any).glows = {
+    accent: T.glow(palette.amber, 0.35),
+    success: T.glow(palette.green, 0.3),
+    danger: T.glow(palette.red, 0.3),
+    gold: T.glow(palette.gold, 0.3),
+}
+
+// Spring configs for Reanimated
+;(T as any).spring = {
+    snappy: { damping: 14, stiffness: 280 },
+    bouncy: { damping: 10, stiffness: 150 },
+    gentle: { damping: 20, stiffness: 120 },
+}
+
+// Stagger config
+;(T as any).stagger = {
+    base: 80,
+    fast: 50,
+    slow: 120,
+}
+
+// Extra color aliases for V4
+;(T as any).colors.violet = palette.violet
+;(T as any).colors.gold = palette.gold
+
 export type ThemeColors   = typeof T.colors
 export type ThemeColor    = typeof T.color
 export type ThemeSpacing  = typeof T.spacing
@@ -409,7 +540,6 @@ export type ThemeFontSize = typeof T.fontSize
 // ─── Export de la palette brute (pour usage avancé) ──────────
 export { palette }
 
-// ─── Helpers typés ───────────────────────────────────────────
 /** Retourne T.color.signature.primary — amber #FF6B00 */
 export const brand = T.color.signature.primary
 

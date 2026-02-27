@@ -102,12 +102,12 @@ function AuthGuard() {
 export default function RootLayout() {
     return (
         <SafeAreaProvider>
-            <StatusBar barStyle="light-content" backgroundColor={T.colors.bg} />
+            <StatusBar barStyle="light-content" backgroundColor={T.color.background.primary} />
             <AuthGuard />
             <Stack
                 screenOptions={{
                     headerShown: false,
-                    contentStyle: { backgroundColor: T.colors.bg },
+                    contentStyle: { backgroundColor: T.color.background.primary },
                     animation: 'slide_from_right',
                 }}
             >

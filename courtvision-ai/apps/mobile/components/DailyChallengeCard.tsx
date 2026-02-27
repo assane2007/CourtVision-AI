@@ -50,11 +50,11 @@ export function DailyChallengeCard() {
         return (
             <View style={{
                 ...T.glass.light,
-                borderRadius: T.radius.lg, padding: 20,
+                borderRadius: T.borderRadius.lg, padding: 20,
                 marginBottom: 16, alignItems: 'center',
                 justifyContent: 'center', height: 100,
             }}>
-                <ActivityIndicator color={T.colors.accent} />
+                <ActivityIndicator color={T.color.signature.primary} />
             </View>
         )
     }
@@ -66,7 +66,7 @@ export function DailyChallengeCard() {
 
     return (
         <Animated.View style={[{
-            borderRadius: T.radius.lg,
+            borderRadius: T.borderRadius.lg,
             ...T.glass.light,
             borderColor: challenge.completed && !challenge.claimed ? `${color}50` : T.glass.light.borderColor,
             marginBottom: 16, overflow: 'hidden',
@@ -101,9 +101,9 @@ export function DailyChallengeCard() {
                 {/* Countdown */}
                 {!challenge.completed && !isExpired && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Feather name="clock" size={11} color={T.colors.muted} />
+                        <Feather name="clock" size={11} color={T.color.text.secondary} />
                         <Text style={{
-                            color: T.colors.muted, fontSize: 11, fontVariant: ['tabular-nums'],
+                            color: T.color.text.secondary, fontSize: 11, fontVariant: ['tabular-nums'],
                             fontFamily: T.fonts.body.regular,
                         }}>
                             {timeLeft}
@@ -112,9 +112,9 @@ export function DailyChallengeCard() {
                 )}
                 {challenge.completed && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Feather name="check-circle" size={14} color={T.colors.green} />
+                        <Feather name="check-circle" size={14} color={T.color.semantic.success} />
                         <Text style={{
-                            color: T.colors.green, fontSize: 11, fontWeight: '700',
+                            color: T.color.semantic.success, fontSize: 11, fontWeight: '700',
                             fontFamily: T.fonts.body.bold,
                         }}>
                             Completed
@@ -126,13 +126,13 @@ export function DailyChallengeCard() {
             {/* Body */}
             <View style={{ padding: 16 }}>
                 <Text style={{
-                    color: T.colors.white, fontWeight: '700', fontSize: 15, marginBottom: 4,
+                    color: T.color.text.primary, fontWeight: '700', fontSize: 15, marginBottom: 4,
                     fontFamily: T.fonts.body.bold,
                 }}>
                     {challenge.title}
                 </Text>
                 <Text style={{
-                    color: T.colors.muted, fontSize: 12, lineHeight: 18, marginBottom: 14,
+                    color: T.color.text.secondary, fontSize: 12, lineHeight: 18, marginBottom: 14,
                     fontFamily: T.fonts.body.regular,
                 }}>
                     {challenge.description}
@@ -141,7 +141,7 @@ export function DailyChallengeCard() {
                 {/* Progress */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                     <View style={{
-                        flex: 1, height: 6, backgroundColor: T.colors.dimmer,
+                        flex: 1, height: 6, backgroundColor: T.color.border.subtle,
                         borderRadius: 3, overflow: 'hidden',
                     }}>
                         <Animated.View style={[{
@@ -149,7 +149,7 @@ export function DailyChallengeCard() {
                         }, progressBarStyle]} />
                     </View>
                     <Text style={{
-                        color: T.colors.muted, fontSize: 11, minWidth: 50, textAlign: 'right',
+                        color: T.color.text.secondary, fontSize: 11, minWidth: 50, textAlign: 'right',
                         fontVariant: ['tabular-nums'], fontFamily: T.fonts.body.regular,
                     }}>
                         {challenge.current}/{challenge.target}
@@ -160,9 +160,9 @@ export function DailyChallengeCard() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                            <Feather name="zap" size={12} color={T.colors.purple} />
+                            <Feather name="zap" size={12} color={T.color.gamification.purple} />
                             <Text style={{
-                                color: T.colors.purple, fontWeight: '900', fontSize: 14,
+                                color: T.color.gamification.purple, fontWeight: '900', fontSize: 14,
                                 fontFamily: T.fonts.display.black,
                             }}>
                                 +{challenge.xp_reward} XP
@@ -170,12 +170,12 @@ export function DailyChallengeCard() {
                         </View>
                         {challenge.bonus_xp && !challenge.completed && (
                             <View style={{
-                                backgroundColor: `${T.colors.gold}12`, borderRadius: 6,
+                                backgroundColor: `${T.color.gamification.gold}12`, borderRadius: 6,
                                 paddingHorizontal: 7, paddingVertical: 2,
-                                borderWidth: 1, borderColor: `${T.colors.gold}25`,
+                                borderWidth: 1, borderColor: `${T.color.gamification.gold}25`,
                             }}>
                                 <Text style={{
-                                    color: T.colors.gold, fontSize: 10, fontWeight: '700',
+                                    color: T.color.gamification.gold, fontSize: 10, fontWeight: '700',
                                     fontFamily: T.fonts.body.bold,
                                 }}>
                                     +{challenge.bonus_xp} bonus before 6pm
@@ -189,7 +189,7 @@ export function DailyChallengeCard() {
                         <TouchableOpacity
                             style={{
                                 backgroundColor: color,
-                                borderRadius: T.radius.sm,
+                                borderRadius: T.borderRadius.sm,
                                 paddingHorizontal: 18, paddingVertical: 9,
                                 flexDirection: 'row', alignItems: 'center', gap: 6,
                                 ...T.glow(color, 0.25),
@@ -197,9 +197,9 @@ export function DailyChallengeCard() {
                             onPress={claimReward}
                             accessibilityRole="button"
                         >
-                            <Feather name="zap" size={12} color={T.colors.bg} />
+                            <Feather name="zap" size={12} color={T.color.background.primary} />
                             <Text style={{
-                                color: T.colors.bg, fontWeight: '800', fontSize: 13,
+                                color: T.color.background.primary, fontWeight: '800', fontSize: 13,
                                 fontFamily: T.fonts.display.bold,
                             }}>
                                 Claim!
@@ -209,9 +209,9 @@ export function DailyChallengeCard() {
 
                     {challenge.claimed && (
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                            <Feather name="gift" size={14} color={T.colors.green} />
+                            <Feather name="gift" size={14} color={T.color.semantic.success} />
                             <Text style={{
-                                color: T.colors.green, fontSize: 12, fontWeight: '600',
+                                color: T.color.semantic.success, fontSize: 12, fontWeight: '600',
                                 fontFamily: T.fonts.body.semibold,
                             }}>
                                 Claimed

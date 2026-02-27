@@ -95,7 +95,7 @@ export function LiveCamera({ active, quarter, onFrame, compact = true }: LiveCam
         return (
             <View style={[styles.container, compact && styles.compact]}>
                 <View style={styles.permissionBox}>
-                    <Feather name="camera" size={24} color={T.colors.muted} />
+                    <Feather name="camera" size={24} color={T.color.text.secondary} />
                     <Text style={styles.permissionText}>
                         Camera lets Live Coach analyze your posture and form in real-time.
                     </Text>
@@ -118,14 +118,14 @@ export function LiveCamera({ active, quarter, onFrame, compact = true }: LiveCam
             >
                 <View style={styles.overlay}>
                     <View style={styles.statusRow}>
-                        <View style={[styles.statusDot, { backgroundColor: capturing ? T.colors.orange : T.colors.green }]} />
+                        <View style={[styles.statusDot, { backgroundColor: capturing ? T.color.semantic.warning : T.color.semantic.success }]} />
                         <Text style={styles.statusText}>
                             {capturing ? 'Capturing...' : 'Standby'}
                         </Text>
                     </View>
 
                     <TouchableOpacity style={styles.flipBtn} onPress={toggleFacing}>
-                        <Feather name="refresh-cw" size={compact ? 16 : 22} color={T.colors.white} />
+                        <Feather name="refresh-cw" size={compact ? 16 : 22} color={T.color.text.primary} />
                     </TouchableOpacity>
                 </View>
             </CameraView>
@@ -137,13 +137,13 @@ const styles = StyleSheet.create({
     container: {
         width: '100%',
         height: 200,
-        borderRadius: T.radius.md,
+        borderRadius: T.borderRadius.md,
         overflow: 'hidden',
-        backgroundColor: T.colors.bg,
+        backgroundColor: T.color.background.primary,
     },
     compact: {
         height: 100,
-        borderRadius: T.radius.sm,
+        borderRadius: T.borderRadius.sm,
     },
     camera: {
         flex: 1,
@@ -153,17 +153,17 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-end',
-        padding: T.space.sm,
+        padding: T.spacing[2],
     },
     statusRow: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: 'rgba(5,10,18,0.65)',
-        paddingHorizontal: T.space.sm,
-        paddingVertical: T.space.xs,
-        borderRadius: T.radius.sm,
+        paddingHorizontal: T.spacing[2],
+        paddingVertical: T.spacing[1],
+        borderRadius: T.borderRadius.sm,
         borderWidth: 1,
-        borderColor: T.colors.border,
+        borderColor: T.color.border.default,
     },
     statusDot: {
         width: 6,
@@ -172,42 +172,42 @@ const styles = StyleSheet.create({
         marginRight: 4,
     },
     statusText: {
-        color: T.colors.white,
-        fontSize: T.font.xs,
+        color: T.color.text.primary,
+        fontSize: T.fontSize.xs,
         fontWeight: '600',
         fontFamily: T.fonts.body.semibold,
     },
     flipBtn: {
         backgroundColor: 'rgba(5,10,18,0.65)',
-        padding: T.space.sm,
-        borderRadius: T.radius.sm,
+        padding: T.spacing[2],
+        borderRadius: T.borderRadius.sm,
         borderWidth: 1,
-        borderColor: T.colors.border,
+        borderColor: T.color.border.default,
     },
     permissionBox: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: T.space.lg,
-        backgroundColor: T.colors.card,
+        padding: T.spacing[4],
+        backgroundColor: T.color.background.tertiary,
     },
     permissionText: {
-        color: T.colors.textSecondary,
-        fontSize: T.font.sm,
+        color: T.color.text.secondary,
+        fontSize: T.fontSize.sm,
         textAlign: 'center',
-        marginVertical: T.space.sm,
+        marginVertical: T.spacing[2],
         fontFamily: T.fonts.body.regular,
     },
     permissionBtn: {
-        backgroundColor: T.colors.primary,
-        paddingHorizontal: T.space.lg,
-        paddingVertical: T.space.sm,
-        borderRadius: T.radius.sm,
+        backgroundColor: T.color.semantic.info,
+        paddingHorizontal: T.spacing[4],
+        paddingVertical: T.spacing[2],
+        borderRadius: T.borderRadius.sm,
     },
     permissionBtnText: {
-        color: T.colors.white,
+        color: T.color.text.primary,
         fontWeight: '700',
-        fontSize: T.font.sm,
+        fontSize: T.fontSize.sm,
         fontFamily: T.fonts.display.bold,
     },
 })

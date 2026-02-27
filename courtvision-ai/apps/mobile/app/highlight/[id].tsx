@@ -1,5 +1,5 @@
 /**
- * Highlight Player — V3 Design
+ * Highlight Player — V4 Design
  * Full-screen highlight reel viewer with AI commentary,
  * clip selector, share CTA. Reanimated v3, Feather icons, English.
  */
@@ -25,9 +25,11 @@ import Animated, {
 } from 'react-native-reanimated'
 import { toast } from '../../lib/toast'
 import { useStore } from '../../lib/store'
-import { T } from '../../lib/theme'
+import { T, typePresets } from '../../lib/theme'
 
-// ── Mock clips (replaced by API data in production) ───────────
+const type = typePresets
+
+// ── Mock clips ────────────────────────────────────────────────
 const CLIPS = [
     { time: '00:14', label: '3-Pt Made · Q1', score: 96, comment: 'Perfect high release — elbow at 90°. Excellent catch-and-shoot form.' },
     { time: '01:32', label: 'Floater · Q2', score: 88, comment: 'Smart lane drive, well-controlled floater. Great decision-making.' },
@@ -62,11 +64,11 @@ function PlayButton({ onPress }: { onPress: () => void }) {
                     activeOpacity={0.8}
                     style={{
                         width: 90, height: 90, borderRadius: 45,
-                        ...T.glass.accent, ...T.glow(T.colors.accent, 0.25),
+                        ...T.glass.accent, ...T.glow(T.color.signature.primary, 0.25),
                         justifyContent: 'center', alignItems: 'center',
                     }}
                 >
-                    <Feather name="play" size={38} color={T.colors.accent} style={{ marginLeft: 4 }} />
+                    <Feather name="play" size={38} color={T.color.signature.primary} style={{ marginLeft: 4 }} />
                 </TouchableOpacity>
             </Animated.View>
         </View>
@@ -137,7 +139,7 @@ export default function HighlightPlayer() {
     const clip = CLIPS[currentClip]
 
     return (
-        <View style={{ flex: 1, backgroundColor: T.colors.bg }}>
+        <View style={{ flex: 1, backgroundColor: T.color.background.primary }}>
             <StatusBar hidden />
 
             {/* ── Simulated video area ── */}
@@ -146,15 +148,15 @@ export default function HighlightPlayer() {
                 onPress={playing ? showControls : togglePlay}
                 activeOpacity={1}
             >
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: T.colors.bg }}>
-                    {/* Court art — subtle neon lines */}
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: T.color.background.primary }}>
+                    {/* Court art */}
                     <View style={{ position: 'absolute', width: '72%', height: '58%', borderWidth: 1.5, borderColor: 'rgba(255,107,0,0.04)', borderRadius: 8 }} />
                     <View style={{ position: 'absolute', width: '36%', height: '32%', borderTopLeftRadius: 80, borderTopRightRadius: 80, borderWidth: 1, borderColor: 'rgba(255,107,0,0.03)', borderBottomWidth: 0, top: '22%' }} />
 
                     {/* Ambient glow */}
                     <View style={{
                         position: 'absolute', width: 200, height: 200, borderRadius: 100,
-                        backgroundColor: T.colors.accentGlow, opacity: 0.08,
+                        backgroundColor: T.color.signature.glow, opacity: 0.08,
                     }} />
 
                     {/* AI Score overlay */}
@@ -164,14 +166,14 @@ export default function HighlightPlayer() {
                             exiting={FadeOut.duration(200)}
                             style={{
                                 position: 'absolute', top: '28%', right: '8%',
-                                borderRadius: T.radius.md, paddingHorizontal: 14, paddingVertical: 10,
-                                ...T.glass.primary, ...T.glow(T.colors.primary, 0.3),
+                                borderRadius: T.borderRadius.md, paddingHorizontal: 14, paddingVertical: 10,
+                                ...T.glass.primary, ...T.glow(T.color.semantic.info, 0.3),
                             }}
                         >
-                            <Text style={{ color: T.colors.textSecondary, fontSize: T.font.sm, fontWeight: '600', fontFamily: T.fonts.body.medium }}>
+                            <Text style={{ ...type.caption, color: T.color.text.secondary, fontFamily: T.fonts.body.medium }}>
                                 AI Score
                             </Text>
-                            <Text style={{ color: T.colors.white, fontSize: 28, fontWeight: '900', letterSpacing: -1, fontFamily: T.fonts.display.bold }}>
+                            <Text style={{ color: T.color.text.primary, fontSize: 28, fontFamily: T.fonts.display.bold, letterSpacing: -1 }}>
                                 {clip?.score}
                             </Text>
                         </Animated.View>
@@ -182,9 +184,8 @@ export default function HighlightPlayer() {
                         <Animated.View entering={FadeIn.duration(300)}>
                             <PlayButton onPress={togglePlay} />
                             <Text style={{
-                                color: T.colors.muted, marginTop: T.space.lg,
-                                fontSize: T.font.md, fontWeight: '600', textAlign: 'center',
-                                fontFamily: T.fonts.body.medium,
+                                ...type.body, color: T.color.text.secondary,
+                                marginTop: T.spacing[4], textAlign: 'center',
                             }}>
                                 Highlight Reel #{id} · 1080p AI
                             </Text>
@@ -206,7 +207,7 @@ export default function HighlightPlayer() {
                             entering={FadeInDown.duration(300).delay(50)}
                             style={{
                                 flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-                                paddingHorizontal: T.space.lg, paddingTop: T.space.md,
+                                paddingHorizontal: T.spacing[4], paddingTop: T.spacing[3],
                             }}
                         >
                             <TouchableOpacity
@@ -216,22 +217,22 @@ export default function HighlightPlayer() {
                                     ...T.glass.medium, justifyContent: 'center', alignItems: 'center',
                                 }}
                             >
-                                <Feather name="x" size={22} color={T.colors.white} />
+                                <Feather name="x" size={22} color={T.color.text.primary} />
                             </TouchableOpacity>
 
                             <TouchableOpacity
                                 onPress={() => setAiCommentary(v => !v)}
                                 style={{
                                     paddingHorizontal: 14, paddingVertical: 8,
-                                    borderRadius: T.radius.pill, flexDirection: 'row', alignItems: 'center', gap: 5,
+                                    borderRadius: T.borderRadius.full, flexDirection: 'row', alignItems: 'center', gap: 5,
                                     ...(aiCommentary ? T.glass.primary : T.glass.medium),
-                                    ...(aiCommentary ? T.glow(T.colors.primary, 0.15) : {}),
+                                    ...(aiCommentary ? T.glow(T.color.semantic.info, 0.15) : {}),
                                 }}
                             >
-                                <Feather name={aiCommentary ? 'mic' : 'mic-off'} size={14} color={aiCommentary ? T.colors.primaryLight : T.colors.muted} />
+                                <Feather name={aiCommentary ? 'mic' : 'mic-off'} size={14} color={aiCommentary ? T.color.semantic.info : T.color.text.secondary} />
                                 <Text style={{
-                                    color: aiCommentary ? T.colors.primaryLight : T.colors.muted,
-                                    fontSize: T.font.sm, fontWeight: '700', fontFamily: T.fonts.body.semibold,
+                                    color: aiCommentary ? T.color.semantic.info : T.color.text.secondary,
+                                    ...type.caption, fontFamily: T.fonts.body.semibold,
                                 }}>
                                     AI Commentary {aiCommentary ? 'ON' : 'OFF'}
                                 </Text>
@@ -244,16 +245,16 @@ export default function HighlightPlayer() {
                                 entering={FadeInDown.duration(300).delay(100)}
                                 exiting={FadeOut.duration(200)}
                                 style={{
-                                    marginTop: T.space.sm, marginHorizontal: T.space.lg,
-                                    borderRadius: T.radius.md, padding: T.space.md,
-                                    ...T.glass.accent, ...T.glow(T.colors.accent, 0.08),
+                                    marginTop: T.spacing[2], marginHorizontal: T.spacing[4],
+                                    borderRadius: T.borderRadius.md, padding: T.spacing[3],
+                                    ...T.glass.accent, ...T.glow(T.color.signature.primary, 0.08),
                                     flexDirection: 'row', alignItems: 'center', gap: 8,
                                 }}
                             >
-                                <Feather name="cpu" size={14} color={T.colors.accent} />
+                                <Feather name="cpu" size={14} color={T.color.signature.primary} />
                                 <Text style={{
-                                    color: T.colors.accent, fontSize: T.font.sm, lineHeight: 19,
-                                    flex: 1, fontFamily: T.fonts.body.regular,
+                                    ...type.caption, color: T.color.signature.primary,
+                                    lineHeight: 19, flex: 1,
                                 }}>
                                     "{clip?.comment}"
                                 </Text>
@@ -265,19 +266,19 @@ export default function HighlightPlayer() {
                         {/* Bottom panel */}
                         <Animated.View
                             entering={FadeInUp.duration(300).delay(100)}
-                            style={{ paddingHorizontal: T.space.lg, paddingBottom: T.space.xl }}
+                            style={{ paddingHorizontal: T.spacing[4], paddingBottom: T.spacing[5] }}
                         >
                             {/* Progress bar */}
-                            <View style={{ height: 3, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 2, marginBottom: T.space.md, overflow: 'hidden' }}>
+                            <View style={{ height: 3, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 2, marginBottom: T.spacing[3], overflow: 'hidden' }}>
                                 <Animated.View style={[{
                                     height: 3, borderRadius: 2,
-                                    backgroundColor: T.colors.accent,
-                                    ...T.shadow(T.colors.accent, 0.5, 4),
+                                    backgroundColor: T.color.signature.primary,
+                                    ...T.shadow(T.color.signature.primary, 0.5, 4),
                                 }, progressStyle]} />
                             </View>
 
                             {/* Clip selector */}
-                            <View style={{ flexDirection: 'row', gap: 7, marginBottom: T.space.md }}>
+                            <View style={{ flexDirection: 'row', gap: 7, marginBottom: T.spacing[3] }}>
                                 {CLIPS.map((c, i) => {
                                     const isActive = currentClip === i
                                     return (
@@ -286,21 +287,20 @@ export default function HighlightPlayer() {
                                             onPress={() => setCurrentClip(i)}
                                             activeOpacity={0.7}
                                             style={{
-                                                flex: 1, borderRadius: T.radius.sm, padding: T.space.sm, alignItems: 'center',
+                                                flex: 1, borderRadius: T.borderRadius.sm, padding: T.spacing[2], alignItems: 'center',
                                                 ...(isActive ? T.glass.primary : T.glass.light),
-                                                ...(isActive ? T.glow(T.colors.primary, 0.12) : {}),
+                                                ...(isActive ? T.glow(T.color.semantic.info, 0.12) : {}),
                                             }}
                                         >
-                                            <Text style={{ color: T.colors.accent, fontSize: T.font.sm, fontWeight: '800', fontFamily: T.fonts.display.bold }}>
+                                            <Text style={{ color: T.color.signature.primary, fontSize: 13, fontFamily: T.fonts.display.bold }}>
                                                 {c.time}
                                             </Text>
-                                            <Text style={{ color: T.colors.muted, fontSize: 8.5, marginTop: 2, textAlign: 'center', fontFamily: T.fonts.body.regular }}>
+                                            <Text style={{ ...type.overline, color: T.color.text.secondary, fontSize: 8.5, marginTop: 2, textAlign: 'center' }}>
                                                 {c.label}
                                             </Text>
                                             <Text style={{
-                                                color: isActive ? T.colors.white : T.colors.muted,
-                                                fontSize: T.font.xs, fontWeight: '700', marginTop: 2,
-                                                fontFamily: T.fonts.display.semibold,
+                                                color: isActive ? T.color.text.primary : T.color.text.secondary,
+                                                fontSize: 11, fontFamily: T.fonts.display.semibold, marginTop: 2,
                                             }}>
                                                 {c.score}pts
                                             </Text>
@@ -313,14 +313,14 @@ export default function HighlightPlayer() {
                             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <View style={{ flex: 1 }}>
                                     <Text style={{
-                                        color: T.colors.white, fontSize: T.font.lg, fontWeight: '800',
-                                        letterSpacing: -0.5, fontFamily: T.fonts.display.bold,
+                                        ...type.cardTitle,
+                                        color: T.color.text.primary, fontSize: 20,
                                     }}>
                                         Highlight Reel #{id}
                                     </Text>
                                     <Text style={{
-                                        color: T.colors.muted, fontSize: T.font.sm, marginTop: 2,
-                                        fontFamily: T.fonts.body.regular,
+                                        ...type.caption,
+                                        color: T.color.text.secondary, marginTop: 2,
                                     }}>
                                         3 key plays · AI Groq · 1080p
                                     </Text>
@@ -336,9 +336,9 @@ export default function HighlightPlayer() {
                                             }}
                                             onPress={() => setShareModal(true)}
                                         >
-                                            <Feather name="share-2" size={20} color={T.colors.white} />
+                                            <Feather name="share-2" size={20} color={T.color.text.primary} />
                                         </TouchableOpacity>
-                                        <Text style={{ color: T.colors.muted, fontSize: T.font.xs, marginTop: 3, fontFamily: T.fonts.body.regular }}>
+                                        <Text style={{ ...type.overline, color: T.color.text.secondary, marginTop: 3, fontSize: 10 }}>
                                             Share
                                         </Text>
                                     </View>
@@ -347,23 +347,23 @@ export default function HighlightPlayer() {
                                     <TouchableOpacity
                                         style={{
                                             width: 56, height: 56, borderRadius: 28,
-                                            backgroundColor: T.colors.accent,
+                                            backgroundColor: T.color.signature.primary,
                                             justifyContent: 'center', alignItems: 'center',
-                                            ...T.glow(T.colors.accent, 0.4),
+                                            ...T.glow(T.color.signature.primary, 0.4),
                                         }}
                                         onPress={togglePlay}
                                         activeOpacity={0.8}
                                     >
-                                        <Feather name={playing ? 'pause' : 'play'} size={24} color={T.colors.bg} />
+                                        <Feather name={playing ? 'pause' : 'play'} size={24} color={T.color.background.primary} />
                                     </TouchableOpacity>
 
                                     {/* Publish */}
                                     <View style={{ alignItems: 'center' }}>
                                         <TouchableOpacity
                                             style={{
-                                                paddingHorizontal: 14, paddingVertical: 12, borderRadius: T.radius.xl,
+                                                paddingHorizontal: 14, paddingVertical: 12, borderRadius: T.borderRadius.xl,
                                                 ...(published
-                                                    ? { ...T.glass.accent, borderColor: T.colors.green, borderWidth: 1 }
+                                                    ? { ...T.glass.accent, borderColor: T.color.semantic.success, borderWidth: 1 }
                                                     : T.glass.medium),
                                             }}
                                             onPress={handlePublish}
@@ -374,19 +374,18 @@ export default function HighlightPlayer() {
                                                 <Feather
                                                     name={published ? 'check-circle' : 'upload-cloud'}
                                                     size={14}
-                                                    color={published ? T.colors.green : T.colors.white}
+                                                    color={published ? T.color.semantic.success : T.color.text.primary}
                                                 />
                                                 <Text style={{
-                                                    color: published ? T.colors.green : T.colors.white,
-                                                    fontWeight: '700', fontSize: T.font.sm,
-                                                    fontFamily: T.fonts.body.semibold,
+                                                    color: published ? T.color.semantic.success : T.color.text.primary,
+                                                    ...type.caption, fontFamily: T.fonts.body.bold,
                                                 }}>
                                                     {published ? 'Published' : 'Publish'}
                                                 </Text>
                                             </View>
                                         </TouchableOpacity>
                                         {!published && (
-                                            <Text style={{ color: T.colors.dim, fontSize: T.font.xs, marginTop: 3, fontFamily: T.fonts.body.regular }}>
+                                            <Text style={{ ...type.overline, color: T.color.text.tertiary, marginTop: 3, fontSize: 10 }}>
                                                 +100 XP
                                             </Text>
                                         )}
@@ -408,28 +407,30 @@ export default function HighlightPlayer() {
                         <Animated.View
                             entering={SlideInDown.duration(350).damping(18)}
                             style={{
-                                backgroundColor: T.colors.card, borderTopLeftRadius: T.radius.xxl, borderTopRightRadius: T.radius.xxl,
-                                padding: T.space.xxl, paddingBottom: 44,
-                                borderTopWidth: 1, borderColor: T.colors.borderLight,
+                                backgroundColor: T.color.background.tertiary,
+                                borderTopLeftRadius: T.borderRadius['2xl'],
+                                borderTopRightRadius: T.borderRadius['2xl'],
+                                padding: T.spacing[6], paddingBottom: 44,
+                                borderTopWidth: 1, borderColor: T.color.border.default,
                             }}
                         >
-                            <View style={{ width: 40, height: 4, backgroundColor: T.colors.dim, borderRadius: 2, alignSelf: 'center', marginBottom: T.space.xl }} />
+                            <View style={{ width: 40, height: 4, backgroundColor: T.color.text.tertiary, borderRadius: 2, alignSelf: 'center', marginBottom: T.spacing[5] }} />
 
                             <Text style={{
-                                color: T.colors.white, fontSize: T.font.xl, fontWeight: '800',
-                                marginBottom: T.space.xs, letterSpacing: -0.5,
-                                fontFamily: T.fonts.display.bold,
+                                ...type.sectionTitle,
+                                color: T.color.text.primary,
+                                marginBottom: T.spacing[1],
                             }}>
                                 Share Highlight
                             </Text>
                             <Text style={{
-                                color: T.colors.textSecondary, fontSize: T.font.md, marginBottom: T.space.xxl,
-                                fontFamily: T.fonts.body.regular,
+                                ...type.body,
+                                color: T.color.text.secondary, marginBottom: T.spacing[6],
                             }}>
                                 Show the world what you can do
                             </Text>
 
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: T.space.xl }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: T.spacing[5] }}>
                                 {SHARE_PLATFORMS.map((p, i) => (
                                     <Animated.View key={p.id} entering={FadeInUp.duration(300).delay(i * 60)}>
                                         <TouchableOpacity
@@ -438,14 +439,14 @@ export default function HighlightPlayer() {
                                             style={{ alignItems: 'center', gap: 8 }}
                                         >
                                             <View style={{
-                                                width: 60, height: 60, borderRadius: T.radius.xl,
+                                                width: 60, height: 60, borderRadius: T.borderRadius.xl,
                                                 backgroundColor: `${p.color}15`, justifyContent: 'center', alignItems: 'center',
                                                 borderWidth: 1.5, borderColor: `${p.color}30`,
                                                 ...T.shadow(p.color, 0.15, 8),
                                             }}>
                                                 <Feather name={p.icon} size={26} color={p.color} />
                                             </View>
-                                            <Text style={{ color: T.colors.textSecondary, fontSize: T.font.sm, fontWeight: '600', fontFamily: T.fonts.body.medium }}>
+                                            <Text style={{ ...type.caption, color: T.color.text.secondary, fontFamily: T.fonts.body.medium }}>
                                                 {p.label}
                                             </Text>
                                         </TouchableOpacity>
@@ -455,16 +456,16 @@ export default function HighlightPlayer() {
 
                             <TouchableOpacity
                                 style={{
-                                    borderRadius: T.radius.lg, paddingVertical: 16, alignItems: 'center',
+                                    borderRadius: T.borderRadius.lg, paddingVertical: 16, alignItems: 'center',
                                     flexDirection: 'row', justifyContent: 'center', gap: 8,
-                                    ...T.glass.accent, ...T.glow(T.colors.accent, 0.15),
-                                    borderWidth: 1.5, borderColor: `${T.colors.accent}30`,
+                                    ...T.glass.accent, ...T.glow(T.color.signature.primary, 0.15),
+                                    borderWidth: 1.5, borderColor: `${T.color.signature.primary}30`,
                                 }}
                                 onPress={handleNativeShare}
                                 activeOpacity={0.8}
                             >
-                                <Feather name="share" size={18} color={T.colors.accent} />
-                                <Text style={{ color: T.colors.accent, fontWeight: '800', fontSize: T.font.lg, fontFamily: T.fonts.display.bold }}>
+                                <Feather name="share" size={18} color={T.color.signature.primary} />
+                                <Text style={{ color: T.color.signature.primary, fontFamily: T.fonts.display.bold, fontSize: 18 }}>
                                     Quick Share
                                 </Text>
                             </TouchableOpacity>

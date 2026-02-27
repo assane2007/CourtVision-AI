@@ -6,9 +6,10 @@ import Animated, {
     useSharedValue, useAnimatedStyle, withTiming, withSpring,
     withSequence, withDelay, withRepeat, Easing, interpolate,
 } from 'react-native-reanimated'
-import { T } from '../lib/theme'
+import { T, typePresets } from '../lib/theme'
 
 const { width: W } = Dimensions.get('window')
+const type = typePresets
 
 //  Animated Particle Ring 
 
@@ -31,7 +32,7 @@ function ParticleRing() {
     return (
         <Animated.View style={[{
             position: 'absolute', width: 240, height: 240, borderRadius: 120,
-            borderWidth: 1, borderColor: `${T.colors.accent}12`,
+            borderWidth: 1, borderColor: `${T.color.signature.primary}12`,
         }, ringStyle]}>
             {DOTS.map((deg, i) => {
                 const rad = (deg * Math.PI) / 180
@@ -40,7 +41,7 @@ function ParticleRing() {
                     <View key={i} style={{
                         position: 'absolute',
                         width: size, height: size, borderRadius: size / 2,
-                        backgroundColor: i % 2 === 0 ? T.colors.accent : T.colors.white,
+                        backgroundColor: i % 2 === 0 ? T.color.signature.primary : T.color.text.primary,
                         opacity: 0.4 + (i % 3) * 0.2,
                         top: 120 + Math.sin(rad) * 120 - size / 2,
                         left: 120 + Math.cos(rad) * 120 - size / 2,
@@ -105,12 +106,12 @@ export default function Onboarding1() {
     }))
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: T.colors.bg }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: T.color.background.primary }}>
             {/* Ambient glow */}
             <Animated.View style={[{
                 position: 'absolute', top: -80, left: W / 2 - 160,
                 width: 320, height: 320, borderRadius: 160,
-                backgroundColor: T.colors.accent,
+                backgroundColor: T.color.signature.primary,
             }, glowStyle]} />
 
             {/* Progress bar */}
@@ -118,13 +119,13 @@ export default function Onboarding1() {
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                     <View style={{
                         flex: 1, height: 3, borderRadius: 2,
-                        backgroundColor: T.colors.accent,
-                        ...T.glow(T.colors.accent, 0.3),
+                        backgroundColor: T.color.signature.primary,
+                        ...T.glow(T.color.signature.primary, 0.3),
                     }} />
                     {[1, 2, 3].map(i => (
                         <View key={i} style={{
                             flex: 1, height: 3, borderRadius: 2,
-                            backgroundColor: T.colors.dimmer,
+                            backgroundColor: T.color.background.tertiary,
                         }} />
                     ))}
                 </View>
@@ -138,31 +139,32 @@ export default function Onboarding1() {
                         width: 140, height: 140, borderRadius: 70,
                         justifyContent: 'center', alignItems: 'center',
                         ...T.glass.accent,
-                        ...T.glow(T.colors.accent, 0.35),
+                        ...T.glow(T.color.signature.primary, 0.35),
                     }, logoAnimStyle]}>
                         <View style={{
                             width: 110, height: 110, borderRadius: 55,
-                            backgroundColor: `${T.colors.accent}15`,
+                            backgroundColor: T.color.signature.dim,
                             justifyContent: 'center', alignItems: 'center',
                         }}>
-                            <Text style={{ fontSize: 56 }}></Text>
+                            <Text style={{ fontSize: 56 }}>🏀</Text>
                         </View>
                     </Animated.View>
                 </View>
 
                 <Animated.View style={[{ alignItems: 'center' }, textAnimStyle]}>
                     <Text style={{
-                        color: T.colors.white, fontSize: T.font.hero,
-                        fontWeight: '900', textAlign: 'center',
-                        letterSpacing: -1.5, lineHeight: 48,
+                        ...type.heroStat,
+                        color: T.color.text.primary, textAlign: 'center',
+                        fontSize: 42, lineHeight: 48, letterSpacing: -1.5,
                     }}>
                         Play like{'\n'}
-                        <Text style={{ color: T.colors.accent }}>a pro.</Text>
+                        <Text style={{ color: T.color.signature.primary }}>a pro.</Text>
                     </Text>
 
                     <Text style={{
-                        color: T.colors.textSecondary, fontSize: T.font.base,
-                        marginTop: 20, textAlign: 'center',
+                        ...type.body,
+                        color: T.color.text.secondary,
+                        marginTop: T.spacing[5], textAlign: 'center',
                         lineHeight: 24, letterSpacing: 0.2,
                     }}>
                         Analyze your game with AI.{'\n'}Your coach, in your pocket.
@@ -174,10 +176,10 @@ export default function Onboarding1() {
             <Animated.View style={[{ paddingHorizontal: 32, paddingBottom: 40 }, btnAnimStyle]}>
                 <TouchableOpacity
                     style={{
-                        backgroundColor: T.colors.accent,
-                        paddingVertical: 18, borderRadius: T.radius.pill,
+                        backgroundColor: T.color.signature.primary,
+                        paddingVertical: 18, borderRadius: T.borderRadius.full,
                         alignItems: 'center',
-                        ...T.glow(T.colors.accent, 0.4),
+                        ...T.glow(T.color.signature.primary, 0.4),
                     }}
                     onPress={() => router.push('/onboarding2')}
                     activeOpacity={0.85}
@@ -185,7 +187,7 @@ export default function Onboarding1() {
                     accessibilityRole="button"
                 >
                     <Text style={{
-                        color: T.colors.bg, fontWeight: '800',
+                        color: T.color.background.primary, fontFamily: T.fonts.display.black,
                         fontSize: 18, letterSpacing: 0.5,
                     }}>
                         Get Started
@@ -193,10 +195,11 @@ export default function Onboarding1() {
                 </TouchableOpacity>
 
                 <Text style={{
-                    color: T.colors.dim, fontSize: 12,
+                    ...type.caption,
+                    color: T.color.text.tertiary,
                     textAlign: 'center', marginTop: 16, letterSpacing: 0.3,
                 }}>
-                    Free during beta  No credit card required
+                    Free during beta · No credit card required
                 </Text>
             </Animated.View>
         </SafeAreaView>

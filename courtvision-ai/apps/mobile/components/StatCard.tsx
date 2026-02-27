@@ -43,26 +43,26 @@ export interface StatCardProps {
 const SIZE_CONFIG = {
     sm: {
         padding:    12,
-        labelSize:  T.font.xs,
-        valueSize:  T.font.xxl,   // 24
-        unitSize:   T.font.md,
-        trendSize:  T.font.xs,
+        labelSize:  T.fontSize.xs,
+        valueSize:  T.fontSize.xl,   // 24
+        unitSize:   T.fontSize.md,
+        trendSize:  T.fontSize.xs,
         gap:        4,
     },
     md: {
         padding:    16,
-        labelSize:  T.font.sm,
-        valueSize:  T.font.xxxl,  // 32
-        unitSize:   T.font.base,
-        trendSize:  T.font.sm,
+        labelSize:  T.fontSize.sm,
+        valueSize:  T.fontSize['2xl'],  // 32
+        unitSize:   T.fontSize.base,
+        trendSize:  T.fontSize.sm,
         gap:        6,
     },
     lg: {
         padding:    20,
-        labelSize:  T.font.base,
+        labelSize:  T.fontSize.base,
         valueSize:  42,           // hero-light
-        unitSize:   T.font.lg,
-        trendSize:  T.font.sm,
+        unitSize:   T.fontSize.lg,
+        trendSize:  T.fontSize.sm,
         gap:        8,
     },
 } as const
@@ -71,10 +71,10 @@ const SIZE_CONFIG = {
 
 function variantColor(variant: StatCardVariant) {
     switch (variant) {
-        case 'accent':  return T.colors.accent         // amber #FF6B00
-        case 'success': return T.colors.green
-        case 'danger':  return T.colors.red
-        default:        return T.colors.textPrimary
+        case 'accent':  return T.color.signature.primary         // amber #FF6B00
+        case 'success': return T.color.semantic.success
+        case 'danger':  return T.color.semantic.error
+        default:        return T.color.text.primary
     }
 }
 
@@ -100,7 +100,7 @@ function SkeletonPulse({ width, height, radius = 6 }: { width: number | string; 
     return (
         <Animated.View style={[{
             width: width as any, height, borderRadius: radius,
-            backgroundColor: T.colors.dimmer,
+            backgroundColor: T.color.border.subtle,
         }, style]} />
     )
 }
@@ -234,7 +234,7 @@ export function StatCard({
                 <View style={styles.trendRow}>
                     <Text style={[
                         styles.trendArrow,
-                        { color: isTrendPositive ? T.colors.green : T.colors.orange },
+                        { color: isTrendPositive ? T.color.semantic.success : T.color.semantic.warning },
                         { fontSize: cfg.trendSize },
                     ]}>
                         {isTrendPositive ? '↑' : '↓'} {Math.abs(trend)}%
@@ -252,7 +252,7 @@ export function StatCard({
 
 const styles = StyleSheet.create({
     base: {
-        borderRadius: T.radius.lg,
+        borderRadius: T.borderRadius.lg,
         overflow: 'hidden',
     },
     labelRow: {
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
     },
     label: {
-        color: T.colors.textSecondary,
+        color: T.color.text.secondary,
         fontWeight: '600',
         letterSpacing: 0.2,
         flexShrink: 1,
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
         fontWeight: '800',
     },
     trendLabel: {
-        color: T.colors.muted,
+        color: T.color.text.secondary,
         fontWeight: '500',
     },
 })
