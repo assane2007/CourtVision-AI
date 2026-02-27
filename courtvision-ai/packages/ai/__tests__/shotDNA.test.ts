@@ -1,6 +1,12 @@
 /**
  * Tests — Shot DNA Engine
  * Vérifie la biomécanique, la comparaison NBA, et la détection de drift
+ *
+ * Valeurs de référence :
+ * - elbowAngle : 85°-110° (sweet spot 90°-100°)
+ * - releaseHeight : ratio hauteur release / taille joueur (NBA: 1.08-1.25)
+ * - releaseTime : catch-to-release en secondes (NBA: 0.30-0.55)
+ * - followThrough : présence du "gooseneck" après le release
  */
 
 import { ShotDNAEngine, type ShotDNASignature } from '../src/shotDNA'
@@ -13,7 +19,7 @@ const mockShots: ShotResult[] = [
         outcome: 'made',
         posture: {
             elbowAngle: 93,
-            releaseHeight: 0.91,
+            releaseHeight: 1.15,  // bon ratio — au-dessus de la tête
             releaseTime: 0.38,
             followThrough: true,
         },
@@ -24,7 +30,7 @@ const mockShots: ShotResult[] = [
         outcome: 'missed',
         posture: {
             elbowAngle: 95,
-            releaseHeight: 0.89,
+            releaseHeight: 1.13,
             releaseTime: 0.40,
             followThrough: true,
         },
@@ -35,7 +41,7 @@ const mockShots: ShotResult[] = [
         outcome: 'made',
         posture: {
             elbowAngle: 92,
-            releaseHeight: 0.92,
+            releaseHeight: 1.16,
             releaseTime: 0.37,
             followThrough: true,
         },
@@ -46,7 +52,7 @@ const mockShots: ShotResult[] = [
         outcome: 'made',
         posture: {
             elbowAngle: 94,
-            releaseHeight: 0.90,
+            releaseHeight: 1.14,
             releaseTime: 0.39,
             followThrough: false,
         },
@@ -57,7 +63,7 @@ const mockShots: ShotResult[] = [
         outcome: 'missed',
         posture: {
             elbowAngle: 88,
-            releaseHeight: 0.85,
+            releaseHeight: 1.08,  // release plus bas (typique peinture)
             releaseTime: 0.45,
             followThrough: true,
         },
@@ -72,8 +78,8 @@ describe('ShotDNAEngine', () => {
 
             expect(signature.avgElbowAngle).toBeGreaterThan(85)
             expect(signature.avgElbowAngle).toBeLessThan(100)
-            expect(signature.avgReleaseHeight).toBeGreaterThan(0.8)
-            expect(signature.avgReleaseHeight).toBeLessThan(1.0)
+            expect(signature.avgReleaseHeight).toBeGreaterThan(1.05)
+            expect(signature.avgReleaseHeight).toBeLessThan(1.25)
             expect(signature.avgReleaseTime).toBeGreaterThan(0.3)
             expect(signature.avgReleaseTime).toBeLessThan(0.5)
             expect(signature.followThroughPct).toBe(80) // 4/5
@@ -100,7 +106,7 @@ describe('ShotDNAEngine', () => {
         it('should give high score for consistent mechanics', () => {
             const perfectSignature: ShotDNASignature = {
                 avgElbowAngle: 93,
-                avgReleaseHeight: 0.91,
+                avgReleaseHeight: 1.15,    // ratio réaliste — bon tireur NBA
                 avgReleaseTime: 0.38,
                 followThroughPct: 98,
                 dominantHand: 'right',
@@ -116,7 +122,7 @@ describe('ShotDNAEngine', () => {
         it('should give low score for inconsistent mechanics', () => {
             const badSignature: ShotDNASignature = {
                 avgElbowAngle: 80,
-                avgReleaseHeight: 0.75,
+                avgReleaseHeight: 0.98,    // très bas — problème mécanique
                 avgReleaseTime: 0.55,
                 followThroughPct: 30,
                 dominantHand: 'right',
@@ -133,8 +139,8 @@ describe('ShotDNAEngine', () => {
         it('should find the closest NBA player match', () => {
             const curryLike: ShotDNASignature = {
                 avgElbowAngle: 95,
-                avgReleaseHeight: 0.92,
-                avgReleaseTime: 0.38,
+                avgReleaseHeight: 1.16,   // Curry release ratio
+                avgReleaseTime: 0.34,     // Curry-like quick release
                 followThroughPct: 98,
                 dominantHand: 'right',
                 elbowStdDev: 2,
@@ -187,7 +193,7 @@ describe('ShotDNAEngine', () => {
         it('should detect elbow angle drift', () => {
             const current: ShotDNASignature = {
                 avgElbowAngle: 100,
-                avgReleaseHeight: 0.91,
+                avgReleaseHeight: 1.14,
                 avgReleaseTime: 0.38,
                 followThroughPct: 95,
                 dominantHand: 'right',
@@ -197,7 +203,7 @@ describe('ShotDNAEngine', () => {
 
             const historical: ShotDNASignature = {
                 avgElbowAngle: 93,
-                avgReleaseHeight: 0.91,
+                avgReleaseHeight: 1.14,
                 avgReleaseTime: 0.38,
                 followThroughPct: 95,
                 dominantHand: 'right',
@@ -215,7 +221,7 @@ describe('ShotDNAEngine', () => {
         it('should detect follow-through degradation', () => {
             const current: ShotDNASignature = {
                 avgElbowAngle: 93,
-                avgReleaseHeight: 0.91,
+                avgReleaseHeight: 1.14,
                 avgReleaseTime: 0.38,
                 followThroughPct: 60,
                 dominantHand: 'right',
@@ -225,7 +231,7 @@ describe('ShotDNAEngine', () => {
 
             const historical: ShotDNASignature = {
                 avgElbowAngle: 93,
-                avgReleaseHeight: 0.91,
+                avgReleaseHeight: 1.14,
                 avgReleaseTime: 0.38,
                 followThroughPct: 95,
                 dominantHand: 'right',
@@ -242,7 +248,7 @@ describe('ShotDNAEngine', () => {
         it('should return empty array when no drift', () => {
             const sig: ShotDNASignature = {
                 avgElbowAngle: 93,
-                avgReleaseHeight: 0.91,
+                avgReleaseHeight: 1.14,
                 avgReleaseTime: 0.38,
                 followThroughPct: 95,
                 dominantHand: 'right',

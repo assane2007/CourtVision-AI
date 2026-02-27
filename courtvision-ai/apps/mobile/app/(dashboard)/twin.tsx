@@ -567,8 +567,8 @@ function OverviewTab({ profile, insights }: { profile: any; insights: string | n
                     </Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
-                    <PoseStatItem label="Elbow Angle" value={`${profile.poseSignature.avgElbowAngle}°`} ideal="90-95°" />
-                    <PoseStatItem label="Release Height" value={`${profile.poseSignature.avgReleaseHeight}`} ideal=">0.88" />
+                    <PoseStatItem label="Elbow Angle" value={`${profile.poseSignature.avgElbowAngle}°`} ideal="90-100°" />
+                    <PoseStatItem label="Release Height" value={`${profile.poseSignature.avgReleaseHeight}x`} ideal=">1.10x" />
                     <PoseStatItem label="Hand" value={profile.poseSignature.dominantHand === 'right' ? 'Right' : 'Left'} />
                 </View>
             </Animated.View>

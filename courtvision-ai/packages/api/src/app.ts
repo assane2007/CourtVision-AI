@@ -26,6 +26,7 @@ import questRoutes from './routes/quests'
 import crewRoutes from './routes/crews'
 import analyticsRoutes from './routes/analytics'
 import dashboardRoutes from './routes/dashboard'
+import shootingSessionRoutes from './routes/shootingSessions'
 
 export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     const app = fastify(opts)
@@ -66,6 +67,7 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     app.register(crewRoutes, { prefix: '/api/crews' })
     app.register(analyticsRoutes, { prefix: '/api/analytics' })
     app.register(dashboardRoutes, { prefix: '/api/dashboard' })
+    app.register(shootingSessionRoutes, { prefix: '/api/shooting-sessions' })
 
     // Health check
     app.get('/health', async () => {

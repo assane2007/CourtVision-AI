@@ -18,6 +18,13 @@ export * from './smartTraining'
 export * from './predictiveEngine'
 export * from './recoveryEngine'
 
+// ── V6 Realtime Pipeline Modules ──
+export * from './poseEstimation'
+export * from './shotDetector'
+export * from './ballTracker'
+export * from './arOverlay'
+export * from './realtimePipeline'
+
 // ── Re-export des types importants pour l'API ──
 
 // Core pipeline types
@@ -38,3 +45,10 @@ export type { CoachChatMessage, ChatAttachment, SuggestedAction, ConversationCon
 export type { TrainingPlanRequest, SmartTrainingPlan, TrainingPlanDay, DrillItem, PlanAdaptation } from './smartTraining'
 export type { PredictionInput, HistoricalSession, PerformancePrediction, ZonePrediction, MomentumPoint, RiskFactor } from './predictiveEngine'
 export type { RecoveryInput, RecoveryResult } from './recoveryEngine'
+
+// V6 Realtime Pipeline types
+export type { PoseEstimationConfig, PoseEstimationResult, NormalizedLandmark, BoundingBox, PoseEstimationState, BodyAngles, ShootingBiomechanics } from './poseEstimation'
+export type { ShotDetectorConfig, DetectedShot, ShotDetectionPhase, ShotDetectorEvent } from './shotDetector'
+export type { BallTrackerConfig, BallPosition, KalmanState, RimPosition, TrajectoryAnalysis, ShotOutcomeResult } from './ballTracker'
+export type { AROverlayConfig, AROverlayFrame, SkeletonOverlay, ARJoint, ARBone, ShotArcOverlay, BioIndicator, ARFeedback } from './arOverlay'
+export type { RealtimePipelineConfig, PipelineFrameResult, InstantFeedback, RealtimeSessionStats, PipelineMode, PipelineEvent } from './realtimePipeline'

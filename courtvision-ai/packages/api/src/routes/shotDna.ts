@@ -34,9 +34,9 @@ const sessionIdSchema = z.object({
 })
 
 const shotQualitySchema = z.object({
-    elbowAngle: z.number().min(0).max(180),
-    releaseHeight: z.number().min(1).max(3),
-    releaseTime: z.number().min(0.1).max(2),
+    elbowAngle: z.number().min(60).max(140),              // degrés au set point (plage réaliste : 85-110)
+    releaseHeight: z.number().min(0.9).max(1.35),         // ratio hauteur release / taille joueur (NBA: 1.08-1.25)
+    releaseTime: z.number().min(0.1).max(2),              // secondes catch-to-release
     zone: z.enum(['restricted', 'paint', 'midrange', 'corner3', 'wing3', 'top3']),
     fatiguePct: z.number().min(0).max(100).default(0),
     mentalScore: z.number().min(0).max(100).default(70),
@@ -110,14 +110,15 @@ export default async function shotDnaRoutes(fastify: FastifyInstance) {
             }
 
             // Construire les ShotResult à partir des données
+            // Fallback values basés sur des moyennes NBA réalistes
             const shots = (analysis.shot_zones || []).map((sz: any, i: number) => ({
                 timestamp: `00:${String(i).padStart(2, '0')}`,
                 zone: sz.zone || 'midrange',
                 outcome: sz.outcome || 'missed',
                 posture: sz.posture || {},
-                elbowAngle: sz.posture?.elbowAngle ?? 95 + Math.random() * 20,
-                releaseHeight: sz.posture?.releaseHeight ?? 2.1 + Math.random() * 0.3,
-                releaseTime: sz.posture?.releaseTime ?? 0.4 + Math.random() * 0.2,
+                elbowAngle: sz.posture?.elbowAngle ?? 90 + Math.random() * 10,           // 90-100° (plage NBA réaliste)
+                releaseHeight: sz.posture?.releaseHeight ?? 1.08 + Math.random() * 0.12,  // ratio 1.08-1.20 (NBA avg)
+                releaseTime: sz.posture?.releaseTime ?? 0.35 + Math.random() * 0.15,      // 0.35-0.50s (NBA range)
                 followThrough: sz.posture?.followThrough ?? Math.random() > 0.3,
             }))
 
@@ -290,7 +291,7 @@ export default async function shotDnaRoutes(fastify: FastifyInstance) {
 
             const defaultSignature = {
                 avgElbowAngle: 93,
-                avgReleaseHeight: 0.90,
+                avgReleaseHeight: 1.14,  // ratio hauteur release / taille joueur (NBA avg ~1.14)
                 avgReleaseTime: 0.40,
                 followThroughPct: 95,
                 dominantHand: 'right' as const,
@@ -423,9 +424,9 @@ async function buildShotDNA(fastify: FastifyInstance, userId: string): Promise<S
             zone: sz.zone || 'midrange',
             outcome: sz.outcome || 'missed',
             posture: sz.posture || {},
-            elbowAngle: sz.posture?.elbowAngle ?? 95 + Math.random() * 20,
-            releaseHeight: sz.posture?.releaseHeight ?? 2.1 + Math.random() * 0.3,
-            releaseTime: sz.posture?.releaseTime ?? 0.4 + Math.random() * 0.2,
+            elbowAngle: sz.posture?.elbowAngle ?? 90 + Math.random() * 10,           // 90-100° (plage NBA réaliste)
+            releaseHeight: sz.posture?.releaseHeight ?? 1.08 + Math.random() * 0.12,  // ratio 1.08-1.20 (NBA avg)
+            releaseTime: sz.posture?.releaseTime ?? 0.35 + Math.random() * 0.15,      // 0.35-0.50s (NBA range)
             followThrough: sz.posture?.followThrough ?? true,
         }))
     })

@@ -7,16 +7,16 @@ import type { ShotResult } from '../src/shotAnalysis'
 import type { MentalAnalysisResult } from '../src/mentalAnalysis'
 
 const mockShots: ShotResult[] = [
-    { timestamp: '01:00', zone: 'top3', outcome: 'made', posture: { elbowAngle: 93, releaseHeight: 0.91, releaseTime: 0.38, followThrough: true } },
-    { timestamp: '02:00', zone: 'midrange', outcome: 'missed', posture: { elbowAngle: 90, releaseHeight: 0.88, releaseTime: 0.40, followThrough: true } },
-    { timestamp: '03:00', zone: 'wing3', outcome: 'made', posture: { elbowAngle: 92, releaseHeight: 0.90, releaseTime: 0.37, followThrough: true } },
-    { timestamp: '04:00', zone: 'corner3', outcome: 'made', posture: { elbowAngle: 94, releaseHeight: 0.91, releaseTime: 0.39, followThrough: false } },
-    { timestamp: '05:00', zone: 'paint', outcome: 'missed', posture: { elbowAngle: 88, releaseHeight: 0.85, releaseTime: 0.45, followThrough: true } },
-    { timestamp: '06:00', zone: 'restricted', outcome: 'made', posture: { elbowAngle: 87, releaseHeight: 0.83, releaseTime: 0.42, followThrough: true } },
-    { timestamp: '07:00', zone: 'top3', outcome: 'made', posture: { elbowAngle: 93, releaseHeight: 0.91, releaseTime: 0.38, followThrough: true } },
-    { timestamp: '08:00', zone: 'wing3', outcome: 'missed', posture: { elbowAngle: 91, releaseHeight: 0.89, releaseTime: 0.39, followThrough: false } },
-    { timestamp: '09:00', zone: 'midrange', outcome: 'made', posture: { elbowAngle: 93, releaseHeight: 0.90, releaseTime: 0.40, followThrough: true } },
-    { timestamp: '10:00', zone: 'corner3', outcome: 'missed', posture: { elbowAngle: 95, releaseHeight: 0.92, releaseTime: 0.38, followThrough: true } },
+    { timestamp: '01:00', zone: 'top3', outcome: 'made', posture: { elbowAngle: 93, releaseHeight: 1.15, releaseTime: 0.38, followThrough: true } },
+    { timestamp: '02:00', zone: 'midrange', outcome: 'missed', posture: { elbowAngle: 90, releaseHeight: 1.11, releaseTime: 0.40, followThrough: true } },
+    { timestamp: '03:00', zone: 'wing3', outcome: 'made', posture: { elbowAngle: 92, releaseHeight: 1.14, releaseTime: 0.37, followThrough: true } },
+    { timestamp: '04:00', zone: 'corner3', outcome: 'made', posture: { elbowAngle: 94, releaseHeight: 1.15, releaseTime: 0.39, followThrough: false } },
+    { timestamp: '05:00', zone: 'paint', outcome: 'missed', posture: { elbowAngle: 88, releaseHeight: 1.08, releaseTime: 0.45, followThrough: true } },
+    { timestamp: '06:00', zone: 'restricted', outcome: 'made', posture: { elbowAngle: 87, releaseHeight: 1.06, releaseTime: 0.42, followThrough: true } },
+    { timestamp: '07:00', zone: 'top3', outcome: 'made', posture: { elbowAngle: 93, releaseHeight: 1.15, releaseTime: 0.38, followThrough: true } },
+    { timestamp: '08:00', zone: 'wing3', outcome: 'missed', posture: { elbowAngle: 91, releaseHeight: 1.12, releaseTime: 0.39, followThrough: false } },
+    { timestamp: '09:00', zone: 'midrange', outcome: 'made', posture: { elbowAngle: 93, releaseHeight: 1.14, releaseTime: 0.40, followThrough: true } },
+    { timestamp: '10:00', zone: 'corner3', outcome: 'missed', posture: { elbowAngle: 95, releaseHeight: 1.16, releaseTime: 0.38, followThrough: true } },
 ] as ShotResult[]
 
 const mockMental = {

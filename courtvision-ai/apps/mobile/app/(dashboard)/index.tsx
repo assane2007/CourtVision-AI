@@ -382,6 +382,18 @@ export default function DashboardIndex() {
                             </Animated.View>
                         )}
                         <AvatarXPRing name={user?.full_name ?? 'Player'} xp={xp} />
+                        <TouchableOpacity
+                            onPress={() => router.push('/settings')}
+                            style={{
+                                width: 36, height: 36, borderRadius: 18,
+                                backgroundColor: T.color.background.secondary,
+                                justifyContent: 'center', alignItems: 'center',
+                                borderWidth: 1, borderColor: T.color.border.default,
+                            }}
+                            accessibilityLabel="Settings"
+                        >
+                            <Feather name="settings" size={16} color={T.color.text.secondary} />
+                        </TouchableOpacity>
                     </View>
                 </Animated.View>
 
@@ -445,11 +457,19 @@ export default function DashboardIndex() {
 
                 {/* ═══ QUICK ACTIONS ═══ */}
                 <Animated.View entering={FadeInDown.delay(240).duration(400)} style={{
-                    flexDirection: 'row', gap: T.spacing[3], marginBottom: T.spacing[6],
+                    flexDirection: 'row', gap: T.spacing[3], marginBottom: T.spacing[3],
                 }}>
+                    <QuickAction icon="zap" label="WORKOUT AI" color={T.color.signature.primary} onPress={() => router.push('/workout-setup')} />
                     <QuickAction icon="radio" label="LIVE COACH" color={T.color.semantic.error} onPress={() => router.push('/live')} />
                     <QuickAction icon="calendar" label="PROGRAM" color={T.color.semantic.success} onPress={() => router.push('/program')} />
-                    <QuickAction icon="cpu" label="DIGITAL TWIN" color={T.color.signature.primary} onPress={() => router.push('/(dashboard)/twin')} />
+                </Animated.View>
+
+                <Animated.View entering={FadeInDown.delay(280).duration(400)} style={{
+                    flexDirection: 'row', gap: T.spacing[3], marginBottom: T.spacing[6],
+                }}>
+                    <QuickAction icon="bar-chart-2" label="ANALYTICS" color="#8B5CF6" onPress={() => router.push('/analytics')} />
+                    <QuickAction icon="award" label="CLASSEMENT" color="#FFD700" onPress={() => router.push('/leaderboard')} />
+                    <QuickAction icon="clock" label="HISTORIQUE" color="#06B6D4" onPress={() => router.push('/history')} />
                 </Animated.View>
 
                 {/* ═══ HIGHLIGHTS ═══ */}

@@ -117,6 +117,13 @@ export default function RootLayout() {
                 <Stack.Screen name="onboarding3" />
                 <Stack.Screen name="(dashboard)" />
                 <Stack.Screen name="live" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
+                <Stack.Screen name="workout" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
+                <Stack.Screen name="history" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="analytics" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="leaderboard" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="workout-setup" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="settings" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="calibration" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
                 <Stack.Screen name="program" options={{ animation: 'slide_from_bottom' }} />
                 <Stack.Screen name="analysis/[id]" />
                 <Stack.Screen name="highlight/[id]" options={{ animation: 'fade' }} />
