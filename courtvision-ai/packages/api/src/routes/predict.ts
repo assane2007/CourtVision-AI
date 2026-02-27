@@ -84,8 +84,7 @@ export default async function predictRoutes(fastify: FastifyInstance) {
                 ? Math.floor((Date.now() - new Date(lastSession.date).getTime()) / (1000 * 60 * 60 * 24))
                 : 7
 
-            const engine = new PredictiveEngine()
-            const prediction = engine.predict({
+            const prediction = PredictiveEngine.predict({
                 historicalSessions,
                 recoveryScore: recovery?.overall_score,
                 sleepHours: recovery?.sleep_hours,
@@ -139,8 +138,7 @@ export default async function predictRoutes(fastify: FastifyInstance) {
                 ? Math.floor((Date.now() - new Date(lastSession.date).getTime()) / (1000 * 60 * 60 * 24))
                 : 7
 
-            const engine = new PredictiveEngine()
-            const prediction = engine.predict({
+            const prediction = PredictiveEngine.predict({
                 historicalSessions,
                 recoveryScore: body.recoveryScore,
                 sleepHours: body.sleepHours,

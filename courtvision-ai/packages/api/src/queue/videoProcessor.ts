@@ -247,7 +247,7 @@ export const initWorker = () => {
             await job.updateProgress(68)
 
             // ── V5 APEX: Advanced Analytics ─────────────────
-            const sessionDurationSec = prepRes.fps > 0 ? (trackingRes.totalFrames || 0) / prepRes.fps : 600
+            const sessionDurationSec = prepRes.fps > 0 ? (trackingRes.length || 0) / prepRes.fps : 600
             const advancedAnalytics: AdvancedAnalyticsResult = AdvancedAnalyticsEngine.compute(
                 shotsRes,
                 mentalRes,

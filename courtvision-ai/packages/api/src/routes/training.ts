@@ -173,8 +173,7 @@ export default async function trainingRoutes(fastify: FastifyInstance) {
                 ? recentAnalyses.reduce((s: number, a: any) => s + (a.mental_score || 50), 0) / recentAnalyses.length : 50
 
             // Générer le plan via l'engine AI
-            const engine = new SmartTrainingEngine()
-            const plan = await engine.generatePlan({
+            const plan = SmartTrainingEngine.generatePlan({
                 userId: user.id,
                 position: twin?.position ?? undefined,
                 overallRating: twin?.overallRating ?? undefined,
@@ -245,12 +244,11 @@ export default async function trainingRoutes(fastify: FastifyInstance) {
                 return reply.code(404).send({ error: 'Plan not found' })
             }
 
-            const engine = new SmartTrainingEngine()
-            const adaptedPlan = engine.adaptPlan(plan.plan_data, {
-                reason: body.reason,
-                recoveryScore: body.recoveryScore,
-                availableDays: body.availableDays,
-            })
+            const adaptedPlan = SmartTrainingEngine.adaptPlan(
+                plan.plan_data,
+                body.recoveryScore ?? 60,
+                { fgPct: 40, mentalScore: 60 },
+            )
 
             // Update le plan
             await fastify.supabase.from('training_plans').update({
@@ -412,8 +410,7 @@ export default async function trainingRoutes(fastify: FastifyInstance) {
         try {
             const user = request.user!
 
-            const engine = new SmartTrainingEngine()
-            const deloadPlan = await engine.generatePlan({
+            const deloadPlan = SmartTrainingEngine.generatePlan({
                 userId: user.id,
                 weaknesses: [],
                 goals: ['recovery', 'maintenance'],

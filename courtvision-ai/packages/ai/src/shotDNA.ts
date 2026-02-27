@@ -224,6 +224,29 @@ export class ShotDNAEngine {
     }
 
     /**
+     * Compare la signature avec TOUS les joueurs NBA et renvoie le classement.
+     */
+    static compareWithAllNBA(signature: ShotDNASignature): { player: string; similarity: number; traits: string[] }[] {
+        return NBA_BIOMECHANICS.map(nba => {
+            const angleDiff = Math.abs(nba.elbowAngle - signature.avgElbowAngle)
+            const heightDiff = Math.abs(nba.releaseHeight - signature.avgReleaseHeight) * 50
+            const timeDiff = Math.abs(nba.releaseTime - signature.avgReleaseTime) * 30
+            const ftDiff = Math.abs(nba.followThroughPct - signature.followThroughPct) * 0.3
+            const score = angleDiff + heightDiff + timeDiff + ftDiff
+
+            const similarity = Math.max(0, Math.min(100, Math.round(100 - score * 1.5)))
+
+            const traits: string[] = []
+            if (Math.abs(nba.elbowAngle - signature.avgElbowAngle) < 3) traits.push('angle_coude_similaire')
+            if (Math.abs(nba.releaseHeight - signature.avgReleaseHeight) < 0.05) traits.push('hauteur_release_similaire')
+            if (Math.abs(nba.releaseTime - signature.avgReleaseTime) < 0.05) traits.push('vitesse_release_similaire')
+            if (signature.followThroughPct > 90 && nba.followThroughPct > 90) traits.push('follow_through_constant')
+
+            return { player: nba.name, similarity, traits }
+        }).sort((a, b) => b.similarity - a.similarity)
+    }
+
+    /**
      * Calcule le Shot Quality Score pour un tir individuel.
      * Prédit la probabilité de réussite basée sur multiples facteurs.
      */

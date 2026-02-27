@@ -69,8 +69,12 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
                 quarter: sz.quarter ?? Math.ceil((i + 1) / Math.max(1, Math.floor((analysis.shot_zones || []).length / 4))),
             }))
 
-            const engine = new AdvancedAnalyticsEngine()
-            const result = engine.computeAdvancedStats(shots, analysis.mental_score || 50)
+            const result = AdvancedAnalyticsEngine.compute(shots, {
+                bodyLanguageScore: analysis.mental_score || 50,
+                mentalFragilityScore: 50,
+                timeline: shots.map((_: any, i: number) => ({ mentalScore: analysis.mental_score || 50 })),
+                fatigueIndex: 0,
+            } as any, (analysis.shot_zones || []).length * 10 || 600)
 
             // Sauvegarder les analytics avancées
             await fastify.supabase.from('advanced_analytics').upsert({

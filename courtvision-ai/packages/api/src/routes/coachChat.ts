@@ -102,12 +102,11 @@ export default async function coachChatRoutes(fastify: FastifyInstance) {
             history.push(userMessage)
 
             // Générer la réponse du coach
-            const engine = new CoachChatEngine()
-            const response = await engine.chat(
-                history,
-                playerContext,
+            const response = await CoachChatEngine.generateResponse(
+                body.message,
                 (body.context || conv.context) as ConversationContext,
-                sessionContext,
+                playerContext,
+                history,
             )
 
             // Ajouter la réponse à l'historique
@@ -215,7 +214,7 @@ export default async function coachChatRoutes(fastify: FastifyInstance) {
             const messages: CoachChatMessage[] = []
 
             // Si un message initial est fourni, le traiter
-            let response = null
+            let response: any = null
             if (body.initialMessage) {
                 messages.push({ role: 'user', content: body.initialMessage })
 
@@ -225,12 +224,11 @@ export default async function coachChatRoutes(fastify: FastifyInstance) {
                     sessionContext = await buildSessionContext(fastify, body.sessionId)
                 }
 
-                const engine = new CoachChatEngine()
-                response = await engine.chat(
-                    messages,
-                    playerContext,
+                response = await CoachChatEngine.generateResponse(
+                    body.initialMessage,
                     body.context as ConversationContext,
-                    sessionContext,
+                    playerContext,
+                    messages,
                 )
 
                 messages.push({
@@ -410,12 +408,11 @@ export default async function coachChatRoutes(fastify: FastifyInstance) {
 
             const question = body.question || 'Break down this session for me — what did I do well and what needs work?'
 
-            const engine = new CoachChatEngine()
-            const response = await engine.chat(
-                [{ role: 'user', content: question }],
-                playerContext,
+            const response = await CoachChatEngine.generateResponse(
+                question,
                 'film_room',
-                sessionContext,
+                playerContext,
+                [{ role: 'user', content: question }],
             )
 
             // Auto-create a film room conversation
@@ -458,11 +455,11 @@ export default async function coachChatRoutes(fastify: FastifyInstance) {
 
             const prompt = buildPreGamePrompt(body, playerContext)
 
-            const engine = new CoachChatEngine()
-            const response = await engine.chat(
-                [{ role: 'user', content: prompt }],
-                playerContext,
+            const response = await CoachChatEngine.generateResponse(
+                prompt,
                 'pre_game',
+                playerContext,
+                [{ role: 'user', content: prompt }],
             )
 
             // Sauvegarder comme conversation

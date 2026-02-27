@@ -122,9 +122,8 @@ export default async function shotDnaRoutes(fastify: FastifyInstance) {
             }))
 
             // Compute Shot DNA
-            const engine = new ShotDNAEngine()
-            const profile = engine.buildProfile(shots)
-            const driftResults = engine.detectDrift(shots)
+            const profile = ShotDNAEngine.buildProfile(shots)
+            const driftResults = profile.mechanicalDrift
 
             // Upsert le profil
             const { error: upsertError } = await fastify.supabase
@@ -255,8 +254,7 @@ export default async function shotDnaRoutes(fastify: FastifyInstance) {
                 return reply.code(404).send({ error: 'No Shot DNA profile yet.' })
             }
 
-            const engine = new ShotDNAEngine()
-            const allComparisons = engine.compareWithAllNBA(dna.profile.signature)
+            const allComparisons = ShotDNAEngine.compareWithAllNBA(dna.profile.signature)
 
             return {
                 data: {
@@ -278,13 +276,30 @@ export default async function shotDnaRoutes(fastify: FastifyInstance) {
         try {
             const body = shotQualitySchema.parse(request.body)
 
-            const engine = new ShotDNAEngine()
-            const quality = engine.computeShotQuality({
-                elbowAngle: body.elbowAngle,
-                releaseHeight: body.releaseHeight,
-                releaseTime: body.releaseTime,
+            const shot = {
+                timestamp: '00:00',
                 zone: body.zone as any,
-                fatiguePct: body.fatiguePct,
+                outcome: 'made' as const,
+                posture: {
+                    elbowAngle: body.elbowAngle,
+                    releaseHeight: body.releaseHeight,
+                    releaseTime: body.releaseTime,
+                    followThrough: true,
+                },
+            }
+
+            const defaultSignature = {
+                avgElbowAngle: 93,
+                avgReleaseHeight: 0.90,
+                avgReleaseTime: 0.40,
+                followThroughPct: 95,
+                dominantHand: 'right' as const,
+                elbowStdDev: 3,
+                releaseHeightStdDev: 0.03,
+            }
+
+            const quality = ShotDNAEngine.computeShotQuality(shot as any, defaultSignature, {
+                fatigueLevel: body.fatiguePct,
                 mentalScore: body.mentalScore,
                 isClutch: body.isClutch,
                 isContested: body.isContested,
@@ -417,8 +432,7 @@ async function buildShotDNA(fastify: FastifyInstance, userId: string): Promise<S
 
     if (allShots.length < 5) return null
 
-    const engine = new ShotDNAEngine()
-    const profile = engine.buildProfile(allShots)
+    const profile = ShotDNAEngine.buildProfile(allShots)
 
     await fastify.supabase.from('shot_dna_profiles').upsert({
         user_id: userId,
