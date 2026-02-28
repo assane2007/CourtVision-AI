@@ -11,7 +11,6 @@
  */
 
 // ── Provider ──
-export { GluestackProvider } from './GluestackProvider'
 
 // ── Foundation ──
 export { CVText } from './CVText'

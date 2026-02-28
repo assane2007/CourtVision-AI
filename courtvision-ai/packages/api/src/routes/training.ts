@@ -478,7 +478,7 @@ async function getTrainingStreak(fastify: FastifyInstance, userId: string) {
 
     // Calculate streak
     let streak = 0
-    let today = new Date()
+    const today = new Date()
     today.setHours(0, 0, 0, 0)
 
     const dates = [...new Set(data.map((d: any) => new Date(d.completed_at).toISOString().slice(0, 10)))]

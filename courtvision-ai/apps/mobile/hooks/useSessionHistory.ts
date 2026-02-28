@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { SessionStorageService, type StoredSession } from '../lib/sessionStorage'
+import { SessionStorageService, type SessionHistoryItem } from '../lib/sessionStorage'
 
 // ==========================================
 // Types
@@ -25,7 +25,7 @@ export interface AggregatedStats {
     avgElbowAngle: number
     avgReleaseTime: number
     bestFgPct: number
-    bestSession: StoredSession | null
+    bestSession: SessionHistoryItem | null
     trend: 'improving' | 'declining' | 'stable' | 'insufficient'
 }
 
@@ -34,7 +34,7 @@ export type SortOrder = 'asc' | 'desc'
 
 export interface UseSessionHistoryReturn {
     /** Sessions chargées */
-    sessions: StoredSession[]
+    sessions: SessionHistoryItem[]
     /** Chargement en cours */
     loading: boolean
     /** Erreur éventuelle */
@@ -56,7 +56,7 @@ export interface UseSessionHistoryReturn {
 // ==========================================
 
 export function useSessionHistory(): UseSessionHistoryReturn {
-    const [sessions, setSessions] = useState<StoredSession[]>([])
+    const [sessions, setSessions] = useState<SessionHistoryItem[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [sortBy, setSortBy] = useState<SortBy>('date')
@@ -68,7 +68,7 @@ export function useSessionHistory(): UseSessionHistoryReturn {
         setLoading(true)
         setError(null)
         try {
-            const loaded = await storage.getSessions()
+            const loaded = await storage.getSessionHistory()
             setSessions(loaded)
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Erreur de chargement')
@@ -103,13 +103,13 @@ export function useSessionHistory(): UseSessionHistoryReturn {
                     cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
                     break
                 case 'fgPct':
-                    cmp = a.stats.shootingPct - b.stats.shootingPct
+                    cmp = a.shootingPct - b.shootingPct
                     break
                 case 'shots':
-                    cmp = a.stats.totalShots - b.stats.totalShots
+                    cmp = a.totalShots - b.totalShots
                     break
                 case 'score':
-                    cmp = a.stats.avgPostureQuality - b.stats.avgPostureQuality
+                    cmp = a.avgPostureQuality - b.avgPostureQuality
                     break
             }
             return sortOrder === 'desc' ? -cmp : cmp
@@ -135,21 +135,21 @@ export function useSessionHistory(): UseSessionHistoryReturn {
             }
         }
 
-        const totalShots = sessions.reduce((sum, s) => sum + s.stats.totalShots, 0)
-        const totalMade = sessions.reduce((sum, s) => sum + s.stats.madeShots, 0)
+        const totalShots = sessions.reduce((sum, s) => sum + s.totalShots, 0)
+        const totalMade = sessions.reduce((sum, s) => sum + s.madeShots, 0)
         const overallFgPct = totalShots > 0 ? Math.round((totalMade / totalShots) * 1000) / 10 : 0
-        const avgPostureQuality = sessions.reduce((sum, s) => sum + s.stats.avgPostureQuality, 0) / sessions.length
-        const avgConsistency = sessions.reduce((sum, s) => sum + s.stats.mechanicConsistency, 0) / sessions.length
-        const avgElbowAngle = sessions.reduce((sum, s) => sum + s.stats.avgElbowAngle, 0) / sessions.length
-        const avgReleaseTime = sessions.reduce((sum, s) => sum + s.stats.avgReleaseTime, 0) / sessions.length
-        const bestFgPct = Math.max(...sessions.map(s => s.stats.shootingPct))
+        const avgPostureQuality = sessions.reduce((sum, s) => sum + s.avgPostureQuality, 0) / sessions.length
+        const avgConsistency = sessions.reduce((sum, s) => sum + s.mechanicConsistency, 0) / sessions.length
+        const avgElbowAngle = sessions.reduce((sum, s) => sum + s.avgElbowAngle, 0) / sessions.length
+        const avgReleaseTime = sessions.reduce((sum, s) => sum + s.avgReleaseTime, 0) / sessions.length
+        const bestFgPct = Math.max(...sessions.map(s => s.shootingPct))
 
         // Best session by score
         const bestSession = sessions.reduce((best, s) => {
-            const sScore = s.stats.avgPostureQuality * 0.4 + s.stats.shootingPct * 0.4 + s.stats.mechanicConsistency * 0.2
-            const bScore = best ? best.stats.avgPostureQuality * 0.4 + best.stats.shootingPct * 0.4 + best.stats.mechanicConsistency * 0.2 : 0
+            const sScore = s.avgPostureQuality * 0.4 + s.shootingPct * 0.4 + s.mechanicConsistency * 0.2
+            const bScore = best ? best.avgPostureQuality * 0.4 + best.shootingPct * 0.4 + best.mechanicConsistency * 0.2 : 0
             return sScore > bScore ? s : best
-        }, sessions[0] as StoredSession | null)
+        }, sessions[0] as SessionHistoryItem | null)
 
         // Trend: compare last 3 sessions vs previous 3
         let trend: AggregatedStats['trend'] = 'insufficient'
@@ -158,8 +158,8 @@ export function useSessionHistory(): UseSessionHistoryReturn {
             const recent = byDate.slice(0, 3)
             const earlier = byDate.slice(3, 6)
             if (earlier.length >= 2) {
-                const recentAvg = recent.reduce((s, r) => s + r.stats.shootingPct, 0) / recent.length
-                const earlierAvg = earlier.reduce((s, r) => s + r.stats.shootingPct, 0) / earlier.length
+                const recentAvg = recent.reduce((s, r) => s + r.shootingPct, 0) / recent.length
+                const earlierAvg = earlier.reduce((s, r) => s + r.shootingPct, 0) / earlier.length
                 if (recentAvg > earlierAvg + 3) trend = 'improving'
                 else if (recentAvg < earlierAvg - 3) trend = 'declining'
                 else trend = 'stable'

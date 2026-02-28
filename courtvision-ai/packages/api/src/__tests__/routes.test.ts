@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 import { buildApp } from '../app'
 import { FastifyInstance } from 'fastify'
 

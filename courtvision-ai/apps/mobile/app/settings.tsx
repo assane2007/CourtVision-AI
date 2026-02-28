@@ -21,7 +21,7 @@ import { useRouter } from 'expo-router'
 import { Feather } from '@expo/vector-icons'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { T, typePresets } from '../lib/theme'
-import { useStore } from '../lib/store'
+import { useStore, selectUser } from '../lib/store'
 import { ShareService } from '../lib/shareService'
 
 const type = typePresets
@@ -68,10 +68,11 @@ const POSITION_LABELS: Record<string, string> = {
 
 export default function SettingsScreen() {
     const router = useRouter()
-    const store = useStore()
+    const user = useStore(selectUser)
+    const logout = useStore(s => s.logout)
 
     // Local state for settings
-    const [playerName, setPlayerName] = useState(store.user?.full_name ?? 'Player')
+    const [playerName, setPlayerName] = useState(user?.full_name ?? 'Player')
     const [playerHeight, setPlayerHeight] = useState('185')
     const [playerPosition, setPlayerPosition] = useState('SG')
     const [haptics, setHaptics] = useState(true)
@@ -116,13 +117,13 @@ export default function SettingsScreen() {
                     text: 'Déconnexion',
                     style: 'destructive',
                     onPress: () => {
-                        store.logout()
+                        logout()
                         router.replace('/')
                     },
                 },
             ],
         )
-    }, [store, router])
+    }, [logout, router])
 
     const handleDeleteAccount = useCallback(() => {
         Alert.alert(

@@ -25,18 +25,18 @@ interface StatCardProps {
 }
 
 const VARIANT_STYLES: Record<string, any> = {
-    glass:   (T as any).glass?.regular ?? T.glass.light,
-    accent:  T.glass.accent,
+    glass: (T as any).glass?.regular ?? T.glass.light,
+    accent: T.glass.accent,
     success: T.glass.success,
-    danger:  (T as any).glass?.danger ?? T.glass.light,
-    gold:    (T as any).glass?.gold ?? T.glass.light,
+    danger: (T as any).glass?.danger ?? T.glass.light,
+    gold: (T as any).glass?.gold ?? T.glass.light,
 }
 
 const SIZE_STYLES: Record<string, any> = {
-    hero:   type.heroStat,
-    big:    type.bigStat,
+    hero: type.heroStat,
+    big: type.bigStat,
     medium: type.mediumStat,
-    small:  type.smallStat,
+    small: type.smallStat,
 }
 
 function StatCardInner({ label, value, unit, delta, variant = 'glass', size = 'medium', index = 0, onPress }: StatCardProps) {
@@ -56,11 +56,11 @@ function StatCardInner({ label, value, unit, delta, variant = 'glass', size = 'm
     const textStyle = SIZE_STYLES[size] ?? SIZE_STYLES.medium
     const valueColor = variant === 'accent' ? T.color.signature.primary
         : variant === 'success' ? T.color.semantic.success
-        : variant === 'danger' ? T.color.semantic.error
-        : variant === 'gold' ? T.color.gamification.gold
-        : T.color.text.primary
+            : variant === 'danger' ? T.color.semantic.error
+                : variant === 'gold' ? T.color.gamification.gold
+                    : T.color.text.primary
 
-    const Wrapper = onPress ? TouchableOpacity : View
+    const Wrapper = (onPress ? TouchableOpacity : View) as any
 
     return (
         <Animated.View entering={FadeInDown.delay(index * 80).duration(400)}>

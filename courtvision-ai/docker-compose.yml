@@ -1,60 +1,67 @@
-# docker-compose.yml — Services de développement local CourtVision AI
-# Usage : docker compose up -d
-
 version: '3.8'
 
 services:
-  # Redis — File d'attente BullMQ pour le traitement vidéo + Live Session store
-  redis:
-    image: redis:7-alpine
-    container_name: courtvision-redis
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
     ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    command: redis-server --appendonly yes
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+    depends_on:
+      - api
     restart: unless-stopped
 
-  # API — Fastify server (routes + live coach SSE)
+  cv-engine:
+    build:
+      context: ./apps/cv-engine
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
   api:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: courtvision-api
+      dockerfile: packages/api/Dockerfile
     ports:
-      - "3001:3001"
-    depends_on:
-      redis:
-        condition: service_healthy
+      - "8080:8080"
     environment:
-      - NODE_ENV=development
-      - PORT=3001
-      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=production
+      - PORT=8080
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
-      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
-      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
-      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - REDIS_URL=redis://redis:6379
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    depends_on:
+      - redis
     restart: unless-stopped
 
-  # Python Tracker — MediaPipe + YOLOv8 for pose/ball tracking
-  tracker:
-    build:
-      context: .
-      dockerfile: packages/python/Dockerfile
-    container_name: courtvision-tracker
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
     volumes:
-      - tracker-models:/app/models
+      - redis_data:/data
+    restart: unless-stopped
+
+  # Note: Postgres is managed by Supabase, so we typically wouldn't host the DB locally 
+  # for the app in prod unless using a self-hosted Supabase instance.
+  # Added a local postgres config here for independent component development if necessary.
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=courtvision
+    volumes:
+      - pg_data:/var/lib/postgresql/data
     restart: unless-stopped
 
 volumes:
-  redis-data:
-    driver: local
-  tracker-models:
-    driver: local
+  redis_data:
+  pg_data:

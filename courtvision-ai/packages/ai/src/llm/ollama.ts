@@ -9,6 +9,7 @@ export async function generateReportLocal(data: {
     systemPrompt?: string
     userPrompt?: string
     payload?: object
+    responseFormat?: 'json' | 'text'
 }): Promise<string> {
     const baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
     const model = process.env.OLLAMA_MODEL || 'llama3.2'
@@ -29,6 +30,7 @@ export async function generateReportLocal(data: {
                 { role: 'user', content: userContent }
             ],
             stream: false,
+            format: data.responseFormat === 'json' ? 'json' : undefined,
             options: {
                 temperature: 0.7,
                 num_predict: 2000

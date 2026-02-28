@@ -1,0 +1,544 @@
+﻿
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\(dashboard)\community.tsx
+  583:63  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\(dashboard)\community.tsx:583:63
+  581 |     const isLeader = challenge.my_rank === 1
+  582 |     const timeLeft = formatTimeLeft(challenge.end_at)
+> 583 |     const isExpiring = new Date(challenge.end_at).getTime() - Date.now() < 1000 * 60 * 60 * 24
+      |                                                               ^^^^^^^^^^ Cannot call impure function
+  584 |
+  585 |     return (
+  586 |         <Glass style={{  react-hooks/purity
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\(dashboard)\index.tsx
+  162:36  error  Error: This value cannot be modified
+
+This modifies a variable that React considers immutable.
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\(dashboard)\index.tsx:162:36
+  160 |                 }}
+  161 |                 onPress={onPress}
+> 162 |                 onPressIn={() => { scale.value = withSpring(0.96, spring?.snappy) }}
+      |                                    ^^^^^ `scale` cannot be modified
+  163 |                 onPressOut={() => { scale.value = withSpring(1, spring?.snappy) }}
+  164 |                 activeOpacity={1}
+  165 |                 accessibilityLabel={`View highlight ${clip.label}`}                           react-hooks/immutability
+  163:37  error  Error: This value cannot be modified
+
+This modifies a variable that React considers immutable.
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\(dashboard)\index.tsx:163:37
+  161 |                 onPress={onPress}
+  162 |                 onPressIn={() => { scale.value = withSpring(0.96, spring?.snappy) }}
+> 163 |                 onPressOut={() => { scale.value = withSpring(1, spring?.snappy) }}
+      |                                     ^^^^^ `scale` cannot be modified
+  164 |                 activeOpacity={1}
+  165 |                 accessibilityLabel={`View highlight ${clip.label}`}
+  166 |                 accessibilityRole="button"  react-hooks/immutability
+  228:36  error  Error: This value cannot be modified
+
+This modifies a variable that React considers immutable.
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\(dashboard)\index.tsx:228:36
+  226 |                 }}
+  227 |                 onPress={onPress}
+> 228 |                 onPressIn={() => { scale.value = withSpring(0.96, spring?.snappy) }}
+      |                                    ^^^^^ `scale` cannot be modified
+  229 |                 onPressOut={() => { scale.value = withSpring(1, spring?.snappy) }}
+  230 |                 activeOpacity={1}
+  231 |                 accessibilityRole="button"                                                    react-hooks/immutability
+  229:37  error  Error: This value cannot be modified
+
+This modifies a variable that React considers immutable.
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\(dashboard)\index.tsx:229:37
+  227 |                 onPress={onPress}
+  228 |                 onPressIn={() => { scale.value = withSpring(0.96, spring?.snappy) }}
+> 229 |                 onPressOut={() => { scale.value = withSpring(1, spring?.snappy) }}
+      |                                     ^^^^^ `scale` cannot be modified
+  230 |                 activeOpacity={1}
+  231 |                 accessibilityRole="button"
+  232 |                 accessibilityLabel={label}                           react-hooks/immutability
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\(dashboard)\upload.tsx
+  319:13  error  Error: This value cannot be modified
+
+Modifying a value previously passed as an argument to a hook is not allowed. Consider moving the modification before calling the hook.
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\(dashboard)\upload.tsx:319:13
+  317 |             setFlowState('processing')
+  318 |             setProgress(0)
+> 319 |             progressBar.value = 0
+      |             ^^^^^^^^^^^ `progressBar` cannot be modified
+  320 |             setCurrentSessionId(null)
+  321 |             toast.info(
+  322 |                 source === 'gallery' ? 'Video imported' : 'Camera ready',                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react-hooks/immutability
+  500:81  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\(dashboard)\upload.tsx:500:81
+  498 |                                 { label: 'Shooting', value: `${Math.round(resultScore * 0.95)}%`, color: T.color.signature.primary },
+  499 |                                 { label: 'Mental', value: `${Math.round(resultScore * 1.05)}`, color: T.color.semantic.success },
+> 500 |                                 { label: 'Highlights', value: `${3 + Math.floor(Math.random() * 4)}`, color: T.color.semantic.info },
+      |                                                                                 ^^^^^^^^^^^^^ Cannot call impure function
+  501 |                             ].map((stat) => (
+  502 |                                 <View key={stat.label} style={{ flex: 1, ...(T as any).glass?.regular ?? T.glass.light, borderRadius: T.borderRadius.lg, padding: T.spacing[4], alignItems: 'center' }}>
+  503 |                                     <Text style={{ ...type.overline, color: T.color.text.secondary }}>{stat.label}</Text>  react-hooks/purity
+  512:90  error  Error: This value cannot be modified
+
+Modifying a value previously passed as an argument to a hook is not allowed. Consider moving the modification before calling the hook.
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\(dashboard)\upload.tsx:512:90
+  510 |                             <PrimaryButton label="View Full Report" icon="bar-chart-2" onPress={() => currentSessionId && router.push(`/analysis/${currentSessionId}`)} size="lg" state={currentSessionId ? 'default' : 'disabled'} />
+  511 |                             <TouchableOpacity
+> 512 |                                 onPress={() => { setFlowState('select'); setProgress(0); progressBar.value = 0; setCurrentSessionId(null) }}
+      |                                                                                          ^^^^^^^^^^^ `progressBar` cannot be modified
+  513 |                                 style={{ alignItems: 'center', paddingVertical: T.spacing[3], minHeight: 44 }}
+  514 |                                 accessibilityRole="button"
+  515 |                             >                                                                                                                                                                                                                                                                                               react-hooks/immutability
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\analysis\[id].tsx
+  390:63  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\analysis\[id].tsx:390:63
+  388 |                             <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 80 }}>
+  389 |                                 {MOCK_SHOTS.map((shot, i) => {
+> 390 |                                     const releaseTime = 0.8 + Math.random() * 1.2
+      |                                                               ^^^^^^^^^^^^^ Cannot call impure function
+  391 |                                     const barH = (releaseTime / 2.0) * 80
+  392 |                                     return (
+  393 |                                         <View  react-hooks/purity
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\calibration.tsx
+  290:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\calibration.tsx:290:13
+  288 |             // Calculate final score
+  289 |             const score = Math.min(100, 75 + passedSteps * 8 + Math.random() * 5)
+> 290 |             setCalibrationScore(Math.round(score))
+      |             ^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  291 |             setStepComplete(true)
+  292 |             return
+  293 |         }  react-hooks/set-state-in-effect
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\highlight\[id].tsx
+   97:36  error  Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `progress`, but the source dependencies were [playing]. Inferred different dependency than source.
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\highlight\[id].tsx:97:36
+   95 |     }))
+   96 |
+>  97 |     const togglePlay = useCallback(() => {
+      |                                    ^^^^^^^
+>  98 |         if (!playing) {
+      | ^^^^^^^^^^^^^^^^^^^^^^^
+>  99 |             setPlaying(true)
+      ÔÇª
+      | ^^^^^^^^^^^^^^^^^^^^^^^
+> 107 |         }
+      | ^^^^^^^^^^^^^^^^^^^^^^^
+> 108 |     }, [playing])
+      | ^^^^^^ Could not preserve existing manual memoization
+  109 |
+  110 |     const showControls = useCallback(() => {
+  111 |         setControlsVisible(true)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    react-hooks/preserve-manual-memoization
+  117:43  error  Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `addXP`, but the source dependencies were [id]. Inferred different dependency than source.
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\highlight\[id].tsx:117:43
+  115 |     }, [playing])
+  116 |
+> 117 |     const handleNativeShare = useCallback(async () => {
+      |                                           ^^^^^^^^^^^^^
+> 118 |         try {
+      | ^^^^^^^^^^^^^
+> 119 |             await Share.share({
+      | ^^^^^^^^^^^^^
+> 120 |                 title: `My Highlight Reel ÔÇö CourtVision AI`,
+      | ^^^^^^^^^^^^^
+> 121 |                 message: `Check out my AI highlight reel ÔÇö Session #${id}\n3 best plays analyzed by CourtVision AI\nhttps://courtvision.ai/highlight/${id}`,
+      | ^^^^^^^^^^^^^
+> 122 |             })
+      | ^^^^^^^^^^^^^
+> 123 |             addXP(50, 'Highlight shared')
+      | ^^^^^^^^^^^^^
+> 124 |             toast.success('+50 XP!', 'Highlight shared successfully')
+      | ^^^^^^^^^^^^^
+> 125 |         } catch { /* user cancelled */ }
+      | ^^^^^^^^^^^^^
+> 126 |     }, [id])
+      | ^^^^^^ Could not preserve existing manual memoization
+  127 |
+  128 |     const handlePlatformShare = useCallback(async (platform: string) => {
+  129 |         setShareModal(false)  react-hooks/preserve-manual-memoization
+  133:39  error  Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `addXP`, but the source dependencies were []. Inferred dependency not present in source.
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\highlight\[id].tsx:133:39
+  131 |     }, [handleNativeShare])
+  132 |
+> 133 |     const handlePublish = useCallback(() => {
+      |                                       ^^^^^^^
+> 134 |         setPublished(true)
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 135 |         addXP(100, 'Highlight published to community')
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 136 |         toast.success('+100 XP!', 'Highlight published to the community')
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 137 |     }, [])
+      | ^^^^^^ Could not preserve existing manual memoization
+  138 |
+  139 |     const clip = CLIPS[currentClip]
+  140 |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      react-hooks/preserve-manual-memoization
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\leaderboard.tsx
+  300:9  error  Error: Cannot access variable before it is declared
+
+`loadLeaderboard` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\leaderboard.tsx:300:9
+  298 |
+  299 |     useEffect(() => {
+> 300 |         loadLeaderboard()
+      |         ^^^^^^^^^^^^^^^ `loadLeaderboard` accessed before it is declared
+  301 |     }, [period, metric])
+  302 |
+  303 |     const loadLeaderboard = useCallback(() => {
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\leaderboard.tsx:303:5
+  301 |     }, [period, metric])
+  302 |
+> 303 |     const loadLeaderboard = useCallback(() => {
+      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 304 |         // En production, appel API
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 305 |         const data = generateMockLeaderboard(metric, 'current_user')
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 306 |         setEntries(data)
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 307 |     }, [metric])
+      | ^^^^^^^^^^^^^^^^^ `loadLeaderboard` is declared here
+  308 |
+  309 |     const onRefresh = useCallback(async () => {
+  310 |         setRefreshing(true)  react-hooks/immutability
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\live.tsx
+  279:41  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\app\live.tsx:279:41
+  277 |     const router = useRouter()
+  278 |     const addXP = useStore(s => s.addXP)
+> 279 |     const sessionId = useRef(`session_${Date.now()}`).current
+      |                                         ^^^^^^^^^^ Cannot call impure function
+  280 |     const live = useLiveCoach(sessionId)
+  281 |     const [showZonePicker, setShowZonePicker] = useState(false)
+  282 |     const [pendingOutcome, setPendingOutcome] = useState<'made' | 'missed' | null>(null)  react-hooks/purity
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\components\DailyChallengeCard.tsx
+  65:66  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\components\DailyChallengeCard.tsx:65:66
+  63 |
+  64 |     const color = DIFFICULTY_COLORS[challenge.difficulty]
+> 65 |     const isExpired = new Date(challenge.expires_at).getTime() < Date.now()
+     |                                                                  ^^^^^^^^^^ Cannot call impure function
+  66 |
+  67 |     return (
+  68 |         <Animated.View style={[{  react-hooks/purity
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\components\FABUpload.tsx
+  78:9  error  Error: This value cannot be modified
+
+This modifies a variable that React considers immutable.
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\components\FABUpload.tsx:78:9
+  76 |
+  77 |     const handlePressIn = () => {
+> 78 |         scale.value = withSpring(0.9, { damping: 15, stiffness: 300 })
+     |         ^^^^^ `scale` cannot be modified
+  79 |     }
+  80 |
+  81 |     const handlePressOut = () => {                                            react-hooks/immutability
+  82:9  error  Error: This value cannot be modified
+
+This modifies a variable that React considers immutable.
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\components\FABUpload.tsx:82:9
+  80 |
+  81 |     const handlePressOut = () => {
+> 82 |         scale.value = withSpring(1, { damping: 10, stiffness: 180 })
+     |         ^^^^^ `scale` cannot be modified
+  83 |     }
+  84 |
+  85 |     const handlePress = () => {                                                react-hooks/immutability
+  90:9  error  Error: This value cannot be modified
+
+This modifies a variable that React considers immutable.
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\components\FABUpload.tsx:90:9
+  88 |         }
+  89 |         // Success bounce
+> 90 |         scale.value = withSequence(
+     |         ^^^^^ `scale` cannot be modified
+  91 |             withSpring(1.1, { damping: 12, stiffness: 200 }),
+  92 |             withSpring(1, { damping: 10 }),
+  93 |         )  react-hooks/immutability
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\components\PrimaryButton.tsx
+  123:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\components\PrimaryButton.tsx:123:9
+  121 |     const [internalState, setInternalState] = useState<ButtonState>(state)
+  122 |     useEffect(() => {
+> 123 |         setInternalState(state)
+      |         ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  124 |         if (state === 'success') {
+  125 |             const t = setTimeout(() => setInternalState('default'), 2000)
+  126 |             return () => clearTimeout(t)  react-hooks/set-state-in-effect
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\components\TabBar.tsx
+  78:9  error  Error: This value cannot be modified
+
+This modifies a variable that React considers immutable.
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\components\TabBar.tsx:78:9
+  76 |
+  77 |     const handlePressIn = () => {
+> 78 |         scale.value = withSpring(0.88, { damping: 15, stiffness: 300 })
+     |         ^^^^^ `scale` cannot be modified
+  79 |     }
+  80 |     const handlePressOut = () => {
+  81 |         scale.value = withSpring(1, { damping: 10, stiffness: 180 })  react-hooks/immutability
+  81:9  error  Error: This value cannot be modified
+
+This modifies a variable that React considers immutable.
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\components\TabBar.tsx:81:9
+  79 |     }
+  80 |     const handlePressOut = () => {
+> 81 |         scale.value = withSpring(1, { damping: 10, stiffness: 180 })
+     |         ^^^^^ `scale` cannot be modified
+  82 |     }
+  83 |
+  84 |     if (isFAB) {                                                                                     react-hooks/immutability
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\hooks\useLiveCoach.ts
+  152:13  error  Error: Cannot access variable before it is declared
+
+`clearTimers` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\hooks\useLiveCoach.ts:152:13
+  150 |         return () => {
+  151 |             serviceRef.current?.destroy()
+> 152 |             clearTimers()
+      |             ^^^^^^^^^^^ `clearTimers` accessed before it is declared
+  153 |         }
+  154 |     }, [sessionId])
+  155 |
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\hooks\useLiveCoach.ts:175:5
+  173 |
+  174 |     // ---- Timer helpers ----
+> 175 |     const clearTimers = useCallback(() => {
+      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 176 |         if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 177 |         if (frameTimerRef.current) { clearInterval(frameTimerRef.current); frameTimerRef.current = null }
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 178 |     }, [])
+      | ^^^^^^^^^^^ `clearTimers` is declared here
+  179 |
+  180 |     const startElapsedTimer = useCallback(() => {
+  181 |         startTimeRef.current = Date.now()                                                                                                                                                                                      react-hooks/immutability
+  167:17  error  Error: Cannot access variable before it is declared
+
+`startFrameTimer` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\hooks\useLiveCoach.ts:167:17
+  165 |             } else if (state === 'active' && phase === 'active') {
+  166 |                 // Reprendre le timer de frames
+> 167 |                 startFrameTimer()
+      |                 ^^^^^^^^^^^^^^^ `startFrameTimer` accessed before it is declared
+  168 |             }
+  169 |         }
+  170 |         const sub = AppState.addEventListener('change', handleAppState)
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\hooks\useLiveCoach.ts:187:5
+  185 |     }, [])
+  186 |
+> 187 |     const startFrameTimer = useCallback(() => {
+      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 188 |         if (frameTimerRef.current) clearInterval(frameTimerRef.current)
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 189 |         frameTimerRef.current = setInterval(async () => {
+      ÔÇª
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 201 |         }, FRAME_INTERVAL_MS)
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 202 |     }, [quarter])
+      | ^^^^^^^^^^^^^^^^^^ `startFrameTimer` is declared here
+  203 |
+  204 |     // ---- Vibration helper ----
+  205 |     const vibrateForAlert = useCallback((alert: LiveAlertPayload) => {  react-hooks/immutability
+  404:23  error  Error: Cannot access variable before it is declared
+
+`end` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\hooks\useLiveCoach.ts:404:23
+  402 |                 setPhase('break')
+  403 |             } else {
+> 404 |                 await end()
+      |                       ^^^ `end` accessed before it is declared
+  405 |             }
+  406 |             return
+  407 |         }
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\hooks\useLiveCoach.ts:441:5
+  439 |     }, [quarter, startElapsedTimer, startFrameTimer])
+  440 |
+> 441 |     const end = useCallback(async () => {
+      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 442 |         clearTimers()
+      | ^^^^^^^^^^^^^^^^^^^^^
+> 443 |
+      ÔÇª
+      | ^^^^^^^^^^^^^^^^^^^^^
+> 481 |         }
+      | ^^^^^^^^^^^^^^^^^^^^^
+> 482 |     }, [clearTimers, makeCount, missCount, mentalScore, fatigueIndex])
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `end` is declared here
+  483 |
+  484 |     const reset = useCallback(() => {
+  485 |         clearTimers()                                                                                                                                                                                                                                                                                                                                                             react-hooks/immutability
+  452:34  error  Error: Cannot access variable before it is declared
+
+`generateLocalRecommendations` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\hooks\useLiveCoach.ts:452:34
+  450 |                 attempts: makeCount + missCount,
+  451 |                 quarter,
+> 452 |                 recommendations: generateLocalRecommendations(),
+      |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `generateLocalRecommendations` accessed before it is declared
+  453 |                 stats: null,
+  454 |                 mentalTimeline: mentalHistory,
+  455 |             } as any
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\hooks\useLiveCoach.ts:507:5
+  505 |
+  506 |     // ---- Local recommendations fallback ----
+> 507 |     const generateLocalRecommendations = (): string[] => {
+      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 508 |         const recs: string[] = []
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 509 |         const total = makeCount + missCount
+      ÔÇª
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 522 |         return recs
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 523 |     }
+      | ^^^^^^ `generateLocalRecommendations` is declared here
+  524 |
+  525 |     return {
+  526 |         // State                                                                                                                                                              react-hooks/immutability
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\web\src\app\page.tsx
+  280:51   error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\web\src\app\page.tsx:280:51
+  278 |         >
+  279 |             <div className="max-w-6xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-8">
+> 280 |                 <div className="text-center" ref={s1.ref}>
+      |                                                   ^^^^^^ Cannot access ref value during render
+  281 |                     <div className="text-4xl sm:text-5xl font-display font-black gradient-text mb-2">{s1.value}</div>
+  282 |                     <div className="text-text-secondary text-sm">AI pipeline stages</div>
+  283 |                 </div>                                                                                                          react-hooks/refs
+  281:103  error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\web\src\app\page.tsx:281:103
+  279 |             <div className="max-w-6xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-8">
+  280 |                 <div className="text-center" ref={s1.ref}>
+> 281 |                     <div className="text-4xl sm:text-5xl font-display font-black gradient-text mb-2">{s1.value}</div>
+      |                                                                                                       ^^^^^^^^ Cannot access ref value during render
+  282 |                     <div className="text-text-secondary text-sm">AI pipeline stages</div>
+  283 |                 </div>
+  284 |                 <div className="text-center" ref={s2.ref}>  react-hooks/refs
+  284:51   error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\web\src\app\page.tsx:284:51
+  282 |                     <div className="text-text-secondary text-sm">AI pipeline stages</div>
+  283 |                 </div>
+> 284 |                 <div className="text-center" ref={s2.ref}>
+      |                                                   ^^^^^^ Cannot access ref value during render
+  285 |                     <div className="text-4xl sm:text-5xl font-display font-black gradient-text mb-2">{s2.value}</div>
+  286 |                     <div className="text-text-secondary text-sm">body keypoints tracked</div>
+  287 |                 </div>                                                                                     react-hooks/refs
+  285:103  error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\web\src\app\page.tsx:285:103
+  283 |                 </div>
+  284 |                 <div className="text-center" ref={s2.ref}>
+> 285 |                     <div className="text-4xl sm:text-5xl font-display font-black gradient-text mb-2">{s2.value}</div>
+      |                                                                                                       ^^^^^^^^ Cannot access ref value during render
+  286 |                     <div className="text-text-secondary text-sm">body keypoints tracked</div>
+  287 |                 </div>
+  288 |                 <div className="text-center" ref={s3.ref}>                                                             react-hooks/refs
+  288:51   error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\web\src\app\page.tsx:288:51
+  286 |                     <div className="text-text-secondary text-sm">body keypoints tracked</div>
+  287 |                 </div>
+> 288 |                 <div className="text-center" ref={s3.ref}>
+      |                                                   ^^^^^^ Cannot access ref value during render
+  289 |                     <div className="text-4xl sm:text-5xl font-display font-black gradient-text mb-2">{s3.value}+</div>
+  290 |                     <div className="text-text-secondary text-sm">games analyzed</div>
+  291 |                 </div>                                                                                        react-hooks/refs
+  289:103  error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\web\src\app\page.tsx:289:103
+  287 |                 </div>
+  288 |                 <div className="text-center" ref={s3.ref}>
+> 289 |                     <div className="text-4xl sm:text-5xl font-display font-black gradient-text mb-2">{s3.value}+</div>
+      |                                                                                                       ^^^^^^^^ Cannot access ref value during render
+  290 |                     <div className="text-text-secondary text-sm">games analyzed</div>
+  291 |                 </div>
+  292 |                 <div className="text-center">                                                                                 react-hooks/refs
+
+Ô£û 32 problems (32 errors, 0 warnings)
+

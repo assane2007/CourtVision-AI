@@ -30,13 +30,17 @@
     "build:web": "npm -w @courtvision/web run build",
     "build:api": "npm -w @courtvision/api run build",
     "build:ai": "npm -w @courtvision/ai run build",
-    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules"
+    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules",
+    "validate": "python scripts/validate_skills.py",
+    "build:index": "python scripts/build_index.py",
+    "stats": "python scripts/validate_skills.py"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react-hooks": "^7.0.1",
     "prettier": "^3.2.5",
     "typescript": "^5.4.2"
   },

@@ -13,6 +13,7 @@ export async function generateReportGroq(data: {
     systemPrompt?: string
     userPrompt?: string
     payload?: object
+    responseFormat?: 'json' | 'text'
 }): Promise<string> {
     if (!groqApiKey) {
         throw new Error('GROQ_API_KEY is not configured')
@@ -30,6 +31,7 @@ export async function generateReportGroq(data: {
             { role: 'system', content: systemContent },
             { role: 'user', content: userContent }
         ],
+        response_format: data.responseFormat === 'json' ? { type: 'json_object' } : undefined,
         max_tokens: 2000,
         temperature: 0.7, // Un peu de créativité pour le style coach
         top_p: 0.9

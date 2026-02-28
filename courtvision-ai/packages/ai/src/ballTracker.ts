@@ -218,7 +218,7 @@ export class BallKalmanFilter {
     predictFuture(frames: number, fps: number): { x: number; y: number }[] {
         const predictions: { x: number; y: number }[] = []
         const dt = 1 / fps
-        let tempState = { ...this.state }
+        const tempState = { ...this.state }
 
         for (let i = 0; i < frames; i++) {
             tempState.x += tempState.vx * dt + 0.5 * tempState.ax * dt * dt

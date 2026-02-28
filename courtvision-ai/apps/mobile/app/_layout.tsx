@@ -5,11 +5,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import * as Notifications from 'expo-notifications'
 import { getAuthToken, setAuthToken, setRefreshToken, clearTokens } from '../lib/api'
 import { supabase, isDemoMode } from '../lib/supabase'
-import { useStore } from '../lib/store'
+import { useStore, selectHydrated } from '../lib/store'
 import { ToastContainer } from '../components/Toast'
 import { usePushNotifications } from '../hooks/usePushNotifications'
 import { T } from '../lib/theme'
-import { GluestackProvider } from '../components/ui/GluestackProvider'
 
 // Configurer le comportement des notifications en foreground (une seule fois, au niveau module)
 Notifications.setNotificationHandler({
@@ -27,19 +26,22 @@ Notifications.setNotificationHandler({
  * Resets notification badge on foreground.
  */
 function AuthGuard() {
-    const router   = useRouter()
+    const router = useRouter()
     const segments = useSegments()
-    const { isAuthenticated, hydrated, login, logout } = useStore()
+
+    const hydrated = useStore(selectHydrated)
+    const login = useStore(s => s.login)
+
     const { registerForPushNotifications } = usePushNotifications()
 
     // Reset badge on foreground
     useEffect(() => {
         const subscription = AppState.addEventListener('change', (state: AppStateStatus) => {
             if (state === 'active') {
-                Notifications.setBadgeCountAsync(0).catch(() => {})
+                Notifications.setBadgeCountAsync(0).catch(() => { })
             }
         })
-        Notifications.setBadgeCountAsync(0).catch(() => {})
+        Notifications.setBadgeCountAsync(0).catch(() => { })
         return () => subscription.remove()
     }, [])
 
@@ -77,25 +79,25 @@ function AuthGuard() {
 
         let cancelled = false
 
-        ;(async () => {
-            const token = await getAuthToken()
-            if (cancelled) return
+            ; (async () => {
+                const token = await getAuthToken()
+                if (cancelled) return
 
-            const first       = segments[0] as string | undefined
-            const inDashboard = first === '(dashboard)'
+                const first = segments[0] as string | undefined
+                const inDashboard = first === '(dashboard)'
 
-            if (token && !inDashboard) {
-                await login(token)
-                if (!cancelled) {
-                    await registerForPushNotifications()
-                    router.replace('/(dashboard)')
+                if (token && !inDashboard) {
+                    await login(token)
+                    if (!cancelled) {
+                        await registerForPushNotifications()
+                        router.replace('/(dashboard)')
+                    }
+                } else if (!token && inDashboard) {
+                    if (!cancelled) router.replace('/')
+                } else if (token && inDashboard) {
+                    registerForPushNotifications()
                 }
-            } else if (!token && inDashboard) {
-                if (!cancelled) router.replace('/')
-            } else if (token && inDashboard) {
-                registerForPushNotifications()
-            }
-        })()
+            })()
 
         return () => { cancelled = true }
     }, [hydrated])
@@ -105,36 +107,34 @@ function AuthGuard() {
 
 export default function RootLayout() {
     return (
-        <GluestackProvider>
-            <SafeAreaProvider>
-                <StatusBar barStyle="light-content" backgroundColor={T.color.background.primary} />
-                <AuthGuard />
-                <Stack
-                    screenOptions={{
-                        headerShown: false,
-                        contentStyle: { backgroundColor: T.color.background.primary },
-                        animation: 'slide_from_right',
-                    }}
-                >
-                    <Stack.Screen name="index" />
-                    <Stack.Screen name="onboarding2" />
-                    <Stack.Screen name="onboarding-camera" />
-                    <Stack.Screen name="onboarding3" />
-                    <Stack.Screen name="(dashboard)" />
-                    <Stack.Screen name="live" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
-                    <Stack.Screen name="workout" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
-                    <Stack.Screen name="history" options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen name="analytics" options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen name="leaderboard" options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen name="workout-setup" options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen name="settings" options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen name="calibration" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
-                    <Stack.Screen name="program" options={{ animation: 'slide_from_bottom' }} />
-                    <Stack.Screen name="analysis/[id]" />
-                    <Stack.Screen name="highlight/[id]" options={{ animation: 'fade' }} />
-                </Stack>
-                <ToastContainer />
-            </SafeAreaProvider>
-        </GluestackProvider>
+        <SafeAreaProvider>
+            <StatusBar barStyle="light-content" backgroundColor={T.color.background.primary} />
+            <AuthGuard />
+            <Stack
+                screenOptions={{
+                    headerShown: false,
+                    contentStyle: { backgroundColor: T.color.background.primary },
+                    animation: 'slide_from_right',
+                }}
+            >
+                <Stack.Screen name="index" />
+                <Stack.Screen name="onboarding2" />
+                <Stack.Screen name="onboarding-camera" />
+                <Stack.Screen name="onboarding3" />
+                <Stack.Screen name="(dashboard)" />
+                <Stack.Screen name="live" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
+                <Stack.Screen name="workout" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
+                <Stack.Screen name="history" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="analytics" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="leaderboard" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="workout-setup" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="settings" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="calibration" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
+                <Stack.Screen name="program" options={{ animation: 'slide_from_bottom' }} />
+                <Stack.Screen name="analysis/[id]" />
+                <Stack.Screen name="highlight/[id]" options={{ animation: 'fade' }} />
+            </Stack>
+            <ToastContainer />
+        </SafeAreaProvider>
     )
 }

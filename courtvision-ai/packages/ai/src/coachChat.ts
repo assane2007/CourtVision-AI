@@ -54,6 +54,14 @@ export type ConversationContext =
     | 'film_room'
     | 'technique'
 
+export interface RecentSessionSummary {
+    date: string
+    type: string
+    fgPct: number
+    mentalScore: number
+    shotsAttempted: number
+}
+
 export interface PlayerContext {
     username: string
     position?: string
@@ -62,6 +70,7 @@ export interface PlayerContext {
     strengths?: string[]
     weaknesses?: string[]
     recentSessions?: RecentSessionSummary[]
+    ragMemories?: string[] // Long-term RAG injected memories
     currentPlan?: string
     mentalProfile?: {
         resilience: number
@@ -74,14 +83,6 @@ export interface PlayerContext {
         avgShotQuality: number
     }
     recoveryScore?: number
-}
-
-export interface RecentSessionSummary {
-    date: string
-    type: string
-    fgPct: number
-    mentalScore: number
-    shotsAttempted: number
 }
 
 export interface CoachChatResponse {
@@ -318,6 +319,14 @@ export class CoachChatEngine {
             }
         }
 
+        if (playerContext.ragMemories?.length) {
+            systemPrompt += `\n--- RAG MEMORY (Souvenirs Historiques Pertinents) ---\n`
+            systemPrompt += `Utilise ces faits du passé du joueur pour personnaliser tes conseils:\n`
+            for (const memory of playerContext.ragMemories) {
+                systemPrompt += `- ${memory}\n`
+            }
+        }
+
         return systemPrompt
     }
 
@@ -430,5 +439,48 @@ export class CoachChatEngine {
         }
 
         return attachments
+    }
+
+    /**
+     * Convert and store a session summary into the vector database (pgvector)
+     * This acts as the long-term memory for the AI Coach (RAG mechanism).
+     */
+    static async storeSessionMemory(
+        supabase: any,
+        userId: string,
+        sessionId: string,
+        summaryContent: string,
+        metadata: object = {}
+    ): Promise<boolean> {
+        try {
+            console.log(`[RAG] Encoding session memory for user ${userId}...`)
+            const { generateEmbedding } = await import('./llm')
+
+            // 1. Generate text embedding
+            const embeddingVector = await generateEmbedding(summaryContent)
+
+            // 2. Format as Postgres pgvector string: '[0.012, -0.043, ...]'
+            const vectorString = `[${embeddingVector.join(',')}]`
+
+            // 3. Store in Supabase via raw insert to `memory_embeddings` table
+            const { error } = await supabase.from('memory_embeddings').insert({
+                user_id: userId,
+                session_id: sessionId,
+                content: summaryContent,
+                embedding: vectorString,
+                metadata: metadata
+            })
+
+            if (error) {
+                console.error(`[RAG] Failed to store memory in pgvector: ${error.message}`)
+                return false
+            }
+
+            console.log(`[RAG] Successfully securely stored vectorized memory for session ${sessionId}`)
+            return true
+        } catch (error) {
+            console.error('[RAG] Error during memory encoding:', error)
+            return false
+        }
     }
 }

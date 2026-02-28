@@ -17,6 +17,9 @@ export interface ShotResult {
         releaseHeight: number // ratio hauteur release / taille joueur
         releaseTime: number // secondes entre début mouvement et release
         followThrough: boolean // main restée en position après le tir
+        arcAngle: number // Angle de tir (idéal: 45°)
+        maxVertical: number // Élévation verticale au release (cm)
+        legSweep: boolean // Détection du mouvement des jambes vers l'avant
     }
     nbaComparison: {
         similarity: number // 0-100
@@ -35,6 +38,8 @@ export interface ShotStats {
     worstZone: ShotZone
     averageElbowAngle: number
     averageReleaseHeight: number
+    averageArcAngle: number
+    averageMaxVertical: number
     consistencyScore: number // 0-100, écart-type de la posture
 }
 
@@ -97,7 +102,7 @@ function courtZoneToShotZone(zone: CourtZone): ShotZone {
 function detectShotMotion(
     prevFrames: TrackedPlayer[],
     currentPlayer: TrackedPlayer
-): { isShooting: boolean; releaseFrame: boolean; elbowAngle: number; releaseHeight: number } {
+): { isShooting: boolean; releaseFrame: boolean; elbowAngle: number; releaseHeight: number; maxVertical?: number; legSweep?: boolean } {
     const landmarks = currentPlayer.landmarks
     if (landmarks.length < 33) {
         return { isShooting: false, releaseFrame: false, elbowAngle: 0, releaseHeight: 0 }
@@ -134,7 +139,18 @@ function detectShotMotion(
     const isShooting = wristAboveHead && wristAboveShoulder
     const releaseFrame = isShooting && elbowExtended
 
-    return { isShooting, releaseFrame, elbowAngle, releaseHeight: Math.abs(releaseHeight) }
+    // Max Vertical (heuristic based on ankle distance from ground bounding box vs player height)
+    // A more precise version would track ankle y-delta from pre-shot crouch
+    const leftAnkle = landmarks[LANDMARKS.LEFT_ANKLE]
+    const rightAnkle = landmarks[LANDMARKS.RIGHT_ANKLE]
+    const restingY = Math.min(leftAnkle?.y || 1, rightAnkle?.y || 1)
+    const verticalPx = restingY < 0.95 ? (0.95 - restingY) : 0
+    const maxVertical = Math.round(verticalPx * 200) // approx transform to cm
+
+    // Leg Sweep (are feet coming forward during release?)
+    const legSweep = (leftAnkle?.z < 0 || rightAnkle?.z < 0) // Z axis indicating moving towards camera/forward
+
+    return { isShooting, releaseFrame, elbowAngle, releaseHeight: Math.abs(releaseHeight), maxVertical, legSweep }
 }
 
 /**
@@ -146,7 +162,7 @@ function determineShotOutcome(
     frames: TrackingResult[],
     releaseFrameIdx: number,
     shooterBbox: { x: number; y: number; w: number; h: number }
-): 'made' | 'missed' | 'blocked' {
+): { outcome: 'made' | 'missed' | 'blocked', arcAngle: number } {
     // Analyser les 30 frames suivantes (1 seconde à 30fps)
     const lookAhead = Math.min(releaseFrameIdx + 30, frames.length)
     let ballGoingUp = 0
@@ -155,12 +171,19 @@ function determineShotOutcome(
     let ballNearBasket = false
     let prevBallY: number | null = null
 
+    let startPos: { x: number, y: number } | null = null
+    let maxApexY = Infinity
+    let arcAngle = 45 // default
+
     for (let i = releaseFrameIdx + 1; i < lookAhead; i++) {
         const ball = frames[i].ballPosition
         if (!ball) {
             ballDisappeared = true
             continue
         }
+
+        if (!startPos) startPos = ball
+        if (ball.y < maxApexY) maxApexY = ball.y
 
         // Le ballon est-il dans la zone du panier ? (quart supérieur du frame, centré)
         if (ball.y < shooterBbox.y * 0.5) {
@@ -174,14 +197,23 @@ function determineShotOutcome(
         prevBallY = ball.y
     }
 
+    // Calculate arc angle approx from apex and start position
+    if (startPos && maxApexY < startPos.y) {
+        const dy = startPos.y - maxApexY
+        const dx = 0.2 // Estimated horizontal distance to apex in normalized coordinates
+        arcAngle = Math.round(Math.abs(Math.atan2(dy, dx) * (180 / Math.PI)))
+    }
+
     // Heuristique de décision
-    // Un tir réussi : le ballon monte, atteint la zone du panier, puis "disparaît" dans le filet
-    if (ballNearBasket && ballDisappeared && ballGoingUp >= 3) return 'made'
+    let outcome: 'made' | 'missed' | 'blocked' = 'missed'
+    if (ballNearBasket && ballDisappeared && ballGoingUp >= 3) outcome = 'made'
+    else if (ballGoingDown > ballGoingUp && ballGoingDown > 5 && !ballNearBasket) outcome = 'blocked'
 
-    // Un tir contré : le ballon change brusquement de direction très vite après le release
-    if (ballGoingDown > ballGoingUp && ballGoingDown > 5 && !ballNearBasket) return 'blocked'
+    return { outcome, arcAngle: clampValue(arcAngle, 30, 65) }
+}
 
-    return 'missed'
+function clampValue(val: number, min: number, max: number) {
+    return Math.max(min, Math.min(max, val))
 }
 
 /**
@@ -310,8 +342,8 @@ export async function analyzeShots(
         const courtZone = getCourtZone(courtX, courtY)
         const shotZone = courtZoneToShotZone(courtZone)
 
-        // Résultat du tir
-        const outcome = determineShotOutcome(trackingData, fi, mainPlayer.bbox)
+        // Résultat du tir et biomechanics du ballon
+        const { outcome, arcAngle } = determineShotOutcome(trackingData, fi, mainPlayer.bbox)
 
         // Follow-through
         const followThrough = detectFollowThrough(trackingData, fi, mainPlayer.id)
@@ -343,7 +375,10 @@ export async function analyzeShots(
                 elbowAngle: Math.round(shotMotion.elbowAngle * 10) / 10,
                 releaseHeight: Math.round(shotMotion.releaseHeight * 100) / 100,
                 releaseTime: Math.round(releaseTime * 100) / 100,
-                followThrough
+                followThrough,
+                arcAngle,
+                maxVertical: shotMotion.maxVertical || 0,
+                legSweep: shotMotion.legSweep || false
             },
             nbaComparison: nbaComp
         })
@@ -381,8 +416,13 @@ export function computeShotStats(shots: ShotResult[]): ShotStats {
     // Moyenne et consistance de la posture
     const elbowAngles = shots.map((s) => s.posture.elbowAngle)
     const releaseHeights = shots.map((s) => s.posture.releaseHeight)
+    const arcAngles = shots.map((s) => s.posture.arcAngle || 45)
+    const maxVerticals = shots.map((s) => s.posture.maxVertical || 0)
+
     const avgElbow = elbowAngles.length > 0 ? elbowAngles.reduce((a, b) => a + b, 0) / elbowAngles.length : 0
     const avgRelease = releaseHeights.length > 0 ? releaseHeights.reduce((a, b) => a + b, 0) / releaseHeights.length : 0
+    const averageArcAngle = arcAngles.length > 0 ? arcAngles.reduce((a, b) => a + b, 0) / arcAngles.length : 45
+    const averageMaxVertical = maxVerticals.length > 0 ? maxVerticals.reduce((a, b) => a + b, 0) / maxVerticals.length : 0
 
     // Consistance = inverse de l'écart-type (normalisé 0-100)
     const elbowStd = standardDeviation(elbowAngles)
@@ -399,6 +439,8 @@ export function computeShotStats(shots: ShotResult[]): ShotStats {
         worstZone,
         averageElbowAngle: Math.round(avgElbow * 10) / 10,
         averageReleaseHeight: Math.round(avgRelease * 100) / 100,
+        averageArcAngle: Math.round(averageArcAngle),
+        averageMaxVertical: Math.round(averageMaxVertical),
         consistencyScore
     }
 }

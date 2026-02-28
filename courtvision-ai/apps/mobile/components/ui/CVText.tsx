@@ -1,7 +1,7 @@
 /**
  * CVText — CourtVision branded text component.
  *
- * Built on gluestack-ui Text with CourtVision typography presets.
+ * Built on pure React Native Text with CourtVision typography presets.
  * Supports preset styles: heroStat, bigStat, screenTitle, sectionTitle,
  * cardTitle, body, bodySemibold, caption, overline.
  *
@@ -12,8 +12,7 @@
  */
 
 import React from 'react'
-import { Text } from '@gluestack-ui/themed'
-import { TextStyle } from 'react-native'
+import { Text, TextStyle } from 'react-native'
 import { T, typePresets } from '../../lib/theme'
 
 // ─── Presets ──────────────────────────────────────────────────
@@ -25,18 +24,18 @@ export type TextColorAlias =
   | 'purple' | 'gold' | 'white'
 
 const COLOR_MAP: Record<TextColorAlias, string> = {
-  primary:   T.color.text.primary,
+  primary: T.color.text.primary,
   secondary: T.color.text.secondary,
-  tertiary:  T.color.text.tertiary,
-  inverse:   T.color.text.inverse,
-  amber:     T.color.signature.primary,
-  success:   T.color.semantic.success,
-  error:     T.color.semantic.error,
-  warning:   T.color.semantic.warning,
-  info:      T.color.semantic.info,
-  purple:    T.color.gamification.purple,
-  gold:      T.color.gamification.gold,
-  white:     '#FFFFFF',
+  tertiary: T.color.text.tertiary,
+  inverse: T.color.text.inverse,
+  amber: T.color.signature.primary,
+  success: T.color.semantic.success,
+  error: T.color.semantic.error,
+  warning: T.color.semantic.warning,
+  info: T.color.semantic.info,
+  purple: T.color.gamification.purple,
+  gold: T.color.gamification.gold,
+  white: '#FFFFFF',
 }
 
 // ─── Props ───────────────────────────────────────────────────

@@ -496,7 +496,7 @@ export default async function coachChatRoutes(fastify: FastifyInstance) {
 // ==========================================
 
 async function buildPlayerContext(fastify: FastifyInstance, userId: string): Promise<PlayerContext> {
-    const [userRes, twinRes, dnaRes, sessionsRes] = await Promise.all([
+    const [userRes, twinRes, dnaRes, sessionsRes, historicalRes] = await Promise.all([
         fastify.supabase.from('users').select('username, position').eq('id', userId).single(),
         fastify.supabase.from('digital_twins').select('twin_profile').eq('user_id', userId).single(),
         fastify.supabase.from('shot_dna_profiles').select('profile').eq('user_id', userId).single(),
@@ -504,6 +504,12 @@ async function buildPlayerContext(fastify: FastifyInstance, userId: string): Pro
             .select('created_at, type, analyses(shot_attempts, shot_made, mental_score)')
             .eq('user_id', userId).eq('status', 'complete')
             .order('created_at', { ascending: false }).limit(5),
+        // Simulate RAG: Fetching historical sessions with AI reports
+        fastify.supabase.from('sessions')
+            .select('created_at, analyses(ai_report)')
+            .eq('user_id', userId).eq('status', 'complete')
+            .order('created_at', { ascending: false })
+            .limit(15)
     ])
 
     const twin = twinRes.data?.twin_profile
@@ -522,6 +528,26 @@ async function buildPlayerContext(fastify: FastifyInstance, userId: string): Pro
         }
     })
 
+    // Extract RAG memories from historical AI reports
+    const ragMemories: string[] = []
+    if (historicalRes.data) {
+        historicalRes.data.forEach((s: any) => {
+            const a = Array.isArray(s.analyses) ? s.analyses[0] : s.analyses
+            if (a?.ai_report) {
+                try {
+                    const report = typeof a.ai_report === 'string' ? JSON.parse(a.ai_report) : a.ai_report
+                    // Add summary bits of past sessions as "memories"
+                    if (report.strengths?.length || report.weaknesses?.length) {
+                        ragMemories.push(
+                            `Le ${new Date(s.created_at).toLocaleDateString()}: focus était sur ` +
+                            (report.weaknesses?.[0] || report.strengths?.[0] || 'la régularité')
+                        )
+                    }
+                } catch { /* parse error, ignore */ }
+            }
+        })
+    }
+
     return {
         username: userRes.data?.username || 'Player',
         position: userRes.data?.position ?? twin?.position,
@@ -530,6 +556,7 @@ async function buildPlayerContext(fastify: FastifyInstance, userId: string): Pro
         strengths: twin?.strengths?.map((s: any) => s.label) ?? [],
         weaknesses: twin?.weaknesses?.map((w: any) => w.label) ?? [],
         recentSessions,
+        ragMemories: ragMemories.slice(0, 5), // Keep top 5 most relevant memories
         mentalProfile: twin?.mentalProfile ? {
             resilience: twin.mentalProfile.resilience,
             clutchFactor: twin.mentalProfile.clutchFactor,

@@ -362,6 +362,7 @@ export class SmartTrainingEngine {
 Tu crées des plans d'entraînement ultra-personnalisés en JSON.
 Réponds UNIQUEMENT en JSON valide, sans texte autour.`,
                 userPrompt: prompt,
+                responseFormat: 'json'
             })
 
             // Try to parse AI response as JSON

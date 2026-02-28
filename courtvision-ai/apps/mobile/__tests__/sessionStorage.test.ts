@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 /**
  * Tests pour le SessionStorageService
  */
@@ -99,8 +100,8 @@ describe('SessionStorageService', () => {
     beforeEach(() => {
         // Clear storage
         Object.keys(mockStorage).forEach(key => delete mockStorage[key])
-        // Reset singleton
-        ;(SessionStorageService as any).instance = null
+            // Reset singleton
+            ; (SessionStorageService as any).instance = null
         service = SessionStorageService.getInstance()
     })
 

@@ -9,63 +9,49 @@ import {
     TrendingUp, Award
 } from 'lucide-react'
 
+import { motion, animate, useInView, Variants } from 'framer-motion'
+
 // ==========================================
 // HOOKS
 // ==========================================
-function useReveal<T extends HTMLElement>() {
-    const ref = useRef<T>(null)
 
-    useEffect(() => {
-        const el = ref.current
-        if (!el) return
-
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    el.classList.add('visible')
-                    observer.unobserve(el)
-                }
-            },
-            { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
-        )
-        observer.observe(el)
-        return () => observer.disconnect()
-    }, [])
-
-    return ref
-}
-
-function useCountUp(target: number, duration = 1500) {
+function useCountUp(target: number, duration = 1.5) {
     const [value, setValue] = useState(0)
     const ref = useRef<HTMLDivElement>(null)
-    const started = useRef(false)
+    const isInView = useInView(ref, { once: true, margin: "-50px" })
 
     useEffect(() => {
-        const el = ref.current
-        if (!el) return
-
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting && !started.current) {
-                    started.current = true
-                    const startTime = performance.now()
-                    const tick = (now: number) => {
-                        const elapsed = now - startTime
-                        const progress = Math.min(elapsed / duration, 1)
-                        const eased = 1 - Math.pow(1 - progress, 4)
-                        setValue(Math.round(eased * target))
-                        if (progress < 1) requestAnimationFrame(tick)
-                    }
-                    requestAnimationFrame(tick)
+        if (isInView) {
+            const controls = animate(0, target, {
+                duration,
+                ease: "easeOut",
+                onUpdate(val) {
+                    setValue(Math.round(val))
                 }
-            },
-            { threshold: 0.5 }
-        )
-        observer.observe(el)
-        return () => observer.disconnect()
-    }, [target, duration])
+            })
+            return controls.stop
+        }
+        return undefined
+    }, [target, duration, isInView])
 
     return { value, ref }
+}
+
+// Staggered variants for generic use
+const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1,
+            delayChildren: 0.1
+        }
+    }
+}
+
+const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 100, damping: 15 } }
 }
 
 // ==========================================
@@ -135,7 +121,12 @@ function Navbar() {
                 </div>
 
                 {open && (
-                    <div className="md:hidden pb-4 flex flex-col gap-1 animate-slide-up">
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="md:hidden pb-4 flex flex-col gap-1"
+                    >
                         {navLinks.map(link => (
                             <a
                                 key={link.href}
@@ -153,7 +144,7 @@ function Navbar() {
                         >
                             Join Beta
                         </a>
-                    </div>
+                    </motion.div>
                 )}
             </div>
         </nav>
@@ -169,8 +160,16 @@ function Hero() {
             <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-primary/5" />
 
             {/* Ambient glow orbs */}
-            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-primary/[0.04] rounded-full blur-[120px]" />
-            <div className="absolute bottom-1/3 right-1/4 w-[400px] h-[400px] bg-accent/[0.03] rounded-full blur-[100px]" />
+            <motion.div
+                animate={{ scale: [1, 1.05, 1], opacity: [0.04, 0.06, 0.04] }}
+                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-primary rounded-full blur-[120px] pointer-events-none"
+            />
+            <motion.div
+                animate={{ scale: [1, 1.1, 1], opacity: [0.03, 0.05, 0.03] }}
+                transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+                className="absolute bottom-1/3 right-1/4 w-[400px] h-[400px] bg-accent rounded-full blur-[100px] pointer-events-none"
+            />
 
             {/* Court lines SVG */}
             <svg className="absolute opacity-[0.03] w-[900px] h-[650px]" viewBox="0 0 800 600" fill="none" aria-hidden="true">
@@ -183,30 +182,35 @@ function Hero() {
                 <path d="M 600 237 A 75 75 0 0 0 750 237" stroke="#FF6B00" strokeWidth="1" className="court-line" fill="none" />
             </svg>
 
-            <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
+            <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="relative z-10 text-center px-4 max-w-5xl mx-auto"
+            >
                 {/* Badge */}
-                <div className="inline-flex items-center gap-2 bg-surface/80 border border-border rounded-full px-4 py-2 mb-8 animate-fade-in">
+                <motion.div variants={itemVariants} className="inline-flex items-center gap-2 bg-surface/80 border border-border rounded-full px-4 py-2 mb-8">
                     <span className="flex h-2 w-2 rounded-full bg-green animate-pulse" />
                     <span className="text-sm text-text-secondary">Open Beta &mdash; Limited Spots</span>
                     <Sparkles size={14} className="text-primary" />
-                </div>
+                </motion.div>
 
                 {/* Headline */}
-                <h1 className="text-5xl sm:text-6xl lg:text-8xl font-display font-black leading-[1.02] mb-6 animate-slide-up tracking-tight">
+                <motion.h1 variants={itemVariants} className="text-5xl sm:text-6xl lg:text-8xl font-display font-black leading-[1.02] mb-6 tracking-tight">
                     <span className="text-text-primary">Play like</span>
                     <br />
                     <span className="gradient-text">a pro.</span>
-                </h1>
+                </motion.h1>
 
                 {/* Subtitle */}
-                <p className="text-lg sm:text-xl text-text-secondary max-w-2xl mx-auto mb-10 animate-slide-up leading-relaxed" style={{ animationDelay: '0.1s' }}>
+                <motion.p variants={itemVariants} className="text-lg sm:text-xl text-text-secondary max-w-2xl mx-auto mb-10 leading-relaxed">
                     AI that analyzes your basketball game from video. Shot tracking,
                     mental scoring, 3D reconstruction, auto highlights.
                     <span className="text-primary font-semibold"> Your personal coach in your pocket.</span>
-                </p>
+                </motion.p>
 
                 {/* CTA buttons */}
-                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-slide-up" style={{ animationDelay: '0.2s' }}>
+                <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                     <a
                         href="#waitlist"
                         className="group bg-primary hover:bg-primary-hover text-white px-8 py-4 rounded-full font-bold text-lg transition-all btn-glow flex items-center gap-2 hover:shadow-xl hover:shadow-primary/30"
@@ -221,10 +225,10 @@ function Hero() {
                         See How It Works
                         <Play size={16} />
                     </a>
-                </div>
+                </motion.div>
 
                 {/* Social proof */}
-                <div className="mt-14 flex flex-wrap justify-center items-center gap-6 text-text-secondary text-sm animate-fade-in" style={{ animationDelay: '0.4s' }}>
+                <motion.div variants={itemVariants} className="mt-14 flex flex-wrap justify-center items-center gap-6 text-text-secondary text-sm">
                     <div className="flex items-center gap-1">
                         {[...Array(5)].map((_, i) => (
                             <Star key={i} size={14} className="fill-yellow text-yellow" />
@@ -241,13 +245,18 @@ function Hero() {
                         <Users size={14} className="text-accent" />
                         Used in 15 countries
                     </span>
-                </div>
-            </div>
+                </motion.div>
+            </motion.div>
 
             {/* Scroll indicator */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1, y: [0, 10, 0] }}
+                transition={{ delay: 1.5, duration: 2, repeat: Infinity }}
+                className="absolute bottom-8 left-1/2 -translate-x-1/2"
+            >
                 <ChevronDown size={24} className="text-text-tertiary" />
-            </div>
+            </motion.div>
         </section>
     )
 }
@@ -256,13 +265,18 @@ function Hero() {
 // STATS BAR
 // ==========================================
 function StatsBar() {
-    const s1 = useCountUp(7, 1000)
-    const s2 = useCountUp(33, 1200)
-    const s3 = useCountUp(2500, 1800)
-    const ref = useReveal<HTMLDivElement>()
+    const s1 = useCountUp(7, 1.2)
+    const s2 = useCountUp(33, 1.4)
+    const s3 = useCountUp(2500, 1.8)
 
     return (
-        <section ref={ref} className="py-16 px-4 border-y border-border reveal">
+        <motion.section
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.6 }}
+            className="py-16 px-4 border-y border-border"
+        >
             <div className="max-w-6xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-8">
                 <div className="text-center" ref={s1.ref}>
                     <div className="text-4xl sm:text-5xl font-display font-black gradient-text mb-2">{s1.value}</div>
@@ -281,7 +295,7 @@ function StatsBar() {
                     <div className="text-text-secondary text-sm">full analysis time</div>
                 </div>
             </div>
-        </section>
+        </motion.section>
     )
 }
 
@@ -348,13 +362,17 @@ const features = [
 ]
 
 function Features() {
-    const titleRef = useReveal<HTMLDivElement>()
-    const gridRef = useReveal<HTMLDivElement>()
-
     return (
-        <section id="features" className="py-28 px-4">
+        <motion.section
+            id="features"
+            className="py-28 px-4"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={containerVariants}
+        >
             <div className="max-w-7xl mx-auto">
-                <div ref={titleRef} className="text-center mb-16 reveal">
+                <motion.div variants={itemVariants} className="text-center mb-16">
                     <span className="text-primary font-semibold text-sm uppercase tracking-wider font-display">Features</span>
                     <h2 className="text-4xl sm:text-5xl font-display font-bold text-text-primary mt-3 mb-4">
                         8 <span className="gradient-text">game-changing</span> features
@@ -362,11 +380,12 @@ function Features() {
                     <p className="text-text-secondary max-w-2xl mx-auto text-lg">
                         Not just a shot counter. A real AI coach that analyzes every aspect of your game.
                     </p>
-                </div>
+                </motion.div>
 
-                <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 reveal-stagger">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                     {features.map((f, i) => (
-                        <div
+                        <motion.div
+                            variants={itemVariants}
                             key={i}
                             className="group glass-card rounded-2xl p-6 hover:border-primary/30 transition-all duration-300 hover:-translate-y-1 card-shine"
                         >
@@ -375,11 +394,11 @@ function Features() {
                             </div>
                             <h3 className="text-base font-bold text-text-primary mb-2 font-display">{f.title}</h3>
                             <p className="text-text-secondary text-sm leading-relaxed">{f.desc}</p>
-                        </div>
+                        </motion.div>
                     ))}
                 </div>
             </div>
-        </section>
+        </motion.section>
     )
 }
 
@@ -432,12 +451,16 @@ const testimonials = [
 ]
 
 function Testimonials() {
-    const ref = useReveal<HTMLDivElement>()
-
     return (
-        <section className="py-28 px-4 overflow-hidden">
+        <motion.section
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.6 }}
+            className="py-28 px-4 overflow-hidden"
+        >
             <div className="max-w-7xl mx-auto">
-                <div ref={ref} className="text-center mb-16 reveal">
+                <div className="text-center mb-16">
                     <span className="text-primary font-semibold text-sm uppercase tracking-wider font-display">Testimonials</span>
                     <h2 className="text-4xl sm:text-5xl font-display font-bold text-text-primary mt-3 mb-4">
                         They already <span className="gradient-text">leveled up</span>
@@ -451,7 +474,7 @@ function Testimonials() {
                     <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
                     <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
 
-                    <div className="flex animate-marquee w-max gap-6">
+                    <div className="flex animate-marquee w-max gap-6 hover:[animation-play-state:paused]">
                         {[...testimonials, ...testimonials].map((t, i) => (
                             <div
                                 key={i}
@@ -476,7 +499,7 @@ function Testimonials() {
                     </div>
                 </div>
             </div>
-        </section>
+        </motion.section>
     )
 }
 
@@ -491,21 +514,26 @@ const steps = [
 ]
 
 function HowItWorks() {
-    const ref = useReveal<HTMLDivElement>()
-
     return (
-        <section id="how-it-works" className="py-28 px-4 bg-surface/30">
+        <motion.section
+            id="how-it-works"
+            className="py-28 px-4 bg-surface/30"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={containerVariants}
+        >
             <div className="max-w-5xl mx-auto">
-                <div className="text-center mb-16">
+                <motion.div variants={itemVariants} className="text-center mb-16">
                     <span className="text-primary font-semibold text-sm uppercase tracking-wider font-display">How It Works</span>
                     <h2 className="text-4xl sm:text-5xl font-display font-bold text-text-primary mt-3 mb-4">
                         Simple as <span className="gradient-text">1-2-3-4</span>
                     </h2>
-                </div>
+                </motion.div>
 
-                <div ref={ref} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 reveal-stagger">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     {steps.map((step, i) => (
-                        <div key={i} className="relative group">
+                        <motion.div variants={itemVariants} key={i} className="relative group">
                             <div className="text-6xl font-display font-black text-primary/10 mb-4 group-hover:text-primary/20 transition-colors">{step.num}</div>
                             <div className="text-primary mb-3 group-hover:scale-110 transition-transform inline-block">{step.icon}</div>
                             <h3 className="text-xl font-display font-bold text-text-primary mb-2">{step.title}</h3>
@@ -513,11 +541,11 @@ function HowItWorks() {
                             {i < steps.length - 1 && (
                                 <ChevronRight className="hidden lg:block absolute top-8 -right-4 text-border-strong" size={24} />
                             )}
-                        </div>
+                        </motion.div>
                     ))}
                 </div>
             </div>
-        </section>
+        </motion.section>
     )
 }
 
@@ -575,12 +603,17 @@ const plans = [
 ]
 
 function Pricing() {
-    const ref = useReveal<HTMLDivElement>()
-
     return (
-        <section id="pricing" className="py-28 px-4">
+        <motion.section
+            id="pricing"
+            className="py-28 px-4"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={containerVariants}
+        >
             <div className="max-w-6xl mx-auto">
-                <div className="text-center mb-16">
+                <motion.div variants={itemVariants} className="text-center mb-16">
                     <span className="text-primary font-semibold text-sm uppercase tracking-wider font-display">Pricing</span>
                     <h2 className="text-4xl sm:text-5xl font-display font-bold text-text-primary mt-3 mb-4">
                         A plan for every <span className="gradient-text">ambition</span>
@@ -588,11 +621,12 @@ function Pricing() {
                     <p className="text-text-secondary max-w-xl mx-auto">
                         Start free during beta. No credit card required.
                     </p>
-                </div>
+                </motion.div>
 
-                <div ref={ref} className="grid grid-cols-1 md:grid-cols-3 gap-6 reveal-stagger">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {plans.map((plan, i) => (
-                        <div
+                        <motion.div
+                            variants={itemVariants}
                             key={i}
                             className={`relative rounded-2xl p-8 border transition-all duration-300 hover:-translate-y-1 card-shine ${plan.popular
                                 ? 'glass-amber shadow-lg shadow-primary/10 scale-[1.02]'
@@ -627,11 +661,11 @@ function Pricing() {
                             >
                                 {plan.cta}
                             </a>
-                        </div>
+                        </motion.div>
                     ))}
                 </div>
             </div>
-        </section>
+        </motion.section>
     )
 }
 
@@ -689,11 +723,15 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 }
 
 function FAQ() {
-    const ref = useReveal<HTMLDivElement>()
-
     return (
-        <section className="py-28 px-4 bg-surface/30">
-            <div ref={ref} className="max-w-3xl mx-auto reveal">
+        <motion.section
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.6 }}
+            className="py-28 px-4 bg-surface/30"
+        >
+            <div className="max-w-3xl mx-auto">
                 <div className="text-center mb-12">
                     <span className="text-primary font-semibold text-sm uppercase tracking-wider font-display">FAQ</span>
                     <h2 className="text-4xl sm:text-5xl font-display font-bold text-text-primary mt-3 mb-4">
@@ -707,7 +745,7 @@ function FAQ() {
                     ))}
                 </div>
             </div>
-        </section>
+        </motion.section>
     )
 }
 
@@ -715,10 +753,14 @@ function FAQ() {
 // TRUST BAR
 // ==========================================
 function TrustBar() {
-    const ref = useReveal<HTMLDivElement>()
-
     return (
-        <section ref={ref} className="py-12 px-4 reveal">
+        <motion.section
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.8 }}
+            className="py-12 px-4"
+        >
             <div className="max-w-4xl mx-auto flex flex-wrap justify-center items-center gap-8 text-text-tertiary text-sm">
                 <div className="flex items-center gap-2">
                     <Shield size={16} />
@@ -737,7 +779,7 @@ function TrustBar() {
                     <span>99.9% Uptime</span>
                 </div>
             </div>
-        </section>
+        </motion.section>
     )
 }
 
@@ -748,7 +790,6 @@ function Waitlist() {
     const [email, setEmail] = useState('')
     const [submitted, setSubmitted] = useState(false)
     const [loading, setLoading] = useState(false)
-    const ref = useReveal<HTMLDivElement>()
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -756,7 +797,7 @@ function Waitlist() {
 
         setLoading(true)
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.courtvision.ai'
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
             const res = await fetch(`${apiUrl}/api/waitlist`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -772,8 +813,15 @@ function Waitlist() {
     }
 
     return (
-        <section id="waitlist" className="py-28 px-4">
-            <div ref={ref} className="max-w-3xl mx-auto text-center reveal">
+        <motion.section
+            id="waitlist"
+            className="py-28 px-4"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.6 }}
+        >
+            <div className="max-w-3xl mx-auto text-center">
                 <div className="relative glass-amber rounded-3xl p-12 overflow-hidden noise-overlay">
                     {/* Decorative orbs */}
                     <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 rounded-full blur-[80px]" />
@@ -830,7 +878,7 @@ function Waitlist() {
                     </div>
                 </div>
             </div>
-        </section>
+        </motion.section>
     )
 }
 

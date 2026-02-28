@@ -27,7 +27,7 @@ import { T } from '../lib/theme'
 
 export type ButtonState = 'default' | 'loading' | 'success' | 'disabled'
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
-export type ButtonSize   = 'sm' | 'md' | 'lg'
+export type ButtonSize = 'sm' | 'md' | 'lg'
 
 export interface PrimaryButtonProps {
     label: string
@@ -45,32 +45,32 @@ export interface PrimaryButtonProps {
 // ─── Size config ─────────────────────────────────────────────
 
 const SIZE_CONFIG = {
-    sm: { height: 40, paddingH: 14, fontSize: T.fontSize.sm,   iconSize: 14, radius: T.borderRadius.md },
+    sm: { height: 40, paddingH: 14, fontSize: T.fontSize.sm, iconSize: 14, radius: T.borderRadius.md },
     md: { height: 52, paddingH: 20, fontSize: T.fontSize.base, iconSize: 16, radius: T.borderRadius.lg },
-    lg: { height: 60, paddingH: 28, fontSize: T.fontSize.lg,   iconSize: 18, radius: T.borderRadius.xl },
+    lg: { height: 60, paddingH: 28, fontSize: T.fontSize.lg, iconSize: 18, radius: T.borderRadius.xl },
 } as const
 
 // ─── Variant backgrounds ──────────────────────────────────────
 
 function bgColor(variant: ButtonVariant, state: ButtonState) {
     if (state === 'disabled') return T.color.border.subtle
-    if (state === 'success')  return T.color.semantic.success
+    if (state === 'success') return T.color.semantic.success
     switch (variant) {
-        case 'primary':   return T.color.signature.primary        // amber #FF6B00
+        case 'primary': return T.color.signature.primary        // amber #FF6B00
         case 'secondary': return T.color.signature.dim
-        case 'ghost':     return 'transparent'
-        case 'danger':    return T.color.semantic.error
+        case 'ghost': return 'transparent'
+        case 'danger': return T.color.semantic.error
     }
 }
 
 function textColor(variant: ButtonVariant, state: ButtonState) {
     if (state === 'disabled') return T.color.text.secondary
-    if (state === 'success')  return T.color.text.primary
+    if (state === 'success') return T.color.text.primary
     switch (variant) {
-        case 'primary':  return T.color.text.primary
-        case 'secondary':return T.color.signature.primary
-        case 'ghost':    return T.color.text.secondary
-        case 'danger':   return T.color.text.primary
+        case 'primary': return T.color.text.primary
+        case 'secondary': return T.color.signature.primary
+        case 'ghost': return T.color.text.secondary
+        case 'danger': return T.color.text.primary
     }
 }
 
@@ -105,7 +105,7 @@ export function PrimaryButton({
 
     // Press animation
     const scale = useSharedValue(1)
-    const bg    = useSharedValue(0) // 0=normal, 1=pressed
+    const bg = useSharedValue(0) // 0=normal, 1=pressed
 
     const handlePressIn = () => {
         scale.value = withSpring(0.95, { damping: 15, stiffness: 400 })
@@ -125,6 +125,7 @@ export function PrimaryButton({
             const t = setTimeout(() => setInternalState('default'), 2000)
             return () => clearTimeout(t)
         }
+        return undefined
     }, [state])
 
     // Glow amplitude (only for primary)
@@ -142,8 +143,8 @@ export function PrimaryButton({
         shadowOpacity: glowOpacity.value,
     }))
 
-    const currentBg    = bgColor(variant, internalState)
-    const currentText  = textColor(variant, internalState)
+    const currentBg = bgColor(variant, internalState)
+    const currentText = textColor(variant, internalState)
     const currentBorder = borderStyle(variant, internalState)
 
     const glowShadow = variant === 'primary' ? T.glow(T.color.signature.primary, 0.35) : {}

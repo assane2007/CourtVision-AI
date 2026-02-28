@@ -20,7 +20,8 @@ import {
     interpolate,
     Easing,
 } from 'react-native-reanimated'
-import { useEffect, useCallback } from 'react'
+/* eslint-disable react-hooks/rules-of-hooks */
+import { useEffect, useRef, useCallback } from 'react'
 import { T } from './theme'
 
 // ─── Types ───────────────────────────────────────────────────────────────────

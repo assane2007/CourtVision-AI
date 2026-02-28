@@ -8,7 +8,8 @@
  *   <StatCard label="Précision" value={73} unit="%" size="lg" trend={+5} />
  */
 
-import React, { useEffect } from 'react'
+/* eslint-disable react-hooks/exhaustive-deps */
+import React, { useEffect, useRef } from 'react'
 import {
     View, Text, ViewStyle, StyleSheet,
 } from 'react-native'
@@ -17,6 +18,7 @@ import Animated, {
     withTiming, withDelay, withSpring,
     interpolate, Easing,
 } from 'react-native-reanimated'
+import { BlurView } from 'expo-blur'
 import { T } from '../lib/theme'
 
 // ─── Types ────────────────────────────────────────────────────
@@ -42,28 +44,28 @@ export interface StatCardProps {
 
 const SIZE_CONFIG = {
     sm: {
-        padding:    12,
-        labelSize:  T.fontSize.xs,
-        valueSize:  T.fontSize.xl,   // 24
-        unitSize:   T.fontSize.md,
-        trendSize:  T.fontSize.xs,
-        gap:        4,
+        padding: 12,
+        labelSize: T.fontSize.xs,
+        valueSize: T.fontSize.xl,   // 24
+        unitSize: T.fontSize.md,
+        trendSize: T.fontSize.xs,
+        gap: 4,
     },
     md: {
-        padding:    16,
-        labelSize:  T.fontSize.sm,
-        valueSize:  T.fontSize['2xl'],  // 32
-        unitSize:   T.fontSize.base,
-        trendSize:  T.fontSize.sm,
-        gap:        6,
+        padding: 16,
+        labelSize: T.fontSize.sm,
+        valueSize: T.fontSize['2xl'],  // 32
+        unitSize: T.fontSize.base,
+        trendSize: T.fontSize.sm,
+        gap: 6,
     },
     lg: {
-        padding:    20,
-        labelSize:  T.fontSize.base,
-        valueSize:  42,           // hero-light
-        unitSize:   T.fontSize.lg,
-        trendSize:  T.fontSize.sm,
-        gap:        8,
+        padding: 20,
+        labelSize: T.fontSize.base,
+        valueSize: 42,           // hero-light
+        unitSize: T.fontSize.lg,
+        trendSize: T.fontSize.sm,
+        gap: 8,
     },
 } as const
 
@@ -71,18 +73,18 @@ const SIZE_CONFIG = {
 
 function variantColor(variant: StatCardVariant) {
     switch (variant) {
-        case 'accent':  return T.color.signature.primary         // amber #FF6B00
+        case 'accent': return T.color.signature.primary         // amber #FF6B00
         case 'success': return T.color.semantic.success
-        case 'danger':  return T.color.semantic.error
-        default:        return T.color.text.primary
+        case 'danger': return T.color.semantic.error
+        default: return T.color.text.primary
     }
 }
 
 function variantGlass(variant: StatCardVariant) {
     switch (variant) {
-        case 'accent':  return T.glass.accent
+        case 'accent': return T.glass.accent
         case 'success': return T.glass.success
-        default:        return T.glass.light
+        default: return T.glass.light
     }
 }
 
@@ -131,7 +133,7 @@ function AnimatedValue({ value, delay, size, color }: {
     // On expose la valeur via un hook de mise à jour React
     const [display, setDisplay] = React.useState(0)
     useEffect(() => {
-        let start = 0
+        const start = 0
         const end = value
         let raf: ReturnType<typeof requestAnimationFrame>
         const startTime = performance.now()
@@ -197,9 +199,14 @@ export function StatCard({
         transform: [{ translateY: translateY.value }],
     }))
 
+    // Premium Apple Fitness+ Blur settings
+    const blurTint = variant === 'default' ? 'systemThinMaterialDark' : (variant === 'accent' ? 'systemMaterialDark' : 'dark')
+    const blurIntensity = variant === 'default' ? 40 : 60
+
     if (loading) {
         return (
-            <View style={[styles.base, glass, { padding: cfg.padding }, style]}>
+            <View style={[styles.base, glass, { padding: cfg.padding, overflow: 'hidden' }, style]}>
+                <BlurView intensity={blurIntensity} tint={blurTint as any} style={StyleSheet.absoluteFillObject} />
                 <SkeletonPulse width="55%" height={cfg.labelSize + 2} />
                 <SkeletonPulse width="70%" height={cfg.valueSize * 0.8} radius={8} />
                 {trend !== undefined && <SkeletonPulse width="45%" height={cfg.trendSize + 2} />}
@@ -210,7 +217,14 @@ export function StatCard({
     const isTrendPositive = (trend ?? 0) >= 0
 
     return (
-        <Animated.View style={[styles.base, glass, { padding: cfg.padding, gap: cfg.gap }, cardStyle, style]}>
+        <Animated.View style={[styles.base, glass, { padding: cfg.padding, gap: cfg.gap, overflow: 'hidden' }, cardStyle, style]}>
+            <BlurView intensity={blurIntensity} tint={blurTint as any} style={StyleSheet.absoluteFillObject} />
+
+            {/* Outline subtil premium (inner border) */}
+            <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+                <View style={{ flex: 1, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)', borderRadius: T.borderRadius.lg }} />
+            </View>
+
             {/* Label + icon */}
             <View style={styles.labelRow}>
                 <Text style={[styles.label, { fontSize: cfg.labelSize }]} numberOfLines={1}>

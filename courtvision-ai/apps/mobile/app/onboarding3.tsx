@@ -20,14 +20,19 @@ const type = typePresets
 
 export default function Onboarding3() {
     const router = useRouter()
-    const { loginWithEmail, signUpWithEmail, loginWithOAuth, authLoading } = useStore()
 
-    const [mode, setMode]       = useState<'choice' | 'email'>('choice')
-    const [email, setEmail]     = useState('')
+    // Selective destructuring to avoid full re-renders
+    const loginWithEmail = useStore(s => s.loginWithEmail)
+    const signUpWithEmail = useStore(s => s.signUpWithEmail)
+    const loginWithOAuth = useStore(s => s.loginWithOAuth)
+    const authLoading = useStore(s => s.authLoading)
+
+    const [mode, setMode] = useState<'choice' | 'email'>('choice')
+    const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [username, setUsername] = useState('')
-    const [isLogin, setIsLogin]  = useState(true)
-    const [loading, setLoading]  = useState(false)
+    const [isLogin, setIsLogin] = useState(true)
+    const [loading, setLoading] = useState(false)
     const [showPass, setShowPass] = useState(false)
 
     // Animations

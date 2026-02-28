@@ -67,8 +67,8 @@ function buildTwinCardData(profile: TwinProfile, user: any): TwinCardData {
         pressureResponse: profile.mentalProfile.pressureResponse,
 
         // Strengths
-        strengths: profile.strengths.slice(0, 3).map(s => s.label),
-        weaknesses: profile.weaknesses.slice(0, 2).map(w => w.label),
+        strengths: profile.strengths.slice(0, 3).map((s: any) => s.label),
+        weaknesses: profile.weaknesses.slice(0, 2).map((w: any) => w.label),
 
         // Meta
         modelVersion: profile.modelVersion,

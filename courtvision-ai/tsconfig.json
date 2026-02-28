@@ -1,5 +1,15 @@
 {
     "compilerOptions": {
+        "baseUrl": ".",
+        "paths": {
+            "@courtvision/*": [
+                "packages/*",
+                "packages/*/src",
+                "apps/*",
+                "apps/*/src"
+            ]
+        },
+        "jsx": "react-native",
         "target": "ESNext",
         "module": "CommonJS",
         "strict": true,

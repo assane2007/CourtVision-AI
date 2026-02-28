@@ -20,7 +20,7 @@ const REFRESH_TOKEN_KEY = 'courtvision_refresh_token'
 export const API_BASE_URL =
     Constants.expoConfig?.extra?.apiUrl
     ?? process.env.EXPO_PUBLIC_API_URL
-    ?? 'http://localhost:3001'
+    ?? 'http://localhost:8080'
 
 // ─── Token management (SecureStore) ──────────────────────────
 
@@ -217,9 +217,9 @@ export async function apiFetch<T = unknown>(
 // ─── Shorthand helpers ─────────────────────────────────────────
 
 export const api = {
-    get:    <T>(path: string)               => apiFetch<T>(path, { method: 'GET' }),
-    post:   <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'POST',  body: JSON.stringify(body) }),
-    patch:  <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
-    put:    <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'PUT',   body: JSON.stringify(body) }),
-    delete: <T>(path: string)               => apiFetch<T>(path, { method: 'DELETE' }),
+    get: <T>(path: string) => apiFetch<T>(path, { method: 'GET' }),
+    post: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'POST', body: JSON.stringify(body) }),
+    patch: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
+    put: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
+    delete: <T>(path: string) => apiFetch<T>(path, { method: 'DELETE' }),
 }

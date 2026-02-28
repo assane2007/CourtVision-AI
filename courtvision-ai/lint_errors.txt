@@ -1,0 +1,21 @@
+﻿
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\__tests__\sessionStorage.test.ts
+  128:34  error  Require statement not part of import statement  @typescript-eslint/no-var-requires
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\__tests__\shareService.test.ts
+   52:31  error  Require statement not part of import statement  @typescript-eslint/no-var-requires
+   64:31  error  Require statement not part of import statement  @typescript-eslint/no-var-requires
+  100:31  error  Require statement not part of import statement  @typescript-eslint/no-var-requires
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\components\StatCard.tsx
+  97:9  error  Definition for rule 'react-hooks/exhaustive-deps' was not found  react-hooks/exhaustive-deps
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\apps\mobile\lib\animations.ts
+  327:9  error  Definition for rule 'react-hooks/rules-of-hooks' was not found  react-hooks/rules-of-hooks
+
+C:\Users\Mohamed\Documents\CourtVision-AI\courtvision-ai\packages\api\src\__tests__\routes.test.ts
+  29:16  error  Require statement not part of import statement  @typescript-eslint/no-var-requires
+  60:16  error  Require statement not part of import statement  @typescript-eslint/no-var-requires
+
+Ô£û 8 problems (8 errors, 0 warnings)
+

@@ -146,6 +146,8 @@ export interface TwinProfile {
         avgElbowAngle: number
         avgReleaseHeight: number
         avgShoulderPosture: number
+        avgArcAngle: number
+        avgMaxVertical: number
         dominantHand: 'right' | 'left'
     }
     /** Profil mental */
@@ -185,17 +187,17 @@ const NBA_ARCHETYPES: {
     bestZone: ShotZone
     traits: string[]
 }[] = [
-    { name: 'Stephen Curry', style: 'sharpshooter', shooting: 98, mental: 95, physical: 78, bestZone: 'top3', traits: ['quick_release', 'deep_range', 'off_dribble', 'gravity'] },
-    { name: 'Klay Thompson', style: 'sharpshooter', shooting: 95, mental: 88, physical: 75, bestZone: 'wing3', traits: ['catch_and_shoot', 'off_screen', 'streaky_hot', 'defense'] },
-    { name: 'Kevin Durant', style: 'shot_creator', shooting: 93, mental: 92, physical: 90, bestZone: 'midrange', traits: ['high_release', 'pull_up', 'unguardable', 'length'] },
-    { name: 'Kyrie Irving', style: 'shot_creator', shooting: 90, mental: 80, physical: 82, bestZone: 'midrange', traits: ['handles', 'finishing', 'isolation', 'creativity'] },
-    { name: 'Ja Morant', style: 'slasher', shooting: 72, mental: 85, physical: 96, bestZone: 'paint', traits: ['explosiveness', 'athleticism', 'drive_and_kick', 'fearless'] },
-    { name: 'LeBron James', style: 'balanced', shooting: 80, mental: 97, physical: 95, bestZone: 'paint', traits: ['court_vision', 'versatility', 'iq', 'durability'] },
-    { name: 'Kawhi Leonard', style: 'two_way', shooting: 85, mental: 90, physical: 88, bestZone: 'midrange', traits: ['defense', 'clutch', 'efficient', 'quiet_killer'] },
-    { name: 'Luka Dončić', style: 'playmaker', shooting: 82, mental: 88, physical: 80, bestZone: 'top3', traits: ['step_back', 'playmaking', 'deceleration', 'bbiq'] },
-    { name: 'Giannis Antetokounmpo', style: 'paint_beast', shooting: 60, mental: 90, physical: 99, bestZone: 'restricted', traits: ['transition', 'length', 'power', 'relentless'] },
-    { name: 'Karl-Anthony Towns', style: 'stretch_big', shooting: 85, mental: 75, physical: 82, bestZone: 'top3', traits: ['stretch', 'versatile_scoring', 'rebounding', 'soft_touch'] },
-]
+        { name: 'Stephen Curry', style: 'sharpshooter', shooting: 98, mental: 95, physical: 78, bestZone: 'top3', traits: ['quick_release', 'deep_range', 'off_dribble', 'gravity'] },
+        { name: 'Klay Thompson', style: 'sharpshooter', shooting: 95, mental: 88, physical: 75, bestZone: 'wing3', traits: ['catch_and_shoot', 'off_screen', 'streaky_hot', 'defense'] },
+        { name: 'Kevin Durant', style: 'shot_creator', shooting: 93, mental: 92, physical: 90, bestZone: 'midrange', traits: ['high_release', 'pull_up', 'unguardable', 'length'] },
+        { name: 'Kyrie Irving', style: 'shot_creator', shooting: 90, mental: 80, physical: 82, bestZone: 'midrange', traits: ['handles', 'finishing', 'isolation', 'creativity'] },
+        { name: 'Ja Morant', style: 'slasher', shooting: 72, mental: 85, physical: 96, bestZone: 'paint', traits: ['explosiveness', 'athleticism', 'drive_and_kick', 'fearless'] },
+        { name: 'LeBron James', style: 'balanced', shooting: 80, mental: 97, physical: 95, bestZone: 'paint', traits: ['court_vision', 'versatility', 'iq', 'durability'] },
+        { name: 'Kawhi Leonard', style: 'two_way', shooting: 85, mental: 90, physical: 88, bestZone: 'midrange', traits: ['defense', 'clutch', 'efficient', 'quiet_killer'] },
+        { name: 'Luka Dončić', style: 'playmaker', shooting: 82, mental: 88, physical: 80, bestZone: 'top3', traits: ['step_back', 'playmaking', 'deceleration', 'bbiq'] },
+        { name: 'Giannis Antetokounmpo', style: 'paint_beast', shooting: 60, mental: 90, physical: 99, bestZone: 'restricted', traits: ['transition', 'length', 'power', 'relentless'] },
+        { name: 'Karl-Anthony Towns', style: 'stretch_big', shooting: 85, mental: 75, physical: 82, bestZone: 'top3', traits: ['stretch', 'versatile_scoring', 'rebounding', 'soft_touch'] },
+    ]
 
 // ==========================================
 // TwinBuilder — Construit et met à jour le profil
@@ -784,6 +786,8 @@ export class TwinBuilder {
         return {
             avgElbowAngle: ss ? Math.round(ss.averageElbowAngle) : 0,
             avgReleaseHeight: ss ? Math.round(ss.averageReleaseHeight * 100) / 100 : 0,
+            avgArcAngle: ss ? Math.round(ss.averageArcAngle) : 45,
+            avgMaxVertical: ss ? Math.round(ss.averageMaxVertical) : 0,
             avgShoulderPosture: agg.bodyLanguageScores.length > 0 ? Math.round(avg(agg.bodyLanguageScores)) : 50,
             dominantHand: 'right', // TODO: détecter à partir des landmarks
         }
@@ -803,7 +807,7 @@ export class TwinBuilder {
             comfortZones: [],
             evolution: [],
             preferredZones: {},
-            poseSignature: { avgElbowAngle: 0, avgReleaseHeight: 0, avgShoulderPosture: 50, dominantHand: 'right' },
+            poseSignature: { avgElbowAngle: 0, avgReleaseHeight: 0, avgArcAngle: 45, avgMaxVertical: 0, avgShoulderPosture: 50, dominantHand: 'right' },
             mentalProfile: { resilience: 50, clutchFactor: 50, consistency: 50, pressureResponse: 'neutral', fatigueResistance: 50 },
         }
     }

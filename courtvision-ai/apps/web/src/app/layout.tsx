@@ -1,6 +1,18 @@
 ﻿import type { Metadata, Viewport } from 'next'
+import { Sora, DM_Sans } from 'next/font/google'
 import './globals.css'
 
+const sora = Sora({
+    subsets: ['latin'],
+    variable: '--font-sora',
+    display: 'swap',
+})
+
+const dmSans = DM_Sans({
+    subsets: ['latin'],
+    variable: '--font-dm-sans',
+    display: 'swap',
+})
 const siteUrl = 'https://courtvision.ai'
 
 export const viewport: Viewport = {
@@ -83,10 +95,8 @@ const jsonLd = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
-        <html lang="en" className="scroll-smooth">
+        <html lang="en" className={`scroll-smooth ${sora.variable} ${dmSans.variable}`}>
             <head>
-                <link rel="preconnect" href="https://fonts.googleapis.com" />
-                <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
                 <script
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
