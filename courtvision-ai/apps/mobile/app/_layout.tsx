@@ -9,6 +9,7 @@ import { useStore } from '../lib/store'
 import { ToastContainer } from '../components/Toast'
 import { usePushNotifications } from '../hooks/usePushNotifications'
 import { T } from '../lib/theme'
+import { GluestackProvider } from '../components/ui/GluestackProvider'
 
 // Configurer le comportement des notifications en foreground (une seule fois, au niveau module)
 Notifications.setNotificationHandler({
@@ -104,34 +105,36 @@ function AuthGuard() {
 
 export default function RootLayout() {
     return (
-        <SafeAreaProvider>
-            <StatusBar barStyle="light-content" backgroundColor={T.color.background.primary} />
-            <AuthGuard />
-            <Stack
-                screenOptions={{
-                    headerShown: false,
-                    contentStyle: { backgroundColor: T.color.background.primary },
-                    animation: 'slide_from_right',
-                }}
-            >
-                <Stack.Screen name="index" />
-                <Stack.Screen name="onboarding2" />
-                <Stack.Screen name="onboarding-camera" />
-                <Stack.Screen name="onboarding3" />
-                <Stack.Screen name="(dashboard)" />
-                <Stack.Screen name="live" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
-                <Stack.Screen name="workout" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
-                <Stack.Screen name="history" options={{ animation: 'slide_from_right' }} />
-                <Stack.Screen name="analytics" options={{ animation: 'slide_from_right' }} />
-                <Stack.Screen name="leaderboard" options={{ animation: 'slide_from_right' }} />
-                <Stack.Screen name="workout-setup" options={{ animation: 'slide_from_right' }} />
-                <Stack.Screen name="settings" options={{ animation: 'slide_from_right' }} />
-                <Stack.Screen name="calibration" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
-                <Stack.Screen name="program" options={{ animation: 'slide_from_bottom' }} />
-                <Stack.Screen name="analysis/[id]" />
-                <Stack.Screen name="highlight/[id]" options={{ animation: 'fade' }} />
-            </Stack>
-            <ToastContainer />
-        </SafeAreaProvider>
+        <GluestackProvider>
+            <SafeAreaProvider>
+                <StatusBar barStyle="light-content" backgroundColor={T.color.background.primary} />
+                <AuthGuard />
+                <Stack
+                    screenOptions={{
+                        headerShown: false,
+                        contentStyle: { backgroundColor: T.color.background.primary },
+                        animation: 'slide_from_right',
+                    }}
+                >
+                    <Stack.Screen name="index" />
+                    <Stack.Screen name="onboarding2" />
+                    <Stack.Screen name="onboarding-camera" />
+                    <Stack.Screen name="onboarding3" />
+                    <Stack.Screen name="(dashboard)" />
+                    <Stack.Screen name="live" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
+                    <Stack.Screen name="workout" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
+                    <Stack.Screen name="history" options={{ animation: 'slide_from_right' }} />
+                    <Stack.Screen name="analytics" options={{ animation: 'slide_from_right' }} />
+                    <Stack.Screen name="leaderboard" options={{ animation: 'slide_from_right' }} />
+                    <Stack.Screen name="workout-setup" options={{ animation: 'slide_from_right' }} />
+                    <Stack.Screen name="settings" options={{ animation: 'slide_from_right' }} />
+                    <Stack.Screen name="calibration" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
+                    <Stack.Screen name="program" options={{ animation: 'slide_from_bottom' }} />
+                    <Stack.Screen name="analysis/[id]" />
+                    <Stack.Screen name="highlight/[id]" options={{ animation: 'fade' }} />
+                </Stack>
+                <ToastContainer />
+            </SafeAreaProvider>
+        </GluestackProvider>
     )
 }

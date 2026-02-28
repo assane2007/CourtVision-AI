@@ -1,15 +1,15 @@
 /**
- * CourtVision AI — Dashboard V4 REDESIGN
- * "Court Night" — Apple × HomeCourt × NBA App
+ * CourtVision AI — Dashboard V5 STITCH REDESIGN
+ * "Court Night" — gluestack-ui × CourtVision Design System
  * 
  * SECTIONS:
  *   1. Hero Header (greeting + avatar XP ring)
  *   2. Hero Stat Card (dominant FG% with progress bar)
- *   3. Mini Stat Cards (3-col: FG%, XP, 3PT%)
+ *   3. Mini Stat Cards (3-col via CVStatRow)
  *   4. Daily Challenge (amber-tinted card)
  *   5. Weekly Dots (7 day markers)
- *   6. Recent Highlights (horizontal scroll)
- *   7. Quick Actions (Live / Program / Twin)
+ *   6. Quick Actions (CVActionCard)
+ *   7. Recent Highlights (horizontal scroll)
  */
 
 import {
@@ -34,6 +34,10 @@ import { PrimaryButton } from '../../components/PrimaryButton'
 import { StatCard } from '../../components/StatCardV4'
 import { WeeklyDots } from '../../components/WeeklyDots'
 import { PerformanceBadge } from '../../components/PerformanceBadge'
+import {
+    GlassCard, CVText, CVSection, CVStatRow, CVBadge,
+    CVActionCard, CVEmptyState, CVProgressBar, CVButton,
+} from '../../components/ui'
 import { T, typePresets } from '../../lib/theme'
 import type { HighlightClip } from '../../lib/store'
 
@@ -99,69 +103,41 @@ function AvatarXPRing({ name, xp }: { name: string; xp: number }) {
 function HeroStatCard({ value, label, delta }: {
     value: number; label: string; delta?: string
 }) {
-    const animValue = useSharedValue(0)
-
-    useEffect(() => {
-        animValue.value = withTiming(value, { duration: 800, easing: Easing.out(Easing.cubic) })
-    }, [value])
-
-    const progressWidth = useAnimatedStyle(() => ({
-        width: `${animValue.value}%`,
-    }))
-
     return (
         <Animated.View entering={FadeInDown.delay(80).duration(500)}>
-            <View style={{
-                ...(T as any).glass?.regular ?? T.glass.light,
-                borderRadius: T.borderRadius.lg,
-                padding: T.spacing[6],
-            }}>
-                <Text style={{
-                    ...type.overline,
-                    color: T.color.text.secondary,
-                    marginBottom: T.spacing[2],
-                }}>
+            <GlassCard variant="light" padding={T.spacing[6]} shadow="md">
+                <CVText preset="overline" color="secondary" style={{ marginBottom: T.spacing[2] }}>
                     {label}
-                </Text>
+                </CVText>
 
                 <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                    <Text style={{
-                        ...type.heroStat,
-                        color: T.color.signature.primary,
-                    }}>
+                    <CVText preset="heroStat" color="amber">
                         {Math.round(value)}
-                    </Text>
-                    <Text style={{
-                        ...type.mediumStat,
-                        color: T.color.text.tertiary,
-                        marginLeft: 4,
-                    }}>
+                    </CVText>
+                    <CVText preset="mediumStat" color="tertiary" style={{ marginLeft: 4 }}>
                         %
-                    </Text>
+                    </CVText>
                 </View>
 
                 {delta && (
-                    <Text style={{
-                        fontSize: 14,
-                        fontFamily: T.fonts.body.semibold,
-                        color: delta.includes('+') || delta.includes('▲') ? T.color.semantic.success : T.color.semantic.error,
-                        marginTop: T.spacing[1],
-                    }}>
+                    <CVText
+                        preset="bodySemibold"
+                        color={delta.includes('+') || delta.includes('▲') ? 'success' : 'error'}
+                        style={{ fontSize: 14, marginTop: T.spacing[1] }}
+                    >
                         {delta}
-                    </Text>
+                    </CVText>
                 )}
 
-                <View style={{
-                    height: 6, borderRadius: 3, overflow: 'hidden',
-                    backgroundColor: T.color.background.tertiary,
-                    marginTop: T.spacing[4],
-                }}>
-                    <Animated.View style={[progressWidth, {
-                        height: 6, borderRadius: 3,
-                        backgroundColor: T.color.signature.primary,
-                    }]} />
-                </View>
-            </View>
+                <CVProgressBar
+                    value={value}
+                    max={100}
+                    color="amber"
+                    height={6}
+                    delay={300}
+                    style={{ marginTop: T.spacing[4] }}
+                />
+            </GlassCard>
         </Animated.View>
     )
 }
@@ -213,7 +189,7 @@ const HighlightCard = memo(function HighlightCard({ clip, onPress }: { clip: Hig
     )
 })
 
-// ─── Section Header ─────────────────────────────────────────
+// ─── Section Header (now using CVSection in render) ─────────
 
 function SectionHeader({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) {
     return (
@@ -221,17 +197,17 @@ function SectionHeader({ title, action, onAction }: { title: string; action?: st
             flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
             marginBottom: T.spacing[3], marginTop: T.spacing[1],
         }}>
-            <Text style={{ ...type.sectionTitle, color: T.color.text.primary }}>{title}</Text>
+            <CVText preset="sectionTitle">{title}</CVText>
             {action && onAction && (
                 <TouchableOpacity onPress={onAction} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Text style={{ color: T.color.signature.primary, fontSize: 13, fontFamily: T.fonts.body.semibold }}>{action}</Text>
+                    <CVText preset="caption" color="amber">{action} →</CVText>
                 </TouchableOpacity>
             )}
         </View>
     )
 }
 
-// ─── Quick Action ───────────────────────────────────────────
+// ─── Quick Action (legacy, kept for backward compat) ─────────
 
 function QuickAction({ icon, label, color, onPress }: {
     icon: keyof typeof Feather.glyphMap; label: string; color: string; onPress: () => void
