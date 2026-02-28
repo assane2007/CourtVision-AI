@@ -6,6 +6,9 @@
  *
  * Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY
  * in your .env (or app.json extra) before running the app.
+ *
+ * If Supabase is not configured, isDemoMode will be true and
+ * the app will use mock auth instead.
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -19,6 +22,21 @@ const SUPABASE_URL =
 
 const SUPABASE_ANON_KEY =
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? 'your-anon-key'
+
+// ─── Demo mode detection ───────────────────────────────────────
+// True when Supabase credentials are still placeholders
+export const isDemoMode =
+    !SUPABASE_URL ||
+    SUPABASE_URL.includes('your-project') ||
+    !SUPABASE_ANON_KEY ||
+    SUPABASE_ANON_KEY === 'your-anon-key'
+
+if (isDemoMode) {
+    console.warn(
+        '[CourtVision] ⚠️  Supabase not configured — running in DEMO mode.\n' +
+        'Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in apps/mobile/.env'
+    )
+}
 
 // ─── Client ────────────────────────────────────────────────────
 

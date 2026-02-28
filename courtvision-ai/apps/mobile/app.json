@@ -3,6 +3,7 @@
     "name": "CourtVision AI",
     "slug": "courtvision-ai",
     "version": "1.0.0",
+    "scheme": "courtvision",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",

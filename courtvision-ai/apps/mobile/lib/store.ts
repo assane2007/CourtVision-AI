@@ -16,7 +16,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { api, clearTokens, setAuthToken, setRefreshToken } from './api'
-import { supabase } from './supabase'
+import { supabase, isDemoMode } from './supabase'
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -143,6 +143,24 @@ const DEFAULT_WEEKLY: WeekDay[] = [
     { day: 'D', mental: 91, shooting: 75, hasSession: true },
 ]
 
+// ─── Demo user profile ───────────────────────────────────────
+const DEMO_USER: UserProfile = {
+    id: 'demo-user-001',
+    username: 'demo_player',
+    full_name: 'Demo Player',
+    avatar_url: undefined,
+    position: 'PG',
+    level: 'Intermediate',
+    streak: 5,
+    mental_score: 82,
+    shooting_grade: 'B+',
+    shooting_fg_pct: 64.2,
+    xp: 1250,
+    xp_level: 4,
+    total_sessions: 23,
+    badges_count: 7,
+}
+
 // ─── Store ─────────────────────────────────────────────────────
 
 export const useStore = create<CourtVisionState>()(
@@ -193,6 +211,19 @@ export const useStore = create<CourtVisionState>()(
             async loginWithEmail(email: string, password: string) {
                 set({ authLoading: true })
                 try {
+                    // ── Demo mode: bypass Supabase ──
+                    if (isDemoMode) {
+                        console.log('[CourtVision] 🎮 Demo login with:', email)
+                        const demoToken = 'demo-token-' + Date.now()
+                        await setAuthToken(demoToken)
+                        set({
+                            isAuthenticated: true,
+                            authLoading: false,
+                            user: { ...DEMO_USER, username: email.split('@')[0], full_name: email.split('@')[0] },
+                        })
+                        return
+                    }
+
                     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
                     if (error) throw error
                     if (data.session) {
@@ -214,6 +245,19 @@ export const useStore = create<CourtVisionState>()(
             async signUpWithEmail(email: string, password: string, username: string) {
                 set({ authLoading: true })
                 try {
+                    // ── Demo mode: bypass Supabase ──
+                    if (isDemoMode) {
+                        console.log('[CourtVision] 🎮 Demo sign up:', username)
+                        const demoToken = 'demo-token-' + Date.now()
+                        await setAuthToken(demoToken)
+                        set({
+                            isAuthenticated: true,
+                            authLoading: false,
+                            user: { ...DEMO_USER, username, full_name: username },
+                        })
+                        return
+                    }
+
                     const { data, error } = await supabase.auth.signUp({
                         email,
                         password,
@@ -242,6 +286,19 @@ export const useStore = create<CourtVisionState>()(
             async loginWithOAuth(provider: 'apple' | 'google') {
                 set({ authLoading: true })
                 try {
+                    // ── Demo mode: bypass Supabase ──
+                    if (isDemoMode) {
+                        console.log('[CourtVision] 🎮 Demo OAuth login:', provider)
+                        const demoToken = 'demo-token-' + Date.now()
+                        await setAuthToken(demoToken)
+                        set({
+                            isAuthenticated: true,
+                            authLoading: false,
+                            user: { ...DEMO_USER, username: `${provider}_user`, full_name: `${provider} User` },
+                        })
+                        return
+                    }
+
                     const { error } = await supabase.auth.signInWithOAuth({ provider })
                     if (error) throw error
                     // Session will be handled by onAuthStateChange in _layout.tsx
@@ -266,6 +323,10 @@ export const useStore = create<CourtVisionState>()(
 
             // ── Data actions ──
             async loadProfile() {
+                if (isDemoMode) {
+                    set({ user: get().user ?? DEMO_USER, userLoading: false })
+                    return
+                }
                 set({ userLoading: true, userError: null })
                 try {
                     const profile = await api.get<UserProfile>('/api/auth/me')
@@ -278,6 +339,7 @@ export const useStore = create<CourtVisionState>()(
             },
 
             async refreshProfile() {
+                if (isDemoMode) return
                 // Silently refresh without loading state (for background refresh)
                 try {
                     const profile = await api.get<UserProfile>('/api/auth/me')
@@ -288,6 +350,10 @@ export const useStore = create<CourtVisionState>()(
             },
 
             async loadWeeklyData() {
+                if (isDemoMode) {
+                    set({ weeklyData: DEFAULT_WEEKLY, weeklyLoading: false })
+                    return
+                }
                 set({ weeklyLoading: true })
                 try {
                     const data = await api.get<WeekDay[]>('/api/sessions/weekly')
@@ -299,6 +365,17 @@ export const useStore = create<CourtVisionState>()(
             },
 
             async loadHighlights() {
+                if (isDemoMode) {
+                    set({
+                        highlights: [
+                            { id: 'demo-1', label: '3-Point Swish', pts: '+12 XP', daysAgo: 1 },
+                            { id: 'demo-2', label: 'Fast Break Assist', pts: '+8 XP', daysAgo: 2 },
+                            { id: 'demo-3', label: 'Clutch Free Throw', pts: '+10 XP', daysAgo: 3 },
+                        ],
+                        highlightsLoading: false,
+                    })
+                    return
+                }
                 set({ highlightsLoading: true })
                 try {
                     const data = await api.get<HighlightClip[]>('/api/sessions/highlights/recent')
@@ -309,6 +386,16 @@ export const useStore = create<CourtVisionState>()(
             },
 
             async loadSessions() {
+                if (isDemoMode) {
+                    set({
+                        sessions: [
+                            { id: 'demo-s1', created_at: new Date().toISOString(), mental_score: 85, shooting_grade: 'A-', highlight_count: 3 },
+                            { id: 'demo-s2', created_at: new Date(Date.now() - 86400000).toISOString(), mental_score: 78, shooting_grade: 'B+', highlight_count: 2 },
+                        ],
+                        sessionsLoading: false,
+                    })
+                    return
+                }
                 set({ sessionsLoading: true })
                 try {
                     const data = await api.get<Session[]>('/api/sessions')

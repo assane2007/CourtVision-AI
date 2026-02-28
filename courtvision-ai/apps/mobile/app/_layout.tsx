@@ -4,7 +4,7 @@ import { AppState, AppStateStatus, StatusBar } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import * as Notifications from 'expo-notifications'
 import { getAuthToken, setAuthToken, setRefreshToken, clearTokens } from '../lib/api'
-import { supabase } from '../lib/supabase'
+import { supabase, isDemoMode } from '../lib/supabase'
 import { useStore } from '../lib/store'
 import { ToastContainer } from '../components/Toast'
 import { usePushNotifications } from '../hooks/usePushNotifications'
@@ -44,6 +44,9 @@ function AuthGuard() {
 
     // Supabase auth state listener — keeps SecureStore in sync
     useEffect(() => {
+        // Skip Supabase listener in demo mode
+        if (isDemoMode) return
+
         // Check initial session
         supabase.auth.getSession().then(async ({ data: { session } }) => {
             if (session) {

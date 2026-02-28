@@ -29,6 +29,7 @@ import Animated, {
 import { useStore } from '../../lib/store'
 import { toast } from '../../lib/toast'
 import { api } from '../../lib/api'
+import { isDemoMode } from '../../lib/supabase'
 import { ScoreRing } from '../../components/ScoreRing'
 import { PrimaryButton } from '../../components/PrimaryButton'
 import { T, typePresets } from '../../lib/theme'
@@ -311,10 +312,52 @@ export default function UploadAnalyze() {
     }, [addXP, progressBar])
 
     const handleUpload = useCallback(async (source: 'gallery' | 'camera') => {
-        if (!SAMPLE_VIDEO_URL) {
-            toast.error('No video configured', 'Set EXPO_PUBLIC_SAMPLE_VIDEO_URL in your env.')
+        // ── Demo mode: simulate the full analysis pipeline ──
+        if (isDemoMode || !SAMPLE_VIDEO_URL) {
+            setFlowState('processing')
+            setProgress(0)
+            progressBar.value = 0
+            setCurrentSessionId(null)
+            toast.info(
+                source === 'gallery' ? 'Video imported' : 'Camera ready',
+                isDemoMode ? 'Demo analysis starting...' : 'AI analysis starting...',
+            )
+
+            // Simulate pipeline steps
+            let lastStep = -1
+            const totalDuration = 8000 // 8 seconds for demo
+            const startedAt = Date.now()
+
+            const demoInterval = setInterval(() => {
+                const elapsed = Date.now() - startedAt
+                const pct = Math.min(100, Math.round((elapsed / totalDuration) * 100))
+                setProgress(pct)
+                progressBar.value = withTiming(pct, { duration: 300 })
+
+                const step = Math.min(
+                    Math.floor((pct / 100) * PIPELINE_STEPS.length),
+                    PIPELINE_STEPS.length - 1,
+                )
+                if (step !== lastStep && PIPELINE_STEPS[step]) {
+                    lastStep = step
+                    const s = PIPELINE_STEPS[step]
+                    toast.xp(`+${s.xp} XP`, s.label, 1500)
+                }
+
+                if (pct >= 100) {
+                    clearInterval(demoInterval)
+                    addXP(TOTAL_XP, 'Full game analysis')
+                    toast.success('Analysis complete!', `+${TOTAL_XP} XP earned`, 3500)
+                    const demoScore = 65 + Math.floor(Math.random() * 25) // 65-89
+                    setResultScore(demoScore)
+                    setCurrentSessionId('demo-session-' + Date.now())
+                    setTimeout(() => setFlowState('result'), 800)
+                }
+            }, 200)
+
             return
         }
+
         setFlowState('processing')
         setProgress(0)
         progressBar.value = 0

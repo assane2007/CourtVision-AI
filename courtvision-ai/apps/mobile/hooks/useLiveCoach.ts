@@ -20,6 +20,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Vibration, AppState, AppStateStatus } from 'react-native'
 import { LiveCoachService } from '../lib/liveCoachService'
+import { isDemoMode } from '../lib/supabase'
 import { toast } from '../lib/toast'
 import { useStore } from '../lib/store'
 import type {
@@ -255,9 +256,50 @@ export function useLiveCoach(sessionId: string): UseLiveCoachReturn {
     // ==========================================
 
     const start = useCallback(async (config?: Record<string, any>) => {
-        if (!serviceRef.current) return
         setPhase('connecting')
         setError(null)
+
+        // ── Demo mode: simulate live coach locally ──
+        if (isDemoMode) {
+            await new Promise(resolve => setTimeout(resolve, 800)) // fake connection delay
+            setPhase('active')
+            setAlerts([])
+            setElapsedTime(0)
+            setMentalHistory([INITIAL_MENTAL])
+            setMentalScore(INITIAL_MENTAL)
+            setFatigueIndex(0)
+            setSseConnected(true)
+            startElapsedTimer()
+
+            // Simulate periodic AI alerts in demo mode
+            frameTimerRef.current = setInterval(() => {
+                const now = Date.now()
+                const demoAlerts: LiveAlertPayload[] = [
+                    { id: `d-${now}-1`, type: 'form' as any, message: 'Keep your elbow tucked on release', severity: 'info' as AlertSeverity, emoji: '💪', vibrate: false, vibrationPattern: [], timestamp: now },
+                    { id: `d-${now}-2`, type: 'form' as any, message: 'Great follow-through on last shot!', severity: 'info' as AlertSeverity, emoji: '✅', vibrate: false, vibrationPattern: [], timestamp: now },
+                    { id: `d-${now}-3`, type: 'fatigue' as any, message: 'Fatigue detected — slow your pace', severity: 'warning' as AlertSeverity, emoji: '⚠️', vibrate: true, vibrationPattern: [0, 200, 100, 200], timestamp: now },
+                    { id: `d-${now}-4`, type: 'form' as any, message: 'Shot arc too flat — aim higher', severity: 'warning' as AlertSeverity, emoji: '📐', vibrate: false, vibrationPattern: [], timestamp: now },
+                    { id: `d-${now}-5`, type: 'mental' as any, message: 'Excellent court vision!', severity: 'info' as AlertSeverity, emoji: '👁️', vibrate: false, vibrationPattern: [], timestamp: now },
+                    { id: `d-${now}-6`, type: 'posture' as any, message: 'Balance shifting left — center up', severity: 'info' as AlertSeverity, emoji: '⚖️', vibrate: false, vibrationPattern: [], timestamp: now },
+                ]
+                const alert = demoAlerts[Math.floor(Math.random() * demoAlerts.length)]
+                setAlerts(prev => [alert, ...prev].slice(0, MAX_ALERTS))
+                setMentalScore(prev => {
+                    const delta = Math.floor(Math.random() * 7) - 3 // -3 to +3
+                    const next = Math.max(30, Math.min(100, prev + delta))
+                    setMentalHistory(h => [...h, next])
+                    return next
+                })
+                setFatigueIndex(prev => Math.min(100, prev + Math.random() * 2))
+                setPostureScore(0.5 + Math.random() * 0.4)
+                setConfidence(0.6 + Math.random() * 0.3)
+            }, FRAME_INTERVAL_MS)
+
+            toast.success('Live Coach started', 'Demo — real-time analysis active')
+            return
+        }
+
+        if (!serviceRef.current) return
 
         try {
             const response = await serviceRef.current.start(config)
@@ -286,7 +328,11 @@ export function useLiveCoach(sessionId: string): UseLiveCoachReturn {
     }, [handleSSEEvent, startElapsedTimer, startFrameTimer])
 
     const sendFrame = useCallback(async (payload: LiveFramePayload) => {
-        if (!serviceRef.current || phase !== 'active') return
+        if (phase !== 'active') return
+        // In demo mode, frames are simulated by the interval timer in start()
+        if (isDemoMode) return
+
+        if (!serviceRef.current) return
 
         try {
             const response = await serviceRef.current.sendFrame(payload)
@@ -313,7 +359,7 @@ export function useLiveCoach(sessionId: string): UseLiveCoachReturn {
     }, [phase, vibrateForAlert])
 
     const recordShot = useCallback(async (outcome: ShotOutcome, zone?: ShotZone) => {
-        if (!serviceRef.current || phase !== 'active') return
+        if (phase !== 'active') return
 
         // Update local immédiatement (optimistic)
         if (outcome === 'made') {
@@ -322,6 +368,11 @@ export function useLiveCoach(sessionId: string): UseLiveCoachReturn {
         } else {
             setMissCount(p => p + 1)
         }
+
+        // In demo mode, just keep optimistic state
+        if (isDemoMode) return
+
+        if (!serviceRef.current) return
 
         try {
             const response = await serviceRef.current.recordShot(outcome, zone)
@@ -343,9 +394,19 @@ export function useLiveCoach(sessionId: string): UseLiveCoachReturn {
     }, [phase, vibrateForAlert])
 
     const endQuarter = useCallback(async () => {
-        if (!serviceRef.current) return
-
         clearTimers()
+
+        // Demo mode: local quarter end
+        if (isDemoMode) {
+            if (quarter < 4) {
+                setPhase('break')
+            } else {
+                await end()
+            }
+            return
+        }
+
+        if (!serviceRef.current) return
 
         try {
             const response = await serviceRef.current.endQuarter(quarter)
@@ -378,9 +439,29 @@ export function useLiveCoach(sessionId: string): UseLiveCoachReturn {
     }, [quarter, startElapsedTimer, startFrameTimer])
 
     const end = useCallback(async () => {
-        if (!serviceRef.current) return
-
         clearTimers()
+
+        // Demo mode: generate local report
+        if (isDemoMode) {
+            const demoReport = {
+                mentalScore,
+                shootingPct: (makeCount + missCount) > 0 ? Math.round((makeCount / (makeCount + missCount)) * 100) : 0,
+                makes: makeCount,
+                attempts: makeCount + missCount,
+                quarter,
+                recommendations: generateLocalRecommendations(),
+                stats: null,
+                mentalTimeline: mentalHistory,
+            } as any
+            setPhase('ended')
+            setEndReport(demoReport)
+            setRecommendations(demoReport.recommendations)
+            setSseConnected(false)
+            toast.success('Game over!', 'Demo — AI report generated', 4000)
+            return
+        }
+
+        if (!serviceRef.current) return
 
         try {
             const response = await serviceRef.current.endSession()
