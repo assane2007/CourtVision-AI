@@ -42,6 +42,9 @@ export type { CVStatRowProps, StatItem } from './CVStatRow'
 export { CVProgressBar } from './CVProgressBar'
 export type { CVProgressBarProps, CVProgressColor } from './CVProgressBar'
 
+export { CVAnalyticsChart } from './CVAnalyticsChart'
+export { CourtHeatmap } from './CourtHeatmap'
+
 export { CVBadge } from './CVBadge'
 export type { CVBadgeProps, CVBadgeVariant, CVBadgeSize } from './CVBadge'
 
@@ -55,6 +58,12 @@ export type { CVAlertProps, CVAlertType } from './CVAlert'
 
 export { CVEmptyState } from './CVEmptyState'
 export type { CVEmptyStateProps } from './CVEmptyState'
+
+// ── HUD & Tracking ──
+export { CVHUDStat } from './CVHUDStat'
+export { CVHUDTimer } from './CVHUDTimer'
+export { CVHUDFeedback } from './CVHUDFeedback'
+export type { HUDFeedbackType } from './CVHUDFeedback'
 
 // ── Screen Structure ──
 export { CVScreenHeader } from './CVScreenHeader'

@@ -6,7 +6,7 @@
 import { memo } from 'react'
 import { View, Text } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
-import { T } from '../lib/theme'
+import { T } from '../../lib/theme'
 
 interface PerformanceBadgeProps {
     score: number

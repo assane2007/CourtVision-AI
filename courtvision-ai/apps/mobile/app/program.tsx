@@ -19,7 +19,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useStore } from '../lib/store'
 import { toast } from '../lib/toast'
-import { XPBadge } from '../components/XPBadge'
+import { XPBadge } from '../components/gamification/XPBadge'
 import { T, typePresets } from '../lib/theme'
 
 const type = typePresets
@@ -61,7 +61,7 @@ function ProgressBar({ progress }: { progress: number }) {
         <View style={{
             height: 8, backgroundColor: T.color.background.tertiary, borderRadius: 4,
             marginBottom: 6, overflow: 'hidden',
-            borderWidth: 1, borderColor: T.color.border.subtle,
+            borderWidth: 1, borderColor: T.color.border.soft,
         }}>
             <Animated.View style={[{
                 height: 8, borderRadius: 4, backgroundColor: T.color.semantic.success,
@@ -105,7 +105,7 @@ export default function TrainingProgram() {
                             onPress={() => router.back()}
                             style={{
                                 width: 42, height: 42, borderRadius: T.borderRadius.md,
-                                ...T.glass.light,
+                                ...T.glass.thin,
                                 justifyContent: 'center', alignItems: 'center', marginRight: 14,
                             }}
                             accessibilityRole="button"
@@ -133,7 +133,7 @@ export default function TrainingProgram() {
 
                     {/* Weekly Goal */}
                     <Animated.View entering={FadeInDown.duration(400).delay(80)} style={{
-                        ...T.glass.accent,
+                        ...T.glass.vivid,
                         borderRadius: T.borderRadius.lg, padding: T.spacing[4], marginBottom: T.spacing[6],
                         ...T.glow(T.color.signature.primary, 0.08),
                     }}>
@@ -204,7 +204,7 @@ export default function TrainingProgram() {
                             Today's Session
                         </Text>
                         <View style={{
-                            ...T.glass.light,
+                            ...T.glass.thin,
                             paddingHorizontal: 10, paddingVertical: 4, borderRadius: T.borderRadius.sm,
                             flexDirection: 'row', alignItems: 'center', gap: 4,
                         }}>
@@ -229,12 +229,12 @@ export default function TrainingProgram() {
                         <Animated.View key={i} entering={FadeInDown.duration(300).delay(100 + i * 60)}>
                             <TouchableOpacity
                                 style={{
-                                    ...T.glass.light,
+                                    ...T.glass.thin,
                                     borderRadius: T.borderRadius.lg, padding: T.spacing[4] + 2, marginBottom: 10,
                                     flexDirection: 'row', alignItems: 'center',
                                     opacity: ex.done ? 0.6 : 1,
                                     borderWidth: 1,
-                                    borderColor: ex.done ? `${T.color.semantic.success}40` : T.color.border.subtle,
+                                    borderColor: ex.done ? `${T.color.semantic.success}40` : T.color.border.soft,
                                     ...(ex.done ? T.glow(T.color.semantic.success, 0.06) : {}),
                                 }}
                                 onPress={() => toggleExercise(i)}
@@ -255,7 +255,7 @@ export default function TrainingProgram() {
                                 </View>
                                 <View style={{ flex: 1 }}>
                                     <Text style={{
-                                        ...type.bodySemibold,
+                                        ...type.cardTitle,
                                         color: T.color.text.primary,
                                         textDecorationLine: ex.done ? 'line-through' : 'none',
                                     }}>
@@ -297,7 +297,7 @@ export default function TrainingProgram() {
                         <Animated.View
                             entering={ZoomIn.duration(400)}
                             style={{
-                                backgroundColor: T.color.semantic.successDim, borderRadius: T.borderRadius.xl,
+                                backgroundColor: `\${T.color.semantic.success}20`, borderRadius: T.borderRadius.xl,
                                 padding: 24, alignItems: 'center', marginTop: T.spacing[2],
                                 borderWidth: 1, borderColor: `${T.color.semantic.success}50`,
                                 ...T.glow(T.color.semantic.success, 0.15),

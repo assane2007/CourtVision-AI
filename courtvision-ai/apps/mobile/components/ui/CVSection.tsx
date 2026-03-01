@@ -58,7 +58,7 @@ export function CVSection({
             accessibilityRole="button"
             accessibilityLabel={action}
           >
-            <CVText preset="caption" color="amber">{action} →</CVText>
+            <CVText preset="caption" color="brand">{action} →</CVText>
           </TouchableOpacity>
         )}
       </View>

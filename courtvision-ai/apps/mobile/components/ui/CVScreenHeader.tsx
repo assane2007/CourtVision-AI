@@ -42,7 +42,7 @@ export function CVScreenHeader({
         paddingTop: insets.top + 8,
         backgroundColor: transparent ? 'transparent' : 'rgba(8,12,18,0.92)',
         borderBottomWidth: transparent ? 0 : 1,
-        borderBottomColor: T.color.border.subtle,
+        borderBottomColor: T.color.border.soft,
       },
       style,
     ]}>

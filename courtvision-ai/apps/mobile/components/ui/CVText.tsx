@@ -13,14 +13,14 @@
 
 import React from 'react'
 import { Text, TextStyle } from 'react-native'
-import { T, typePresets } from '../../lib/theme'
+import { T } from '../../lib/theme'
 
 // ─── Presets ──────────────────────────────────────────────────
 
-export type TextPreset = keyof typeof typePresets
+export type TextPreset = keyof typeof T.type
 export type TextColorAlias =
   | 'primary' | 'secondary' | 'tertiary' | 'inverse'
-  | 'amber' | 'success' | 'error' | 'warning' | 'info'
+  | 'brand' | 'success' | 'error' | 'warning' | 'info'
   | 'purple' | 'gold' | 'white'
 
 const COLOR_MAP: Record<TextColorAlias, string> = {
@@ -28,13 +28,13 @@ const COLOR_MAP: Record<TextColorAlias, string> = {
   secondary: T.color.text.secondary,
   tertiary: T.color.text.tertiary,
   inverse: T.color.text.inverse,
-  amber: T.color.signature.primary,
+  brand: T.color.brand.primary,
   success: T.color.semantic.success,
   error: T.color.semantic.error,
   warning: T.color.semantic.warning,
   info: T.color.semantic.info,
-  purple: T.color.gamification.purple,
-  gold: T.color.gamification.gold,
+  purple: T.color.semantic.purple,
+  gold: T.color.semantic.gold,
   white: '#FFFFFF',
 }
 
@@ -67,7 +67,7 @@ export function CVText({
   style,
   selectable,
 }: CVTextProps) {
-  const presetStyle = typePresets[preset]
+  const presetStyle = T.type[preset]
   const resolvedColor = COLOR_MAP[color as TextColorAlias] ?? color
 
   return (

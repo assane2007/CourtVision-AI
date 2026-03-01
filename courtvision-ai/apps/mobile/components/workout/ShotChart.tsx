@@ -7,7 +7,7 @@ import { memo, useCallback } from 'react'
 import { View, Text, TouchableOpacity, Dimensions } from 'react-native'
 import Svg, { Rect, Circle, Line, Path, G } from 'react-native-svg'
 import Animated, { FadeInDown } from 'react-native-reanimated'
-import { T } from '../lib/theme'
+import { T } from '../../lib/theme'
 
 const { width: SCREEN_W } = Dimensions.get('window')
 

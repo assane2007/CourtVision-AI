@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
         borderRadius: T.borderRadius.lg,
         paddingVertical: 16,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
     lifetimeStat: {
         alignItems: 'center',
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
         padding: 12,
         minWidth: 110,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
     trendHeader: {
         flexDirection: 'row',
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
         borderRadius: T.borderRadius.md,
         padding: 12,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
         gap: 12,
     },
     gradeCircle: {
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
         width: 72,
         height: 72,
         borderRadius: 36,
-        backgroundColor: T.color.signature.dim,
+        backgroundColor: T.color.signature.muted,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 20,

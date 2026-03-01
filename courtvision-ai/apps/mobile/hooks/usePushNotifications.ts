@@ -62,7 +62,7 @@ async function ensureAndroidChannel() {
         name: 'CourtVision AI',
         importance: Notifications.AndroidImportance.HIGH,
         vibrationPattern: [0, 250, 150, 250],
-        lightColor: T.colors.primary,
+        lightColor: T.color.signature.primary,
         sound: 'default',
         enableVibrate: true,
         showBadge: true,

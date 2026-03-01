@@ -29,7 +29,7 @@ import Animated, {
     withSequence,
     Easing,
 } from 'react-native-reanimated'
-import { T } from '../lib/theme'
+import { T } from '../../lib/theme'
 import type {
     AROverlayFrame,
     ARFeedback,
@@ -37,7 +37,7 @@ import type {
     ARBone,
     ShotArcOverlay,
     BioIndicator,
-} from '../lib/realtimeAIService'
+} from '../../lib/realtimeAIService'
 
 // ==========================================
 // Types
@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10,
         paddingVertical: 6,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
     postureLabel: {
         color: T.color.text.secondary,
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
         paddingVertical: 4,
         borderRadius: 6,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
     debugText: {
         color: T.color.text.tertiary,

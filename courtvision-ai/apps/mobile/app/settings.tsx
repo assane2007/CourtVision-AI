@@ -20,11 +20,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Feather } from '@expo/vector-icons'
 import Animated, { FadeInDown } from 'react-native-reanimated'
-import { T, typePresets } from '../lib/theme'
+import { T } from '../lib/theme'
 import { useStore, selectUser } from '../lib/store'
 import { ShareService } from '../lib/shareService'
 
-const type = typePresets
+const type = T.type
 
 // ==========================================
 // Types
@@ -200,7 +200,7 @@ export default function SettingsScreen() {
                     id: 'calibrate', icon: 'crosshair', label: 'Recalibrer l\'IA',
                     type: 'action',
                     onPress: handleResetCalibration,
-                    color: T.color.signature.primary,
+                    color: T.color.brand.primary,
                 },
             ],
         },
@@ -273,7 +273,7 @@ export default function SettingsScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                     <Feather name="arrow-left" size={22} color={T.color.text.primary} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Paramètres</Text>
+                <Text style={[styles.headerTitle, T.type.h3]}>Paramètres</Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -283,7 +283,7 @@ export default function SettingsScreen() {
                 showsVerticalScrollIndicator={false}
             >
                 {/* Player avatar card */}
-                <Animated.View entering={FadeInDown.duration(400)} style={styles.profileCard}>
+                <Animated.View entering={FadeInDown.duration(400)} style={[styles.profileCard, T.glass.vivid]}>
                     <View style={styles.avatarCircle}>
                         <Text style={styles.avatarText}>
                             {playerName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
@@ -308,7 +308,7 @@ export default function SettingsScreen() {
                         style={styles.section}
                     >
                         <Text style={styles.sectionTitle}>{section.title}</Text>
-                        <View style={styles.sectionCard}>
+                        <View style={[styles.sectionCard, T.glass.thin]}>
                             {section.items.map((item, iIdx) => (
                                 <SettingsRow
                                     key={item.id}
@@ -326,7 +326,7 @@ export default function SettingsScreen() {
                         CourtVision AI v1.0.0
                     </Text>
                     <Text style={styles.footerText}>
-                        Made with 🏀 for hoopers everywhere
+                        Made with {Platform.OS === 'ios' ? '🏀' : '🏀'} for hoopers everywhere
                     </Text>
                 </View>
             </ScrollView>
@@ -350,10 +350,10 @@ function SettingsRow({ item, isLast }: { item: SettingsItem; isLast: boolean }) 
                         value={item.value as boolean}
                         onValueChange={item.onToggle}
                         trackColor={{
-                            false: T.color.background.tertiary,
-                            true: `${T.color.signature.primary}60`,
+                            false: T.color.bg.tertiary,
+                            true: `${T.color.brand.primary}60`,
                         }}
-                        thumbColor={item.value ? T.color.signature.primary : T.color.text.tertiary}
+                        thumbColor={item.value ? T.color.brand.primary : T.color.text.tertiary}
                     />
                 )
             case 'select':
@@ -419,7 +419,7 @@ function SettingsRow({ item, isLast }: { item: SettingsItem; isLast: boolean }) 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: T.color.background.primary,
+        backgroundColor: T.color.bg.primary,
     },
     header: {
         flexDirection: 'row',
@@ -454,24 +454,24 @@ const styles = StyleSheet.create({
     profileCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: T.color.background.secondary,
-        borderRadius: T.borderRadius.xl,
+        backgroundColor: T.color.bg.secondary,
+        borderRadius: T.radius.xl,
         padding: 16,
         borderWidth: 1,
-        borderColor: T.color.border.accent,
+        borderColor: T.color.border.base,
     },
     avatarCircle: {
         width: 52,
         height: 52,
         borderRadius: 26,
-        backgroundColor: T.color.signature.dim,
+        backgroundColor: `${T.color.brand.primary}20`,
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 2,
-        borderColor: T.color.signature.primary,
+        borderColor: T.color.brand.primary,
     },
     avatarText: {
-        color: T.color.signature.primary,
+        color: T.color.brand.primary,
         fontSize: 18,
         fontWeight: '800',
         fontFamily: T.fonts.display.bold,
@@ -493,15 +493,15 @@ const styles = StyleSheet.create({
         fontFamily: T.fonts.body.regular,
     },
     profileBadge: {
-        backgroundColor: T.color.signature.dim,
+        backgroundColor: `${T.color.brand.primary}30`,
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: `${T.color.signature.primary}30`,
+        borderColor: `${T.color.brand.primary}40`,
     },
     profileBadgeText: {
-        color: T.color.signature.primary,
+        color: T.color.brand.primary,
         fontSize: 11,
         fontWeight: '800',
         fontFamily: T.fonts.display.bold,
@@ -521,10 +521,10 @@ const styles = StyleSheet.create({
         fontFamily: T.fonts.body.semibold,
     },
     sectionCard: {
-        backgroundColor: T.color.background.secondary,
-        borderRadius: T.borderRadius.lg,
+        backgroundColor: T.color.bg.secondary,
+        borderRadius: T.radius.lg,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
         overflow: 'hidden',
     },
 
@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
     },
     rowBorder: {
         borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: T.color.border.default,
+        borderBottomColor: T.color.border.base,
     },
     rowIconCircle: {
         width: 30,
@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
         minWidth: 100,
         paddingVertical: 4,
         paddingHorizontal: 8,
-        backgroundColor: T.color.background.tertiary,
+        backgroundColor: T.color.bg.tertiary,
         borderRadius: 8,
     },
 

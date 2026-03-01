@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
         borderRadius: T.borderRadius.lg,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
     camera: {
         flex: 1,
@@ -566,7 +566,7 @@ const styles = StyleSheet.create({
         paddingVertical: 5,
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
     cameraStepText: {
         color: T.color.text.primary,
@@ -611,7 +611,7 @@ const styles = StyleSheet.create({
         borderRadius: T.borderRadius.lg,
         backgroundColor: T.color.background.secondary,
         borderWidth: 1,
-        borderColor: T.color.border.accent,
+        borderColor: T.color.border.base,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -677,7 +677,7 @@ const styles = StyleSheet.create({
         padding: 12,
         marginBottom: 8,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
         gap: 12,
     },
     checkIcon: {

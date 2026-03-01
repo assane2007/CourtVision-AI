@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
         borderRadius: T.borderRadius.lg,
         padding: 16,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
     cardHeader: {
         flexDirection: 'row',
@@ -565,7 +565,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 10,
         borderBottomWidth: 1,
-        borderBottomColor: T.color.border.default,
+        borderBottomColor: T.color.border.base,
     },
     bioLeft: {
         flexDirection: 'row',
@@ -597,7 +597,7 @@ const styles = StyleSheet.create({
         gap: 10,
         paddingVertical: 8,
         borderBottomWidth: 1,
-        borderBottomColor: T.color.border.default,
+        borderBottomColor: T.color.border.base,
     },
     trendText: {
         fontSize: 13,

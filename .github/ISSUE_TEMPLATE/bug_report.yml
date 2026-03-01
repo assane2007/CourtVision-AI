@@ -1,0 +1,51 @@
+name: 🐛 Bug Report
+description: Report a bug to help us improve CourtVision AI
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci de prendre le temps de signaler ce bug ! 🏀
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: e.g., 2.0.1
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Mobile App (v2)
+        - Web Landing Page
+        - API Backend
+        - AI Pipeline
+        - Database/Auth
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the bug in detail.
+      placeholder: L'analyse s'arrête à l'étape 3...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: How can we recreate this issue?
+      placeholder: |
+        1. Ouvrir l'app
+        2. Cliquer sur Upload
+        3. Sélectionner une vidéo de 20s
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Screenshots
+      description: Paste any error logs or drag-and-drop screenshots here.

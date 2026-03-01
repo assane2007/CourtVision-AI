@@ -45,19 +45,19 @@ export interface PrimaryButtonProps {
 // ─── Size config ─────────────────────────────────────────────
 
 const SIZE_CONFIG = {
-    sm: { height: 40, paddingH: 14, fontSize: T.fontSize.sm, iconSize: 14, radius: T.borderRadius.md },
-    md: { height: 52, paddingH: 20, fontSize: T.fontSize.base, iconSize: 16, radius: T.borderRadius.lg },
-    lg: { height: 60, paddingH: 28, fontSize: T.fontSize.lg, iconSize: 18, radius: T.borderRadius.xl },
+    sm: { height: 40, paddingH: 14, fontSize: T.fontSize.sm, iconSize: 14, radius: T.radius.sm },
+    md: { height: 52, paddingH: 20, fontSize: T.fontSize.base, iconSize: 16, radius: T.radius.lg },
+    lg: { height: 60, paddingH: 28, fontSize: T.fontSize.lg, iconSize: 18, radius: T.radius.xl },
 } as const
 
 // ─── Variant backgrounds ──────────────────────────────────────
 
 function bgColor(variant: ButtonVariant, state: ButtonState) {
-    if (state === 'disabled') return T.color.border.subtle
+    if (state === 'disabled') return T.color.border.soft
     if (state === 'success') return T.color.semantic.success
     switch (variant) {
-        case 'primary': return T.color.signature.primary        // amber #FF6B00
-        case 'secondary': return T.color.signature.dim
+        case 'primary': return T.color.brand.primary
+        case 'secondary': return T.color.brand.muted
         case 'ghost': return 'transparent'
         case 'danger': return T.color.semantic.error
     }
@@ -67,21 +67,21 @@ function textColor(variant: ButtonVariant, state: ButtonState) {
     if (state === 'disabled') return T.color.text.secondary
     if (state === 'success') return T.color.text.primary
     switch (variant) {
-        case 'primary': return T.color.text.primary
-        case 'secondary': return T.color.signature.primary
+        case 'primary': return T.color.text.inverse
+        case 'secondary': return T.color.brand.primary
         case 'ghost': return T.color.text.secondary
-        case 'danger': return T.color.text.primary
+        case 'danger': return T.color.text.inverse
     }
 }
 
 function borderStyle(variant: ButtonVariant, state: ButtonState) {
     if (variant === 'secondary') return {
         borderWidth: 1,
-        borderColor: state === 'disabled' ? T.color.text.tertiary : `${T.color.signature.primary}40`,
+        borderColor: state === 'disabled' ? T.color.text.tertiary : `${T.color.brand.primary}40`,
     }
     if (variant === 'ghost') return {
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     }
     return {}
 }
@@ -147,7 +147,7 @@ export function PrimaryButton({
     const currentText = textColor(variant, internalState)
     const currentBorder = borderStyle(variant, internalState)
 
-    const glowShadow = variant === 'primary' ? T.glow(T.color.signature.primary, 0.35) : {}
+    const glowShadow = variant === 'primary' ? T.glow.hero(T.color.brand.primary) : {}
 
     return (
         <Animated.View style={[

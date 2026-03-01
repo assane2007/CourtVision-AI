@@ -6,7 +6,7 @@
 import { memo } from 'react'
 import { View, Text, TouchableOpacity } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
-import { T } from '../lib/theme'
+import { T } from '../../lib/theme'
 
 const type = (T as any).type
 
@@ -20,8 +20,8 @@ function WeeklyDotsInner({ data, onDayPress }: WeeklyDotsProps) {
         <Animated.View
             entering={FadeInDown.delay(160).duration(400)}
             style={{
-                ...(T as any).glass?.regular ?? T.glass.light,
-                borderRadius: T.borderRadius.lg,
+                ...(T as any).glass?.regular ?? T.glass.base,
+                borderRadius: T.radius.lg,
                 padding: T.spacing[4],
             }}
         >
@@ -62,22 +62,22 @@ function WeeklyDotsInner({ data, onDayPress }: WeeklyDotsProps) {
                                 height: dotSize,
                                 borderRadius: dotSize / 2,
                                 backgroundColor: d.hasSession
-                                    ? T.color.signature.primary
+                                    ? T.color.brand.primary
                                     : d.isToday
-                                    ? 'transparent'
-                                    : `${T.color.text.tertiary}40`,
+                                        ? 'transparent'
+                                        : `${T.color.text.tertiary}40`,
                                 borderWidth: d.isToday && !d.hasSession ? 2 : 0,
-                                borderColor: d.isToday ? T.color.signature.primary : 'transparent',
-                                ...(d.hasSession ? (T as any).glows?.accent ?? {} : {}),
+                                borderColor: d.isToday ? T.color.brand.primary : 'transparent',
+                                ...(d.hasSession ? T.glow.soft(T.color.brand.primary) : {}),
                             }} />
                             <Text style={{
                                 fontSize: 10,
                                 fontFamily: d.isToday ? T.fonts.body.bold : T.fonts.body.regular,
                                 color: d.isToday
-                                    ? T.color.signature.primary
+                                    ? T.color.brand.primary
                                     : d.hasSession
-                                    ? T.color.text.secondary
-                                    : T.color.text.tertiary,
+                                        ? T.color.text.secondary
+                                        : T.color.text.tertiary,
                             }}>
                                 {d.day}
                             </Text>

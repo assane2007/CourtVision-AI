@@ -22,7 +22,7 @@ import { T } from '../lib/theme'
 
 // Haptic feedback (graceful fallback if not installed)
 let Haptics: any = null
-try { Haptics = require('expo-haptics') } catch {}
+try { Haptics = require('expo-haptics') } catch { }
 
 interface FABUploadProps {
     onPress: () => void
@@ -127,10 +127,10 @@ export default function FABUpload({
                         width: size,
                         height: size,
                         borderRadius: half,
-                        backgroundColor: T.color.signature.primary,
+                        backgroundColor: T.color.brand.primary,
                         justifyContent: 'center',
                         alignItems: 'center',
-                        ...T.glow(T.color.signature.primary, 0.55),
+                        ...T.glow.hero(T.color.brand.primary),
                     },
                     buttonStyle,
                 ]}

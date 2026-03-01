@@ -19,7 +19,7 @@ import Animated, {
     interpolate, Easing,
 } from 'react-native-reanimated'
 import { BlurView } from 'expo-blur'
-import { T } from '../lib/theme'
+import { T } from '../../lib/theme'
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -69,11 +69,9 @@ const SIZE_CONFIG = {
     },
 } as const
 
-// ─── Couleur par variante ─────────────────────────────────────
-
 function variantColor(variant: StatCardVariant) {
     switch (variant) {
-        case 'accent': return T.color.signature.primary         // amber #FF6B00
+        case 'accent': return T.color.brand.primary         // amber #FF6B00
         case 'success': return T.color.semantic.success
         case 'danger': return T.color.semantic.error
         default: return T.color.text.primary
@@ -82,9 +80,9 @@ function variantColor(variant: StatCardVariant) {
 
 function variantGlass(variant: StatCardVariant) {
     switch (variant) {
-        case 'accent': return T.glass.accent
-        case 'success': return T.glass.success
-        default: return T.glass.light
+        case 'accent': return T.glass.vivid
+        case 'success': return T.glass.base
+        default: return T.glass.thin
     }
 }
 
@@ -102,7 +100,7 @@ function SkeletonPulse({ width, height, radius = 6 }: { width: number | string; 
     return (
         <Animated.View style={[{
             width: width as any, height, borderRadius: radius,
-            backgroundColor: T.color.border.subtle,
+            backgroundColor: T.color.border.soft,
         }, style]} />
     )
 }
@@ -117,7 +115,7 @@ function AnimatedValue({ value, delay, size, color }: {
 
     useEffect(() => {
         const anim = withDelay(delay, withTiming(1, {
-            duration: T.animation.duration.slow,
+            duration: 500,
             easing: Easing.out(Easing.cubic),
         }))
         progress.value = anim
@@ -137,7 +135,7 @@ function AnimatedValue({ value, delay, size, color }: {
         const end = value
         let raf: ReturnType<typeof requestAnimationFrame>
         const startTime = performance.now()
-        const duration = T.animation.duration.slow + delay
+        const duration = 500 + delay
 
         const tick = (now: number) => {
             const elapsed = now - startTime - delay
@@ -145,7 +143,7 @@ function AnimatedValue({ value, delay, size, color }: {
                 raf = requestAnimationFrame(tick)
                 return
             }
-            const t = Math.min(elapsed / T.animation.duration.slow, 1)
+            const t = Math.min(elapsed / 500, 1)
             const eased = 1 - Math.pow(1 - t, 3)
             setDisplay(Math.round(eased * end))
             if (t < 1) raf = requestAnimationFrame(tick)
@@ -191,7 +189,7 @@ export function StatCard({
     const translateY = useSharedValue(16)
     useEffect(() => {
         opacity.value = withDelay(delay, withTiming(1, { duration: 400, easing: Easing.out(Easing.quad) }))
-        translateY.value = withDelay(delay, withSpring(0, { damping: 20, stiffness: 200 }))
+        translateY.value = withDelay(delay, withSpring(0, T.spring.snappy))
     }, [delay])
 
     const cardStyle = useAnimatedStyle(() => ({
@@ -222,7 +220,7 @@ export function StatCard({
 
             {/* Outline subtil premium (inner border) */}
             <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
-                <View style={{ flex: 1, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)', borderRadius: T.borderRadius.lg }} />
+                <View style={{ flex: 1, borderWidth: 1, borderColor: T.color.border.base, borderRadius: T.radius.lg }} />
             </View>
 
             {/* Label + icon */}
@@ -266,7 +264,7 @@ export function StatCard({
 
 const styles = StyleSheet.create({
     base: {
-        borderRadius: T.borderRadius.lg,
+        borderRadius: T.radius.lg,
         overflow: 'hidden',
     },
     labelRow: {

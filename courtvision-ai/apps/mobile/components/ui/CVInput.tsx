@@ -65,7 +65,7 @@ export function CVInput({
       ? T.color.signature.primary
       : variant === 'ghost'
         ? 'transparent'
-        : T.color.border.default
+        : T.color.border.base
 
   const bgColor = variant === 'filled'
     ? T.color.background.secondary

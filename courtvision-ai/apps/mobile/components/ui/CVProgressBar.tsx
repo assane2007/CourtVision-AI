@@ -19,7 +19,7 @@ import { T } from '../../lib/theme'
 
 // ─── Types ────────────────────────────────────────────────────
 
-export type CVProgressColor = 'amber' | 'success' | 'warning' | 'error' | 'purple' | 'gold' | 'info'
+export type CVProgressColor = 'brand' | 'amber' | 'success' | 'warning' | 'error' | 'purple' | 'gold' | 'info'
 
 export interface CVProgressBarProps {
   value: number
@@ -35,23 +35,25 @@ export interface CVProgressBarProps {
 // ─── Color Map ────────────────────────────────────────────────
 
 const FILL_COLORS: Record<CVProgressColor, string> = {
-  amber:   T.color.signature.primary,
+  brand: T.color.brand.primary,
+  amber: T.color.brand.primary,
   success: T.color.semantic.success,
   warning: T.color.semantic.warning,
-  error:   T.color.semantic.error,
-  purple:  T.color.gamification.purple,
-  gold:    T.color.gamification.gold,
-  info:    T.color.semantic.info,
+  error: T.color.semantic.error,
+  purple: T.color.semantic.purple,
+  gold: T.color.semantic.gold,
+  info: T.color.semantic.info,
 }
 
 const TEXT_COLOR_MAP: Record<CVProgressColor, TextColorAlias> = {
-  amber:   'amber',
+  brand: 'brand',
+  amber: 'brand',
   success: 'success',
   warning: 'warning',
-  error:   'error',
-  purple:  'purple',
-  gold:    'gold',
-  info:    'info',
+  error: 'error',
+  purple: 'purple',
+  gold: 'gold',
+  info: 'info',
 }
 
 // ─── Component ───────────────────────────────────────────────
@@ -108,7 +110,7 @@ export function CVProgressBar({
           height: '100%',
           borderRadius: height / 2,
           backgroundColor: fillColor,
-          ...T.glow(fillColor, 0.15),
+          ...T.glow.soft(fillColor),
         }, fillStyle]} />
       </View>
     </View>

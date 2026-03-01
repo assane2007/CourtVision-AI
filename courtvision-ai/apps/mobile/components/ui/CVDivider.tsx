@@ -26,10 +26,10 @@ export interface CVDividerProps {
 // ─── Colors ──────────────────────────────────────────────────
 
 const COLORS: Record<CVDividerVariant, string> = {
-  subtle:  T.color.border.subtle,
-  default: T.color.border.default,
+  subtle:  T.color.border.soft,
+  default: T.color.border.base,
   strong:  T.color.border.strong,
-  accent:  T.color.border.accent,
+  accent:  T.color.border.base,
 }
 
 // ─── Component ───────────────────────────────────────────────

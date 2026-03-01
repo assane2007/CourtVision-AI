@@ -17,6 +17,7 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { api, clearTokens, setAuthToken, setRefreshToken } from './api'
 import { supabase, isDemoMode } from './supabase'
+import { T } from './theme'
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -67,6 +68,25 @@ export interface XPEvent {
     timestamp: number
 }
 
+export interface Badge {
+    id: string
+    emoji: string
+    name: string
+    rarity: 'common' | 'rare' | 'epic' | 'legendary'
+    xp: number
+    desc: string
+    earnedAt?: string
+}
+
+export interface ActivityEvent {
+    id: string
+    icon: string
+    text: string
+    time: string
+    color: string
+    timestamp: number
+}
+
 // ─── XP level thresholds ─────────────────────────────────────
 const XP_LEVELS = [0, 100, 250, 500, 900, 1500, 2300, 3400, 5000, 7000, 10000]
 export function xpToLevel(xp: number): number {
@@ -114,6 +134,10 @@ interface CourtVisionState {
     // XP events (pour les animations de gain XP)
     xpEvents: XPEvent[]
 
+    // Gamification
+    badges: Badge[]
+    recentActivity: ActivityEvent[]
+
     // Actions
     login: (token: string, refreshToken?: string) => Promise<void>
     loginWithEmail: (email: string, password: string) => Promise<void>
@@ -127,19 +151,41 @@ interface CourtVisionState {
     loadSessions: () => Promise<void>
     addXP: (amount: number, label: string) => void
     clearXPEvents: () => void
+    addActivity: (activity: Omit<ActivityEvent, 'id' | 'timestamp'>) => void
+    evaluateBadges: () => void
+    completeSession: (sessionData: Partial<Session>) => void
     setHydrated: () => void
     updateUser: (partial: Partial<UserProfile>) => void
 }
+
+// ─── Default Gamification Data ────────────────────────────────
+const DEFAULT_BADGES: Badge[] = [
+    { id: 'b1', emoji: '🎯', name: 'Sniper', rarity: 'epic', xp: 500, desc: 'FG% > 60% over 5 sessions', earnedAt: new Date().toISOString() },
+    { id: 'b2', emoji: '🔥', name: '7-Day Streak', rarity: 'rare', xp: 200, desc: '7 consecutive days', earnedAt: new Date().toISOString() },
+    { id: 'b3', emoji: '🧠', name: 'Mental Pro', rarity: 'legendary', xp: 1000, desc: 'Mental score > 90', earnedAt: new Date().toISOString() },
+    { id: 'b4', emoji: '⚡', name: 'Quick Release', rarity: 'rare', xp: 300, desc: 'Release speed top 5%', earnedAt: new Date().toISOString() },
+    { id: 'b5', emoji: '🛡️', name: 'Lock Down', rarity: 'common', xp: 100, desc: 'Defender of the week', earnedAt: new Date().toISOString() },
+    { id: 'b6', emoji: '🏆', name: 'First Win', rarity: 'common', xp: 50, desc: 'First challenge won', earnedAt: new Date().toISOString() },
+    { id: 'b7', emoji: '💎', name: 'Elite', rarity: 'legendary', xp: 2000, desc: 'Reach 90+ overall', earnedAt: new Date().toISOString() },
+]
+
+const DEFAULT_ACTIVITY: ActivityEvent[] = [
+    { id: 'a1', icon: 'film', text: 'Session analyzed · Mental 91', time: '2h ago', color: T.color.signature.primary, timestamp: Date.now() - 7200000 },
+    { id: 'a2', icon: 'zap', text: '7-day streak reached!', time: 'Yesterday', color: T.color.semantic.warning, timestamp: Date.now() - 86400000 },
+    { id: 'a3', icon: 'arrow-up', text: 'Level 8 unlocked · +200 XP', time: 'Yesterday', color: T.color.semantic.success, timestamp: Date.now() - 86400000 },
+    { id: 'a4', icon: 'target', text: 'Sniper Badge earned', time: '3d ago', color: T.color.gamification.purple, timestamp: Date.now() - 86400000 * 3 },
+    { id: 'a5', icon: 'award', text: 'Top 10 weekly leaderboard', time: '5d ago', color: T.color.gamification.gold, timestamp: Date.now() - 86400000 * 5 },
+]
 
 // ─── Default mock data (shown while loading or on error) ──────
 
 const DEFAULT_WEEKLY: WeekDay[] = [
     { day: 'L', mental: 72, shooting: 58, hasSession: true },
     { day: 'M', mental: 80, shooting: 64, hasSession: true },
-    { day: 'M', mental: 0,  shooting: 0,  hasSession: false },
+    { day: 'M', mental: 0, shooting: 0, hasSession: false },
     { day: 'J', mental: 85, shooting: 70, hasSession: true },
     { day: 'V', mental: 78, shooting: 62, hasSession: true },
-    { day: 'S', mental: 0,  shooting: 0,  hasSession: false },
+    { day: 'S', mental: 0, shooting: 0, hasSession: false },
     { day: 'D', mental: 91, shooting: 75, hasSession: true },
 ]
 
@@ -190,6 +236,10 @@ export const useStore = create<CourtVisionState>()(
 
             // XP
             xpEvents: [],
+
+            // Notifications & gamification
+            badges: DEFAULT_BADGES,
+            recentActivity: DEFAULT_ACTIVITY,
 
             // ── Hydration ──
             setHydrated: () => set({ hydrated: true }),
@@ -309,7 +359,7 @@ export const useStore = create<CourtVisionState>()(
             },
 
             async logout() {
-                await supabase.auth.signOut().catch(() => {})
+                await supabase.auth.signOut().catch(() => { })
                 await clearTokens()
                 set({
                     isAuthenticated: false,
@@ -318,6 +368,8 @@ export const useStore = create<CourtVisionState>()(
                     highlights: [],
                     sessions: [],
                     xpEvents: [],
+                    badges: [],
+                    recentActivity: [],
                 })
             },
 
@@ -423,6 +475,57 @@ export const useStore = create<CourtVisionState>()(
                 set({ xpEvents: [] })
             },
 
+            addActivity(activity) {
+                const newActivity: ActivityEvent = {
+                    ...activity,
+                    id: `act-${Date.now()}-${Math.random()}`,
+                    timestamp: Date.now()
+                }
+                set(s => ({
+                    recentActivity: [newActivity, ...s.recentActivity].slice(0, 20)
+                }))
+            },
+
+            evaluateBadges() {
+                // Example evaluation logic
+                const store = get()
+                if (!store.user) return
+
+                // Example rule: Elite overall rating
+                if (store.user.level === 'Elite' && !store.badges.find(b => b.name === 'Elite')) {
+                    const newBadge = { id: `b-new-${Date.now()}`, emoji: '💎', name: 'Elite', rarity: 'legendary' as const, xp: 2000, desc: 'Reach 90+ overall', earnedAt: new Date().toISOString() }
+                    set(s => ({ badges: [newBadge, ...s.badges] }))
+                    get().addXP(2000, 'Unlocked Elite Badge!')
+                    get().addActivity({ icon: 'award', text: 'New Badge: Elite', time: 'Just now', color: T.color.gamification.gold })
+                }
+            },
+
+            completeSession(sessionData) {
+                // A simulation of what happens when a session concludes
+                const store = get()
+                get().addXP(150, 'Session Completed')
+                get().addActivity({
+                    icon: 'film',
+                    text: `Session analyzed · Mental ${sessionData.mental_score ?? 80}`,
+                    time: 'Just now',
+                    color: T.color.signature.primary
+                })
+                get().evaluateBadges()
+
+                // If the user leveled up from this logic, addXP technically covers it (it computes level implicitly via selectXPLevel)
+                const currentXp = store.user?.xp ?? 0
+                const curLevel = xpToLevel(currentXp)
+                const nextLevel = xpToLevel(currentXp + 150)
+                if (nextLevel > curLevel) {
+                    get().addActivity({
+                        icon: 'arrow-up',
+                        text: `Level ${nextLevel} unlocked!`,
+                        time: 'Just now',
+                        color: T.color.semantic.success
+                    })
+                }
+            },
+
             updateUser(partial: Partial<UserProfile>) {
                 set(s => ({ user: s.user ? { ...s.user, ...partial } : s.user }))
             },
@@ -436,6 +539,8 @@ export const useStore = create<CourtVisionState>()(
                 user: s.user,
                 weeklyData: s.weeklyData,
                 highlights: s.highlights,
+                badges: s.badges,
+                recentActivity: s.recentActivity
             }),
             onRehydrateStorage: () => (state) => {
                 state?.setHydrated()
@@ -445,12 +550,12 @@ export const useStore = create<CourtVisionState>()(
 )
 
 // ─── Selectors ─────────────────────────────────────────────────
-export const selectUser           = (s: CourtVisionState) => s.user
-export const selectWeekly         = (s: CourtVisionState) => s.weeklyData
-export const selectHighlights     = (s: CourtVisionState) => s.highlights
-export const selectStreak         = (s: CourtVisionState) => s.user?.streak ?? 0
-export const selectXP             = (s: CourtVisionState) => s.user?.xp ?? 0
-export const selectXPLevel        = (s: CourtVisionState) => s.user?.xp_level ?? 1
-export const selectXPEvents       = (s: CourtVisionState) => s.xpEvents
+export const selectUser = (s: CourtVisionState) => s.user
+export const selectWeekly = (s: CourtVisionState) => s.weeklyData
+export const selectHighlights = (s: CourtVisionState) => s.highlights
+export const selectStreak = (s: CourtVisionState) => s.user?.streak ?? 0
+export const selectXP = (s: CourtVisionState) => s.user?.xp ?? 0
+export const selectXPLevel = (s: CourtVisionState) => s.user?.xp_level ?? 1
+export const selectXPEvents = (s: CourtVisionState) => s.xpEvents
 export const selectIsAuthenticated = (s: CourtVisionState) => s.isAuthenticated
-export const selectHydrated       = (s: CourtVisionState) => s.hydrated
+export const selectHydrated = (s: CourtVisionState) => s.hydrated

@@ -18,9 +18,9 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useStore } from '../../lib/store'
 import { toast } from '../../lib/toast'
-import { ScoreRing } from '../../components/ScoreRing'
-import { PerformanceBadge } from '../../components/PerformanceBadge'
-import { ShotScienceGrid } from '../../components/ShotScienceGrid'
+import { ScoreRing } from '../../components/workout/ScoreRing'
+import { PerformanceBadge } from '../../components/gamification/PerformanceBadge'
+import { ShotScienceGrid } from '../../components/workout/ShotScienceGrid'
 import { T, typePresets } from '../../lib/theme'
 
 const type = typePresets
@@ -68,7 +68,7 @@ function Glass({ children, style, accent = false }: any) {
     return (
         <View style={[{
             borderRadius: T.borderRadius.lg, padding: T.spacing[4],
-            ...((accent ? T.glass.accent : (T as any).glass?.regular) ?? T.glass.light),
+            ...((accent ? T.glass.vivid : (T as any).glass?.regular) ?? T.glass.thin),
         }, style]}>
             {children}
         </View>
@@ -272,7 +272,7 @@ export default function AnalysisReport() {
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     style={{
                         width: 36, height: 36, borderRadius: T.borderRadius.md,
-                        ...(T as any).glass?.regular ?? T.glass.light,
+                        ...(T as any).glass?.regular ?? T.glass.thin,
                         justifyContent: 'center', alignItems: 'center', marginRight: T.spacing[3],
                     }}
                     accessibilityLabel="Go back"
@@ -287,7 +287,7 @@ export default function AnalysisReport() {
                 <TouchableOpacity
                     onPress={handleShare}
                     style={{
-                        ...(T as any).glass?.regular ?? T.glass.light,
+                        ...(T as any).glass?.regular ?? T.glass.thin,
                         borderRadius: T.borderRadius.md,
                         paddingHorizontal: T.spacing[3], paddingVertical: T.spacing[2],
                         flexDirection: 'row', alignItems: 'center', gap: 4,

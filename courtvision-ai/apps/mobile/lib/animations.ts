@@ -100,11 +100,11 @@ export function useFadeSlideIn(delay = 0, offset = 20) {
     useEffect(() => {
         opacity.value = withDelay(
             delay,
-            withTiming(1, { duration: T.animation.duration.slow, easing: Easing.out(Easing.quad) })
+            withTiming(1, { duration: 500, easing: Easing.out(Easing.quad) })
         )
         translateY.value = withDelay(
             delay,
-            withSpring(0, { damping: 20, stiffness: 200 })
+            withSpring(0, T.spring.snappy)
         )
 
         return () => {
@@ -202,7 +202,7 @@ export function useGlow(active = true) {
             )
         } else {
             cancelAnimation(intensity)
-            intensity.value = withTiming(0, { duration: T.animation.duration.fast })
+            intensity.value = withTiming(0, { duration: 150 })
         }
 
         return () => cancelAnimation(intensity)
@@ -228,11 +228,7 @@ export function useTabSlide(activeIndex: number, tabWidth: number) {
     const translateX = useSharedValue(activeIndex * tabWidth)
 
     useEffect(() => {
-        translateX.value = withSpring(activeIndex * tabWidth, {
-            damping: 20,
-            stiffness: 200,
-            mass: 0.8,
-        })
+        translateX.value = withSpring(activeIndex * tabWidth, T.spring.snappy)
     }, [activeIndex, tabWidth])
 
     const animatedStyle = useAnimatedStyle(() => ({
@@ -287,7 +283,7 @@ export function useLevelUp(onDone?: () => void) {
         opacity.value = withTiming(1, { duration: 100 })
         scale.value = withSequence(
             withSpring(1.35, { damping: 6, stiffness: 300 }),
-            withSpring(1, { damping: 14, stiffness: 200 })
+            withSpring(1, T.spring.snappy)
         )
         glowOpacity.value = withSequence(
             withTiming(1, { duration: 200 }),
@@ -349,10 +345,10 @@ export function useProgressBar(target: number, delay = 0) {
         if (delay > 0) {
             progress.value = withDelay(
                 delay,
-                withSpring(targetDecimal, { damping: 22, stiffness: 140 })
+                withSpring(targetDecimal, T.spring.gentle)
             )
         } else {
-            progress.value = withSpring(targetDecimal, { damping: 22, stiffness: 140 })
+            progress.value = withSpring(targetDecimal, T.spring.gentle)
         }
     }, [target])
 
@@ -385,13 +381,13 @@ export function useRingProgress(score: number, circumference: number, delay = 0)
             strokeDashoffset.value = withDelay(
                 delay,
                 withTiming(targetOffset, {
-                    duration: T.animation.duration.slow,
+                    duration: 500,
                     easing: Easing.out(Easing.cubic),
                 })
             )
         } else {
             strokeDashoffset.value = withTiming(targetOffset, {
-                duration: T.animation.duration.slow,
+                duration: 500,
                 easing: Easing.out(Easing.cubic),
             })
         }

@@ -25,11 +25,11 @@ import Animated, {
     FadeInDown,
     FadeInRight,
 } from 'react-native-reanimated'
-import { T, typePresets } from '../lib/theme'
-import { CourtZoneSelector, type CourtZoneData, type ZoneStats } from '../components/CourtZoneSelector'
+import { T } from '../lib/theme'
+import { CourtZoneSelector, type CourtZoneData } from '../components/workout/CourtZoneSelector'
 import { SessionStorageService, type SessionHistoryItem } from '../lib/sessionStorage'
 
-const type = typePresets
+const type = T.type
 const { width: SCREEN_W } = Dimensions.get('window')
 
 // ==========================================
@@ -155,9 +155,9 @@ function TabSelector({
                         <Feather
                             name={tab.icon as any}
                             size={14}
-                            color={active ? T.color.signature.primary : T.color.text.tertiary}
+                            color={active ? T.color.brand.primary : T.color.text.tertiary}
                         />
-                        <Text style={[styles.tabText, active && styles.tabTextActive]}>
+                        <Text style={[styles.tabText, active && styles.tabTextActive, active && { fontFamily: T.fonts.body.bold }]}>
                             {tab.label}
                         </Text>
                     </TouchableOpacity>
@@ -170,7 +170,7 @@ function TabSelector({
 function NBACompCard({ comp, rank, delay = 0 }: { comp: NBAPlayerComp; rank: number; delay?: number }) {
     const simColor = comp.similarity >= 75 ? T.color.semantic.success
         : comp.similarity >= 50 ? T.color.semantic.warning
-        : T.color.text.tertiary
+            : T.color.text.tertiary
 
     return (
         <Animated.View entering={FadeInDown.delay(delay).duration(300)} style={styles.compCard}>
@@ -205,17 +205,17 @@ function ShotDNACard({ dna }: { dna: ShotDNAProfile }) {
     ]
 
     return (
-        <Animated.View entering={FadeInDown.delay(100).duration(300)} style={styles.dnaCard}>
+        <Animated.View entering={FadeInDown.delay(100).duration(300)} style={[styles.dnaCard, T.glass.thin]}>
             <View style={styles.cardHeader}>
-                <Feather name="cpu" size={14} color={T.color.signature.primary} />
+                <Feather name="cpu" size={14} color={T.color.brand.primary} />
                 <Text style={styles.cardTitle}>Shot DNA Profile</Text>
             </View>
 
             {metrics.map((m, i) => {
                 const barColor = m.percentile >= 75 ? T.color.semantic.success
-                    : m.percentile >= 50 ? T.color.signature.primary
-                    : m.percentile >= 25 ? T.color.semantic.warning
-                    : T.color.semantic.error
+                    : m.percentile >= 50 ? T.color.brand.primary
+                        : m.percentile >= 25 ? T.color.semantic.warning
+                            : T.color.semantic.error
 
                 return (
                     <View key={m.key} style={styles.dnaRow}>
@@ -284,7 +284,7 @@ function ProgressionChart({
                                     styles.chartBar,
                                     {
                                         height,
-                                        backgroundColor: isLast ? T.color.signature.primary : 'rgba(255,255,255,0.15)',
+                                        backgroundColor: isLast ? T.color.brand.primary : 'rgba(255,255,255,0.1)',
                                     },
                                 ]}
                             />
@@ -294,7 +294,7 @@ function ProgressionChart({
             </View>
             <View style={styles.chartLabels}>
                 <Text style={styles.chartLabelMin}>{min.toFixed(1)}</Text>
-                <Text style={[styles.chartLabelCurrent, { color: T.color.signature.primary }]}>
+                <Text style={[styles.chartLabelCurrent, { color: T.color.brand.primary }]}>
                     {values[values.length - 1].toFixed(1)}
                 </Text>
                 <Text style={styles.chartLabelMax}>{max.toFixed(1)}</Text>
@@ -400,9 +400,9 @@ export default function AnalyticsScreen() {
                 {/* Shot Chart Tab */}
                 {activeTab === 'shotchart' && (
                     <Animated.View entering={FadeIn.duration(300)}>
-                        <View style={styles.card}>
+                        <View style={[styles.card, T.glass.thin]}>
                             <View style={styles.cardHeader}>
-                                <Feather name="target" size={14} color={T.color.signature.primary} />
+                                <Feather name="target" size={14} color={T.color.brand.primary} />
                                 <Text style={styles.cardTitle}>Shot Chart</Text>
                             </View>
                             <CourtZoneSelector
@@ -412,9 +412,9 @@ export default function AnalyticsScreen() {
                         </View>
 
                         {/* Zone breakdown table */}
-                        <View style={[styles.card, { marginTop: 12 }]}>
+                        <View style={[styles.card, { marginTop: 12 }, T.glass.thin]}>
                             <View style={styles.cardHeader}>
-                                <Feather name="bar-chart-2" size={14} color={T.color.signature.primary} />
+                                <Feather name="bar-chart-2" size={14} color={T.color.brand.primary} />
                                 <Text style={styles.cardTitle}>Détail par zone</Text>
                             </View>
                             {Object.entries(zoneData).map(([zone, stats]) => {
@@ -438,7 +438,7 @@ export default function AnalyticsScreen() {
                                         <Text style={[styles.zonePct, {
                                             color: stats.pct >= 45 ? T.color.semantic.success
                                                 : stats.pct >= 35 ? T.color.semantic.warning
-                                                : T.color.semantic.error
+                                                    : T.color.semantic.error
                                         }]}>
                                             {stats.pct}%
                                         </Text>
@@ -471,9 +471,9 @@ export default function AnalyticsScreen() {
                     <Animated.View entering={FadeIn.duration(300)}>
                         {nbaComps.length > 0 ? (
                             <>
-                                <View style={styles.card}>
+                                <View style={[styles.card, T.glass.thin]}>
                                     <View style={styles.cardHeader}>
-                                        <Feather name="users" size={14} color={T.color.signature.primary} />
+                                        <Feather name="users" size={14} color={T.color.brand.primary} />
                                         <Text style={styles.cardTitle}>Comparaisons NBA 2023-24</Text>
                                     </View>
                                     <Text style={styles.compDescription}>
@@ -506,9 +506,9 @@ export default function AnalyticsScreen() {
                 {/* Progression Tab */}
                 {activeTab === 'progress' && (
                     <Animated.View entering={FadeIn.duration(300)}>
-                        <View style={styles.card}>
+                        <View style={[styles.card, T.glass.thin]}>
                             <View style={styles.cardHeader}>
-                                <Feather name="trending-up" size={14} color={T.color.signature.primary} />
+                                <Feather name="trending-up" size={14} color={T.color.brand.primary} />
                                 <Text style={styles.cardTitle}>Progression</Text>
                             </View>
 
@@ -532,7 +532,7 @@ export default function AnalyticsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: T.color.background.primary,
+        backgroundColor: T.color.bg.primary,
     },
     header: {
         flexDirection: 'row',
@@ -579,12 +579,12 @@ const styles = StyleSheet.create({
         gap: 4,
         paddingVertical: 8,
         borderRadius: 10,
-        backgroundColor: T.color.background.secondary,
+        backgroundColor: T.color.bg.secondary,
     },
     tabActive: {
-        backgroundColor: `${T.color.signature.primary}15`,
+        backgroundColor: `${T.color.brand.primary}15`,
         borderWidth: 1,
-        borderColor: `${T.color.signature.primary}30`,
+        borderColor: `${T.color.brand.primary}30`,
     },
     tabText: {
         color: T.color.text.tertiary,
@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
         fontFamily: T.fonts.body.semibold,
     },
     tabTextActive: {
-        color: T.color.signature.primary,
+        color: T.color.brand.primary,
     },
 
     scroll: {
@@ -607,11 +607,11 @@ const styles = StyleSheet.create({
 
     // Cards
     card: {
-        backgroundColor: T.color.background.secondary,
-        borderRadius: T.borderRadius.lg,
+        backgroundColor: T.color.bg.secondary,
+        borderRadius: T.radius.lg,
         padding: 16,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
     cardHeader: {
         flexDirection: 'row',
@@ -632,7 +632,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 8,
         borderBottomWidth: 1,
-        borderBottomColor: T.color.border.default,
+        borderBottomColor: T.color.border.base,
     },
     zoneLabel: {
         flex: 1,
@@ -658,17 +658,17 @@ const styles = StyleSheet.create({
     compCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: T.color.background.secondary,
-        borderRadius: T.borderRadius.lg,
+        backgroundColor: T.color.bg.secondary,
+        borderRadius: T.radius.lg,
         padding: 14,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
     compRank: {
         width: 30,
         height: 30,
         borderRadius: 15,
-        backgroundColor: T.color.background.tertiary,
+        backgroundColor: T.color.bg.tertiary,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
@@ -728,11 +728,11 @@ const styles = StyleSheet.create({
 
     // Shot DNA
     dnaCard: {
-        backgroundColor: T.color.background.secondary,
-        borderRadius: T.borderRadius.lg,
+        backgroundColor: T.color.bg.secondary,
+        borderRadius: T.radius.lg,
         padding: 16,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
     dnaRow: {
         marginBottom: 12,
@@ -763,7 +763,7 @@ const styles = StyleSheet.create({
         flex: 1,
         height: 6,
         borderRadius: 3,
-        backgroundColor: T.color.background.tertiary,
+        backgroundColor: T.color.bg.tertiary,
         overflow: 'hidden',
     },
     dnaBar: {
@@ -839,10 +839,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 40,
         paddingHorizontal: 20,
-        backgroundColor: T.color.background.secondary,
-        borderRadius: T.borderRadius.lg,
+        backgroundColor: T.color.bg.secondary,
+        borderRadius: T.radius.lg,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
     emptyTitle: {
         color: T.color.text.primary,

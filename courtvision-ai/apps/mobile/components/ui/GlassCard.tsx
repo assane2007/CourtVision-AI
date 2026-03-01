@@ -19,13 +19,13 @@ import { T } from '../../lib/theme'
 export type GlassVariant = 'light' | 'medium' | 'accent' | 'success' | 'danger' | 'gold' | 'thin' | 'primary'
 
 const GLASS_STYLES: Record<GlassVariant, { bg: string; border: string }> = {
-  light: { bg: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.07)' },
+  light: { bg: T.glass.base.backgroundColor, border: T.glass.base.borderColor },
   medium: { bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.10)' },
-  accent: { bg: 'rgba(255,107,0,0.06)', border: 'rgba(255,107,0,0.16)' },
+  accent: { bg: T.color.brand.glow, border: `${T.color.brand.primary}30` },
   success: { bg: 'rgba(0,198,122,0.07)', border: 'rgba(0,198,122,0.16)' },
   danger: { bg: 'rgba(255,58,94,0.08)', border: 'rgba(255,58,94,0.16)' },
   gold: { bg: 'rgba(255,214,10,0.08)', border: 'rgba(255,214,10,0.16)' },
-  thin: { bg: 'rgba(255,255,255,0.02)', border: 'rgba(255,255,255,0.04)' },
+  thin: { bg: T.glass.thin.backgroundColor, border: T.glass.thin.borderColor },
   primary: { bg: 'rgba(10,132,255,0.07)', border: 'rgba(10,132,255,0.16)' },
 }
 
@@ -51,14 +51,17 @@ export interface GlassCardProps {
 export function GlassCard({
   children,
   variant = 'light',
-  borderRadius = T.borderRadius.lg,
+  borderRadius = T.radius.lg,
   padding = T.spacing[4],
   style,
   shadow = 'none',
 }: GlassCardProps) {
   const glass = GLASS_STYLES[variant]
 
-  const shadowStyle = shadow !== 'none' ? T.shadows[shadow]?.('#000') ?? {} : {}
+  const shadowStyle = shadow === 'none' ? {}
+    : shadow === 'sm' ? T.glow.soft()
+      : shadow === 'md' ? T.glow.soft()
+        : T.glow.hero()
 
   return (
     <View

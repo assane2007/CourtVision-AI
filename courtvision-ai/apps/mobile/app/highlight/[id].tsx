@@ -64,7 +64,7 @@ function PlayButton({ onPress }: { onPress: () => void }) {
                     activeOpacity={0.8}
                     style={{
                         width: 90, height: 90, borderRadius: 45,
-                        ...T.glass.accent, ...T.glow(T.color.signature.primary, 0.25),
+                        ...T.glass.vivid, ...T.glow(T.color.signature.primary, 0.25),
                         justifyContent: 'center', alignItems: 'center',
                     }}
                 >
@@ -167,7 +167,7 @@ export default function HighlightPlayer() {
                             style={{
                                 position: 'absolute', top: '28%', right: '8%',
                                 borderRadius: T.borderRadius.md, paddingHorizontal: 14, paddingVertical: 10,
-                                ...T.glass.primary, ...T.glow(T.color.semantic.info, 0.3),
+                                ...T.glass.vivid, ...T.glow(T.color.semantic.info, 0.3),
                             }}
                         >
                             <Text style={{ ...type.caption, color: T.color.text.secondary, fontFamily: T.fonts.body.medium }}>
@@ -214,7 +214,7 @@ export default function HighlightPlayer() {
                                 onPress={() => router.back()}
                                 style={{
                                     width: 42, height: 42, borderRadius: 21,
-                                    ...T.glass.medium, justifyContent: 'center', alignItems: 'center',
+                                    ...T.glass.base, justifyContent: 'center', alignItems: 'center',
                                 }}
                             >
                                 <Feather name="x" size={22} color={T.color.text.primary} />
@@ -225,14 +225,15 @@ export default function HighlightPlayer() {
                                 style={{
                                     paddingHorizontal: 14, paddingVertical: 8,
                                     borderRadius: T.borderRadius.full, flexDirection: 'row', alignItems: 'center', gap: 5,
-                                    ...(aiCommentary ? T.glass.primary : T.glass.medium),
+                                    ...(aiCommentary ? T.glass.vivid : T.glass.base),
                                     ...(aiCommentary ? T.glow(T.color.semantic.info, 0.15) : {}),
                                 }}
                             >
                                 <Feather name={aiCommentary ? 'mic' : 'mic-off'} size={14} color={aiCommentary ? T.color.semantic.info : T.color.text.secondary} />
                                 <Text style={{
+                                    ...type.caption,
                                     color: aiCommentary ? T.color.semantic.info : T.color.text.secondary,
-                                    ...type.caption, fontFamily: T.fonts.body.semibold,
+                                    fontFamily: T.fonts.body.semibold,
                                 }}>
                                     AI Commentary {aiCommentary ? 'ON' : 'OFF'}
                                 </Text>
@@ -247,7 +248,7 @@ export default function HighlightPlayer() {
                                 style={{
                                     marginTop: T.spacing[2], marginHorizontal: T.spacing[4],
                                     borderRadius: T.borderRadius.md, padding: T.spacing[3],
-                                    ...T.glass.accent, ...T.glow(T.color.signature.primary, 0.08),
+                                    ...T.glass.vivid, ...T.glow(T.color.signature.primary, 0.08),
                                     flexDirection: 'row', alignItems: 'center', gap: 8,
                                 }}
                             >
@@ -273,7 +274,7 @@ export default function HighlightPlayer() {
                                 <Animated.View style={[{
                                     height: 3, borderRadius: 2,
                                     backgroundColor: T.color.signature.primary,
-                                    ...T.shadow(T.color.signature.primary, 0.5, 4),
+                                    ...T.glow.soft(),
                                 }, progressStyle]} />
                             </View>
 
@@ -288,7 +289,7 @@ export default function HighlightPlayer() {
                                             activeOpacity={0.7}
                                             style={{
                                                 flex: 1, borderRadius: T.borderRadius.sm, padding: T.spacing[2], alignItems: 'center',
-                                                ...(isActive ? T.glass.primary : T.glass.light),
+                                                ...(isActive ? T.glass.vivid : T.glass.thin),
                                                 ...(isActive ? T.glow(T.color.semantic.info, 0.12) : {}),
                                             }}
                                         >
@@ -332,7 +333,7 @@ export default function HighlightPlayer() {
                                         <TouchableOpacity
                                             style={{
                                                 width: 46, height: 46, borderRadius: 23,
-                                                ...T.glass.medium, justifyContent: 'center', alignItems: 'center',
+                                                ...T.glass.base, justifyContent: 'center', alignItems: 'center',
                                             }}
                                             onPress={() => setShareModal(true)}
                                         >
@@ -363,8 +364,8 @@ export default function HighlightPlayer() {
                                             style={{
                                                 paddingHorizontal: 14, paddingVertical: 12, borderRadius: T.borderRadius.xl,
                                                 ...(published
-                                                    ? { ...T.glass.accent, borderColor: T.color.semantic.success, borderWidth: 1 }
-                                                    : T.glass.medium),
+                                                    ? { ...T.glass.vivid, borderColor: T.color.semantic.success, borderWidth: 1 }
+                                                    : T.glass.base),
                                             }}
                                             onPress={handlePublish}
                                             disabled={published}
@@ -377,8 +378,9 @@ export default function HighlightPlayer() {
                                                     color={published ? T.color.semantic.success : T.color.text.primary}
                                                 />
                                                 <Text style={{
+                                                    ...type.caption,
                                                     color: published ? T.color.semantic.success : T.color.text.primary,
-                                                    ...type.caption, fontFamily: T.fonts.body.bold,
+                                                    fontFamily: T.fonts.body.bold,
                                                 }}>
                                                     {published ? 'Published' : 'Publish'}
                                                 </Text>
@@ -403,7 +405,7 @@ export default function HighlightPlayer() {
                     style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' }}
                     onPress={() => setShareModal(false)}
                 >
-                    <Pressable onPress={() => {}}>
+                    <Pressable onPress={() => { }}>
                         <Animated.View
                             entering={SlideInDown.duration(350).damping(18)}
                             style={{
@@ -411,7 +413,7 @@ export default function HighlightPlayer() {
                                 borderTopLeftRadius: T.borderRadius['2xl'],
                                 borderTopRightRadius: T.borderRadius['2xl'],
                                 padding: T.spacing[6], paddingBottom: 44,
-                                borderTopWidth: 1, borderColor: T.color.border.default,
+                                borderTopWidth: 1, borderColor: T.color.border.base,
                             }}
                         >
                             <View style={{ width: 40, height: 4, backgroundColor: T.color.text.tertiary, borderRadius: 2, alignSelf: 'center', marginBottom: T.spacing[5] }} />
@@ -442,7 +444,7 @@ export default function HighlightPlayer() {
                                                 width: 60, height: 60, borderRadius: T.borderRadius.xl,
                                                 backgroundColor: `${p.color}15`, justifyContent: 'center', alignItems: 'center',
                                                 borderWidth: 1.5, borderColor: `${p.color}30`,
-                                                ...T.shadow(p.color, 0.15, 8),
+                                                ...T.glow.soft(),
                                             }}>
                                                 <Feather name={p.icon} size={26} color={p.color} />
                                             </View>
@@ -458,7 +460,7 @@ export default function HighlightPlayer() {
                                 style={{
                                     borderRadius: T.borderRadius.lg, paddingVertical: 16, alignItems: 'center',
                                     flexDirection: 'row', justifyContent: 'center', gap: 8,
-                                    ...T.glass.accent, ...T.glow(T.color.signature.primary, 0.15),
+                                    ...T.glass.vivid, ...T.glow(T.color.signature.primary, 0.15),
                                     borderWidth: 1.5, borderColor: `${T.color.signature.primary}30`,
                                 }}
                                 onPress={handleNativeShare}

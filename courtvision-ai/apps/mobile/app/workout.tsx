@@ -33,13 +33,14 @@ import Animated, {
     SlideInDown,
 } from 'react-native-reanimated'
 import { useRealtimeAI, type AIPhase } from '../hooks/useRealtimeAI'
-import { SmartCamera } from '../components/SmartCamera'
-import { BiomechanicsPanel } from '../components/BiomechanicsPanel'
-import { SessionSummary } from '../components/SessionSummary'
+import { SmartCamera } from '../components/workout/SmartCamera'
+import { BiomechanicsPanel } from '../components/workout/BiomechanicsPanel'
+import { SessionSummary } from '../components/workout/SessionSummary'
 import { ShareService } from '../lib/shareService'
 import { CoachingEngine, type CoachingReport } from '../lib/coachingEngine'
 import { SessionStorageService } from '../lib/sessionStorage'
-import { T, typePresets } from '../lib/theme'
+import { T, typePresets, impact } from '../lib/theme'
+import { CVHUDStat, CVHUDTimer } from '../components/ui'
 import type { CapturedFrame } from '../lib/frameCapture'
 
 const type = typePresets
@@ -96,6 +97,7 @@ export default function WorkoutScreen() {
 
     // ---- Actions ----
     const handleStart = useCallback(() => {
+        impact.medium()
         setCoachingReport(null)
         setSaveSuccess(false)
         setShowCoaching(false)
@@ -107,6 +109,7 @@ export default function WorkoutScreen() {
     }, [ai, demoMode])
 
     const handleEnd = useCallback(() => {
+        impact.light()
         Alert.alert(
             'Terminer la session ?',
             'Tu verras un résumé complet de ta performance.',
@@ -123,6 +126,7 @@ export default function WorkoutScreen() {
 
     const handleSaveSession = useCallback(async () => {
         if (!ai.stats || isSaving) return
+        impact.light()
         setIsSaving(true)
         try {
             const storage = SessionStorageService.getInstance()
@@ -131,8 +135,10 @@ export default function WorkoutScreen() {
                 appVersion: '1.0.0',
             })
             setSaveSuccess(true)
+            impact.success()
             Alert.alert('✅ Sauvegardé', 'Ta session a été enregistrée et sera synchronisée.')
         } catch (err) {
+            impact.error()
             Alert.alert('Erreur', 'Impossible de sauvegarder la session.')
         } finally {
             setIsSaving(false)
@@ -140,11 +146,14 @@ export default function WorkoutScreen() {
     }, [ai.stats, ai.shots, isSaving])
 
     const handleRestart = useCallback(() => {
+        impact.medium()
         ai.reset()
         ai.startSession({ enableHaptics: true })
     }, [ai])
 
     const handleManualShot = useCallback((outcome: 'made' | 'missed') => {
+        if (outcome === 'made') impact.success()
+        else impact.heavy()
         ai.recordShot(outcome)
     }, [ai])
 
@@ -332,9 +341,10 @@ export default function WorkoutScreen() {
                         {ai.phase === 'active' ? 'Session Active' : 'Workout AI'}
                     </Text>
                     {ai.phase === 'active' ? (
-                        <Text style={styles.headerSub}>
-                            {formatTime(ai.sessionDuration)} · {ai.shotCount} tirs
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: T.spacing[3], marginTop: T.spacing[1] }}>
+                            <CVHUDTimer seconds={ai.sessionDuration} active />
+                            <CVHUDStat label="Total" value={ai.shotCount} color={T.color.text.secondary} />
+                        </View>
                     ) : null}
                 </View>
                 {ai.phase === 'active' ? (
@@ -426,29 +436,23 @@ export default function WorkoutScreen() {
                 {ai.phase === 'active' ? (
                     <>
                         {/* Shooting quick stats */}
-                        <Animated.View entering={FadeInDown.delay(100).duration(300)} style={styles.quickStats}>
-                            <View style={styles.quickStat}>
-                                <Text style={[styles.quickStatValue, { color: T.color.semantic.success }]}>
-                                    {ai.madeCount}
-                                </Text>
-                                <Text style={styles.quickStatLabel}>Made</Text>
-                            </View>
-                            <View style={styles.quickStatCenter}>
-                                <Text style={[styles.quickStatPct, {
-                                    color: ai.shootingPct >= 50 ? T.color.semantic.success
-                                        : ai.shootingPct >= 35 ? T.color.semantic.warning
-                                        : T.color.semantic.error
-                                }]}>
-                                    {ai.shootingPct}%
-                                </Text>
-                                <Text style={styles.quickStatLabel}>FG%</Text>
-                            </View>
-                            <View style={styles.quickStat}>
-                                <Text style={[styles.quickStatValue, { color: T.color.semantic.error }]}>
-                                    {ai.missCount}
-                                </Text>
-                                <Text style={styles.quickStatLabel}>Miss</Text>
-                            </View>
+                        <Animated.View entering={FadeInDown.delay(100).duration(300)} style={{ flexDirection: 'row', gap: T.spacing[3], marginBottom: T.spacing[3] }}>
+                            <CVHUDStat
+                                label="Made"
+                                value={ai.madeCount}
+                                color={T.color.semantic.success}
+                            />
+                            <CVHUDStat
+                                label="FG%"
+                                value={`${ai.shootingPct}%`}
+                                color={ai.shootingPct >= 50 ? T.color.semantic.success : ai.shootingPct >= 35 ? T.color.semantic.warning : T.color.semantic.error}
+                                large
+                            />
+                            <CVHUDStat
+                                label="Miss"
+                                value={ai.missCount}
+                                color={T.color.semantic.error}
+                            />
                         </Animated.View>
 
                         {/* Biomechanics panel */}
@@ -562,7 +566,7 @@ const styles = StyleSheet.create({
         backgroundColor: T.color.background.secondary,
         borderRadius: T.borderRadius.xl,
         borderWidth: 1,
-        borderColor: T.color.border.accent,
+        borderColor: T.color.border.base,
     },
     readyTitle: {
         color: T.color.text.primary,
@@ -605,7 +609,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         backgroundColor: T.color.background.tertiary,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
         marginBottom: 16,
     },
     demoToggleActive: {
@@ -635,11 +639,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        backgroundColor: T.color.semantic.errorDim,
+        backgroundColor: `${T.color.semantic.error}20`,
         padding: 12,
         borderRadius: T.borderRadius.md,
         borderWidth: 1,
-        borderColor: 'rgba(255,58,94,0.25)',
+        borderColor: `${T.color.semantic.error}40`,
     },
     errorText: {
         color: T.color.semantic.error,
@@ -657,7 +661,7 @@ const styles = StyleSheet.create({
         borderRadius: T.borderRadius.lg,
         paddingVertical: 14,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
     quickStat: {
         alignItems: 'center',
@@ -697,7 +701,7 @@ const styles = StyleSheet.create({
         backgroundColor: T.color.background.secondary,
         borderRadius: T.borderRadius.lg,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
     waitingText: {
         color: T.color.text.secondary,
@@ -733,7 +737,7 @@ const styles = StyleSheet.create({
         borderRadius: T.borderRadius.xl,
         padding: 24,
         borderWidth: 1,
-        borderColor: T.color.border.accent,
+        borderColor: T.color.border.base,
         marginBottom: 12,
     },
     coachingGradeValue: {
@@ -761,7 +765,7 @@ const styles = StyleSheet.create({
         borderRadius: T.borderRadius.lg,
         padding: 16,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
         marginBottom: 16,
     },
     nbaCompHeader: {
@@ -814,7 +818,7 @@ const styles = StyleSheet.create({
         padding: 14,
         marginBottom: 8,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
     insightStrength: {
         borderColor: `${T.color.semantic.success}30`,
@@ -850,7 +854,7 @@ const styles = StyleSheet.create({
         padding: 14,
         marginBottom: 8,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
     drillHeader: {
         flexDirection: 'row',
@@ -907,7 +911,7 @@ const styles = StyleSheet.create({
         padding: 16,
         marginBottom: 24,
         borderWidth: 1,
-        borderColor: T.color.border.accent,
+        borderColor: T.color.border.base,
     },
     nextFocusLabel: {
         color: T.color.text.tertiary,

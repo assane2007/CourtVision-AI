@@ -16,8 +16,8 @@ import Animated, {
     interpolate,
     FadeInUp,
 } from 'react-native-reanimated'
-import type { TwinCardData, SharePlatform } from '../hooks/useViralShare'
-import { T } from '../lib/theme'
+import type { TwinCardData, SharePlatform } from '../../hooks/useViralShare'
+import { T } from '../../lib/theme'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const CARD_WIDTH = SCREEN_WIDTH - 48
@@ -28,10 +28,10 @@ const STYLE_EMOJIS: Record<string, string> = {
 }
 
 const PLATFORM_CONFIG: Record<SharePlatform, { icon: string; color: string; label: string }> = {
-    tiktok:    { icon: 'play-circle', color: '#EE1D52', label: 'TikTok' },
-    instagram: { icon: 'camera',      color: '#E4405F', label: 'Instagram' },
-    twitter:   { icon: 'twitter',     color: '#1DA1F2', label: 'Twitter/X' },
-    generic:   { icon: 'share-2',     color: T.color.signature.primary, label: 'Share' },
+    tiktok: { icon: 'play-circle', color: '#EE1D52', label: 'TikTok' },
+    instagram: { icon: 'camera', color: '#E4405F', label: 'Instagram' },
+    twitter: { icon: 'twitter', color: '#1DA1F2', label: 'Twitter/X' },
+    generic: { icon: 'share-2', color: T.color.brand.primary, label: 'Share' },
 }
 
 // ==========================================
@@ -65,31 +65,31 @@ export function TwinCard({ data, compact }: TwinCardProps) {
     return (
         <View style={{
             width: compact ? CARD_WIDTH * 0.85 : CARD_WIDTH,
-            backgroundColor: T.color.background.primary,
-            borderRadius: T.borderRadius.xl,
+            backgroundColor: T.color.bg.primary,
+            borderRadius: T.radius.xl,
             overflow: 'hidden',
             borderWidth: 1.5,
             borderColor: `${ratingColor}40`,
-            ...T.glow(ratingColor, 0.3),
+            ...T.glow.soft(ratingColor),
         }}>
             {/* Header */}
             <View style={{
                 paddingHorizontal: 20, paddingTop: 20, paddingBottom: 14,
-                ...T.glass.accent,
-                borderBottomWidth: 1, borderBottomColor: T.color.border.default,
+                ...T.glass.vivid,
+                borderBottomWidth: 1, borderBottomColor: T.color.border.base,
             }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Feather name="crosshair" size={16} color={T.color.signature.primary} />
+                        <Feather name="crosshair" size={16} color={T.color.brand.primary} />
                         <Text style={{
-                            color: T.color.signature.primary, fontSize: 12, fontWeight: '800', marginLeft: 6,
+                            color: T.color.brand.primary, fontSize: 12, fontWeight: '800', marginLeft: 6,
                             letterSpacing: 1, fontFamily: T.fonts.display.black,
                         }}>
                             COURTVISION AI
                         </Text>
                     </View>
                     <View style={{
-                        ...T.glass.light, borderRadius: T.borderRadius.sm,
+                        ...T.glass.base, borderRadius: T.radius.sm,
                         paddingHorizontal: 8, paddingVertical: 3,
                     }}>
                         <Text style={{
@@ -110,11 +110,11 @@ export function TwinCard({ data, compact }: TwinCardProps) {
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
                     {data.position && (
                         <View style={{
-                            backgroundColor: T.color.signature.dim, borderRadius: 6,
+                            backgroundColor: T.color.brand.muted, borderRadius: 6,
                             paddingHorizontal: 8, paddingVertical: 2, marginRight: 8,
                         }}>
                             <Text style={{
-                                color: T.color.signature.primary, fontSize: 11, fontWeight: 'bold',
+                                color: T.color.brand.primary, fontSize: 11, fontWeight: 'bold',
                                 fontFamily: T.fonts.display.bold,
                             }}>
                                 {data.position}
@@ -132,14 +132,14 @@ export function TwinCard({ data, compact }: TwinCardProps) {
             {/* Overall Rating + Play Style */}
             <View style={{
                 flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-                paddingVertical: compact ? 14 : 18, ...T.glass.light,
+                paddingVertical: compact ? 14 : 18, ...T.glass.thin,
             }}>
                 <Animated.View style={[{
                     width: compact ? 70 : 85, height: compact ? 70 : 85,
                     borderRadius: compact ? 35 : 42.5,
-                    backgroundColor: T.color.background.tertiary,
+                    backgroundColor: T.color.bg.tertiary,
                     justifyContent: 'center', alignItems: 'center',
-                    ...T.glow(ratingColor, 0.4),
+                    ...T.glow.soft(ratingColor),
                     borderWidth: 2, borderColor: `${ratingColor}40`,
                 }, shimmerStyle]}>
                     <Text style={{
@@ -175,7 +175,7 @@ export function TwinCard({ data, compact }: TwinCardProps) {
                         {data.playStyleDescription}
                     </Text>
                     <Text style={{
-                        color: T.color.signature.primary, fontSize: 10, fontWeight: '600', marginTop: 3,
+                        color: T.color.brand.primary, fontSize: 10, fontWeight: '600', marginTop: 3,
                         fontFamily: T.fonts.body.semibold,
                     }}>
                         Archetype: {data.nbaArchetype}
@@ -187,7 +187,7 @@ export function TwinCard({ data, compact }: TwinCardProps) {
             <View style={{
                 flexDirection: 'row', flexWrap: 'wrap',
                 paddingHorizontal: 12, paddingVertical: 10,
-                borderTopWidth: 1, borderTopColor: T.color.border.default,
+                borderTopWidth: 1, borderTopColor: T.color.border.base,
             }}>
                 {data.keyAttributes.map((attr: { name: string; value: number; emoji: string }, i: number) => (
                     <View key={i} style={{
@@ -216,8 +216,8 @@ export function TwinCard({ data, compact }: TwinCardProps) {
                 <View style={{
                     flexDirection: 'row', alignItems: 'center',
                     paddingHorizontal: 16, paddingVertical: 8,
-                    backgroundColor: T.color.gamification.goldDim,
-                    borderTopWidth: 1, borderTopColor: T.color.border.default,
+                    backgroundColor: `${T.color.gamification.gold}20`,
+                    borderTopWidth: 1, borderTopColor: T.color.border.base,
                 }}>
                     <Feather name="star" size={14} color={T.color.gamification.gold} />
                     <Text style={{
@@ -252,7 +252,7 @@ export function TwinCard({ data, compact }: TwinCardProps) {
                 }}>
                     {data.strengths.map((s: string, i: number) => (
                         <View key={i} style={{
-                            backgroundColor: T.color.semantic.successDim, borderRadius: 8,
+                            backgroundColor: `${T.color.semantic.success}15`, borderRadius: 8,
                             paddingHorizontal: 8, paddingVertical: 3,
                             marginRight: 6, marginBottom: 4,
                         }}>
@@ -295,7 +295,7 @@ export function TwinCard({ data, compact }: TwinCardProps) {
                     courtvision.ai Ã‚Â· Create your own Twin
                 </Text>
                 <Text style={{
-                    color: T.color.signature.primary, fontSize: 9, fontWeight: '700',
+                    color: T.color.brand.primary, fontSize: 9, fontWeight: '700',
                     fontFamily: T.fonts.display.bold,
                 }}>
                     TWIN CARD
@@ -306,7 +306,7 @@ export function TwinCard({ data, compact }: TwinCardProps) {
 }
 
 function MiniStatBadge({ label, value, icon }: { label: string; value: number; icon: string }) {
-    const color = value >= 80 ? T.color.semantic.success : value >= 50 ? T.color.signature.primary : T.color.semantic.warning
+    const color = value >= 80 ? T.color.semantic.success : value >= 50 ? T.color.brand.primary : T.color.semantic.warning
     return (
         <View style={{ alignItems: 'center' }}>
             <Feather name={icon as any} size={14} color={color} />
@@ -340,7 +340,7 @@ interface ShareModalProps {
 
 export function ShareModal({ visible, onClose, onShare, sharing, cardData, shareType }: ShareModalProps) {
     const slide = useSharedValue(300)
-    const fade  = useSharedValue(0)
+    const fade = useSharedValue(0)
 
     useEffect(() => {
         if (visible) {
@@ -353,7 +353,7 @@ export function ShareModal({ visible, onClose, onShare, sharing, cardData, share
     }, [visible])
 
     const backdropStyle = useAnimatedStyle(() => ({ opacity: fade.value }))
-    const sheetStyle    = useAnimatedStyle(() => ({ transform: [{ translateY: slide.value }] }))
+    const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: slide.value }] }))
 
     const shareTitle: Record<string, string> = {
         twin_card: 'Share Twin Card',
@@ -369,12 +369,12 @@ export function ShareModal({ visible, onClose, onShare, sharing, cardData, share
             }, backdropStyle]}>
                 <TouchableOpacity style={{ flex: 1 }} onPress={onClose} activeOpacity={1} />
                 <Animated.View style={[{
-                    backgroundColor: T.color.background.tertiary,
+                    backgroundColor: T.color.bg.tertiary,
                     borderTopLeftRadius: 24, borderTopRightRadius: 24,
                     padding: 24, paddingBottom: 40,
                 }, sheetStyle]}>
                     <View style={{
-                        width: 40, height: 4, backgroundColor: T.color.border.default,
+                        width: 40, height: 4, backgroundColor: T.color.border.base,
                         borderRadius: 2, alignSelf: 'center', marginBottom: 20,
                     }} />
 
@@ -435,7 +435,7 @@ export function ShareModal({ visible, onClose, onShare, sharing, cardData, share
                     {/* XP bonus */}
                     <View style={{
                         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-                        backgroundColor: T.color.gamification.purpleDim, borderRadius: 10, padding: 10,
+                        backgroundColor: `\${T.color.gamification.purple}20`, borderRadius: 10, padding: 10,
                     }}>
                         <Feather name="zap" size={12} color={T.color.gamification.purple} style={{ marginRight: 6 }} />
                         <Text style={{

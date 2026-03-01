@@ -14,9 +14,10 @@
 import React from 'react'
 import {
   TouchableOpacity, Text, ActivityIndicator,
-  ViewStyle, TextStyle, View,
+  ViewStyle, TextStyle, View, Platform,
 } from 'react-native'
 import { Feather } from '@expo/vector-icons'
+import * as Haptics from 'expo-haptics'
 import { T } from '../../lib/theme'
 
 // ─── Types ────────────────────────────────────────────────────
@@ -43,9 +44,9 @@ export interface CVButtonProps {
 const SIZES: Record<CVButtonSize, {
   height: number; px: number; fontSize: number; iconSize: number; radius: number
 }> = {
-  sm: { height: 40, px: 14, fontSize: T.fontSize.sm, iconSize: 14, radius: T.borderRadius.md },
-  md: { height: 52, px: 20, fontSize: T.fontSize.base, iconSize: 16, radius: T.borderRadius.lg },
-  lg: { height: 60, px: 28, fontSize: T.fontSize.lg, iconSize: 18, radius: T.borderRadius.xl },
+  sm: { height: 40, px: 14, fontSize: T.fontSize.sm, iconSize: 14, radius: T.radius.md },
+  md: { height: 52, px: 20, fontSize: T.fontSize.base, iconSize: 16, radius: T.radius.lg },
+  lg: { height: 60, px: 28, fontSize: T.fontSize.lg, iconSize: 18, radius: T.radius.xl },
 }
 
 // ─── Variant Styles ───────────────────────────────────────────
@@ -53,7 +54,7 @@ const SIZES: Record<CVButtonSize, {
 function getVariantStyle(variant: CVButtonVariant, disabled: boolean) {
   if (disabled) {
     return {
-      bg: T.color.border.subtle,
+      bg: T.color.border.soft,
       text: T.color.text.tertiary,
       border: undefined as string | undefined,
       shadow: {} as ViewStyle,
@@ -63,23 +64,23 @@ function getVariantStyle(variant: CVButtonVariant, disabled: boolean) {
   switch (variant) {
     case 'primary':
       return {
-        bg: T.color.signature.primary,
-        text: T.color.text.primary,
+        bg: T.color.brand.primary,
+        text: T.color.text.inverse,
         border: undefined,
-        shadow: T.glow(T.color.signature.primary, 0.30),
+        shadow: T.glow.hero(T.color.brand.primary),
       }
     case 'secondary':
       return {
-        bg: T.color.signature.dim,
-        text: T.color.signature.primary,
-        border: `${T.color.signature.primary}40`,
+        bg: `${T.color.brand.primary}15`,
+        text: T.color.brand.primary,
+        border: `${T.color.brand.primary}40`,
         shadow: {} as ViewStyle,
       }
     case 'ghost':
       return {
         bg: 'transparent',
         text: T.color.text.secondary,
-        border: T.color.border.default,
+        border: T.color.border.base,
         shadow: {} as ViewStyle,
       }
     case 'danger':
@@ -87,14 +88,14 @@ function getVariantStyle(variant: CVButtonVariant, disabled: boolean) {
         bg: T.color.semantic.error,
         text: T.color.text.primary,
         border: undefined,
-        shadow: T.glow(T.color.semantic.error, 0.25),
+        shadow: T.glow.soft(T.color.semantic.error),
       }
     case 'success':
       return {
         bg: T.color.semantic.success,
         text: T.color.text.primary,
         border: undefined,
-        shadow: T.glow(T.color.semantic.success, 0.25),
+        shadow: T.glow.soft(T.color.semantic.success),
       }
   }
 }
@@ -118,9 +119,16 @@ export function CVButton({
   const isDisabled = disabled || loading
   const vs = getVariantStyle(variant, isDisabled)
 
+  const handlePress = () => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    }
+    onPress?.()
+  }
+
   return (
     <TouchableOpacity
-      onPress={isDisabled ? undefined : onPress}
+      onPress={isDisabled ? undefined : handlePress}
       disabled={isDisabled}
       activeOpacity={0.8}
       accessibilityRole="button"

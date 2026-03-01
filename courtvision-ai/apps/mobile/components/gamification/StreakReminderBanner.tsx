@@ -8,8 +8,8 @@ import { useCallback } from 'react'
 import { Feather } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import Animated, { FadeInDown, FadeOutUp } from 'react-native-reanimated'
-import { useStore, selectStreak } from '../lib/store'
-import { T } from '../lib/theme'
+import { useStore, selectStreak } from '../../lib/store'
+import { T } from '../../lib/theme'
 
 interface StreakReminderBannerProps {
     onDismiss?: () => void
@@ -31,11 +31,11 @@ export function StreakReminderBanner({ onDismiss }: StreakReminderBannerProps) {
             entering={FadeInDown.springify().damping(14).stiffness(120)}
             exiting={FadeOutUp.duration(250)}
             style={{
-                borderRadius: T.borderRadius.lg, marginHorizontal: T.spacing[4], marginBottom: T.spacing[3],
+                borderRadius: T.radius.lg, marginHorizontal: T.spacing[4], marginBottom: T.spacing[3],
                 padding: T.spacing[3], flexDirection: 'row', alignItems: 'center',
-                ...T.glass.light,
+                ...T.glass.base,
                 borderWidth: 1.5, borderColor: T.color.semantic.warning,
-                ...T.glow(T.color.semantic.warning, 0.2),
+                ...T.glow.soft(T.color.semantic.warning),
             }}
         >
             <Text style={{ fontSize: 28, marginRight: T.spacing[3] }}>🔥</Text>
@@ -57,13 +57,13 @@ export function StreakReminderBanner({ onDismiss }: StreakReminderBannerProps) {
                 onPress={goPlay}
                 activeOpacity={0.8}
                 style={{
-                    backgroundColor: T.color.semantic.warning, borderRadius: T.borderRadius.sm,
+                    backgroundColor: T.color.semantic.warning, borderRadius: T.radius.sm,
                     paddingHorizontal: 12, paddingVertical: 7, marginRight: T.spacing[2],
-                    ...T.shadow(T.color.semantic.warning, 0.3, 8),
+                    ...T.glow.soft(T.color.semantic.warning),
                 }}
             >
                 <Text style={{
-                    color: T.color.background.primary, fontWeight: '800', fontSize: T.fontSize.sm,
+                    color: T.color.bg.primary, fontWeight: '800', fontSize: T.fontSize.sm,
                     fontFamily: T.fonts.display.bold,
                 }}>
                     Play →

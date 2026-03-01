@@ -17,9 +17,10 @@ import React, { useMemo } from 'react'
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native'
 import Animated, { FadeIn, FadeInDown, FadeInUp, ZoomIn } from 'react-native-reanimated'
 import { Feather } from '@expo/vector-icons'
-import { T, typePresets } from '../lib/theme'
-import type { SessionRealtimeStats } from '../lib/realtimeAIService'
-import { CoachingEngine, type CoachingReport, type CoachingInsight, type DrillRecommendation } from '../lib/coachingEngine'
+import { T, typePresets, glass } from '../../lib/theme'
+import { ShotScienceGrid } from './ShotScienceGrid'
+import type { SessionRealtimeStats } from '../../lib/realtimeAIService'
+import { CoachingEngine, type CoachingReport, type CoachingInsight, type DrillRecommendation } from '../../lib/coachingEngine'
 
 const type = typePresets
 
@@ -131,7 +132,7 @@ export function SessionSummary({
 }: SessionSummaryProps) {
     const fgColor = stats.shootingPct >= 50 ? T.color.semantic.success
         : stats.shootingPct >= 35 ? T.color.semantic.warning
-        : T.color.semantic.error
+            : T.color.semantic.error
 
     // Generate coaching report
     const coachingReport = useMemo(() => {
@@ -181,45 +182,16 @@ export function SessionSummary({
 
             {/* Biomechanics Stats */}
             <SectionTitle title="Biomécanique" icon="activity" delay={200} />
-            <Animated.View entering={FadeInDown.delay(250).duration(300)} style={styles.card}>
-                <StatRow
-                    label="Angle coude moyen"
-                    value={stats.avgElbowAngle.toFixed(1)}
-                    unit="°"
-                    color={stats.avgElbowAngle >= 90 && stats.avgElbowAngle <= 100
-                        ? T.color.semantic.success : T.color.semantic.warning}
-                />
-                <StatRow
-                    label="Release Height moyen"
-                    value={stats.avgReleaseHeight.toFixed(3)}
-                    unit="x"
-                    color={stats.avgReleaseHeight >= 1.12 ? T.color.semantic.success : T.color.semantic.warning}
-                />
-                <StatRow
-                    label="Release Time moyen"
-                    value={stats.avgReleaseTime.toFixed(3)}
-                    unit="s"
-                    color={stats.avgReleaseTime <= 0.45 ? T.color.semantic.success : T.color.semantic.warning}
-                />
-                <StatRow
-                    label="Follow-Through"
-                    value={stats.followThroughPct.toFixed(0)}
-                    unit="%"
-                    color={stats.followThroughPct >= 80 ? T.color.semantic.success : T.color.semantic.warning}
-                />
-                <StatRow
-                    label="Qualité posture"
-                    value={stats.avgPostureQuality.toFixed(0)}
-                    unit="/100"
-                    color={stats.avgPostureQuality >= 70 ? T.color.semantic.success : T.color.semantic.warning}
-                />
-                <StatRow
-                    label="Consistance"
-                    value={stats.mechanicConsistency.toFixed(0)}
-                    unit="/100"
-                    color={stats.mechanicConsistency >= 70 ? T.color.semantic.success : T.color.semantic.warning}
-                />
-            </Animated.View>
+            <ShotScienceGrid
+                metrics={[
+                    { label: 'ANGLE COUDE', value: stats.avgElbowAngle.toFixed(1), unit: '°' },
+                    { label: 'RELEASE HEIGHT', value: stats.avgReleaseHeight.toFixed(3), unit: 'x' },
+                    { label: 'RELEASE TIME', value: stats.avgReleaseTime.toFixed(3), unit: 's' },
+                    { label: 'FOLLOW-THROUGH', value: stats.followThroughPct.toFixed(0), unit: '%' },
+                    { label: 'POSTURE', value: stats.avgPostureQuality.toFixed(0), unit: '/100' },
+                    { label: 'CONSISTANCE', value: stats.mechanicConsistency.toFixed(0), unit: '/100' }
+                ]}
+            />
 
             {/* Performance */}
             <SectionTitle title="Performance" icon="zap" delay={300} />
@@ -274,7 +246,7 @@ export function SessionSummary({
                                     <Text style={[styles.insightTitle, {
                                         color: insight.category === 'strength' ? T.color.semantic.success
                                             : insight.category === 'weakness' ? T.color.semantic.error
-                                            : T.color.text.primary,
+                                                : T.color.text.primary,
                                     }]}>{insight.title}</Text>
                                     <Text style={styles.insightDesc}>{insight.description}</Text>
                                 </View>
@@ -385,7 +357,7 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: T.color.background.tertiary,
+        ...(T.glass.thin as any),
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -398,7 +370,7 @@ const styles = StyleSheet.create({
         backgroundColor: T.color.background.secondary,
         borderRadius: T.borderRadius.xl,
         borderWidth: 1,
-        borderColor: T.color.border.accent,
+        borderColor: T.color.border.base,
     },
     gradeCircle: {
         width: 88,
@@ -451,12 +423,10 @@ const styles = StyleSheet.create({
 
     // Card
     card: {
-        backgroundColor: T.color.background.secondary,
+        ...(T.glass.base as any),
         borderRadius: T.borderRadius.lg,
         padding: 14,
         marginBottom: 12,
-        borderWidth: 1,
-        borderColor: T.color.border.default,
     },
 
     // Shooting row
@@ -496,7 +466,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 6,
         borderBottomWidth: 1,
-        borderBottomColor: T.color.border.subtle,
+        borderBottomColor: T.color.border.soft,
     },
     statLabel: {
         color: T.color.text.secondary,
@@ -564,9 +534,7 @@ const styles = StyleSheet.create({
         gap: 6,
         paddingVertical: 12,
         borderRadius: T.borderRadius.md,
-        backgroundColor: T.color.background.tertiary,
-        borderWidth: 1,
-        borderColor: T.color.border.default,
+        ...(T.glass.thin as any),
     },
     secondaryBtnText: {
         color: T.color.text.primary,
@@ -598,7 +566,7 @@ const styles = StyleSheet.create({
     },
     insightBorder: {
         borderBottomWidth: 1,
-        borderBottomColor: T.color.border.subtle,
+        borderBottomColor: T.color.border.soft,
     },
     insightIcon: {
         fontSize: 18,
@@ -625,7 +593,7 @@ const styles = StyleSheet.create({
         marginTop: 12,
         paddingTop: 12,
         borderTopWidth: 1,
-        borderTopColor: T.color.border.default,
+        borderTopColor: T.color.border.soft,
     },
     nbaCompLabel: {
         color: T.color.text.secondary,
@@ -649,12 +617,10 @@ const styles = StyleSheet.create({
 
     // Drills
     drillCard: {
-        backgroundColor: T.color.background.secondary,
+        ...(T.glass.base as any),
         borderRadius: T.borderRadius.lg,
         padding: 14,
         marginBottom: 8,
-        borderWidth: 1,
-        borderColor: T.color.border.default,
     },
     drillHeader: {
         flexDirection: 'row',
@@ -692,7 +658,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
-        backgroundColor: T.color.signature.dim,
+        backgroundColor: T.color.signature.muted,
         borderRadius: T.borderRadius.md,
         padding: 14,
         marginTop: 4,

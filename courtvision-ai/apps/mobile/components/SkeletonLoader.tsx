@@ -46,7 +46,7 @@ export function SkeletonLoader({ width = '100%', height = 16, borderRadius = 10,
                     width: width as any,
                     height,
                     borderRadius,
-                    backgroundColor: T.color.border.subtle,
+                    backgroundColor: T.color.border.soft,
                 },
                 animStyle,
                 style,
@@ -61,7 +61,7 @@ export function SkeletonStatCard() {
         <View style={{
             flex: 1, borderRadius: T.borderRadius.lg,
             padding: 16,
-            ...T.glass.light,
+            ...T.glass.thin,
             gap: 10,
         }}>
             <SkeletonLoader height={10} width="60%" />
@@ -78,7 +78,7 @@ export function SkeletonHighlight() {
             width: 140, height: 200,
             borderRadius: T.borderRadius.lg,
             marginHorizontal: 5,
-            ...T.glass.light,
+            ...T.glass.thin,
             padding: 14, justifyContent: 'flex-end', gap: 8,
         }}>
             <SkeletonLoader height={10} width="80%" />
@@ -95,7 +95,7 @@ export function SkeletonLeaderboardRow() {
             flexDirection: 'row', alignItems: 'center',
             borderRadius: T.borderRadius.md,
             padding: 14, marginBottom: 8, gap: 12,
-            ...T.glass.light,
+            ...T.glass.thin,
         }}>
             <SkeletonLoader width={28} height={28} borderRadius={14} />
             <SkeletonLoader width={40} height={40} borderRadius={20} />
@@ -115,7 +115,7 @@ export function SkeletonWeeklyChart() {
         <View style={{
             borderRadius: T.borderRadius.lg,
             padding: 16,
-            ...T.glass.light,
+            ...T.glass.thin,
         }}>
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 70, marginBottom: 8 }}>
                 {HEIGHTS.map((h, i) => (

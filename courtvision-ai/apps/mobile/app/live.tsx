@@ -28,13 +28,14 @@ import Animated, {
     Easing,
 } from 'react-native-reanimated'
 import { useLiveCoach } from '../hooks/useLiveCoach'
-import { LiveCamera } from '../components/LiveCamera'
+import { LiveCamera } from '../components/workout/LiveCamera'
 import { useStore } from '../lib/store'
-import { XPBadge } from '../components/XPBadge'
-import { T, typePresets } from '../lib/theme'
+import { XPBadge } from '../components/gamification/XPBadge'
+import { T, typePresets, impact } from '../lib/theme'
+import { CVHUDStat, CVHUDTimer, CVHUDFeedback } from '../components/ui'
 
 const type = typePresets
-const glass = (T as any).glass
+const glass = T.glass
 
 // ==========================================
 // Constants
@@ -57,7 +58,7 @@ function MiniBar({ value, color, max = 100 }: { value: number; color: string; ma
     }, [value])
     const barStyle = useAnimatedStyle(() => ({ width: `${width.value}%` }))
     return (
-        <View style={{ height: 4, backgroundColor: T.color.border.subtle, borderRadius: 2, overflow: 'hidden', flex: 1 }}>
+        <View style={{ height: 4, backgroundColor: T.color.border.base, borderRadius: 2, overflow: 'hidden', flex: 1 }}>
             <Animated.View style={[{ height: 4, borderRadius: 2, backgroundColor: color }, barStyle]} />
         </View>
     )
@@ -71,12 +72,12 @@ function StatChip({ label, value, color, sub }: { label: string; value: string |
         <View style={{
             flex: 1, borderRadius: T.borderRadius.lg,
             paddingVertical: T.spacing[3], paddingHorizontal: T.spacing[3], alignItems: 'center',
-            ...(glass.regular ?? T.glass.light),
+            ...(T.glass.thin),
         }}>
             <Text style={{ ...type.overline, color: T.color.text.secondary, fontSize: 9, marginBottom: T.spacing[1] }}>
                 {label}
             </Text>
-            <Text style={{ ...type.smallStat, color, fontSize: 24 }}>{value}</Text>
+            <Text style={{ ...type.mediumStat, color, fontSize: 24 }}>{value}</Text>
             {sub ? <Text style={{ ...type.overline, color: T.color.text.tertiary, fontSize: 10, marginTop: T.spacing[1] }}>{sub}</Text> : null}
         </View>
     )
@@ -111,7 +112,7 @@ function AlertBanner({ alert }: { alert: any }) {
                 backgroundColor: color, marginRight: T.spacing[3],
                 ...T.glow(color, 0.5),
             }} />
-            <Text style={{ ...type.bodySemibold, color: T.color.text.primary, fontSize: 13, flex: 1, lineHeight: 19 }}>
+            <Text style={{ ...type.cardTitle, color: T.color.text.primary, fontSize: 13, flex: 1, lineHeight: 19 }}>
                 {alert.message}
             </Text>
             <View style={{
@@ -130,7 +131,7 @@ function AlertBanner({ alert }: { alert: any }) {
 // Mental Pulse Ring V4
 // ==========================================
 function MentalRing({ score }: { score: number }) {
-    const color = T.scoreColor(score)
+    const color = T.ratingColor(score)
     const pulse = useSharedValue(1)
     const rotation = useSharedValue(0)
 
@@ -168,7 +169,7 @@ function MentalRing({ score }: { score: number }) {
                 justifyContent: 'center', alignItems: 'center',
                 ...T.glow(color, 0.3),
             }, pulseStyle]}>
-                <Text style={{ ...type.smallStat, color, fontSize: 28 }}>{score}</Text>
+                <Text style={{ ...type.mediumStat, color, fontSize: 28 }}>{score}</Text>
                 <Text style={{ ...type.overline, color: T.color.text.secondary, fontSize: 8, letterSpacing: 1 }}>MENTAL</Text>
             </Animated.View>
         </View>
@@ -195,7 +196,7 @@ function EndReportModal({ visible, report, onClose }: { visible: boolean; report
                     <Animated.View entering={ZoomIn.duration(400)} style={{ alignItems: 'center', marginBottom: T.spacing[8] }}>
                         <View style={{
                             width: 80, height: 80, borderRadius: 40,
-                            backgroundColor: T.color.signature.dim,
+                            backgroundColor: T.color.signature.muted,
                             justifyContent: 'center', alignItems: 'center',
                             marginBottom: T.spacing[4], ...T.glow(T.color.signature.primary, 0.2),
                         }}>
@@ -211,7 +212,7 @@ function EndReportModal({ visible, report, onClose }: { visible: boolean; report
 
                     {/* Main stats */}
                     <Animated.View entering={FadeInUp.duration(400).delay(100)} style={{ flexDirection: 'row', gap: T.spacing[3], marginBottom: T.spacing[5] }}>
-                        <StatChip label="Mental" value={report.mentalScore ?? '--'} color={T.scoreColor(report.mentalScore ?? 0)} sub="/ 100" />
+                        <StatChip label="Mental" value={report.mentalScore ?? '--'} color={T.ratingColor(report.mentalScore ?? 0)} sub="/ 100" />
                         <StatChip label="Shooting" value={`${report.shootingPct ?? 0}%`} color={T.color.signature.primary} sub={`${report.makes ?? 0}/${report.attempts ?? 0}`} />
                         <StatChip label="Quarter" value={`Q${report.quarter ?? 1}`} color={T.color.semantic.warning} />
                     </Animated.View>
@@ -227,14 +228,15 @@ function EndReportModal({ visible, report, onClose }: { visible: boolean; report
                                     key={i}
                                     entering={FadeInDown.duration(300).delay(200 + i * 80)}
                                     style={{
-                                        ...glass.accent,
+                                        backgroundColor: 'rgba(255, 107, 0, 0.15)',
+                                        borderWidth: 1, borderColor: 'rgba(255, 107, 0, 0.3)',
                                         borderRadius: T.borderRadius.lg, padding: T.spacing[4],
                                         marginBottom: T.spacing[2], flexDirection: 'row', alignItems: 'flex-start',
                                     }}
                                 >
                                     <View style={{
                                         width: 20, height: 20, borderRadius: 10,
-                                        backgroundColor: T.color.signature.dim,
+                                        backgroundColor: T.color.signature.muted,
                                         justifyContent: 'center', alignItems: 'center',
                                         marginRight: T.spacing[3], marginTop: 1,
                                     }}>
@@ -257,7 +259,7 @@ function EndReportModal({ visible, report, onClose }: { visible: boolean; report
                             alignItems: 'center', ...T.glow(T.color.signature.primary, 0.3),
                             minHeight: 52,
                         }}
-                        onPress={onClose}
+                        onPress={() => { impact.light(); onClose(); }}
                         activeOpacity={0.85}
                     >
                         <Text style={{ ...type.cardTitle, color: T.color.background.primary }}>
@@ -302,6 +304,7 @@ export default function LiveCoachScreen() {
     }, [live.phase, live.endReport])
 
     const handleShotPress = useCallback((outcome: 'made' | 'missed') => {
+        impact.light()
         setPendingOutcome(outcome)
         setShowZonePicker(true)
     }, [])
@@ -309,9 +312,10 @@ export default function LiveCoachScreen() {
     const handleZoneSelect = useCallback(async (zone: string) => {
         setShowZonePicker(false)
         if (pendingOutcome) {
+            if (pendingOutcome === 'made') impact.success()
+            else impact.heavy()
             try {
                 await live.recordShot(pendingOutcome, zone as any)
-                Vibration.vibrate(pendingOutcome === 'made' ? 60 : [0, 80, 60, 80])
             } catch (err) {
                 console.warn('[LiveCoach] Shot recording failed:', err)
             }
@@ -320,6 +324,7 @@ export default function LiveCoachScreen() {
     }, [pendingOutcome, live.recordShot])
 
     const handleClose = useCallback(async () => {
+        impact.light()
         if (live.phase === 'active' || live.phase === 'break') {
             try { await live.end() } catch { router.back() }
         } else {
@@ -365,14 +370,14 @@ export default function LiveCoachScreen() {
                             <Animated.View entering={FadeIn.duration(400)} style={{ alignItems: 'center' }}>
                                 <View style={{
                                     width: 80, height: 80, borderRadius: 40,
-                                    backgroundColor: T.color.signature.dim,
+                                    backgroundColor: T.color.signature.muted,
                                     justifyContent: 'center', alignItems: 'center',
                                     ...T.glow(T.color.signature.primary, 0.15),
                                 }}>
                                     <Feather name="radio" size={38} color={`${T.color.signature.primary}60`} />
                                 </View>
                                 <Text style={{
-                                    ...type.bodySemibold, color: `${T.color.signature.primary}80`, marginTop: T.spacing[3],
+                                    ...type.cardTitle, color: `${T.color.signature.primary}80`, marginTop: T.spacing[3],
                                     fontSize: 13,
                                 }}>
                                     Ready to analyze
@@ -403,7 +408,7 @@ export default function LiveCoachScreen() {
                             onPress={handleClose}
                             style={{
                                 backgroundColor: 'rgba(0,0,0,0.5)', padding: T.spacing[3], borderRadius: T.borderRadius.full,
-                                borderWidth: 1, borderColor: T.color.border.default,
+                                borderWidth: 1, borderColor: T.color.border.base,
                                 width: 44, height: 44, justifyContent: 'center', alignItems: 'center',
                             }}
                             accessibilityLabel="Close Live Coach"
@@ -412,54 +417,17 @@ export default function LiveCoachScreen() {
                         </TouchableOpacity>
 
                         {/* Timer + Quarter */}
-                        <View style={{
-                            backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: T.spacing[4], paddingVertical: T.spacing[3],
-                            borderRadius: T.borderRadius.full, flexDirection: 'row', alignItems: 'center', gap: T.spacing[3],
-                            borderWidth: 1, borderColor: T.color.border.default,
-                        }}>
-                            {isActive && (
-                                <View style={{
-                                    width: 8, height: 8, borderRadius: 4,
-                                    backgroundColor: T.color.semantic.error,
-                                    ...T.glow(T.color.semantic.error, 0.6),
-                                }} />
-                            )}
-                            <Text style={{
-                                ...type.cardTitle, color: '#FFF',
-                                fontVariant: ['tabular-nums'],
-                            }}>
-                                {formatTime(live.elapsedTime)}
-                            </Text>
-                            <View style={{
-                                backgroundColor: 'rgba(255,255,255,0.1)',
-                                borderRadius: T.borderRadius.md, paddingHorizontal: T.spacing[2], paddingVertical: T.spacing[1],
-                            }}>
-                                <Text style={{ ...type.overline, color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>
-                                    Q{live.quarter}
-                                </Text>
-                            </View>
-                        </View>
+                        <CVHUDTimer
+                            seconds={live.elapsedTime}
+                            active={isActive}
+                        />
 
                         {/* SSE Status */}
-                        <View style={{
-                            backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: T.spacing[3], paddingVertical: T.spacing[2],
-                            borderRadius: T.borderRadius.full, flexDirection: 'row', alignItems: 'center',
-                            borderWidth: 1, borderColor: T.color.border.default,
-                        }}>
-                            <View style={{
-                                width: 6, height: 6, borderRadius: 3,
-                                backgroundColor: live.sseConnected ? T.color.semantic.success : T.color.text.tertiary,
-                                marginRight: T.spacing[2],
-                                ...(live.sseConnected ? T.glow(T.color.semantic.success, 0.5) : {}),
-                            }} />
-                            <Text style={{
-                                ...type.overline,
-                                color: live.sseConnected ? T.color.semantic.success : T.color.text.tertiary,
-                                fontSize: 10,
-                            }}>
-                                {live.sseConnected ? 'LIVE' : 'OFF'}
-                            </Text>
-                        </View>
+                        <CVHUDStat
+                            label="Stream"
+                            value={live.sseConnected ? 'LIVE' : 'OFF'}
+                            color={live.sseConnected ? T.color.semantic.success : T.color.text.tertiary}
+                        />
                     </Animated.View>
                 </SafeAreaView>
             </View>
@@ -492,7 +460,7 @@ export default function LiveCoachScreen() {
                                 ...T.glow(T.color.semantic.error, 0.4),
                                 minHeight: 56,
                             }}
-                            onPress={live.start}
+                            onPress={() => { impact.medium(); live.start(); }}
                             activeOpacity={0.85}
                             accessibilityLabel="Start Live Coach"
                         >
@@ -519,13 +487,13 @@ export default function LiveCoachScreen() {
                                     key={i}
                                     entering={FadeInDown.duration(300).delay(200 + i * 80)}
                                     style={{
-                                        ...(glass.regular ?? T.glass.light),
+                                        ...(T.glass.thin),
                                         borderRadius: T.borderRadius.lg,
                                         padding: T.spacing[3], flexDirection: 'row', alignItems: 'center', gap: T.spacing[3],
                                     }}
                                 >
                                     <Feather name={feat.icon} size={18} color={T.color.signature.primary} />
-                                    <Text style={{ ...type.bodySemibold, color: T.color.text.secondary, fontSize: 13 }}>
+                                    <Text style={{ ...type.cardTitle, color: T.color.text.secondary, fontSize: 13 }}>
                                         {feat.text}
                                     </Text>
                                 </Animated.View>
@@ -539,7 +507,7 @@ export default function LiveCoachScreen() {
                     <Animated.View entering={FadeIn.duration(400)} style={{ alignItems: 'center', paddingVertical: T.spacing[8] }}>
                         <View style={{
                             width: 80, height: 80, borderRadius: 40,
-                            backgroundColor: T.color.signature.dim,
+                            backgroundColor: T.color.signature.muted,
                             justifyContent: 'center', alignItems: 'center',
                             ...T.glow(T.color.signature.primary, 0.2),
                         }}>
@@ -562,22 +530,22 @@ export default function LiveCoachScreen() {
                             <MentalRing score={live.mentalScore} />
                             <View style={{ flex: 1, gap: T.spacing[2] }}>
                                 <View style={{ flexDirection: 'row', gap: T.spacing[2] }}>
-                                    <StatChip
+                                    <CVHUDStat
                                         label="Shots"
                                         value={`${live.makeCount}/${live.makeCount + live.missCount}`}
+                                        subValue={`${live.shootingPct}%`}
                                         color={T.color.signature.primary}
-                                        sub={`${live.shootingPct}%`}
                                     />
-                                    <StatChip
+                                    <CVHUDStat
                                         label="Posture"
                                         value={`${Math.round(live.postureScore * 100)}`}
-                                        color={T.scoreColor(live.postureScore * 100)}
-                                        sub="/ 100"
+                                        subValue="/ 100"
+                                        color={T.ratingColor(live.postureScore * 100)}
                                     />
                                 </View>
                                 {/* Fatigue */}
                                 <View style={{
-                                    ...(glass.regular ?? T.glass.light),
+                                    ...(T.glass.thin),
                                     borderRadius: T.borderRadius.lg, padding: T.spacing[3],
                                     flexDirection: 'row', alignItems: 'center', gap: T.spacing[3],
                                 }}>
@@ -588,7 +556,7 @@ export default function LiveCoachScreen() {
                                         value={live.fatigueIndex}
                                         color={live.fatigueIndex > 70 ? T.color.semantic.error : live.fatigueIndex > 40 ? T.color.semantic.warning : T.color.semantic.success}
                                     />
-                                    <Text style={{ ...type.bodySemibold, color: T.color.text.primary, fontSize: 13, minWidth: 32, textAlign: 'right' }}>
+                                    <Text style={{ ...type.cardTitle, color: T.color.text.primary, fontSize: 13, minWidth: 32, textAlign: 'right' }}>
                                         {live.fatigueIndex}%
                                     </Text>
                                 </View>
@@ -597,13 +565,14 @@ export default function LiveCoachScreen() {
 
                         {/* AI Confidence */}
                         <View style={{
-                            ...glass.accent,
+                            backgroundColor: 'rgba(255, 107, 0, 0.1)',
+                            borderWidth: 1, borderColor: 'rgba(255, 107, 0, 0.25)',
                             borderRadius: T.borderRadius.lg, padding: T.spacing[3], marginBottom: T.spacing[3],
                             flexDirection: 'row', alignItems: 'center', gap: T.spacing[3],
                         }}>
                             <View style={{
                                 width: 32, height: 32, borderRadius: 16,
-                                backgroundColor: T.color.signature.dim,
+                                backgroundColor: T.color.signature.muted,
                                 justifyContent: 'center', alignItems: 'center',
                             }}>
                                 <Feather name="cpu" size={14} color={T.color.signature.primary} />
@@ -612,7 +581,7 @@ export default function LiveCoachScreen() {
                                 AI CONFIDENCE
                             </Text>
                             <MiniBar value={live.confidence * 100} color={T.color.signature.primary} />
-                            <Text style={{ ...type.bodySemibold, color: T.color.signature.primary, fontSize: 13, minWidth: 36, textAlign: 'right' }}>
+                            <Text style={{ ...type.cardTitle, color: T.color.signature.primary, fontSize: 13, minWidth: 36, textAlign: 'right' }}>
                                 {Math.round(live.confidence * 100)}%
                             </Text>
                         </View>
@@ -620,7 +589,7 @@ export default function LiveCoachScreen() {
                         {/* Mental Trend */}
                         {live.mentalHistory.length > 1 && (
                             <Animated.View entering={FadeIn.duration(300)} style={{
-                                ...(glass.regular ?? T.glass.light),
+                                ...(T.glass.thin),
                                 borderRadius: T.borderRadius.lg, padding: T.spacing[3], marginBottom: T.spacing[3],
                             }}>
                                 <Text style={{ ...type.overline, color: T.color.text.secondary, fontSize: 9, marginBottom: T.spacing[3] }}>
@@ -632,7 +601,7 @@ export default function LiveCoachScreen() {
                                             key={i}
                                             style={{
                                                 flex: 1, height: `${Math.max(12, v)}%`,
-                                                borderRadius: T.borderRadius.sm, backgroundColor: T.scoreColor(v),
+                                                borderRadius: T.borderRadius.sm, backgroundColor: T.ratingColor(v),
                                                 opacity: 0.5 + (i / arr.length) * 0.5,
                                             }}
                                         />
@@ -650,7 +619,7 @@ export default function LiveCoachScreen() {
                                 <TouchableOpacity
                                     style={{
                                         flex: 1, paddingVertical: T.spacing[4], borderRadius: T.borderRadius.xl,
-                                        backgroundColor: T.color.semantic.successDim,
+                                        backgroundColor: `${T.color.semantic.success}20`,
                                         borderWidth: 1.5, borderColor: `${T.color.semantic.success}40`,
                                         alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: T.spacing[2],
                                         minHeight: 52,
@@ -667,7 +636,7 @@ export default function LiveCoachScreen() {
                                 <TouchableOpacity
                                     style={{
                                         flex: 1, paddingVertical: T.spacing[4], borderRadius: T.borderRadius.xl,
-                                        backgroundColor: T.color.semantic.errorDim,
+                                        backgroundColor: `${T.color.semantic.error}20`,
                                         borderWidth: 1.5, borderColor: `${T.color.semantic.error}40`,
                                         alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: T.spacing[2],
                                         minHeight: 52,
@@ -689,15 +658,19 @@ export default function LiveCoachScreen() {
                                 <Text style={{ ...type.overline, color: T.color.text.secondary, fontSize: 9, marginBottom: T.spacing[3] }}>
                                     AI FEEDBACK
                                 </Text>
-                                {live.alerts.slice(0, 3).map((alert, i) => (
-                                    <AlertBanner key={`${i}-${alert.message}`} alert={alert} />
+                                {live.alerts.slice(0, 2).map((alert, i) => (
+                                    <CVHUDFeedback
+                                        key={`${i}-${alert.message}`}
+                                        message={alert.message}
+                                        type={alert.severity === 'critical' ? 'error' : alert.severity as any}
+                                    />
                                 ))}
                             </View>
                         )}
 
                         {/* Quarter Controls */}
                         <View style={{
-                            ...(glass.regular ?? T.glass.light),
+                            ...(T.glass.thin),
                             borderRadius: T.borderRadius.xl, padding: T.spacing[4], marginBottom: T.spacing[3],
                         }}>
                             <Text style={{ ...type.overline, color: T.color.text.secondary, fontSize: 9, marginBottom: T.spacing[3] }}>
@@ -707,16 +680,16 @@ export default function LiveCoachScreen() {
                                 <TouchableOpacity
                                     style={{
                                         flex: 1, paddingVertical: T.spacing[3], borderRadius: T.borderRadius.lg,
-                                        backgroundColor: T.color.semantic.warningDim,
+                                        backgroundColor: `${T.color.semantic.warning}20`,
                                         borderWidth: 1, borderColor: `${T.color.semantic.warning}30`,
                                         alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: T.spacing[2],
                                         minHeight: 44,
                                     }}
-                                    onPress={live.endQuarter}
+                                    onPress={() => { impact.light(); live.endQuarter(); }}
                                     activeOpacity={0.8}
                                 >
                                     <Feather name="pause" size={14} color={T.color.semantic.warning} />
-                                    <Text style={{ ...type.bodySemibold, color: T.color.semantic.warning, fontSize: 13 }}>
+                                    <Text style={{ ...type.cardTitle, color: T.color.semantic.warning, fontSize: 13 }}>
                                         Break
                                     </Text>
                                 </TouchableOpacity>
@@ -725,16 +698,16 @@ export default function LiveCoachScreen() {
                                     <TouchableOpacity
                                         style={{
                                             flex: 1, paddingVertical: T.spacing[3], borderRadius: T.borderRadius.lg,
-                                            backgroundColor: T.color.signature.dim,
+                                            backgroundColor: T.color.signature.muted,
                                             borderWidth: 1, borderColor: `${T.color.signature.primary}30`,
                                             alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: T.spacing[2],
                                             minHeight: 44,
                                         }}
-                                        onPress={live.nextQuarter}
+                                        onPress={() => { impact.light(); live.nextQuarter(); }}
                                         activeOpacity={0.8}
                                     >
                                         <Feather name="play" size={14} color={T.color.signature.primary} />
-                                        <Text style={{ ...type.bodySemibold, color: T.color.signature.primary, fontSize: 13 }}>
+                                        <Text style={{ ...type.cardTitle, color: T.color.signature.primary, fontSize: 13 }}>
                                             Q{live.quarter + 1}
                                         </Text>
                                     </TouchableOpacity>
@@ -743,16 +716,16 @@ export default function LiveCoachScreen() {
                                 <TouchableOpacity
                                     style={{
                                         flex: 1, paddingVertical: T.spacing[3], borderRadius: T.borderRadius.lg,
-                                        backgroundColor: T.color.semantic.errorDim,
+                                        backgroundColor: `${T.color.semantic.error}20`,
                                         borderWidth: 1, borderColor: `${T.color.semantic.error}30`,
                                         alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: T.spacing[2],
                                         minHeight: 44,
                                     }}
-                                    onPress={live.end}
+                                    onPress={() => { impact.medium(); live.end(); }}
                                     activeOpacity={0.8}
                                 >
                                     <Feather name="square" size={14} color={T.color.semantic.error} />
-                                    <Text style={{ ...type.bodySemibold, color: T.color.semantic.error, fontSize: 13 }}>
+                                    <Text style={{ ...type.cardTitle, color: T.color.semantic.error, fontSize: 13 }}>
                                         End Game
                                     </Text>
                                 </TouchableOpacity>
@@ -762,7 +735,7 @@ export default function LiveCoachScreen() {
                         {/* Inline error */}
                         {live.error && (
                             <View style={{
-                                ...(glass.regular ?? T.glass.light),
+                                ...(T.glass.thin),
                                 borderRadius: T.borderRadius.lg, padding: T.spacing[3], marginBottom: T.spacing[3],
                                 borderColor: `${T.color.semantic.error}30`,
                                 flexDirection: 'row', alignItems: 'center',
@@ -781,7 +754,7 @@ export default function LiveCoachScreen() {
                     <Animated.View entering={FadeIn.duration(400)} style={{ alignItems: 'center', paddingVertical: T.spacing[8] }}>
                         <View style={{
                             width: 72, height: 72, borderRadius: 36,
-                            backgroundColor: T.color.semantic.errorDim,
+                            backgroundColor: `${T.color.semantic.error}20`,
                             justifyContent: 'center', alignItems: 'center', marginBottom: T.spacing[4],
                         }}>
                             <Feather name="wifi-off" size={32} color={T.color.semantic.error} />
@@ -825,7 +798,7 @@ export default function LiveCoachScreen() {
                             backgroundColor: T.color.background.tertiary,
                             borderTopLeftRadius: T.borderRadius['2xl'], borderTopRightRadius: T.borderRadius['2xl'],
                             padding: T.spacing[6], paddingBottom: Platform.OS === 'ios' ? T.spacing[10] : T.spacing[6],
-                            borderTopWidth: 1, borderTopColor: T.color.border.default,
+                            borderTopWidth: 1, borderTopColor: T.color.border.base,
                         }}
                     >
                         <View style={{ width: 40, height: 4, backgroundColor: T.color.text.tertiary, borderRadius: 2, alignSelf: 'center', marginBottom: T.spacing[5] }} />
@@ -849,7 +822,7 @@ export default function LiveCoachScreen() {
                                         onPress={() => handleZoneSelect(zone.toLowerCase().replace('-', '_'))}
                                         activeOpacity={0.75}
                                     >
-                                        <Text style={{ ...type.bodySemibold, color, fontSize: 14 }}>
+                                        <Text style={{ ...type.cardTitle, color, fontSize: 14 }}>
                                             {zone}
                                         </Text>
                                     </TouchableOpacity>

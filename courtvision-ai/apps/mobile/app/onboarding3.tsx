@@ -10,11 +10,11 @@ import Animated, {
     withRepeat, withSequence, Easing,
 } from 'react-native-reanimated'
 import { AntDesign, Feather } from '@expo/vector-icons'
+import * as Haptics from 'expo-haptics'
 import { useStore } from '../lib/store'
 import { toast } from '../lib/toast'
-import { T, typePresets } from '../lib/theme'
-
-const type = typePresets
+import { T } from '../lib/theme'
+const type = T.type
 
 //  Screen 
 
@@ -115,17 +115,21 @@ export default function Onboarding3() {
     //  Render 
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: T.color.background.primary }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: T.color.bg.primary }}>
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
                 {/* Header */}
                 <View style={{ paddingHorizontal: T.spacing[5], paddingTop: 10 }}>
-                    <TouchableOpacity onPress={() => mode === 'email' ? setMode('choice') : router.back()}>
+                    <TouchableOpacity onPress={() => {
+                        if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                        mode === 'email' ? setMode('choice') : router.back()
+                    }}>
                         <View style={{
-                            width: 40, height: 40, borderRadius: T.borderRadius.md,
-                            ...T.glass.light,
+                            width: 40, height: 40, borderRadius: T.radius.md,
+                            backgroundColor: `${T.color.brand.primary}15`,
+                            borderWidth: 1, borderColor: `${T.color.brand.primary}30`,
                             justifyContent: 'center', alignItems: 'center',
                         }}>
-                            <Feather name="arrow-left" size={20} color={T.color.text.secondary} />
+                            <Feather name="arrow-left" size={20} color={T.color.brand.primary} />
                         </View>
                     </TouchableOpacity>
 
@@ -134,8 +138,8 @@ export default function Onboarding3() {
                         {[0, 1, 2, 3].map(i => (
                             <View key={i} style={{
                                 flex: 1, height: 3, borderRadius: 2,
-                                backgroundColor: T.color.signature.primary,
-                                ...T.glow(T.color.signature.primary, 0.15),
+                                backgroundColor: T.color.brand.primary,
+                                ...T.glow.soft(T.color.brand.primary),
                             }} />
                         ))}
                     </View>
@@ -146,28 +150,37 @@ export default function Onboarding3() {
                     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 28 }}>
                         {/* Logo */}
                         <Animated.View style={[{
-                            width: 120, height: 120, borderRadius: T.borderRadius['2xl'],
-                            ...T.glass.accent,
+                            width: 120, height: 120, borderRadius: T.radius['2xl'],
+                            backgroundColor: `${T.color.brand.primary}10`,
+                            borderWidth: 2, borderColor: T.color.brand.primary,
                             marginBottom: 28, justifyContent: 'center', alignItems: 'center',
-                            ...T.glow(T.color.signature.primary, 0.35),
+                            ...T.glow.hero(T.color.brand.primary),
+                            overflow: 'hidden'
                         }, logoStyle]}>
-                            <Text style={{ fontSize: 56 }}>🏀</Text>
+                            {/* Grid lines inside logo */}
+                            <View style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0.1 }}>
+                                {[...Array(5)].map((_, i) => <View key={`h-${i}`} style={{ position: 'absolute', top: i * 24, left: 0, right: 0, height: 1, backgroundColor: T.color.brand.primary }} />)}
+                                {[...Array(5)].map((_, i) => <View key={`v-${i}`} style={{ position: 'absolute', left: i * 24, top: 0, bottom: 0, width: 1, backgroundColor: T.color.brand.primary }} />)}
+                            </View>
+                            <Feather name="terminal" size={48} color={T.color.brand.primary} />
                         </Animated.View>
 
                         <Animated.View style={[{ alignItems: 'center', marginBottom: 40 }, fadeStyle]}>
                             <Text style={{
-                                ...type.screenTitle,
+                                ...type.h1,
                                 color: T.color.text.primary,
                                 fontSize: 36, letterSpacing: -0.8,
+                                fontFamily: T.fonts.display.black,
                             }}>
-                                CourtVision AI
+                                TERMINAL ACCESS
                             </Text>
                             <Text style={{
                                 ...type.body,
-                                color: T.color.text.secondary,
+                                color: T.color.brand.primary,
                                 marginTop: 8, textAlign: 'center', lineHeight: 22,
+                                letterSpacing: 1,
                             }}>
-                                Your AI basketball coach.{'\n'}Join thousands of players.
+                                SECURE CONNECTION REQUIRED
                             </Text>
                         </Animated.View>
 
@@ -176,22 +189,27 @@ export default function Onboarding3() {
                             <TouchableOpacity
                                 style={{
                                     flexDirection: 'row', alignItems: 'center',
-                                    backgroundColor: T.color.text.primary, padding: T.spacing[4] + 1,
-                                    borderRadius: T.borderRadius.lg, marginBottom: 12,
-                                    ...T.shadow('#000', 0.15, 8),
+                                    backgroundColor: `${T.color.text.primary}10`, padding: T.spacing[4] + 1,
+                                    borderRadius: T.radius.lg, marginBottom: 12,
+                                    borderWidth: 1, borderColor: T.color.text.primary,
+                                    ...T.glow.soft(T.color.text.primary),
                                 }}
-                                onPress={() => handleOAuth('apple')}
+                                onPress={() => {
+                                    if (Platform.OS !== 'web') Haptics.selectionAsync()
+                                    handleOAuth('apple')
+                                }}
                                 disabled={isLoading}
                                 activeOpacity={0.85}
                             >
                                 {isLoading
-                                    ? <ActivityIndicator size="small" color={T.color.background.primary} style={{ marginRight: 15 }} />
-                                    : <AntDesign name="apple1" size={22} color={T.color.background.primary} style={{ marginRight: 15 }} />}
+                                    ? <ActivityIndicator size="small" color={T.color.text.primary} style={{ marginRight: 15 }} />
+                                    : <AntDesign name="apple1" size={22} color={T.color.text.primary} style={{ marginRight: 15 }} />}
                                 <Text style={{
-                                    color: T.color.background.primary, fontSize: 16,
+                                    color: T.color.text.primary, fontSize: 16,
                                     fontFamily: T.fonts.body.bold, flex: 1, textAlign: 'center', marginRight: 37,
+                                    letterSpacing: 1,
                                 }}>
-                                    Continue with Apple
+                                    AUTHENTICATE [APPLE]
                                 </Text>
                             </TouchableOpacity>
 
@@ -199,21 +217,27 @@ export default function Onboarding3() {
                             <TouchableOpacity
                                 style={{
                                     flexDirection: 'row', alignItems: 'center',
-                                    ...T.glass.medium,
-                                    padding: T.spacing[4] + 1, borderRadius: T.borderRadius.lg, marginBottom: 12,
+                                    backgroundColor: `${T.color.brand.primary}10`,
+                                    padding: T.spacing[4] + 1, borderRadius: T.radius.lg, marginBottom: 12,
+                                    borderWidth: 1, borderColor: T.color.brand.primary,
+                                    ...T.glow.soft(T.color.brand.primary),
                                 }}
-                                onPress={() => handleOAuth('google')}
+                                onPress={() => {
+                                    if (Platform.OS !== 'web') Haptics.selectionAsync()
+                                    handleOAuth('google')
+                                }}
                                 disabled={isLoading}
                                 activeOpacity={0.85}
                             >
                                 {isLoading
-                                    ? <ActivityIndicator size="small" color={T.color.text.primary} style={{ marginRight: 15 }} />
-                                    : <AntDesign name="google" size={22} color={T.color.text.primary} style={{ marginRight: 15 }} />}
+                                    ? <ActivityIndicator size="small" color={T.color.brand.primary} style={{ marginRight: 15 }} />
+                                    : <AntDesign name="google" size={22} color={T.color.brand.primary} style={{ marginRight: 15 }} />}
                                 <Text style={{
-                                    color: T.color.text.primary, fontSize: 16,
+                                    color: T.color.brand.primary, fontSize: 16,
                                     fontFamily: T.fonts.body.bold, flex: 1, textAlign: 'center', marginRight: 37,
+                                    letterSpacing: 1,
                                 }}>
-                                    Continue with Google
+                                    AUTHENTICATE [GOOGLE]
                                 </Text>
                             </TouchableOpacity>
 
@@ -221,18 +245,23 @@ export default function Onboarding3() {
                             <TouchableOpacity
                                 style={{
                                     flexDirection: 'row', alignItems: 'center',
-                                    ...T.glass.light,
-                                    padding: T.spacing[4] + 1, borderRadius: T.borderRadius.lg,
+                                    backgroundColor: `${T.color.text.secondary}10`,
+                                    padding: T.spacing[4] + 1, borderRadius: T.radius.lg,
+                                    borderWidth: 1, borderColor: T.color.border.soft,
                                 }}
-                                onPress={() => setMode('email')}
+                                onPress={() => {
+                                    if (Platform.OS !== 'web') Haptics.selectionAsync()
+                                    setMode('email')
+                                }}
                                 activeOpacity={0.85}
                             >
-                                <Feather name="mail" size={22} color={T.color.text.secondary} style={{ marginRight: 15 }} />
+                                <Feather name="terminal" size={22} color={T.color.text.secondary} style={{ marginRight: 15 }} />
                                 <Text style={{
                                     color: T.color.text.secondary, fontSize: 16,
                                     fontFamily: T.fonts.body.semibold, flex: 1, textAlign: 'center', marginRight: 37,
+                                    letterSpacing: 1,
                                 }}>
-                                    Continue with Email
+                                    MANUAL ENTRY [EMAIL]
                                 </Text>
                             </TouchableOpacity>
 
@@ -252,7 +281,7 @@ export default function Onboarding3() {
                     /*  Email Form  */
                     <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 30 }}>
                         <Text style={{
-                            ...type.sectionTitle,
+                            ...type.h2,
                             color: T.color.text.primary,
                             fontSize: 24, marginBottom: 6, letterSpacing: -0.3,
                         }}>
@@ -280,8 +309,8 @@ export default function Onboarding3() {
                                     value={username}
                                     onChangeText={setUsername}
                                     style={{
-                                        ...T.glass.light,
-                                        color: T.color.text.primary, borderRadius: T.borderRadius.md,
+                                        ...T.glass.base,
+                                        color: T.color.text.primary, borderRadius: T.radius.md,
                                         paddingHorizontal: 18, paddingVertical: 14,
                                         fontSize: 15, fontFamily: T.fonts.body.regular, marginBottom: 14,
                                     }}
@@ -302,8 +331,8 @@ export default function Onboarding3() {
                             value={email}
                             onChangeText={setEmail}
                             style={{
-                                ...T.glass.light,
-                                color: T.color.text.primary, borderRadius: T.borderRadius.md,
+                                ...T.glass.base,
+                                color: T.color.text.primary, borderRadius: T.radius.md,
                                 paddingHorizontal: 18, paddingVertical: 14,
                                 fontSize: 15, fontFamily: T.fonts.body.regular, marginBottom: 14,
                             }}
@@ -324,8 +353,8 @@ export default function Onboarding3() {
                                 value={password}
                                 onChangeText={setPassword}
                                 style={{
-                                    ...T.glass.light,
-                                    color: T.color.text.primary, borderRadius: T.borderRadius.md,
+                                    ...T.glass.base,
+                                    color: T.color.text.primary, borderRadius: T.radius.md,
                                     paddingHorizontal: 18, paddingVertical: 14,
                                     fontSize: 15, fontFamily: T.fonts.body.regular, paddingRight: 50,
                                 }}
@@ -349,18 +378,18 @@ export default function Onboarding3() {
                         {/* Submit */}
                         <TouchableOpacity
                             style={{
-                                backgroundColor: T.color.signature.primary, borderRadius: T.borderRadius.full,
+                                backgroundColor: T.color.brand.primary, borderRadius: T.radius.full,
                                 paddingVertical: 18, alignItems: 'center',
                                 opacity: isLoading ? 0.7 : 1,
-                                ...T.glow(T.color.signature.primary, 0.3),
+                                ...T.glow.hero(T.color.brand.primary),
                             }}
                             onPress={handleEmailAuth}
                             disabled={isLoading}
                             activeOpacity={0.85}
                         >
                             {isLoading
-                                ? <ActivityIndicator color={T.color.background.primary} />
-                                : <Text style={{ color: T.color.background.primary, fontFamily: T.fonts.display.black, fontSize: 17 }}>
+                                ? <ActivityIndicator color={T.color.bg.primary} />
+                                : <Text style={{ color: T.color.bg.primary, fontFamily: T.fonts.display.black, fontSize: 17 }}>
                                     {isLogin ? '🔑 Sign In' : '🚀 Create Account'}
                                 </Text>
                             }
@@ -373,7 +402,7 @@ export default function Onboarding3() {
                         >
                             <Text style={{ ...type.body, color: T.color.text.secondary }}>
                                 {isLogin ? "Don't have an account? " : 'Already registered? '}
-                                <Text style={{ color: T.color.signature.primary, fontFamily: T.fonts.body.bold }}>
+                                <Text style={{ color: T.color.brand.primary, fontFamily: T.fonts.body.bold }}>
                                     {isLogin ? 'Sign Up' : 'Sign In'}
                                 </Text>
                             </Text>

@@ -17,7 +17,7 @@ import { T } from '../../lib/theme'
 
 // ─── Types ────────────────────────────────────────────────────
 
-export type CVBadgeVariant = 'amber' | 'success' | 'danger' | 'warning' | 'info' | 'purple' | 'gold' | 'neutral'
+export type CVBadgeVariant = 'brand' | 'success' | 'danger' | 'warning' | 'info' | 'purple' | 'gold' | 'secondary'
 export type CVBadgeSize = 'sm' | 'md' | 'lg'
 
 export interface CVBadgeProps {
@@ -33,14 +33,14 @@ export interface CVBadgeProps {
 // ─── Variant Colors ───────────────────────────────────────────
 
 const VARIANT_COLORS: Record<CVBadgeVariant, { bg: string; text: string; border: string }> = {
-  amber:   { bg: 'rgba(255,107,0,0.10)',  text: T.color.signature.primary,   border: 'rgba(255,107,0,0.22)' },
-  success: { bg: 'rgba(0,198,122,0.10)',   text: T.color.semantic.success,    border: 'rgba(0,198,122,0.22)' },
-  danger:  { bg: 'rgba(255,58,94,0.10)',   text: T.color.semantic.error,      border: 'rgba(255,58,94,0.22)' },
-  warning: { bg: 'rgba(255,186,0,0.10)',   text: T.color.semantic.warning,    border: 'rgba(255,186,0,0.22)' },
-  info:    { bg: 'rgba(10,132,255,0.10)',  text: T.color.semantic.info,       border: 'rgba(10,132,255,0.22)' },
-  purple:  { bg: 'rgba(167,139,250,0.10)', text: T.color.gamification.purple, border: 'rgba(167,139,250,0.22)' },
-  gold:    { bg: 'rgba(255,215,0,0.10)',   text: T.color.gamification.gold,   border: 'rgba(255,215,0,0.22)' },
-  neutral: { bg: 'rgba(255,255,255,0.05)', text: T.color.text.secondary,      border: 'rgba(255,255,255,0.10)' },
+  brand: { bg: `${T.color.brand.primary}15`, text: T.color.brand.primary, border: `${T.color.brand.primary}30` },
+  success: { bg: `${T.color.semantic.success}15`, text: T.color.semantic.success, border: `${T.color.semantic.success}30` },
+  danger: { bg: `${T.color.semantic.error}15`, text: T.color.semantic.error, border: `${T.color.semantic.error}30` },
+  warning: { bg: `${T.color.semantic.warning}15`, text: T.color.semantic.warning, border: `${T.color.semantic.warning}30` },
+  info: { bg: `${T.color.semantic.info}15`, text: T.color.semantic.info, border: `${T.color.semantic.info}30` },
+  purple: { bg: `${T.color.semantic.purple}15`, text: T.color.semantic.purple, border: `${T.color.semantic.purple}30` },
+  gold: { bg: `${T.color.semantic.gold}15`, text: T.color.semantic.gold, border: `${T.color.semantic.gold}30` },
+  secondary: { bg: T.color.bg.secondary, text: T.color.text.secondary, border: T.color.border.base },
 }
 
 // ─── Size Config ──────────────────────────────────────────────
@@ -48,16 +48,16 @@ const VARIANT_COLORS: Record<CVBadgeVariant, { bg: string; text: string; border:
 const SIZE_CONFIG: Record<CVBadgeSize, {
   height: number; px: number; fontSize: number; iconSize: number; radius: number; gap: number
 }> = {
-  sm: { height: 22, px: 8,  fontSize: 10, iconSize: 10, radius: T.borderRadius.sm, gap: 3 },
-  md: { height: 28, px: 10, fontSize: 11, iconSize: 12, radius: T.borderRadius.md, gap: 4 },
-  lg: { height: 34, px: 12, fontSize: 13, iconSize: 14, radius: T.borderRadius.md, gap: 5 },
+  sm: { height: 22, px: 8, fontSize: 10, iconSize: 10, radius: T.radius.sm, gap: 3 },
+  md: { height: 28, px: 10, fontSize: 11, iconSize: 12, radius: T.radius.md, gap: 4 },
+  lg: { height: 34, px: 12, fontSize: 13, iconSize: 14, radius: T.radius.md, gap: 5 },
 }
 
 // ─── Component ───────────────────────────────────────────────
 
 export function CVBadge({
   label,
-  variant = 'amber',
+  variant = 'brand',
   size = 'md',
   icon,
   style,
@@ -80,7 +80,7 @@ export function CVBadge({
           alignItems: 'center',
           alignSelf: 'flex-start',
           gap: cfg.gap,
-          ...(glow ? T.glow(colors.text, 0.2) : {}),
+          ...(glow ? T.glow.soft(colors.text) : {}),
         },
         style,
       ]}

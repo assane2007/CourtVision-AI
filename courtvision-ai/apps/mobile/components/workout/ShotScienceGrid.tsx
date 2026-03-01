@@ -6,7 +6,7 @@
 import { memo } from 'react'
 import { View, Text } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
-import { T } from '../lib/theme'
+import { T } from '../../lib/theme'
 
 const type = (T as any).type
 
@@ -30,7 +30,7 @@ function ShotScienceGridInner({ metrics }: ShotScienceGridProps) {
         <Animated.View
             entering={FadeInDown.delay(160).duration(400)}
             style={{
-                ...(T as any).glass?.regular ?? T.glass.light,
+                ...(T as any).glass?.regular ?? T.glass.thin,
                 borderRadius: T.borderRadius.lg,
                 overflow: 'hidden',
             }}
@@ -61,7 +61,7 @@ function ShotScienceGridInner({ metrics }: ShotScienceGridProps) {
                                 </Text>
                                 <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
                                     <Text style={{
-                                        ...type.smallStat,
+                                        ...type.mediumStat,
                                         color: T.color.text.primary,
                                     }}>
                                         {metric.value}

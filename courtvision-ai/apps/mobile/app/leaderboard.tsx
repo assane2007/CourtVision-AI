@@ -560,7 +560,7 @@ const styles = StyleSheet.create({
         borderRadius: T.borderRadius.lg,
         padding: 16,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
     cardHeader: {
         flexDirection: 'row',
@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         gap: 10,
         borderBottomWidth: 1,
-        borderBottomColor: T.color.border.default,
+        borderBottomColor: T.color.border.base,
     },
     leaderRowCurrent: {
         backgroundColor: `${T.color.signature.primary}08`,
@@ -598,7 +598,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
     rankText: {
         color: T.color.text.secondary,

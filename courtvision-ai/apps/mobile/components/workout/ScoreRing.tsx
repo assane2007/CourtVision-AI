@@ -21,7 +21,7 @@ import Animated, {
     interpolate,
     useAnimatedStyle,
 } from 'react-native-reanimated'
-import { T } from '../lib/theme'
+import { T } from '../../lib/theme'
 
 // ─── Animated SVG Circle ─────────────────────────────────────
 const AnimatedCircle = Animated.createAnimatedComponent(Circle)
@@ -81,7 +81,7 @@ export function ScoreRing({
         strokeOffset.value = withDelay(
             delay,
             withTiming(targetOffset, {
-                duration: T.animation.duration.slow,
+                duration: 800,
                 easing: Easing.out(Easing.cubic),
             })
         )
@@ -108,7 +108,7 @@ export function ScoreRing({
         const tick = (now: number) => {
             const elapsed = now - startMs
             if (elapsed < 0) { raf = requestAnimationFrame(tick); return }
-            const t = Math.min(elapsed / T.animation.duration.slow, 1)
+            const t = Math.min(elapsed / 800, 1)
             const eased = 1 - Math.pow(1 - t, 3)
             setDisplay(Math.round(eased * clampedValue))
             if (t < 1) raf = requestAnimationFrame(tick)
@@ -136,7 +136,7 @@ export function ScoreRing({
                         cx={center}
                         cy={center}
                         r={radius}
-                        stroke={T.color.border.subtle}
+                        stroke={T.color.border.soft}
                         strokeWidth={strokeWidth - 2}
                         fill="none"
                     />

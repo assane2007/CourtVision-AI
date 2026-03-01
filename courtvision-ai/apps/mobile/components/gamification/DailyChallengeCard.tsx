@@ -14,13 +14,13 @@ import Animated, {
     withSequence,
     interpolate,
 } from 'react-native-reanimated'
-import { useDailyChallenge, DIFFICULTY_COLORS, DIFFICULTY_LABELS } from '../hooks/useDailyChallenge'
-import { T } from '../lib/theme'
+import { useDailyChallenge, DIFFICULTY_COLORS, DIFFICULTY_LABELS } from '../../hooks/useDailyChallenge'
+import { T } from '../../lib/theme'
 
 export function DailyChallengeCard() {
     const { challenge, loading, timeLeft, progressPct, claimReward } = useDailyChallenge()
     const progress = useSharedValue(0)
-    const pulse    = useSharedValue(1)
+    const pulse = useSharedValue(1)
 
     useEffect(() => {
         progress.value = withTiming(progressPct / 100, { duration: 800 })
@@ -49,12 +49,12 @@ export function DailyChallengeCard() {
     if (loading) {
         return (
             <View style={{
-                ...T.glass.light,
-                borderRadius: T.borderRadius.lg, padding: 20,
+                ...T.glass.base,
+                borderRadius: T.radius.lg, padding: 20,
                 marginBottom: 16, alignItems: 'center',
                 justifyContent: 'center', height: 100,
             }}>
-                <ActivityIndicator color={T.color.signature.primary} />
+                <ActivityIndicator color={T.color.brand.primary} />
             </View>
         )
     }
@@ -66,11 +66,11 @@ export function DailyChallengeCard() {
 
     return (
         <Animated.View style={[{
-            borderRadius: T.borderRadius.lg,
-            ...T.glass.light,
-            borderColor: challenge.completed && !challenge.claimed ? `${color}50` : T.glass.light.borderColor,
+            borderRadius: T.radius.lg,
+            ...T.glass.base,
+            borderColor: challenge.completed && !challenge.claimed ? `${color}50` : T.glass.base.borderColor,
             marginBottom: 16, overflow: 'hidden',
-            ...(challenge.completed && !challenge.claimed ? T.glow(color, 0.2) : {}),
+            ...(challenge.completed && !challenge.claimed ? T.glow.soft(color) : {}),
         }, pulseStyle]}>
             {/* Header */}
             <View style={{
@@ -141,7 +141,7 @@ export function DailyChallengeCard() {
                 {/* Progress */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                     <View style={{
-                        flex: 1, height: 6, backgroundColor: T.color.border.subtle,
+                        flex: 1, height: 6, backgroundColor: T.color.bg.tertiary,
                         borderRadius: 3, overflow: 'hidden',
                     }}>
                         <Animated.View style={[{
@@ -160,9 +160,9 @@ export function DailyChallengeCard() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                            <Feather name="zap" size={12} color={T.color.gamification.purple} />
+                            <Feather name="zap" size={12} color={T.color.semantic.purple} />
                             <Text style={{
-                                color: T.color.gamification.purple, fontWeight: '900', fontSize: 14,
+                                color: T.color.semantic.purple, fontWeight: '900', fontSize: 14,
                                 fontFamily: T.fonts.display.black,
                             }}>
                                 +{challenge.xp_reward} XP
@@ -170,12 +170,12 @@ export function DailyChallengeCard() {
                         </View>
                         {challenge.bonus_xp && !challenge.completed && (
                             <View style={{
-                                backgroundColor: `${T.color.gamification.gold}12`, borderRadius: 6,
+                                backgroundColor: `${T.color.semantic.gold}12`, borderRadius: 6,
                                 paddingHorizontal: 7, paddingVertical: 2,
-                                borderWidth: 1, borderColor: `${T.color.gamification.gold}25`,
+                                borderWidth: 1, borderColor: `${T.color.semantic.gold}25`,
                             }}>
                                 <Text style={{
-                                    color: T.color.gamification.gold, fontSize: 10, fontWeight: '700',
+                                    color: T.color.semantic.gold, fontSize: 10, fontWeight: '700',
                                     fontFamily: T.fonts.body.bold,
                                 }}>
                                     +{challenge.bonus_xp} bonus before 6pm
@@ -189,17 +189,17 @@ export function DailyChallengeCard() {
                         <TouchableOpacity
                             style={{
                                 backgroundColor: color,
-                                borderRadius: T.borderRadius.sm,
+                                borderRadius: T.radius.sm,
                                 paddingHorizontal: 18, paddingVertical: 9,
                                 flexDirection: 'row', alignItems: 'center', gap: 6,
-                                ...T.glow(color, 0.25),
+                                ...T.glow.soft(color),
                             }}
                             onPress={claimReward}
                             accessibilityRole="button"
                         >
-                            <Feather name="zap" size={12} color={T.color.background.primary} />
+                            <Feather name="zap" size={12} color={T.color.bg.primary} />
                             <Text style={{
-                                color: T.color.background.primary, fontWeight: '800', fontSize: 13,
+                                color: T.color.bg.primary, fontWeight: '800', fontSize: 13,
                                 fontFamily: T.fonts.display.bold,
                             }}>
                                 Claim!

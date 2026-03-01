@@ -13,6 +13,7 @@ import { apiFetch } from '../lib/api'
 import { useStore } from '../lib/store'
 import { toast } from '../lib/toast'
 import { T } from '../lib/theme'
+import * as Haptics from 'expo-haptics'
 
 export interface DailyChallenge {
     id: string
@@ -43,17 +44,17 @@ export interface DailyChallengeState {
 // ── Couleurs par difficulté ─────────────────────────────────────
 
 export const DIFFICULTY_COLORS: Record<string, string> = {
-    easy:       T.colors.green,
-    medium:     T.colors.accent,
-    hard:       T.colors.orange,
-    legendary:  T.colors.gold,
+    easy: T.color.semantic.success,
+    medium: T.color.semantic.info,
+    hard: T.color.signature.primary,
+    legendary: T.color.semantic.gold,
 }
 
 export const DIFFICULTY_LABELS: Record<string, string> = {
-    easy:       'Easy',
-    medium:     'Medium',
-    hard:       'Hard',
-    legendary:  '✨ Legendary',
+    easy: 'Easy',
+    medium: 'Medium',
+    hard: 'Hard',
+    legendary: '✨ Legendary',
 }
 
 // ── Défis locaux (fallback sans serveur) ─────────────────────────
@@ -171,10 +172,11 @@ function formatTimeLeft(expiresAt: string): string {
 
 export function useDailyChallenge(): DailyChallengeState {
     const addXP = useStore(s => s.addXP)
+    const addActivity = useStore(s => s.addActivity)
     const [challenge, setChallenge] = useState<DailyChallenge | null>(null)
-    const [loading, setLoading]     = useState(false)
-    const [error, setError]         = useState<string | null>(null)
-    const [timeLeft, setTimeLeft]   = useState('00:00:00')
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const [timeLeft, setTimeLeft] = useState('00:00:00')
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
     const progressPct = challenge
@@ -206,10 +208,21 @@ export function useDailyChallenge(): DailyChallengeState {
 
         const totalXP = challenge.xp_reward + (challenge.bonus_xp ?? 0)
         addXP(totalXP, challenge.title)
+        addActivity({
+            icon: 'check-circle',
+            text: `Challenge claimed: ${challenge.title}`,
+            time: 'Just now',
+            color: T.color.semantic.success
+        })
         toast.xp(`+${totalXP} XP`, `Challenge "${challenge.title}" claimed!`, 4000)
 
+        // Satisfying haptic when claiming xp
+        if (process.env.EXPO_OS !== 'web') {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+        }
+
         setChallenge(prev => prev ? { ...prev, claimed: true } : prev)
-    }, [challenge, addXP])
+    }, [challenge, addXP, addActivity])
 
     // Countdown timer
     useEffect(() => {

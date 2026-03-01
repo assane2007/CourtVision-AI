@@ -19,21 +19,24 @@ import {
 import Animated, {
     useSharedValue, useAnimatedStyle, withSpring,
     withTiming, withSequence, FadeIn,
+    interpolate, withRepeat,
 } from 'react-native-reanimated'
+import { BlurView } from 'expo-blur'
 import { Feather, AntDesign } from '@expo/vector-icons'
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import * as Haptics from 'expo-haptics'
 import { T } from '../lib/theme'
 import { useStore } from '../lib/store'
 
 // ─── Tab config ──────────────────────────────────────────────
 
 const TAB_ICONS: Record<string, { icon: string; label: string }> = {
-    index:     { icon: 'zap',   label: 'Court' },
+    index: { icon: 'zap', label: 'Court' },
     community: { icon: 'users', label: 'Squad' },
-    upload:    { icon: 'plus',  label: 'Film' },
-    twin:      { icon: 'cpu',   label: 'Twin' },
-    profile:   { icon: 'user',  label: 'Me' },
+    upload: { icon: 'plus', label: 'Film' },
+    twin: { icon: 'cpu', label: 'Twin' },
+    profile: { icon: 'user', label: 'Me' },
 }
 
 // ─── Animated tab item ───────────────────────────────────────
@@ -72,7 +75,7 @@ function TabItem({
         transform: [{ scale: iconScale.value }],
     }))
 
-    const color = isFocused ? T.color.signature.primary : T.color.text.tertiary
+    const color = isFocused ? T.color.brand.primary : T.color.text.tertiary
 
     const handlePressIn = () => {
         scale.value = withSpring(0.88, { damping: 15, stiffness: 300 })
@@ -131,18 +134,14 @@ function NotifDot() {
     const pulse = useSharedValue(1)
 
     useEffect(() => {
-        pulse.value = withSequence(
-            withTiming(1.4, { duration: 700 }),
-            withTiming(1, { duration: 700 }),
+        pulse.value = withRepeat(
+            withSequence(
+                withTiming(1.3, { duration: 800 }),
+                withTiming(1, { duration: 800 }),
+            ),
+            -1,
+            true
         )
-        // Loop
-        const id = setInterval(() => {
-            pulse.value = withSequence(
-                withTiming(1.4, { duration: 700 }),
-                withTiming(1, { duration: 700 }),
-            )
-        }, 1400)
-        return () => clearInterval(id)
     }, [])
 
     const dotStyle = useAnimatedStyle(() => ({
@@ -161,43 +160,49 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
     const xpEvents = useStore(s => s.xpEvents)
     const hasNotif = xpEvents.length > 0
 
-    const bottomPadding = Platform.OS === 'ios' ? Math.max(insets.bottom, 16) : 12
+    const bottomOffset = Platform.OS === 'ios' ? Math.max(insets.bottom, 20) : 24
 
     return (
-        <View style={[styles.container, { paddingBottom: bottomPadding }]}>
-            {state.routes.map((route, index) => {
-                const isFocused = state.index === index
-                const { options } = descriptors[route.key]
+        <View style={[styles.wrapper, { bottom: bottomOffset }]}>
+            <BlurView intensity={65} tint="systemThinMaterialDark" style={StyleSheet.absoluteFill} />
+            <View style={styles.container}>
+                {state.routes.map((route, index) => {
+                    const isFocused = state.index === index
+                    const { options } = descriptors[route.key]
 
-                const onPress = () => {
-                    const event = navigation.emit({
-                        type: 'tabPress',
-                        target: route.key,
-                        canPreventDefault: true,
-                    })
-                    if (!isFocused && !event.defaultPrevented) {
-                        navigation.navigate(route.name)
+                    const onPress = () => {
+                        const event = navigation.emit({
+                            type: 'tabPress',
+                            target: route.key,
+                            canPreventDefault: true,
+                        })
+                        if (!isFocused && !event.defaultPrevented) {
+                            if (Platform.OS !== 'web') {
+                                Haptics.selectionAsync()
+                            }
+                            navigation.navigate(route.name)
+                        }
                     }
-                }
 
-                const onLongPress = () => {
-                    navigation.emit({
-                        type: 'tabLongPress',
-                        target: route.key,
-                    })
-                }
+                    const onLongPress = () => {
+                        navigation.emit({
+                            type: 'tabLongPress',
+                            target: route.key,
+                        })
+                    }
 
-                return (
-                    <TabItem
-                        key={route.key}
-                        routeName={route.name}
-                        isFocused={isFocused}
-                        onPress={onPress}
-                        onLongPress={onLongPress}
-                        showBadge={route.name === 'profile' && hasNotif}
-                    />
-                )
-            })}
+                    return (
+                        <TabItem
+                            key={route.key}
+                            routeName={route.name}
+                            isFocused={isFocused}
+                            onPress={onPress}
+                            onLongPress={onLongPress}
+                            showBadge={route.name === 'profile' && hasNotif}
+                        />
+                    )
+                })}
+            </View>
         </View>
     )
 }
@@ -205,23 +210,23 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
 // ─── Styles ──────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+    wrapper: {
+        position: 'absolute',
+        left: T.spacing[6],
+        right: T.spacing[6],
+        height: 72,
+        borderRadius: 36,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: T.color.border.base,
+        backgroundColor: 'rgba(10,16,24,0.7)',
+        ...T.glow.soft(T.color.brand.primary),
+    },
     container: {
         flexDirection: 'row',
-        backgroundColor: 'rgba(8,12,18,0.97)',
-        borderTopWidth: 1,
-        borderTopColor: T.color.border.subtle,
-        paddingTop: 8,
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -6 },
-        shadowOpacity: 0.4,
-        shadowRadius: 20,
-        elevation: 12,
+        flex: 1,
+        alignItems: 'center',
+        paddingHorizontal: T.spacing[2],
     },
     tabItem: {
         flex: 1,
@@ -237,22 +242,21 @@ const styles = StyleSheet.create({
         width: 4,
         height: 4,
         borderRadius: 2,
-        backgroundColor: T.color.signature.primary,
+        backgroundColor: T.color.brand.primary,
         marginTop: 5,
-        ...T.glow(T.color.signature.primary, 0.6),
+        ...T.glow.soft(T.color.brand.primary),
     },
     fabButton: {
-        width: 54,
-        height: 54,
-        borderRadius: 27,
-        backgroundColor: T.color.signature.primary,
+        width: 52,
+        height: 52,
+        borderRadius: 26,
+        backgroundColor: T.color.brand.primary,
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: -22,
-        ...T.glow(T.color.signature.primary, 0.45),
+        ...T.glow.soft(T.color.brand.primary),
     },
     fabButtonActive: {
-        ...T.glow(T.color.signature.primary, 0.65),
+        ...T.glow.hero(T.color.brand.primary),
     },
     notifDot: {
         position: 'absolute',
@@ -263,6 +267,6 @@ const styles = StyleSheet.create({
         borderRadius: 4,
         backgroundColor: T.color.semantic.error,
         borderWidth: 1.5,
-        borderColor: T.color.background.primary,
+        borderColor: T.color.bg.primary,
     },
 })

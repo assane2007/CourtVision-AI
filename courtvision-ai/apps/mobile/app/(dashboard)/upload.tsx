@@ -9,7 +9,7 @@
  * Design rules:
  *   - All spacing from T.spacing (4pt grid)
  *   - All type from typePresets (type.*)
- *   - All colors from T.color / T.colors
+ *   - All colors from T.color / T.color
  *   - Glass cards: T.glass.*
  *   - Animations ≤ 500ms, spring configs from T
  */
@@ -30,7 +30,7 @@ import { useStore } from '../../lib/store'
 import { toast } from '../../lib/toast'
 import { api } from '../../lib/api'
 import { isDemoMode } from '../../lib/supabase'
-import { ScoreRing } from '../../components/ScoreRing'
+import { ScoreRing } from '../../components/workout/ScoreRing'
 import { PrimaryButton } from '../../components/PrimaryButton'
 import { T, typePresets } from '../../lib/theme'
 
@@ -96,7 +96,7 @@ function PulsingRecordButton({ onPress }: { onPress: () => void }) {
         >
             <Animated.View style={[pulseStyle, {
                 width: 120, height: 120, borderRadius: 60,
-                backgroundColor: T.color.signature.dim,
+                backgroundColor: T.color.signature.muted,
                 justifyContent: 'center', alignItems: 'center',
                 borderWidth: 2, borderColor: `${T.color.signature.primary}30`,
             }]}>
@@ -122,7 +122,7 @@ function TipCard({ icon, title, subtitle, delay: d }: {
         <Animated.View
             entering={FadeInDown.delay(d).duration(400)}
             style={{
-                ...(T as any).glass?.regular ?? T.glass.light,
+                ...(T as any).glass?.regular ?? T.glass.thin,
                 borderRadius: T.borderRadius.lg,
                 padding: T.spacing[4],
                 flexDirection: 'row', alignItems: 'center', gap: T.spacing[3],
@@ -130,13 +130,13 @@ function TipCard({ icon, title, subtitle, delay: d }: {
         >
             <View style={{
                 width: 36, height: 36, borderRadius: 18,
-                backgroundColor: T.color.signature.dim,
+                backgroundColor: T.color.signature.muted,
                 justifyContent: 'center', alignItems: 'center',
             }}>
                 <Feather name={icon} size={16} color={T.color.signature.primary} />
             </View>
             <View style={{ flex: 1 }}>
-                <Text style={{ ...type.bodySemibold, color: T.color.text.primary, fontSize: 13 }}>{title}</Text>
+                <Text style={{ ...type.cardTitle, color: T.color.text.primary, fontSize: 13 }}>{title}</Text>
                 <Text style={{ ...type.caption, color: T.color.text.secondary, marginTop: 2 }}>{subtitle}</Text>
             </View>
         </Animated.View>
@@ -419,23 +419,23 @@ export default function UploadAnalyze() {
                         </View>
 
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: T.spacing[3] }}>
-                            <View style={{ flex: 1, height: 1, backgroundColor: T.color.border.subtle }} />
+                            <View style={{ flex: 1, height: 1, backgroundColor: T.color.border.soft }} />
                             <Text style={{ ...type.overline, color: T.color.text.tertiary }}>OR</Text>
-                            <View style={{ flex: 1, height: 1, backgroundColor: T.color.border.subtle }} />
+                            <View style={{ flex: 1, height: 1, backgroundColor: T.color.border.soft }} />
                         </View>
 
                         <TouchableOpacity
-                            style={{ ...(T as any).glass?.regular ?? T.glass.light, borderRadius: T.borderRadius.lg, padding: T.spacing[4], flexDirection: 'row', alignItems: 'center', gap: T.spacing[4] }}
+                            style={{ ...(T as any).glass?.regular ?? T.glass.thin, borderRadius: T.borderRadius.lg, padding: T.spacing[4], flexDirection: 'row', alignItems: 'center', gap: T.spacing[4] }}
                             onPress={() => handleUpload('camera')}
                             activeOpacity={0.8}
                             accessibilityLabel="Record live"
                             accessibilityRole="button"
                         >
-                            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: T.color.semantic.infoDim, justifyContent: 'center', alignItems: 'center' }}>
+                            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: `\${T.color.semantic.info}20`, justifyContent: 'center', alignItems: 'center' }}>
                                 <Feather name="camera" size={20} color={T.color.semantic.info} />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={{ ...type.bodySemibold, color: T.color.text.primary }}>Record live</Text>
+                                <Text style={{ ...type.cardTitle, color: T.color.text.primary }}>Record live</Text>
                                 <Text style={{ ...type.caption, color: T.color.text.secondary, marginTop: 2 }}>Open camera directly</Text>
                             </View>
                             <Feather name="chevron-right" size={18} color={T.color.text.tertiary} />
@@ -456,7 +456,7 @@ export default function UploadAnalyze() {
                             <Animated.View style={[progressStyle, { height: '100%', borderRadius: 3, backgroundColor: T.color.signature.primary }]} />
                         </View>
 
-                        <Text style={{ ...type.bigStat, color: T.color.signature.primary, textAlign: 'center', marginBottom: T.spacing[1], fontVariant: ['tabular-nums'] }}>
+                        <Text style={{ ...type.statLarge, color: T.color.signature.primary, textAlign: 'center', marginBottom: T.spacing[1], fontVariant: ['tabular-nums'] }}>
                             {Math.round(progress)}%
                         </Text>
 
@@ -464,7 +464,7 @@ export default function UploadAnalyze() {
                             {FUN_FACTS[funFactIdx]}
                         </Animated.Text>
 
-                        <View style={{ ...(T as any).glass?.regular ?? T.glass.light, borderRadius: T.borderRadius.xl, padding: T.spacing[4] }}>
+                        <View style={{ ...(T as any).glass?.regular ?? T.glass.thin, borderRadius: T.borderRadius.xl, padding: T.spacing[4] }}>
                             {PIPELINE_STEPS.map((step, i) => (
                                 <StepRow key={step.label} step={step} index={i} progress={progress} completed={progress >= 100} />
                             ))}
@@ -488,7 +488,7 @@ export default function UploadAnalyze() {
                             </Text>
                         </Animated.View>
 
-                        <Animated.View entering={FadeInDown.delay(400).duration(400)} style={{ ...T.glass.accent, borderRadius: T.borderRadius.lg, paddingHorizontal: T.spacing[5], paddingVertical: T.spacing[3], flexDirection: 'row', alignItems: 'center', gap: T.spacing[2] }}>
+                        <Animated.View entering={FadeInDown.delay(400).duration(400)} style={{ ...T.glass.vivid, borderRadius: T.borderRadius.lg, paddingHorizontal: T.spacing[5], paddingVertical: T.spacing[3], flexDirection: 'row', alignItems: 'center', gap: T.spacing[2] }}>
                             <Text style={{ fontSize: 16 }}>⚡</Text>
                             <Text style={{ ...type.cardTitle, color: T.color.signature.primary }}>+{TOTAL_XP} XP</Text>
                         </Animated.View>
@@ -499,9 +499,9 @@ export default function UploadAnalyze() {
                                 { label: 'Mental', value: `${Math.round(resultScore * 1.05)}`, color: T.color.semantic.success },
                                 { label: 'Highlights', value: `${3 + Math.floor(Math.random() * 4)}`, color: T.color.semantic.info },
                             ].map((stat) => (
-                                <View key={stat.label} style={{ flex: 1, ...(T as any).glass?.regular ?? T.glass.light, borderRadius: T.borderRadius.lg, padding: T.spacing[4], alignItems: 'center' }}>
+                                <View key={stat.label} style={{ flex: 1, ...(T as any).glass?.regular ?? T.glass.thin, borderRadius: T.borderRadius.lg, padding: T.spacing[4], alignItems: 'center' }}>
                                     <Text style={{ ...type.overline, color: T.color.text.secondary }}>{stat.label}</Text>
-                                    <Text style={{ ...type.smallStat, color: stat.color, marginTop: T.spacing[1] }}>{stat.value}</Text>
+                                    <Text style={{ ...type.mediumStat, color: stat.color, marginTop: T.spacing[1] }}>{stat.value}</Text>
                                 </View>
                             ))}
                         </Animated.View>
@@ -513,7 +513,7 @@ export default function UploadAnalyze() {
                                 style={{ alignItems: 'center', paddingVertical: T.spacing[3], minHeight: 44 }}
                                 accessibilityRole="button"
                             >
-                                <Text style={{ ...type.bodySemibold, color: T.color.text.secondary }}>Analyze another video</Text>
+                                <Text style={{ ...type.cardTitle, color: T.color.text.secondary }}>Analyze another video</Text>
                             </TouchableOpacity>
                         </Animated.View>
                     </View>

@@ -82,7 +82,7 @@ function Glass({ children, style, accent = false }: any) {
         <View style={[{
             borderRadius: T.borderRadius.xl,
             padding: T.spacing[4],
-            ...(accent ? glass.accent : glass.regular ?? T.glass.light),
+            ...(accent ? glass.accent : glass.regular ?? T.glass.thin),
         }, style]}>
             {children}
         </View>
@@ -135,7 +135,7 @@ export default function Community() {
                         style={{
                             position: 'relative', width: 44, height: 44,
                             borderRadius: T.borderRadius.md,
-                            ...glass.regular ?? T.glass.light,
+                            ...glass.regular ?? T.glass.thin,
                             justifyContent: 'center', alignItems: 'center',
                         }}
                         onPress={() => {}}
@@ -160,7 +160,7 @@ export default function Community() {
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: T.spacing[3] }}>
                         {myBadges.slice(0, 6).map(badge => (
                             <View key={badge.id} style={{
-                                ...(glass.regular ?? T.glass.light),
+                                ...(glass.regular ?? T.glass.thin),
                                 borderRadius: T.borderRadius.sm,
                                 paddingHorizontal: T.spacing[2], paddingVertical: T.spacing[1],
                                 marginRight: T.spacing[2],
@@ -182,7 +182,7 @@ export default function Community() {
             {/* Tab Pills */}
             <View style={{
                 flexDirection: 'row', marginHorizontal: T.spacing[4], marginVertical: T.spacing[3],
-                ...(glass.regular ?? T.glass.light), borderRadius: T.borderRadius.md, padding: 3,
+                ...(glass.regular ?? T.glass.thin), borderRadius: T.borderRadius.md, padding: 3,
             }}>
                 {TABS.map(tab => (
                     <TouchableOpacity
@@ -257,7 +257,7 @@ function RankingsTab({ entries, metric, scope, myRank, onChangeMetric, onChangeS
             {/* Search */}
             <View style={{
                 flexDirection: 'row', alignItems: 'center',
-                ...(glass.regular ?? T.glass.light),
+                ...(glass.regular ?? T.glass.thin),
                 borderRadius: T.borderRadius.md, paddingHorizontal: T.spacing[3], marginBottom: T.spacing[3],
             }}>
                 <Feather name="search" size={16} color={T.color.text.tertiary} />
@@ -297,7 +297,7 @@ function RankingsTab({ entries, metric, scope, myRank, onChangeMetric, onChangeS
                                 paddingHorizontal: T.spacing[4], paddingVertical: T.spacing[2],
                                 borderRadius: T.borderRadius.sm,
                                 backgroundColor: scope === s.key ? T.color.signature.primary : 'transparent',
-                                ...(scope !== s.key ? (glass.regular ?? T.glass.light) : {}),
+                                ...(scope !== s.key ? (glass.regular ?? T.glass.thin) : {}),
                                 minHeight: 44, justifyContent: 'center',
                             }} accessibilityRole="button">
                                 <Text style={{ ...type.overline, color: scope === s.key ? '#fff' : T.color.text.secondary, fontSize: 11 }}>{s.label}</Text>
@@ -310,8 +310,8 @@ function RankingsTab({ entries, metric, scope, myRank, onChangeMetric, onChangeS
                             <TouchableOpacity key={m.key} onPress={() => onChangeMetric(m.key)} style={{
                                 paddingHorizontal: T.spacing[3], paddingVertical: T.spacing[2],
                                 borderRadius: T.borderRadius.sm, marginRight: T.spacing[2],
-                                backgroundColor: metric === m.key ? T.color.signature.dim : 'transparent',
-                                ...(metric !== m.key ? (glass.regular ?? T.glass.light) : {}),
+                                backgroundColor: metric === m.key ? T.color.signature.muted : 'transparent',
+                                ...(metric !== m.key ? (glass.regular ?? T.glass.thin) : {}),
                                 borderWidth: metric === m.key ? 1 : 0,
                                 borderColor: `${T.color.signature.primary}30`,
                                 minHeight: 44, justifyContent: 'center',
@@ -330,7 +330,7 @@ function RankingsTab({ entries, metric, scope, myRank, onChangeMetric, onChangeS
                             <Glass accent style={{ marginBottom: T.spacing[4], flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <View>
                                     <Text style={{ ...type.overline, color: T.color.text.secondary }}>YOUR RANK</Text>
-                                    <Text style={{ ...type.bigStat, color: T.color.signature.primary }}>#{myRank}</Text>
+                                    <Text style={{ ...type.statLarge, color: T.color.signature.primary }}>#{myRank}</Text>
                                 </View>
                                 <View style={{ alignItems: 'flex-end' }}>
                                     <Text style={{ ...type.caption, color: T.color.text.tertiary }}>of {entries.length} players</Text>
@@ -384,7 +384,7 @@ function PodiumItem({ entry, position }: { entry: LeaderboardEntry; position: 1 
         <View style={{ alignItems: 'center', marginHorizontal: T.spacing[2] }}>
             <View style={{
                 width: position === 1 ? 56 : 44, height: position === 1 ? 56 : 44,
-                backgroundColor: entry.is_me ? T.color.signature.dim : T.color.background.tertiary,
+                backgroundColor: entry.is_me ? T.color.signature.muted : T.color.background.tertiary,
                 borderRadius: 28, marginBottom: T.spacing[2],
                 borderWidth: 2, borderColor: podiumColors[position],
                 alignItems: 'center', justifyContent: 'center',
@@ -396,7 +396,7 @@ function PodiumItem({ entry, position }: { entry: LeaderboardEntry; position: 1 
             <Text style={{ ...type.overline, color: T.color.text.primary, fontSize: 11 }} numberOfLines={1}>
                 {entry.is_me ? 'You' : entry.username}
             </Text>
-            <Text style={{ ...type.smallStat, color: T.color.signature.primary, fontSize: 14 }}>{entry.score}</Text>
+            <Text style={{ ...type.mediumStat, color: T.color.signature.primary, fontSize: 14 }}>{entry.score}</Text>
             <View style={{
                 width: 64, height: heights[position], marginTop: T.spacing[2],
                 backgroundColor: podiumColors[position], borderTopLeftRadius: T.borderRadius.sm, borderTopRightRadius: T.borderRadius.sm,
@@ -418,19 +418,19 @@ function LeaderboardRow({ entry }: { entry: LeaderboardEntry }) {
     return (
         <View style={{
             flexDirection: 'row', alignItems: 'center',
-            ...(entry.is_me ? glass.accent : (glass.regular ?? T.glass.light)),
+            ...(entry.is_me ? glass.accent : (glass.regular ?? T.glass.thin)),
             borderRadius: T.borderRadius.lg, padding: T.spacing[3], marginBottom: T.spacing[2],
         }}>
-            <Text style={{ ...type.smallStat, color: entry.rank <= 5 ? T.color.gamification.gold : T.color.text.tertiary, fontSize: 14, width: 32, fontVariant: ['tabular-nums'] }}>#{entry.rank}</Text>
+            <Text style={{ ...type.mediumStat, color: entry.rank <= 5 ? T.color.gamification.gold : T.color.text.tertiary, fontSize: 14, width: 32, fontVariant: ['tabular-nums'] }}>#{entry.rank}</Text>
             <View style={{
                 width: 36, height: 36,
-                backgroundColor: entry.is_me ? T.color.signature.dim : T.color.background.tertiary,
+                backgroundColor: entry.is_me ? T.color.signature.muted : T.color.background.tertiary,
                 borderRadius: 18, marginRight: T.spacing[3], alignItems: 'center', justifyContent: 'center',
             }}>
-                <Text style={{ ...type.bodySemibold, color: T.color.text.primary, fontSize: 13 }}>{entry.username?.charAt(0).toUpperCase()}</Text>
+                <Text style={{ ...type.cardTitle, color: T.color.text.primary, fontSize: 13 }}>{entry.username?.charAt(0).toUpperCase()}</Text>
             </View>
             <View style={{ flex: 1 }}>
-                <Text style={{ ...type.bodySemibold, color: T.color.text.primary, fontSize: 13 }}>{entry.is_me ? 'You' : entry.username}</Text>
+                <Text style={{ ...type.cardTitle, color: T.color.text.primary, fontSize: 13 }}>{entry.is_me ? 'You' : entry.username}</Text>
                 <Text style={{ ...type.caption, color: T.color.text.tertiary, fontSize: 10 }}>{entry.position || '-'} · Lv.{entry.level}</Text>
             </View>
             <View style={{ alignItems: 'flex-end', gap: 2 }}>
@@ -449,17 +449,17 @@ function SearchResultRow({ player, onFollow, onUnfollow }: {
     return (
         <View style={{
             flexDirection: 'row', alignItems: 'center',
-            ...(glass.regular ?? T.glass.light),
+            ...(glass.regular ?? T.glass.thin),
             borderRadius: T.borderRadius.lg, padding: T.spacing[3], marginBottom: T.spacing[2],
         }}>
             <View style={{
                 width: 40, height: 40, backgroundColor: T.color.background.tertiary,
                 borderRadius: 20, marginRight: T.spacing[3], alignItems: 'center', justifyContent: 'center',
             }}>
-                <Text style={{ ...type.bodySemibold, color: T.color.text.primary, fontSize: 14 }}>{player.username?.charAt(0).toUpperCase()}</Text>
+                <Text style={{ ...type.cardTitle, color: T.color.text.primary, fontSize: 14 }}>{player.username?.charAt(0).toUpperCase()}</Text>
             </View>
             <View style={{ flex: 1 }}>
-                <Text style={{ ...type.bodySemibold, color: T.color.text.primary, fontSize: 13 }}>{player.username}</Text>
+                <Text style={{ ...type.cardTitle, color: T.color.text.primary, fontSize: 13 }}>{player.username}</Text>
                 <Text style={{ ...type.caption, color: T.color.text.tertiary, fontSize: 10 }}>{player.position || '-'} · Lv.{player.level} · {player.xp} XP</Text>
             </View>
             <TouchableOpacity
@@ -496,12 +496,12 @@ function FeedTab({ items, hasMore, onLoadMore, loading }: {
             {hasMore && (
                 <TouchableOpacity
                     onPress={onLoadMore}
-                    style={{ ...(glass.regular ?? T.glass.light), padding: T.spacing[3], borderRadius: T.borderRadius.lg, alignItems: 'center', marginTop: T.spacing[2], minHeight: 44, justifyContent: 'center' }}
+                    style={{ ...(glass.regular ?? T.glass.thin), padding: T.spacing[3], borderRadius: T.borderRadius.lg, alignItems: 'center', marginTop: T.spacing[2], minHeight: 44, justifyContent: 'center' }}
                     accessibilityRole="button"
                 >
                     {loading
                         ? <ActivityIndicator color={T.color.signature.primary} size="small" />
-                        : <Text style={{ ...type.bodySemibold, color: T.color.signature.primary, fontSize: 12 }}>Load more</Text>
+                        : <Text style={{ ...type.cardTitle, color: T.color.signature.primary, fontSize: 12 }}>Load more</Text>
                     }
                 </TouchableOpacity>
             )}
@@ -521,7 +521,7 @@ function FeedItem({ item }: { item: ActivityItem }) {
     const icon = ACTIVITY_ICONS[item.type] || 'activity'
     return (
         <View style={{
-            ...(glass.regular ?? T.glass.light), borderRadius: T.borderRadius.lg,
+            ...(glass.regular ?? T.glass.thin), borderRadius: T.borderRadius.lg,
             padding: T.spacing[4], marginBottom: T.spacing[2],
             flexDirection: 'row', alignItems: 'flex-start', gap: T.spacing[3],
         }}>
@@ -533,7 +533,7 @@ function FeedItem({ item }: { item: ActivityItem }) {
             </View>
             <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: T.spacing[2] }}>
-                    <Text style={{ ...type.bodySemibold, color: T.color.signature.primary, fontSize: 12 }}>{item.username}</Text>
+                    <Text style={{ ...type.cardTitle, color: T.color.signature.primary, fontSize: 12 }}>{item.username}</Text>
                     <Text style={{ ...type.caption, color: T.color.text.tertiary, fontSize: 10 }}>{formatTimeAgo(item.created_at)}</Text>
                 </View>
                 <Text style={{ ...type.body, color: T.color.text.primary, fontSize: 13, marginTop: 2 }}>{item.title}</Text>
@@ -585,7 +585,7 @@ function ChallengeCard({ challenge }: { challenge: ChallengeItem }) {
     return (
         <Glass style={{
             marginBottom: T.spacing[3],
-            borderColor: isLeader ? `${T.color.semantic.success}40` : T.color.border.default,
+            borderColor: isLeader ? `${T.color.semantic.success}40` : T.color.border.base,
             borderWidth: 1,
         }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: T.spacing[3] }}>
@@ -608,17 +608,17 @@ function ChallengeCard({ challenge }: { challenge: ChallengeItem }) {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: T.spacing[3] }}>
                 <View>
                     <Text style={{ ...type.overline, color: T.color.text.tertiary, fontSize: 9 }}>Leader</Text>
-                    <Text style={{ ...type.bodySemibold, color: T.color.gamification.gold, fontSize: 12 }}>
+                    <Text style={{ ...type.cardTitle, color: T.color.gamification.gold, fontSize: 12 }}>
                         {challenge.leader_name || '-'} - {challenge.leader_value ?? '-'}
                     </Text>
                 </View>
                 <View style={{ alignItems: 'center' }}>
                     <Text style={{ ...type.overline, color: T.color.text.tertiary, fontSize: 9 }}>Players</Text>
-                    <Text style={{ ...type.bodySemibold, color: T.color.text.primary, fontSize: 12 }}>{challenge.participants_count}</Text>
+                    <Text style={{ ...type.cardTitle, color: T.color.text.primary, fontSize: 12 }}>{challenge.participants_count}</Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                     <Text style={{ ...type.overline, color: T.color.text.tertiary, fontSize: 9 }}>You #{challenge.my_rank || '-'}</Text>
-                    <Text style={{ ...type.bodySemibold, color: T.color.signature.primary, fontSize: 12 }}>{challenge.my_value ?? '-'}</Text>
+                    <Text style={{ ...type.cardTitle, color: T.color.signature.primary, fontSize: 12 }}>{challenge.my_value ?? '-'}</Text>
                 </View>
             </View>
 

@@ -73,7 +73,7 @@ export function CVAlert({
 
       {/* Content */}
       <View style={styles.content}>
-        <CVText preset="bodySemibold" style={{ color: cfg.color }}>
+        <CVText preset='cardTitle' style={{ color: cfg.color }}>
           {title}
         </CVText>
         {message && (

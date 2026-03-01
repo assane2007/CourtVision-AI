@@ -12,8 +12,8 @@ import Animated, {
     withSpring, withSequence, withDelay, runOnJS,
     Easing, interpolate, FadeIn,
 } from 'react-native-reanimated'
-import { xpToNextLevel, xpToLevel } from '../lib/store'
-import { T } from '../lib/theme'
+import { xpToNextLevel, xpToLevel } from '../../lib/store'
+import { T } from '../../lib/theme'
 
 //  XP Badge (popup toast) 
 
@@ -25,7 +25,7 @@ interface XPBadgeProps {
 
 export function XPBadge({ amount, label, onDone }: XPBadgeProps) {
     const progress = useSharedValue(0)
-    const opacity  = useSharedValue(0)
+    const opacity = useSharedValue(0)
 
     useEffect(() => {
         // Phase 1: spring in
@@ -152,20 +152,20 @@ const styles = StyleSheet.create({
         position: 'absolute',
         alignSelf: 'center',
         zIndex: T.zIndex.toast,
-        backgroundColor: `${T.color.gamification.purple}18`,
-        borderRadius: T.borderRadius.xl,
+        backgroundColor: `${T.gamification.purple}18`,
+        borderRadius: T.radius.xl,
         paddingHorizontal: 18,
         paddingVertical: 10,
         borderWidth: 1.5,
-        borderColor: `${T.color.gamification.purple}50`,
+        borderColor: `${T.gamification.purple}50`,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        ...T.glow(T.color.gamification.purple, 0.4),
+        ...T.glow.soft(T.gamification.purple),
     },
     badgeEmoji: { fontSize: 16 },
     badgeAmount: {
-        color: T.color.gamification.purple,
+        color: T.gamification.purple,
         fontWeight: '900',
         fontSize: T.fontSize.md,
         letterSpacing: 0.3,
@@ -177,8 +177,8 @@ const styles = StyleSheet.create({
 
     // Card (full variant)
     card: {
-        ...T.glass.light,
-        borderRadius: T.borderRadius.xl,
+        ...T.glass.base,
+        borderRadius: T.radius.xl,
         padding: T.spacing[4],
     },
     headerRow: {
@@ -208,15 +208,15 @@ const styles = StyleSheet.create({
     // Track (full)
     track: {
         height: 8,
-        backgroundColor: T.color.border.subtle,
+        backgroundColor: T.color.border.base,
         borderRadius: 4,
         overflow: 'hidden',
     },
     fill: {
         height: 8,
         borderRadius: 4,
-        backgroundColor: T.color.gamification.purple,
-        ...T.glow(T.color.gamification.purple, 0.4),
+        backgroundColor: T.gamification.purple,
+        ...T.glow.soft(T.gamification.purple),
         overflow: 'hidden',
     },
     shimmer: {
@@ -242,15 +242,15 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     levelPill: {
-        backgroundColor: `${T.color.gamification.purple}15`,
-        borderColor: `${T.color.gamification.purple}30`,
+        backgroundColor: `${T.gamification.purple}15`,
+        borderColor: `${T.gamification.purple}30`,
         borderWidth: 1,
-        borderRadius: T.borderRadius.sm,
+        borderRadius: T.radius.sm,
         paddingHorizontal: 10,
         paddingVertical: 4,
     },
     levelPillText: {
-        color: T.color.gamification.purple,
+        color: T.gamification.purple,
         fontSize: T.fontSize.xs,
         fontWeight: '900',
         letterSpacing: 0.5,
@@ -258,15 +258,15 @@ const styles = StyleSheet.create({
     compactTrack: {
         flex: 1,
         height: 4,
-        backgroundColor: T.color.border.subtle,
+        backgroundColor: T.color.border.base,
         borderRadius: 2,
         overflow: 'hidden',
     },
     compactFill: {
         height: 4,
         borderRadius: 2,
-        backgroundColor: T.color.gamification.purple,
-        ...T.glow(T.color.gamification.purple, 0.3),
+        backgroundColor: T.gamification.purple,
+        ...T.glow.soft(T.gamification.purple),
     },
     compactLabel: {
         color: T.color.text.secondary,

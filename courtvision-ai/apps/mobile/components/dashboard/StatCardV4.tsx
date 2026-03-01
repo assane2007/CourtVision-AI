@@ -9,7 +9,7 @@ import Animated, {
     useSharedValue, useAnimatedStyle, useAnimatedProps,
     withTiming, Easing, FadeInDown,
 } from 'react-native-reanimated'
-import { T } from '../lib/theme'
+import { T } from '../../lib/theme'
 
 const type = (T as any).type
 
@@ -25,18 +25,18 @@ interface StatCardProps {
 }
 
 const VARIANT_STYLES: Record<string, any> = {
-    glass: (T as any).glass?.regular ?? T.glass.light,
-    accent: T.glass.accent,
-    success: T.glass.success,
-    danger: (T as any).glass?.danger ?? T.glass.light,
-    gold: (T as any).glass?.gold ?? T.glass.light,
+    glass: (T as any).glass?.regular ?? T.glass.thin,
+    accent: T.glass.vivid,
+    success: T.glass.vivid,
+    danger: (T as any).glass?.danger ?? T.glass.thin,
+    gold: (T as any).glass?.gold ?? T.glass.thin,
 }
 
 const SIZE_STYLES: Record<string, any> = {
-    hero: type.heroStat,
-    big: type.bigStat,
+    hero: type.hero,
+    big: type.statLarge,
     medium: type.mediumStat,
-    small: type.smallStat,
+    small: type.mediumStat,
 }
 
 function StatCardInner({ label, value, unit, delta, variant = 'glass', size = 'medium', index = 0, onPress }: StatCardProps) {

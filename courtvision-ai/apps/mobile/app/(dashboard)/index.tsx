@@ -26,24 +26,24 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useStore, selectWeekly, selectHighlights, selectStreak, selectXP, xpToLevel, xpToNextLevel } from '../../lib/store'
 import { SkeletonHighlight, SkeletonStatCard, SkeletonWeeklyChart } from '../../components/SkeletonLoader'
-import { XPLevelBar } from '../../components/XPBadge'
-import { DailyChallengeCard } from '../../components/DailyChallengeCard'
-import { StreakReminderBanner } from '../../components/StreakReminderBanner'
-import { ScoreRing } from '../../components/ScoreRing'
+import { XPLevelBar } from '../../components/gamification/XPBadge'
+import { DailyChallengeCard } from '../../components/gamification/DailyChallengeCard'
+import { StreakReminderBanner } from '../../components/gamification/StreakReminderBanner'
+import { ScoreRing } from '../../components/workout/ScoreRing'
 import { PrimaryButton } from '../../components/PrimaryButton'
-import { StatCard } from '../../components/StatCardV4'
-import { WeeklyDots } from '../../components/WeeklyDots'
-import { PerformanceBadge } from '../../components/PerformanceBadge'
+import { StatCard } from '../../components/dashboard/StatCard'
+import { WeeklyDots } from '../../components/dashboard/WeeklyDots'
+import { PerformanceBadge } from '../../components/gamification/PerformanceBadge'
 import {
     GlassCard, CVText, CVSection, CVStatRow, CVBadge,
     CVActionCard, CVEmptyState, CVProgressBar, CVButton,
+    CVAnalyticsChart, CourtHeatmap
 } from '../../components/ui'
-import { T, typePresets } from '../../lib/theme'
+import { T } from '../../lib/theme'
 import type { HighlightClip } from '../../lib/store'
+import { InteractiveTerrainVisualizer } from '../../components/dashboard/InteractiveTerrainVisualizer'
 
 const { width: SCREEN_W } = Dimensions.get('window')
-const type = typePresets
-const spring = (T as any).spring
 
 // ─── Greeting ───────────────────────────────────────────────
 
@@ -66,33 +66,33 @@ function AvatarXPRing({ name, xp }: { name: string; xp: number }) {
             <View style={{
                 position: 'absolute', width: 56, height: 56,
                 borderRadius: 28, borderWidth: 2.5,
-                borderColor: `${T.color.signature.primary}30`,
+                borderColor: `${T.color.brand.primary}15`,
             }} />
             <View style={{
                 position: 'absolute', width: 56, height: 56,
                 borderRadius: 28, borderWidth: 2.5,
-                borderColor: T.color.signature.primary,
-                borderTopColor: pct > 25 ? T.color.signature.primary : 'transparent',
-                borderRightColor: pct > 50 ? T.color.signature.primary : 'transparent',
-                borderBottomColor: pct > 75 ? T.color.signature.primary : 'transparent',
+                borderColor: T.color.brand.primary,
+                borderTopColor: pct > 25 ? T.color.brand.primary : 'transparent',
+                borderRightColor: pct > 50 ? T.color.brand.primary : 'transparent',
+                borderBottomColor: pct > 75 ? T.color.brand.primary : 'transparent',
                 borderLeftColor: 'transparent',
                 transform: [{ rotate: '-90deg' }],
             }} />
             <View style={{
                 width: 44, height: 44, borderRadius: 22,
-                backgroundColor: T.color.background.tertiary,
+                backgroundColor: T.color.bg.tertiary,
                 justifyContent: 'center', alignItems: 'center',
             }}>
                 <Text style={{ color: T.color.text.primary, fontSize: 16, fontFamily: T.fonts.display.bold }}>{initials}</Text>
             </View>
             <View style={{
                 position: 'absolute', bottom: -4, right: -4,
-                backgroundColor: T.color.signature.primary, borderRadius: 8,
+                backgroundColor: T.color.brand.primary, borderRadius: 8,
                 width: 20, height: 20,
                 justifyContent: 'center', alignItems: 'center',
-                borderWidth: 2, borderColor: T.color.background.primary,
+                borderWidth: 2, borderColor: T.color.bg.primary,
             }}>
-                <Text style={{ color: '#fff', fontSize: 9, fontFamily: T.fonts.display.black }}>{level}</Text>
+                <Text style={{ color: T.color.text.inverse, fontSize: 9, fontFamily: T.fonts.display.black }}>{level}</Text>
             </View>
         </View>
     )
@@ -105,23 +105,23 @@ function HeroStatCard({ value, label, delta }: {
 }) {
     return (
         <Animated.View entering={FadeInDown.delay(80).duration(500)}>
-            <GlassCard variant="light" padding={T.spacing[6]} shadow="md">
+            <GlassCard variant="accent" padding={T.spacing[6]} shadow="md">
                 <CVText preset="overline" color="secondary" style={{ marginBottom: T.spacing[2] }}>
                     {label}
                 </CVText>
 
                 <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                    <CVText preset="heroStat" color="amber">
+                    <CVText preset="hero" color="primary">
                         {Math.round(value)}
                     </CVText>
-                    <CVText preset="mediumStat" color="tertiary" style={{ marginLeft: 4 }}>
+                    <CVText preset="statLarge" color="secondary" style={{ marginLeft: 4 }}>
                         %
                     </CVText>
                 </View>
 
                 {delta && (
                     <CVText
-                        preset="bodySemibold"
+                        preset="bodyBold"
                         color={delta.includes('+') || delta.includes('▲') ? 'success' : 'error'}
                         style={{ fontSize: 14, marginTop: T.spacing[1] }}
                     >
@@ -132,7 +132,7 @@ function HeroStatCard({ value, label, delta }: {
                 <CVProgressBar
                     value={value}
                     max={100}
-                    color="amber"
+                    color="brand"
                     height={6}
                     delay={300}
                     style={{ marginTop: T.spacing[4] }}
@@ -153,23 +153,23 @@ const HighlightCard = memo(function HighlightCard({ clip, onPress }: { clip: Hig
             <TouchableOpacity
                 style={{
                     width: 140, height: 96,
-                    borderRadius: T.borderRadius.md,
+                    borderRadius: T.radius.md,
                     marginRight: T.spacing[3],
                     overflow: 'hidden',
-                    ...(T as any).glass?.regular ?? T.glass.light,
+                    ...T.glass.thin,
                 }}
                 onPress={onPress}
-                onPressIn={() => { scale.value = withSpring(0.96, spring?.snappy) }}
-                onPressOut={() => { scale.value = withSpring(1, spring?.snappy) }}
+                onPressIn={() => { scale.value = withSpring(0.96, T.spring.snappy) }}
+                onPressOut={() => { scale.value = withSpring(1, T.spring.snappy) }}
                 activeOpacity={1}
                 accessibilityLabel={`View highlight ${clip.label}`}
                 accessibilityRole="button"
             >
                 <View style={{
-                    flex: 1, backgroundColor: T.color.signature.dim,
+                    flex: 1, backgroundColor: T.color.brand.muted,
                     justifyContent: 'center', alignItems: 'center',
                 }}>
-                    <Feather name="play" size={18} color={T.color.signature.primary} />
+                    <Feather name="play" size={18} color={T.color.brand.primary} />
                 </View>
                 <View style={{
                     position: 'absolute', bottom: 0, left: 0, right: 0,
@@ -197,10 +197,10 @@ function SectionHeader({ title, action, onAction }: { title: string; action?: st
             flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
             marginBottom: T.spacing[3], marginTop: T.spacing[1],
         }}>
-            <CVText preset="sectionTitle">{title}</CVText>
+            <CVText preset="h2">{title}</CVText>
             {action && onAction && (
                 <TouchableOpacity onPress={onAction} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <CVText preset="caption" color="amber">{action} →</CVText>
+                    <CVText preset="overline" color="brand">{action} →</CVText>
                 </TouchableOpacity>
             )}
         </View>
@@ -219,26 +219,26 @@ function QuickAction({ icon, label, color, onPress }: {
         <Animated.View style={[{ flex: 1 }, animStyle]}>
             <TouchableOpacity
                 style={{
-                    ...(T as any).glass?.regular ?? T.glass.light,
-                    borderRadius: T.borderRadius.lg,
+                    ...T.glass.thin,
+                    borderRadius: T.radius.lg,
                     padding: T.spacing[4], alignItems: 'center', gap: T.spacing[2],
                     minHeight: 44,
                 }}
                 onPress={onPress}
-                onPressIn={() => { scale.value = withSpring(0.96, spring?.snappy) }}
-                onPressOut={() => { scale.value = withSpring(1, spring?.snappy) }}
+                onPressIn={() => { scale.value = withSpring(0.96, T.spring.snappy) }}
+                onPressOut={() => { scale.value = withSpring(1, T.spring.snappy) }}
                 activeOpacity={1}
                 accessibilityRole="button"
                 accessibilityLabel={label}
             >
                 <View style={{
                     width: 40, height: 40, borderRadius: 20,
-                    backgroundColor: `${color}10`,
+                    backgroundColor: `${color}15`,
                     justifyContent: 'center', alignItems: 'center',
                 }}>
                     <Feather name={icon} size={18} color={color} />
                 </View>
-                <Text style={{ ...type.overline, color: T.color.text.secondary, fontSize: 10 }}>{label}</Text>
+                <CVText preset="overline" color="secondary" align="center">{label}</CVText>
             </TouchableOpacity>
         </Animated.View>
     )
@@ -250,22 +250,22 @@ function EmptyTodayCard({ onUpload }: { onUpload: () => void }) {
     return (
         <Animated.View entering={FadeInDown.delay(160).duration(500)}>
             <View style={{
-                ...T.glass.accent, borderRadius: T.borderRadius.lg,
+                ...T.glass.vivid, borderRadius: T.radius.lg,
                 padding: T.spacing[8], alignItems: 'center', gap: T.spacing[4],
             }}>
                 <View style={{
                     width: 72, height: 72, borderRadius: 36,
-                    backgroundColor: T.color.signature.dim,
+                    backgroundColor: T.color.brand.muted,
                     justifyContent: 'center', alignItems: 'center',
                 }}>
                     <Text style={{ fontSize: 32 }}>🏀</Text>
                 </View>
-                <Text style={{ ...type.cardTitle, color: T.color.text.primary, textAlign: 'center' }}>
+                <CVText preset="h2" color="primary" align="center">
                     No session today — yet
-                </Text>
-                <Text style={{ ...type.caption, color: T.color.text.secondary, textAlign: 'center' }}>
+                </CVText>
+                <CVText preset="body" color="secondary" align="center">
                     {'Film your game and let AI break down\nevery shot, every detail.'}
-                </Text>
+                </CVText>
                 <PrimaryButton label="Start Today's Session" icon="video" onPress={onUpload} size="md" />
             </View>
         </Animated.View>
@@ -308,18 +308,23 @@ export default function DashboardIndex() {
     const hasSession = !!shootingFgPct || !!mentalScore
 
     const today = new Date().getDay()
-    const weeklyDots = weeklyData.map((d: any, i: number) => ({
-        day: d.day,
-        hasSession: d.hasSession,
-        isToday: i === (today === 0 ? 6 : today - 1),
-        score: d.hasSession ? Math.max(d.mental || 0, d.shooting || 0) : undefined,
+    const chartData = weeklyData.map(d => ({
+        label: d.day,
+        value: d.hasSession ? Math.max(d.mental || 0, d.shooting || 0) : 0
     }))
 
+    const shootingHeatData = [
+        { id: '1', x: 20, y: 30, accuracy: 72, shots: 15 },
+        { id: '2', x: 50, y: 15, accuracy: 85, shots: 12 },
+        { id: '3', x: 80, y: 35, accuracy: 45, shots: 10 },
+        { id: '4', x: 50, y: 50, accuracy: 55, shots: 20 },
+    ]
+
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: T.color.background.primary }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: T.color.bg.primary }}>
             <View style={{
                 position: 'absolute', top: -120, left: '15%', width: 280, height: 280,
-                borderRadius: 140, backgroundColor: 'rgba(255,107,0,0.025)',
+                borderRadius: 140, backgroundColor: 'rgba(255,107,0,0.01)',
             }} />
 
             <ScrollView
@@ -330,7 +335,7 @@ export default function DashboardIndex() {
                 }}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh}
-                        tintColor={T.color.signature.primary} colors={[T.color.signature.primary]} />
+                        tintColor={T.color.brand.primary} colors={[T.color.brand.primary]} />
                 }
                 showsVerticalScrollIndicator={false}
             >
@@ -339,20 +344,22 @@ export default function DashboardIndex() {
                     flexDirection: 'row', justifyContent: 'space-between',
                     alignItems: 'flex-start', marginBottom: T.spacing[2],
                 }}>
-                    <View style={{ flex: 1, gap: 2 }}>
-                        <Text style={{ ...type.caption, color: T.color.text.secondary }}>{greeting}</Text>
-                        <Text style={{ ...type.screenTitle, color: T.color.text.primary }}>{firstName}</Text>
+                    <View style={{ flex: 1, gap: 4 }}>
+                        <CVText preset="overline" color="tertiary" style={{ letterSpacing: 1.5 }}>{greeting.toUpperCase()}</CVText>
+                        <CVText preset="h1" color="primary">{firstName}</CVText>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: T.spacing[3] }}>
                         {streak > 0 && (
-                            <Animated.View entering={FadeInRight.delay(200).duration(400)} style={{
-                                ...(T as any).glass?.regular ?? T.glass.light,
-                                borderRadius: T.borderRadius.md,
-                                paddingHorizontal: T.spacing[3], paddingVertical: T.spacing[2],
-                                flexDirection: 'row', alignItems: 'center', gap: 6,
-                            }}>
+                            <Animated.View entering={FadeInRight.delay(200).duration(400)} style={[
+                                T.glass.frosted,
+                                {
+                                    borderRadius: T.radius.md,
+                                    paddingHorizontal: T.spacing[3], paddingVertical: T.spacing[2],
+                                    flexDirection: 'row', alignItems: 'center', gap: 6,
+                                }
+                            ]}>
                                 <Text style={{ fontSize: 16 }}>🔥</Text>
-                                <Text style={{ color: T.color.signature.primary, fontFamily: T.fonts.display.black, fontSize: 16, fontVariant: ['tabular-nums'] }}>
+                                <Text style={{ color: T.color.brand.primary, fontFamily: T.fonts.display.black, fontSize: 18, fontVariant: ['tabular-nums'] }}>
                                     {streak}
                                 </Text>
                             </Animated.View>
@@ -361,14 +368,14 @@ export default function DashboardIndex() {
                         <TouchableOpacity
                             onPress={() => router.push('/settings')}
                             style={{
-                                width: 36, height: 36, borderRadius: 18,
-                                backgroundColor: T.color.background.secondary,
+                                width: 44, height: 44, borderRadius: 22,
+                                backgroundColor: T.color.bg.secondary,
                                 justifyContent: 'center', alignItems: 'center',
-                                borderWidth: 1, borderColor: T.color.border.default,
+                                borderWidth: 1, borderColor: T.color.border.base,
                             }}
                             accessibilityLabel="Settings"
                         >
-                            <Feather name="settings" size={16} color={T.color.text.secondary} />
+                            <Feather name="settings" size={18} color={T.color.text.secondary} />
                         </TouchableOpacity>
                     </View>
                 </Animated.View>
@@ -404,13 +411,13 @@ export default function DashboardIndex() {
                         flexDirection: 'row', gap: T.spacing[3], marginBottom: T.spacing[5],
                     }}>
                         <View style={{ flex: 1 }}>
-                            <StatCard label="FG%" value={shootingFgPct > 0 ? Math.round(shootingFgPct) : '--'} unit="%" variant="accent" size="small" index={0} />
+                            <StatCard label="FG%" value={shootingFgPct > 0 ? Math.round(shootingFgPct) : 0} unit="%" variant="accent" size="sm" />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <StatCard label="XP" value={xp} variant="glass" size="small" index={1} />
+                            <StatCard label="XP" value={xp} variant="default" size="sm" />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <StatCard label="3PT%" value={(user as any)?.shooting_3pt_pct ? Math.round((user as any).shooting_3pt_pct) : '--'} unit="%" variant="glass" size="small" index={2} />
+                            <StatCard label="3PT%" value={(user as any)?.shooting_3pt_pct ? Math.round((user as any).shooting_3pt_pct) : 0} unit="%" variant="default" size="sm" />
                         </View>
                     </Animated.View>
                 )}
@@ -421,21 +428,28 @@ export default function DashboardIndex() {
                     <DailyChallengeCard />
                 </View>
 
-                {/* ═══ WEEKLY DOTS ═══ */}
-                <View style={{ marginBottom: T.spacing[5] }}>
-                    <SectionHeader title="Weekly Progress" />
-                    {weeklyLoading && weeklyData.every((d: any) => !d.hasSession) ? (
-                        <SkeletonWeeklyChart />
-                    ) : (
-                        <WeeklyDots data={weeklyDots} />
-                    )}
+                {/* ═══ WEEKLY PROGRESS ═══ */}
+                <View style={{ marginBottom: T.spacing[6] }}>
+                    <SectionHeader title="Progression" action="Full Stats" onAction={() => router.push('/analytics')} />
+                    <CVAnalyticsChart data={chartData} />
+                </View>
+
+                {/* ═══ INTERACTIVE TERRAIN ═══ */}
+                <View style={{ marginBottom: T.spacing[6] }}>
+                    <InteractiveTerrainVisualizer />
+                </View>
+
+                {/* ═══ PERFORMANCE BREAKDOWN (Heatmap) ═══ */}
+                <View style={{ marginBottom: T.spacing[6] }}>
+                    <SectionHeader title="Court Hotzones" />
+                    <CourtHeatmap data={shootingHeatData} />
                 </View>
 
                 {/* ═══ QUICK ACTIONS ═══ */}
                 <Animated.View entering={FadeInDown.delay(240).duration(400)} style={{
                     flexDirection: 'row', gap: T.spacing[3], marginBottom: T.spacing[3],
                 }}>
-                    <QuickAction icon="zap" label="WORKOUT AI" color={T.color.signature.primary} onPress={() => router.push('/workout-setup')} />
+                    <QuickAction icon="zap" label="WORKOUT AI" color={T.color.brand.primary} onPress={() => router.push('/workout-setup')} />
                     <QuickAction icon="radio" label="LIVE COACH" color={T.color.semantic.error} onPress={() => router.push('/live')} />
                     <QuickAction icon="calendar" label="PROGRAM" color={T.color.semantic.success} onPress={() => router.push('/program')} />
                 </Animated.View>
@@ -461,23 +475,23 @@ export default function DashboardIndex() {
                     </View>
                 ) : highlights.length === 0 ? (
                     <View style={{
-                        ...(T as any).glass?.regular ?? T.glass.light,
-                        borderRadius: T.borderRadius.lg, padding: T.spacing[8],
+                        ...T.glass.thin,
+                        borderRadius: T.radius.lg, padding: T.spacing[8],
                         alignItems: 'center', gap: T.spacing[3],
                     }}>
                         <Feather name="film" size={22} color={T.color.text.tertiary} />
-                        <Text style={{ ...type.caption, color: T.color.text.secondary, textAlign: 'center' }}>
+                        <CVText preset="caption" color="secondary" align="center">
                             {'No highlights yet.\nAnalyze a game to generate AI clips.'}
-                        </Text>
+                        </CVText>
                         <TouchableOpacity
                             onPress={() => router.push('/(dashboard)/upload')}
                             style={{
-                                backgroundColor: T.color.signature.dim, borderRadius: T.borderRadius.md,
+                                backgroundColor: T.color.brand.muted, borderRadius: T.radius.md,
                                 paddingHorizontal: T.spacing[5], paddingVertical: T.spacing[3],
-                                borderWidth: 1, borderColor: `${T.color.signature.primary}30`,
+                                borderWidth: 1, borderColor: `${T.color.brand.primary}15`,
                             }}
                         >
-                            <Text style={{ color: T.color.signature.primary, fontFamily: T.fonts.body.bold, fontSize: 13 }}>Upload a video</Text>
+                            <CVText preset="bodyBold" color="brand">Upload a video</CVText>
                         </TouchableOpacity>
                     </View>
                 ) : (

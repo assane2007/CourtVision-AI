@@ -20,7 +20,7 @@ import Svg, {
     Defs, LinearGradient, Stop,
 } from 'react-native-svg'
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
-import { T } from '../lib/theme'
+import { T } from '../../lib/theme'
 
 // ==========================================
 // Types

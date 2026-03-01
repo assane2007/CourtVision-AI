@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
         borderRadius: T.borderRadius.md,
         padding: 14,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
     tipText: {
         flex: 1,
@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
         borderRadius: T.borderRadius.lg,
         padding: 16,
         borderWidth: 1.5,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
         gap: 14,
     },
     modeOptionSelected: {
@@ -458,7 +458,7 @@ const styles = StyleSheet.create({
         height: 22,
         borderRadius: 11,
         borderWidth: 2,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
         justifyContent: 'center',
         alignItems: 'center',
     },

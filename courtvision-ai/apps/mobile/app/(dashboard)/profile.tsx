@@ -18,7 +18,7 @@ import Animated, {
     useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence, Easing,
 } from 'react-native-reanimated'
 import { useStore, selectXP, xpToLevel, xpToNextLevel } from '../../lib/store'
-import { XPLevelBar } from '../../components/XPBadge'
+import { XPLevelBar } from '../../components/gamification/XPBadge'
 import { SkeletonLoader } from '../../components/SkeletonLoader'
 import { toast } from '../../lib/toast'
 import { apiFetch } from '../../lib/api'
@@ -37,28 +37,10 @@ const POSITION_LABELS: Record<string, string> = {
 }
 const LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Pro', 'Elite']
 
-const EARNED_BADGES = [
-    { emoji: '🎯', name: 'Sniper',        rarity: 'epic',      xp: 500,  desc: 'FG% > 60% over 5 sessions' },
-    { emoji: '🔥', name: '7-Day Streak',  rarity: 'rare',      xp: 200,  desc: '7 consecutive days' },
-    { emoji: '🧠', name: 'Mental Pro',    rarity: 'legendary', xp: 1000, desc: 'Mental score > 90' },
-    { emoji: '⚡', name: 'Quick Release', rarity: 'rare',      xp: 300,  desc: 'Release speed top 5%' },
-    { emoji: '🛡️', name: 'Lock Down',     rarity: 'common',    xp: 100,  desc: 'Defender of the week' },
-    { emoji: '🏆', name: 'First Win',     rarity: 'common',    xp: 50,   desc: 'First challenge won' },
-    { emoji: '💎', name: 'Elite',         rarity: 'legendary', xp: 2000, desc: 'Reach 90+ overall' },
-]
-
 const RARITY_COLORS: Record<string, string> = {
     common: T.color.text.secondary, rare: T.color.semantic.info,
     epic: T.color.gamification.purple, legendary: T.color.signature.primary,
 }
-
-const RECENT_ACTIVITY = [
-    { icon: 'film' as const,        text: 'Session analyzed · Mental 91',  time: '2h ago',    color: T.color.signature.primary },
-    { icon: 'zap' as const,         text: '7-day streak reached!',         time: 'Yesterday', color: T.color.semantic.warning },
-    { icon: 'arrow-up' as const,    text: 'Level 8 unlocked · +200 XP',   time: 'Yesterday', color: T.color.semantic.success },
-    { icon: 'target' as const,      text: 'Sniper Badge earned',           time: '3d ago',    color: T.color.gamification.purple },
-    { icon: 'award' as const,       text: 'Top 10 weekly leaderboard',     time: '5d ago',    color: T.color.gamification.gold },
-]
 
 // ==========================================
 // Animated Stat Tile V4
@@ -71,12 +53,12 @@ function StatTile({ label, value, sub, color, delay }: {
             entering={ZoomIn.delay(delay).duration(400).springify()}
             style={{
                 flex: 1, borderRadius: T.borderRadius.xl, padding: T.spacing[3], alignItems: 'center',
-                ...(glass.regular ?? T.glass.light),
-                borderColor: color ? `${color}30` : T.color.border.default,
-                ...(color ? T.glow(color, 0.1) : {}),
+                ...(glass.regular ?? T.glass.thin),
+                borderColor: color ? `${color}30` : T.color.border.base,
+                ...(color ? T.glow.soft(color) : {}),
             }}
         >
-            <Text style={{ ...type.smallStat, color: color ?? T.color.text.primary, fontSize: 20 }}>{value}</Text>
+            <Text style={{ ...type.mediumStat, color: color ?? T.color.text.primary, fontSize: 20 }}>{value}</Text>
             <Text style={{ ...type.caption, color: T.color.text.secondary, marginTop: 3, textAlign: 'center', fontSize: 11 }}>{label}</Text>
             <Text style={{ ...type.overline, color: T.color.text.tertiary, marginTop: 1, fontSize: 9 }}>{sub}</Text>
         </Animated.View>
@@ -107,10 +89,10 @@ function PlayerAvatar({ name, size = 72, onPress }: { name: string; size?: numbe
         <TouchableOpacity onPress={onPress} activeOpacity={0.85}>
             <Animated.View style={[{
                 width: size, height: size, borderRadius: size / 2,
-                backgroundColor: T.color.signature.dim,
+                backgroundColor: T.color.signature.muted,
                 borderWidth: 3, borderColor: T.color.signature.primary,
                 justifyContent: 'center', alignItems: 'center',
-                ...T.glow(T.color.signature.primary, 0.3),
+                ...T.glow.soft(T.color.brand.primary),
             }, pulseStyle]}>
                 <Text style={{ ...type.sectionTitle, color: T.color.text.primary, fontSize: size * 0.3 }}>
                     {initials.length >= 2 ? initials : '?'}
@@ -168,7 +150,7 @@ function EditProfileModal({ visible, user, onClose, onSave }: {
     }
 
     const inputStyle = {
-        ...(glass.regular ?? T.glass.light),
+        ...(glass.regular ?? T.glass.thin),
         color: T.color.text.primary,
         borderRadius: T.borderRadius.lg,
         paddingHorizontal: T.spacing[4], paddingVertical: T.spacing[3],
@@ -179,12 +161,12 @@ function EditProfileModal({ visible, user, onClose, onSave }: {
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
             <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' }} onPress={onClose}>
-                <Pressable onPress={() => {}}>
+                <Pressable onPress={() => { }}>
                     <View style={{
                         backgroundColor: T.color.background.secondary,
                         borderTopLeftRadius: T.borderRadius['2xl'], borderTopRightRadius: T.borderRadius['2xl'],
                         padding: T.spacing[6], paddingBottom: T.spacing[10],
-                        borderWidth: 1, borderColor: T.color.border.default, borderBottomWidth: 0,
+                        borderWidth: 1, borderColor: T.color.border.base, borderBottomWidth: 0,
                     }}>
                         <View style={{ width: 40, height: 4, backgroundColor: T.color.text.tertiary, borderRadius: 2, alignSelf: 'center', marginBottom: T.spacing[5] }} />
                         <Text style={{ ...type.sectionTitle, color: T.color.text.primary, marginBottom: T.spacing[5] }}>
@@ -206,7 +188,7 @@ function EditProfileModal({ visible, user, onClose, onSave }: {
                                     paddingHorizontal: T.spacing[4], paddingVertical: T.spacing[2],
                                     borderRadius: T.borderRadius.full, minHeight: 44, justifyContent: 'center',
                                     backgroundColor: position === p ? T.color.signature.primary : 'transparent',
-                                    ...(position !== p ? (glass.regular ?? T.glass.light) : {}), marginRight: T.spacing[2],
+                                    ...(position !== p ? (glass.regular ?? T.glass.thin) : {}), marginRight: T.spacing[2],
                                 }}>
                                     <Text style={{ ...type.cardTitle, color: position === p ? '#fff' : T.color.text.secondary, fontSize: 14 }}>{p}</Text>
                                 </TouchableOpacity>
@@ -220,9 +202,9 @@ function EditProfileModal({ visible, user, onClose, onSave }: {
                                     paddingHorizontal: T.spacing[3], paddingVertical: T.spacing[2],
                                     borderRadius: T.borderRadius.full, minHeight: 44, justifyContent: 'center',
                                     backgroundColor: level === l ? T.color.semantic.success : 'transparent',
-                                    ...(level !== l ? (glass.regular ?? T.glass.light) : {}), marginRight: T.spacing[2],
+                                    ...(level !== l ? (glass.regular ?? T.glass.thin) : {}), marginRight: T.spacing[2],
                                 }}>
-                                    <Text style={{ ...type.bodySemibold, color: level === l ? '#fff' : T.color.text.secondary, fontSize: 13 }}>{l}</Text>
+                                    <Text style={{ ...type.cardTitle, color: level === l ? '#fff' : T.color.text.secondary, fontSize: 13 }}>{l}</Text>
                                 </TouchableOpacity>
                             ))}
                         </ScrollView>
@@ -235,7 +217,7 @@ function EditProfileModal({ visible, user, onClose, onSave }: {
                         <TouchableOpacity style={{
                             backgroundColor: T.color.signature.primary, borderRadius: T.borderRadius.lg,
                             paddingVertical: T.spacing[4], alignItems: 'center', opacity: saving ? 0.7 : 1,
-                            ...T.glow(T.color.signature.primary, 0.2), minHeight: 52,
+                            ...T.glow.soft(T.color.brand.primary), minHeight: 52,
                         }} onPress={handleSave} disabled={saving} activeOpacity={0.85}>
                             <Text style={{ ...type.cardTitle, color: '#fff' }}>{saving ? 'Saving...' : 'Save'}</Text>
                         </TouchableOpacity>
@@ -255,7 +237,7 @@ function MenuItem({ icon, color, label, sub, onPress, rightEl }: {
 }) {
     return (
         <TouchableOpacity style={{
-            ...(glass.regular ?? T.glass.light),
+            ...(glass.regular ?? T.glass.thin),
             flexDirection: 'row', alignItems: 'center',
             justifyContent: 'space-between', padding: T.spacing[4],
             borderRadius: T.borderRadius.xl, marginBottom: T.spacing[2],
@@ -270,7 +252,7 @@ function MenuItem({ icon, color, label, sub, onPress, rightEl }: {
                     <Feather name={icon} size={18} color={color} />
                 </View>
                 <View style={{ flex: 1 }}>
-                    <Text style={{ ...type.bodySemibold, color: T.color.text.primary, fontSize: 14 }}>{label}</Text>
+                    <Text style={{ ...type.cardTitle, color: T.color.text.primary, fontSize: 14 }}>{label}</Text>
                     {sub && <Text style={{ ...type.caption, color: T.color.text.secondary, marginTop: 2, fontSize: 11 }}>{sub}</Text>}
                 </View>
             </View>
@@ -283,39 +265,41 @@ function MenuItem({ icon, color, label, sub, onPress, rightEl }: {
 // Main Profile Screen V4
 // ==========================================
 export default function Profile() {
-    const router        = useRouter()
-    const user          = useStore(s => s.user)
-    const userLoading   = useStore(s => s.userLoading)
-    const loadProfile   = useStore(s => s.loadProfile)
-    const logout        = useStore(s => s.logout)
-    const updateUser    = useStore(s => s.updateUser)
-    const sessions      = useStore(s => s.sessions)
-    const loadSessions  = useStore(s => s.loadSessions)
-    const xp            = useStore(selectXP)
+    const router = useRouter()
+    const user = useStore(s => s.user)
+    const userLoading = useStore(s => s.userLoading)
+    const loadProfile = useStore(s => s.loadProfile)
+    const logout = useStore(s => s.logout)
+    const updateUser = useStore(s => s.updateUser)
+    const sessions = useStore(s => s.sessions)
+    const loadSessions = useStore(s => s.loadSessions)
+    const xp = useStore(selectXP)
+    const badges = useStore(s => s.badges)
+    const recentActivity = useStore(s => s.recentActivity)
     const [editVisible, setEditVisible] = useState(false)
     const [notifEnabled, setNotifEnabled] = useState(true)
     const [publicProfile, setPublicProfile] = useState(true)
-    const [showBadgeDetail, setShowBadgeDetail] = useState<typeof EARNED_BADGES[0] | null>(null)
+    const [showBadgeDetail, setShowBadgeDetail] = useState<any | null>(null)
 
     useEffect(() => {
         if (!user) loadProfile()
         if (sessions.length === 0) loadSessions()
     }, [])
 
-    const displayName   = user?.full_name ?? user?.username ?? 'Player'
-    const displayPos    = POSITION_LABELS[user?.position ?? 'PG'] ?? user?.position ?? 'Point Guard'
-    const level         = xpToLevel(xp)
+    const displayName = user?.full_name ?? user?.username ?? 'Player'
+    const displayPos = POSITION_LABELS[user?.position ?? 'PG'] ?? user?.position ?? 'Point Guard'
+    const level = xpToLevel(xp)
     const overallRating = user?.level === 'Elite' ? 93 : user?.level === 'Pro' ? 88 : 78
-    const mentalAvg     = user?.mental_score    ?? 81
+    const mentalAvg = user?.mental_score ?? 81
     const shootingFgPct = user?.shooting_fg_pct ?? 62
-    const sessionCount  = user?.total_sessions  ?? sessions.length
-    const streak        = user?.streak          ?? 0
+    const sessionCount = user?.total_sessions ?? sessions.length
+    const streak = user?.streak ?? 0
 
     const SEASON_STATS = [
-        { label: 'Sessions',  value: String(sessionCount), sub: 'analyzed',     color: T.color.semantic.info },
-        { label: 'Mental',    value: String(mentalAvg),    sub: '/ 100',        color: T.color.signature.primary },
-        { label: 'FG%',       value: `${shootingFgPct}%`,  sub: 'season',       color: T.color.semantic.success },
-        { label: 'Overall',   value: String(overallRating), sub: 'Digital Twin', color: T.color.semantic.warning },
+        { label: 'Sessions', value: String(sessionCount), sub: 'analyzed', color: T.color.semantic.info },
+        { label: 'Mental', value: String(mentalAvg), sub: '/ 100', color: T.color.signature.primary },
+        { label: 'FG%', value: `${shootingFgPct}%`, sub: 'season', color: T.color.semantic.success },
+        { label: 'Overall', value: String(overallRating), sub: 'Digital Twin', color: T.color.semantic.warning },
     ]
 
     const handleProfileSave = useCallback((data: any) => { updateUser(data) }, [updateUser])
@@ -334,7 +318,7 @@ export default function Profile() {
                 message: `Join CourtVision AI and analyze your basketball game with AI! My overall: ${overallRating}`,
                 url: 'https://courtvision.ai',
             })
-        } catch {}
+        } catch { }
     }, [displayName, overallRating])
 
     return (
@@ -355,7 +339,7 @@ export default function Profile() {
                         </Text>
                     </View>
                     <TouchableOpacity onPress={handleShare} style={{
-                        ...(glass.regular ?? T.glass.light), borderRadius: T.borderRadius.md,
+                        ...(glass.regular ?? T.glass.thin), borderRadius: T.borderRadius.md,
                         width: 44, height: 44, justifyContent: 'center', alignItems: 'center',
                     }} accessibilityLabel="Share profile" accessibilityRole="button">
                         <Feather name="share-2" size={18} color={T.color.text.primary} />
@@ -364,10 +348,10 @@ export default function Profile() {
 
                 {/* Player Card */}
                 <Animated.View entering={FadeInDown.delay(100).duration(500)} style={{
-                    ...(glass.regular ?? T.glass.light), borderRadius: T.borderRadius['2xl'], padding: T.spacing[5],
-                    borderColor: T.color.border.accent, borderWidth: 1,
+                    ...(glass.regular ?? T.glass.thin), borderRadius: T.borderRadius['2xl'], padding: T.spacing[5],
+                    borderColor: T.color.border.base, borderWidth: 1,
                     marginBottom: T.spacing[5],
-                    ...T.glow(T.color.signature.primary, 0.06),
+                    ...T.glow.soft(T.color.brand.primary),
                 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: T.spacing[4] }}>
                         <PlayerAvatar name={displayName} size={76} onPress={() => toast.info('Profile photo', 'Coming soon')} />
@@ -381,10 +365,10 @@ export default function Profile() {
                             ) : (
                                 <>
                                     <Text style={{ ...type.sectionTitle, color: T.color.text.primary }}>{displayName}</Text>
-                                    <Text style={{ ...type.bodySemibold, color: T.color.signature.primary, marginTop: 3, fontSize: 13 }}>{displayPos}</Text>
+                                    <Text style={{ ...type.cardTitle, color: T.color.signature.primary, marginTop: 3, fontSize: 13 }}>{displayPos}</Text>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: T.spacing[2], gap: T.spacing[2] }}>
                                         <View style={{
-                                            backgroundColor: T.color.semantic.warningDim, borderRadius: T.borderRadius.sm,
+                                            backgroundColor: `${T.color.semantic.warning}20`, borderRadius: T.borderRadius.sm,
                                             paddingHorizontal: T.spacing[2], paddingVertical: 3,
                                             flexDirection: 'row', alignItems: 'center', gap: 3,
                                         }}>
@@ -405,12 +389,12 @@ export default function Profile() {
                         </View>
                         {/* Overall badge */}
                         <View style={{
-                            ...T.glass.accent, borderRadius: T.borderRadius.xl,
+                            ...T.glass.vivid, borderRadius: T.borderRadius.xl,
                             paddingHorizontal: T.spacing[3], paddingVertical: T.spacing[2], alignItems: 'center',
-                            borderWidth: 2, borderColor: T.color.border.accent,
-                            ...T.glow(T.color.signature.primary, 0.2),
+                            borderWidth: 2, borderColor: T.color.border.base,
+                            ...T.glow.soft(T.color.brand.primary),
                         }}>
-                            <Text style={{ ...type.bigStat, color: T.color.signature.primary, fontSize: 28 }}>{overallRating}</Text>
+                            <Text style={{ ...type.statLarge, color: T.color.signature.primary, fontSize: 28 }}>{overallRating}</Text>
                             <Text style={{ ...type.overline, color: T.color.signature.primary, fontSize: 9 }}>OVR</Text>
                         </View>
                     </View>
@@ -419,11 +403,11 @@ export default function Profile() {
 
                     <View style={{
                         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-                        paddingTop: T.spacing[3], borderTopWidth: 1, borderTopColor: T.color.border.subtle,
+                        paddingTop: T.spacing[3], borderTopWidth: 1, borderTopColor: T.color.border.soft,
                     }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: T.spacing[2] }}>
                             <View style={{
-                                backgroundColor: T.color.semantic.warningDim, borderRadius: T.borderRadius.sm,
+                                backgroundColor: `${T.color.semantic.warning}20`, borderRadius: T.borderRadius.sm,
                                 paddingHorizontal: T.spacing[2], paddingVertical: 3,
                                 flexDirection: 'row', alignItems: 'center', gap: 4,
                             }}>
@@ -433,12 +417,12 @@ export default function Profile() {
                             <Text style={{ ...type.caption, color: T.color.text.tertiary, fontSize: 11 }}>Active · Free Beta</Text>
                         </View>
                         <TouchableOpacity style={{
-                            ...T.glass.accent, paddingHorizontal: T.spacing[4], paddingVertical: T.spacing[2],
+                            ...T.glass.vivid, paddingHorizontal: T.spacing[4], paddingVertical: T.spacing[2],
                             borderRadius: T.borderRadius.md, flexDirection: 'row', alignItems: 'center', gap: T.spacing[1],
                             minHeight: 44,
                         }} onPress={() => setEditVisible(true)} accessibilityRole="button">
                             <Feather name="edit-2" size={13} color={T.color.signature.primary} />
-                            <Text style={{ ...type.bodySemibold, color: T.color.signature.primary, fontSize: 13 }}>Edit</Text>
+                            <Text style={{ ...type.cardTitle, color: T.color.signature.primary, fontSize: 13 }}>Edit</Text>
                         </TouchableOpacity>
                     </View>
                 </Animated.View>
@@ -458,22 +442,22 @@ export default function Profile() {
                     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: T.spacing[3],
                 }}>
                     <Text style={{ ...type.sectionTitle, color: T.color.text.primary, fontSize: 18 }}>
-                        Badges ({EARNED_BADGES.length})
+                        Badges ({badges?.length || 0})
                     </Text>
                     <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                        <Text style={{ ...type.bodySemibold, color: T.color.signature.primary, fontSize: 13 }}>See all</Text>
+                        <Text style={{ ...type.cardTitle, color: T.color.signature.primary, fontSize: 13 }}>See all</Text>
                     </TouchableOpacity>
                 </Animated.View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: T.spacing[6], marginHorizontal: -4 }}>
-                    {EARNED_BADGES.map((badge, idx) => (
+                    {(badges || []).map((badge, idx) => (
                         <Animated.View key={badge.name} entering={FadeInRight.delay(400 + idx * 60).duration(300)}>
                             <TouchableOpacity onPress={() => setShowBadgeDetail(badge)}
                                 style={{
-                                    ...(glass.regular ?? T.glass.light),
+                                    ...(glass.regular ?? T.glass.thin),
                                     borderRadius: T.borderRadius.xl, padding: T.spacing[3],
                                     marginHorizontal: 4, width: 88, alignItems: 'center',
-                                    borderColor: RARITY_COLORS[badge.rarity] ? `${RARITY_COLORS[badge.rarity]}30` : T.color.border.default,
-                                    ...(RARITY_COLORS[badge.rarity] ? T.glow(RARITY_COLORS[badge.rarity], 0.08) : {}),
+                                    borderColor: RARITY_COLORS[badge.rarity] ? `${RARITY_COLORS[badge.rarity]}30` : T.color.border.base,
+                                    ...(RARITY_COLORS[badge.rarity] ? T.glow.soft(RARITY_COLORS[badge.rarity]) : {}),
                                 }}
                                 activeOpacity={0.75}
                             >
@@ -490,16 +474,19 @@ export default function Profile() {
                 </ScrollView>
 
                 {/* Recent Activity */}
-                <Animated.View entering={FadeInDown.delay(500).duration(400)}>
-                    <Text style={{ ...type.sectionTitle, color: T.color.text.primary, marginBottom: T.spacing[3], fontSize: 18 }}>
+                <Animated.View entering={FadeInDown.delay(500).duration(400)} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: T.spacing[3] }}>
+                    <Text style={{ ...type.sectionTitle, color: T.color.text.primary, fontSize: 18 }}>
                         Recent Activity
                     </Text>
+                    <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => router.push('/history')}>
+                        <Text style={{ ...type.cardTitle, color: T.color.signature.primary, fontSize: 13 }}>Full ➔</Text>
+                    </TouchableOpacity>
                 </Animated.View>
                 <View style={{ marginBottom: T.spacing[6], gap: T.spacing[2] }}>
-                    {RECENT_ACTIVITY.map((item, idx) => (
+                    {(recentActivity || []).map((item, idx) => (
                         <Animated.View key={idx} entering={FadeInDown.delay(550 + idx * 60).duration(300)}
                             style={{
-                                ...(glass.regular ?? T.glass.light),
+                                ...(glass.regular ?? T.glass.thin),
                                 flexDirection: 'row', alignItems: 'center',
                                 borderRadius: T.borderRadius.lg, padding: T.spacing[3],
                                 borderLeftWidth: 3, borderLeftColor: item.color,
@@ -510,10 +497,10 @@ export default function Profile() {
                                 backgroundColor: `${item.color}15`,
                                 justifyContent: 'center', alignItems: 'center', marginRight: T.spacing[3],
                             }}>
-                                <Feather name={item.icon} size={16} color={item.color} />
+                                <Feather name={item.icon as any} size={16} color={item.color} />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={{ ...type.bodySemibold, color: T.color.text.primary, fontSize: 13 }}>{item.text}</Text>
+                                <Text style={{ ...type.cardTitle, color: T.color.text.primary, fontSize: 13 }}>{item.text}</Text>
                             </View>
                             <Text style={{ ...type.caption, color: T.color.text.tertiary, fontSize: 11 }}>{item.time}</Text>
                         </Animated.View>
@@ -546,14 +533,14 @@ export default function Profile() {
                 {/* Logout */}
                 <Animated.View entering={FadeInDown.delay(800).duration(400)}>
                     <TouchableOpacity style={{
-                        ...(glass.regular ?? T.glass.light),
+                        ...(glass.regular ?? T.glass.thin),
                         borderRadius: T.borderRadius.xl, padding: T.spacing[4],
                         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
                         borderColor: `${T.color.semantic.error}30`, minHeight: 52,
-                        ...T.glow(T.color.semantic.error, 0.06),
+                        ...T.glow.soft(T.color.semantic.error),
                     }} onPress={handleLogout} activeOpacity={0.75}>
                         <Feather name="log-out" size={18} color={T.color.semantic.error} />
-                        <Text style={{ ...type.bodySemibold, color: T.color.semantic.error, marginLeft: T.spacing[2] }}>Log Out</Text>
+                        <Text style={{ ...type.cardTitle, color: T.color.semantic.error, marginLeft: T.spacing[2] }}>Log Out</Text>
                     </TouchableOpacity>
                 </Animated.View>
 
@@ -571,14 +558,14 @@ export default function Profile() {
             <Modal visible={!!showBadgeDetail} transparent animationType="fade" onRequestClose={() => setShowBadgeDetail(null)}>
                 <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'center', alignItems: 'center', padding: T.spacing[8] }}
                     onPress={() => setShowBadgeDetail(null)}>
-                    <Pressable onPress={() => {}}>
+                    <Pressable onPress={() => { }}>
                         {showBadgeDetail && (
                             <Animated.View entering={ZoomIn.duration(300)} style={{
-                                ...(glass.regular ?? T.glass.light),
+                                ...(glass.regular ?? T.glass.thin),
                                 borderRadius: T.borderRadius['2xl'], padding: T.spacing[6],
                                 alignItems: 'center', width: 280,
-                                borderColor: RARITY_COLORS[showBadgeDetail.rarity] ? `${RARITY_COLORS[showBadgeDetail.rarity]}40` : T.color.border.default,
-                                ...T.glow(RARITY_COLORS[showBadgeDetail.rarity] ?? T.color.signature.primary, 0.15),
+                                borderColor: RARITY_COLORS[showBadgeDetail.rarity] ? `${RARITY_COLORS[showBadgeDetail.rarity]}40` : T.color.border.base,
+                                ...T.glow.soft(RARITY_COLORS[showBadgeDetail.rarity] ?? T.color.brand.primary),
                             }}>
                                 <Text style={{ fontSize: 52, marginBottom: T.spacing[3] }}>{showBadgeDetail.emoji}</Text>
                                 <Text style={{ ...type.sectionTitle, color: T.color.text.primary, textAlign: 'center' }}>
@@ -596,7 +583,7 @@ export default function Profile() {
                                 <Text style={{ ...type.body, color: T.color.text.secondary, textAlign: 'center', marginTop: T.spacing[3] }}>
                                     {showBadgeDetail.desc}
                                 </Text>
-                                <Text style={{ ...type.bodySemibold, color: T.color.signature.primary, marginTop: T.spacing[3] }}>
+                                <Text style={{ ...type.cardTitle, color: T.color.signature.primary, marginTop: T.spacing[3] }}>
                                     +{showBadgeDetail.xp} XP
                                 </Text>
                                 <TouchableOpacity style={{

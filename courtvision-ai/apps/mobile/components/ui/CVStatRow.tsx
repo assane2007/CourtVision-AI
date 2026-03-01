@@ -65,7 +65,7 @@ export function CVStatRow({
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
               <CVText
                 preset="mediumStat"
-                color={stat.color ?? 'primary'}
+                color={stat.color ?? 'brand'}
                 style={{ fontSize: 28 }}
               >
                 {typeof stat.value === 'number' ? Math.round(stat.value) : stat.value}

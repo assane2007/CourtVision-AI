@@ -37,10 +37,10 @@ import Animated, {
     withSequence,
     withTiming,
 } from 'react-native-reanimated'
-import { T, typePresets } from '../lib/theme'
+import { T, typePresets } from '../../lib/theme'
 import { AROverlayView } from './AROverlayView'
-import { FrameCaptureService, type CapturedFrame } from '../lib/frameCapture'
-import type { DetectedShot, ARFeedback } from '../lib/realtimeAIService'
+import { FrameCaptureService, type CapturedFrame } from '../../lib/frameCapture'
+import type { DetectedShot, ARFeedback } from '../../lib/realtimeAIService'
 
 const type = typePresets
 
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
         paddingVertical: 5,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
     recordDot: {
         width: 8,
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
 
     // Bottom bar
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
         width: 64,
         height: 64,
         borderRadius: 32,
-        backgroundColor: T.color.signature.dim,
+        backgroundColor: T.color.signature.muted,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 16,

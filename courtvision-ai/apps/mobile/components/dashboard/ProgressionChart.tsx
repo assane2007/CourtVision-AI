@@ -10,7 +10,7 @@
 import React, { useMemo } from 'react'
 import { View, Text, StyleSheet, Dimensions } from 'react-native'
 import Svg, { Path, Circle, Line, G, Text as SvgText, Defs, LinearGradient, Stop, Rect } from 'react-native-svg'
-import { T } from '../lib/theme'
+import { T } from '../../lib/theme'
 
 // ==========================================
 // Types
@@ -167,7 +167,7 @@ export function ProgressionChart({
                     <G key={i}>
                         <Line
                             x1={0} y1={yl.y} x2={chartWidth} y2={yl.y}
-                            stroke={T.color.border.subtle} strokeWidth={0.5} strokeDasharray="4,4"
+                            stroke={T.color.border.soft} strokeWidth={0.5} strokeDasharray="4,4"
                         />
                         <SvgText
                             x={chartWidth + 2} y={yl.y + 3}
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
         borderRadius: T.borderRadius.lg,
         padding: 14,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
     header: {
         flexDirection: 'row',

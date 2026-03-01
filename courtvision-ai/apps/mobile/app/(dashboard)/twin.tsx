@@ -18,7 +18,7 @@ import Animated, {
 import { useDigitalTwin } from '../../hooks/useDigitalTwin'
 import { useViralShare } from '../../hooks/useViralShare'
 import type { SharePlatform, TwinCardData } from '../../hooks/useViralShare'
-import { ShareButton, ShareModal } from '../../components/ShareCard'
+import { ShareButton, ShareModal } from '../../components/dashboard/ShareCard'
 import type {
     TwinTab, TwinAttributeCategory, TwinTrait,
     NBAComparison, ComfortZone, TwinEvolutionPoint, MatchupSimulation,
@@ -99,7 +99,7 @@ export default function DigitalTwin() {
                 }}>
                     <ActivityIndicator size="large" color={T.color.signature.primary} />
                 </View>
-                <Text style={{ ...type.bodySemibold, color: T.color.text.secondary, marginTop: T.spacing[5] }}>
+                <Text style={{ ...type.cardTitle, color: T.color.text.secondary, marginTop: T.spacing[5] }}>
                     Building Digital Twin...
                 </Text>
                 <Text style={{ ...type.caption, color: T.color.text.tertiary, marginTop: T.spacing[2] }}>
@@ -171,7 +171,7 @@ export default function DigitalTwin() {
                                 activeOpacity={0.7}
                                 style={{
                                     width: 44, height: 44, borderRadius: 22,
-                                    ...(glass.regular ?? T.glass.light),
+                                    ...(glass.regular ?? T.glass.thin),
                                     justifyContent: 'center', alignItems: 'center',
                                 }}
                             >
@@ -206,7 +206,7 @@ export default function DigitalTwin() {
                         borderWidth: 2, borderColor: `${T.ratingColor(p.overallRating)}40`,
                     }, pulseStyle]}>
                         <Text style={{
-                            ...type.heroStat, color: T.ratingColor(p.overallRating), fontSize: 44,
+                            ...type.hero, color: T.ratingColor(p.overallRating), fontSize: 44,
                         }}>
                             {p.overallRating}
                         </Text>
@@ -246,11 +246,11 @@ export default function DigitalTwin() {
                     </Text>
                     <View style={{
                         marginTop: T.spacing[2], flexDirection: 'row', alignItems: 'center',
-                        backgroundColor: T.color.semantic.infoDim, borderRadius: T.borderRadius.full,
+                        backgroundColor: `\${T.color.semantic.info}20`, borderRadius: T.borderRadius.full,
                         paddingHorizontal: T.spacing[3], paddingVertical: T.spacing[1],
                     }}>
                         <Feather name="star" size={12} color={T.color.semantic.info} style={{ marginRight: T.spacing[1] }} />
-                        <Text style={{ ...type.bodySemibold, color: T.color.semantic.info, fontSize: 13 }}>
+                        <Text style={{ ...type.cardTitle, color: T.color.semantic.info, fontSize: 13 }}>
                             NBA Archetype: {p.playStyle.nbaArchetype}
                         </Text>
                     </View>
@@ -259,7 +259,7 @@ export default function DigitalTwin() {
                 {/* ======= Tab Bar ======= */}
                 <Animated.View entering={FadeInDown.delay(300).duration(500)} style={{
                     flexDirection: 'row', marginHorizontal: T.spacing[5], marginBottom: T.spacing[4],
-                    borderRadius: T.borderRadius.lg, padding: 3, ...(glass.regular ?? T.glass.light),
+                    borderRadius: T.borderRadius.lg, padding: 3, ...(glass.regular ?? T.glass.thin),
                 }}>
                     {TAB_CONFIG.map(tab => {
                         const isActive = twin.activeTab === tab.key
@@ -272,7 +272,7 @@ export default function DigitalTwin() {
                                     flex: 1, paddingVertical: T.spacing[3], borderRadius: T.borderRadius.md,
                                     alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: T.spacing[1],
                                     backgroundColor: isActive ? T.color.signature.primary : 'transparent',
-                                    ...(isActive ? T.shadow(T.color.signature.primary, 0.3, 8) : {}),
+                                    ...(isActive ? T.glow.soft() : {}),
                                     minHeight: 44,
                                 }}
                             >
@@ -324,11 +324,11 @@ export default function DigitalTwin() {
                         style={{
                             backgroundColor: T.color.signature.primary,
                             borderRadius: T.borderRadius.md, paddingHorizontal: T.spacing[4], paddingVertical: T.spacing[3],
-                            ...T.shadow(T.color.signature.primary, 0.35, 10),
+                            ...T.glow.soft(),
                             minHeight: 44, justifyContent: 'center',
                         }}
                     >
-                        <Text style={{ ...type.bodySemibold, color: T.color.background.primary }}>Share</Text>
+                        <Text style={{ ...type.cardTitle, color: T.color.background.primary }}>Share</Text>
                     </TouchableOpacity>
                 </Animated.View>
 
@@ -364,21 +364,21 @@ function OverviewTab({ profile, insights }: { profile: any; insights: string | n
                         style={{
                             width: (SCREEN_WIDTH - 50) / 2,
                             borderRadius: T.borderRadius.xl, padding: T.spacing[4], marginBottom: T.spacing[3],
-                            ...(glass.regular ?? T.glass.medium),
+                            ...(glass.regular ?? T.glass.base),
                         }}
                     >
-                        <Text style={{ ...type.bodySemibold, marginBottom: T.spacing[1] }}>
+                        <Text style={{ ...type.cardTitle, marginBottom: T.spacing[1] }}>
                             {cat.emoji} <Text style={{ color: T.color.text.primary }}>{cat.category}</Text>
                         </Text>
                         <Text style={{ ...type.mediumStat, color: T.ratingColor(cat.overallScore), fontSize: 30 }}>
                             {cat.overallScore}
                         </Text>
-                        <View style={{ height: 4, backgroundColor: T.color.border.subtle, borderRadius: 2, marginTop: T.spacing[2] }}>
+                        <View style={{ height: 4, backgroundColor: T.color.border.soft, borderRadius: 2, marginTop: T.spacing[2] }}>
                             <View style={{
                                 height: 4, borderRadius: 2,
                                 backgroundColor: T.ratingColor(cat.overallScore),
                                 width: `${cat.overallScore}%`,
-                                ...T.shadow(T.ratingColor(cat.overallScore), 0.4, 6),
+                                ...T.glow.soft(),
                             }} />
                         </View>
                     </Animated.View>
@@ -400,7 +400,7 @@ function OverviewTab({ profile, insights }: { profile: any; insights: string | n
                                 style={{
                                     borderRadius: T.borderRadius.lg, padding: T.spacing[4], marginBottom: T.spacing[2],
                                     flexDirection: 'row', alignItems: 'center',
-                                    ...(glass.regular ?? T.glass.light),
+                                    ...(glass.regular ?? T.glass.thin),
                                     borderLeftWidth: 3, borderLeftColor: accentColor,
                                 }}
                             >
@@ -431,7 +431,7 @@ function OverviewTab({ profile, insights }: { profile: any; insights: string | n
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: T.spacing[4] }}>
                 <Animated.View entering={FadeInDown.delay(100).duration(400)} style={{
                     flex: 1, marginRight: 6, borderRadius: T.borderRadius.lg, padding: T.spacing[4],
-                    ...(glass.regular ?? T.glass.light),
+                    ...(glass.regular ?? T.glass.thin),
                     borderLeftWidth: 3, borderLeftColor: T.color.semantic.success,
                 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: T.spacing[2] }}>
@@ -440,7 +440,7 @@ function OverviewTab({ profile, insights }: { profile: any; insights: string | n
                     </View>
                     {profile.strengths.map((t: TwinTrait) => (
                         <View key={t.id} style={{ marginBottom: T.spacing[2] }}>
-                            <Text style={{ ...type.bodySemibold, color: T.color.text.primary, fontSize: 13 }}>
+                            <Text style={{ ...type.cardTitle, color: T.color.text.primary, fontSize: 13 }}>
                                 ✓ {t.label}
                             </Text>
                             <Text style={{ ...type.caption, color: T.color.text.secondary, marginLeft: T.spacing[3] }}>
@@ -454,7 +454,7 @@ function OverviewTab({ profile, insights }: { profile: any; insights: string | n
                 </Animated.View>
                 <Animated.View entering={FadeInDown.delay(180).duration(400)} style={{
                     flex: 1, marginLeft: 6, borderRadius: T.borderRadius.lg, padding: T.spacing[4],
-                    ...(glass.regular ?? T.glass.light),
+                    ...(glass.regular ?? T.glass.thin),
                     borderLeftWidth: 3, borderLeftColor: T.color.semantic.error,
                 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: T.spacing[2] }}>
@@ -463,7 +463,7 @@ function OverviewTab({ profile, insights }: { profile: any; insights: string | n
                     </View>
                     {profile.weaknesses.map((t: TwinTrait) => (
                         <View key={t.id} style={{ marginBottom: T.spacing[2] }}>
-                            <Text style={{ ...type.bodySemibold, color: T.color.text.primary, fontSize: 13 }}>
+                            <Text style={{ ...type.cardTitle, color: T.color.text.primary, fontSize: 13 }}>
                                 ✗ {t.label}
                             </Text>
                             {t.drillRecommendation && (
@@ -492,10 +492,10 @@ function OverviewTab({ profile, insights }: { profile: any; insights: string | n
                         {profile.comfortZones.filter((z: ComfortZone) => z.attempts > 0).map((z: ComfortZone, i: number) => (
                             <View key={i} style={{
                                 borderRadius: T.borderRadius.md, padding: T.spacing[3], margin: 3,
-                                ...(z.isComfort ? glass.accent : (glass.regular ?? T.glass.light)),
+                                ...(z.isComfort ? glass.accent : (glass.regular ?? T.glass.thin)),
                                 ...(z.isComfort ? { borderColor: T.color.semantic.success, borderWidth: 1 } : {}),
                             }}>
-                                <Text style={{ ...type.bodySemibold, color: T.color.text.primary, fontSize: 13 }}>{z.zone}</Text>
+                                <Text style={{ ...type.cardTitle, color: T.color.text.primary, fontSize: 13 }}>{z.zone}</Text>
                                 <Text style={{
                                     ...type.cardTitle,
                                     color: z.isComfort ? T.color.semantic.success : T.color.text.secondary,
@@ -512,7 +512,7 @@ function OverviewTab({ profile, insights }: { profile: any; insights: string | n
             {/* Mental Profile */}
             <Animated.View entering={FadeInDown.duration(400)} style={{
                 borderRadius: T.borderRadius.xl, padding: T.spacing[4], marginBottom: T.spacing[4],
-                ...(glass.regular ?? T.glass.medium),
+                ...(glass.regular ?? T.glass.base),
             }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: T.spacing[3] }}>
                     <Feather name="activity" size={18} color={T.color.gamification.purple} style={{ marginRight: T.spacing[2] }} />
@@ -526,11 +526,11 @@ function OverviewTab({ profile, insights }: { profile: any; insights: string | n
                 <MentalBar label="Fatigue Resist." value={profile.mentalProfile.fatigueResistance} />
                 <View style={{
                     flexDirection: 'row', alignItems: 'center', marginTop: T.spacing[3],
-                    paddingTop: T.spacing[2], borderTopWidth: 1, borderTopColor: T.color.border.subtle,
+                    paddingTop: T.spacing[2], borderTopWidth: 1, borderTopColor: T.color.border.soft,
                 }}>
                     <Text style={{ ...type.caption, color: T.color.text.secondary }}>Under pressure: </Text>
                     <Text style={{
-                        ...type.bodySemibold, fontSize: 13,
+                        ...type.cardTitle, fontSize: 13,
                         color: profile.mentalProfile.pressureResponse === 'thrives' ? T.color.semantic.success
                             : profile.mentalProfile.pressureResponse === 'struggles' ? T.color.semantic.error
                             : T.color.semantic.warning,
@@ -545,7 +545,7 @@ function OverviewTab({ profile, insights }: { profile: any; insights: string | n
             {insights && (
                 <Animated.View entering={FadeInDown.duration(400)} style={{
                     borderRadius: T.borderRadius.xl, padding: T.spacing[4], marginBottom: T.spacing[4],
-                    ...T.glass.primary, borderLeftWidth: 3, borderLeftColor: T.color.gamification.purple,
+                    ...T.glass.vivid, borderLeftWidth: 3, borderLeftColor: T.color.gamification.purple,
                 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: T.spacing[2] }}>
                         <Feather name="cpu" size={16} color={T.color.gamification.purple} style={{ marginRight: T.spacing[2] }} />
@@ -558,7 +558,7 @@ function OverviewTab({ profile, insights }: { profile: any; insights: string | n
             {/* Shot Signature */}
             <Animated.View entering={FadeInDown.duration(400)} style={{
                 borderRadius: T.borderRadius.xl, padding: T.spacing[4], marginBottom: T.spacing[4],
-                ...(glass.regular ?? T.glass.medium),
+                ...(glass.regular ?? T.glass.base),
             }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: T.spacing[3] }}>
                     <Feather name="crosshair" size={18} color={T.color.signature.primary} style={{ marginRight: T.spacing[2] }} />
@@ -588,7 +588,7 @@ function AttributesTab({ categories }: { categories: TwinAttributeCategory[] }) 
                     entering={FadeInDown.delay(catIdx * 100).duration(400)}
                     style={{
                         borderRadius: T.borderRadius.xl, padding: T.spacing[4], marginBottom: T.spacing[3],
-                        ...(glass.regular ?? T.glass.medium),
+                        ...(glass.regular ?? T.glass.base),
                     }}
                 >
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: T.spacing[3] }}>
@@ -600,7 +600,7 @@ function AttributesTab({ categories }: { categories: TwinAttributeCategory[] }) 
                             borderRadius: T.borderRadius.md, paddingHorizontal: T.spacing[3], paddingVertical: T.spacing[1],
                             borderWidth: 1, borderColor: `${T.ratingColor(cat.overallScore)}25`,
                         }}>
-                            <Text style={{ ...type.smallStat, color: T.ratingColor(cat.overallScore), fontSize: 20 }}>
+                            <Text style={{ ...type.mediumStat, color: T.ratingColor(cat.overallScore), fontSize: 20 }}>
                                 {cat.overallScore}
                             </Text>
                         </View>
@@ -626,7 +626,7 @@ function AttributesTab({ categories }: { categories: TwinAttributeCategory[] }) 
                                     )}
                                 </View>
                             </View>
-                            <View style={{ height: 5, backgroundColor: T.color.border.subtle, borderRadius: 3, overflow: 'hidden' }}>
+                            <View style={{ height: 5, backgroundColor: T.color.border.soft, borderRadius: 3, overflow: 'hidden' }}>
                                 <View style={{
                                     height: 5, borderRadius: 3,
                                     backgroundColor: T.ratingColor(attr.value),
@@ -672,10 +672,10 @@ function MatchupTab({ profile, simulation, simulating, onSimulateNBA, onClear }:
                             activeOpacity={0.7}
                             style={{
                                 borderRadius: T.borderRadius.md, paddingHorizontal: T.spacing[3], paddingVertical: T.spacing[2],
-                                margin: 3, ...(glass.regular ?? T.glass.light), minHeight: 44, justifyContent: 'center',
+                                margin: 3, ...(glass.regular ?? T.glass.thin), minHeight: 44, justifyContent: 'center',
                             }}
                         >
-                            <Text style={{ ...type.bodySemibold, color: T.color.text.primary, fontSize: 13 }}>{name}</Text>
+                            <Text style={{ ...type.cardTitle, color: T.color.text.primary, fontSize: 13 }}>{name}</Text>
                         </TouchableOpacity>
                     </Animated.View>
                 ))}
@@ -690,7 +690,7 @@ function MatchupTab({ profile, simulation, simulating, onSimulateNBA, onClear }:
                     }}>
                         <ActivityIndicator size="large" color={T.color.signature.primary} />
                     </View>
-                    <Text style={{ ...type.bodySemibold, color: T.color.text.secondary, marginTop: T.spacing[3] }}>
+                    <Text style={{ ...type.cardTitle, color: T.color.text.secondary, marginTop: T.spacing[3] }}>
                         Simulating matchup...
                     </Text>
                 </View>
@@ -701,40 +701,40 @@ function MatchupTab({ profile, simulation, simulating, onSimulateNBA, onClear }:
                     {/* Win Probability */}
                     <View style={{
                         borderRadius: T.borderRadius['2xl'], padding: T.spacing[6], alignItems: 'center', marginBottom: T.spacing[4],
-                        ...(glass.regular ?? T.glass.medium),
+                        ...(glass.regular ?? T.glass.base),
                         borderWidth: 1.5,
                         borderColor: simulation.winProbability >= 50 ? `${T.color.semantic.success}30` : `${T.color.semantic.error}30`,
                         ...T.glow(simulation.winProbability >= 50 ? T.color.semantic.success : T.color.semantic.error, 0.12),
                     }}>
-                        <Text style={{ ...type.bodySemibold, color: T.color.text.secondary, marginBottom: T.spacing[1] }}>
+                        <Text style={{ ...type.cardTitle, color: T.color.text.secondary, marginBottom: T.spacing[1] }}>
                             vs {simulation.opponent}
                         </Text>
                         <Text style={{
-                            ...type.heroStat,
+                            ...type.hero,
                             color: simulation.winProbability >= 50 ? T.color.semantic.success : T.color.semantic.error,
                             fontSize: 52,
                         }}>
                             {simulation.winProbability}%
                         </Text>
-                        <Text style={{ ...type.bodySemibold, color: T.color.text.secondary }}>Win Probability</Text>
+                        <Text style={{ ...type.cardTitle, color: T.color.text.secondary }}>Win Probability</Text>
 
                         <View style={{
                             flexDirection: 'row', marginTop: T.spacing[4], alignItems: 'center',
-                            backgroundColor: T.color.border.subtle, borderRadius: T.borderRadius.full,
+                            backgroundColor: T.color.border.soft, borderRadius: T.borderRadius.full,
                             paddingHorizontal: T.spacing[4], paddingVertical: T.spacing[2],
                         }}>
-                            <Text style={{ ...type.smallStat, color: T.color.signature.primary, fontSize: 20 }}>
+                            <Text style={{ ...type.mediumStat, color: T.color.signature.primary, fontSize: 20 }}>
                                 {simulation.predictedScore.player}
                             </Text>
-                            <Text style={{ ...type.bodySemibold, color: T.color.text.tertiary, marginHorizontal: T.spacing[3] }}>—</Text>
-                            <Text style={{ ...type.smallStat, color: T.color.semantic.error, fontSize: 20 }}>
+                            <Text style={{ ...type.cardTitle, color: T.color.text.tertiary, marginHorizontal: T.spacing[3] }}>—</Text>
+                            <Text style={{ ...type.mediumStat, color: T.color.semantic.error, fontSize: 20 }}>
                                 {simulation.predictedScore.opponent}
                             </Text>
                         </View>
                     </View>
 
                     {/* Key Matchups */}
-                    <View style={{ borderRadius: T.borderRadius.xl, padding: T.spacing[4], marginBottom: T.spacing[3], ...(glass.regular ?? T.glass.medium) }}>
+                    <View style={{ borderRadius: T.borderRadius.xl, padding: T.spacing[4], marginBottom: T.spacing[3], ...(glass.regular ?? T.glass.base) }}>
                         <Text style={{ ...type.cardTitle, color: T.color.text.primary, marginBottom: T.spacing[3] }}>
                             Key Matchups
                         </Text>
@@ -743,13 +743,13 @@ function MatchupTab({ profile, simulation, simulating, onSimulateNBA, onClear }:
                                 flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
                                 marginBottom: T.spacing[2], paddingBottom: T.spacing[2],
                                 borderBottomWidth: i < simulation.keyMatchups.length - 1 ? 1 : 0,
-                                borderBottomColor: T.color.border.subtle,
+                                borderBottomColor: T.color.border.soft,
                             }}>
                                 <Text style={{ ...type.body, color: T.color.text.secondary }}>{km.area}</Text>
                                 <View style={{
                                     borderRadius: T.borderRadius.md, paddingHorizontal: T.spacing[3], paddingVertical: T.spacing[1],
-                                    backgroundColor: km.edge === 'player' ? T.color.semantic.successDim
-                                        : km.edge === 'opponent' ? T.color.semantic.errorDim : T.color.semantic.warningDim,
+                                    backgroundColor: km.edge === 'player' ? `\${T.color.semantic.success}20`
+                                        : km.edge === 'opponent' ? `\${T.color.semantic.error}20` : `\${T.color.semantic.warning}20`,
                                 }}>
                                     <Text style={{
                                         ...type.overline, fontSize: 10,
@@ -784,10 +784,10 @@ function MatchupTab({ profile, simulation, simulating, onSimulateNBA, onClear }:
                     <View style={{ flexDirection: 'row', marginBottom: T.spacing[4] }}>
                         <View style={{
                             flex: 1, marginRight: 5, borderRadius: T.borderRadius.lg, padding: T.spacing[3],
-                            ...(glass.regular ?? T.glass.light),
+                            ...(glass.regular ?? T.glass.thin),
                             borderLeftWidth: 3, borderLeftColor: T.color.semantic.success,
                         }}>
-                            <Text style={{ ...type.bodySemibold, color: T.color.semantic.success, marginBottom: T.spacing[1], fontSize: 13 }}>
+                            <Text style={{ ...type.cardTitle, color: T.color.semantic.success, marginBottom: T.spacing[1], fontSize: 13 }}>
                                 Advantages
                             </Text>
                             {simulation.advantages.map((a, i) => (
@@ -802,10 +802,10 @@ function MatchupTab({ profile, simulation, simulating, onSimulateNBA, onClear }:
                         </View>
                         <View style={{
                             flex: 1, marginLeft: 5, borderRadius: T.borderRadius.lg, padding: T.spacing[3],
-                            ...(glass.regular ?? T.glass.light),
+                            ...(glass.regular ?? T.glass.thin),
                             borderLeftWidth: 3, borderLeftColor: T.color.semantic.error,
                         }}>
-                            <Text style={{ ...type.bodySemibold, color: T.color.semantic.error, marginBottom: T.spacing[1], fontSize: 13 }}>
+                            <Text style={{ ...type.cardTitle, color: T.color.semantic.error, marginBottom: T.spacing[1], fontSize: 13 }}>
                                 Vulnerabilities
                             </Text>
                             {simulation.vulnerabilities.map((v, i) => (
@@ -825,12 +825,12 @@ function MatchupTab({ profile, simulation, simulating, onSimulateNBA, onClear }:
                         activeOpacity={0.7}
                         style={{
                             borderRadius: T.borderRadius.lg, padding: T.spacing[3], alignItems: 'center',
-                            ...(glass.regular ?? T.glass.light), minHeight: 44, justifyContent: 'center',
+                            ...(glass.regular ?? T.glass.thin), minHeight: 44, justifyContent: 'center',
                         }}
                     >
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <Feather name="refresh-cw" size={14} color={T.color.signature.primary} style={{ marginRight: T.spacing[2] }} />
-                            <Text style={{ ...type.bodySemibold, color: T.color.signature.primary }}>
+                            <Text style={{ ...type.cardTitle, color: T.color.signature.primary }}>
                                 New Simulation
                             </Text>
                         </View>
@@ -850,7 +850,7 @@ function EvolutionTab({ evolution }: { evolution: TwinEvolutionPoint[] }) {
             <View style={{ padding: T.spacing[10], alignItems: 'center' }}>
                 <View style={{
                     width: 70, height: 70, borderRadius: 35,
-                    ...(glass.regular ?? T.glass.light),
+                    ...(glass.regular ?? T.glass.thin),
                     justifyContent: 'center', alignItems: 'center',
                 }}>
                     <Feather name="trending-up" size={32} color={T.color.text.tertiary} />
@@ -879,7 +879,7 @@ function EvolutionTab({ evolution }: { evolution: TwinEvolutionPoint[] }) {
 
             <Animated.View entering={FadeInDown.delay(100).duration(500)} style={{
                 borderRadius: T.borderRadius.xl, padding: T.spacing[4], marginBottom: T.spacing[4],
-                ...(glass.regular ?? T.glass.medium),
+                ...(glass.regular ?? T.glass.base),
             }}>
                 <Text style={{ ...type.caption, color: T.color.text.secondary, marginBottom: T.spacing[3] }}>
                     Overall rating per session
@@ -895,7 +895,7 @@ function EvolutionTab({ evolution }: { evolution: TwinEvolutionPoint[] }) {
                                 <View style={{
                                     width: barWidth, height: h, borderRadius: T.borderRadius.sm,
                                     backgroundColor: T.ratingColor(point.overallRating),
-                                    ...T.shadow(T.ratingColor(point.overallRating), 0.2, 4),
+                                    ...T.glow.soft(),
                                 }} />
                                 <Text style={{
                                     ...type.overline, color: T.color.text.tertiary, fontSize: 7, marginTop: T.spacing[1],
@@ -911,7 +911,7 @@ function EvolutionTab({ evolution }: { evolution: TwinEvolutionPoint[] }) {
 
             <Animated.View entering={FadeInDown.delay(200).duration(500)} style={{
                 borderRadius: T.borderRadius.xl, padding: T.spacing[4], marginBottom: T.spacing[4],
-                ...(glass.regular ?? T.glass.medium),
+                ...(glass.regular ?? T.glass.base),
             }}>
                 <Text style={{ ...type.cardTitle, color: T.color.text.primary, marginBottom: T.spacing[3] }}>
                     Recent Sessions
@@ -920,7 +920,7 @@ function EvolutionTab({ evolution }: { evolution: TwinEvolutionPoint[] }) {
                     <View key={i} style={{
                         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
                         paddingVertical: T.spacing[2],
-                        borderBottomWidth: i < 4 ? 1 : 0, borderBottomColor: T.color.border.subtle,
+                        borderBottomWidth: i < 4 ? 1 : 0, borderBottomColor: T.color.border.soft,
                     }}>
                         <Text style={{ ...type.caption, color: T.color.text.secondary }}>{point.date}</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -933,7 +933,7 @@ function EvolutionTab({ evolution }: { evolution: TwinEvolutionPoint[] }) {
                                 marginLeft: T.spacing[2],
                                 borderWidth: 1, borderColor: `${T.ratingColor(point.overallRating)}30`,
                             }}>
-                                <Text style={{ ...type.bodySemibold, color: T.ratingColor(point.overallRating), fontSize: 13 }}>
+                                <Text style={{ ...type.cardTitle, color: T.ratingColor(point.overallRating), fontSize: 13 }}>
                                     {point.overallRating}
                                 </Text>
                             </View>
@@ -954,9 +954,9 @@ function MentalBar({ label, value }: { label: string; value: number }) {
         <View style={{ marginBottom: T.spacing[2] }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: T.spacing[1] }}>
                 <Text style={{ ...type.caption, color: T.color.text.secondary }}>{label}</Text>
-                <Text style={{ ...type.bodySemibold, color: T.ratingColor(value), fontSize: 13 }}>{value}</Text>
+                <Text style={{ ...type.cardTitle, color: T.ratingColor(value), fontSize: 13 }}>{value}</Text>
             </View>
-            <View style={{ height: 5, backgroundColor: T.color.border.subtle, borderRadius: 3, overflow: 'hidden' }}>
+            <View style={{ height: 5, backgroundColor: T.color.border.soft, borderRadius: 3, overflow: 'hidden' }}>
                 <View style={{
                     height: 5, borderRadius: 3,
                     backgroundColor: T.ratingColor(value),
@@ -974,7 +974,7 @@ function PoseStatItem({ label, value, ideal }: { label: string; value: string; i
             <Text style={{ ...type.cardTitle, color: T.color.text.primary, marginVertical: T.spacing[1] }}>{value}</Text>
             {ideal && (
                 <View style={{
-                    backgroundColor: T.color.signature.dim, borderRadius: T.borderRadius.full,
+                    backgroundColor: T.color.signature.muted, borderRadius: T.borderRadius.full,
                     paddingHorizontal: T.spacing[2], paddingVertical: T.spacing[1],
                 }}>
                     <Text style={{ ...type.overline, color: T.color.signature.primary, fontSize: 9 }}>Ideal: {ideal}</Text>

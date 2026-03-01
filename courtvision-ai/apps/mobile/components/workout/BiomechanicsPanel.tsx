@@ -23,7 +23,8 @@ import Animated, {
     withTiming,
 } from 'react-native-reanimated'
 import { Feather } from '@expo/vector-icons'
-import { T, typePresets } from '../lib/theme'
+import { ScoreRing } from './ScoreRing'
+import { T, typePresets, glass } from '../../lib/theme'
 
 const type = typePresets
 
@@ -129,25 +130,7 @@ function MetricCard({
     )
 }
 
-/** Score circulaire */
-function ScoreRingMini({
-    score,
-    label,
-    color,
-}: {
-    score: number
-    label: string
-    color: string
-}) {
-    return (
-        <View style={styles.scoreRing}>
-            <View style={[styles.scoreCircle, { borderColor: color }]}>
-                <Text style={[styles.scoreValue, { color }]}>{score}</Text>
-            </View>
-            <Text style={styles.scoreLabel}>{label}</Text>
-        </View>
-    )
-}
+
 
 // ==========================================
 // Composant principal
@@ -213,9 +196,9 @@ export function BiomechanicsPanel({
 
             {/* Scores circulaires */}
             <View style={styles.scoresRow}>
-                <ScoreRingMini score={postureQuality} label="Posture" color={postureColor} />
-                <ScoreRingMini score={mechanicConsistency} label="Consistance" color={consistencyColor} />
-                <ScoreRingMini score={Math.round(followThroughPct)} label="Follow-Thru" color={getScoreColor(followThroughPct)} />
+                <ScoreRing value={postureQuality} label="Posture" size={72} strokeWidth={6} delay={100} />
+                <ScoreRing value={mechanicConsistency} label="Consistance" size={72} strokeWidth={6} delay={200} />
+                <ScoreRing value={Math.round(followThroughPct)} label="Follow" size={72} strokeWidth={6} delay={300} />
             </View>
 
             {/* Metrics grid */}
@@ -284,11 +267,9 @@ export function BiomechanicsPanel({
 
 const styles = StyleSheet.create({
     container: {
-        backgroundColor: T.color.background.secondary,
+        ...(T.glass.base as any),
         borderRadius: T.borderRadius.lg,
         padding: 16,
-        borderWidth: 1,
-        borderColor: T.color.border.default,
     },
 
     // Header
@@ -356,11 +337,9 @@ const styles = StyleSheet.create({
     metricCard: {
         flex: 1,
         minWidth: '45%' as any,
-        backgroundColor: T.color.background.tertiary,
+        ...(T.glass.thin as any),
         borderRadius: T.borderRadius.md,
         padding: 10,
-        borderWidth: 1,
-        borderColor: T.color.border.subtle,
     },
     metricHeader: {
         flexDirection: 'row',
@@ -401,7 +380,7 @@ const styles = StyleSheet.create({
         marginTop: 12,
         paddingTop: 12,
         borderTopWidth: 1,
-        borderTopColor: T.color.border.subtle,
+        borderTopColor: T.color.border.soft,
     },
     trendsTitle: {
         color: T.color.text.secondary,
@@ -423,12 +402,10 @@ const styles = StyleSheet.create({
 
     // Compact mode
     compactContainer: {
-        backgroundColor: 'rgba(13,17,25,0.85)',
+        ...(glass.deep as any),
         borderRadius: T.borderRadius.md,
         paddingHorizontal: 12,
         paddingVertical: 8,
-        borderWidth: 1,
-        borderColor: T.color.border.default,
     },
     compactRow: {
         flexDirection: 'row',
@@ -454,6 +431,6 @@ const styles = StyleSheet.create({
     compactDivider: {
         width: 1,
         height: 24,
-        backgroundColor: T.color.border.subtle,
+        backgroundColor: T.color.border.soft,
     },
 })

@@ -13,7 +13,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera'
 import { Feather } from '@expo/vector-icons'
 import type { LiveFramePayload } from '@courtvision/shared'
-import { T } from '../lib/theme'
+import { T } from '../../lib/theme'
 
 const FRAME_CAPTURE_INTERVAL_MS = 3000
 
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
         paddingVertical: T.spacing[1],
         borderRadius: T.borderRadius.sm,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
     statusDot: {
         width: 6,
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
         padding: T.spacing[2],
         borderRadius: T.borderRadius.sm,
         borderWidth: 1,
-        borderColor: T.color.border.default,
+        borderColor: T.color.border.base,
     },
     permissionBox: {
         flex: 1,

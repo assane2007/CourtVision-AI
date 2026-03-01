@@ -9,14 +9,14 @@
  *   <SessionCard session={session} onPress={() => router.push(`/analysis/${session.id}`)} />
  */
 
-import React, { useEffect } from 'react'
+import React, { useEffect, memo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native'
 import { Feather } from '@expo/vector-icons'
 import Animated, {
     useSharedValue, useAnimatedStyle,
     withDelay, withTiming, withSpring, Easing,
 } from 'react-native-reanimated'
-import { T } from '../lib/theme'
+import { T } from '../../lib/theme'
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -49,7 +49,7 @@ function formatDate(iso: string) {
 
     if (diffDays === 0) return 'Today'
     if (diffDays === 1) return 'Yesterday'
-    if (diffDays < 7)  return `${diffDays}d ago`
+    if (diffDays < 7) return `${diffDays}d ago`
 
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
@@ -80,7 +80,11 @@ function MiniStat({ icon, label, value, color = T.color.text.secondary }: {
 // ─── PerformanceBadge ─────────────────────────────────────────
 
 function PerformanceBadge({ value }: { value: number }) {
-    const { label, color } = T.performanceBadge(value)
+    let label = 'WORK IN PROGRESS'
+    let color: string = T.color.semantic.info
+    if (value >= 90) { label = 'ELITE'; color = T.color.gamification.gold }
+    else if (value >= 80) { label = 'GREAT'; color = T.color.semantic.success }
+    else if (value >= 70) { label = 'GOOD'; color = T.color.signature.primary }
     return (
         <View style={[styles.badge, { backgroundColor: `${color}14`, borderColor: `${color}28` }]}>
             <Text style={[styles.badgeText, { color }]}>{label}</Text>
@@ -90,7 +94,7 @@ function PerformanceBadge({ value }: { value: number }) {
 
 // ─── SessionCard ──────────────────────────────────────────────
 
-export function SessionCard({ session, onPress, delay = 0, style, compact = false }: SessionCardProps) {
+export const SessionCard = memo(function SessionCard({ session, onPress, delay = 0, style, compact = false }: SessionCardProps) {
     const opacity = useSharedValue(0)
     const translateX = useSharedValue(-12)
 
@@ -107,7 +111,7 @@ export function SessionCard({ session, onPress, delay = 0, style, compact = fals
     const primaryStat = session.shooting_fg_pct ?? session.mental_score ?? 0
     const date = formatDate(session.created_at)
     const time = formatTime(session.created_at)
-    const dur  = session.duration_minutes ? `${session.duration_minutes}min` : '—'
+    const dur = session.duration_minutes ? `${session.duration_minutes}min` : '—'
 
     if (compact) {
         return (
@@ -221,13 +225,13 @@ export function SessionCard({ session, onPress, delay = 0, style, compact = fals
             </TouchableOpacity>
         </Animated.View>
     )
-}
+})
 
 // ─── Styles ──────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
     container: {
-        ...T.glass.light,
+        ...T.glass.thin,
         borderRadius: T.borderRadius.lg,
         padding: 16,
         gap: 12,
@@ -250,7 +254,7 @@ const styles = StyleSheet.create({
     },
     divider: {
         height: 1,
-        backgroundColor: T.color.border.default,
+        backgroundColor: T.color.border.base,
     },
     statsRow: {
         flexDirection: 'row',
@@ -296,7 +300,7 @@ const styles = StyleSheet.create({
 
     // Compact variant
     compactContainer: {
-        ...T.glass.light,
+        ...T.glass.thin,
         borderRadius: T.borderRadius.md,
         padding: 14,
         flexDirection: 'row',

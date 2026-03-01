@@ -68,7 +68,7 @@ export function CVActionCard({
             {/* Title + description */}
             <View style={styles.textCol}>
               <View style={styles.titleRow}>
-                <CVText preset={compact ? 'bodySemibold' : 'cardTitle'} numberOfLines={1}>
+                <CVText preset={compact ? 'cardTitle' : 'cardTitle'} numberOfLines={1}>
                   {title}
                 </CVText>
                 {badge && (
