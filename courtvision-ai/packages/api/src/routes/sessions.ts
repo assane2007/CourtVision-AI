@@ -234,7 +234,8 @@ const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
             }
         }, 2000)
 
-        app.addHook('onSend', async () => clearInterval(interval))
+        // Clean up on client disconnect — scoped to THIS request, not a global hook
+        request.raw.on('close', () => clearInterval(interval))
     })
 }
 

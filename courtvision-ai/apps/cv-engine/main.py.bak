@@ -1,0 +1,333 @@
+import cv2
+import numpy as np
+import logging
+import tempfile
+import os
+import uuid
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query
+from pydantic import BaseModel
+from typing import List, Optional
+
+try:
+    import mediapipe as mp
+    mp_pose = mp.solutions.pose
+    MEDIAPIPE_AVAILABLE = True
+except ImportError:
+    MEDIAPIPE_AVAILABLE = False
+
+# Setup logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
+logger = logging.getLogger(__name__)
+
+app = FastAPI(
+    title="CourtVision CV Engine",
+    description="Python microservice for heavy computer vision tasks (OpenCV / MediaPipe / YOLO)",
+    version="2.0.0"
+)
+
+# --- Schemas ---
+class Point2D(BaseModel):
+    x: float
+    y: float
+    confidence: float = 1.0
+
+class Landmark3D(BaseModel):
+    x: float
+    y: float
+    z: float
+    visibility: float
+
+class Skeleton(BaseModel):
+    nose: Optional[Point2D] = None
+    left_eye: Optional[Point2D] = None
+    right_eye: Optional[Point2D] = None
+    left_shoulder: Optional[Point2D] = None
+    right_shoulder: Optional[Point2D] = None
+    left_elbow: Optional[Point2D] = None
+    right_elbow: Optional[Point2D] = None
+    left_wrist: Optional[Point2D] = None
+    right_wrist: Optional[Point2D] = None
+    left_hip: Optional[Point2D] = None
+    right_hip: Optional[Point2D] = None
+    left_knee: Optional[Point2D] = None
+    right_knee: Optional[Point2D] = None
+    left_ankle: Optional[Point2D] = None
+    right_ankle: Optional[Point2D] = None
+
+class FrameAnalysisResult(BaseModel):
+    frame_index: int
+    timestamp_ms: float
+    ball_position: Optional[Point2D] = None
+    player_skeleton: Optional[Skeleton] = None
+    landmarks_3d: Optional[List[Landmark3D]] = None
+    elbow_angle: Optional[float] = None
+    knee_angle: Optional[float] = None
+
+class VideoAnalysisResult(BaseModel):
+    job_id: str
+    fps: float
+    total_frames: int
+    analyzed_frames: int
+    frames: List[FrameAnalysisResult]
+    status: str
+    engine: str  # 'mediapipe' or 'fallback'
+
+class FrameInput(BaseModel):
+    frame_data_base64: str
+    frame_index: int
+    timestamp_ms: float
+
+class SingleFrameResult(BaseModel):
+    landmarks_3d: Optional[List[Landmark3D]] = None
+    skeleton: Optional[Skeleton] = None
+    elbow_angle: Optional[float] = None
+    knee_angle: Optional[float] = None
+    inference_ms: float
+    success: bool
+
+# --- Helpers ---
+
+def calculate_angle(a: np.ndarray, b: np.ndarray, c: np.ndarray) -> float:
+    """Calculate angle at point b given 3 points a, b, c (in degrees)."""
+    ba = a - b
+    bc = c - b
+    cosine = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc) + 1e-8)
+    return float(np.degrees(np.arccos(np.clip(cosine, -1.0, 1.0))))
+
+def landmarks_to_skeleton(landmarks, w: int, h: int) -> Skeleton:
+    """Convert MediaPipe pose landmarks to Skeleton schema."""
+    def pt(idx: int) -> Optional[Point2D]:
+        lm = landmarks[idx]
+        if lm.visibility < 0.3:
+            return None
+        return Point2D(x=lm.x * w, y=lm.y * h, confidence=lm.visibility)
+
+    return Skeleton(
+        nose=pt(0),
+        left_eye=pt(2),
+        right_eye=pt(5),
+        left_shoulder=pt(11),
+        right_shoulder=pt(12),
+        left_elbow=pt(13),
+        right_elbow=pt(14),
+        left_wrist=pt(15),
+        right_wrist=pt(16),
+        left_hip=pt(23),
+        right_hip=pt(24),
+        left_knee=pt(25),
+        right_knee=pt(26),
+        left_ankle=pt(27),
+        right_ankle=pt(28),
+    )
+
+def landmarks_to_3d(landmarks) -> List[Landmark3D]:
+    """Convert MediaPipe landmarks to 3D landmark list."""
+    return [
+        Landmark3D(x=lm.x, y=lm.y, z=lm.z, visibility=lm.visibility)
+        for lm in landmarks
+    ]
+
+def compute_elbow_angle(landmarks) -> Optional[float]:
+    """Compute right elbow angle (shoulder-elbow-wrist)."""
+    try:
+        shoulder = np.array([landmarks[12].x, landmarks[12].y, landmarks[12].z])
+        elbow = np.array([landmarks[14].x, landmarks[14].y, landmarks[14].z])
+        wrist = np.array([landmarks[16].x, landmarks[16].y, landmarks[16].z])
+        if all(l.visibility > 0.5 for l in [landmarks[12], landmarks[14], landmarks[16]]):
+            return calculate_angle(shoulder, elbow, wrist)
+    except (IndexError, AttributeError):
+        pass
+    return None
+
+def compute_knee_angle(landmarks) -> Optional[float]:
+    """Compute right knee angle (hip-knee-ankle)."""
+    try:
+        hip = np.array([landmarks[24].x, landmarks[24].y, landmarks[24].z])
+        knee = np.array([landmarks[26].x, landmarks[26].y, landmarks[26].z])
+        ankle = np.array([landmarks[28].x, landmarks[28].y, landmarks[28].z])
+        if all(l.visibility > 0.5 for l in [landmarks[24], landmarks[26], landmarks[28]]):
+            return calculate_angle(hip, knee, ankle)
+    except (IndexError, AttributeError):
+        pass
+    return None
+
+# --- Routes ---
+
+@app.get("/health")
+def health_check():
+    return {
+        "status": "ok",
+        "service": "cv-engine",
+        "version": "2.0.0",
+        "mediapipe_available": MEDIAPIPE_AVAILABLE,
+    }
+
+@app.post("/analyze/video", response_model=VideoAnalysisResult)
+async def analyze_video(
+    job_id: str,
+    video_file: UploadFile = File(...),
+    frame_skip: int = Query(default=3, ge=1, le=30, description="Process every Nth frame"),
+):
+    """
+    Takes a video file, processes it frame by frame with MediaPipe Pose,
+    and returns CV metadata (skeleton, landmarks 3D, joint angles).
+    """
+    logger.info(f"Received video analysis job: {job_id}, filename: {video_file.filename}, skip={frame_skip}")
+
+    if not video_file.filename or not video_file.filename.lower().endswith(('.mp4', '.mov', '.avi', '.mkv', '.webm')):
+        raise HTTPException(status_code=400, detail="Invalid video format. Supported: mp4, mov, avi, mkv, webm")
+
+    content = await video_file.read()
+    if len(content) < 1000:
+        raise HTTPException(status_code=400, detail="Video file too small or empty")
+
+    # Write to temp file for OpenCV
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
+            tmp.write(content)
+            tmp_path = tmp.name
+
+        cap = cv2.VideoCapture(tmp_path)
+        if not cap.isOpened():
+            raise HTTPException(status_code=400, detail="Failed to open video file")
+
+        fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+        logger.info(f"Video: {total_frames} frames, {fps:.1f} fps, {w}x{h}")
+
+        frames_result: List[FrameAnalysisResult] = []
+        engine_used = "fallback"
+
+        if MEDIAPIPE_AVAILABLE:
+            engine_used = "mediapipe"
+            with mp_pose.Pose(
+                static_image_mode=False,
+                model_complexity=1,
+                enable_segmentation=False,
+                min_detection_confidence=0.5,
+                min_tracking_confidence=0.5,
+            ) as pose:
+                frame_idx = 0
+                while cap.isOpened():
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
+
+                    if frame_idx % frame_skip == 0:
+                        timestamp_ms = (frame_idx / fps) * 1000
+
+                        # MediaPipe expects RGB
+                        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        results = pose.process(rgb)
+
+                        skeleton = None
+                        landmarks_3d = None
+                        elbow_angle = None
+                        knee_angle = None
+
+                        if results.pose_landmarks:
+                            lms = results.pose_landmarks.landmark
+                            skeleton = landmarks_to_skeleton(lms, w, h)
+                            landmarks_3d = landmarks_to_3d(lms)
+                            elbow_angle = compute_elbow_angle(lms)
+                            knee_angle = compute_knee_angle(lms)
+
+                        frames_result.append(FrameAnalysisResult(
+                            frame_index=frame_idx,
+                            timestamp_ms=timestamp_ms,
+                            player_skeleton=skeleton,
+                            landmarks_3d=landmarks_3d,
+                            elbow_angle=round(elbow_angle, 1) if elbow_angle else None,
+                            knee_angle=round(knee_angle, 1) if knee_angle else None,
+                        ))
+
+                    frame_idx += 1
+
+                    # Safety: limit analysis to ~10 minutes of video
+                    if frame_idx > fps * 600:
+                        logger.warning(f"Job {job_id}: video exceeds 10min limit, truncating")
+                        break
+        else:
+            # Fallback: extract basic info without ML
+            logger.warning("MediaPipe not available, returning frame count only")
+        
+        cap.release()
+
+        logger.info(f"Job {job_id}: analyzed {len(frames_result)}/{total_frames} frames")
+
+        return VideoAnalysisResult(
+            job_id=job_id,
+            fps=fps,
+            total_frames=total_frames,
+            analyzed_frames=len(frames_result),
+            frames=frames_result,
+            status="completed",
+            engine=engine_used,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Job {job_id} failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Video processing failed")
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+@app.post("/analyze/frame", response_model=SingleFrameResult)
+async def analyze_single_frame(
+    frame_file: UploadFile = File(...),
+):
+    """
+    Analyze a single image frame for pose estimation.
+    Used for real-time analysis when the mobile client sends individual frames.
+    """
+    import time
+    start = time.time()
+
+    content = await frame_file.read()
+    nparr = np.frombuffer(content, np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+    if img is None:
+        raise HTTPException(status_code=400, detail="Invalid image data")
+
+    h, w = img.shape[:2]
+
+    if not MEDIAPIPE_AVAILABLE:
+        return SingleFrameResult(
+            success=False,
+            inference_ms=round((time.time() - start) * 1000, 1),
+        )
+
+    with mp_pose.Pose(
+        static_image_mode=True,
+        model_complexity=1,
+        min_detection_confidence=0.5,
+    ) as pose:
+        rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        results = pose.process(rgb)
+
+        if not results.pose_landmarks:
+            return SingleFrameResult(
+                success=False,
+                inference_ms=round((time.time() - start) * 1000, 1),
+            )
+
+        lms = results.pose_landmarks.landmark
+
+        return SingleFrameResult(
+            landmarks_3d=landmarks_to_3d(lms),
+            skeleton=landmarks_to_skeleton(lms, w, h),
+            elbow_angle=round(a, 1) if (a := compute_elbow_angle(lms)) else None,
+            knee_angle=round(a, 1) if (a := compute_knee_angle(lms)) else None,
+            inference_ms=round((time.time() - start) * 1000, 1),
+            success=True,
+        )
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

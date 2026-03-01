@@ -17,6 +17,7 @@ const mockShots: ShotResult[] = [
         timestamp: '01:30',
         zone: 'top3',
         outcome: 'made',
+        courtPosition: { x: 5.2, y: 8.1 },
         posture: {
             elbowAngle: 93,
             releaseHeight: 1.15,  // bon ratio — au-dessus de la tête
@@ -28,6 +29,7 @@ const mockShots: ShotResult[] = [
         timestamp: '02:15',
         zone: 'midrange',
         outcome: 'missed',
+        courtPosition: { x: 4.5, y: 6.3 },
         posture: {
             elbowAngle: 95,
             releaseHeight: 1.13,
@@ -39,6 +41,7 @@ const mockShots: ShotResult[] = [
         timestamp: '03:00',
         zone: 'wing3',
         outcome: 'made',
+        courtPosition: { x: 3.1, y: 9.5 },
         posture: {
             elbowAngle: 92,
             releaseHeight: 1.16,
@@ -50,6 +53,7 @@ const mockShots: ShotResult[] = [
         timestamp: '04:30',
         zone: 'corner3',
         outcome: 'made',
+        courtPosition: { x: 6.0, y: 0.5 },
         posture: {
             elbowAngle: 94,
             releaseHeight: 1.14,
@@ -61,6 +65,7 @@ const mockShots: ShotResult[] = [
         timestamp: '05:00',
         zone: 'paint',
         outcome: 'missed',
+        courtPosition: { x: 7.5, y: 2.0 },
         posture: {
             elbowAngle: 88,
             releaseHeight: 1.08,  // release plus bas (typique peinture)

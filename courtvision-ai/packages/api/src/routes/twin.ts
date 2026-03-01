@@ -310,6 +310,7 @@ async function buildTwinForUser(
                 zoneOccupancy: a.heatmap_data?.zoneOccupancy ?? {},
                 averagePositions: {},
                 totalDistanceCovered: a.heatmap_data?.totalDistanceCovered ?? {},
+                maxSpeed: {},
             },
         }
     })

@@ -2,7 +2,11 @@ import { buildApp } from './app'
 import dotenv from 'dotenv'
 import { initWorker } from './queue/videoProcessor'
 
+// Load .env BEFORE any env validation
 dotenv.config({ path: '../../.env' })
+
+// Env validation — fail fast if critical vars are missing (C-5)
+import { env } from './config/env'
 
 const start = async () => {
     // Init worker (graceful — no-op if Redis not available)
@@ -16,8 +20,8 @@ const start = async () => {
 
     const server = buildApp({
         logger: {
-            level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-            transport: process.env.NODE_ENV !== 'production'
+            level: env.isProduction ? 'info' : 'debug',
+            transport: !env.isProduction
                 ? { target: 'pino-pretty' }
                 : undefined,
         },
@@ -34,9 +38,8 @@ const start = async () => {
     process.on('SIGTERM', () => shutdown('SIGTERM'))
 
     try {
-        const port = parseInt(process.env.PORT || '3000', 10)
-        await server.listen({ port, host: '0.0.0.0' })
-        server.log.info(`🏀 CourtVision API running on port ${port}`)
+        await server.listen({ port: env.PORT, host: '0.0.0.0' })
+        server.log.info(`🏀 CourtVision API running on port ${env.PORT}`)
     } catch (err) {
         server.log.error(err)
         process.exit(1)

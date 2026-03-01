@@ -1,11 +1,38 @@
 import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 
+const sessionIdParamsSchema = z.object({
+    sessionId: z.string().uuid(),
+})
+
 const programSchema = z.object({
     sessionId: z.string().uuid(),
     weaknesses: z.array(z.string()),
     goals: z.array(z.string()).optional()
 })
+
+/**
+ * Helper: Verify that a session belongs to the authenticated user.
+ * Returns the session_id if valid, or sends a 404/403 and returns null.
+ */
+async function verifySessionOwnership(
+    fastify: FastifyInstance,
+    sessionId: string,
+    userId: string,
+    reply: any,
+): Promise<boolean> {
+    const { data: session, error } = await fastify.supabase
+        .from('sessions')
+        .select('id')
+        .eq('id', sessionId)
+        .eq('user_id', userId)
+        .single()
+    if (error || !session) {
+        reply.code(404).send({ error: 'Session not found' })
+        return false
+    }
+    return true
+}
 
 // Programme 7 jours — retourné depuis l'analyse après le match
 export default async function analysisRoutes(fastify: FastifyInstance) {
@@ -14,49 +41,65 @@ export default async function analysisRoutes(fastify: FastifyInstance) {
 
     fastify.get('/:sessionId', async (request, reply) => {
         try {
-            const { sessionId } = request.params as { sessionId: string }
+            const { sessionId } = sessionIdParamsSchema.parse(request.params)
+            const user = request.user!
+            if (!(await verifySessionOwnership(fastify, sessionId, user.id, reply))) return
             const { data, error } = await fastify.supabase
                 .from('analyses').select('*').eq('session_id', sessionId).single()
             if (error) throw error
             return { data }
         } catch (error: any) {
-            return reply.code(400).send({ error: error.message })
+            if (error instanceof z.ZodError) return reply.code(400).send({ error: 'Invalid session ID format' })
+            request.log.error({ err: error }, 'Failed to fetch analysis')
+            return reply.code(500).send({ error: 'Failed to fetch analysis' })
         }
     })
 
     fastify.get('/:sessionId/heatmap', async (request, reply) => {
         try {
-            const { sessionId } = request.params as { sessionId: string }
+            const { sessionId } = sessionIdParamsSchema.parse(request.params)
+            const user = request.user!
+            if (!(await verifySessionOwnership(fastify, sessionId, user.id, reply))) return
             const { data, error } = await fastify.supabase
                 .from('analyses').select('heatmap_data').eq('session_id', sessionId).single()
             if (error) throw error
             return { data: data?.heatmap_data }
         } catch (error: any) {
-            return reply.code(400).send({ error: error.message })
+            if (error instanceof z.ZodError) return reply.code(400).send({ error: 'Invalid session ID format' })
+            request.log.error({ err: error }, 'Failed to fetch heatmap')
+            return reply.code(500).send({ error: 'Failed to fetch heatmap' })
         }
     })
 
     fastify.get('/:sessionId/report', async (request, reply) => {
         try {
-            const { sessionId } = request.params as { sessionId: string }
+            const { sessionId } = sessionIdParamsSchema.parse(request.params)
+            const user = request.user!
+            if (!(await verifySessionOwnership(fastify, sessionId, user.id, reply))) return
             const { data, error } = await fastify.supabase
                 .from('analyses').select('ai_report').eq('session_id', sessionId).single()
             if (error) throw error
             return { data: data?.ai_report }
         } catch (error: any) {
-            return reply.code(400).send({ error: error.message })
+            if (error instanceof z.ZodError) return reply.code(400).send({ error: 'Invalid session ID format' })
+            request.log.error({ err: error }, 'Failed to fetch report')
+            return reply.code(500).send({ error: 'Failed to fetch report' })
         }
     })
 
     fastify.get('/:sessionId/highlights', async (request, reply) => {
         try {
-            const { sessionId } = request.params as { sessionId: string }
+            const { sessionId } = sessionIdParamsSchema.parse(request.params)
+            const user = request.user!
+            if (!(await verifySessionOwnership(fastify, sessionId, user.id, reply))) return
             const { data, error } = await fastify.supabase
                 .from('analyses').select('highlights').eq('session_id', sessionId).single()
             if (error) throw error
             return { data: data?.highlights }
         } catch (error: any) {
-            return reply.code(400).send({ error: error.message })
+            if (error instanceof z.ZodError) return reply.code(400).send({ error: 'Invalid session ID format' })
+            request.log.error({ err: error }, 'Failed to fetch highlights')
+            return reply.code(500).send({ error: 'Failed to fetch highlights' })
         }
     })
 
@@ -66,7 +109,9 @@ export default async function analysisRoutes(fastify: FastifyInstance) {
      */
     fastify.get('/:sessionId/program', async (request, reply) => {
         try {
-            const { sessionId } = request.params as { sessionId: string }
+            const { sessionId } = sessionIdParamsSchema.parse(request.params)
+            const user = request.user!
+            if (!(await verifySessionOwnership(fastify, sessionId, user.id, reply))) return
 
             const { data: analysis, error } = await fastify.supabase
                 .from('analyses')
@@ -84,7 +129,9 @@ export default async function analysisRoutes(fastify: FastifyInstance) {
 
             return { data: program }
         } catch (error: any) {
-            return reply.code(400).send({ error: error.message })
+            if (error instanceof z.ZodError) return reply.code(400).send({ error: 'Invalid session ID format' })
+            request.log.error({ err: error }, 'Failed to generate program')
+            return reply.code(500).send({ error: 'Failed to generate training program' })
         }
     })
 }

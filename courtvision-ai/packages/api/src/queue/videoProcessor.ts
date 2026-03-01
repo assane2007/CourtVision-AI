@@ -12,6 +12,7 @@ import {
     analyzeMentality,
     createAiReport,
     createHighlightReel,
+    CoachChatEngine,
     // V5 Apex AI modules
     ShotDNAEngine,
     AdvancedAnalyticsEngine,
@@ -19,6 +20,7 @@ import {
     type ShotDNAProfile,
     type AdvancedAnalyticsResult,
     type ShotResult,
+    type CVHighlightEvent,
 } from '@courtvision/ai'
 import pino from 'pino'
 
@@ -60,21 +62,21 @@ try {
     logger.error({ err }, '[Redis] ⚠️ Initialization failed')
 }
 
-// Supabase lazy client
+// Supabase lazy client — C-4: fail-fast instead of placeholder credentials
 let _supabase: SupabaseClient | null = null
 function getSupabase(): SupabaseClient {
     if (!_supabase) {
-        const supabaseUrl = process.env.SUPABASE_URL || ''
-        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || ''
-        if (!supabaseUrl) {
-            logger.error('[Worker] SUPABASE_URL not set')
+        const supabaseUrl = process.env.SUPABASE_URL
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
+        if (!supabaseUrl || !supabaseKey) {
+            throw new Error('[Worker] SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set — cannot process videos without database access')
         }
-        _supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder')
+        _supabase = createClient(supabaseUrl, supabaseKey)
     }
     return _supabase
 }
 
-// Queue
+// Queue — H-7: proper job timeout, dead letter config, stalled detection
 export const videoQueue = redisConnection
     ? new Queue('video-processing', {
         connection: redisConnection as any,
@@ -85,7 +87,9 @@ export const videoQueue = redisConnection
                 delay: 2000
             },
             removeOnComplete: { count: 100 },
-            removeOnFail: { count: 500 }
+            removeOnFail: { count: 500 },
+            // H-7: Job timeout — 10 minutes max per video
+            timeout: 600_000,
         }
     })
     : null
@@ -158,16 +162,7 @@ export const initWorker = () => {
             localVideoPath = await downloadVideo(videoUrl)
             await job.updateProgress(5)
 
-            // 2. CV Engine Health check
-            const cvEngineUrl = process.env.CV_ENGINE_URL || 'http://localhost:8000'
-            try {
-                const cvCheck = await fetch(`${cvEngineUrl}/health`)
-                if (!cvCheck.ok) throw new Error('CV Engine Down')
-            } catch (e) {
-                logger.warn({ err: e }, '[Worker] CV Engine unreachable, falling back to TS mock')
-            }
-
-            // 3. Pipeline execution
+            // 2. Pipeline execution
             const prepRes = await preprocessVideo(localVideoPath, calibration)
             await job.updateProgress(10)
 
@@ -273,14 +268,68 @@ export const initWorker = () => {
                 analytics: analytics
             })
 
-            const { CoachChatEngine } = await import('@courtvision/ai/src/coachChat')
             await CoachChatEngine.storeSessionMemory(getSupabase(), userId, sessionId, report.reportText, {
                 fgPct: (shotsRes.filter((s: ShotResult) => s.outcome === 'made').length / Math.max(shotsRes.length, 1)) * 100,
                 mentalScore: mentalRes.bodyLanguageScore,
                 date: new Date().toISOString()
             })
 
-            const highlight = await createHighlightReel(videoUrl, shotsRes, 'espn')
+            // Resolve player name for highlight overlay
+            const { data: playerProfile } = await getSupabase().from('public_profiles').select('display_name').eq('user_id', userId).single()
+            const playerName = playerProfile?.display_name || 'Player'
+
+            // ── CV Engine highlight detection ──────────────────────
+            let cvEvents: CVHighlightEvent[] = []
+            try {
+                const cvEngineUrl = process.env.CV_ENGINE_URL || 'http://localhost:8000'
+                const formData = new FormData()
+                const videoBuffer = fs.readFileSync(localVideoPath!)
+                formData.append('video_file', new Blob([videoBuffer]), 'video.mp4')
+
+                const cvResp = await fetch(`${cvEngineUrl}/detect/highlights?frame_skip=2&enable_audio=true`, {
+                    method: 'POST',
+                    body: formData,
+                })
+
+                if (cvResp.ok) {
+                    const { job_id: cvJobId } = await cvResp.json() as { job_id: string }
+                    logger.info({ cvJobId }, '[Worker] CV engine highlight detection started')
+
+                    // Poll for completion (max 5 minutes)
+                    const deadline = Date.now() + 300_000
+                    while (Date.now() < deadline) {
+                        await new Promise((r) => setTimeout(r, 3000))
+                        const statusResp = await fetch(`${cvEngineUrl}/job/${cvJobId}/status`)
+                        if (!statusResp.ok) break
+                        const status = await statusResp.json() as { status: string; progress: number }
+                        if (status.status === 'completed') {
+                            const resultResp = await fetch(`${cvEngineUrl}/job/${cvJobId}/result`)
+                            if (resultResp.ok) {
+                                const result = await resultResp.json() as { events: CVHighlightEvent[] }
+                                cvEvents = result.events || []
+                                logger.info({ count: cvEvents.length }, '[Worker] CV engine highlights received')
+                            }
+                            break
+                        }
+                        if (status.status === 'failed') {
+                            logger.warn('[Worker] CV engine highlight detection failed')
+                            break
+                        }
+                    }
+                }
+            } catch (cvErr) {
+                logger.warn({ err: cvErr }, '[Worker] CV engine highlight detection unavailable')
+            }
+
+            // BUG FIX: Use local file path (not remote URL) for FFmpeg highlight creation
+            const highlight = await createHighlightReel(
+                localVideoPath!,
+                shotsRes,
+                'espn',
+                playerName,
+                null,       // auto-select music
+                cvEvents.length > 0 ? cvEvents : undefined,
+            )
 
             await getSupabase().from('analyses').insert({
                 session_id: sessionId,
@@ -297,7 +346,15 @@ export const initWorker = () => {
                     url: highlight.outputPath,
                     clips: highlight.clips,
                     duration: highlight.durationSec,
-                    template: highlight.template
+                    template: highlight.template,
+                    exportProfile: highlight.exportProfile,
+                    fileSizeBytes: highlight.fileSizeBytes,
+                    cvEventsCount: cvEvents.length,
+                    music: highlight.music ? {
+                        id: highlight.music.id,
+                        title: highlight.music.title,
+                        artist: highlight.music.artist,
+                    } : null,
                 },
                 ai_report: JSON.stringify({
                     text: report.reportText,
@@ -343,7 +400,11 @@ export const initWorker = () => {
         }
     }, {
         connection: redisConnection as any,
-        concurrency: process.env.WORKER_CONCURRENCY ? parseInt(process.env.WORKER_CONCURRENCY) : 5,
+        // H-8: Reduce default concurrency (video processing is CPU/memory-heavy)
+        concurrency: process.env.WORKER_CONCURRENCY ? parseInt(process.env.WORKER_CONCURRENCY) : 2,
+        // H-7: Stalled job detection every 2 min, lock for 5 min (video jobs are long)
+        stalledInterval: 120_000,
+        lockDuration: 300_000,
     })
 
     worker.on('failed', (job, err) => {

@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
+import crypto from 'crypto'
 import type { TwinProfile } from '@courtvision/ai'
 
 // ==========================================
@@ -427,7 +428,7 @@ export default async function shareRoutes(fastify: FastifyInstance) {
     // ──────────────────────────────────
     fastify.get('/card/:shareId', async (request, reply) => {
         try {
-            const { shareId } = request.params as { shareId: string }
+            const { shareId } = z.object({ shareId: z.string().min(1) }).parse(request.params)
 
             const { data: share, error } = await fastify.supabase
                 .from('shared_cards')
@@ -468,8 +469,7 @@ export default async function shareRoutes(fastify: FastifyInstance) {
     }, async (request, reply) => {
         try {
             const user = request.user!
-            const query = request.query as any
-            const limit = Math.min(parseInt(query.limit) || 20, 50)
+            const { limit } = z.object({ limit: z.coerce.number().int().min(1).max(50).default(20) }).parse(request.query)
 
             const { data, error } = await fastify.supabase
                 .from('shared_cards')
@@ -527,33 +527,16 @@ export default async function shareRoutes(fastify: FastifyInstance) {
 // ==========================================
 
 function generateShareId(): string {
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
-    let id = ''
-    for (let i = 0; i < 10; i++) {
-        id += chars.charAt(Math.floor(Math.random() * chars.length))
-    }
-    return id
+    // Use cryptographically secure random bytes instead of Math.random()
+    return crypto.randomBytes(8).toString('base64url').slice(0, 12)
 }
 
 async function addShareXp(fastify: FastifyInstance, userId: string) {
     try {
         const XP_FOR_SHARE = 10
-        const { data: profile } = await fastify.supabase
-            .from('public_profiles')
-            .select('xp, level')
-            .eq('user_id', userId)
-            .single()
-
-        if (profile) {
-            const newXp = (profile.xp || 0) + XP_FOR_SHARE
-            const newLevel = Math.floor(newXp / 100) + 1
-
-            await fastify.supabase
-                .from('public_profiles')
-                .update({ xp: newXp, level: newLevel })
-                .eq('user_id', userId)
-        }
+        // Use atomic increment_xp RPC to avoid read-then-write race condition
+        await fastify.supabase.rpc('increment_xp', { p_user_id: userId, p_amount: XP_FOR_SHARE })
     } catch {
-        // Non-blocking
+        // Non-blocking — XP award failure should not break sharing
     }
 }

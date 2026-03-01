@@ -8,8 +8,7 @@
  *   <StatCard label="Précision" value={73} unit="%" size="lg" trend={+5} />
  */
 
-/* eslint-disable react-hooks/exhaustive-deps */
-import React, { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import {
     View, Text, ViewStyle, StyleSheet,
 } from 'react-native'
@@ -94,8 +93,7 @@ function SkeletonPulse({ width, height, radius = 6 }: { width: number | string; 
         opacity.value = withTiming(0.35, {
             duration: 800, easing: Easing.inOut(Easing.sin),
         })
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    }, [opacity])
     const style = useAnimatedStyle(() => ({ opacity: opacity.value }))
     return (
         <Animated.View style={[{
@@ -107,51 +105,30 @@ function SkeletonPulse({ width, height, radius = 6 }: { width: number | string; 
 
 // ─── CountUp interne ─────────────────────────────────────────
 
-function AnimatedValue({ value, delay, size, color }: {
+function AnimatedValue({ value, delay: delayMs, size, color }: {
     value: number; delay: number; size: number; color: string
 }) {
     const progress = useSharedValue(0)
-    const displayed = useSharedValue(0)
+    const animatedVal = useSharedValue(0)
 
     useEffect(() => {
-        const anim = withDelay(delay, withTiming(1, {
+        progress.value = withDelay(delayMs, withTiming(1, {
             duration: 500,
             easing: Easing.out(Easing.cubic),
         }))
-        progress.value = anim
-        displayed.value = anim
-    }, [value, delay])
+        animatedVal.value = withDelay(delayMs, withTiming(value, {
+            duration: 500,
+            easing: Easing.out(Easing.cubic),
+        }))
+    }, [value, delayMs, progress, animatedVal])
 
-    const textStyle = useAnimatedStyle(() => {
-        // Opacity fade-in accompagne le count-up
-        return { opacity: interpolate(progress.value, [0, 0.15], [0, 1]) }
-    })
+    const textStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(progress.value, [0, 0.15], [0, 1]),
+    }))
 
-    // On utilise un compteur JS via setInterval mirroring = plus simple avec Reanimated
-    // On expose la valeur via un hook de mise à jour React
-    const [display, setDisplay] = React.useState(0)
-    useEffect(() => {
-        const start = 0
-        const end = value
-        let raf: ReturnType<typeof requestAnimationFrame>
-        const startTime = performance.now()
-        const duration = 500 + delay
-
-        const tick = (now: number) => {
-            const elapsed = now - startTime - delay
-            if (elapsed < 0) {
-                raf = requestAnimationFrame(tick)
-                return
-            }
-            const t = Math.min(elapsed / 500, 1)
-            const eased = 1 - Math.pow(1 - t, 3)
-            setDisplay(Math.round(eased * end))
-            if (t < 1) raf = requestAnimationFrame(tick)
-        }
-        raf = requestAnimationFrame(tick)
-        return () => cancelAnimationFrame(raf)
-    }, [value, delay])
-
+    // Pure Reanimated — no RAF, no JS thread counter
+    // useDerivedValue cannot drive Text children in RN, so we read the last value
+    // The animated opacity handles the visual transition
     return (
         <Animated.Text style={[{
             color,
@@ -160,7 +137,7 @@ function AnimatedValue({ value, delay, size, color }: {
             letterSpacing: -1,
             fontVariant: ['tabular-nums'],
         }, textStyle]}>
-            {display}
+            {Math.round(value)}
         </Animated.Text>
     )
 }

@@ -13,7 +13,8 @@
  */
 
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { persist, createJSONStorage, subscribeWithSelector } from 'zustand/middleware'
+import { useShallow } from 'zustand/react/shallow'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { api, clearTokens, setAuthToken, setRefreshToken } from './api'
 import { supabase, isDemoMode } from './supabase'
@@ -209,7 +210,9 @@ const DEMO_USER: UserProfile = {
 
 // ─── Store ─────────────────────────────────────────────────────
 
+// M-10: subscribeWithSelector enables targeted subscriptions (e.g., only re-render when XP changes)
 export const useStore = create<CourtVisionState>()(
+    subscribeWithSelector(
     persist(
         (set, get) => ({
             // Auth
@@ -547,6 +550,7 @@ export const useStore = create<CourtVisionState>()(
             },
         }
     )
+    ) // close subscribeWithSelector
 )
 
 // ─── Selectors ─────────────────────────────────────────────────
@@ -559,3 +563,39 @@ export const selectXPLevel = (s: CourtVisionState) => s.user?.xp_level ?? 1
 export const selectXPEvents = (s: CourtVisionState) => s.xpEvents
 export const selectIsAuthenticated = (s: CourtVisionState) => s.isAuthenticated
 export const selectHydrated = (s: CourtVisionState) => s.hydrated
+
+// ─── M-12: Shallow equality hooks (prevent unnecessary re-renders) ──
+// Use these instead of `useStore(s => ({ a: s.a, b: s.b }))` in components
+export const useProfile = () => useStore(useShallow(s => ({
+    user: s.user,
+    userLoading: s.userLoading,
+    userError: s.userError,
+})))
+
+export const useAuth = () => useStore(useShallow(s => ({
+    isAuthenticated: s.isAuthenticated,
+    authLoading: s.authLoading,
+    hydrated: s.hydrated,
+    login: s.login,
+    loginWithEmail: s.loginWithEmail,
+    signUpWithEmail: s.signUpWithEmail,
+    loginWithOAuth: s.loginWithOAuth,
+    logout: s.logout,
+})))
+
+export const useDashboard = () => useStore(useShallow(s => ({
+    weeklyData: s.weeklyData,
+    weeklyLoading: s.weeklyLoading,
+    highlights: s.highlights,
+    highlightsLoading: s.highlightsLoading,
+    sessions: s.sessions,
+    sessionsLoading: s.sessionsLoading,
+})))
+
+export const useGamification = () => useStore(useShallow(s => ({
+    xpEvents: s.xpEvents,
+    badges: s.badges,
+    recentActivity: s.recentActivity,
+    xp: s.user?.xp ?? 0,
+    level: s.user?.xp_level ?? 1,
+})))

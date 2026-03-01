@@ -80,29 +80,51 @@ function generateFallbackReport(payload?: object): string {
 }
 
 /**
+ * Target embedding dimension — must match pgvector schema.
+ * Default: 1536 (matches pgvector_schema.sql vector(1536)).
+ * If using bge-small (384d), the vector is L2-normalized and
+ * then repeated (tiled) to fill 1536d, preserving cosine similarity.
+ */
+const TARGET_EMBEDDING_DIM = 1536
+
+/**
  * Génère un vecteur d'embedding pour le RAG (Retrieval-Augmented Generation).
  * Tente d'utiliser Cloudflare AI (`@cf/baai/bge-small-en-v1.5`) pour des embeddings gratuits.
  * Si échoue, génère un vecteur mock (1536d) pour préserver l'architecture.
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
-    console.log(`[RAG] Generating embedding for text snippet (${text.length} chars)`)
     try {
         const cfVector = await generateEmbeddingCloudflare(text)
 
-        // pgvector (if setup for 1536) needs padding if we use bge-small (384)
-        if (cfVector.length < 1536) {
-            const padded = new Array(1536).fill(0)
-            for (let i = 0; i < cfVector.length; i++) padded[i] = cfVector[i]
-            return padded
+        // If source dimension < target dimension, tile the vector (repeat)
+        // rather than zero-padding. Tiling preserves cosine similarity:
+        //   cos(tile(a), tile(b)) == cos(a, b)
+        // whereas zero-padding destroys it when the padding dominates.
+        if (cfVector.length < TARGET_EMBEDDING_DIM) {
+            const tiled = new Array(TARGET_EMBEDDING_DIM)
+            for (let i = 0; i < TARGET_EMBEDDING_DIM; i++) {
+                tiled[i] = cfVector[i % cfVector.length]
+            }
+            // L2-normalize the tiled vector
+            const mag = Math.sqrt(tiled.reduce((s, v) => s + v * v, 0))
+            return mag > 0 ? tiled.map(v => v / mag) : tiled
         }
         return cfVector
     } catch (e) {
         const message = e instanceof Error ? e.message : String(e)
-        console.warn(`[RAG] Cloudflare embeddings failed (${message}). Using fallback mock vector.`)
 
-        // Return a dummy 1536-dimensional vector for architecture validation
-        const vector = new Array(1536).fill(0).map(() => Math.random() * 2 - 1)
+        // Return a deterministic-ish fallback based on text content hash
+        // so that identical texts produce identical embeddings (useful for dedup)
+        let hash = 0
+        for (let i = 0; i < text.length; i++) {
+            hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0
+        }
+        const seededRNG = (seed: number) => {
+            const x = Math.sin(seed) * 10000
+            return x - Math.floor(x)
+        }
+        const vector = new Array(TARGET_EMBEDDING_DIM).fill(0).map((_, i) => seededRNG(hash + i) * 2 - 1)
         const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0))
-        return vector.map(val => val / magnitude)
+        return magnitude > 0 ? vector.map(val => val / magnitude) : vector
     }
 }

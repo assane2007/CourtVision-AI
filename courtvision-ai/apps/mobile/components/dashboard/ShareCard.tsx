@@ -1,10 +1,11 @@
 /**
- * ShareCard - Exportable Twin Card, share modal, share button.
- * V3: Reanimated v3, Feather icons, English, fontFamily.
+ * ShareCard — Exportable Twin Card, share modal, share button.
+ * V5 PERFECTION: StyleSheet.create, memo'd sub-components, fixed emojis,
+ * proper theme imports, no inline objects. Touch targets >= 44 px.
  */
 
-import { View, Text, TouchableOpacity, ActivityIndicator, Modal, Dimensions } from 'react-native'
-import { useEffect } from 'react'
+import { View, Text, TouchableOpacity, ActivityIndicator, Modal, Dimensions, StyleSheet } from 'react-native'
+import { useEffect, useCallback, memo } from 'react'
 import { Feather } from '@expo/vector-icons'
 import Animated, {
     useSharedValue,
@@ -17,14 +18,14 @@ import Animated, {
     FadeInUp,
 } from 'react-native-reanimated'
 import type { TwinCardData, SharePlatform } from '../../hooks/useViralShare'
-import { T } from '../../lib/theme'
+import { T, typePresets } from '../../lib/theme'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const CARD_WIDTH = SCREEN_WIDTH - 48
 
 const STYLE_EMOJIS: Record<string, string> = {
-    sharpshooter: 'Ã°Å¸Å½Â¯', shot_creator: 'Ã°Å¸Âªâ€ž', slasher: 'Ã¢Å¡Â¡', playmaker: 'Ã°Å¸Â§Â ',
-    two_way: 'Ã°Å¸â€ºÂ¡Ã¯Â¸Â', stretch_big: 'Ã°Å¸Ââ€”Ã¯Â¸Â', paint_beast: 'Ã°Å¸â€™Â¥', balanced: 'Ã¢â„¢Â¾Ã¯Â¸Â',
+    sharpshooter: '🎯', shot_creator: '🪄', slasher: '⚡', playmaker: '🧠',
+    two_way: '🛡️', stretch_big: '🏗️', paint_beast: '💥', balanced: '♾️',
 }
 
 const PLATFORM_CONFIG: Record<SharePlatform, { icon: string; color: string; label: string }> = {
@@ -35,6 +36,23 @@ const PLATFORM_CONFIG: Record<SharePlatform, { icon: string; color: string; labe
 }
 
 // ==========================================
+// MiniStatBadge
+// ==========================================
+
+const MiniStatBadge = memo(function MiniStatBadge({ label, value, icon }: {
+    label: string; value: number; icon: string
+}) {
+    const color = value >= 80 ? T.color.semantic.success : value >= 50 ? T.color.brand.primary : T.color.semantic.warning
+    return (
+        <View style={sc.miniBadge}>
+            <Feather name={icon as any} size={14} color={color} />
+            <Text style={[sc.miniBadgeValue, { color }]}>{value}</Text>
+            <Text style={sc.miniBadgeLabel}>{label}</Text>
+        </View>
+    )
+})
+
+// ==========================================
 // Twin Card Component (exportable card)
 // ==========================================
 
@@ -43,7 +61,7 @@ interface TwinCardProps {
     compact?: boolean
 }
 
-export function TwinCard({ data, compact }: TwinCardProps) {
+export const TwinCard = memo(function TwinCard({ data, compact }: TwinCardProps) {
     const shimmer = useSharedValue(0)
 
     useEffect(() => {
@@ -54,157 +72,78 @@ export function TwinCard({ data, compact }: TwinCardProps) {
             ),
             -1,
         )
-    }, [])
+    }, [shimmer])
 
     const shimmerStyle = useAnimatedStyle(() => ({
         opacity: interpolate(shimmer.value, [0, 1], [0.9, 1]),
     }))
 
     const ratingColor = T.ratingColor(data.overallRating)
+    const cardWidth = compact ? CARD_WIDTH * 0.85 : CARD_WIDTH
+    const ratingSize = compact ? 70 : 85
 
     return (
-        <View style={{
-            width: compact ? CARD_WIDTH * 0.85 : CARD_WIDTH,
-            backgroundColor: T.color.bg.primary,
-            borderRadius: T.radius.xl,
-            overflow: 'hidden',
-            borderWidth: 1.5,
-            borderColor: `${ratingColor}40`,
-            ...T.glow.soft(ratingColor),
-        }}>
+        <View style={[sc.card, { width: cardWidth, borderColor: `${ratingColor}40` }, T.glow.soft(ratingColor)]}>
             {/* Header */}
-            <View style={{
-                paddingHorizontal: 20, paddingTop: 20, paddingBottom: 14,
-                ...T.glass.vivid,
-                borderBottomWidth: 1, borderBottomColor: T.color.border.base,
-            }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={sc.cardHeader}>
+                <View style={sc.cardHeaderTop}>
+                    <View style={sc.brandRow}>
                         <Feather name="crosshair" size={16} color={T.color.brand.primary} />
-                        <Text style={{
-                            color: T.color.brand.primary, fontSize: 12, fontWeight: '800', marginLeft: 6,
-                            letterSpacing: 1, fontFamily: T.fonts.display.black,
-                        }}>
-                            COURTVISION AI
-                        </Text>
+                        <Text style={sc.brandText}>COURTVISION AI</Text>
                     </View>
-                    <View style={{
-                        ...T.glass.base, borderRadius: T.radius.sm,
-                        paddingHorizontal: 8, paddingVertical: 3,
-                    }}>
-                        <Text style={{
-                            color: T.color.text.secondary, fontSize: 9, fontWeight: '600',
-                            fontFamily: T.fonts.body.semibold,
-                        }}>
-                            DIGITAL TWIN {data.modelVersion}
-                        </Text>
+                    <View style={sc.versionBadge}>
+                        <Text style={sc.versionText}>DIGITAL TWIN {data.modelVersion}</Text>
                     </View>
                 </View>
 
-                <Text style={{
-                    color: T.color.text.primary, fontSize: compact ? 20 : 24, fontWeight: '900',
-                    letterSpacing: -0.5, fontFamily: T.fonts.display.black,
-                }}>
-                    {data.fullName}
-                </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                <Text style={[sc.fullName, compact && sc.fullNameCompact]}>{data.fullName}</Text>
+                <View style={sc.metaRow}>
                     {data.position && (
-                        <View style={{
-                            backgroundColor: T.color.brand.muted, borderRadius: 6,
-                            paddingHorizontal: 8, paddingVertical: 2, marginRight: 8,
-                        }}>
-                            <Text style={{
-                                color: T.color.brand.primary, fontSize: 11, fontWeight: 'bold',
-                                fontFamily: T.fonts.display.bold,
-                            }}>
-                                {data.position}
-                            </Text>
+                        <View style={sc.positionBadge}>
+                            <Text style={sc.positionText}>{data.position}</Text>
                         </View>
                     )}
-                    <Text style={{
-                        color: T.color.text.secondary, fontSize: 11, fontFamily: T.fonts.body.regular,
-                    }}>
-                        @{data.username} Ã‚Â· {data.sessionCount} sessions
-                    </Text>
+                    <Text style={sc.username}>@{data.username} · {data.sessionCount} sessions</Text>
                 </View>
             </View>
 
             {/* Overall Rating + Play Style */}
-            <View style={{
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-                paddingVertical: compact ? 14 : 18, ...T.glass.thin,
-            }}>
-                <Animated.View style={[{
-                    width: compact ? 70 : 85, height: compact ? 70 : 85,
-                    borderRadius: compact ? 35 : 42.5,
-                    backgroundColor: T.color.bg.tertiary,
-                    justifyContent: 'center', alignItems: 'center',
-                    ...T.glow.soft(ratingColor),
-                    borderWidth: 2, borderColor: `${ratingColor}40`,
-                }, shimmerStyle]}>
-                    <Text style={{
-                        color: ratingColor, fontSize: compact ? 28 : 34, fontWeight: '900',
-                        fontFamily: T.fonts.display.black,
-                    }}>
+            <View style={sc.ratingSection}>
+                <Animated.View style={[
+                    sc.ratingCircle,
+                    { width: ratingSize, height: ratingSize, borderRadius: ratingSize / 2, borderColor: `${ratingColor}40` },
+                    T.glow.soft(ratingColor),
+                    shimmerStyle,
+                ]}>
+                    <Text style={[sc.ratingValue, { color: ratingColor, fontSize: compact ? 28 : 34 }]}>
                         {data.overallRating}
                     </Text>
-                    <Text style={{
-                        color: T.color.text.secondary, fontSize: 8, fontWeight: '700',
-                        fontFamily: T.fonts.display.bold,
-                    }}>
-                        OVERALL
-                    </Text>
+                    <Text style={sc.ratingLabel}>OVERALL</Text>
                 </Animated.View>
 
-                <View style={{ marginLeft: 18, flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                        <Text style={{ fontSize: 20 }}>
-                            {STYLE_EMOJIS[data.playStyle] ?? 'Ã°Å¸Ââ‚¬'}
+                <View style={sc.playStyleInfo}>
+                    <View style={sc.playStyleRow}>
+                        <Text style={sc.playStyleEmoji}>
+                            {STYLE_EMOJIS[data.playStyle] ?? '🏀'}
                         </Text>
-                        <Text style={{
-                            color: T.color.text.primary, fontSize: 16, fontWeight: '800', marginLeft: 6,
-                            fontFamily: T.fonts.display.bold,
-                        }}>
-                            {data.playStyleLabel}
-                        </Text>
+                        <Text style={sc.playStyleLabel}>{data.playStyleLabel}</Text>
                     </View>
-                    <Text style={{
-                        color: T.color.text.secondary, fontSize: 10, lineHeight: 14,
-                        fontFamily: T.fonts.body.regular,
-                    }} numberOfLines={2}>
+                    <Text style={sc.playStyleDesc} numberOfLines={2}>
                         {data.playStyleDescription}
                     </Text>
-                    <Text style={{
-                        color: T.color.brand.primary, fontSize: 10, fontWeight: '600', marginTop: 3,
-                        fontFamily: T.fonts.body.semibold,
-                    }}>
+                    <Text style={sc.archetypeText}>
                         Archetype: {data.nbaArchetype}
                     </Text>
                 </View>
             </View>
 
             {/* Key Attributes Grid */}
-            <View style={{
-                flexDirection: 'row', flexWrap: 'wrap',
-                paddingHorizontal: 12, paddingVertical: 10,
-                borderTopWidth: 1, borderTopColor: T.color.border.base,
-            }}>
+            <View style={sc.attributesGrid}>
                 {data.keyAttributes.map((attr: { name: string; value: number; emoji: string }, i: number) => (
-                    <View key={i} style={{
-                        width: '50%', flexDirection: 'row', alignItems: 'center',
-                        paddingVertical: 5, paddingHorizontal: 6,
-                    }}>
-                        <Text style={{ fontSize: 12, marginRight: 6 }}>{attr.emoji}</Text>
-                        <Text style={{
-                            color: T.color.text.secondary, fontSize: 11, flex: 1,
-                            fontFamily: T.fonts.body.regular,
-                        }} numberOfLines={1}>
-                            {attr.name}
-                        </Text>
-                        <Text style={{
-                            color: T.ratingColor(attr.value), fontSize: 13, fontWeight: '800',
-                            fontFamily: T.fonts.display.bold,
-                        }}>
+                    <View key={i} style={sc.attrItem}>
+                        <Text style={sc.attrEmoji}>{attr.emoji}</Text>
+                        <Text style={sc.attrName} numberOfLines={1}>{attr.name}</Text>
+                        <Text style={[sc.attrValue, { color: T.ratingColor(attr.value) }]}>
                             {attr.value}
                         </Text>
                     </View>
@@ -213,66 +152,29 @@ export function TwinCard({ data, compact }: TwinCardProps) {
 
             {/* NBA Comparison */}
             {data.nbaCompPlayer && (
-                <View style={{
-                    flexDirection: 'row', alignItems: 'center',
-                    paddingHorizontal: 16, paddingVertical: 8,
-                    backgroundColor: `${T.color.gamification.gold}20`,
-                    borderTopWidth: 1, borderTopColor: T.color.border.base,
-                }}>
-                    <Feather name="star" size={14} color={T.color.gamification.gold} />
-                    <Text style={{
-                        color: T.color.text.secondary, fontSize: 11, marginLeft: 6,
-                        fontFamily: T.fonts.body.regular,
-                    }}>
-                        Comparable to
-                    </Text>
-                    <Text style={{
-                        color: T.color.gamification.gold, fontSize: 12, fontWeight: '800', marginLeft: 4,
-                        fontFamily: T.fonts.display.bold,
-                    }}>
-                        {data.nbaCompPlayer}
-                    </Text>
-                    <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                        <Text style={{
-                            color: T.color.gamification.gold, fontSize: 11, fontWeight: 'bold',
-                            fontFamily: T.fonts.display.bold,
-                        }}>
-                            {data.nbaCompSimilarity}% match
-                        </Text>
+                <View style={sc.nbaCompRow}>
+                    <Feather name="star" size={14} color={T.color.semantic.gold} />
+                    <Text style={sc.nbaCompLabel}>Comparable to</Text>
+                    <Text style={sc.nbaCompPlayer}>{data.nbaCompPlayer}</Text>
+                    <View style={sc.nbaCompRight}>
+                        <Text style={sc.nbaCompMatch}>{data.nbaCompSimilarity}% match</Text>
                     </View>
                 </View>
             )}
 
             {/* Strengths */}
             {data.strengths.length > 0 && (
-                <View style={{
-                    flexDirection: 'row', flexWrap: 'wrap',
-                    paddingHorizontal: 16, paddingVertical: 8,
-                    borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.04)',
-                }}>
+                <View style={sc.strengthsRow}>
                     {data.strengths.map((s: string, i: number) => (
-                        <View key={i} style={{
-                            backgroundColor: `${T.color.semantic.success}15`, borderRadius: 8,
-                            paddingHorizontal: 8, paddingVertical: 3,
-                            marginRight: 6, marginBottom: 4,
-                        }}>
-                            <Text style={{
-                                color: T.color.semantic.success, fontSize: 10, fontWeight: '600',
-                                fontFamily: T.fonts.body.semibold,
-                            }}>
-                                {s}
-                            </Text>
+                        <View key={i} style={sc.strengthChip}>
+                            <Text style={sc.strengthText}>{s}</Text>
                         </View>
                     ))}
                 </View>
             )}
 
             {/* Mental Row */}
-            <View style={{
-                flexDirection: 'row', justifyContent: 'space-around',
-                paddingVertical: 10, paddingHorizontal: 16,
-                borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.04)',
-            }}>
+            <View style={sc.mentalRow}>
                 <MiniStatBadge label="Resilience" value={data.mentalResilience} icon="heart" />
                 <MiniStatBadge label="Clutch" value={data.clutchFactor} icon="zap" />
                 <MiniStatBadge
@@ -283,47 +185,13 @@ export function TwinCard({ data, compact }: TwinCardProps) {
             </View>
 
             {/* Footer */}
-            <View style={{
-                flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-                paddingHorizontal: 16, paddingVertical: 10,
-                backgroundColor: 'rgba(0,212,255,0.04)',
-                borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)',
-            }}>
-                <Text style={{
-                    color: T.color.text.secondary, fontSize: 9, fontFamily: T.fonts.body.regular,
-                }}>
-                    courtvision.ai Ã‚Â· Create your own Twin
-                </Text>
-                <Text style={{
-                    color: T.color.brand.primary, fontSize: 9, fontWeight: '700',
-                    fontFamily: T.fonts.display.bold,
-                }}>
-                    TWIN CARD
-                </Text>
+            <View style={sc.cardFooter}>
+                <Text style={sc.footerLink}>courtvision.ai · Create your own Twin</Text>
+                <Text style={sc.footerBrand}>TWIN CARD</Text>
             </View>
         </View>
     )
-}
-
-function MiniStatBadge({ label, value, icon }: { label: string; value: number; icon: string }) {
-    const color = value >= 80 ? T.color.semantic.success : value >= 50 ? T.color.brand.primary : T.color.semantic.warning
-    return (
-        <View style={{ alignItems: 'center' }}>
-            <Feather name={icon as any} size={14} color={color} />
-            <Text style={{
-                color, fontSize: 14, fontWeight: '800', marginTop: 2,
-                fontFamily: T.fonts.display.bold,
-            }}>
-                {value}
-            </Text>
-            <Text style={{
-                color: T.color.text.secondary, fontSize: 9, fontFamily: T.fonts.body.regular,
-            }}>
-                {label}
-            </Text>
-        </View>
-    )
-}
+})
 
 // ==========================================
 // Share Modal
@@ -338,7 +206,9 @@ interface ShareModalProps {
     shareType: 'twin_card' | 'session_recap' | 'badge' | 'highlight_reel'
 }
 
-export function ShareModal({ visible, onClose, onShare, sharing, cardData, shareType }: ShareModalProps) {
+export const ShareModal = memo(function ShareModal({
+    visible, onClose, onShare, sharing, cardData, shareType,
+}: ShareModalProps) {
     const slide = useSharedValue(300)
     const fade = useSharedValue(0)
 
@@ -350,7 +220,7 @@ export function ShareModal({ visible, onClose, onShare, sharing, cardData, share
             slide.value = 300
             fade.value = 0
         }
-    }, [visible])
+    }, [visible, fade, slide])
 
     const backdropStyle = useAnimatedStyle(() => ({ opacity: fade.value }))
     const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: slide.value }] }))
@@ -362,70 +232,45 @@ export function ShareModal({ visible, onClose, onShare, sharing, cardData, share
         highlight_reel: 'Share Highlights',
     }
 
+    const handlePlatformPress = useCallback((platform: SharePlatform) => {
+        onShare(platform)
+    }, [onShare])
+
     return (
         <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
-            <Animated.View style={[{
-                flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end',
-            }, backdropStyle]}>
-                <TouchableOpacity style={{ flex: 1 }} onPress={onClose} activeOpacity={1} />
-                <Animated.View style={[{
-                    backgroundColor: T.color.bg.tertiary,
-                    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-                    padding: 24, paddingBottom: 40,
-                }, sheetStyle]}>
-                    <View style={{
-                        width: 40, height: 4, backgroundColor: T.color.border.base,
-                        borderRadius: 2, alignSelf: 'center', marginBottom: 20,
-                    }} />
+            <Animated.View style={[sc.modalBackdrop, backdropStyle]}>
+                <TouchableOpacity style={sc.modalDismiss} onPress={onClose} activeOpacity={1} />
+                <Animated.View style={[sc.modalSheet, sheetStyle]}>
+                    <View style={sc.modalHandle} />
 
-                    <Text style={{
-                        color: T.color.text.primary, fontSize: 20, fontWeight: '800', marginBottom: 6,
-                        fontFamily: T.fonts.display.black,
-                    }}>
-                        {shareTitle[shareType]}
-                    </Text>
-                    <Text style={{
-                        color: T.color.text.secondary, fontSize: 13, marginBottom: 20,
-                        fontFamily: T.fonts.body.regular,
-                    }}>
-                        Pick a platform Ã¢â‚¬â€ we'll optimize the format for you
-                    </Text>
+                    <Text style={sc.modalTitle}>{shareTitle[shareType]}</Text>
+                    <Text style={sc.modalSubtitle}>Pick a platform — we'll optimize the format for you</Text>
 
                     {cardData && shareType === 'twin_card' && (
-                        <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                        <View style={sc.modalPreview}>
                             <TwinCard data={cardData} compact />
                         </View>
                     )}
 
                     {/* Platform buttons */}
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 20 }}>
+                    <View style={sc.platformRow}>
                         {(['instagram', 'tiktok', 'twitter', 'generic'] as SharePlatform[]).map((platform, i) => {
                             const info = PLATFORM_CONFIG[platform]
                             return (
                                 <Animated.View key={platform} entering={FadeInUp.duration(300).delay(i * 60)}>
                                     <TouchableOpacity
-                                        onPress={() => onShare(platform)}
+                                        onPress={() => handlePlatformPress(platform)}
                                         disabled={sharing}
-                                        style={{ alignItems: 'center', opacity: sharing ? 0.5 : 1 }}
+                                        style={[sc.platformBtn, sharing && sc.platformBtnDisabled]}
                                     >
-                                        <View style={{
-                                            width: 56, height: 56, borderRadius: 16,
-                                            backgroundColor: `${info.color}20`,
-                                            justifyContent: 'center', alignItems: 'center',
-                                            borderWidth: 1, borderColor: `${info.color}40`,
-                                        }}>
+                                        <View style={[sc.platformIcon, { backgroundColor: `${info.color}20`, borderColor: `${info.color}40` }]}>
                                             {sharing ? (
                                                 <ActivityIndicator size="small" color={info.color} />
                                             ) : (
                                                 <Feather name={info.icon as any} size={24} color={info.color} />
                                             )}
                                         </View>
-                                        <Text style={{
-                                            color: T.color.text.secondary, fontSize: 11, marginTop: 6, fontWeight: '500',
-                                            fontFamily: T.fonts.body.medium,
-                                        }}>
-                                            {info.label}
-                                        </Text>
+                                        <Text style={sc.platformLabel}>{info.label}</Text>
                                     </TouchableOpacity>
                                 </Animated.View>
                             )
@@ -433,23 +278,15 @@ export function ShareModal({ visible, onClose, onShare, sharing, cardData, share
                     </View>
 
                     {/* XP bonus */}
-                    <View style={{
-                        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-                        backgroundColor: `\${T.color.gamification.purple}20`, borderRadius: 10, padding: 10,
-                    }}>
-                        <Feather name="zap" size={12} color={T.color.gamification.purple} style={{ marginRight: 6 }} />
-                        <Text style={{
-                            color: T.color.gamification.purple, fontSize: 12,
-                            fontFamily: T.fonts.body.medium,
-                        }}>
-                            +10 XP bonus for each share
-                        </Text>
+                    <View style={sc.xpBonusRow}>
+                        <Feather name="zap" size={12} color={T.color.semantic.purple} style={sc.xpBonusIcon} />
+                        <Text style={sc.xpBonusText}>+10 XP bonus for each share</Text>
                     </View>
                 </Animated.View>
             </Animated.View>
         </Modal>
     )
-}
+})
 
 // ==========================================
 // Share Button (inline toolbar)
@@ -462,30 +299,400 @@ interface ShareButtonProps {
     disabled?: boolean
 }
 
-export function ShareButton({ onPress, label = 'Share', compact, disabled }: ShareButtonProps) {
+export const ShareButton = memo(function ShareButton({
+    onPress, label = 'Share', compact, disabled,
+}: ShareButtonProps) {
     return (
         <TouchableOpacity
             onPress={onPress}
             disabled={disabled}
-            style={{
-                flexDirection: 'row', alignItems: 'center',
-                backgroundColor: 'rgba(0,212,255,0.12)',
-                borderRadius: compact ? 8 : 12,
-                paddingHorizontal: compact ? 10 : 14,
-                paddingVertical: compact ? 6 : 10,
-                borderWidth: 1, borderColor: 'rgba(0,212,255,0.25)',
-                opacity: disabled ? 0.5 : 1,
-            }}
+            style={[
+                compact ? sc.shareBtnCompact : sc.shareBtn,
+                disabled && sc.shareBtnDisabled,
+            ]}
         >
-            <Feather name="share-2" size={compact ? 14 : 16} color={T.color.signature.primary} />
-            {!compact && (
-                <Text style={{
-                    color: T.color.signature.primary, fontSize: 13, fontWeight: '600', marginLeft: 6,
-                    fontFamily: T.fonts.body.semibold,
-                }}>
-                    {label}
-                </Text>
-            )}
+            <Feather name="share-2" size={compact ? 14 : 16} color={T.color.brand.primary} />
+            {!compact && <Text style={sc.shareBtnLabel}>{label}</Text>}
         </TouchableOpacity>
     )
-}
+})
+
+// ==========================================
+// StyleSheet
+// ==========================================
+
+const sc = StyleSheet.create({
+    // ── Twin Card ──
+    card: {
+        backgroundColor: T.color.bg.primary,
+        borderRadius: T.radius.xl,
+        overflow: 'hidden',
+        borderWidth: 1.5,
+    },
+    cardHeader: {
+        paddingHorizontal: 20,
+        paddingTop: 20,
+        paddingBottom: 14,
+        ...T.glass.vivid,
+        borderBottomWidth: 1,
+        borderBottomColor: T.color.border.base,
+    },
+    cardHeaderTop: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    brandRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    brandText: {
+        color: T.color.brand.primary,
+        fontSize: 12,
+        fontFamily: T.fonts.display.black,
+        marginLeft: 6,
+        letterSpacing: 1,
+    },
+    versionBadge: {
+        ...T.glass.base,
+        borderRadius: T.radius.sm,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+    },
+    versionText: {
+        color: T.color.text.secondary,
+        fontSize: 9,
+        fontFamily: T.fonts.body.semibold,
+    },
+    fullName: {
+        color: T.color.text.primary,
+        fontSize: 24,
+        fontFamily: T.fonts.display.black,
+        letterSpacing: -0.5,
+    },
+    fullNameCompact: {
+        fontSize: 20,
+    },
+    metaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 4,
+    },
+    positionBadge: {
+        backgroundColor: T.color.brand.muted,
+        borderRadius: 6,
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        marginRight: 8,
+    },
+    positionText: {
+        color: T.color.brand.primary,
+        fontSize: 11,
+        fontFamily: T.fonts.display.bold,
+    },
+    username: {
+        color: T.color.text.secondary,
+        fontSize: 11,
+        fontFamily: T.fonts.body.regular,
+    },
+
+    // ── Rating section ──
+    ratingSection: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 18,
+        ...T.glass.thin,
+    },
+    ratingCircle: {
+        backgroundColor: T.color.bg.tertiary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+    },
+    ratingValue: {
+        fontFamily: T.fonts.display.black,
+    },
+    ratingLabel: {
+        color: T.color.text.secondary,
+        fontSize: 8,
+        fontFamily: T.fonts.display.bold,
+    },
+    playStyleInfo: {
+        marginLeft: 18,
+        flex: 1,
+    },
+    playStyleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+    playStyleEmoji: {
+        fontSize: 20,
+    },
+    playStyleLabel: {
+        color: T.color.text.primary,
+        fontSize: 16,
+        fontFamily: T.fonts.display.bold,
+        marginLeft: 6,
+    },
+    playStyleDesc: {
+        color: T.color.text.secondary,
+        fontSize: 10,
+        lineHeight: 14,
+        fontFamily: T.fonts.body.regular,
+    },
+    archetypeText: {
+        color: T.color.brand.primary,
+        fontSize: 10,
+        fontFamily: T.fonts.body.semibold,
+        marginTop: 3,
+    },
+
+    // ── Attributes ──
+    attributesGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        borderTopWidth: 1,
+        borderTopColor: T.color.border.base,
+    },
+    attrItem: {
+        width: '50%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 5,
+        paddingHorizontal: 6,
+    },
+    attrEmoji: {
+        fontSize: 12,
+        marginRight: 6,
+    },
+    attrName: {
+        color: T.color.text.secondary,
+        fontSize: 11,
+        flex: 1,
+        fontFamily: T.fonts.body.regular,
+    },
+    attrValue: {
+        fontSize: 13,
+        fontFamily: T.fonts.display.bold,
+    },
+
+    // ── NBA Comparison ──
+    nbaCompRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        backgroundColor: `${T.color.semantic.gold}20`,
+        borderTopWidth: 1,
+        borderTopColor: T.color.border.base,
+    },
+    nbaCompLabel: {
+        color: T.color.text.secondary,
+        fontSize: 11,
+        marginLeft: 6,
+        fontFamily: T.fonts.body.regular,
+    },
+    nbaCompPlayer: {
+        color: T.color.semantic.gold,
+        fontSize: 12,
+        fontFamily: T.fonts.display.bold,
+        marginLeft: 4,
+    },
+    nbaCompRight: {
+        flex: 1,
+        alignItems: 'flex-end',
+    },
+    nbaCompMatch: {
+        color: T.color.semantic.gold,
+        fontSize: 11,
+        fontFamily: T.fonts.display.bold,
+    },
+
+    // ── Strengths ──
+    strengthsRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(255,255,255,0.04)',
+    },
+    strengthChip: {
+        backgroundColor: `${T.color.semantic.success}15`,
+        borderRadius: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        marginRight: 6,
+        marginBottom: 4,
+    },
+    strengthText: {
+        color: T.color.semantic.success,
+        fontSize: 10,
+        fontFamily: T.fonts.body.semibold,
+    },
+
+    // ── Mental row ──
+    mentalRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(255,255,255,0.04)',
+    },
+    miniBadge: {
+        alignItems: 'center',
+    },
+    miniBadgeValue: {
+        fontSize: 14,
+        fontFamily: T.fonts.display.bold,
+        marginTop: 2,
+    },
+    miniBadgeLabel: {
+        color: T.color.text.secondary,
+        fontSize: 9,
+        fontFamily: T.fonts.body.regular,
+    },
+
+    // ── Card footer ──
+    cardFooter: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        backgroundColor: 'rgba(0,212,255,0.04)',
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(255,255,255,0.06)',
+    },
+    footerLink: {
+        color: T.color.text.secondary,
+        fontSize: 9,
+        fontFamily: T.fonts.body.regular,
+    },
+    footerBrand: {
+        color: T.color.brand.primary,
+        fontSize: 9,
+        fontFamily: T.fonts.display.bold,
+    },
+
+    // ── Share Modal ──
+    modalBackdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        justifyContent: 'flex-end',
+    },
+    modalDismiss: {
+        flex: 1,
+    },
+    modalSheet: {
+        backgroundColor: T.color.bg.tertiary,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 24,
+        paddingBottom: 40,
+    },
+    modalHandle: {
+        width: 40,
+        height: 4,
+        backgroundColor: T.color.border.base,
+        borderRadius: 2,
+        alignSelf: 'center',
+        marginBottom: 20,
+    },
+    modalTitle: {
+        color: T.color.text.primary,
+        fontSize: 20,
+        fontFamily: T.fonts.display.black,
+        marginBottom: 6,
+    },
+    modalSubtitle: {
+        color: T.color.text.secondary,
+        fontSize: 13,
+        fontFamily: T.fonts.body.regular,
+        marginBottom: 20,
+    },
+    modalPreview: {
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    platformRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginBottom: 20,
+    },
+    platformBtn: {
+        alignItems: 'center',
+    },
+    platformBtnDisabled: {
+        opacity: 0.5,
+    },
+    platformIcon: {
+        width: 56,
+        height: 56,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+    },
+    platformLabel: {
+        color: T.color.text.secondary,
+        fontSize: 11,
+        marginTop: 6,
+        fontFamily: T.fonts.body.medium,
+    },
+    xpBonusRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: `${T.color.semantic.purple}20`,
+        borderRadius: 10,
+        padding: 10,
+    },
+    xpBonusIcon: {
+        marginRight: 6,
+    },
+    xpBonusText: {
+        color: T.color.semantic.purple,
+        fontSize: 12,
+        fontFamily: T.fonts.body.medium,
+    },
+
+    // ── Share Button ──
+    shareBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,212,255,0.12)',
+        borderRadius: 12,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        borderWidth: 1,
+        borderColor: 'rgba(0,212,255,0.25)',
+        minHeight: 44,
+    },
+    shareBtnCompact: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,212,255,0.12)',
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderWidth: 1,
+        borderColor: 'rgba(0,212,255,0.25)',
+        minHeight: 44,
+    },
+    shareBtnDisabled: {
+        opacity: 0.5,
+    },
+    shareBtnLabel: {
+        color: T.color.brand.primary,
+        fontSize: 13,
+        fontFamily: T.fonts.body.semibold,
+        marginLeft: 6,
+    },
+})

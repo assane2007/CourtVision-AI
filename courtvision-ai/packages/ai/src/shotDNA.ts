@@ -362,12 +362,26 @@ export class ShotDNAEngine {
             return Math.sqrt(arr.reduce((sum, v) => sum + (v - mean) ** 2, 0) / arr.length)
         }
 
+        // Detect dominant hand from court position asymmetry:
+        // Right-handed shooters tend to have more consistent mechanics
+        // (lower elbowStdDev) and naturally drift to the left side of the court.
+        // We use court position X: left side < 7m center, right side > 7m.
+        // Right-handed players favor left side (their strong side towards basket).
+        const shotsWithPosition = shots.filter(s => s.courtPosition != null)
+        const leftSideShots = shotsWithPosition.filter(s => s.courtPosition.x < 7).length
+        const rightSideShots = shotsWithPosition.filter(s => s.courtPosition.x > 7).length
+        const dominantHand: 'right' | 'left' = leftSideShots > rightSideShots * 1.3
+            ? 'right'   // Prefers left side → right-handed (shooting hand faces basket)
+            : rightSideShots > leftSideShots * 1.3
+                ? 'left'    // Prefers right side → left-handed
+                : 'right'   // Balanced or insufficient data → default right (85% of players)
+
         return {
             avgElbowAngle: Math.round(avg(elbowAngles) * 10) / 10,
             avgReleaseHeight: Math.round(avg(releaseHeights) * 1000) / 1000,
             avgReleaseTime: Math.round(avg(releaseTimes) * 1000) / 1000,
             followThroughPct: Math.round((followThroughs / shots.length) * 100),
-            dominantHand: 'right', // TODO: detect from landmark tracking data
+            dominantHand,
             elbowStdDev: Math.round(stdDev(elbowAngles) * 10) / 10,
             releaseHeightStdDev: Math.round(stdDev(releaseHeights) * 1000) / 1000,
         }
@@ -729,6 +743,23 @@ export class ShotDNAEngine {
                 }, 0) / zoneShots.length
                 : 0
 
+            // Compute trend: compare recent shots (last 30%) vs earlier shots
+            let trend: 'improving' | 'declining' | 'stable' = 'stable'
+            if (zoneShots.length >= 6) {
+                const splitIdx = Math.floor(zoneShots.length * 0.7)
+                const earlyShots = zoneShots.slice(0, splitIdx)
+                const recentShots = zoneShots.slice(splitIdx)
+                const earlyPct = earlyShots.length > 0
+                    ? (earlyShots.filter(s => s.outcome === 'made').length / earlyShots.length) * 100
+                    : 0
+                const recentPct = recentShots.length > 0
+                    ? (recentShots.filter(s => s.outcome === 'made').length / recentShots.length) * 100
+                    : 0
+                const delta = recentPct - earlyPct
+                if (delta > 10) trend = 'improving'
+                else if (delta < -10) trend = 'declining'
+            }
+
             zoneEfficiency[zone] = {
                 attempts: zoneShots.length,
                 made,
@@ -737,7 +768,7 @@ export class ShotDNAEngine {
                 nbaAvgPct: nbaAvg,
                 isOptimal: pct > nbaAvg + 5 && zoneShots.length >= 3,
                 isUnderperforming: pct < nbaAvg - 10 && zoneShots.length >= 5,
-                trend: 'stable', // TODO: compute from recent vs historical sessions
+                trend,
             }
         }
 

@@ -1,12 +1,14 @@
 import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import Stripe from 'stripe'
+import { env, requireStripeConfig } from '../config/env'
 
-// Initialisation lazy de Stripe (évite crash si clé non configurée en dev)
+// Initialisation lazy de Stripe — uses validated env vars
 let _stripe: Stripe | null = null
 function getStripe(): Stripe {
     if (!_stripe) {
-        const key = process.env.STRIPE_SECRET_KEY
+        requireStripeConfig() // Fail-fast if Stripe vars missing in prod (C-2)
+        const key = env.STRIPE_SECRET_KEY
         if (!key) {
             throw new Error('STRIPE_SECRET_KEY is not configured')
         }
@@ -65,17 +67,20 @@ export default async function billingRoutes(fastify: FastifyInstance) {
                 await fastify.supabase.from('users').update({ stripe_customer_id: customerId }).eq('id', user.id)
             }
 
-            // Mapping du plan aux prix Stripe (via variables d'environnement)
+            // Mapping du plan aux prix Stripe — validated env vars (C-2)
             const prices: Record<string, string> = {
-                player: process.env.STRIPE_PRICE_PLAYER || '',
-                coach: process.env.STRIPE_PRICE_COACH || '',
-                academy: process.env.STRIPE_PRICE_ACADEMY || ''
+                player: env.STRIPE_PRICE_PLAYER,
+                coach: env.STRIPE_PRICE_COACH,
+                academy: env.STRIPE_PRICE_ACADEMY,
             }
             const priceId = prices[body.planName]
 
             if (!priceId) {
                 throw new Error(`Price ID missing for plan ${body.planName}. Check your environment variables.`)
             }
+
+            // Idempotency key prevents duplicate checkout sessions (H-3)
+            const idempotencyKey = `checkout_${user.id}_${body.planName}_${Date.now()}`
 
             // Création de la Checkout Session
             const session = await getStripe().checkout.sessions.create({
@@ -86,12 +91,13 @@ export default async function billingRoutes(fastify: FastifyInstance) {
                 success_url: 'https://courtvision.ai/dashboard?checkout=success',
                 cancel_url: 'https://courtvision.ai/dashboard?checkout=cancel',
                 metadata: { userId: user.id, planName: body.planName }
-            })
+            }, { idempotencyKey })
 
             return { url: session.url }
         } catch (error: any) {
             if (error instanceof z.ZodError) return reply.code(400).send({ error: error.errors })
-            return reply.code(400).send({ error: error.message })
+            request.log.error(error, 'Checkout creation failed')
+            return reply.code(400).send({ error: 'Checkout creation failed' })
         }
     })
 
@@ -100,20 +106,28 @@ export default async function billingRoutes(fastify: FastifyInstance) {
     fastify.post('/webhook', { config: { rawBody: true } }, async (request, reply) => {
         try {
             // Raw body is stored by our custom content type parser above
-            const payload = (request.raw as any).rawBody as Buffer
+            const rawRequest = request as any
+            const payload = rawRequest.rawBody as Buffer
             if (!payload) {
                 return reply.code(400).send({ error: 'Missing raw body for webhook signature verification' })
             }
             const sig = request.headers['stripe-signature'] as string
+            if (!sig) {
+                return reply.code(400).send({ error: 'Missing stripe-signature header' })
+            }
 
-            const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET || ''
+            const endpointSecret = env.STRIPE_WEBHOOK_SECRET
+            if (!endpointSecret) {
+                request.log.error('STRIPE_WEBHOOK_SECRET not configured — rejecting webhook')
+                return reply.code(500).send({ error: 'Webhook not configured' })
+            }
 
             let event: Stripe.Event
 
             try {
                 event = getStripe().webhooks.constructEvent(payload, sig, endpointSecret)
             } catch (err: any) {
-                fastify.log.warn(`Webhook Error: ${err.message}`)
+                request.log.warn({ err }, 'Webhook signature verification failed')
                 return reply.code(400).send(`Webhook Error: ${err.message}`)
             }
 
@@ -160,14 +174,42 @@ export default async function billingRoutes(fastify: FastifyInstance) {
                     }
                     break
 
+                // ── H-2: Handle payment failures & subscription pauses ──
+                case 'invoice.payment_failed': {
+                    const invoice = event.data.object as any
+                    const subId = invoice.subscription as string
+                    if (subId) {
+                        await fastify.supabase.from('subscriptions')
+                            .update({ status: 'past_due' })
+                            .eq('stripe_subscription_id', subId)
+                        request.log.warn({ subId }, 'Invoice payment failed — marked past_due')
+                    }
+                    break
+                }
+
+                case 'customer.subscription.paused': {
+                    const pausedSub = event.data.object as any
+                    await fastify.supabase.from('subscriptions')
+                        .update({ status: 'paused' })
+                        .eq('stripe_subscription_id', pausedSub.id)
+                    const { data: pausedUser } = await fastify.supabase.from('subscriptions')
+                        .select('user_id').eq('stripe_subscription_id', pausedSub.id).single()
+                    if (pausedUser) {
+                        await fastify.supabase.from('users').update({ plan: 'free' }).eq('id', pausedUser.user_id)
+                    }
+                    request.log.info({ subId: pausedSub.id }, 'Subscription paused — reverted to free')
+                    break
+                }
+
                 default:
-                    fastify.log.info(`Unhandled event type ${event.type}`)
+                    request.log.info({ eventType: event.type }, 'Unhandled Stripe event type')
             }
 
             return { received: true }
         } catch (error: any) {
-            fastify.log.error(error)
-            return reply.code(400).send({ error: error.message })
+            request.log.error(error, 'Billing webhook handler failed')
+            // H-4: Never leak internal error details to Stripe
+            return reply.code(400).send({ error: 'Webhook processing failed' })
         }
     })
 
@@ -188,7 +230,8 @@ export default async function billingRoutes(fastify: FastifyInstance) {
 
             return { url: session.url }
         } catch (error: any) {
-            return reply.code(400).send({ error: error.message })
+            request.log.error(error, 'Portal session creation failed')
+            return reply.code(400).send({ error: 'Could not create billing portal session' })
         }
     })
 

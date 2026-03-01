@@ -1,6 +1,7 @@
 import fastify, { FastifyInstance, FastifyServerOptions } from 'fastify'
 import cors from '@fastify/cors'
 import rateLimit from '@fastify/rate-limit'
+import helmet from '@fastify/helmet'
 import {
     serializerCompiler,
     validatorCompiler,
@@ -10,6 +11,8 @@ import {
 
 import { supabasePlugin } from './plugins/supabase'
 import { authPlugin } from './plugins/auth'
+import { initV5Orchestrator } from './services/v5Orchestrator'
+import { env } from './config/env'
 
 // ── Routes ──
 import authRoutes from './routes/auth'
@@ -31,6 +34,7 @@ import crewRoutes from './routes/crews'
 import analyticsRoutes from './routes/analytics'
 import dashboardRoutes from './routes/dashboard'
 import shootingSessionRoutes from './routes/shootingSessions'
+import highlightRoutes from './routes/highlights'
 
 export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     const app = fastify(opts).withTypeProvider<ZodTypeProvider>()
@@ -39,35 +43,51 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     app.setValidatorCompiler(validatorCompiler)
     app.setSerializerCompiler(serializerCompiler)
 
-    // Rate Limiting
+    // Security Headers (C-3: @fastify/helmet)
+    app.register(helmet, {
+        contentSecurityPolicy: env.isProduction ? undefined : false, // CSP breaks Swagger UI in dev
+        crossOriginEmbedderPolicy: false, // needed for mobile app
+    })
+
+    // Rate Limiting — global default + route-specific overrides (M-8)
     app.register(rateLimit, {
         max: 100,
         timeWindow: '1 minute'
     })
 
-    // CORS
+    // CORS — tighter in production (M-7: trim whitespace)
     app.register(cors, {
-        origin: true
+        origin: env.isProduction
+            ? env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+            : true,
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     })
 
     // Plugins
     app.register(supabasePlugin)
     app.register(authPlugin)
 
+    // Initialize V5Orchestrator with shared Supabase client after plugin registration
+    app.addHook('onReady', async () => {
+        initV5Orchestrator(app.supabase)
+    })
+
     // Global Error Handler (Production Optimized)
     app.setErrorHandler((error, request, reply) => {
         const isProduction = process.env.NODE_ENV === 'production'
         const statusCode = error.statusCode || 500
 
-        // Log structured error
+        // Log structured error with full context
         request.log.error({
             err: error,
             requestId: request.id,
             url: request.url,
-            method: request.method
+            method: request.method,
+            userId: request.user?.id,
         }, `API Error: ${error.message}`)
 
-        // Zod validation errors
+        // Zod validation errors — safe to expose field details
         if (error.name === 'ZodError') {
             return reply.status(400).send({
                 success: false,
@@ -86,16 +106,47 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
             })
         }
 
-        // Generic response
+        // Rate limiting
+        if (statusCode === 429) {
+            return reply.status(429).send({
+                success: false,
+                error: 'Too Many Requests',
+                message: 'Rate limit exceeded. Please slow down.',
+            })
+        }
+
+        // Generic response — NEVER leak internals in production
         return reply.status(statusCode).send({
             success: false,
-            error: statusCode >= 500 ? 'Internal Server Error' : 'Client Error',
-            message: statusCode >= 500 && isProduction
+            error: statusCode >= 500 ? 'Internal Server Error' : 'Request failed',
+            message: isProduction
                 ? 'An unexpected error occurred. Please try again later.'
                 : error.message,
-            requestId: isProduction ? undefined : request.id
         })
     })
+
+    // ── Global onSend hook: strip error.message in production responses ──
+    // Catches error leaks from route-level catch blocks that return error.message directly
+    if (process.env.NODE_ENV === 'production') {
+        app.addHook('onSend', async (request, reply, payload) => {
+            if (reply.statusCode >= 400 && typeof payload === 'string') {
+                try {
+                    const body = JSON.parse(payload)
+                    // If the response has an "error" field that looks like an internal error, sanitize it
+                    if (body.error && !body.success && typeof body.error === 'string') {
+                        const internalPatterns = /supabase|postgres|sql|econnrefused|timeout|ENOTFOUND|column|relation|22P02|23505|42P01/i
+                        if (internalPatterns.test(body.error)) {
+                            body.error = 'Request failed'
+                            return JSON.stringify(body)
+                        }
+                    }
+                } catch {
+                    // Not JSON, pass through
+                }
+            }
+            return payload
+        })
+    }
 
     // ── Routes Registration ──
     app.register(authRoutes, { prefix: '/api/auth' })
@@ -104,7 +155,7 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     app.register(twinRoutes, { prefix: '/api/twin' })
     app.register(billingRoutes, { prefix: '/api/billing' })
     app.register(communityRoutes, { prefix: '/api/community' })
-    app.register(liveRoutes, { prefix: '/api/sessions' })
+    app.register(liveRoutes, { prefix: '/api/live' })
     app.register(waitlistRoutes, { prefix: '/api' })
     app.register(shareRoutes, { prefix: '/api/share' })
     app.register(shotDnaRoutes, { prefix: '/api/shot-dna' })
@@ -117,15 +168,27 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     app.register(analyticsRoutes, { prefix: '/api/analytics' })
     app.register(dashboardRoutes, { prefix: '/api/dashboard' })
     app.register(shootingSessionRoutes, { prefix: '/api/shooting-sessions' })
+    app.register(highlightRoutes, { prefix: '/api/highlights' })
 
-    // Health check
-    app.get('/health', async () => {
+    // Health check — deep check with DB + Redis connectivity (M-9)
+    app.get('/health', async (request) => {
+        const checks: Record<string, 'ok' | 'error'> = { api: 'ok' }
+
+        // Supabase connectivity
+        try {
+            const { error } = await app.supabase.from('users').select('id').limit(1)
+            checks.database = error ? 'error' : 'ok'
+        } catch { checks.database = 'error' }
+
+        const allOk = Object.values(checks).every(v => v === 'ok')
+
         return {
-            status: 'ok',
+            status: allOk ? 'ok' : 'degraded',
             service: 'courtvision-api',
-            version: '5.2.0',
-            codename: 'Apex-Hardened',
-            time: new Date().toISOString()
+            version: '5.3.0',
+            codename: 'Skill-Hardened',
+            time: new Date().toISOString(),
+            checks,
         }
     })
 

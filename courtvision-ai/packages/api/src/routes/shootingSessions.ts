@@ -124,7 +124,7 @@ export default async function shootingSessionRoutes(fastify: FastifyInstance) {
                     .upsert(shotRows)
 
                 if (shotsError) {
-                    fastify.log.warn({ shotsError }, 'Failed to insert shots')
+                    request.log.warn({ shotsError }, 'Failed to insert shots')
                 }
             }
 
@@ -148,7 +148,7 @@ export default async function shootingSessionRoutes(fastify: FastifyInstance) {
             if (error instanceof z.ZodError) {
                 return reply.code(400).send({ error: error.errors })
             }
-            fastify.log.error(error, 'Failed to save shooting session')
+            request.log.error(error, 'Failed to save shooting session')
             return reply.code(500).send({ error: error.message })
         }
     })
@@ -267,7 +267,7 @@ export default async function shootingSessionRoutes(fastify: FastifyInstance) {
                 .order('shot_timestamp', { ascending: true })
 
             if (shotsError) {
-                fastify.log.warn({ shotsError }, 'Failed to fetch shots')
+                request.log.warn({ shotsError }, 'Failed to fetch shots')
             }
 
             return {

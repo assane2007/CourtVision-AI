@@ -101,12 +101,29 @@ export interface WeeklyDigest {
 // ── Supabase Helper ──────────────────────────────────────────
 
 let _supabase: SupabaseClient | null = null
+
+/**
+ * Initialize the V5Orchestrator with a shared Supabase client.
+ * Call this once during server startup to avoid creating duplicate connections.
+ */
+export function initV5Orchestrator(supabase: SupabaseClient): void {
+    _supabase = supabase
+}
+
 function getSupabase(): SupabaseClient {
     if (!_supabase) {
-        _supabase = createClient(
-            process.env.SUPABASE_URL || 'https://placeholder.supabase.co',
-            process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || 'placeholder'
-        )
+        // Fallback: create a client if not initialized (e.g. in tests)
+        const url = process.env.SUPABASE_URL
+        const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
+        if (!url || !key) {
+            throw new Error(
+                'V5Orchestrator not initialized. Call initV5Orchestrator(supabase) at startup, ' +
+                'or set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.'
+            )
+        }
+        _supabase = createClient(url, key, {
+            auth: { autoRefreshToken: false, persistSession: false },
+        })
     }
     return _supabase
 }
@@ -300,12 +317,27 @@ export class V5Orchestrator {
                 recommendation: latestRecovery.recommendation,
                 lastLogDate: latestRecovery.date,
             } : null,
-            crew: crewMembership ? {
-                name: (crewMembership as any).crew?.name || null,
-                tag: (crewMembership as any).crew?.tag || null,
-                role: crewMembership.role,
-                rankInCrew: null, // TODO: compute
-            } : null,
+            crew: crewMembership ? await (async () => {
+                const crewId = (crewMembership as any).crew_id
+                let rankInCrew: number | null = null
+                if (crewId) {
+                    const { data: members } = await supabase
+                        .from('crew_members')
+                        .select('user_id, users!inner(xp)')
+                        .eq('crew_id', crewId)
+                        .order('users(xp)', { ascending: false })
+                    if (members) {
+                        const idx = members.findIndex((m: any) => m.user_id === userId)
+                        rankInCrew = idx >= 0 ? idx + 1 : null
+                    }
+                }
+                return {
+                    name: (crewMembership as any).crew?.name || null,
+                    tag: (crewMembership as any).crew?.tag || null,
+                    role: crewMembership.role,
+                    rankInCrew,
+                }
+            })() : null,
         }
     }
 
@@ -341,9 +373,73 @@ export class V5Orchestrator {
             ? analytics.reduce((sum, a) => sum + (a.true_shooting_pct || 0), 0) / analytics.length
             : 0
 
+        // Compute average mental score from this week's analyses
+        const { data: weekAnalyses } = await supabase
+            .from('analyses')
+            .select('mental_score')
+            .in('session_id', (weekSessions || []).map((s: any) => s.id))
+        const mentalScores = (weekAnalyses || []).map((a: any) => a.mental_score).filter(Boolean)
+        const avgMentalScore = mentalScores.length > 0
+            ? Math.round(mentalScores.reduce((s: number, v: number) => s + v, 0) / mentalScores.length)
+            : 0
+
+        // Compute improvement vs previous week — M-3: parallel instead of sequential
+        const twoWeeksAgo = new Date(weekAgo.getTime() - 7 * 24 * 60 * 60 * 1000)
+        const [
+            { data: prevWeekAnalytics },
+            { data: prevWeekSessions },
+        ] = await Promise.all([
+            supabase.from('advanced_analytics')
+                .select('true_shooting_pct')
+                .eq('user_id', userId)
+                .gte('computed_at', twoWeeksAgo.toISOString())
+                .lt('computed_at', weekAgo.toISOString()),
+            supabase.from('sessions')
+                .select('id')
+                .eq('user_id', userId)
+                .eq('status', 'complete')
+                .gte('created_at', twoWeeksAgo.toISOString())
+                .lt('created_at', weekAgo.toISOString()),
+        ])
+        const prevSessionIds = (prevWeekSessions || []).map((s: any) => s.id)
+        const { data: prevWeekAnalyses } = prevSessionIds.length > 0
+            ? await supabase.from('analyses')
+                .select('mental_score, session_id')
+                .in('session_id', prevSessionIds)
+            : { data: [] as any[] }
+
+        const prevFGPct = (prevWeekAnalytics || []).length > 0
+            ? (prevWeekAnalytics || []).reduce((s, a) => s + (a.true_shooting_pct || 0), 0) / prevWeekAnalytics!.length
+            : avgFGPct
+        const prevMentalScores = (prevWeekAnalyses || []).map((a: any) => a.mental_score).filter(Boolean)
+        const prevAvgMental = prevMentalScores.length > 0
+            ? prevMentalScores.reduce((s: number, v: number) => s + v, 0) / prevMentalScores.length
+            : avgMentalScore
+
+        const fgPctDelta = Math.round((avgFGPct - prevFGPct) * 10) / 10
+        const mentalDelta = Math.round(avgMentalScore - prevAvgMental)
+
+        // Find best zone improvement
+        const currentZones = analytics.flatMap((a: any) => Object.entries(a.zone_breakdown || {}))
+        const zoneImprovements = new Map<string, number>()
+        for (const [zone, data] of currentZones) {
+            const pct = (data as any)?.pct || 0
+            zoneImprovements.set(zone, (zoneImprovements.get(zone) || 0) + pct)
+        }
+        let bestZoneImproved: string | null = null
+        let bestImprovement = 0
+        for (const [zone, totalPct] of zoneImprovements) {
+            if (totalPct > bestImprovement) {
+                bestImprovement = totalPct
+                bestZoneImproved = zone
+            }
+        }
+
         const highlights: string[] = []
         if (sessionCount >= 5) highlights.push('🔥 5+ sessions cette semaine — grindeur!')
         if (avgFGPct > 50) highlights.push('🎯 Adresse au-dessus de 50% — sniper mode')
+        if (fgPctDelta > 3) highlights.push('📈 Shooting en nette progression!')
+        if (mentalDelta > 5) highlights.push('🧠 Mental score en hausse!')
 
         const focusAreas: string[] = []
         const coldZones = analytics.flatMap(a => a.cold_zones || [])
@@ -358,11 +454,11 @@ export class V5Orchestrator {
             sessions: sessionCount,
             totalShots,
             avgFGPct: Math.round(avgFGPct * 10) / 10,
-            avgMentalScore: 0, // TODO
+            avgMentalScore,
             improvement: {
-                fgPctDelta: 0, // TODO: compare with previous week
-                mentalDelta: 0,
-                bestZoneImproved: null,
+                fgPctDelta,
+                mentalDelta,
+                bestZoneImproved,
             },
             highlights,
             apexScore,
@@ -372,34 +468,59 @@ export class V5Orchestrator {
 
     /**
      * Compute percentiles for a user vs all other users.
+     * M-1: Uses SQL count-based percentile instead of fetching ALL profiles.
      */
     static async computePercentiles(userId: string): Promise<PercentileData> {
         const supabase = getSupabase()
 
-        const { data: allProfiles } = await supabase
+        // Get user's own profile first
+        const { data: myProfile } = await supabase
             .from('public_profiles')
-            .select('user_id, avg_shooting_pct, avg_mental_score, total_sessions')
+            .select('avg_shooting_pct, avg_mental_score, total_sessions')
+            .eq('user_id', userId)
+            .single()
 
-        if (!allProfiles || allProfiles.length === 0) {
-            return { shooting: 50, mental: 50, consistency: 50, overall: 50 }
-        }
-
-        const myProfile = allProfiles.find(p => p.user_id === userId)
         if (!myProfile) {
             return { shooting: 50, mental: 50, consistency: 50, overall: 50 }
         }
 
-        const percentile = (value: number, all: number[]) => {
-            const sorted = all.sort((a, b) => a - b)
-            const index = sorted.findIndex(v => v >= value)
-            return Math.round((index / sorted.length) * 100)
+        // Get total count of profiles
+        const { count: totalCount } = await supabase
+            .from('public_profiles')
+            .select('*', { count: 'exact', head: true })
+
+        if (!totalCount || totalCount <= 1) {
+            return { shooting: 50, mental: 50, consistency: 50, overall: 50 }
         }
 
+        // Count how many users score BELOW this user for each metric
+        const [
+            { count: belowShooting },
+            { count: belowMental },
+            { count: belowConsistency },
+        ] = await Promise.all([
+            supabase.from('public_profiles')
+                .select('*', { count: 'exact', head: true })
+                .lt('avg_shooting_pct', myProfile.avg_shooting_pct || 0),
+            supabase.from('public_profiles')
+                .select('*', { count: 'exact', head: true })
+                .lt('avg_mental_score', myProfile.avg_mental_score || 0),
+            supabase.from('public_profiles')
+                .select('*', { count: 'exact', head: true })
+                .lt('total_sessions', myProfile.total_sessions || 0),
+        ])
+
+        const shootingPct = Math.round(((belowShooting || 0) / totalCount) * 100)
+        const mentalPct = Math.round(((belowMental || 0) / totalCount) * 100)
+        const consistencyPct = Math.round(((belowConsistency || 0) / totalCount) * 100)
+        // Overall = weighted composite of all three dimensions
+        const overallPct = Math.round(shootingPct * 0.4 + mentalPct * 0.3 + consistencyPct * 0.3)
+
         return {
-            shooting: percentile(myProfile.avg_shooting_pct || 0, allProfiles.map(p => p.avg_shooting_pct || 0)),
-            mental: percentile(myProfile.avg_mental_score || 0, allProfiles.map(p => p.avg_mental_score || 0)),
-            consistency: percentile(myProfile.total_sessions || 0, allProfiles.map(p => p.total_sessions || 0)),
-            overall: 50, // TODO: compute from apex scores
+            shooting: shootingPct,
+            mental: mentalPct,
+            consistency: consistencyPct,
+            overall: overallPct,
         }
     }
 

@@ -32,6 +32,7 @@ module.exports = {
         '^expo-secure-store$': '<rootDir>/__mocks__/expo-secure-store.ts',
         '^expo-sharing$': '<rootDir>/__mocks__/expo-sharing.ts',
         '^expo-file-system$': '<rootDir>/__mocks__/expo-file-system.ts',
+        '^expo-constants$': '<rootDir>/__mocks__/expo-constants.ts',
         '^@react-native-async-storage/async-storage$': '<rootDir>/__mocks__/async-storage.ts',
         '^@supabase/supabase-js$': '<rootDir>/__mocks__/supabase.ts',
     },

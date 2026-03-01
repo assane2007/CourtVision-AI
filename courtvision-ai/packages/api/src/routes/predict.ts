@@ -249,8 +249,7 @@ export default async function predictRoutes(fastify: FastifyInstance) {
     fastify.get('/history', async (request, reply) => {
         try {
             const user = request.user!
-            const query = request.query as any
-            const limit = Math.min(parseInt(query.limit) || 20, 50)
+            const { limit } = z.object({ limit: z.coerce.number().int().min(1).max(50).default(20) }).parse(request.query)
 
             const { data, error } = await fastify.supabase
                 .from('predictions')

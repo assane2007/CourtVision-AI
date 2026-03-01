@@ -67,6 +67,11 @@ class LiveSessionStore {
     private engines = new Map<string, LiveCoachEngine>()
     private redis: Redis | null = null
     private redisAvailable = false
+    private logger: { info: (...a: any[]) => void; warn: (...a: any[]) => void; error: (...a: any[]) => void }
+
+    constructor(logger?: any) {
+        this.logger = logger || { info: () => {}, warn: () => {}, error: () => {} }
+    }
 
     async connectRedis(): Promise<void> {
         try {
@@ -82,9 +87,9 @@ class LiveSessionStore {
             this.redis.on('error', () => { this.redisAvailable = false })
             await this.redis.connect()
             this.redisAvailable = true
-            console.log('[LiveStore] Redis connected')
+            this.logger.info('LiveStore: Redis connected')
         } catch {
-            console.warn('[LiveStore] Redis unavailable — memory-only mode')
+            this.logger.warn('LiveStore: Redis unavailable — memory-only mode')
             this.redisAvailable = false
         }
     }
@@ -107,10 +112,10 @@ class LiveSessionStore {
                     .eq('id', meta.sessionId)
                     .eq('status', 'live')
                 await this.redis.del(key)
-                console.log(`[LiveStore] Recovered stale session: ${meta.sessionId}`)
+                this.logger.info({ sessionId: meta.sessionId }, 'LiveStore: Recovered stale session')
             }
         } catch (err) {
-            console.warn('[LiveStore] Stale session recovery failed:', err)
+            this.logger.warn({ err }, 'LiveStore: Stale session recovery failed')
         }
     }
 
@@ -166,6 +171,9 @@ const sessionStore = new LiveSessionStore()
 const sseConnections = new Map<string, Set<any>>()
 
 export default async function liveRoutes(fastify: FastifyInstance) {
+
+    // Inject Fastify logger into the session store
+    (sessionStore as any).logger = fastify.log
 
     // ── Init Redis + recover stale sessions on startup ──
     await sessionStore.connectRedis()

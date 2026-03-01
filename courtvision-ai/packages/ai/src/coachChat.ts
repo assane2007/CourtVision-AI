@@ -83,6 +83,7 @@ export interface PlayerContext {
         avgShotQuality: number
     }
     recoveryScore?: number
+    sessionReview?: string // Session-specific context for review conversations
 }
 
 export interface CoachChatResponse {

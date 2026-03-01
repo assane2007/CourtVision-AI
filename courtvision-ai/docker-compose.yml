@@ -20,6 +20,24 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
+    volumes:
+      - cv_models:/root/.cache
+      - cv_tmp:/tmp
+    environment:
+      - CV_WORKERS=2
+      - YOLO_MODEL=yolov8s.pt
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     restart: unless-stopped
 
   api:
@@ -35,8 +53,12 @@ services:
       - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
       - REDIS_URL=redis://redis:6379
       - GROQ_API_KEY=${GROQ_API_KEY}
+      - CV_ENGINE_URL=http://cv-engine:8000
     depends_on:
-      - redis
+      cv-engine:
+        condition: service_healthy
+      redis:
+        condition: service_started
     restart: unless-stopped
 
   redis:
@@ -65,3 +87,5 @@ services:
 volumes:
   redis_data:
   pg_data:
+  cv_models:
+  cv_tmp:

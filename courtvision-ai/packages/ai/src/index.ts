@@ -9,6 +9,7 @@ export * from './digitalTwin'
 export * from './llm'
 export * from './reportGenerator'
 export * from './highlightEditor'
+export * from './musicLibrary'
 
 // ── V5 Apex AI Modules ──
 export * from './shotDNA'
@@ -36,7 +37,8 @@ export type { MentalAnalysisResult, MentalPattern, MentalTimeline } from './ment
 export type { LiveCoachConfig, LiveAlert, LiveAlertType, LiveFrameAnalysis, LiveCumulativeStats, LiveLandmarks } from './liveCoach'
 export type { TwinProfile, TwinAttribute, TwinAttributeCategory, TwinTrait, PlayStyleProfile, NBAComparison, MatchupSimulation, SessionAnalysisData, ComfortZone, TwinEvolutionPoint, PlayStyle } from './digitalTwin'
 export type { FullAnalysisData, AIReport, TrainingDay } from './reportGenerator'
-export type { HighlightResult, HighlightClip, HighlightTemplate } from './highlightEditor'
+export type { HighlightResult, HighlightClip, HighlightTemplate, CVHighlightEvent, ExportProfile } from './highlightEditor'
+export type { MusicTrack, MusicConfig, MusicMood, MusicGenre } from './musicLibrary'
 
 // V5 Apex types
 export type { ShotDNASignature, ShotDNAProfile, ZoneEfficiencyData, MechanicalDrift, ShotQualityResult } from './shotDNA'

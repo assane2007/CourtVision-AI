@@ -556,9 +556,29 @@ export class DemoSimulator {
             }
         }
 
+        // Generate shot arc during release/follow-through phases
+        let shotArc: { points: Array<{ x: number; y: number }>; color: string; width: number; style: 'solid' | 'dashed' } | null = null
+        if (this.currentPhase === 'releasing' || this.currentPhase === 'follow_through') {
+            // Parabolic arc from release point (~0.48, 0.15) to rim (~0.50, 0.05)
+            const startX = 0.48, startY = 0.15
+            const endX = 0.50, endY = 0.05
+            const peakY = -0.02 // arc peaks above the screen slightly
+            const numPoints = 12
+            const arcPoints: Array<{ x: number; y: number }> = []
+            for (let i = 0; i <= numPoints; i++) {
+                const t = i / numPoints
+                // Quadratic bezier: start → peak → end
+                const x = (1 - t) * (1 - t) * startX + 2 * (1 - t) * t * ((startX + endX) / 2) + t * t * endX
+                const y = (1 - t) * (1 - t) * startY + 2 * (1 - t) * t * peakY + t * t * endY
+                arcPoints.push({ x, y })
+            }
+            const arcColor = this.currentPhase === 'follow_through' ? '#00C67A' : '#F5A623'
+            shotArc = { points: arcPoints, color: arcColor, width: 2, style: 'dashed' }
+        }
+
         return {
             skeleton: this.currentPhase !== 'idle' ? skeleton : null,
-            shotArc: null, // TODO: arc de tir simulé
+            shotArc,
             bioIndicators,
             ballIndicator: this.currentPhase !== 'idle' ? {
                 x: 0.48 + gaussianRandom(0, 0.01),

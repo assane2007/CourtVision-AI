@@ -319,8 +319,7 @@ export default async function shotDnaRoutes(fastify: FastifyInstance) {
     fastify.get('/evolution', async (request, reply) => {
         try {
             const user = request.user!
-            const query = request.query as any
-            const limit = Math.min(parseInt(query.limit) || 30, 100)
+            const { limit } = z.object({ limit: z.coerce.number().int().min(1).max(100).default(30) }).parse(request.query)
 
             const { data, error } = await fastify.supabase
                 .from('shot_dna_history')
@@ -362,9 +361,10 @@ export default async function shotDnaRoutes(fastify: FastifyInstance) {
     fastify.get('/leaderboard', async (request, reply) => {
         try {
             const user = request.user!
-            const query = request.query as any
-            const metric = query.metric || 'purity' // purity | quality | nba_similarity
-            const limit = Math.min(parseInt(query.limit) || 20, 50)
+            const { metric, limit } = z.object({
+                metric: z.enum(['purity', 'quality', 'nba_similarity']).default('purity'),
+                limit: z.coerce.number().int().min(1).max(50).default(20),
+            }).parse(request.query)
 
             const sortField = metric === 'quality' ? 'profile->avgShotQuality' :
                 metric === 'nba_similarity' ? 'profile->nbaSimilarity' :

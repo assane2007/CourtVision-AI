@@ -21,6 +21,22 @@ const searchSchema = z.object({
     q: z.string().min(1).max(100)
 })
 
+// Param/query schemas
+const idParamsSchema = z.object({ id: z.string().uuid() })
+const userIdParamsSchema = z.object({ userId: z.string().uuid() })
+const leaderboardQuerySchema = z.object({
+    metric: z.enum(['overall', 'shooting', 'mental', 'xp']).default('overall'),
+    scope: z.enum(['global', 'friends']).default('global'),
+    limit: z.coerce.number().int().min(1).max(100).default(50),
+})
+const feedQuerySchema = z.object({
+    limit: z.coerce.number().int().min(1).max(50).default(30),
+    cursor: z.string().optional(),
+})
+const notificationsQuerySchema = z.object({
+    limit: z.coerce.number().int().min(1).max(50).default(30),
+})
+
 // ==========================================
 // Helpers
 // ==========================================
@@ -53,11 +69,8 @@ export default async function communityRoutes(fastify: FastifyInstance) {
     // ──────────────────────────────────
     fastify.get('/leaderboard', async (request, reply) => {
         try {
-            const query = request.query as any
-            const metric = query.metric || 'overall'
-            const scope = query.scope || 'global'
-            const limit = Math.min(parseInt(query.limit) || 50, 100)
-            const userId = (request as any).user?.id
+            const { metric, scope, limit } = leaderboardQuerySchema.parse(request.query)
+            const userId = request.user?.id
 
             const sortColumn: Record<string, string> = {
                 overall: 'xp',
@@ -136,7 +149,7 @@ export default async function communityRoutes(fastify: FastifyInstance) {
     // ──────────────────────────────────
     fastify.get('/challenges', async (request, reply) => {
         try {
-            const userId = (request as any).user?.id
+            const userId = request.user?.id
 
             const { data: challenges, error } = await fastify.supabase
                 .from('community_challenges')
@@ -182,7 +195,7 @@ export default async function communityRoutes(fastify: FastifyInstance) {
     }, async (request, reply) => {
         try {
             const user = request.user!
-            const { id } = request.params as { id: string }
+            const { id } = idParamsSchema.parse(request.params)
             const body = submitSchema.parse(request.body)
 
             const { data: challenge, error: challengeError } = await fastify.supabase
@@ -221,14 +234,14 @@ export default async function communityRoutes(fastify: FastifyInstance) {
     })
 
     // ──────────────────────────────────
-    // GET /api/community/feed
+    // GET /api/community/feed — H-1: requires auth (feed is personalized)
     // ──────────────────────────────────
-    fastify.get('/feed', async (request, reply) => {
+    fastify.get('/feed', {
+        preValidation: [fastify.authenticate]
+    }, async (request, reply) => {
         try {
-            const query = request.query as any
-            const limit = Math.min(parseInt(query.limit) || 30, 50)
-            const cursor = query.cursor
-            const userId = (request as any).user?.id
+            const { limit, cursor } = feedQuerySchema.parse(request.query)
+            const userId = request.user!.id
 
             let feedQuery = fastify.supabase
                 .from('activity_feed')
@@ -243,16 +256,15 @@ export default async function communityRoutes(fastify: FastifyInstance) {
                 feedQuery = feedQuery.lt('created_at', cursor)
             }
 
-            if (userId) {
-                const { data: follows } = await fastify.supabase
-                    .from('user_follows')
-                    .select('following_id')
-                    .eq('follower_id', userId)
+            // Feed shows own + followed users' activity
+            const { data: follows } = await fastify.supabase
+                .from('user_follows')
+                .select('following_id')
+                .eq('follower_id', userId)
 
-                const ids = (follows?.map((f: any) => f.following_id) || [])
-                ids.push(userId)
-                feedQuery = feedQuery.in('user_id', ids)
-            }
+            const ids = (follows?.map((f: any) => f.following_id) || [])
+            ids.push(userId)
+            feedQuery = feedQuery.in('user_id', ids)
 
             const { data, error } = await feedQuery
             if (error) throw error
@@ -286,8 +298,8 @@ export default async function communityRoutes(fastify: FastifyInstance) {
     // ──────────────────────────────────
     fastify.get('/profile/:userId', async (request, reply) => {
         try {
-            const { userId } = request.params as { userId: string }
-            const currentUserId = (request as any).user?.id
+            const { userId } = userIdParamsSchema.parse(request.params)
+            const currentUserId = request.user?.id
 
             const { data: profile, error } = await fastify.supabase
                 .from('public_profiles')
@@ -390,7 +402,7 @@ export default async function communityRoutes(fastify: FastifyInstance) {
     }, async (request, reply) => {
         try {
             const user = request.user!
-            const { userId } = request.params as { userId: string }
+            const { userId } = userIdParamsSchema.parse(request.params)
 
             if (user.id === userId) {
                 return reply.code(400).send({ error: 'Cannot follow yourself' })
@@ -450,7 +462,7 @@ export default async function communityRoutes(fastify: FastifyInstance) {
     }, async (request, reply) => {
         try {
             const user = request.user!
-            const { userId } = request.params as { userId: string }
+            const { userId } = userIdParamsSchema.parse(request.params)
 
             const { error } = await fastify.supabase
                 .from('user_follows')
@@ -535,14 +547,16 @@ export default async function communityRoutes(fastify: FastifyInstance) {
     // ──────────────────────────────────
     fastify.get('/search', async (request, reply) => {
         try {
-            const query = request.query as any
-            const { q } = searchSchema.parse(query)
-            const currentUserId = (request as any).user?.id
+            const { q } = searchSchema.parse(request.query)
+            const currentUserId = request.user?.id
+
+            // Sanitize search input: escape special Postgres LIKE/ILIKE characters
+            const sanitized = q.replace(/[%_\\]/g, '\\$&')
 
             const { data, error } = await fastify.supabase
                 .from('users')
                 .select('id, username, full_name, avatar_url, position')
-                .or(`username.ilike.%${q}%,full_name.ilike.%${q}%`)
+                .or(`username.ilike.%${sanitized}%,full_name.ilike.%${sanitized}%`)
                 .limit(20)
 
             if (error) throw error
@@ -636,8 +650,7 @@ export default async function communityRoutes(fastify: FastifyInstance) {
     }, async (request, reply) => {
         try {
             const user = request.user!
-            const query = request.query as any
-            const limit = Math.min(parseInt(query.limit) || 30, 50)
+            const { limit } = notificationsQuerySchema.parse(request.query)
 
             const { data, error } = await fastify.supabase
                 .from('notifications')
@@ -855,6 +868,7 @@ async function checkBadges(fastify: FastifyInstance, userId: string) {
             }
         }
     } catch (e) {
-        console.error('Badge check error:', e)
+        // Badge check errors are non-critical, swallow silently
+        // In production, use structured logging: fastify.log.error({ err: e }, 'Badge check failed')
     }
 }

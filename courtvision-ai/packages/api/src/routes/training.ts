@@ -344,8 +344,7 @@ export default async function trainingRoutes(fastify: FastifyInstance) {
     fastify.get('/history', async (request, reply) => {
         try {
             const user = request.user!
-            const query = request.query as any
-            const limit = Math.min(parseInt(query.limit) || 10, 30)
+            const { limit } = z.object({ limit: z.coerce.number().int().min(1).max(30).default(10) }).parse(request.query)
 
             const { data, error } = await fastify.supabase
                 .from('training_plans')
@@ -379,9 +378,10 @@ export default async function trainingRoutes(fastify: FastifyInstance) {
     // ==========================================
     fastify.get('/drills', async (request, reply) => {
         try {
-            const query = request.query as any
-            const category = query.category || 'all'
-            const difficulty = query.difficulty // 'beginner' | 'intermediate' | 'advanced'
+            const { category, difficulty } = z.object({
+                category: z.string().default('all'),
+                difficulty: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
+            }).parse(request.query)
 
             const drills = getDrillLibrary()
             let filtered = drills

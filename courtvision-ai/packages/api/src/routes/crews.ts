@@ -51,6 +51,13 @@ const inviteSchema = z.object({
     userId: z.string().uuid(),
 })
 
+// Param/query schemas for safe parsing
+const crewIdParamsSchema = z.object({ id: z.string().uuid() })
+const leaderboardQuerySchema = z.object({ metric: z.enum(['xp', 'shooting', 'mental', 'sessions']).default('xp') })
+const feedQuerySchema = z.object({ limit: z.coerce.number().int().min(1).max(50).default(20) })
+const searchQuerySchema = z.object({ q: z.string().default(''), type: z.string().optional() })
+const rankingsQuerySchema = z.object({ metric: z.enum(['xp', 'members']).default('xp'), limit: z.coerce.number().int().min(1).max(50).default(20) })
+
 export default async function crewRoutes(fastify: FastifyInstance) {
     fastify.addHook('preValidation', fastify.authenticate)
 
@@ -145,7 +152,8 @@ export default async function crewRoutes(fastify: FastifyInstance) {
     // ==========================================
     fastify.get('/:id', async (request, reply) => {
         try {
-            const { id } = request.params as { id: string }
+            const { id } = crewIdParamsSchema.parse(request.params)
+            const user = request.user
 
             const { data: crew, error } = await fastify.supabase
                 .from('crews')
@@ -155,6 +163,21 @@ export default async function crewRoutes(fastify: FastifyInstance) {
 
             if (error || !crew) {
                 return reply.code(404).send({ error: 'Crew not found' })
+            }
+
+            // Private crew: only members can view details
+            if (!crew.is_public && user?.id) {
+                const { data: membership } = await fastify.supabase
+                    .from('crew_members')
+                    .select('role')
+                    .eq('crew_id', id)
+                    .eq('user_id', user.id)
+                    .single()
+                if (!membership) {
+                    return reply.code(403).send({ error: 'This crew is private' })
+                }
+            } else if (!crew.is_public) {
+                return reply.code(403).send({ error: 'This crew is private' })
             }
 
             // Membres
@@ -210,7 +233,7 @@ export default async function crewRoutes(fastify: FastifyInstance) {
     fastify.post('/:id/join', async (request, reply) => {
         try {
             const user = request.user!
-            const { id } = request.params as { id: string }
+            const { id } = crewIdParamsSchema.parse(request.params)
 
             const { data: crew } = await fastify.supabase
                 .from('crews')
@@ -262,7 +285,7 @@ export default async function crewRoutes(fastify: FastifyInstance) {
     fastify.post('/:id/leave', async (request, reply) => {
         try {
             const user = request.user!
-            const { id } = request.params as { id: string }
+            const { id } = crewIdParamsSchema.parse(request.params)
 
             // Vérifier que le joueur n'est pas le captain (owner)
             const { data: crew } = await fastify.supabase
@@ -296,9 +319,18 @@ export default async function crewRoutes(fastify: FastifyInstance) {
     // ==========================================
     fastify.get('/:id/leaderboard', async (request, reply) => {
         try {
-            const { id } = request.params as { id: string }
-            const query = request.query as any
-            const metric = query.metric || 'xp' // xp, shooting, mental, sessions
+            const { id } = crewIdParamsSchema.parse(request.params)
+            const user = request.user!
+            const { metric } = leaderboardQuerySchema.parse(request.query)
+
+            // Check crew visibility
+            const { data: crew } = await fastify.supabase.from('crews').select('is_public').eq('id', id).single()
+            if (!crew) return reply.code(404).send({ error: 'Crew not found' })
+            if (!crew.is_public) {
+                const { data: membership } = await fastify.supabase
+                    .from('crew_members').select('role').eq('crew_id', id).eq('user_id', user.id).single()
+                if (!membership) return reply.code(403).send({ error: 'This crew is private' })
+            }
 
             const { data: members } = await fastify.supabase
                 .from('crew_members')
@@ -347,9 +379,18 @@ export default async function crewRoutes(fastify: FastifyInstance) {
     // ==========================================
     fastify.get('/:id/feed', async (request, reply) => {
         try {
-            const { id } = request.params as { id: string }
-            const query = request.query as any
-            const limit = Math.min(parseInt(query.limit) || 20, 50)
+            const { id } = crewIdParamsSchema.parse(request.params)
+            const user = request.user!
+            const { limit } = feedQuerySchema.parse(request.query)
+
+            // Check crew visibility
+            const { data: crew } = await fastify.supabase.from('crews').select('is_public').eq('id', id).single()
+            if (!crew) return reply.code(404).send({ error: 'Crew not found' })
+            if (!crew.is_public) {
+                const { data: membership } = await fastify.supabase
+                    .from('crew_members').select('role').eq('crew_id', id).eq('user_id', user.id).single()
+                if (!membership) return reply.code(403).send({ error: 'This crew is private' })
+            }
 
             const { data: members } = await fastify.supabase
                 .from('crew_members')
@@ -407,7 +448,7 @@ export default async function crewRoutes(fastify: FastifyInstance) {
     fastify.post('/:id/challenge', async (request, reply) => {
         try {
             const user = request.user!
-            const { id } = request.params as { id: string }
+            const { id } = crewIdParamsSchema.parse(request.params)
             const body = challengeSchema.parse(request.body)
 
             // Vérifier que le joueur est membre du crew
@@ -458,9 +499,7 @@ export default async function crewRoutes(fastify: FastifyInstance) {
     // ==========================================
     fastify.get('/search', async (request, reply) => {
         try {
-            const query = request.query as any
-            const q = query.q || ''
-            const crewType = query.type
+            const { q, type: crewType } = searchQuerySchema.parse(request.query)
 
             let queryBuilder = fastify.supabase
                 .from('crews')
@@ -468,7 +507,9 @@ export default async function crewRoutes(fastify: FastifyInstance) {
                 .eq('is_public', true)
 
             if (q) {
-                queryBuilder = queryBuilder.ilike('name', `%${q}%`)
+                // Sanitize LIKE special characters to prevent pattern injection
+                const sanitized = q.replace(/[%_\\]/g, '\\$&')
+                queryBuilder = queryBuilder.ilike('name', `%${sanitized}%`)
             }
             if (crewType) {
                 queryBuilder = queryBuilder.eq('crew_type', crewType)
@@ -491,9 +532,7 @@ export default async function crewRoutes(fastify: FastifyInstance) {
     // ==========================================
     fastify.get('/rankings', async (request, reply) => {
         try {
-            const query = request.query as any
-            const metric = query.metric || 'xp' // xp, members
-            const limit = Math.min(parseInt(query.limit) || 20, 50)
+            const { metric, limit } = rankingsQuerySchema.parse(request.query)
 
             const col = metric === 'members' ? 'member_count' : 'total_xp'
 
@@ -523,7 +562,7 @@ export default async function crewRoutes(fastify: FastifyInstance) {
     fastify.post('/:id/invite', async (request, reply) => {
         try {
             const user = request.user!
-            const { id } = request.params as { id: string }
+            const { id } = crewIdParamsSchema.parse(request.params)
             const body = inviteSchema.parse(request.body)
 
             // Vérifier que l'inviteur est membre

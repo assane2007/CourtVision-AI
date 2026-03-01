@@ -171,8 +171,7 @@ export default async function recoveryRoutes(fastify: FastifyInstance) {
     fastify.get('/history', async (request, reply) => {
         try {
             const user = request.user!
-            const query = request.query as any
-            const days = Math.min(parseInt(query.days) || 30, 90)
+            const { days } = z.object({ days: z.coerce.number().int().min(1).max(90).default(30) }).parse(request.query)
 
             const since = new Date()
             since.setDate(since.getDate() - days)

@@ -147,6 +147,7 @@ export class RealtimePipelineEngine {
     private lastFrameTimestamp: number = 0
     private currentAngles: BodyAngles | null = null
     private currentBiomechanics: ShootingBiomechanics | null = null
+    private lastPoseResult: PoseEstimationResult | null = null
     private wristTrajectory: Array<{ x: number; y: number; timestamp: number }> = []
     private pendingShot: DetectedShot | null = null
     private isRunning: boolean = false
@@ -228,6 +229,9 @@ export class RealtimePipelineEngine {
             pose = await this.poseEngine.processFrame(
                 frameData, frameIndex, timestamp, frameWidth, frameHeight
             )
+            if (pose) {
+                this.lastPoseResult = pose
+            }
         }
 
         // --- Étape 2 : Shot Detection ---
@@ -507,8 +511,31 @@ export class RealtimePipelineEngine {
     }
 
     private estimateZone(): ShotZone {
-        // TODO: Utiliser la calibration terrain et la position 3D
-        // Pour l'instant, retourne une zone par défaut
+        // Estimate court zone from the last known pose position
+        // Uses normalized hip midpoint (x, y) as the player's floor position
+        const lastPose = this.lastPoseResult
+        if (lastPose && lastPose.landmarks.length > 24) {
+            // BlazePose: landmarks 23=left_hip, 24=right_hip
+            const lHip = lastPose.landmarks[23]
+            const rHip = lastPose.landmarks[24]
+            if (lHip && rHip) {
+                const x = (lHip.x + rHip.x) / 2  // 0-1 normalized court width
+                const y = (lHip.y + rHip.y) / 2  // 0-1 normalized (top=basket)
+
+                // Court zone estimation based on normalized camera view
+                // Assumes camera is behind the baseline looking at the court
+                const distFromBasket = y  // higher y = farther from basket
+
+                if (distFromBasket < 0.15) return 'restricted'
+                if (distFromBasket < 0.30) return 'paint'
+                if (distFromBasket < 0.50) {
+                    return (x < 0.25 || x > 0.75) ? 'corner3' : 'midrange'
+                }
+                if (x < 0.30 || x > 0.70) return 'wing3'
+                return 'top3'
+            }
+        }
+        // Fallback when no pose data is available
         return 'midrange'
     }
 

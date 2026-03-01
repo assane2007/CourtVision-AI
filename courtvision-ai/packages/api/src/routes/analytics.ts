@@ -36,13 +36,17 @@ import {
 export default async function analyticsRoutes(fastify: FastifyInstance) {
     fastify.addHook('preValidation', fastify.authenticate)
 
+    const sessionIdParamsSchema = z.object({ id: z.string().uuid() })
+    const sessionIdParamsSchema2 = z.object({ sessionId: z.string().uuid() })
+    const hotColdQuerySchema = z.object({ sessions: z.coerce.number().int().min(1).max(50).default(10) })
+
     // ==========================================
     // GET /session/:id — Analytics d'une session
     // ==========================================
     fastify.get('/session/:id', async (request, reply) => {
         try {
             const user = request.user!
-            const { id } = request.params as { id: string }
+            const { id } = sessionIdParamsSchema.parse(request.params)
 
             // Vérifier la session
             const { data: session, error: sessionErr } = await fastify.supabase
@@ -193,8 +197,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
     fastify.get('/hot-cold-zones', async (request, reply) => {
         try {
             const user = request.user!
-            const query = request.query as any
-            const sessions = parseInt(query.sessions) || 10
+            const { sessions } = hotColdQuerySchema.parse(request.query)
 
             const { data, error } = await fastify.supabase
                 .from('sessions')
@@ -421,7 +424,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
     fastify.get('/game-score/:sessionId', async (request, reply) => {
         try {
             const user = request.user!
-            const { sessionId } = request.params as { sessionId: string }
+            const { sessionId } = sessionIdParamsSchema2.parse(request.params)
 
             const { data: analysis } = await fastify.supabase
                 .from('analyses')

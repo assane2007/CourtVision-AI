@@ -59,6 +59,10 @@ const preGameSchema = z.object({
     goals: z.array(z.string()).optional(),
 })
 
+// Param/query schemas
+const conversationIdSchema = z.object({ id: z.string().uuid() })
+const conversationsQuerySchema = z.object({ limit: z.coerce.number().int().min(1).max(50).default(20) })
+
 export default async function coachChatRoutes(fastify: FastifyInstance) {
     fastify.addHook('preValidation', fastify.authenticate)
 
@@ -86,9 +90,11 @@ export default async function coachChatRoutes(fastify: FastifyInstance) {
             const playerContext = await buildPlayerContext(fastify, user.id)
 
             // Si session_review, enrichir avec les données de la session
-            let sessionContext = ''
             if (body.sessionId) {
-                sessionContext = await buildSessionContext(fastify, body.sessionId)
+                const sessionContext = await buildSessionContext(fastify, body.sessionId)
+                if (sessionContext) {
+                    playerContext.sessionReview = sessionContext
+                }
             }
 
             // Historique de la conversation
@@ -151,8 +157,7 @@ export default async function coachChatRoutes(fastify: FastifyInstance) {
     fastify.get('/conversations', async (request, reply) => {
         try {
             const user = request.user!
-            const query = request.query as any
-            const limit = Math.min(parseInt(query.limit) || 20, 50)
+            const { limit } = conversationsQuerySchema.parse(request.query)
 
             const { data, error } = await fastify.supabase
                 .from('coach_conversations')
@@ -175,7 +180,7 @@ export default async function coachChatRoutes(fastify: FastifyInstance) {
     fastify.get('/conversations/:id', async (request, reply) => {
         try {
             const user = request.user!
-            const { id } = request.params as { id: string }
+            const { id } = conversationIdSchema.parse(request.params)
 
             const { data, error } = await fastify.supabase
                 .from('coach_conversations')
@@ -281,7 +286,7 @@ export default async function coachChatRoutes(fastify: FastifyInstance) {
     fastify.delete('/conversations/:id', async (request, reply) => {
         try {
             const user = request.user!
-            const { id } = request.params as { id: string }
+            const { id } = conversationIdSchema.parse(request.params)
 
             const { error } = await fastify.supabase
                 .from('coach_conversations')

@@ -18,21 +18,46 @@ export const authPlugin = fp(async (fastify, opts) => {
     fastify.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
         try {
             const authHeader = request.headers.authorization
-            if (!authHeader) {
-                throw new Error('No authorization header')
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return reply.code(401).send({
+                    success: false,
+                    error: 'Unauthorized',
+                    message: 'Missing or malformed Authorization header. Expected: Bearer <token>'
+                })
             }
 
-            const token = authHeader.replace('Bearer ', '')
+            const token = authHeader.slice(7) // More reliable than .replace()
+            if (!token || token.length < 10) {
+                return reply.code(401).send({
+                    success: false,
+                    error: 'Unauthorized',
+                    message: 'Invalid token format'
+                })
+            }
+
             const { data, error } = await fastify.supabase.auth.getUser(token)
 
             if (error || !data.user) {
-                throw new Error('Invalid token')
+                request.log.warn({ error: error?.message }, 'Auth token validation failed')
+                return reply.code(401).send({
+                    success: false,
+                    error: 'Unauthorized',
+                    message: 'Invalid or expired token'
+                })
             }
 
             // Inject user on request to use it in routes
-            request.user = { id: data.user.id, email: data.user.email ?? undefined }
-        } catch (err) {
-            reply.code(401).send({ error: 'Unauthorized' })
+            request.user = {
+                id: data.user.id,
+                email: data.user.email ?? undefined,
+            }
+        } catch (err: any) {
+            request.log.error({ err }, 'Authentication error')
+            return reply.code(401).send({
+                success: false,
+                error: 'Unauthorized',
+                message: 'Authentication failed'
+            })
         }
     })
 })

@@ -19,7 +19,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
     app.get('/', {
         preHandler: [app.authenticate],
     }, async (request, reply) => {
-        const userId = (request as any).userId
+        const userId = request.user?.id
         if (!userId) return reply.status(401).send({ error: 'Unauthorized' })
 
         try {
@@ -31,8 +31,8 @@ export default async function dashboardRoutes(app: FastifyInstance) {
                 generatedAt: new Date().toISOString(),
             })
         } catch (error: any) {
-            console.error('[Dashboard] Error:', error)
-            return reply.status(500).send({ error: 'Failed to build dashboard', details: error.message })
+            request.log.error({ err: error }, '[Dashboard] Error building dashboard')
+            return reply.status(500).send({ error: 'Failed to build dashboard' })
         }
     })
 
@@ -40,7 +40,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
     app.get('/apex', {
         preHandler: [app.authenticate],
     }, async (request, reply) => {
-        const userId = (request as any).userId
+        const userId = request.user?.id
         if (!userId) return reply.status(401).send({ error: 'Unauthorized' })
 
         try {
@@ -50,6 +50,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
                 data: apexScore,
             })
         } catch (error: any) {
+            request.log.error({ err: error }, '[Dashboard] Error computing apex score')
             return reply.status(500).send({ error: 'Failed to compute apex score' })
         }
     })
@@ -58,7 +59,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
     app.get('/digest', {
         preHandler: [app.authenticate],
     }, async (request, reply) => {
-        const userId = (request as any).userId
+        const userId = request.user?.id
         if (!userId) return reply.status(401).send({ error: 'Unauthorized' })
 
         try {
@@ -68,6 +69,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
                 data: digest,
             })
         } catch (error: any) {
+            request.log.error({ err: error }, '[Dashboard] Error generating weekly digest')
             return reply.status(500).send({ error: 'Failed to generate weekly digest' })
         }
     })
@@ -76,7 +78,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
     app.get('/percentiles', {
         preHandler: [app.authenticate],
     }, async (request, reply) => {
-        const userId = (request as any).userId
+        const userId = request.user?.id
         if (!userId) return reply.status(401).send({ error: 'Unauthorized' })
 
         try {
@@ -86,6 +88,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
                 data: percentiles,
             })
         } catch (error: any) {
+            request.log.error({ err: error }, '[Dashboard] Error computing percentiles')
             return reply.status(500).send({ error: 'Failed to compute percentiles' })
         }
     })
