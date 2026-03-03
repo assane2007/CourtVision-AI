@@ -7,24 +7,34 @@ module.exports = {
     theme: {
         extend: {
             colors: {
-                // Backgrounds
-                background: '#080C12',
-                surface: '#0D1219',
-                elevated: '#131A24',
-                overlay: '#1A2333',
-                // Primary / Brand (Amber)
-                primary: {
-                    DEFAULT: '#FF6B00',
-                    hover: '#FF8C36',
-                    dark: '#CC5500',
-                    dim: 'rgba(255,107,0,0.10)',
-                    glow: 'rgba(255,107,0,0.28)',
+                // DARK ARENA PALETTE
+                void: '#040404',
+                fire: {
+                    DEFAULT: '#FF4D00',
+                    glow: 'rgba(255,107,0,0.35)',
+                    dim: 'rgba(255,107,0,0.12)',
                 },
-                // Accent (Blue)
+                ice: {
+                    DEFAULT: '#00F0FF',
+                    glow: 'rgba(0,240,255,0.35)',
+                    dim: 'rgba(0,240,255,0.12)',
+                },
+                // Legacy / Semantic Mapping
+                background: '#040404',
+                surface: '#080808',
+                elevated: '#0C0C0C',
+                overlay: '#111111',
+                primary: {
+                    DEFAULT: '#FF4D00',
+                    hover: '#FF6B22',
+                    dark: '#CC3D00',
+                    dim: 'rgba(255,77,0,0.12)',
+                    glow: 'rgba(255,77,0,0.30)',
+                },
                 accent: {
-                    DEFAULT: '#0A84FF',
-                    light: '#4DA6FF',
-                    dim: 'rgba(10,132,255,0.10)',
+                    DEFAULT: '#00F0FF',
+                    light: '#55FFFF',
+                    dim: 'rgba(0,240,255,0.10)',
                 },
                 // Semantic
                 green: {
@@ -48,9 +58,9 @@ module.exports = {
                 },
                 gold: '#FFD700',
                 // Text
-                'text-primary': '#F2F6FC',
-                'text-secondary': '#7C8FA3',
-                'text-tertiary': '#48596B',
+                'text-primary': '#FFFFFF',
+                'text-secondary': '#FFFFFF',
+                'text-tertiary': '#FFFFFF',
                 // Borders
                 border: {
                     DEFAULT: 'rgba(255,255,255,0.05)',

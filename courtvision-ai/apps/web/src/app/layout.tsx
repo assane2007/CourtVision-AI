@@ -1,4 +1,4 @@
-﻿import type { Metadata, Viewport } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Sora, DM_Sans } from 'next/font/google'
 import './globals.css'
 
@@ -24,14 +24,14 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
     metadataBase: new URL(siteUrl),
     title: {
-        default: 'CourtVision AI  The AI Coach That Transforms Your Game',
+        default: 'CourtVision AI — The Apex of Athletic Intelligence',
         template: '%s | CourtVision AI',
     },
-    description: 'AI-powered basketball analysis from video. Shot detection, mental scoring, 3D reconstruction, auto highlights. Your personal coach in your pocket.',
+    description: 'The world-record AI basketball coach. AR Ghost Tracking, 3D Court Reconstruction via Gaussian Splatting, and The Shadow League multi-agent simulations. Elite performance starts here.',
     keywords: [
-        'basketball', 'AI', 'artificial intelligence', 'coach', 'video analysis',
-        'sport tech', 'shot tracking', 'mental game', 'highlights', 'training',
-        'shot analysis', 'digital twin', '3D reconstruction', 'basketball analytics'
+        'basketball AI', 'AR ghost tracking', 'Gaussian Splatting sports', '3D court reconstruction',
+        'shadow league', 'multi-agent simulation', 'NBA shooting mechanics', 'digital twin athlete',
+        'automated basketball highlights', 'biometric HUD', 'smart basketball coach'
     ],
     authors: [{ name: 'CourtVision AI' }],
     creator: 'CourtVision AI',
@@ -93,6 +93,9 @@ const jsonLd = {
     },
 }
 
+import NeuralHUD from '@/components/NeuralHUD'
+import PageTransition from '@/components/PageTransition'
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
         <html lang="en" className={`scroll-smooth ${sora.variable} ${dmSans.variable}`}>
@@ -102,8 +105,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
                 />
             </head>
-            <body className="font-body antialiased">
-                {children}
+            <body className="font-body antialiased bg-void text-text-primary selection:bg-fire selection:text-white">
+                <NeuralHUD />
+                <PageTransition>
+                    {children}
+                </PageTransition>
             </body>
         </html>
     )

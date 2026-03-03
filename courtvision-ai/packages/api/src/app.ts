@@ -9,10 +9,13 @@ import {
     jsonSchemaTransform
 } from 'fastify-type-provider-zod'
 
+import fastifyWebsocket from '@fastify/websocket'
+
 import { supabasePlugin } from './plugins/supabase'
 import { authPlugin } from './plugins/auth'
 import { initV5Orchestrator } from './services/v5Orchestrator'
 import { env } from './config/env'
+import { initializeQueues } from './queue'
 
 // ── Routes ──
 import authRoutes from './routes/auth'
@@ -35,6 +38,10 @@ import analyticsRoutes from './routes/analytics'
 import dashboardRoutes from './routes/dashboard'
 import shootingSessionRoutes from './routes/shootingSessions'
 import highlightRoutes from './routes/highlights'
+import wsRoutes from './routes/ws'
+import playersRoutes from './routes/players'
+import shadowRoutes from './routes/shadow'
+import spatialRoutes from './routes/spatial'
 
 export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     const app = fastify(opts).withTypeProvider<ZodTypeProvider>()
@@ -64,6 +71,11 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     })
 
+    // WebSockets
+    app.register(fastifyWebsocket, {
+        options: { maxPayload: 1048576 }
+    })
+
     // Plugins
     app.register(supabasePlugin)
     app.register(authPlugin)
@@ -71,6 +83,12 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     // Initialize V5Orchestrator with shared Supabase client after plugin registration
     app.addHook('onReady', async () => {
         initV5Orchestrator(app.supabase)
+
+        // Boot our AI workers
+        if (!env.isProduction) {
+            // Note: In prod these might run on separate containers, but for dev we bind them to the web API thread.
+            initializeQueues();
+        }
     })
 
     // Global Error Handler (Production Optimized)
@@ -169,6 +187,10 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     app.register(dashboardRoutes, { prefix: '/api/dashboard' })
     app.register(shootingSessionRoutes, { prefix: '/api/shooting-sessions' })
     app.register(highlightRoutes, { prefix: '/api/highlights' })
+    app.register(wsRoutes, { prefix: '/ws' })
+    app.register(playersRoutes, { prefix: '/api/players' })
+    app.register(shadowRoutes, { prefix: '/api/shadow' })
+    app.register(spatialRoutes, { prefix: '/api/spatial' })
 
     // Health check — deep check with DB + Redis connectivity (M-9)
     app.get('/health', async (request) => {

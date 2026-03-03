@@ -1,0 +1,18 @@
+import { Stack } from 'expo-router';
+import { colors } from '../../constants/tokens';
+
+export default function AuthLayout() {
+    return (
+        <Stack
+            screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: colors.void },
+                animation: 'fade_from_bottom',
+            }}
+        >
+            <Stack.Screen name="index" />
+            <Stack.Screen name="login" />
+            <Stack.Screen name="ai-setup" />
+        </Stack>
+    );
+}

@@ -7,6 +7,6 @@ test('homepage has correct branding and critical CTA', async ({ page }) => {
     await expect(page).toHaveTitle(/CourtVision|AI/i);
 
     // Expect prominent call to action to be visible and interactive
-    const cta = page.getByRole('link', { name: /Commencer/i }).first();
+    const cta = page.getByRole('link', { name: /Try for Free/i }).first();
     await expect(cta).toBeVisible();
 });

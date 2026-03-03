@@ -51,7 +51,15 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
             }
         }
 
-        return { success: true, data: { user: data.user, session: data.session } }
+        return {
+            success: true,
+            user: { ...data.user, role: 'player' },
+            tokens: data.session ? {
+                accessToken: data.session.access_token,
+                refreshToken: data.session.refresh_token,
+                expiresIn: data.session.expires_in
+            } : null
+        }
     })
 
     app.post('/login', {
@@ -65,10 +73,39 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
             password: body.password
         })
         if (error) throw error
-        return { success: true, data }
+        return {
+            success: true,
+            user: { ...data.user, role: 'player' },
+            tokens: {
+                accessToken: data.session.access_token,
+                refreshToken: data.session.refresh_token,
+                expiresIn: data.session.expires_in
+            }
+        }
     })
 
-    app.post('/logout', { preValidation: [app.authenticate] }, async (request, reply) => {
+    app.post('/apple', async (request, reply) => {
+        const body = request.body as any
+        // Demo/Simulated implementation for OAuth login on backend mapping via token
+        const dummyToken = `dummy_apple_access_${Date.now()}`
+        return {
+            success: true,
+            user: { id: `apple-${Date.now()}`, email: 'apple@example.com', role: 'player' },
+            tokens: { accessToken: dummyToken, refreshToken: 'dummy_refresh', expiresIn: 3600 }
+        }
+    })
+
+    app.post('/google', async (request, reply) => {
+        const body = request.body as any
+        const dummyToken = `dummy_google_access_${Date.now()}`
+        return {
+            success: true,
+            user: { id: `google-${Date.now()}`, email: 'google@example.com', role: 'player' },
+            tokens: { accessToken: dummyToken, refreshToken: 'dummy_refresh', expiresIn: 3600 }
+        }
+    })
+
+    app.delete('/logout', { preValidation: [app.authenticate] }, async (request, reply) => {
         const authHeader = request.headers.authorization!
         const token = authHeader.replace('Bearer ', '')
         const { error } = await app.supabase.auth.admin.signOut(token)

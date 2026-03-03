@@ -9,7 +9,7 @@ html {
 }
 
 body {
-    background-color: #080C12;
+    background-color: #040404;
     color: #F2F6FC;
 }
 
@@ -17,47 +17,51 @@ body {
    SCROLLBAR
    ========================================== */
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #080C12; }
-::-webkit-scrollbar-thumb { background: #1A2333; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #2A3545; }
+::-webkit-scrollbar-track { background: #040404; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
 /* ==========================================
    GLASS MORPHISM
    ========================================== */
 .glass {
-    background: rgba(13, 18, 25, 0.80);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(4, 4, 4, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 }
 
 .glass-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
 }
 
 .glass-amber {
-    background: rgba(255, 107, 0, 0.06);
-    border: 1px solid rgba(255, 107, 0, 0.16);
+    background: rgba(255, 77, 0, 0.05);
+    border: 1px solid rgba(255, 77, 0, 0.2);
 }
 
 /* ==========================================
    GRADIENT TEXT
    ========================================== */
 .gradient-text {
-    background: linear-gradient(135deg, #FF6B00 0%, #FF8C36 50%, #FFBA00 100%);
+    background: linear-gradient(135deg, #FF4D00 0%, #FF8C36 50%, #FF2D00 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 
 .gradient-text-cool {
-    background: linear-gradient(135deg, #0A84FF 0%, #A78BFA 100%);
+    background: linear-gradient(135deg, #00F0FF 0%, #A78BFA 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+}
+
+.ice-glow {
+    box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);
 }
 
 /* ==========================================

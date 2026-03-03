@@ -87,9 +87,7 @@ export const videoQueue = redisConnection
                 delay: 2000
             },
             removeOnComplete: { count: 100 },
-            removeOnFail: { count: 500 },
-            // H-7: Job timeout — 10 minutes max per video
-            timeout: 600_000,
+            removeOnFail: { count: 500 }
         }
     })
     : null

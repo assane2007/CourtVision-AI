@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 
 import { motion, animate, useInView, Variants } from 'framer-motion'
+import Link from 'next/link'
 
 // ==========================================
 // HOOKS
@@ -102,12 +103,12 @@ function Navbar() {
                                 {link.label}
                             </a>
                         ))}
-                        <a
-                            href="#waitlist"
-                            className="bg-primary hover:bg-primary-hover text-white px-5 py-2 rounded-full font-semibold transition-all hover:shadow-lg hover:shadow-primary/25 text-sm btn-glow"
+                        <Link
+                            href="/dashboard"
+                            className="bg-fire hover:bg-fire-hover text-white px-6 py-2.5 rounded-full font-bold transition-all shadow-lg shadow-fire/20 text-xs uppercase tracking-widest"
                         >
-                            Join Beta
-                        </a>
+                            Player Portal
+                        </Link>
                     </div>
 
                     <button
@@ -137,13 +138,13 @@ function Navbar() {
                                 {link.label}
                             </a>
                         ))}
-                        <a
-                            href="#waitlist"
+                        <Link
+                            href="/dashboard"
                             onClick={closeMenu}
-                            className="bg-primary text-white px-5 py-3 rounded-full font-semibold text-center mt-2"
+                            className="bg-fire text-white px-5 py-3 rounded-full font-semibold text-center mt-2 shadow-lg shadow-fire/20"
                         >
-                            Join Beta
-                        </a>
+                            Player Portal
+                        </Link>
                     </motion.div>
                 )}
             </div>
@@ -151,102 +152,99 @@ function Navbar() {
     )
 }
 
+import dynamic from 'next/dynamic'
+
+const NeuralCourt = dynamic(() => import('@/components/NeuralCourt'), { ssr: false })
+import SimulationTerminal from '@/components/SimulationTerminal'
+
 // ==========================================
 // HERO
 // ==========================================
 function Hero() {
     return (
         <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
-            <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-primary/5" />
+            <div className="absolute inset-0 bg-gradient-to-b from-void via-void to-fire/5" />
+
+            {/* Revolutionary 3D Background */}
+            <NeuralCourt />
 
             {/* Ambient glow orbs */}
             <motion.div
-                animate={{ scale: [1, 1.05, 1], opacity: [0.04, 0.06, 0.04] }}
+                animate={{ scale: [1, 1.05, 1], opacity: [0.08, 0.12, 0.08] }}
                 transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-primary rounded-full blur-[120px] pointer-events-none"
-            />
-            <motion.div
-                animate={{ scale: [1, 1.1, 1], opacity: [0.03, 0.05, 0.03] }}
-                transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-                className="absolute bottom-1/3 right-1/4 w-[400px] h-[400px] bg-accent rounded-full blur-[100px] pointer-events-none"
+                className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-fire rounded-full blur-[120px] pointer-events-none"
             />
 
-            {/* Court lines SVG */}
-            <svg className="absolute opacity-[0.03] w-[900px] h-[650px]" viewBox="0 0 800 600" fill="none" aria-hidden="true">
-                <rect x="50" y="50" width="700" height="500" rx="5" stroke="#FF6B00" strokeWidth="1.5" className="court-line" />
-                <line x1="400" y1="50" x2="400" y2="550" stroke="#FF6B00" strokeWidth="1.5" className="court-line" />
-                <circle cx="400" cy="300" r="60" stroke="#FF6B00" strokeWidth="1.5" className="court-line" />
-                <rect x="50" y="175" width="150" height="250" stroke="#FF6B00" strokeWidth="1.5" className="court-line" />
-                <rect x="600" y="175" width="150" height="250" stroke="#FF6B00" strokeWidth="1.5" className="court-line" />
-                <path d="M 50 237 A 75 75 0 0 1 200 237" stroke="#FF6B00" strokeWidth="1" className="court-line" fill="none" />
-                <path d="M 600 237 A 75 75 0 0 0 750 237" stroke="#FF6B00" strokeWidth="1" className="court-line" fill="none" />
-            </svg>
+            <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="text-left"
+                >
+                    {/* Badge */}
+                    <motion.div variants={itemVariants} className="inline-flex items-center gap-2 bg-surface border border-border rounded-full px-4 py-2 mb-8">
+                        <span className="flex h-2 w-2 rounded-full bg-fire animate-pulse" />
+                        <span className="text-xs uppercase tracking-widest text-text-secondary font-mono">NEURAL NETWORK ACTIVE</span>
+                        <Sparkles size={14} className="text-fire" />
+                    </motion.div>
 
-            <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-                className="relative z-10 text-center px-4 max-w-5xl mx-auto"
-            >
-                {/* Badge */}
-                <motion.div variants={itemVariants} className="inline-flex items-center gap-2 bg-surface/80 border border-border rounded-full px-4 py-2 mb-8">
-                    <span className="flex h-2 w-2 rounded-full bg-green animate-pulse" />
-                    <span className="text-sm text-text-secondary">Open Beta &mdash; Limited Spots</span>
-                    <Sparkles size={14} className="text-primary" />
+                    {/* Headline */}
+                    <motion.h1 variants={itemVariants} className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-display font-black leading-[1.02] mb-6 tracking-tight italic uppercase">
+                        THE APEX OF
+                        <br />
+                        <span className="gradient-text">INTELLIGENCE.</span>
+                    </motion.h1>
+
+                    {/* Subtitle */}
+                    <motion.p variants={itemVariants} className="text-lg sm:text-xl text-text-secondary max-w-xl mb-10 leading-relaxed uppercase tracking-[0.15em] font-mono text-[12px] opacity-80">
+                        AR Ghost Tracking • Digital Twin Matchups • Elite Biometrics.
+                        <span className="text-fire font-semibold block mt-1"> The future of basketball is here.</span>
+                    </motion.p>
+
+                    {/* CTA buttons */}
+                    <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-6 items-start mb-12">
+                        <Link
+                            href="/dashboard"
+                            className="group bg-fire hover:bg-fire-hover text-white px-8 py-4 rounded-full font-bold text-lg transition-all btn-glow flex items-center gap-2 hover:shadow-xl hover:shadow-fire/30"
+                        >
+                            GO PRO NOW
+                            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                        </Link>
+
+                        <div className="flex items-center gap-3">
+                            <div className="h-14 w-40 bg-surface border border-white/10 rounded-xl flex items-center justify-center cursor-not-allowed grayscale opacity-50 relative overflow-hidden group">
+                                <div className="text-[9px] text-text-tertiary font-mono tracking-widest">APP STORE</div>
+                            </div>
+                            <div className="h-14 w-40 bg-surface border border-white/10 rounded-xl flex items-center justify-center cursor-not-allowed grayscale opacity-50 relative overflow-hidden group">
+                                <div className="text-[9px] text-text-tertiary font-mono tracking-widest">PLAY STORE</div>
+                            </div>
+                        </div>
+                    </motion.div>
+
+                    {/* Social proof */}
+                    <motion.div variants={itemVariants} className="flex items-center gap-6 text-text-secondary text-[11px] font-mono uppercase tracking-widest">
+                        <div className="flex items-center gap-2">
+                            <div className="flex -space-x-2">
+                                {[1, 2, 3].map(i => <div key={i} className="w-6 h-6 rounded-full border border-void bg-surface" />)}
+                            </div>
+                            <span>+2.5K USERS</span>
+                        </div>
+                        <span className="text-border-strong">/ /</span>
+                        <span>15 COUNTRIES</span>
+                    </motion.div>
                 </motion.div>
 
-                {/* Headline */}
-                <motion.h1 variants={itemVariants} className="text-5xl sm:text-6xl lg:text-8xl font-display font-black leading-[1.02] mb-6 tracking-tight">
-                    <span className="text-text-primary">Play like</span>
-                    <br />
-                    <span className="gradient-text">a pro.</span>
-                </motion.h1>
-
-                {/* Subtitle */}
-                <motion.p variants={itemVariants} className="text-lg sm:text-xl text-text-secondary max-w-2xl mx-auto mb-10 leading-relaxed">
-                    AI that analyzes your basketball game from video. Shot tracking,
-                    mental scoring, 3D reconstruction, auto highlights.
-                    <span className="text-primary font-semibold"> Your personal coach in your pocket.</span>
-                </motion.p>
-
-                {/* CTA buttons */}
-                <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                    <a
-                        href="#waitlist"
-                        className="group bg-primary hover:bg-primary-hover text-white px-8 py-4 rounded-full font-bold text-lg transition-all btn-glow flex items-center gap-2 hover:shadow-xl hover:shadow-primary/30"
-                    >
-                        Try for Free
-                        <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                    </a>
-                    <a
-                        href="#how-it-works"
-                        className="text-text-secondary hover:text-text-primary border border-border hover:border-border-light px-8 py-4 rounded-full font-medium transition-all flex items-center gap-2 hover:bg-surface/50"
-                    >
-                        See How It Works
-                        <Play size={16} />
-                    </a>
+                {/* Simulation Terminal - Hidden on small, visible on LG */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9, rotateY: 20 }}
+                    animate={{ opacity: 1, scale: 1, rotateY: -10 }}
+                    transition={{ duration: 1.5, ease: "easeOut", delay: 0.5 }}
+                    className="hidden lg:block perspective-1000"
+                >
+                    <SimulationTerminal />
                 </motion.div>
-
-                {/* Social proof */}
-                <motion.div variants={itemVariants} className="mt-14 flex flex-wrap justify-center items-center gap-6 text-text-secondary text-sm">
-                    <div className="flex items-center gap-1">
-                        {[...Array(5)].map((_, i) => (
-                            <Star key={i} size={14} className="fill-yellow text-yellow" />
-                        ))}
-                        <span className="ml-2">4.9/5 from beta testers</span>
-                    </div>
-                    <span className="hidden sm:inline text-border-strong">&bull;</span>
-                    <span className="flex items-center gap-1.5">
-                        <BarChart3 size={14} className="text-primary" />
-                        2,500+ games analyzed
-                    </span>
-                    <span className="hidden sm:inline text-border-strong">&bull;</span>
-                    <span className="flex items-center gap-1.5">
-                        <Users size={14} className="text-accent" />
-                        Used in 15 countries
-                    </span>
-                </motion.div>
-            </motion.div>
+            </div>
 
             {/* Scroll indicator */}
             <motion.div
@@ -304,58 +302,58 @@ function StatsBar() {
 // ==========================================
 const features = [
     {
-        icon: <Target size={24} />,
-        title: 'AI Shot Analysis',
-        desc: 'Auto-detect every shot, zone, posture, and elbow angle. Compare your form against NBA players.',
+        icon: <Zap size={24} />,
+        title: 'Ghost Mode AR',
+        desc: 'Interactive skeletal analysis. Compare your shooting mechanics frame-by-frame against your perfectly calibrated Digital Twin.',
         color: 'text-primary',
         bg: 'bg-primary/10',
     },
     {
-        icon: <Brain size={24} />,
-        title: 'Mental Score',
-        desc: 'Body language analysis that detects frustration, fatigue, and confidence drops in real time.',
-        color: 'text-violet',
-        bg: 'bg-violet/10',
-    },
-    {
         icon: <Eye size={24} />,
-        title: '3D Reconstruction',
-        desc: 'Bird\'s eye court view from a single phone camera. Heatmaps, distances, positioning insights.',
+        title: '3D Court Reconstruct',
+        desc: 'Turn a single 2D video into a fully navigable 3D Gaussian Splatting scene. Re-watch your highlights from any angle.',
         color: 'text-accent',
         bg: 'bg-accent/10',
     },
     {
+        icon: <Users size={24} />,
+        title: 'The Shadow League',
+        desc: 'Multi-agent simulation engine. Your digital twin plays 1,000 matches nightly to reveal your ultimate tactical edge.',
+        color: 'text-violet',
+        bg: 'bg-violet/10',
+    },
+    {
         icon: <Video size={24} />,
-        title: 'Auto Highlights',
-        desc: 'ESPN-level highlight reels in 2 minutes. 3 templates. One-tap share to TikTok, IG, YouTube.',
+        title: 'Cinematic Highlights',
+        desc: 'Auto-generate TikTok reels with "Iron Man" style biometric HUDs. Pro-level editing powered by athletic vision models.',
         color: 'text-red',
         bg: 'bg-red/10',
     },
     {
         icon: <Activity size={24} />,
-        title: 'Live Coach',
-        desc: 'Real-time analysis during your game. Haptic alerts. Summary after each quarter.',
+        title: 'Live Playbook',
+        desc: 'Holographic objectives during play. Earn XP and complete real-time training challenges using live AR tracking.',
         color: 'text-green',
         bg: 'bg-green/10',
     },
     {
-        icon: <Layers size={24} />,
-        title: 'Digital Twin',
-        desc: 'Your AI avatar evolves with every game. Compare to pros. Coaches can test tactics on your twin.',
+        icon: <Award size={24} />,
+        title: 'Skill DNA Score',
+        desc: 'High-fidelity tracking of 33+ body keypoints to quantify your athletic potential and identify mechanics breakdown.',
         color: 'text-yellow',
         bg: 'bg-yellow/10',
     },
     {
-        icon: <Trophy size={24} />,
-        title: 'Community & Challenges',
-        desc: 'The Strava of basketball. Friend leaderboards, weekly challenges, public profiles with stats.',
+        icon: <Brain size={24} />,
+        title: 'Predictive Insights',
+        desc: 'AI that forecasts your next move. Understand your offensive patterns and defensive gaps with precision data.',
         color: 'text-primary',
         bg: 'bg-primary/10',
     },
     {
         icon: <TrendingUp size={24} />,
-        title: '30-Day Program',
-        desc: 'AI generates a personalized training plan based on your weaknesses. Gamified like Duolingo.',
+        title: 'Elite Curriculum',
+        desc: 'Daily regimen generated by the coach agent based on your previous night\'s Shadow League simulation results.',
         color: 'text-green',
         bg: 'bg-green/10',
     },
@@ -507,17 +505,17 @@ function Testimonials() {
 // HOW IT WORKS
 // ==========================================
 const steps = [
-    { num: '01', title: 'Film your game', desc: 'Set your phone on the sideline. That\'s all you need.', icon: <Smartphone size={22} /> },
-    { num: '02', title: 'AI analyzes', desc: '7-stage pipeline: tracking, 3D, shots, mental, report, highlights. Under 2 minutes.', icon: <Zap size={22} /> },
-    { num: '03', title: 'Get your report', desc: 'Complete stats, mental analysis, NBA comparison, personalized training program.', icon: <BarChart3 size={22} /> },
-    { num: '04', title: 'Share & improve', desc: 'Viral highlights, friend challenges, Duolingo-style streaks, 30-day progression.', icon: <Award size={22} /> },
+    { num: '01', title: 'Uplink Video', desc: 'Securely sync your court footage to the Cloud from the app.', icon: <Smartphone size={22} /> },
+    { num: '02', title: 'AI Extraction', desc: 'Skeletal mapping, 3D scene reconstruction, and biometric quantification.', icon: <Zap size={22} /> },
+    { num: '03', title: 'Simulate', desc: 'Nightly Shadow League simulations pit your Digital Twin against the community.', icon: <BarChart3 size={22} /> },
+    { num: '04', title: 'Evolution', desc: 'Receive your Morning Report & Adaptive Training Plan based on results.', icon: <Award size={22} /> },
 ]
 
 function HowItWorks() {
     return (
         <motion.section
             id="how-it-works"
-            className="py-28 px-4 bg-surface/30"
+            className="py-28 px-4 bg-surface"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-100px" }}
@@ -652,15 +650,15 @@ function Pricing() {
                                     </li>
                                 ))}
                             </ul>
-                            <a
-                                href="#waitlist"
+                            <Link
+                                href="/dashboard"
                                 className={`block text-center py-3 rounded-full font-semibold transition-all ${plan.popular
-                                    ? 'bg-primary hover:bg-primary-hover text-white hover:shadow-lg hover:shadow-primary/25 btn-glow'
-                                    : 'bg-elevated border border-border hover:border-primary/30 text-text-primary hover:bg-overlay'
+                                    ? 'bg-fire hover:bg-fire-hover text-white hover:shadow-lg hover:shadow-fire/25 shadow-lg shadow-fire/10'
+                                    : 'bg-elevated border border-border hover:border-fire/30 text-text-primary hover:bg-overlay'
                                     }`}
                             >
                                 {plan.cta}
-                            </a>
+                            </Link>
                         </motion.div>
                     ))}
                 </div>
@@ -729,7 +727,7 @@ function FAQ() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6 }}
-            className="py-28 px-4 bg-surface/30"
+            className="py-28 px-4 bg-surface"
         >
             <div className="max-w-3xl mx-auto">
                 <div className="text-center mb-12">
@@ -831,12 +829,11 @@ function Waitlist() {
                         <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-6">
                             <Flame size={28} className="text-primary" />
                         </div>
-                        <h2 className="text-3xl sm:text-4xl font-display font-bold text-text-primary mb-4">
-                            Ready to transform your game?
+                        <h2 className="text-3xl sm:text-4xl font-display font-black text-text-primary mb-4 uppercase tracking-tighter italic">
+                            UNLEASH YOUR DIGITAL TWIN
                         </h2>
-                        <p className="text-text-secondary mb-8 max-w-lg mx-auto">
-                            Join the private beta. Free access for the first 500 players.
-                            No credit card required.
+                        <p className="text-text-secondary mb-8 max-w-lg mx-auto uppercase text-[12px] tracking-[0.2em] font-mono opacity-70">
+                            Join the private elite beta. Restricted access to the first 500 athletes.
                         </p>
 
                         {submitted ? (
@@ -863,10 +860,10 @@ function Waitlist() {
                                     {loading ? (
                                         <span className="flex items-center justify-center gap-2">
                                             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                            Sending...
+                                            SYNCING...
                                         </span>
                                     ) : (
-                                        'Join the Beta'
+                                        'ENTER THE ARENA'
                                     )}
                                 </button>
                             </form>
@@ -902,9 +899,9 @@ function Footer() {
                     </a>
 
                     <div className="flex gap-6 text-sm text-text-secondary">
-                        <a href="#" className="hover:text-text-primary transition-colors">Privacy</a>
-                        <a href="#" className="hover:text-text-primary transition-colors">Terms</a>
-                        <a href="#" className="hover:text-text-primary transition-colors">Contact</a>
+                        <Link href="/privacy" className="hover:text-text-primary transition-colors">Privacy</Link>
+                        <Link href="/terms" className="hover:text-text-primary transition-colors">Terms</Link>
+                        <a href="mailto:legal@courtvision.ai" className="hover:text-text-primary transition-colors">Contact</a>
                         <a href="https://twitter.com/courtvisionai" className="hover:text-text-primary transition-colors" target="_blank" rel="noopener noreferrer">
                             Twitter
                         </a>
@@ -916,8 +913,8 @@ function Footer() {
                 </div>
 
                 <div className="text-center mt-8 pt-6 border-t border-border">
-                    <p className="text-xs text-text-tertiary/60">
-                        Built with passion for the basketball community
+                    <p className="text-xs text-text-tertiary/60 uppercase tracking-[0.3em] font-mono">
+                        ENGINEERED FOR THE NEXT GENERATION OF ATHLETES
                     </p>
                 </div>
             </div>

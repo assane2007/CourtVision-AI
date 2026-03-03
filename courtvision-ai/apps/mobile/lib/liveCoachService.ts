@@ -31,10 +31,13 @@ import type {
 
 export class LiveCoachService {
     private sessionId: string
-    private basePath: string
-    private eventSource: EventSource | null = null
-    private sseReconnectTimer: ReturnType<typeof setTimeout> | null = null
-    private sseListeners: Set<(event: LiveSSEEvent) => void> = new Set()
+    private basePath: string // For fallback REST calls if needed
+    private ws: WebSocket | null = null
+    private wsReconnectTimer: ReturnType<typeof setTimeout> | null = null
+    private eventListeners: Set<(event: LiveSSEEvent) => void> = new Set()
+    private isConnected = false
+    private framePromises = new Map<string, { resolve: (val: any) => void; reject: (err: any) => void }>()
+    private frameCounter = 0
 
     constructor(sessionId: string) {
         this.sessionId = sessionId
@@ -45,29 +48,45 @@ export class LiveCoachService {
     // Session Lifecycle
     // ==========================================
 
-    /**
-     * Démarre une session Coach Live sur le serveur.
-     */
     async start(config?: LiveSessionConfig): Promise<LiveStartResponse> {
-        return apiFetch<LiveStartResponse>(this.basePath, {
+        // We still start the session via REST to initialize DB records, then connect WS
+        const res = await apiFetch<LiveStartResponse>(this.basePath, {
             method: 'POST',
             body: JSON.stringify(config || {}),
         })
+        this.connectWebSocket()
+        return res
     }
 
-    /**
-     * Envoie une frame d'analyse (landmarks + metadata).
-     */
     async sendFrame(payload: LiveFramePayload): Promise<LiveFrameResponse> {
-        return apiFetch<LiveFrameResponse>(`${this.basePath}/frame`, {
-            method: 'POST',
-            body: JSON.stringify(payload),
+        if (!this.isConnected || !this.ws) {
+            // Fallback to HTTP if WS is dead or still connecting
+            return apiFetch<LiveFrameResponse>(`${this.basePath}/frame`, {
+                method: 'POST',
+                body: JSON.stringify(payload),
+            })
+        }
+
+        return new Promise((resolve, reject) => {
+            const frameId = `f_${this.frameCounter++}`
+            this.framePromises.set(frameId, { resolve, reject })
+
+            // Timeout in case server doesn't ack the frame
+            setTimeout(() => {
+                if (this.framePromises.has(frameId)) {
+                    this.framePromises.delete(frameId)
+                    reject(new Error('WebSocket frame timeout'))
+                }
+            }, 5000)
+
+            this.ws!.send(JSON.stringify({
+                type: 'frame',
+                frameId,
+                payload
+            }))
         })
     }
 
-    /**
-     * Enregistre un tir manuellement.
-     */
     async recordShot(outcome: ShotOutcome, zone?: ShotZone): Promise<LiveShotResponse> {
         return apiFetch<LiveShotResponse>(`${this.basePath}/shot`, {
             method: 'POST',
@@ -75,9 +94,6 @@ export class LiveCoachService {
         })
     }
 
-    /**
-     * Termine un quart-temps et reçoit le résumé.
-     */
     async endQuarter(quarter: number): Promise<LiveQuarterResponse> {
         return apiFetch<LiveQuarterResponse>(`${this.basePath}/quarter`, {
             method: 'POST',
@@ -85,138 +101,114 @@ export class LiveCoachService {
         })
     }
 
-    /**
-     * Termine la session et reçoit le rapport final.
-     */
     async endSession(): Promise<LiveEndResponse> {
-        this.disconnectSSE()
+        this.disconnectWebSocket()
         return apiFetch<LiveEndResponse>(`${this.basePath}/end`, {
             method: 'POST',
         })
     }
 
-    /**
-     * Récupère le status courant de la session.
-     */
     async getStatus(): Promise<LiveStatusResponse> {
         return apiFetch<LiveStatusResponse>(`${this.basePath}/status`)
     }
 
     // ==========================================
-    // Server-Sent Events (SSE)
+    // WebSockets (Native)
     // ==========================================
 
-    /**
-     * Se connecte au flux SSE pour recevoir les alertes en push.
-     * Le callback est appelé pour chaque événement reçu.
-     * Gère automatiquement la reconnection.
-     */
     connectSSE(onEvent: (event: LiveSSEEvent) => void): void {
-        this.sseListeners.add(onEvent)
-
-        if (this.eventSource) return // déjà connecté
-
-        // getAuthToken() est async — on résout le token avant de construire l'URL
-        getAuthToken().then(token => {
-            const url = `${API_BASE_URL}${this.basePath}/stream${token ? `?token=${encodeURIComponent(token)}` : ''}`
-            this.startSSEPolyfill(url).catch(error => {
-                console.warn('[LiveCoach SSE] Connection error:', error)
-                this.scheduleSSEReconnect()
-            })
-        }).catch(() => {
-            // Pas de token — tenter quand même sans auth
-            const url = `${API_BASE_URL}${this.basePath}/stream`
-            this.startSSEPolyfill(url).catch(() => this.scheduleSSEReconnect())
-        })
+        this.eventListeners.add(onEvent)
+        this.connectWebSocket() // Connect if not already done
     }
 
-    /**
-     * Déconnecte le flux SSE.
-     */
-    disconnectSSE(): void {
-        if (this.eventSource) {
-            this.eventSource.close()
-            this.eventSource = null
-        }
-        if (this.sseReconnectTimer) {
-            clearTimeout(this.sseReconnectTimer)
-            this.sseReconnectTimer = null
-        }
-        this.sseListeners.clear()
-    }
+    private async connectWebSocket(): Promise<void> {
+        if (this.ws) return // already connecting/connected
 
-    /**
-     * Polyfill SSE pour React Native basé sur fetch + streaming.
-     * React Native n'a pas d'EventSource natif, on simule avec un fetch long-polling.
-     */
-    private async startSSEPolyfill(url: string): Promise<void> {
         const token = await getAuthToken()
-        try {
-            const response = await fetch(url, {
-                headers: {
-                    'Accept': 'text/event-stream',
-                    'Cache-Control': 'no-cache',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                },
-            })
+        const wsProtocol = API_BASE_URL.startsWith('https') ? 'wss://' : 'ws://'
+        const domain = API_BASE_URL.replace(/^https?:\/\//, '').replace(/\/api\/?$/, '')
+        // Route as defined in our sync audit fix: /ws/sessions/:id
+        const wsUrl = `${wsProtocol}${domain}/ws/sessions/${this.sessionId}${token ? `?token=${encodeURIComponent(token)}` : ''}`
 
-            if (!response.ok) {
-                console.warn(`[LiveCoach SSE] HTTP ${response.status}`)
-                this.scheduleSSEReconnect()
-                return
+        this.ws = new WebSocket(wsUrl)
+
+        this.ws.onopen = () => {
+            this.isConnected = true
+            console.log('[LiveCoach WS] Connected')
+            if (this.wsReconnectTimer) {
+                clearTimeout(this.wsReconnectTimer)
+                this.wsReconnectTimer = null
             }
+        }
 
-            const reader = response.body?.getReader()
-            if (!reader) {
-                console.warn('[LiveCoach SSE] No reader available, falling back to polling')
-                return
-            }
+        this.ws.onmessage = (e) => {
+            try {
+                const data = JSON.parse(e.data)
 
-            const decoder = new TextDecoder()
-            let buffer = ''
+                // Match frame promises
+                if (data.type === 'frame_ack' && data.frameId) {
+                    const promise = this.framePromises.get(data.frameId)
+                    if (promise) {
+                        promise.resolve(data.response)
+                        this.framePromises.delete(data.frameId)
+                    }
+                    return
+                }
 
-            while (true) {
-                const { done, value } = await reader.read()
-                if (done) break
-
-                buffer += decoder.decode(value, { stream: true })
-
-                // Parser les messages SSE
-                const lines = buffer.split('\n')
-                buffer = lines.pop() || '' // garder le dernier fragment incomplet
-
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        try {
-                            const data = JSON.parse(line.slice(6)) as LiveSSEEvent
-                            for (const listener of this.sseListeners) {
-                                listener(data)
-                            }
-                        } catch {
-                            // Ignorer les messages mal formés
-                        }
+                // If it's a push event or alert from the SSE/WS stream
+                if (data.type === 'alert' || data.type === 'status_update') {
+                    for (const listener of this.eventListeners) {
+                        listener(data)
                     }
                 }
+            } catch (err) {
+                console.warn('[LiveCoach WS] Parse error:', err)
             }
-        } catch (error) {
-            console.warn('[LiveCoach SSE] Stream error:', error)
-            this.scheduleSSEReconnect()
+        }
+
+        this.ws.onerror = (e) => {
+            console.warn('[LiveCoach WS] Error:', e)
+            this.isConnected = false
+        }
+
+        this.ws.onclose = () => {
+            console.log('[LiveCoach WS] Closed')
+            this.isConnected = false
+            this.ws = null
+            this.scheduleReconnect()
         }
     }
 
-    private scheduleSSEReconnect(): void {
-        if (this.sseReconnectTimer) return
-        this.sseReconnectTimer = setTimeout(() => {
-            this.sseReconnectTimer = null
-            if (this.sseListeners.size > 0) {
-                getAuthToken().then(token => {
-                    const url = `${API_BASE_URL}${this.basePath}/stream${token ? `?token=${encodeURIComponent(token)}` : ''}`
-                    this.startSSEPolyfill(url)
-                }).catch(() => {
-                    this.startSSEPolyfill(`${API_BASE_URL}${this.basePath}/stream`)
-                })
+    disconnectSSE(): void {
+        this.disconnectWebSocket()
+        this.eventListeners.clear()
+    }
+
+    private disconnectWebSocket(): void {
+        if (this.ws) {
+            this.ws.close()
+            this.ws = null
+        }
+        this.isConnected = false
+        if (this.wsReconnectTimer) {
+            clearTimeout(this.wsReconnectTimer)
+            this.wsReconnectTimer = null
+        }
+        // Reject pending frame promises
+        for (const [id, promise] of this.framePromises.entries()) {
+            promise.reject(new Error('WebSocket disconnected'))
+        }
+        this.framePromises.clear()
+    }
+
+    private scheduleReconnect(): void {
+        if (this.wsReconnectTimer) return
+        this.wsReconnectTimer = setTimeout(() => {
+            this.wsReconnectTimer = null
+            if (this.eventListeners.size > 0) {
+                this.connectWebSocket()
             }
-        }, 5000)
+        }, 3000)
     }
 
     // ==========================================
@@ -224,6 +216,7 @@ export class LiveCoachService {
     // ==========================================
 
     destroy(): void {
-        this.disconnectSSE()
+        this.disconnectWebSocket()
+        this.eventListeners.clear()
     }
 }

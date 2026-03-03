@@ -1,140 +1,157 @@
-import { Stack, useRouter, useSegments } from 'expo-router'
-import { useEffect } from 'react'
-import { AppState, AppStateStatus, StatusBar } from 'react-native'
-import { SafeAreaProvider } from 'react-native-safe-area-context'
-import * as Notifications from 'expo-notifications'
-import { getAuthToken, setAuthToken, setRefreshToken, clearTokens } from '../lib/api'
-import { supabase, isDemoMode } from '../lib/supabase'
-import { useStore, selectHydrated } from '../lib/store'
-import { ToastContainer } from '../components/Toast'
-import { usePushNotifications } from '../hooks/usePushNotifications'
-import { T } from '../lib/theme'
+import { Stack, useRouter, useSegments } from 'expo-router';
+import { useEffect } from 'react';
+import { AppState, AppStateStatus, StatusBar, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as Notifications from 'expo-notifications';
+import * as SplashScreen from 'expo-splash-screen';
+import { getAuthToken, setAuthToken, setRefreshToken, clearTokens } from '../lib/api';
+import { supabase, isDemoMode } from '../lib/supabase';
+import { useStore, selectHydrated } from '../lib/store';
+import { ToastContainer } from '../components/Toast';
+import { usePushNotifications } from '../hooks/usePushNotifications';
+import { colors } from '../constants/tokens';
 
-// Configurer le comportement des notifications en foreground (une seule fois, au niveau module)
+import {
+    useFonts,
+    BarlowCondensed_700Bold,
+    BarlowCondensed_800ExtraBold_Italic
+} from '@expo-google-fonts/barlow-condensed';
+
+import {
+    DMSans_400Regular,
+    DMSans_500Medium,
+    DMSans_700Bold
+} from '@expo-google-fonts/dm-sans';
+
+import {
+    JetBrainsMono_400Regular
+} from '@expo-google-fonts/jetbrains-mono';
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
+
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
         shouldShowAlert: true,
         shouldPlaySound: true,
         shouldSetBadge: true,
     }),
-})
+});
 
-/**
- * Auth guard: syncs Supabase session with SecureStore tokens,
- * redirects to onboarding when no session, and to dashboard
- * when a returning user opens the app.
- * Resets notification badge on foreground.
- */
 function AuthGuard() {
-    const router = useRouter()
-    const segments = useSegments()
+    const router = useRouter();
+    const segments = useSegments();
 
-    const hydrated = useStore(selectHydrated)
-    const login = useStore(s => s.login)
+    const hydrated = useStore(selectHydrated);
+    const login = useStore(s => s.login);
 
-    const { registerForPushNotifications } = usePushNotifications()
+    const { registerForPushNotifications } = usePushNotifications();
 
-    // Reset badge on foreground
     useEffect(() => {
         const subscription = AppState.addEventListener('change', (state: AppStateStatus) => {
             if (state === 'active') {
-                Notifications.setBadgeCountAsync(0).catch(() => { })
+                Notifications.setBadgeCountAsync(0).catch(() => { });
             }
-        })
-        Notifications.setBadgeCountAsync(0).catch(() => { })
-        return () => subscription.remove()
-    }, [])
+        });
+        Notifications.setBadgeCountAsync(0).catch(() => { });
+        return () => subscription.remove();
+    }, []);
 
-    // Supabase auth state listener — keeps SecureStore in sync
     useEffect(() => {
-        // Skip Supabase listener in demo mode
-        if (isDemoMode) return
-
-        // Check initial session
+        if (isDemoMode) return;
         supabase.auth.getSession().then(async ({ data: { session } }) => {
             if (session) {
-                await setAuthToken(session.access_token)
-                await setRefreshToken(session.refresh_token)
+                await setAuthToken(session.access_token);
+                await setRefreshToken(session.refresh_token);
             }
-        })
-
-        // Listen for changes (sign in, sign out, token refresh)
+        });
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, session) => {
                 if (session) {
-                    await setAuthToken(session.access_token)
-                    await setRefreshToken(session.refresh_token)
+                    await setAuthToken(session.access_token);
+                    await setRefreshToken(session.refresh_token);
                 } else if (event === 'SIGNED_OUT') {
-                    await clearTokens()
+                    await clearTokens();
                 }
             },
-        )
+        );
+        return () => subscription.unsubscribe();
+    }, []);
 
-        return () => subscription.unsubscribe()
-    }, [])
-
-    // Navigation guard — redirect based on auth state
+    // Navigation guard
     useEffect(() => {
-        if (!hydrated) return
+        if (!hydrated) return;
 
-        let cancelled = false
+        let cancelled = false;
+        (async () => {
+            const token = await getAuthToken();
+            if (cancelled) return;
 
-            ; (async () => {
-                const token = await getAuthToken()
-                if (cancelled) return
+            // Simple segment check depending on where we are
+            // segments[0] could be '(app)', '(auth)', '(setup)'
+            const inApp = segments[0] === '(app)';
+            // const inSetup = segments[0] === '(setup)';
 
-                const first = segments[0] as string | undefined
-                const inDashboard = first === '(dashboard)'
-
-                if (token && !inDashboard) {
-                    await login(token)
-                    if (!cancelled) {
-                        await registerForPushNotifications()
-                        router.replace('/(dashboard)')
-                    }
-                } else if (!token && inDashboard) {
-                    if (!cancelled) router.replace('/')
-                } else if (token && inDashboard) {
-                    registerForPushNotifications()
+            if (token && !inApp) {
+                await login(token);
+                if (!cancelled) {
+                    await registerForPushNotifications();
+                    router.replace('/(app)');
                 }
-            })()
+            } else if (!token && inApp) {
+                if (!cancelled) router.replace('/(auth)');
+            } else if (token && inApp) {
+                registerForPushNotifications();
+            }
+        })();
 
-        return () => { cancelled = true }
-    }, [hydrated])
+        return () => { cancelled = true };
+    }, [hydrated, segments]);
 
-    return null
+    return null;
 }
 
 export default function RootLayout() {
+    const [fontsLoaded, fontError] = useFonts({
+        BarlowCondensed_700Bold,
+        BarlowCondensed_800ExtraBold_Italic,
+        DMSans_400Regular,
+        DMSans_500Medium,
+        DMSans_700Bold,
+        JetBrainsMono_400Regular
+    });
+
+    useEffect(() => {
+        if (fontsLoaded || fontError) {
+            SplashScreen.hideAsync();
+        }
+    }, [fontsLoaded, fontError]);
+
+    if (!fontsLoaded && !fontError) {
+        return <View style={{ flex: 1, backgroundColor: colors.void }} />;
+    }
+
     return (
         <SafeAreaProvider>
-            <StatusBar barStyle="light-content" backgroundColor={T.color.bg.primary} />
+            <StatusBar barStyle="light-content" backgroundColor={colors.void} />
             <AuthGuard />
             <Stack
                 screenOptions={{
                     headerShown: false,
-                    contentStyle: { backgroundColor: T.color.bg.primary },
-                    animation: 'slide_from_right',
+                    contentStyle: { backgroundColor: colors.void },
+                    animation: 'fade', // Simple cross-fade transitions by default
                 }}
             >
-                <Stack.Screen name="index" />
-                <Stack.Screen name="onboarding2" />
-                <Stack.Screen name="onboarding-camera" />
-                <Stack.Screen name="onboarding3" />
-                <Stack.Screen name="(dashboard)" />
-                <Stack.Screen name="live" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
-                <Stack.Screen name="workout" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
-                <Stack.Screen name="history" options={{ animation: 'slide_from_right' }} />
-                <Stack.Screen name="analytics" options={{ animation: 'slide_from_right' }} />
-                <Stack.Screen name="leaderboard" options={{ animation: 'slide_from_right' }} />
-                <Stack.Screen name="workout-setup" options={{ animation: 'slide_from_right' }} />
-                <Stack.Screen name="settings" options={{ animation: 'slide_from_right' }} />
-                <Stack.Screen name="calibration" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
-                <Stack.Screen name="program" options={{ animation: 'slide_from_bottom' }} />
-                <Stack.Screen name="analysis/[id]" />
-                <Stack.Screen name="highlight/[id]" options={{ animation: 'fade' }} />
+                {/* Auth stack handles the initial boot logo, then auth -> ai setup */}
+                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+
+                {/* Setup stack for hardware/camera config */}
+                <Stack.Screen name="(setup)" options={{ headerShown: false, animation: 'slide_from_right' }} />
+
+                {/* Main app UI */}
+                <Stack.Screen name="(app)" options={{ headerShown: false, animation: 'slide_from_right' }} />
             </Stack>
             <ToastContainer />
         </SafeAreaProvider>
-    )
+    );
 }
