@@ -156,7 +156,7 @@ export class LiveCoachService {
                 }
 
                 // If it's a push event or alert from the SSE/WS stream
-                if (data.type === 'alert' || data.type === 'status_update') {
+                if (data.type === 'alert' || data.type === 'status_update' || data.type === 'biomechanic_fault') {
                     for (const listener of this.eventListeners) {
                         listener(data)
                     }

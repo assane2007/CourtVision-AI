@@ -536,6 +536,7 @@ export type LiveSSEEvent =
     | { type: 'alerts'; alerts: LiveAlertPayload[]; mentalScore: number; fatigueIndex: number }
     | { type: 'quarter_end'; quarter: number; summary: LiveAlertPayload }
     | { type: 'session_end'; result: LiveEndResponse }
+    | { type: 'biomechanic_fault'; fault: string; severity: 'low' | 'medium' | 'high' }
     | { type: 'heartbeat'; time: number }
 
 // ==========================================

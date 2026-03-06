@@ -23,6 +23,8 @@ import {
     type CVHighlightEvent,
 } from '@courtvision/ai'
 import pino from 'pino'
+import { tiktokService } from '../services/tiktokService'
+import { viralMusicService } from '../services/viralMusicService'
 
 const logger = pino({
     level: process.env.LOG_LEVEL || 'info',
@@ -375,6 +377,22 @@ export const initWorker = () => {
                     },
                 })
             })
+
+
+            // ── Phase 2: Viral TikTok Expansion ─────────────────────
+            if (highlight.outputPath) {
+                try {
+                    // Match music for maximum social impact
+                    const logicIntensity = Math.min(1.0, (shotsRes.filter(s => s.outcome === 'made').length / Math.max(shotsRes.length, 1)) + 0.2)
+                    const recommendedTrack = await viralMusicService.matchTrack(logicIntensity)
+
+                    const viralPath = await tiktokService.transcodeForTikTok(highlight.outputPath)
+                    await tiktokService.publishHighlight(userId, viralPath, `Elite session by ${playerName}! 🔥 Track: ${recommendedTrack.title} by ${recommendedTrack.artist} #CourtVisionAI #Basketball #${recommendedTrack.genre[0]}`)
+                    logger.info({ userId, sessionId, track: recommendedTrack.title }, '[Worker] Viral highlight posted to TikTok with energy matching')
+                } catch (ttErr) {
+                    logger.warn({ ttErr }, '[Worker] TikTok viral automation failed')
+                }
+            }
 
             await getSupabase().from('sessions').update({ status: 'complete' }).eq('id', sessionId)
             await emitSessionComplete(userId, sessionId, {

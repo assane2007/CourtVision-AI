@@ -46,6 +46,9 @@ import playersRoutes from './routes/players'
 import shadowRoutes from './routes/shadow'
 import spatialRoutes from './routes/spatial'
 import precogRoutes from './routes/precog'
+import voiceCoachRoutes from './routes/voiceCoach'
+import tiktokRoutes from './routes/tiktok'
+import investorRoutes from './routes/investor'
 
 export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     // Initialize Sentry early (C-2)
@@ -213,6 +216,9 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     app.register(shadowRoutes, { prefix: '/api/shadow' })
     app.register(spatialRoutes, { prefix: '/api/spatial' })
     app.register(precogRoutes, { prefix: '/api/precog' })
+    app.register(voiceCoachRoutes, { prefix: '/ws' })
+    app.register(tiktokRoutes, { prefix: '/api/tiktok' })
+    app.register(investorRoutes, { prefix: '/api/investor' })
 
     // Health check — deep check with DB + Redis connectivity (M-9)
     app.get('/health', async (request) => {

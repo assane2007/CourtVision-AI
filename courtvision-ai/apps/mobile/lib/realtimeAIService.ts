@@ -158,6 +158,8 @@ export interface ARFeedback {
     icon: string
     duration: number
     position: 'top' | 'center' | 'bottom'
+    vibrate?: boolean
+    vibrationPattern?: number[]
 }
 
 /** Frame AR complète à afficher */
@@ -217,6 +219,7 @@ export type PipelineEvent =
     | { type: 'shot_detected'; shot: DetectedShot }
     | { type: 'phase_change'; phase: string }
     | { type: 'feedback'; feedback: ARFeedback }
+    | { type: 'biomechanic_fault'; fault: string; severity: 'low' | 'medium' | 'high' }
     | { type: 'error'; message: string }
 
 /** Résultat de traitement d'une frame (à utiliser pour le rendu AR) */
@@ -318,7 +321,7 @@ export class RealtimeAIService {
         return RealtimeAIService.instance
     }
 
-    private constructor() {}
+    private constructor() { }
 
     // ---- Lifecycle ----
 
@@ -386,6 +389,17 @@ export class RealtimeAIService {
             // Start the server session asynchronously (don't block)
             this.liveCoach.start({}).then(() => {
                 this.serverSessionStarted = true
+
+                // Connect to biomechanic events (Nuclear Integration)
+                this.liveCoach?.connectSSE((event) => {
+                    if (event.type === 'biomechanic_fault') {
+                        this.config.onPipelineEvent?.({
+                            type: 'biomechanic_fault',
+                            fault: event.fault,
+                            severity: event.severity
+                        })
+                    }
+                })
             }).catch(err => {
                 console.warn('[RealtimeAI] Server session start failed, frames will be buffered:', err?.message)
                 this.config.onPipelineEvent?.({ type: 'error', message: 'Server connection failed — processing locally' })
@@ -482,7 +496,11 @@ export class RealtimeAIService {
                 const serverResult = await this.liveCoach.sendFrame({
                     timestamp,
                     quarter: 1, // Can be parameterized by session config
-                })
+                    frameData,
+                    frameIndex: this.frameCount,
+                    width: frameWidth,
+                    height: frameHeight
+                } as any)
 
                 // Map server response to FrameProcessingResult
                 // The server tracks shots and returns cumulative stats + alerts

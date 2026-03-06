@@ -251,6 +251,16 @@ export class RealtimePipelineEngine {
             // Traiter la frame dans le shot detector
             detectedShot = this.shotDetector.processFrame(pose.landmarks, frameIndex, timestamp)
 
+            // Check for immediate biomechanical faults (Nuclear Integration)
+            if (this.currentBiomechanics && this.shotDetector.getPhase() === 'gathering') {
+                if (this.currentBiomechanics.elbowAngle < 80) {
+                    this.emitEvent({ type: 'biomechanic_fault', fault: 'low_elbow', severity: 'medium' })
+                }
+                if (this.currentBiomechanics.kneeFlexion > 175) {
+                    this.emitEvent({ type: 'biomechanic_fault', fault: 'stiff_knees', severity: 'low' })
+                }
+            }
+
             if (detectedShot) {
                 this.pendingShot = detectedShot
                 this.sessionStats.shotsDetected++
@@ -267,7 +277,7 @@ export class RealtimePipelineEngine {
 
                 // Ajouter la comparison NBA
                 const nbaComp = { similarity: 0, closestPlayer: '', tip: '' }
-                ;(shotResult as any).nbaComparison = nbaComp
+                    ; (shotResult as any).nbaComparison = nbaComp
 
                 this.sessionStats.allShots.push(shotResult as ShotResult)
             }
@@ -608,3 +618,4 @@ export type PipelineEvent =
     | { type: 'shot_detected'; shot: DetectedShot }
     | { type: 'phase_change'; phase: ShotDetectionPhase }
     | { type: 'manual_resolution'; outcome: 'made' | 'missed' }
+    | { type: 'biomechanic_fault'; fault: string; severity: 'low' | 'medium' | 'high' }

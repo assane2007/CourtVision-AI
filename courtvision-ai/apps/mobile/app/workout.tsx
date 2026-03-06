@@ -36,6 +36,7 @@ import { useRealtimeAI, type AIPhase } from '../hooks/useRealtimeAI'
 import { SmartCamera } from '../components/workout/SmartCamera'
 import { BiomechanicsPanel } from '../components/workout/BiomechanicsPanel'
 import { SessionSummary } from '../components/workout/SessionSummary'
+import { VocalCoachOverlay } from '../components/workout/VocalCoachOverlay'
 import { ShareService } from '../lib/shareService'
 import { CoachingEngine, type CoachingReport } from '../lib/coachingEngine'
 import { SessionStorageService } from '../lib/sessionStorage'
@@ -488,6 +489,12 @@ export default function WorkoutScreen() {
                     </>
                 ) : null}
             </ScrollView>
+
+            {/* 🔥 Strategic Pillar 1: Real-time Vocal Coach */}
+            <VocalCoachOverlay
+                active={ai.phase === 'active'}
+                sessionId={ai.sessionId ?? 'live-session'}
+            />
         </SafeAreaView>
     )
 }

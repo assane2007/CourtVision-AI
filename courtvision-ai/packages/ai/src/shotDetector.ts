@@ -154,6 +154,8 @@ export class ShotDetectorEngine {
     private wristTrajectory: Array<{ x: number; y: number; timestamp: number }> = []
     private followThroughFrameCount: number = 0
     private releaseBiomechanics: ShootingBiomechanics | null = null
+    private lastWristY: number | null = null
+    private wristVelocities: number[] = []
 
     // Compteur de tirs pour IDs uniques
     private shotCounter: number = 0
@@ -200,6 +202,14 @@ export class ShotDetectorEngine {
         const wrist = landmarks[LANDMARKS.RIGHT_WRIST]
         if (wrist) {
             this.wristTrajectory.push({ x: wrist.x, y: wrist.y, timestamp })
+
+            // Calculer la vitesse verticale (pix/s)
+            if (this.lastWristY !== null) {
+                const velY = (this.lastWristY - wrist.y) / (1 / this.config.fps) // y diminue quand on monte
+                this.wristVelocities.push(velY)
+                if (this.wristVelocities.length > 5) this.wristVelocities.shift()
+            }
+            this.lastWristY = wrist.y
         }
 
         this.angleBuffer.push(angles)
@@ -378,7 +388,12 @@ export class ShotDetectorEngine {
             ? (wrist && nose && wrist.y < nose.y)
             : true
 
-        if (elbowExtended && wristAboveHead) {
+        // Nuclear Refinement: Detect peak vertical velocity (acceleration flip)
+        const avgVel = this.wristVelocities.reduce((a, b) => a + b, 0) / Math.max(this.wristVelocities.length, 1)
+        const currentVel = this.wristVelocities[this.wristVelocities.length - 1] || 0
+        const isSlowingDown = currentVel < avgVel * 0.8 && currentVel > 0
+
+        if (elbowExtended && wristAboveHead && isSlowingDown) {
             // Capturer la biomécanique au moment exact du release
             this.releaseBiomechanics = biomechanics
             this.transitionTo('following_through', timestamp)

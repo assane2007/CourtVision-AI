@@ -1,69 +1,72 @@
 import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
+import { RealtimePipelineEngine } from '@courtvision/ai'
 
 export default async function wsRoutes(fastify: FastifyInstance) {
-    // ⚠️ We use fastify-websocket to handle ws connections 
+    // Pipeline instances indexed by sessionId
+    const pipelines = new Map<string, RealtimePipelineEngine>();
+
     // WebSocket endpoint: /ws/sessions/:id
     fastify.get('/sessions/:id', { websocket: true }, (connectionParam: any, req: any) => {
         const socket = connectionParam.socket || connectionParam;
         const sessionId = req.params.id
 
-        socket.on('message', (message: import('ws').RawData) => {
-            // For now, we simulate receiving a TrackingFrame and returning analyzed data
-            // In reality, this would pipe to the LiveCoachEngine as established in live.ts
+        // Initialize high-performance pipeline for this session
+        const pipeline = new RealtimePipelineEngine({
+            mode: 'full',
+            onEvent: (event: any) => {
+                // Forward events to mobile in real-time
+                socket.send(JSON.stringify(event));
+            }
+        } as any);
+        pipelines.set(sessionId, pipeline);
+
+        socket.on('message', async (message: import('ws').RawData) => {
             try {
                 const data = JSON.parse(message.toString())
-                // Basic validation
+
                 if (data.type === 'frame') {
-                    const payload = data.payload || {}
+                    // Process frame through the real AI motor
+                    // Arguments: (frameData, frameIndex, timestamp, frameWidth, frameHeight)
+                    const result = await (pipeline as any).processFrame(
+                        data.payload.frameData,
+                        data.payload.frameIndex || 0,
+                        data.payload.timestamp || Date.now() / 1000,
+                        data.payload.width || 640,
+                        data.payload.height || 480
+                    );
+
+                    // Send sync response for UI rendering
                     socket.send(JSON.stringify({
                         type: 'frame_ack',
                         frameId: data.frameId,
                         response: {
                             success: true,
-                            mentalScore: Math.floor(60 + Math.random() * 40),
-                            fatigueIndex: Math.floor(Math.random() * 20),
-                            postureScore: 0.8,
-                            confidence: 0.9,
-                            alerts: [],
-                            stats: null
+                            mentalScore: result.mentalScore,
+                            fatigueIndex: result.fatigueIndex,
+                            postureScore: result.postureScore,
+                            confidence: result.confidence,
+                            alerts: (result as any).alerts || [],
+                            stats: (result as any).getStats ? (result as any).getStats() : null
                         }
                     }))
-
-                    // Periodically send a random alert if playing around
-                    if (Math.random() > 0.95) {
-                        socket.send(JSON.stringify({
-                            type: 'alert',
-                            alerts: [{
-                                id: `alert_${Date.now()}`,
-                                type: 'form',
-                                message: 'Keep your elbow tucked!',
-                                severity: 'warning',
-                                emoji: '💡',
-                                vibrate: true,
-                                vibrationPattern: [100, 200],
-                                timestamp: Date.now()
-                            }],
-                            mentalScore: 65,
-                            fatigueIndex: 12
-                        }))
-                    }
                 }
             } catch (err) {
-                // Ignore
+                console.error(`[WS] Error on session ${sessionId}:`, err);
             }
         })
 
         socket.on('close', () => {
-            // Cleanup
+            pipeline.stop();
+            pipelines.delete(sessionId);
+            console.info(`[WS] Session ${sessionId} cleaned up.`);
         })
 
         // Initial handshake payload
         socket.send(JSON.stringify({
             sessionId,
             status: 'connected',
-            timestamp: Date.now(),
-            players: []
+            timestamp: Date.now()
         }))
     })
 }
