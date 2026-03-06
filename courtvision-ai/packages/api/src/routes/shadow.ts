@@ -42,6 +42,13 @@ const shadowRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
     }, async (request, reply) => {
         const { playerA, playerB } = request.body as any; // Type handled by Zod
 
+        if (!shadowQueue) {
+            return reply.status(503).send({
+                success: false,
+                message: 'Simulation queue is currently unavailable.'
+            });
+        }
+
         // Enqueue the heavy job taking the simulation off the main event loop
         const job = await shadowQueue.add(`sim_${playerA.id}_vs_${playerB.id}`, {
             playerA,

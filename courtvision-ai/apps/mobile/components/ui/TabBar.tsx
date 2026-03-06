@@ -14,6 +14,9 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                 const { options } = descriptors[route.key];
                 const isFocused = state.index === index;
 
+                // Respect the "href: null" option to hide sub-routes
+                if (options.href === null) return null;
+
                 const onPress = () => {
                     const event = navigation.emit({
                         type: 'tabPress',

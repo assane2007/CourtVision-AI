@@ -1,217 +1,360 @@
-﻿import { View, Text, TouchableOpacity, SafeAreaView, Platform } from 'react-native'
+﻿import { View, Text, TouchableOpacity, SafeAreaView, Platform, StyleSheet, Pressable } from 'react-native'
 import { useRouter } from 'expo-router'
-import { useEffect, useState } from 'react'
-import Animated, {
-    useSharedValue, useAnimatedStyle, withTiming,
-    FadeInDown, withRepeat, withSequence
-} from 'react-native-reanimated'
+import { useState } from 'react'
+import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSpring, interpolateColor } from 'react-native-reanimated'
 import * as Haptics from 'expo-haptics'
 import { T } from '../lib/theme'
 import { useStore } from '../lib/store'
+import { colors, space } from '../constants/tokens'
 
 const POSITIONS = [
-    { label: 'Point Guard', id: 'PG' },
-    { label: 'Shooting Guard', id: 'SG' },
-    { label: 'Small Forward', id: 'SF' },
-    { label: 'Power Forward', id: 'PF' },
-    { label: 'Center', id: 'C' },
+    { label: 'Point Guard', icon: '⚡️', id: 'PG' },
+    { label: 'Shooting Guard', icon: '🎯', id: 'SG' },
+    { label: 'Small Forward', icon: '🦅', id: 'SF' },
+    { label: 'Power Forward', icon: '🦍', id: 'PF' },
+    { label: 'Center', icon: '🧱', id: 'C' },
 ]
 
 const LEVELS = [
-    { label: 'Beginner [0-1 YR]', id: 'Beginner' },
-    { label: 'Intermediate [1-3 YRS]', id: 'Intermediate' },
-    { label: 'Advanced [3-5 YRS]', id: 'Advanced' },
-    { label: 'Pro [5+ YRS]', id: 'Pro' },
+    { label: 'Beginner', val: '0-1 YR', color: '#3b82f6', id: 'Beginner' },
+    { label: 'Intermediate', val: '1-3 YRS', color: '#10b981', id: 'Intermediate' },
+    { label: 'Advanced', val: '3-5 YRS', color: '#f59e0b', id: 'Advanced' },
+    { label: 'Elite', val: '5+ YRS', color: '#ef4444', id: 'Pro' },
 ]
 
-// Terminal Typewriter Effect
-function TypewriterText({ text, onComplete }: { text: string, onComplete?: () => void }) {
-    const [displayedText, setDisplayedText] = useState('')
+// Addictive Bouncy Card
+function BouncyCard({ label, icon, isSelected, onPress }: { label: string, icon: string, isSelected: boolean, onPress: () => void }) {
+    const scale = useSharedValue(1);
 
-    useEffect(() => {
-        let i = 0
-        setDisplayedText('')
-        const interval = setInterval(() => {
-            setDisplayedText(prev => prev + text.charAt(i))
-            i++
-            if (i >= text.length) {
-                clearInterval(interval)
-                if (onComplete) onComplete()
-            }
-        }, 30) // Typing speed
-
-        return () => clearInterval(interval)
-    }, [text, onComplete])
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: scale.value }],
+        borderColor: isSelected ? colors.fire : '#222',
+        backgroundColor: isSelected ? 'rgba(255,68,0,0.15)' : '#111',
+    }));
 
     return (
-        <Text style={{
-            fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-            color: T.color.brand.primary,
-            fontSize: 16,
-            lineHeight: 24,
-            marginBottom: 20,
-        }}>
-            {'>'} {displayedText}
-            <AnimatedCursor />
-        </Text>
+        <Pressable
+            onPressIn={() => {
+                scale.value = withSpring(0.95);
+                if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
+            onPressOut={() => {
+                scale.value = withSpring(1);
+            }}
+            onPress={onPress}
+            style={{ width: '48%', marginBottom: 16 }}
+        >
+            <Animated.View style={[styles.tile, animatedStyle, isSelected && styles.tileSelected]}>
+                <Text style={styles.tileIcon}>{icon}</Text>
+                <Text style={[styles.tileLabel, { color: isSelected ? colors.snow : '#888' }]}>{label}</Text>
+            </Animated.View>
+        </Pressable>
     )
 }
 
-function AnimatedCursor() {
-    const opacity = useSharedValue(1)
+function BouncyRow({ title, desc, tagText, tagColor, isSelected, onPress }: { title: string, desc: string, tagText: string, tagColor: string, isSelected: boolean, onPress: () => void }) {
+    const scale = useSharedValue(1);
 
-    useEffect(() => {
-        opacity.value = withRepeat(
-            withSequence(
-                withTiming(0, { duration: 400 }),
-                withTiming(1, { duration: 400 })
-            ),
-            -1, true
-        )
-    }, [])
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: scale.value }],
+        borderColor: isSelected ? tagColor : '#222',
+        backgroundColor: isSelected ? `${tagColor}20` : '#111',
+    }));
 
     return (
-        <Animated.View style={[
-            { width: 8, height: 16, backgroundColor: T.color.brand.primary, marginLeft: 2, transform: [{ translateY: 2 }] },
-            useAnimatedStyle(() => ({ opacity: opacity.value }))
-        ]} />
+        <Pressable
+            onPressIn={() => {
+                scale.value = withSpring(0.96);
+                if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
+            onPressOut={() => {
+                scale.value = withSpring(1);
+            }}
+            onPress={onPress}
+        >
+            <Animated.View style={[styles.rowCard, animatedStyle, isSelected && { shadowColor: tagColor, shadowOffset: { width: 0, height: 0 }, shadowRadius: 15, shadowOpacity: 0.4 }]}>
+                <View>
+                    <Text style={[styles.rowTitle, { color: isSelected ? colors.snow : '#888' }]}>{title}</Text>
+                    <Text style={styles.rowDesc}>{desc}</Text>
+                </View>
+                <View style={[styles.rowTag, { backgroundColor: tagColor }]}>
+                    <Text style={styles.rowTagText}>{tagText}</Text>
+                </View>
+            </Animated.View>
+        </Pressable>
     )
 }
 
 export default function Onboarding2() {
     const router = useRouter()
-    const [step, setStep] = useState<'position' | 'level' | 'processing'>('position')
+    const [step, setStep] = useState<'position' | 'level'>('position')
     const [selectedPos, setSelectedPos] = useState<string | null>(null)
     const [selectedLevel, setSelectedLevel] = useState<string | null>(null)
-    const [showOptions, setShowOptions] = useState(false)
-
-    // Log messages
-    const [logs, setLogs] = useState<string[]>([
-        '[SYSTEM] Secure connection established.',
-        '[AI] Hello. I am your CourtVision Digital Twin.'
-    ])
-
-    useEffect(() => {
-        // Reset show options when step changes to trigger typewriter
-        setShowOptions(false)
-        if (step === 'position') {
-            setLogs(prev => [...prev.slice(0, 2)]) // keep initial logs
-        } else if (step === 'level') {
-            setLogs(prev => [...prev, `[USER] Selected: ${selectedPos}`])
-        }
-    }, [step, selectedPos])
 
     const handleSelectPos = (val: string) => {
         if (Platform.OS !== 'web') Haptics.selectionAsync()
         setSelectedPos(val)
-        setTimeout(() => setStep('level'), 400)
+        // Auto-advance after small delay
+        setTimeout(() => setStep('level'), 300)
     }
 
     const handleSelectLevel = (val: string) => {
         if (Platform.OS !== 'web') Haptics.selectionAsync()
         setSelectedLevel(val)
-        setStep('processing')
-
-        setLogs(prev => [...prev, `[USER] Selected: ${val}`, '[AI] Processing neural matrix...'])
-
-        // Setup user in store
-        useStore.setState((s: any) => ({
-            user: s.user
-                ? { ...s.user, position: selectedPos ?? 'PG', level: val }
-                : {
-                    id: '', username: '', full_name: 'Player',
-                    position: selectedPos ?? 'PG', level: val,
-                    streak: 0, mental_score: 0, shooting_grade: 'B',
-                    shooting_fg_pct: 0, xp: 0, xp_level: 1,
-                    total_sessions: 0, badges_count: 0,
-                },
-        }))
-
-        // Fake processing delay before next screen
-        setTimeout(() => {
-            if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-            router.push('/onboarding-camera')
-        }, 1500)
     }
 
-    const aiPrompt = step === 'position'
-        ? "To optimize your analysis algorithms, please specify your primary role on the court."
-        : step === 'level'
-            ? "Thank you. Now, specify your current experience level for baseline calibration."
-            : "Calibration complete. Generating optimal tracking parameters..."
+    const handleNext = () => {
+        if (step === 'position') {
+            if (!selectedPos) return;
+            setStep('level');
+        } else {
+            if (!selectedLevel) return;
+            if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+
+            // Setup user in store
+            useStore.setState((s: any) => ({
+                user: s.user
+                    ? { ...s.user, position: selectedPos ?? 'PG', level: selectedLevel }
+                    : {
+                        id: '', username: '', full_name: 'Player',
+                        position: selectedPos ?? 'PG', level: selectedLevel,
+                        streak: 0, mental_score: 0, shooting_grade: 'B',
+                        shooting_fg_pct: 0, xp: 0, xp_level: 1,
+                        total_sessions: 0, badges_count: 0,
+                    },
+            }))
+            router.push('/onboarding-camera')
+        }
+    }
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#050505' }}> {/* True dark for terminal */}
-            <View style={{ padding: T.spacing[5], flex: 1 }}>
+        <SafeAreaView style={styles.container}>
+            <View style={styles.content}>
 
-                {/* Header terminal style */}
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 30, borderBottomWidth: 1, borderColor: '#333', paddingBottom: 10 }}>
-                    <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: '#555', fontSize: 12 }}>TERMINAL v2.4.1</Text>
-                    <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: '#555', fontSize: 12 }}>AUTH: PENDING</Text>
+                {/* Header Back button & Progress */}
+                <View style={styles.header}>
+                    <Pressable onPress={() => step === 'level' ? setStep('position') : router.back()}>
+                        <View style={styles.backBtn}>
+                            <Text style={styles.backBtnText}>{'<'}</Text>
+                        </View>
+                    </Pressable>
+                    <View style={styles.progressContainer}>
+                        <View style={[styles.progressDot, step === 'position' ? styles.progressActive : null]} />
+                        <View style={[styles.progressDot, step === 'level' ? styles.progressActive : null]} />
+                    </View>
                 </View>
 
-                {/* Log History */}
-                <View style={{ marginBottom: 20 }}>
-                    {logs.map((log, i) => (
-                        <Text key={i} style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: log.startsWith('[USER]') ? '#fff' : '#666', fontSize: 13, marginBottom: 8 }}>
-                            {log}
-                        </Text>
-                    ))}
+                {/* Animated Titles */}
+                <Animated.View entering={FadeInDown.duration(500)} style={styles.titleContainer}>
+                    <Text style={styles.title}>
+                        {step === 'position' ? 'Select Archetype' : 'Select Experience'}
+                    </Text>
+                    <Text style={styles.subtitle}>
+                        {step === 'position'
+                            ? 'Define your playstyle.'
+                            : 'Set the AI evaluation strictness.'}
+                    </Text>
+                </Animated.View>
+
+                {/* Grid vs List layout based on step */}
+                <View style={styles.listContainer}>
+                    {step === 'position' && (
+                        <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.gridBox}>
+                            {POSITIONS.map((p, i) => (
+                                <BouncyCard
+                                    key={p.id}
+                                    label={p.label}
+                                    icon={p.icon}
+                                    isSelected={selectedPos === p.id}
+                                    onPress={() => handleSelectPos(p.id)}
+                                />
+                            ))}
+                        </Animated.View>
+                    )}
+
+                    {step === 'level' && (
+                        <View>
+                            {LEVELS.map((l, i) => (
+                                <Animated.View key={l.id} entering={FadeInDown.delay(i * 100).duration(400)}>
+                                    <BouncyRow
+                                        title={l.label}
+                                        desc='Calibrate feedback algorithms.'
+                                        tagText={l.val}
+                                        tagColor={l.color}
+                                        isSelected={selectedLevel === l.id}
+                                        onPress={() => handleSelectLevel(l.id)}
+                                    />
+                                </Animated.View>
+                            ))}
+                        </View>
+                    )}
                 </View>
 
-                {/* Current Prompt */}
-                <TypewriterText text={aiPrompt} onComplete={() => setShowOptions(true)} />
-
-                {/* Options */}
-                {showOptions && step === 'position' && (
-                    <Animated.View entering={FadeInDown.duration(400)} style={{ marginTop: 10 }}>
-                        {POSITIONS.map((p, i) => (
-                            <TouchableOpacity
-                                key={p.id}
-                                style={{
-                                    borderWidth: 1, borderColor: selectedPos === p.id ? T.color.brand.primary : '#333',
-                                    backgroundColor: selectedPos === p.id ? `${T.color.brand.primary}15` : 'transparent',
-                                    padding: 16, marginBottom: 12, borderRadius: 4,
-                                    flexDirection: 'row', alignItems: 'center'
-                                }}
-                                onPress={() => handleSelectPos(p.id)}
-                            >
-                                <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: selectedPos === p.id ? T.color.brand.primary : '#888', marginRight: 16 }}>
-                                    {`[0${i + 1}]`}
-                                </Text>
-                                <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: selectedPos === p.id ? '#fff' : '#ccc', fontSize: 15 }}>
-                                    {p.label}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
+                {/* Bouncy Next Button */}
+                {(selectedPos && step === 'position') || (selectedLevel && step === 'level') ? (
+                    <Animated.View entering={FadeInDown.duration(300).springify()} style={styles.footer}>
+                        <Pressable
+                            style={styles.nextBtn}
+                            onPress={handleNext}
+                        >
+                            <Text style={styles.nextBtnText}>Continue</Text>
+                        </Pressable>
                     </Animated.View>
-                )}
-
-                {showOptions && step === 'level' && (
-                    <Animated.View entering={FadeInDown.duration(400)} style={{ marginTop: 10 }}>
-                        {LEVELS.map((l, i) => (
-                            <TouchableOpacity
-                                key={l.id}
-                                style={{
-                                    borderWidth: 1, borderColor: selectedLevel === l.id ? T.color.semantic.success : '#333',
-                                    backgroundColor: selectedLevel === l.id ? `${T.color.semantic.success}15` : 'transparent',
-                                    padding: 16, marginBottom: 12, borderRadius: 4,
-                                    flexDirection: 'row', alignItems: 'center'
-                                }}
-                                onPress={() => handleSelectLevel(l.id)}
-                            >
-                                <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: selectedLevel === l.id ? T.color.semantic.success : '#888', marginRight: 16 }}>
-                                    {`[0${i + 1}]`}
-                                </Text>
-                                <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: selectedLevel === l.id ? '#fff' : '#ccc', fontSize: 15 }}>
-                                    {l.label}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </Animated.View>
-                )}
+                ) : null}
 
             </View>
         </SafeAreaView>
     )
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#000',
+    },
+    content: {
+        flex: 1,
+        padding: 24,
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 12,
+        marginBottom: space[6],
+    },
+    backBtn: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: '#111',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#222',
+    },
+    backBtnText: {
+        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+        fontSize: 18,
+        color: colors.cloud,
+        fontWeight: 'bold',
+    },
+    progressContainer: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    progressDot: {
+        width: 32,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#222',
+    },
+    progressActive: {
+        backgroundColor: colors.snow,
+    },
+    titleContainer: {
+        marginBottom: space[10],
+    },
+    title: {
+        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+        fontSize: 40,
+        fontWeight: '900',
+        color: colors.snow,
+        marginBottom: 8,
+        letterSpacing: -1,
+    },
+    subtitle: {
+        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+        fontSize: 18,
+        color: colors.fog,
+        fontWeight: '500',
+    },
+    listContainer: {
+        flex: 1,
+    },
+    gridBox: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+    },
+    tile: {
+        backgroundColor: '#111',
+        borderRadius: 24,
+        padding: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        aspectRatio: 1, // Make them squares
+    },
+    tileSelected: {
+        shadowColor: colors.fire,
+        shadowOffset: { width: 0, height: 0 },
+        shadowRadius: 20,
+        shadowOpacity: 0.4,
+        zIndex: 10,
+    },
+    tileIcon: {
+        fontSize: 40,
+        marginBottom: 12,
+    },
+    tileLabel: {
+        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+        fontSize: 14,
+        fontWeight: '800',
+        textAlign: 'center',
+    },
+    rowCard: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 24,
+        borderRadius: 24,
+        marginBottom: 16,
+        borderWidth: 2,
+    },
+    rowTitle: {
+        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+        fontSize: 20,
+        fontWeight: '800',
+        marginBottom: 4,
+    },
+    rowDesc: {
+        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+        fontSize: 14,
+        color: '#666',
+        fontWeight: '500',
+    },
+    rowTag: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12,
+    },
+    rowTagText: {
+        color: '#fff',
+        fontWeight: '800',
+        fontSize: 12,
+    },
+    footer: {
+        position: 'absolute',
+        bottom: Platform.OS === 'ios' ? 40 : 20,
+        left: 24,
+        right: 24,
+    },
+    nextBtn: {
+        backgroundColor: colors.snow,
+        height: 64,
+        borderRadius: 32,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: colors.snow,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.2,
+        shadowRadius: 16,
+    },
+    nextBtnText: {
+        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+        fontSize: 18,
+        fontWeight: '800',
+        color: '#000',
+    }
+})

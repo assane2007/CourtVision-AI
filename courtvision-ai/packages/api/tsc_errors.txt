@@ -1,6 +1,0 @@
-﻿src/queue/videoProcessor.ts(92,13): error TS2353: Object literal may only specify known properties, and 'timeout' does not exist in type 'DefaultJobOptions'.
-src/routes/ws.ts(10,20): error TS2339: Property 'socket' does not exist on type 'WebSocket'.
-src/routes/ws.ts(10,41): error TS7006: Parameter 'message' implicitly has an 'any' type.
-src/routes/ws.ts(17,32): error TS2339: Property 'socket' does not exist on type 'WebSocket'.
-src/routes/ws.ts(29,20): error TS2339: Property 'socket' does not exist on type 'WebSocket'.
-src/routes/ws.ts(34,20): error TS2339: Property 'socket' does not exist on type 'WebSocket'.

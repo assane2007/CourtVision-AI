@@ -133,51 +133,68 @@ export function GhostMode() {
         opacity: interpolate(progress.value, [0, 0.5, 1], [0.4, 0.8, 0.4])
     }));
 
-    const renderSkeleton = (isPerfect: boolean) => {
-        const strokeColor = isPerfect ? colors.live : colors.danger;
-        const strokeW = isPerfect ? 2 : 2.5;
-        const dotR = isPerfect ? 3 : 4;
-        const opacity = isPerfect ? 0.6 : 1;
-
-        const bones: [keyof Skeleton, keyof Skeleton][] = [
-            ['head', 'shoulder'],
-            ['shoulder', 'elbow'],
-            ['elbow', 'wrist'],
-            ['shoulder', 'hip'],
-            ['hip', 'knee'],
-            ['knee', 'ankle']
-        ];
-
+    // Inner components to isolate hook usage
+    const BoneLine = ({ a, b, isPerfect }: { a: keyof Skeleton, b: keyof Skeleton, isPerfect: boolean }) => {
+        const props = useBoneProps(a, b, isPerfect);
         return (
-            <G opacity={opacity}>
-                {bones.map(([a, b]) => (
-                    <AnimatedLine
-                        key={`${a}-${b}`}
-                        animatedProps={useBoneProps(a, b, isPerfect)}
-                        stroke={strokeColor}
-                        strokeWidth={strokeW}
-                        strokeLinecap="round"
-                        strokeDasharray={isPerfect ? "4 4" : undefined}
-                    />
-                ))}
-
-                {Object.keys(PERFECT_FORM).map((key) => {
-                    const part = key as keyof Skeleton;
-                    return (
-                        <AnimatedCircle
-                            key={part}
-                            animatedProps={useJointProps(part, isPerfect)}
-                            r={dotR}
-                            fill={colors.base}
-                            stroke={strokeColor}
-                            strokeWidth={1.5}
-                        />
-                    )
-                })}
-            </G>
+            <AnimatedLine
+                animatedProps={props}
+                stroke={isPerfect ? colors.live : colors.danger}
+                strokeWidth={isPerfect ? 2 : 2.5}
+                strokeLinecap="round"
+                strokeDasharray={isPerfect ? "4 4" : undefined}
+            />
         );
     };
 
+    const JointCircle = ({ part, isPerfect }: { part: keyof Skeleton, isPerfect: boolean }) => {
+        const props = useJointProps(part, isPerfect);
+        return (
+            <AnimatedCircle
+                animatedProps={props}
+                r={isPerfect ? 3 : 4}
+                fill={colors.base}
+                stroke={isPerfect ? colors.live : colors.danger}
+                strokeWidth={1.5}
+            />
+        );
+    };
+
+    const SkeletonBones = ({ isPerfect }: { isPerfect: boolean }) => {
+        const bones: [keyof Skeleton, keyof Skeleton][] = [
+            ['head', 'shoulder'], ['shoulder', 'elbow'], ['elbow', 'wrist'],
+            ['shoulder', 'hip'], ['hip', 'knee'], ['knee', 'ankle']
+        ];
+        return (
+            <>
+                {bones.map(([a, b]) => <BoneLine key={`${a}-${b}`} a={a} b={b} isPerfect={isPerfect} />)}
+            </>
+        );
+    };
+
+    const SkeletonJoints = ({ isPerfect }: { isPerfect: boolean }) => {
+        return (
+            <>
+                {Object.keys(PERFECT_FORM).map((key) => (
+                    <JointCircle key={key} part={key as keyof Skeleton} isPerfect={isPerfect} />
+                ))}
+            </>
+        );
+    };
+
+    const ElbowFocus = () => {
+        const props = useJointProps('elbow', false);
+        return (
+            <AnimatedCircle
+                animatedProps={props}
+                r="12"
+                fill="none"
+                stroke={colors.fire}
+                strokeWidth="1"
+                strokeDasharray="2 2"
+            />
+        );
+    };
     return (
         <View style={styles.container}>
             <View style={styles.headerRow}>
@@ -217,20 +234,20 @@ export function GhostMode() {
                     </Animated.View>
 
                     {/* Both Skeletons */}
-                    {renderSkeleton(true)}
-                    {renderSkeleton(false)}
+                    <G opacity={0.6}>
+                        <SkeletonBones isPerfect={true} />
+                        <SkeletonJoints isPerfect={true} />
+                    </G>
+
+                    <G opacity={1}>
+                        <SkeletonBones isPerfect={false} />
+                        <SkeletonJoints isPerfect={false} />
+                    </G>
 
                     {/* Flared Elbow Focus Area */}
-                    <AnimatedCircle
-                        animatedProps={useJointProps('elbow', false)}
-                        r="12"
-                        fill="none"
-                        stroke={colors.fire}
-                        strokeWidth="1"
-                        strokeDasharray="2 2"
-                    />
-                </Svg>
-            </View>
+                    <ElbowFocus />
+                </Svg >
+            </View >
 
             <View style={styles.analysisBox}>
                 <Text style={styles.analysisTitle}>Critical Deviations</Text>
@@ -247,7 +264,7 @@ export function GhostMode() {
                     <Text style={[styles.deviationValue, { color: colors.caution }]}>-8° STIFF</Text>
                 </View>
             </View>
-        </View>
+        </View >
     );
 }
 

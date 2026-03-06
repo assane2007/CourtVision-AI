@@ -1,66 +1,106 @@
 /**
- * ToastContainer — Premium toast notifications with glassmorphism.
- * V3: Reanimated v3, fontFamily.
+ * ToastContainer — Premium Notifications with Glassmorphism
+ * Using heavy physics, BlurView, and haptic feedback.
  */
 
-import React, { useEffect } from 'react'
-import { Text, TouchableOpacity, View, StyleSheet } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import { Text, TouchableOpacity, View, StyleSheet, Dimensions, Platform } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
     withSpring,
     withTiming,
+    FadeInUp,
+    FadeOutUp,
+    SlideInUp,
+    SlideOutUp,
+    runOnJS
 } from 'react-native-reanimated'
+import { BlurView } from 'expo-blur'
+import * as Haptics from 'expo-haptics'
+import { Feather, AntDesign } from '@expo/vector-icons'
 import { useToastStore, ToastMessage, ToastType } from '../lib/toast'
-import { T } from '../lib/theme'
+import { colors, space } from '../constants/tokens'
 
-const TOAST_STYLES: Record<ToastType, { bg: string; border: string; text: string }> = {
-    success: { bg: `${T.color.semantic.success}12`, border: `${T.color.semantic.success}40`, text: T.color.semantic.success },
-    error:   { bg: `${T.color.semantic.error}12`,   border: `${T.color.semantic.error}40`,   text: T.color.semantic.error },
-    warning: { bg: `${T.color.semantic.warning}12`, border: `${T.color.semantic.warning}40`, text: T.color.semantic.warning },
-    info:    { bg: `${T.color.signature.primary}12`, border: `${T.color.signature.primary}40`, text: T.color.signature.primary },
-    xp:      { bg: `${T.color.gamification.purple}15`, border: `${T.color.gamification.purple}40`, text: T.color.gamification.purple },
+const { width } = Dimensions.get('window')
+
+// Aesthetic mappings per toast type
+const TOAST_STYLES: Record<ToastType, { color: string; icon: React.ReactNode; haptic: Haptics.NotificationFeedbackType }> = {
+    success: {
+        color: '#00ffcc',
+        icon: <Feather name="check-circle" size={20} color="#00ffcc" />,
+        haptic: Haptics.NotificationFeedbackType.Success
+    },
+    error: {
+        color: '#ff4400',
+        icon: <Feather name="alert-triangle" size={20} color="#ff4400" />,
+        haptic: Haptics.NotificationFeedbackType.Error
+    },
+    warning: {
+        color: '#ffbb00',
+        icon: <Feather name="alert-circle" size={20} color="#ffbb00" />,
+        haptic: Haptics.NotificationFeedbackType.Warning
+    },
+    info: {
+        color: '#00aaff',
+        icon: <Feather name="info" size={20} color="#00aaff" />,
+        haptic: Haptics.NotificationFeedbackType.Success
+    },
+    xp: {
+        color: '#A020F0',
+        icon: <Feather name="zap" size={20} color="#A020F0" />,
+        haptic: Haptics.NotificationFeedbackType.Success
+    },
 }
 
 function ToastItem({ msg, onDismiss }: { msg: ToastMessage; onDismiss: () => void }) {
-    const translateY = useSharedValue(-80)
-    const opacity    = useSharedValue(0)
-    const scale      = useSharedValue(0.9)
+    const styleDef = TOAST_STYLES[msg.type];
 
+    // Trigger haptics on mount
     useEffect(() => {
-        translateY.value = withSpring(0, { damping: 12, stiffness: 120 })
-        opacity.value    = withTiming(1, { duration: 250 })
-        scale.value      = withSpring(1, { damping: 12, stiffness: 120 })
+        if (Platform.OS !== 'web') {
+            Haptics.notificationAsync(styleDef.haptic).catch(() => { })
+        }
     }, [])
 
-    const animStyle = useAnimatedStyle(() => ({
-        opacity: opacity.value,
-        transform: [{ translateY: translateY.value }, { scale: scale.value }],
-    }))
-
-    const style = TOAST_STYLES[msg.type]
-
     return (
-        <Animated.View style={[
-            styles.toast,
-            { backgroundColor: style.bg, borderColor: style.border },
-            animStyle,
-        ]}>
+        <Animated.View
+            entering={SlideInUp.springify().damping(14).stiffness(120)}
+            exiting={SlideOutUp.springify().damping(16).stiffness(150)}
+            style={[styles.toastWrapper, { shadowColor: styleDef.color }]}
+        >
             <TouchableOpacity
-                style={styles.toastInner}
-                onPress={onDismiss}
-                activeOpacity={0.85}
+                onPress={() => {
+                    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                    onDismiss()
+                }}
+                activeOpacity={0.8}
                 accessibilityRole="alert"
                 accessibilityLiveRegion="polite"
-                accessibilityLabel={`${msg.title}${msg.subtitle ? '. ' + msg.subtitle : ''}`}
+                style={{ flex: 1 }}
             >
-                {msg.emoji && <Text style={styles.emoji}>{msg.emoji}</Text>}
-                <View style={{ flex: 1 }}>
-                    <Text style={[styles.title, { color: style.text }]} numberOfLines={1}>{msg.title}</Text>
-                    {msg.subtitle && <Text style={styles.subtitle} numberOfLines={1}>{msg.subtitle}</Text>}
-                </View>
-                <Text style={[styles.dismiss, { color: style.text }]}>✕</Text>
+                <BlurView intensity={70} tint="dark" style={styles.blurContainer}>
+                    {/* Glowing highlight strip on the left */}
+                    <View style={[styles.glowStrip, { backgroundColor: styleDef.color }]} />
+
+                    <View style={styles.contentRow}>
+                        <View style={styles.iconContainer}>
+                            {msg.emoji ? (
+                                <Text style={styles.emoji}>{msg.emoji}</Text>
+                            ) : (
+                                styleDef.icon
+                            )}
+                        </View>
+
+                        <View style={styles.textContainer}>
+                            <Text style={styles.title} numberOfLines={1}>{msg.title}</Text>
+                            {!!msg.subtitle && (
+                                <Text style={styles.subtitle} numberOfLines={1}>{msg.subtitle}</Text>
+                            )}
+                        </View>
+                    </View>
+                </BlurView>
             </TouchableOpacity>
         </Animated.View>
     )
@@ -69,12 +109,12 @@ function ToastItem({ msg, onDismiss }: { msg: ToastMessage; onDismiss: () => voi
 export function ToastContainer() {
     const { top } = useSafeAreaInsets()
     const messages = useToastStore(s => s.messages)
-    const dismiss  = useToastStore(s => s.dismiss)
+    const dismiss = useToastStore(s => s.dismiss)
 
     if (messages.length === 0) return null
 
     return (
-        <View style={[styles.container, { top: top + 8 }]} pointerEvents="box-none">
+        <View style={[styles.container, { top: Math.max(top, 10) + 10 }]} pointerEvents="box-none">
             {messages.map(msg => (
                 <ToastItem key={msg.id} msg={msg} onDismiss={() => dismiss(msg.id)} />
             ))}
@@ -84,23 +124,74 @@ export function ToastContainer() {
 
 const styles = StyleSheet.create({
     container: {
-        position: 'absolute', left: 16, right: 16, zIndex: 9999, gap: 8,
+        position: 'absolute',
+        left: 16,
+        right: 16,
+        zIndex: 9999,
+        gap: 12,
     },
-    toast: {
-        borderRadius: T.borderRadius.md,
-        borderWidth: 1,
+    toastWrapper: {
+        borderRadius: 24,
         overflow: 'hidden',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
+        // Intense glow shadow
+        shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.3,
-        shadowRadius: 12,
-        elevation: 10,
+        shadowRadius: 20,
+        elevation: 15,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.15)',
+        backgroundColor: 'transparent',
     },
-    toastInner: {
-        flexDirection: 'row', alignItems: 'center', padding: 14, gap: 10,
+    blurContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 14,
+        paddingHorizontal: 16,
     },
-    emoji: { fontSize: 18 },
-    title: { fontSize: 14, fontWeight: '700', fontFamily: T.fonts.body.bold },
-    subtitle: { color: T.color.text.secondary, fontSize: 12, marginTop: 1, fontFamily: T.fonts.body.regular },
-    dismiss: { fontSize: 12, opacity: 0.7, paddingLeft: 4 },
+    glowStrip: {
+        position: 'absolute',
+        top: '25%',
+        bottom: '25%',
+        left: 0,
+        width: 3,
+        borderTopRightRadius: 3,
+        borderBottomRightRadius: 3,
+        shadowOffset: { width: 4, height: 0 },
+        shadowOpacity: 1,
+        shadowRadius: 8,
+    },
+    contentRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    iconContainer: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    emoji: {
+        fontSize: 18
+    },
+    textContainer: {
+        flex: 1,
+    },
+    title: {
+        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+        fontSize: 15,
+        fontWeight: '800',
+        color: colors.snow,
+        letterSpacing: 0.5,
+    },
+    subtitle: {
+        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+        fontSize: 13,
+        marginTop: 2,
+        color: colors.fog,
+        fontWeight: '500',
+    }
 })

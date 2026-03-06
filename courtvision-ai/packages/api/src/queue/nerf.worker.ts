@@ -1,12 +1,17 @@
 import { Queue, Worker, Job } from 'bullmq';
 import { SpatialService, SpatialJobResult } from '../services/spatial.service';
 
-const redisConnection = {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379', 10),
-};
+const redisUrl = process.env.REDIS_URL;
+const redisHost = process.env.REDIS_HOST;
+const hasRedis = (redisUrl && redisUrl.trim() !== '') || (redisHost && redisHost.trim() !== '');
 
-export const spatialQueue = new Queue('SpatialReconstructionQueue', { connection: redisConnection });
+const redisConnection = hasRedis ? {
+    host: redisHost || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379', 10),
+    maxRetriesPerRequest: null,
+} : null;
+
+export const spatialQueue = redisConnection ? new Queue('SpatialReconstructionQueue', { connection: redisConnection as any }) : null;
 
 export interface SpatialJobData {
     videoId: string;
@@ -14,6 +19,11 @@ export interface SpatialJobData {
 }
 
 export const initSpatialWorker = () => {
+    if (!redisConnection) {
+        console.warn('[Spatial Worker] ⚠️ Redis not available — worker not started');
+        return null;
+    }
+
     const worker = new Worker<SpatialJobData, SpatialJobResult>(
         'SpatialReconstructionQueue',
         async (job: Job) => {
@@ -32,7 +42,7 @@ export const initSpatialWorker = () => {
             }
         },
         {
-            connection: redisConnection,
+            connection: redisConnection as any,
             concurrency: 1 // Gaussian splatting requires heavy GPU compute, limit locally
         }
     );

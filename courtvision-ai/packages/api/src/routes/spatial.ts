@@ -25,6 +25,13 @@ const spatialRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
     }, async (request, reply) => {
         const { videoId, videoUrl } = request.body as any; // Type handled by Zod
 
+        if (!spatialQueue) {
+            return reply.status(503).send({
+                success: false,
+                message: 'Spatial queue is currently unavailable.'
+            });
+        }
+
         // Add 3D generation to the asynchronous BullMQ queue
         const job = await spatialQueue.add(`nerf_gen_${videoId}`, {
             videoId,
@@ -59,6 +66,10 @@ const spatialRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
         }
     }, async (request, reply) => {
         const { jobId } = request.params as any;
+        if (!spatialQueue) {
+            return reply.status(503).send({ success: false, state: 'queue_unavailable', progress: null });
+        }
+
         const job = await spatialQueue.getJob(jobId);
 
         if (!job) {

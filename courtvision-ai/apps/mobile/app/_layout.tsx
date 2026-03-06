@@ -161,8 +161,6 @@ function RootLayout() {
                         {/* Auth stack handles the initial boot logo, then auth -> ai setup */}
                         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
 
-                        {/* Setup stack for hardware/camera config */}
-                        <Stack.Screen name="(setup)" options={{ headerShown: false, animation: 'slide_from_right' }} />
 
                         {/* Main app UI */}
                         <Stack.Screen name="(app)" options={{ headerShown: false, animation: 'slide_from_right' }} />

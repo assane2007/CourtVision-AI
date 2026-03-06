@@ -1,180 +1,359 @@
-import { View, Text, TouchableOpacity, Dimensions, ScrollView, Platform } from 'react-native'
+import { View, Text, TouchableOpacity, Dimensions, Platform, StyleSheet } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Animated, {
     useSharedValue, useAnimatedStyle, withTiming, withRepeat,
-    Easing, FadeIn,
+    Easing, FadeInDown, withSequence, interpolate,
+    withSpring
 } from 'react-native-reanimated'
 import { Feather } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
-import { T } from '../lib/theme'
+import { BlurView } from 'expo-blur'
+import { CameraView, useCameraPermissions } from 'expo-camera'
+import { colors, space } from '../constants/tokens'
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window')
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
 
-const HUD_MODULES = [
-    {
-        id: 'placement',
-        title: 'SPATIAL PLACEMENT',
-        desc: 'Distance: 3–5 meters. Landscape orientation required for full court mapping.',
-        icon: 'maximize-2' as const,
-        status: 'CRITICAL',
-    },
-    {
-        id: 'stability',
-        title: 'STABILIZATION',
-        desc: 'Tripod mounting optimal. Handheld filming reduces tracking precision.',
-        icon: 'aperture' as const,
-        status: 'REQUIRED',
-    },
-    {
-        id: 'environment',
-        title: 'ENVIRONMENTAL LIGHTING',
-        desc: 'Avoid direct backlight. Maintain contrast between player and background.',
-        icon: 'sun' as const,
-        status: 'MONITORING',
-    }
-]
+// A component that erratically moves around to simulate tracking a subject
+function BoundingBox({ delay, startX, startY, color }: { delay: number, startX: number, startY: number, color: string }) {
+    const x = useSharedValue(startX)
+    const y = useSharedValue(startY)
+    const scale = useSharedValue(1)
+
+    useEffect(() => {
+        // Random wandering
+        const move = () => {
+            const nextX = Math.random() * (SCREEN_WIDTH - 100)
+            const nextY = Math.random() * (SCREEN_HEIGHT - 300)
+            x.value = withTiming(nextX, { duration: 1500, easing: Easing.inOut(Easing.quad) })
+            y.value = withTiming(nextY, { duration: 1500, easing: Easing.inOut(Easing.quad) })
+            scale.value = withSequence(
+                withTiming(1.1, { duration: 750 }),
+                withTiming(1.0, { duration: 750 })
+            )
+        }
+
+        const timeout = setTimeout(() => {
+            move()
+            setInterval(move, 1500)
+        }, delay)
+
+        return () => clearTimeout(timeout)
+    }, [])
+
+    const animStyle = useAnimatedStyle(() => ({
+        transform: [{ translateX: x.value }, { translateY: y.value }, { scale: scale.value }]
+    }))
+
+    return (
+        <Animated.View style={[styles.boundingBox, animStyle, { borderColor: color }]}>
+            <View style={[styles.boxCorner, { top: -2, left: -2, borderTopWidth: 2, borderLeftWidth: 2, borderColor: color }]} />
+            <View style={[styles.boxCorner, { top: -2, right: -2, borderTopWidth: 2, borderRightWidth: 2, borderColor: color }]} />
+            <View style={[styles.boxCorner, { bottom: -2, left: -2, borderBottomWidth: 2, borderLeftWidth: 2, borderColor: color }]} />
+            <View style={[styles.boxCorner, { bottom: -2, right: -2, borderBottomWidth: 2, borderRightWidth: 2, borderColor: color }]} />
+            <Text style={[styles.trackingText, { color }]}>TRGT_LOCK</Text>
+        </Animated.View>
+    )
+}
 
 export default function OnboardingCamera() {
     const router = useRouter()
+    const [logLines, setLogLines] = useState<string[]>([])
+    const [permission, requestPermission] = useCameraPermissions()
 
-    // HUD Scan animation
+    // Animations
     const scanLineY = useSharedValue(0)
+    const gridOpacity = useSharedValue(0.1)
 
     useEffect(() => {
+        // Scanner Sweep
         scanLineY.value = withRepeat(
-            withTiming(SCREEN_WIDTH * 1.5, { duration: 3000, easing: Easing.linear }),
-            -1, false
+            withSequence(
+                withTiming(SCREEN_HEIGHT, { duration: 2500, easing: Easing.linear }),
+                withTiming(0, { duration: 0 }) // instant snap back to top
+            ), -1, false
         )
-    }, [])
 
-    const scanStyle = useAnimatedStyle(() => ({
-        transform: [{ translateY: scanLineY.value }]
-    }))
+        // Pulsing Grid
+        gridOpacity.value = withRepeat(
+            withSequence(
+                withTiming(0.4, { duration: 1000 }),
+                withTiming(0.1, { duration: 1000 })
+            ), -1, true
+        )
+
+        // Generate fake logs
+        const logs = [
+            'CALCULATING ANGLE OFFSET...',
+            'DETECTED: JOINT MAPPING [82%]',
+            'CALIBRATING 3D DEPTH MAP...',
+            'LENS DISTORTION CORRECTED.',
+            'NEURAL NET COMPILED.',
+            'TRACKING FLUIDITY: 60 FPS',
+        ]
+        let i = 0
+        const interval = setInterval(() => {
+            setLogLines(prev => {
+                const newLogs = [...prev, `[${new Date().toISOString().split('T')[1].slice(0, -1)}] ${logs[i % logs.length]}`]
+                if (newLogs.length > 5) newLogs.shift()
+                return newLogs
+            })
+            if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+            i++
+        }, 1200)
+
+        // Haptic feedback loop for realism
+        const hapticInterval = setInterval(() => {
+            if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+        }, 200)
+
+        return () => {
+            clearInterval(interval)
+            clearInterval(hapticInterval)
+        }
+    }, [])
 
     const handleLaunch = () => {
         if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-        // Simulate a lock-on delay before navigating
-        setTimeout(() => {
-            router.push('/onboarding3')
-        }, 600)
+        router.push('/onboarding3')
     }
 
+    useEffect(() => {
+        if (!permission?.granted && permission?.canAskAgain) {
+            requestPermission()
+        }
+    }, [permission])
+
+    const rScan = useAnimatedStyle(() => ({
+        transform: [{ translateY: scanLineY.value }]
+    }))
+
+    const rGrid = useAnimatedStyle(() => ({
+        opacity: gridOpacity.value
+    }))
+
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#050505' }}>
-            {/* Background Scanner */}
-            <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, opacity: 0.1 }}>
-                {[...Array(20)].map((_, i) => (
-                    <View key={`h-${i}`} style={{ position: 'absolute', top: i * 40, left: 0, right: 0, height: 1, backgroundColor: T.color.brand.primary }} />
-                ))}
-                {[...Array(10)].map((_, i) => (
-                    <View key={`v-${i}`} style={{ position: 'absolute', left: i * 40, top: 0, bottom: 0, width: 1, backgroundColor: T.color.brand.primary }} />
-                ))}
+        <View style={styles.container}>
+
+            {/* Live Camera Feed */}
+            {permission?.granted ? (
+                <CameraView style={StyleSheet.absoluteFillObject} facing="back" />
+            ) : (
+                <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#000' }]} />
+            )}
+
+            {/* Darker glass overlay to keep the focus on AI elements while showing the court feed */}
+            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 0 }]} />
+
+            {/* Viewfinder Elements */}
+            <View style={styles.cameraFrame}>
+                {/* Simulated grid */}
+                <Animated.View style={[StyleSheet.absoluteFill, rGrid]}>
+                    <View style={styles.gridVertical} />
+                    <View style={styles.gridHorizontal} />
+                    <View style={[styles.gridVertical, { left: '75%' }]} />
+                    <View style={[styles.gridHorizontal, { top: '75%' }]} />
+                </Animated.View>
+
+                {/* Tracking Subjects */}
+                <BoundingBox delay={0} startX={50} startY={200} color={colors.fire} />
+                <BoundingBox delay={500} startX={250} startY={400} color="#00ffcc" />
+                <BoundingBox delay={250} startX={100} startY={500} color={colors.live} />
+
+                {/* Aggressive Scanning Laser */}
+                <Animated.View style={[styles.scanBeam, rScan]}>
+                    <View style={styles.scanCore} />
+                </Animated.View>
             </View>
 
-            {/* HUD Scanning line */}
-            <Animated.View style={[{
-                position: 'absolute', top: -100, left: 0, right: 0, height: 100,
-                backgroundColor: `${T.color.brand.primary}10`,
-                borderBottomWidth: 2, borderBottomColor: T.color.brand.primary,
-                zIndex: 0
-            }, scanStyle]} />
-
-            <ScrollView contentContainerStyle={{ padding: T.spacing[5], flexGrow: 1, zIndex: 10 }} showsVerticalScrollIndicator={false}>
-
-                {/* Header HUD */}
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40, borderBottomWidth: 1, borderColor: `${T.color.brand.primary}40`, paddingBottom: 16 }}>
-                    <View>
-                        <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: T.color.brand.primary, fontSize: 18, fontWeight: 'bold', letterSpacing: 2 }}>OPTICS_SYS_VER_2.0</Text>
-                        <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: '#888', fontSize: 10, marginTop: 4 }}>CALIBRATION PROTOCOL INITIATED</Text>
-                    </View>
-                    <View style={{ width: 40, height: 40, borderWidth: 1, borderColor: T.color.brand.primary, justifyContent: 'center', alignItems: 'center' }}>
-                        <View style={{ width: 8, height: 8, backgroundColor: T.color.brand.primary }} />
+            {/* Top HUD overlay */}
+            <SafeAreaView edges={['top']} style={styles.topBar}>
+                <View style={styles.topBarInner}>
+                    <Text style={styles.hudTitle}>SYSTEM CALIBRATION</Text>
+                    <View style={styles.statusPill}>
+                        <View style={styles.statusDot} />
+                        <Text style={styles.statusText}>REC</Text>
                     </View>
                 </View>
 
-                {/* Modules */}
-                {HUD_MODULES.map((mod, i) => (
-                    <Animated.View
-                        key={mod.id}
-                        entering={FadeIn.delay(i * 300).duration(500)}
-                        style={{
-                            backgroundColor: 'rgba(0,0,0,0.6)',
-                            borderWidth: 1, borderColor: '#333',
-                            borderLeftWidth: 3, borderLeftColor: T.color.brand.primary,
-                            padding: 20, marginBottom: 20,
-                            flexDirection: 'row', alignItems: 'flex-start'
-                        }}
-                    >
-                        <View style={{ width: 40, height: 40, backgroundColor: `${T.color.brand.primary}20`, justifyContent: 'center', alignItems: 'center', marginRight: 16 }}>
-                            <Feather name={mod.icon} size={20} color={T.color.brand.primary} />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                                <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: '#fff', fontSize: 14 }}>{mod.title}</Text>
-                                <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: mod.status === 'CRITICAL' ? T.color.semantic.error : T.color.brand.primary, fontSize: 10 }}>[{mod.status}]</Text>
-                            </View>
-                            <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: '#888', fontSize: 12, lineHeight: 18 }}>
-                                {mod.desc}
-                            </Text>
-                        </View>
-                    </Animated.View>
-                ))}
+                {/* Scrolling Data Logs */}
+                <View style={styles.logContainer}>
+                    {logLines.map((line, idx) => (
+                        <Text key={idx} style={styles.logText}>{line}</Text>
+                    ))}
+                </View>
+            </SafeAreaView>
 
-                {/* Target Demo Box */}
-                <Animated.View entering={FadeIn.delay(900).duration(500)} style={{ marginTop: 20, alignItems: 'center' }}>
-                    <View style={{ width: 280, height: 380, borderWidth: 1, borderColor: '#333', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
-                        {/* Biometric Corner markers */}
-                        <View style={{ position: 'absolute', top: -2, left: -2, width: 20, height: 20, borderTopWidth: 3, borderLeftWidth: 3, borderColor: T.color.brand.primary }} />
-                        <View style={{ position: 'absolute', top: -2, right: -2, width: 20, height: 20, borderTopWidth: 3, borderRightWidth: 3, borderColor: T.color.brand.primary }} />
-                        <View style={{ position: 'absolute', bottom: -2, left: -2, width: 20, height: 20, borderBottomWidth: 3, borderLeftWidth: 3, borderColor: T.color.brand.primary }} />
-                        <View style={{ position: 'absolute', bottom: -2, right: -2, width: 20, height: 20, borderBottomWidth: 3, borderRightWidth: 3, borderColor: T.color.brand.primary }} />
-
-                        {/* Dynamic Grid Overlay */}
-                        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.2 }}>
-                            {[...Array(8)].map((_, i) => (
-                                <View key={`g-h-${i}`} style={{ width: '100%', height: 1, backgroundColor: T.color.brand.primary, marginTop: 45 }} />
-                            ))}
-                            <View style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: 1, backgroundColor: T.color.brand.primary }} />
-                        </View>
-
-                        {/* Central Focus Ring */}
-                        <View style={{ width: 120, height: 120, borderRadius: 60, borderWidth: 1, borderColor: T.color.brand.primary, justifyContent: 'center', alignItems: 'center', opacity: 0.5 }}>
-                            <View style={{ width: 80, height: 80, borderRadius: 40, borderWidth: 1, borderColor: T.color.brand.primary, borderStyle: 'dashed' }} />
-                        </View>
-
-                        <Feather name="target" size={48} color={T.color.brand.primary} style={{ position: 'absolute', opacity: 0.8 }} />
-
-                        <View style={{ position: 'absolute', bottom: 16, backgroundColor: 'rgba(255, 77, 0, 0.1)', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: T.color.brand.primary }}>
-                            <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: T.color.brand.primary, fontSize: 12, fontWeight: 'bold' }}>BIOMETRIC_LOCK_READY</Text>
-                        </View>
-
-                        {/* Floating Stats */}
-                        <Text style={{ position: 'absolute', top: 10, right: 10, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: T.color.brand.primary, fontSize: 8 }}>LAT: 12ms</Text>
-                        <Text style={{ position: 'absolute', top: 22, right: 10, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: T.color.brand.primary, fontSize: 8 }}>FPS: 60.0</Text>
-                    </View>
-                </Animated.View>
-
-            </ScrollView>
-
-            {/* Launch Button */}
-            <View style={{ padding: T.spacing[5] }}>
-                <TouchableOpacity
-                    style={{
-                        backgroundColor: T.color.brand.primary,
-                        height: 60,
-                        justifyContent: 'center', alignItems: 'center',
-                        ...T.glow.hero(T.color.brand.primary),
-                    }}
-                    onPress={handleLaunch}
-                    activeOpacity={0.8}
-                >
-                    <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: '#000', fontSize: 18, fontWeight: 'bold', letterSpacing: 2 }}>
-                        INITIALIZE SESSION
+            {/* Bottom Content Area */}
+            <SafeAreaView edges={['bottom']} style={styles.bottomArea}>
+                <BlurView intensity={40} tint="dark" style={styles.infoCard}>
+                    <Text style={styles.infoTitle}>Frame The Court</Text>
+                    <Text style={styles.infoDesc}>
+                        Point your camera at the play area. Our neural engine will automatically map player joints, calculate shooting arcs, and track physical metrics.
                     </Text>
-                </TouchableOpacity>
-            </View>
-        </SafeAreaView>
+                    <TouchableOpacity
+                        style={styles.primaryBtn}
+                        onPress={handleLaunch}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={styles.primaryBtnText}>INITIALIZE TRACKER</Text>
+                    </TouchableOpacity>
+                </BlurView>
+            </SafeAreaView>
+
+        </View>
     )
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#000',
+    },
+    cameraFrame: {
+        ...StyleSheet.absoluteFillObject,
+        overflow: 'hidden',
+    },
+    gridVertical: {
+        position: 'absolute',
+        top: 0, bottom: 0, left: '25%', width: 1,
+        backgroundColor: colors.live,
+    },
+    gridHorizontal: {
+        position: 'absolute',
+        left: 0, right: 0, top: '25%', height: 1,
+        backgroundColor: colors.live,
+    },
+    scanBeam: {
+        position: 'absolute',
+        top: 0, left: 0, right: 0,
+        height: 150,
+        backgroundColor: 'rgba(255, 68, 0, 0.1)',
+        borderBottomWidth: 3,
+        borderBottomColor: colors.fire,
+        shadowColor: colors.fire,
+        shadowRadius: 20,
+        shadowOpacity: 1,
+    },
+    scanCore: {
+        position: 'absolute',
+        bottom: 0, left: 0, right: 0,
+        height: 1,
+        backgroundColor: '#fff',
+    },
+    boundingBox: {
+        position: 'absolute',
+        width: 120, height: 200,
+        borderWidth: 1,
+        backgroundColor: 'rgba(0,0,0,0.2)',
+    },
+    boxCorner: {
+        position: 'absolute',
+        width: 15, height: 15,
+    },
+    trackingText: {
+        position: 'absolute',
+        top: -20, left: 0,
+        fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+        fontSize: 10,
+        fontWeight: 'bold',
+    },
+    topBar: {
+        position: 'absolute',
+        top: 0, left: 0, right: 0,
+        zIndex: 10,
+    },
+    topBarInner: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: space[6],
+        paddingVertical: space[4],
+    },
+    hudTitle: {
+        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+        fontSize: 18,
+        fontWeight: '900',
+        color: colors.snow,
+        letterSpacing: 2,
+    },
+    statusPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,0,0,0.2)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255,0,0,0.5)',
+    },
+    statusDot: {
+        width: 8, height: 8,
+        borderRadius: 4,
+        backgroundColor: '#ff0000',
+        marginRight: 6,
+    },
+    statusText: {
+        fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#ff0000',
+    },
+    logContainer: {
+        paddingHorizontal: space[6],
+        marginTop: space[2],
+    },
+    logText: {
+        fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+        fontSize: 10,
+        color: colors.live,
+        marginBottom: 2,
+        textShadowColor: colors.live,
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 5,
+    },
+    bottomArea: {
+        position: 'absolute',
+        bottom: 0, left: 0, right: 0,
+        padding: space[4],
+        zIndex: 10,
+    },
+    infoCard: {
+        borderRadius: 24,
+        padding: 24,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    infoTitle: {
+        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+        fontSize: 24,
+        fontWeight: '900',
+        color: colors.snow,
+        marginBottom: 8,
+        letterSpacing: -0.5,
+    },
+    infoDesc: {
+        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+        fontSize: 15,
+        color: colors.fog,
+        lineHeight: 22,
+        marginBottom: 24,
+    },
+    primaryBtn: {
+        backgroundColor: colors.snow,
+        width: '100%',
+        height: 64,
+        borderRadius: 32,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    primaryBtnText: {
+        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+        color: '#000',
+        fontSize: 18,
+        fontWeight: '900',
+        letterSpacing: 1,
+    }
+})

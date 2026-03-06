@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Square, Activity, Users, Zap } from 'lucide-react-native';
 import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { colors, typography, space, shadows, radius } from '../../constants/tokens';
 import { Badge } from '../../components/ui/Badge';
 import { useLiveCoach } from '../../hooks/useLiveCoach';
@@ -48,12 +49,17 @@ export default function RecordScreen() {
     const router = useRouter();
     const live = useLiveCoach('session-test-id');
 
+    const [permission, requestPermission] = useCameraPermissions();
+
     useEffect(() => {
+        if (!permission?.granted && permission?.canAskAgain) {
+            requestPermission();
+        }
         live.start({ mode: 'record_only' });
         return () => {
             live.end();
         };
-    }, []);
+    }, [permission]);
 
     const formatTime = (totalSeconds: number) => {
         const h = Math.floor(totalSeconds / 3600);
@@ -71,8 +77,16 @@ export default function RecordScreen() {
 
     return (
         <View style={styles.container}>
-            {/* Fake Camera Background */}
-            <View style={styles.cameraBackground} />
+            {/* Real Camera Feed */}
+            {permission?.granted ? (
+                <CameraView style={StyleSheet.absoluteFillObject} facing="back" />
+            ) : (
+                <View style={styles.cameraBackground}>
+                    <Text style={{ color: colors.snow, textAlign: 'center', padding: 20 }}>
+                        {permission?.status === 'denied' ? 'Camera access denied' : 'Requesting camera...'}
+                    </Text>
+                </View>
+            )}
 
             {/* Grid overlay to give it a tech vibe */}
             <View style={styles.gridOverlay}>

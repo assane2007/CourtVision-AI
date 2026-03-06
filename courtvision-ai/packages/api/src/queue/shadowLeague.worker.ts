@@ -2,12 +2,17 @@ import { Queue, Worker, Job } from 'bullmq';
 // Logging disabled/swapped to console for MVP
 import { SimulationService, DigitalTwin } from '../services/simulation.service';
 
-const redisConnection = {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379', 10),
-};
+const redisUrl = process.env.REDIS_URL;
+const redisHost = process.env.REDIS_HOST;
+const hasRedis = (redisUrl && redisUrl.trim() !== '') || (redisHost && redisHost.trim() !== '');
 
-export const shadowQueue = new Queue('ShadowLeagueQueue', { connection: redisConnection });
+const redisConnection = hasRedis ? {
+    host: redisHost || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379', 10),
+    maxRetriesPerRequest: null,
+} : null;
+
+export const shadowQueue = redisConnection ? new Queue('ShadowLeagueQueue', { connection: redisConnection as any }) : null;
 
 export interface ShadowLeagueJobData {
     playerA: DigitalTwin;
@@ -15,6 +20,11 @@ export interface ShadowLeagueJobData {
 }
 
 export const initShadowLeagueWorker = () => {
+    if (!redisConnection) {
+        console.warn('[Shadow League Worker] ⚠️ Redis not available — worker not started');
+        return null;
+    }
+
     const worker = new Worker<ShadowLeagueJobData>(
         'ShadowLeagueQueue',
         async (job: Job) => {
@@ -33,7 +43,7 @@ export const initShadowLeagueWorker = () => {
             }
         },
         {
-            connection: redisConnection,
+            connection: redisConnection as any,
             concurrency: 5 // Run up to 5 simulations in parallel
         }
     );

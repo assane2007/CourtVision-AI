@@ -14,29 +14,43 @@ export default function AppLayout() {
                 name="index"
                 options={{
                     title: 'Home',
-                    tabBarAccessibilityLabel: 'Dashboard Home'
+                    tabBarAccessibilityLabel: 'Dashboard'
                 }}
             />
-            {/* These routes don't necessarily exist yet but mock the tab bar layout */}
-            <Tabs.Screen
-                name="sessions"
-                options={{
-                    title: 'Analyze',
-                    tabBarAccessibilityLabel: 'Analyze Sessions'
-                }}
-            />
+
             <Tabs.Screen
                 name="record"
                 options={{
                     title: 'Record',
-                    tabBarAccessibilityLabel: 'Start Recording'
+                    tabBarAccessibilityLabel: 'Start AI Session'
+                }}
+            />
+
+            {/* Hidden routes from TabBar but accessible via router.push */}
+            <Tabs.Screen
+                name="coach"
+                options={{
+                    href: null,
                 }}
             />
             <Tabs.Screen
+                name="precog"
+                options={{
+                    href: null,
+                }}
+            />
+            <Tabs.Screen
+                name="sessions"
+                options={{
+                    href: null,
+                }}
+            />
+
+            {/* If players route doesn't exist yet, we can hide it or point it to index for now */}
+            <Tabs.Screen
                 name="players"
                 options={{
-                    title: 'Stats',
-                    tabBarAccessibilityLabel: 'Player Stats'
+                    href: null, // Hide for now until we have a dedicated players/profile screen
                 }}
             />
         </Tabs>
