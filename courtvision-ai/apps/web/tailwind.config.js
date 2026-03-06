@@ -8,7 +8,7 @@ module.exports = {
         extend: {
             colors: {
                 // DARK ARENA PALETTE
-                void: '#040404',
+                void: '#000000',
                 fire: {
                     DEFAULT: '#FF4D00',
                     glow: 'rgba(255,107,0,0.35)',
@@ -20,10 +20,10 @@ module.exports = {
                     dim: 'rgba(0,240,255,0.12)',
                 },
                 // Legacy / Semantic Mapping
-                background: '#040404',
-                surface: '#080808',
-                elevated: '#0C0C0C',
-                overlay: '#111111',
+                background: '#000000',
+                surface: '#000000',
+                elevated: '#000000',
+                overlay: '#000000',
                 primary: {
                     DEFAULT: '#FF4D00',
                     hover: '#FF6B22',

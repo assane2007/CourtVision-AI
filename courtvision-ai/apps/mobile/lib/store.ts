@@ -29,6 +29,7 @@ export interface UserProfile {
     avatar_url?: string
     position: string
     level: string
+    plan?: string
     streak: number
     mental_score: number
     shooting_grade: string
@@ -149,6 +150,7 @@ interface CourtVisionState {
     refreshProfile: () => Promise<void>
     loadWeeklyData: () => Promise<void>
     loadHighlights: () => Promise<void>
+    initDashboard: () => Promise<void>
     loadSessions: () => Promise<void>
     addXP: (amount: number, label: string) => void
     clearXPEvents: () => void
@@ -198,6 +200,7 @@ const DEMO_USER: UserProfile = {
     avatar_url: undefined,
     position: 'PG',
     level: 'Intermediate',
+    plan: 'free',
     streak: 5,
     mental_score: 82,
     shooting_grade: 'B+',
@@ -213,343 +216,357 @@ const DEMO_USER: UserProfile = {
 // M-10: subscribeWithSelector enables targeted subscriptions (e.g., only re-render when XP changes)
 export const useStore = create<CourtVisionState>()(
     subscribeWithSelector(
-    persist(
-        (set, get) => ({
-            // Auth
-            isAuthenticated: false,
-            authLoading: false,
-            hydrated: false,
+        persist(
+            (set, get) => ({
+                // Auth
+                isAuthenticated: false,
+                authLoading: false,
+                hydrated: false,
 
-            // Profile
-            user: null,
-            userLoading: false,
-            userError: null,
+                // Profile
+                user: null,
+                userLoading: false,
+                userError: null,
 
-            // Weekly
-            weeklyData: DEFAULT_WEEKLY,
-            weeklyLoading: false,
+                // Weekly
+                weeklyData: DEFAULT_WEEKLY,
+                weeklyLoading: false,
 
-            // Highlights
-            highlights: [],
-            highlightsLoading: false,
+                // Highlights
+                highlights: [],
+                highlightsLoading: false,
 
-            // Sessions
-            sessions: [],
-            sessionsLoading: false,
+                // Sessions
+                sessions: [],
+                sessionsLoading: false,
 
-            // XP
-            xpEvents: [],
+                // XP
+                xpEvents: [],
 
-            // Notifications & gamification
-            badges: DEFAULT_BADGES,
-            recentActivity: DEFAULT_ACTIVITY,
+                // Notifications & gamification
+                badges: DEFAULT_BADGES,
+                recentActivity: DEFAULT_ACTIVITY,
 
-            // ── Hydration ──
-            setHydrated: () => set({ hydrated: true }),
+                // ── Hydration ──
+                setHydrated: () => set({ hydrated: true }),
 
-            // ── Auth actions ──
-            async login(token, refreshToken) {
-                set({ authLoading: true })
-                await setAuthToken(token)
-                if (refreshToken) await setRefreshToken(refreshToken)
-                set({ isAuthenticated: true, authLoading: false })
-                // Load initial data after login (parallel)
-                await Promise.all([
-                    get().loadProfile(),
-                    get().loadWeeklyData(),
-                    get().loadHighlights(),
-                ])
-            },
+                // ── Auth actions ──
+                async login(token, refreshToken) {
+                    set({ authLoading: true })
+                    await setAuthToken(token)
+                    if (refreshToken) await setRefreshToken(refreshToken)
+                    set({ isAuthenticated: true, authLoading: false })
+                    await get().initDashboard()
+                },
 
-            async loginWithEmail(email: string, password: string) {
-                set({ authLoading: true })
-                try {
-                    // ── Demo mode: bypass Supabase ──
-                    if (isDemoMode) {
-                        console.log('[CourtVision] 🎮 Demo login with:', email)
-                        const demoToken = 'demo-token-' + Date.now()
-                        await setAuthToken(demoToken)
-                        set({
-                            isAuthenticated: true,
-                            authLoading: false,
-                            user: { ...DEMO_USER, username: email.split('@')[0], full_name: email.split('@')[0] },
-                        })
-                        return
-                    }
+                async loginWithEmail(email: string, password: string) {
+                    set({ authLoading: true })
+                    try {
+                        // ── Demo mode: bypass Supabase ──
+                        if (isDemoMode) {
+                            console.log('[CourtVision] 🎮 Demo login with:', email)
+                            const demoToken = 'demo-token-' + Date.now()
+                            await setAuthToken(demoToken)
+                            set({
+                                isAuthenticated: true,
+                                authLoading: false,
+                                user: { ...DEMO_USER, username: email.split('@')[0], full_name: email.split('@')[0] },
+                            })
+                            return
+                        }
 
-                    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-                    if (error) throw error
-                    if (data.session) {
-                        await setAuthToken(data.session.access_token)
-                        await setRefreshToken(data.session.refresh_token)
-                        set({ isAuthenticated: true, authLoading: false })
-                        await Promise.all([
-                            get().loadProfile(),
-                            get().loadWeeklyData(),
-                            get().loadHighlights(),
-                        ])
-                    }
-                } catch (err) {
-                    set({ authLoading: false })
-                    throw err
-                }
-            },
-
-            async signUpWithEmail(email: string, password: string, username: string) {
-                set({ authLoading: true })
-                try {
-                    // ── Demo mode: bypass Supabase ──
-                    if (isDemoMode) {
-                        console.log('[CourtVision] 🎮 Demo sign up:', username)
-                        const demoToken = 'demo-token-' + Date.now()
-                        await setAuthToken(demoToken)
-                        set({
-                            isAuthenticated: true,
-                            authLoading: false,
-                            user: { ...DEMO_USER, username, full_name: username },
-                        })
-                        return
-                    }
-
-                    const { data, error } = await supabase.auth.signUp({
-                        email,
-                        password,
-                        options: { data: { username } },
-                    })
-                    if (error) throw error
-                    if (data.session) {
-                        await setAuthToken(data.session.access_token)
-                        await setRefreshToken(data.session.refresh_token)
-                        set({ isAuthenticated: true, authLoading: false })
-                        await Promise.all([
-                            get().loadProfile(),
-                            get().loadWeeklyData(),
-                            get().loadHighlights(),
-                        ])
-                    } else {
-                        // Email confirmation required
+                        const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+                        if (error) throw error
+                        if (data.session) {
+                            await setAuthToken(data.session.access_token)
+                            await setRefreshToken(data.session.refresh_token)
+                            set({ isAuthenticated: true, authLoading: false })
+                            await get().initDashboard()
+                        }
+                    } catch (err) {
                         set({ authLoading: false })
+                        throw err
                     }
-                } catch (err) {
-                    set({ authLoading: false })
-                    throw err
-                }
-            },
+                },
 
-            async loginWithOAuth(provider: 'apple' | 'google') {
-                set({ authLoading: true })
-                try {
-                    // ── Demo mode: bypass Supabase ──
+                async signUpWithEmail(email: string, password: string, username: string) {
+                    set({ authLoading: true })
+                    try {
+                        // ── Demo mode: bypass Supabase ──
+                        if (isDemoMode) {
+                            console.log('[CourtVision] 🎮 Demo sign up:', username)
+                            const demoToken = 'demo-token-' + Date.now()
+                            await setAuthToken(demoToken)
+                            set({
+                                isAuthenticated: true,
+                                authLoading: false,
+                                user: { ...DEMO_USER, username, full_name: username },
+                            })
+                            return
+                        }
+
+                        const { data, error } = await supabase.auth.signUp({
+                            email,
+                            password,
+                            options: { data: { username } },
+                        })
+                        if (error) throw error
+                        if (data.session) {
+                            await setAuthToken(data.session.access_token)
+                            await setRefreshToken(data.session.refresh_token)
+                            set({ isAuthenticated: true, authLoading: false })
+                            await get().initDashboard()
+                        } else {
+                            // Email confirmation required
+                            set({ authLoading: false })
+                        }
+                    } catch (err) {
+                        set({ authLoading: false })
+                        throw err
+                    }
+                },
+
+                async loginWithOAuth(provider: 'apple' | 'google') {
+                    set({ authLoading: true })
+                    try {
+                        // ── Demo mode: bypass Supabase ──
+                        if (isDemoMode) {
+                            console.log('[CourtVision] 🎮 Demo OAuth login:', provider)
+                            const demoToken = 'demo-token-' + Date.now()
+                            await setAuthToken(demoToken)
+                            set({
+                                isAuthenticated: true,
+                                authLoading: false,
+                                user: { ...DEMO_USER, username: `${provider}_user`, full_name: `${provider} User` },
+                            })
+                            return
+                        }
+
+                        const { error } = await supabase.auth.signInWithOAuth({ provider })
+                        if (error) throw error
+                        // Session will be handled by onAuthStateChange in _layout.tsx
+                    } catch (err) {
+                        set({ authLoading: false })
+                        throw err
+                    }
+                },
+
+                async logout() {
+                    await supabase.auth.signOut().catch(() => { })
+                    await clearTokens()
+                    set({
+                        isAuthenticated: false,
+                        user: null,
+                        weeklyData: DEFAULT_WEEKLY,
+                        highlights: [],
+                        sessions: [],
+                        xpEvents: [],
+                        badges: [],
+                        recentActivity: [],
+                    })
+                },
+
+                // ── Data actions ──
+                async loadProfile() {
                     if (isDemoMode) {
-                        console.log('[CourtVision] 🎮 Demo OAuth login:', provider)
-                        const demoToken = 'demo-token-' + Date.now()
-                        await setAuthToken(demoToken)
+                        set({ user: get().user ?? DEMO_USER, userLoading: false })
+                        return
+                    }
+                    set({ userLoading: true, userError: null })
+                    try {
+                        const profile = await api.get<UserProfile>('/api/auth/me')
+                        set({ user: profile, userLoading: false })
+                    } catch (err) {
+                        const msg = (err as Error).message ?? 'Erreur de chargement du profil'
+                        console.warn('[Store] loadProfile error:', msg)
+                        set({ userError: msg, userLoading: false })
+                    }
+                },
+
+                async initDashboard() {
+                    if (isDemoMode) {
+                        return Promise.all([get().loadProfile(), get().loadWeeklyData(), get().loadHighlights()]).then(() => { })
+                    }
+
+                    set({ userLoading: true, weeklyLoading: true, highlightsLoading: true })
+                    try {
+                        const res = await api.get<{ data: { profile: UserProfile, weeklyData: WeekDay[], highlights: HighlightClip[] } }>('/api/dashboard/init')
+
+                        // Default Fallbacks handles SWR/Cache values if NetworkError occurred inside API client.
+                        if (res?.data) {
+                            set({
+                                user: res.data.profile,
+                                weeklyData: res.data.weeklyData,
+                                highlights: res.data.highlights,
+                                userLoading: false,
+                                weeklyLoading: false,
+                                highlightsLoading: false
+                            })
+                        }
+                    } catch (err) {
+                        console.warn('[Store] initDashboard error:', err)
+                        // Fallback individually on error if batch fails
+                        await Promise.all([get().loadProfile(), get().loadWeeklyData(), get().loadHighlights()])
+                    }
+                },
+
+                async refreshProfile() {
+                    if (isDemoMode) return
+                    // Silently refresh without loading state (for background refresh)
+                    try {
+                        const profile = await api.get<UserProfile>('/api/auth/me')
+                        set({ user: profile })
+                    } catch {
+                        // Silent — keep existing data
+                    }
+                },
+
+                async loadWeeklyData() {
+                    if (isDemoMode) {
+                        set({ weeklyData: DEFAULT_WEEKLY, weeklyLoading: false })
+                        return
+                    }
+                    set({ weeklyLoading: true })
+                    try {
+                        const data = await api.get<WeekDay[]>('/api/sessions/weekly')
+                        set({ weeklyData: data, weeklyLoading: false })
+                    } catch {
+                        // Keep default/last known data on error
+                        set({ weeklyLoading: false })
+                    }
+                },
+
+                async loadHighlights() {
+                    if (isDemoMode) {
                         set({
-                            isAuthenticated: true,
-                            authLoading: false,
-                            user: { ...DEMO_USER, username: `${provider}_user`, full_name: `${provider} User` },
+                            highlights: [
+                                { id: 'demo-1', label: '3-Point Swish', pts: '+12 XP', daysAgo: 1 },
+                                { id: 'demo-2', label: 'Fast Break Assist', pts: '+8 XP', daysAgo: 2 },
+                                { id: 'demo-3', label: 'Clutch Free Throw', pts: '+10 XP', daysAgo: 3 },
+                            ],
+                            highlightsLoading: false,
                         })
                         return
                     }
+                    set({ highlightsLoading: true })
+                    try {
+                        const data = await api.get<HighlightClip[]>('/api/sessions/highlights/recent')
+                        set({ highlights: data, highlightsLoading: false })
+                    } catch {
+                        set({ highlightsLoading: false })
+                    }
+                },
 
-                    const { error } = await supabase.auth.signInWithOAuth({ provider })
-                    if (error) throw error
-                    // Session will be handled by onAuthStateChange in _layout.tsx
-                } catch (err) {
-                    set({ authLoading: false })
-                    throw err
-                }
-            },
+                async loadSessions() {
+                    if (isDemoMode) {
+                        set({
+                            sessions: [
+                                { id: 'demo-s1', created_at: new Date().toISOString(), mental_score: 85, shooting_grade: 'A-', highlight_count: 3 },
+                                { id: 'demo-s2', created_at: new Date(Date.now() - 86400000).toISOString(), mental_score: 78, shooting_grade: 'B+', highlight_count: 2 },
+                            ],
+                            sessionsLoading: false,
+                        })
+                        return
+                    }
+                    set({ sessionsLoading: true })
+                    try {
+                        const data = await api.get<Session[]>('/api/sessions')
+                        set({ sessions: data, sessionsLoading: false })
+                    } catch {
+                        set({ sessionsLoading: false })
+                    }
+                },
 
-            async logout() {
-                await supabase.auth.signOut().catch(() => { })
-                await clearTokens()
-                set({
-                    isAuthenticated: false,
-                    user: null,
-                    weeklyData: DEFAULT_WEEKLY,
-                    highlights: [],
-                    sessions: [],
-                    xpEvents: [],
-                    badges: [],
-                    recentActivity: [],
-                })
-            },
+                // ── XP actions ──
+                addXP(amount: number, label: string) {
+                    const event: XPEvent = {
+                        id: `${Date.now()}-${Math.random()}`,
+                        label,
+                        amount,
+                        timestamp: Date.now(),
+                    }
+                    set(s => ({
+                        xpEvents: [event, ...s.xpEvents].slice(0, 10),
+                        user: s.user ? { ...s.user, xp: (s.user.xp ?? 0) + amount } : s.user,
+                    }))
+                },
 
-            // ── Data actions ──
-            async loadProfile() {
-                if (isDemoMode) {
-                    set({ user: get().user ?? DEMO_USER, userLoading: false })
-                    return
-                }
-                set({ userLoading: true, userError: null })
-                try {
-                    const profile = await api.get<UserProfile>('/api/auth/me')
-                    set({ user: profile, userLoading: false })
-                } catch (err) {
-                    const msg = (err as Error).message ?? 'Erreur de chargement du profil'
-                    console.warn('[Store] loadProfile error:', msg)
-                    set({ userError: msg, userLoading: false })
-                }
-            },
+                clearXPEvents() {
+                    set({ xpEvents: [] })
+                },
 
-            async refreshProfile() {
-                if (isDemoMode) return
-                // Silently refresh without loading state (for background refresh)
-                try {
-                    const profile = await api.get<UserProfile>('/api/auth/me')
-                    set({ user: profile })
-                } catch {
-                    // Silent — keep existing data
-                }
-            },
+                addActivity(activity) {
+                    const newActivity: ActivityEvent = {
+                        ...activity,
+                        id: `act-${Date.now()}-${Math.random()}`,
+                        timestamp: Date.now()
+                    }
+                    set(s => ({
+                        recentActivity: [newActivity, ...s.recentActivity].slice(0, 20)
+                    }))
+                },
 
-            async loadWeeklyData() {
-                if (isDemoMode) {
-                    set({ weeklyData: DEFAULT_WEEKLY, weeklyLoading: false })
-                    return
-                }
-                set({ weeklyLoading: true })
-                try {
-                    const data = await api.get<WeekDay[]>('/api/sessions/weekly')
-                    set({ weeklyData: data, weeklyLoading: false })
-                } catch {
-                    // Keep default/last known data on error
-                    set({ weeklyLoading: false })
-                }
-            },
+                evaluateBadges() {
+                    // Example evaluation logic
+                    const store = get()
+                    if (!store.user) return
 
-            async loadHighlights() {
-                if (isDemoMode) {
-                    set({
-                        highlights: [
-                            { id: 'demo-1', label: '3-Point Swish', pts: '+12 XP', daysAgo: 1 },
-                            { id: 'demo-2', label: 'Fast Break Assist', pts: '+8 XP', daysAgo: 2 },
-                            { id: 'demo-3', label: 'Clutch Free Throw', pts: '+10 XP', daysAgo: 3 },
-                        ],
-                        highlightsLoading: false,
-                    })
-                    return
-                }
-                set({ highlightsLoading: true })
-                try {
-                    const data = await api.get<HighlightClip[]>('/api/sessions/highlights/recent')
-                    set({ highlights: data, highlightsLoading: false })
-                } catch {
-                    set({ highlightsLoading: false })
-                }
-            },
+                    // Example rule: Elite overall rating
+                    if (store.user.level === 'Elite' && !store.badges.find(b => b.name === 'Elite')) {
+                        const newBadge = { id: `b-new-${Date.now()}`, emoji: '💎', name: 'Elite', rarity: 'legendary' as const, xp: 2000, desc: 'Reach 90+ overall', earnedAt: new Date().toISOString() }
+                        set(s => ({ badges: [newBadge, ...s.badges] }))
+                        get().addXP(2000, 'Unlocked Elite Badge!')
+                        get().addActivity({ icon: 'award', text: 'New Badge: Elite', time: 'Just now', color: T.color.gamification.gold })
+                    }
+                },
 
-            async loadSessions() {
-                if (isDemoMode) {
-                    set({
-                        sessions: [
-                            { id: 'demo-s1', created_at: new Date().toISOString(), mental_score: 85, shooting_grade: 'A-', highlight_count: 3 },
-                            { id: 'demo-s2', created_at: new Date(Date.now() - 86400000).toISOString(), mental_score: 78, shooting_grade: 'B+', highlight_count: 2 },
-                        ],
-                        sessionsLoading: false,
-                    })
-                    return
-                }
-                set({ sessionsLoading: true })
-                try {
-                    const data = await api.get<Session[]>('/api/sessions')
-                    set({ sessions: data, sessionsLoading: false })
-                } catch {
-                    set({ sessionsLoading: false })
-                }
-            },
-
-            // ── XP actions ──
-            addXP(amount: number, label: string) {
-                const event: XPEvent = {
-                    id: `${Date.now()}-${Math.random()}`,
-                    label,
-                    amount,
-                    timestamp: Date.now(),
-                }
-                set(s => ({
-                    xpEvents: [event, ...s.xpEvents].slice(0, 10),
-                    user: s.user ? { ...s.user, xp: (s.user.xp ?? 0) + amount } : s.user,
-                }))
-            },
-
-            clearXPEvents() {
-                set({ xpEvents: [] })
-            },
-
-            addActivity(activity) {
-                const newActivity: ActivityEvent = {
-                    ...activity,
-                    id: `act-${Date.now()}-${Math.random()}`,
-                    timestamp: Date.now()
-                }
-                set(s => ({
-                    recentActivity: [newActivity, ...s.recentActivity].slice(0, 20)
-                }))
-            },
-
-            evaluateBadges() {
-                // Example evaluation logic
-                const store = get()
-                if (!store.user) return
-
-                // Example rule: Elite overall rating
-                if (store.user.level === 'Elite' && !store.badges.find(b => b.name === 'Elite')) {
-                    const newBadge = { id: `b-new-${Date.now()}`, emoji: '💎', name: 'Elite', rarity: 'legendary' as const, xp: 2000, desc: 'Reach 90+ overall', earnedAt: new Date().toISOString() }
-                    set(s => ({ badges: [newBadge, ...s.badges] }))
-                    get().addXP(2000, 'Unlocked Elite Badge!')
-                    get().addActivity({ icon: 'award', text: 'New Badge: Elite', time: 'Just now', color: T.color.gamification.gold })
-                }
-            },
-
-            completeSession(sessionData) {
-                // A simulation of what happens when a session concludes
-                const store = get()
-                get().addXP(150, 'Session Completed')
-                get().addActivity({
-                    icon: 'film',
-                    text: `Session analyzed · Mental ${sessionData.mental_score ?? 80}`,
-                    time: 'Just now',
-                    color: T.color.signature.primary
-                })
-                get().evaluateBadges()
-
-                // If the user leveled up from this logic, addXP technically covers it (it computes level implicitly via selectXPLevel)
-                const currentXp = store.user?.xp ?? 0
-                const curLevel = xpToLevel(currentXp)
-                const nextLevel = xpToLevel(currentXp + 150)
-                if (nextLevel > curLevel) {
+                completeSession(sessionData) {
+                    // A simulation of what happens when a session concludes
+                    const store = get()
+                    get().addXP(150, 'Session Completed')
                     get().addActivity({
-                        icon: 'arrow-up',
-                        text: `Level ${nextLevel} unlocked!`,
+                        icon: 'film',
+                        text: `Session analyzed · Mental ${sessionData.mental_score ?? 80}`,
                         time: 'Just now',
-                        color: T.color.semantic.success
+                        color: T.color.signature.primary
                     })
-                }
-            },
+                    get().evaluateBadges()
 
-            updateUser(partial: Partial<UserProfile>) {
-                set(s => ({ user: s.user ? { ...s.user, ...partial } : s.user }))
-            },
-        }),
-        {
-            name: 'courtvision-store',
-            storage: createJSONStorage(() => AsyncStorage),
-            // Persister uniquement les données non-sensibles (pas les tokens — ils sont dans SecureStore)
-            partialize: (s) => ({
-                isAuthenticated: s.isAuthenticated,
-                user: s.user,
-                weeklyData: s.weeklyData,
-                highlights: s.highlights,
-                badges: s.badges,
-                recentActivity: s.recentActivity
+                    // If the user leveled up from this logic, addXP technically covers it (it computes level implicitly via selectXPLevel)
+                    const currentXp = store.user?.xp ?? 0
+                    const curLevel = xpToLevel(currentXp)
+                    const nextLevel = xpToLevel(currentXp + 150)
+                    if (nextLevel > curLevel) {
+                        get().addActivity({
+                            icon: 'arrow-up',
+                            text: `Level ${nextLevel} unlocked!`,
+                            time: 'Just now',
+                            color: T.color.semantic.success
+                        })
+                    }
+                },
+
+                updateUser(partial: Partial<UserProfile>) {
+                    set(s => ({ user: s.user ? { ...s.user, ...partial } : s.user }))
+                },
             }),
-            onRehydrateStorage: () => (state) => {
-                state?.setHydrated()
-            },
-        }
-    )
+            {
+                name: 'courtvision-store',
+                storage: createJSONStorage(() => AsyncStorage),
+                // Persister uniquement les données non-sensibles (pas les tokens — ils sont dans SecureStore)
+                partialize: (s) => ({
+                    isAuthenticated: s.isAuthenticated,
+                    user: s.user,
+                    weeklyData: s.weeklyData,
+                    highlights: s.highlights,
+                    badges: s.badges,
+                    recentActivity: s.recentActivity
+                }),
+                onRehydrateStorage: () => (state) => {
+                    state?.setHydrated()
+                },
+            }
+        )
     ) // close subscribeWithSelector
 )
 

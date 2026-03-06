@@ -119,10 +119,10 @@ export default function BootScreen() {
             <Animated.View style={[styles.ctaBlock, { paddingBottom: Math.max(insets.bottom + space[4], space[10]) }, animatedCta]}>
                 <Button
                     title="Get Started →"
-                    onPress={() => router.push('/(auth)/ai-setup')}
+                    onPress={() => router.push('/onboarding2')}
                 />
 
-                <Pressable style={styles.loginLink} onPress={() => router.push('/(auth)/login')}>
+                <Pressable style={styles.loginLink} onPress={() => router.push('/onboarding3')}>
                     <Text style={styles.loginTextNormal}>
                         Already a member? <Text style={styles.loginTextHighlight}>Sign in</Text>
                     </Text>

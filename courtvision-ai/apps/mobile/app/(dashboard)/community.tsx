@@ -15,6 +15,7 @@ import { Feather } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import Animated, { FadeInDown, FadeInRight, withSpring, useSharedValue, useAnimatedStyle } from 'react-native-reanimated'
 import { useCommunity, LeaderboardEntry, ChallengeItem, ActivityItem, SearchResult } from '../../hooks/useCommunity'
+import { PrimaryButton } from '../../components/PrimaryButton'
 import { T, typePresets } from '../../lib/theme'
 
 const type = typePresets
@@ -23,21 +24,21 @@ const glass = (T as any).glass
 // ─── Constants ──────────────────────────────────────────────
 
 const TABS = [
-    { key: 'rankings',   label: 'Rankings',   icon: 'award' as const },
-    { key: 'feed',       label: 'Feed',       icon: 'rss' as const },
+    { key: 'rankings', label: 'Rankings', icon: 'award' as const },
+    { key: 'feed', label: 'Feed', icon: 'rss' as const },
     { key: 'challenges', label: 'Challenges', icon: 'target' as const },
 ] as const
 type TabKey = (typeof TABS)[number]['key']
 
 const METRICS = [
-    { key: 'overall',  label: 'Overall',  emoji: 'award' as const },
+    { key: 'overall', label: 'Overall', emoji: 'award' as const },
     { key: 'shooting', label: 'Shooting', emoji: 'crosshair' as const },
-    { key: 'mental',   label: 'Mental',   emoji: 'activity' as const },
+    { key: 'mental', label: 'Mental', emoji: 'activity' as const },
     { key: 'sessions', label: 'Sessions', emoji: 'bar-chart-2' as const },
 ]
 
 const SCOPES = [
-    { key: 'global',  label: 'Global' },
+    { key: 'global', label: 'Global' },
     { key: 'friends', label: 'Friends' },
 ]
 
@@ -138,7 +139,7 @@ export default function Community() {
                             ...glass.regular ?? T.glass.thin,
                             justifyContent: 'center', alignItems: 'center',
                         }}
-                        onPress={() => {}}
+                        onPress={() => { }}
                         accessibilityLabel="Notifications"
                         accessibilityRole="button"
                     >
@@ -247,11 +248,11 @@ export default function Community() {
 
 function RankingsTab({ entries, metric, scope, myRank, onChangeMetric, onChangeScope,
     searchQuery, onSearchChange, searchResults, onFollow, onUnfollow }: {
-    entries: LeaderboardEntry[]; metric: string; scope: string; myRank?: number;
-    onChangeMetric: (m: string) => void; onChangeScope: (s: string) => void;
-    searchQuery: string; onSearchChange: (q: string) => void;
-    searchResults: SearchResult[]; onFollow: (id: string) => void; onUnfollow: (id: string) => void;
-}) {
+        entries: LeaderboardEntry[]; metric: string; scope: string; myRank?: number;
+        onChangeMetric: (m: string) => void; onChangeScope: (s: string) => void;
+        searchQuery: string; onSearchChange: (q: string) => void;
+        searchResults: SearchResult[]; onFollow: (id: string) => void; onUnfollow: (id: string) => void;
+    }) {
     return (
         <View style={{ marginTop: T.spacing[2] }}>
             {/* Search */}
@@ -508,9 +509,19 @@ function FeedTab({ items, hasMore, onLoadMore, loading }: {
             {items.length === 0 && !loading && (
                 <View style={{ alignItems: 'center', padding: T.spacing[10] }}>
                     <Feather name="rss" size={32} color={T.color.text.tertiary} />
-                    <Text style={{ ...type.caption, color: T.color.text.secondary, textAlign: 'center', marginTop: T.spacing[3] }}>
+                    <Text style={{ ...type.caption, color: T.color.text.secondary, textAlign: 'center', marginTop: T.spacing[3], marginBottom: T.spacing[5] }}>
                         {'Nothing in the feed yet.\nFollow players to see their activity!'}
                     </Text>
+                    <PrimaryButton
+                        label="Find Friends"
+                        variant="primary"
+                        icon="search"
+                        size="sm"
+                        fullWidth={false}
+                        onPress={() => {
+                            /* Implementation would jump focus to player search or invite flow */
+                        }}
+                    />
                 </View>
             )}
         </View>
@@ -568,9 +579,16 @@ function ChallengesTab({ challenges }: { challenges: ChallengeItem[] }) {
             {challenges.length === 0 && (
                 <View style={{ alignItems: 'center', padding: T.spacing[10] }}>
                     <Feather name="target" size={32} color={T.color.text.tertiary} />
-                    <Text style={{ ...type.caption, color: T.color.text.secondary, textAlign: 'center', marginTop: T.spacing[3] }}>
+                    <Text style={{ ...type.caption, color: T.color.text.secondary, textAlign: 'center', marginTop: T.spacing[3], marginBottom: T.spacing[5] }}>
                         {'No active challenges right now.\nCheck back soon!'}
                     </Text>
+                    <PrimaryButton
+                        label="Create Challenge"
+                        variant="secondary"
+                        icon="plus"
+                        size="sm"
+                        fullWidth={false}
+                    />
                 </View>
             )}
         </View>

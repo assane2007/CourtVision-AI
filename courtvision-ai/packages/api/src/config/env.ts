@@ -27,6 +27,9 @@ export const env = cleanEnv(process.env, {
     STRIPE_PRICE_COACH: str({ default: '', desc: 'Stripe price ID for Coach plan' }),
     STRIPE_PRICE_ACADEMY: str({ default: '', desc: 'Stripe price ID for Academy plan' }),
 
+    // -- RevenueCat --
+    REVENUECAT_WEBHOOK_SECRET: str({ default: '', desc: 'RevenueCat webhook auth secret' }),
+
     // ── Redis (optional — graceful degradation) ──
     REDIS_URL: str({ default: '', desc: 'Redis connection URL for BullMQ' }),
 

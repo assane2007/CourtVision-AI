@@ -3,7 +3,9 @@ import dotenv from 'dotenv'
 import { initWorker } from './queue/videoProcessor'
 
 // Load .env BEFORE any env validation
-dotenv.config({ path: '../../.env' })
+import { resolve } from 'path'
+dotenv.config({ path: resolve(__dirname, '../../.env') })
+dotenv.config() // Fallback to local .env in packages/api
 
 // Env validation — fail fast if critical vars are missing (C-5)
 import { env } from './config/env'
@@ -15,7 +17,7 @@ const start = async () => {
         worker = initWorker()
     } catch {
         console.warn('[Server] Worker init skipped (no Redis)')
-        worker = { close: async () => {} }
+        worker = { close: async () => { } }
     }
 
     const server = buildApp({

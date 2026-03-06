@@ -9,17 +9,29 @@ html {
 }
 
 body {
-    background-color: #040404;
+    background-color: #000000;
     color: #F2F6FC;
 }
 
 /* ==========================================
    SCROLLBAR
    ========================================== */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #040404; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #040404;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
 
 /* ==========================================
    GLASS MORPHISM
@@ -74,7 +86,9 @@ body {
 }
 
 @keyframes draw-line {
-    to { stroke-dashoffset: 0; }
+    to {
+        stroke-dashoffset: 0;
+    }
 }
 
 /* ==========================================
@@ -85,26 +99,52 @@ body {
     transform: translateY(40px);
     transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 .reveal.visible {
     opacity: 1;
     transform: translateY(0);
 }
 
 /* Staggered children */
-.reveal-stagger > * {
+.reveal-stagger>* {
     opacity: 0;
     transform: translateY(30px);
     transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.reveal-stagger.visible > *:nth-child(1) { transition-delay: 0.05s; }
-.reveal-stagger.visible > *:nth-child(2) { transition-delay: 0.10s; }
-.reveal-stagger.visible > *:nth-child(3) { transition-delay: 0.15s; }
-.reveal-stagger.visible > *:nth-child(4) { transition-delay: 0.20s; }
-.reveal-stagger.visible > *:nth-child(5) { transition-delay: 0.25s; }
-.reveal-stagger.visible > *:nth-child(6) { transition-delay: 0.30s; }
-.reveal-stagger.visible > *:nth-child(7) { transition-delay: 0.35s; }
-.reveal-stagger.visible > *:nth-child(8) { transition-delay: 0.40s; }
-.reveal-stagger.visible > * {
+
+.reveal-stagger.visible>*:nth-child(1) {
+    transition-delay: 0.05s;
+}
+
+.reveal-stagger.visible>*:nth-child(2) {
+    transition-delay: 0.10s;
+}
+
+.reveal-stagger.visible>*:nth-child(3) {
+    transition-delay: 0.15s;
+}
+
+.reveal-stagger.visible>*:nth-child(4) {
+    transition-delay: 0.20s;
+}
+
+.reveal-stagger.visible>*:nth-child(5) {
+    transition-delay: 0.25s;
+}
+
+.reveal-stagger.visible>*:nth-child(6) {
+    transition-delay: 0.30s;
+}
+
+.reveal-stagger.visible>*:nth-child(7) {
+    transition-delay: 0.35s;
+}
+
+.reveal-stagger.visible>*:nth-child(8) {
+    transition-delay: 0.40s;
+}
+
+.reveal-stagger.visible>* {
     opacity: 1;
     transform: translateY(0);
 }
@@ -116,6 +156,7 @@ body {
     position: relative;
     overflow: hidden;
 }
+
 .card-shine::after {
     content: '';
     position: absolute;
@@ -123,16 +164,15 @@ body {
     left: -50%;
     width: 200%;
     height: 200%;
-    background: linear-gradient(
-        to bottom right,
-        rgba(255, 255, 255, 0) 0%,
-        rgba(255, 255, 255, 0.02) 50%,
-        rgba(255, 255, 255, 0) 100%
-    );
+    background: linear-gradient(to bottom right,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.02) 50%,
+            rgba(255, 255, 255, 0) 100%);
     transform: rotate(-45deg) translateY(-100%);
     transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
     pointer-events: none;
 }
+
 .card-shine:hover::after {
     transform: rotate(-45deg) translateY(0%);
 }
@@ -144,6 +184,7 @@ body {
     position: relative;
     z-index: 1;
 }
+
 .btn-glow::before {
     content: '';
     position: absolute;
@@ -155,6 +196,7 @@ body {
     transition: opacity 0.3s;
     filter: blur(14px);
 }
+
 .btn-glow:hover::before {
     opacity: 0.55;
 }

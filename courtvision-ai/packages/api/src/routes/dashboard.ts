@@ -36,6 +36,76 @@ export default async function dashboardRoutes(app: FastifyInstance) {
         }
     })
 
+    // ── Batch Init (Reduces 3 Mobile requests down to 1) ─────
+    app.get('/init', {
+        preHandler: [app.authenticate],
+    }, async (request, reply) => {
+        const userId = request.user?.id
+        if (!userId) return reply.status(401).send({ error: 'Unauthorized' })
+
+        try {
+            const since = new Date()
+            since.setDate(since.getDate() - 6)
+
+            // Execute all three primary home queries in parallel
+            const [
+                { data: profile },
+                { data: weeklySessions },
+                { data: highlightSessions }
+            ] = await Promise.all([
+                request.server.supabase.from('public_profiles').select('*').eq('user_id', userId).single(),
+                request.server.supabase.from('sessions').select('created_at, analyses(shot_attempts, shot_made, mental_score)').eq('user_id', userId).eq('status', 'complete').gte('created_at', since.toISOString()).order('created_at', { ascending: true }),
+                request.server.supabase.from('sessions').select('id, created_at, analyses(highlights)').eq('user_id', userId).eq('status', 'complete').order('created_at', { ascending: false }).limit(10)
+            ])
+
+            // Build Weekly Format
+            const days = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+            const weeklyData = days.map((day, i) => {
+                const d = new Date(since)
+                d.setDate(d.getDate() + i)
+                const dateStr = d.toISOString().slice(0, 10)
+                const s = (weeklySessions ?? []).filter((s: any) => s.created_at.slice(0, 10) === dateStr)
+                if (s.length === 0) return { day, mental: 0, shooting: 0, hasSession: false }
+                const latest = s[s.length - 1] as any
+                const analysis = Array.isArray(latest.analyses) ? latest.analyses[0] : latest.analyses
+                const attempts = analysis?.shot_attempts ?? 0
+                const made = analysis?.shot_made ?? 0
+                return {
+                    day,
+                    mental: analysis?.mental_score ?? 0,
+                    shooting: Math.round(attempts > 0 ? (made / attempts) * 100 : 0),
+                    hasSession: true,
+                }
+            })
+
+            // Build Highlights
+            const now = Date.now()
+            const highlights = (highlightSessions ?? []).flatMap((session: any) => {
+                const analysis = Array.isArray(session.analyses) ? session.analyses[0] : null
+                const hs: any[] = analysis?.highlights ?? []
+                return hs.slice(0, 1).map((h: any) => ({
+                    id: h.id ?? session.id,
+                    label: h.label ?? `Match ${new Date(session.created_at).toLocaleDateString('fr')}`,
+                    pts: h.pts ?? `${h.points ?? '--'} Pts`,
+                    daysAgo: Math.round((now - new Date(session.created_at).getTime()) / 86_400_000),
+                    thumbnail_url: h.thumbnail_url ?? null,
+                }))
+            }).slice(0, 6)
+
+            return reply.send({
+                success: true,
+                data: {
+                    profile,
+                    weeklyData,
+                    highlights
+                }
+            })
+        } catch (error: any) {
+            request.log.error({ err: error }, '[Dashboard] Error fetching mobile init payload')
+            return reply.status(500).send({ error: 'Failed to initialize app payload' })
+        }
+    })
+
     // ── Apex Score Only (lightweight) ────────────────────────
     app.get('/apex', {
         preHandler: [app.authenticate],

@@ -12,6 +12,7 @@ import { AntDesign, Feather } from '@expo/vector-icons'
 import { useStore } from '../lib/store'
 import { toast } from '../lib/toast'
 import { T } from '../lib/theme'
+import { useAnalytics } from '../lib/analytics'
 
 export default function Onboarding3() {
     const router = useRouter()
@@ -19,6 +20,7 @@ export default function Onboarding3() {
     const signUpWithEmail = useStore(s => s.signUpWithEmail)
     const loginWithOAuth = useStore(s => s.loginWithOAuth)
     const authLoading = useStore(s => s.authLoading)
+    const { trackEvent } = useAnalytics()
 
     const [mode, setMode] = useState<'choice' | 'email'>('choice')
     const [email, setEmail] = useState('')
@@ -26,6 +28,24 @@ export default function Onboarding3() {
     const [username, setUsername] = useState('')
     const [isLogin, setIsLogin] = useState(true)
     const [loading, setLoading] = useState(false)
+    const [booting, setBooting] = useState(true)
+
+    // Terminal Typewriter Effect inline
+    const [bootText, setBootText] = useState('')
+    const fullBootText = "INITIALIZING SECURE ENCLAVE...\nDECRYPTING GATEWAY PROTOCOLS...\nESTABLISHING UPLINK..."
+
+    useEffect(() => {
+        let i = 0
+        const interval = setInterval(() => {
+            setBootText(fullBootText.substring(0, i))
+            i++
+            if (i > fullBootText.length) {
+                clearInterval(interval)
+                setTimeout(() => setBooting(false), 500)
+            }
+        }, 20)
+        return () => clearInterval(interval)
+    }, [])
 
     // Cursor animation
     const cursorOpacity = useSharedValue(1)
@@ -44,7 +64,8 @@ export default function Onboarding3() {
         setLoading(true)
         try {
             await loginWithOAuth(provider)
-            router.replace('/(dashboard)')
+            trackEvent('onboarding_completed', { method: `oauth_${provider}` })
+            router.replace('/(app)')
         } catch (err: unknown) {
             toast.error('Auth Error', err instanceof Error ? err.message : 'Error')
         } finally {
@@ -57,10 +78,12 @@ export default function Onboarding3() {
         try {
             if (isLogin) {
                 await loginWithEmail(email, password)
+                trackEvent('onboarding_completed', { method: 'email_login' })
             } else {
                 await signUpWithEmail(email, password, username)
+                trackEvent('onboarding_completed', { method: 'email_signup' })
             }
-            router.replace('/(dashboard)')
+            router.replace('/(app)')
         } catch (err: unknown) {
             toast.error('Auth Error', err instanceof Error ? err.message : 'Error')
         } finally {
@@ -83,9 +106,16 @@ export default function Onboarding3() {
                         <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: '#555', fontSize: 12 }}>AUTH_SYS_v1.0</Text>
                     </View>
 
-                    {mode === 'choice' ? (
+                    {booting ? (
                         <View style={{ flex: 1, justifyContent: 'center' }}>
-                            <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: '#fff', fontSize: 24, marginBottom: 8 }}>
+                            <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: T.color.brand.primary, fontSize: 14, lineHeight: 24 }}>
+                                {bootText}
+                                <Animated.View style={[{ width: 8, height: 14, backgroundColor: T.color.brand.primary, transform: [{ translateY: 2 }] }, useAnimatedStyle(() => ({ opacity: cursorOpacity.value }))]} />
+                            </Text>
+                        </View>
+                    ) : mode === 'choice' ? (
+                        <View style={{ flex: 1, justifyContent: 'center' }}>
+                            <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: '#fff', fontSize: 24, marginBottom: 8, textShadowColor: T.color.brand.primary, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 10 }}>
                                 ROOT_ACCESS_REQ
                             </Text>
                             <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: '#888', fontSize: 12, marginBottom: 40 }}>
@@ -129,7 +159,7 @@ export default function Onboarding3() {
                         </View>
                     ) : (
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: '#fff', fontSize: 20, marginBottom: 30 }}>
+                            <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: '#fff', fontSize: 20, marginBottom: 30, textShadowColor: T.color.brand.primary, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 }}>
                                 {'>'} {isLogin ? 'INIT_SESSION' : 'CREATE_ENTITY'}
                             </Text>
 

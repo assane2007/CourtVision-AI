@@ -78,7 +78,7 @@ function Navbar() {
 
     return (
         <nav
-            className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'glass shadow-lg shadow-black/20' : 'bg-transparent'}`}
+            className={`fixed top-0 w-full z-50 transition-all duration-500 border-b border-white/0 ${scrolled ? 'bg-void/80 backdrop-blur-2xl border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.8)]' : 'bg-transparent'}`}
             role="navigation"
             aria-label="Main navigation"
         >
@@ -105,9 +105,12 @@ function Navbar() {
                         ))}
                         <Link
                             href="/dashboard"
-                            className="bg-fire hover:bg-fire-hover text-white px-6 py-2.5 rounded-full font-bold transition-all shadow-lg shadow-fire/20 text-xs uppercase tracking-widest"
+                            className="relative group overflow-hidden bg-white text-void px-6 py-2.5 rounded-full font-black transition-all text-xs uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:scale-105"
                         >
-                            Player Portal
+                            <span className="relative z-10 flex items-center gap-2">
+                                PLAYER PORTAL
+                                <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                            </span>
                         </Link>
                     </div>
 
@@ -170,9 +173,14 @@ function Hero() {
 
             {/* Ambient glow orbs */}
             <motion.div
-                animate={{ scale: [1, 1.05, 1], opacity: [0.08, 0.12, 0.08] }}
-                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-fire rounded-full blur-[120px] pointer-events-none"
+                animate={{ scale: [1, 1.1, 1], opacity: [0.15, 0.25, 0.15] }}
+                transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute top-[20%] left-[60%] -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-fire rounded-full blur-[150px] pointer-events-none mix-blend-screen"
+            />
+            <motion.div
+                animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.2, 0.1] }}
+                transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+                className="absolute bottom-[0%] left-[20%] w-[600px] h-[600px] bg-accent rounded-full blur-[150px] pointer-events-none mix-blend-screen"
             />
 
             <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -190,10 +198,12 @@ function Hero() {
                     </motion.div>
 
                     {/* Headline */}
-                    <motion.h1 variants={itemVariants} className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-display font-black leading-[1.02] mb-6 tracking-tight italic uppercase">
+                    <motion.h1 variants={itemVariants} className="text-5xl sm:text-7xl lg:text-[7rem] font-display font-black leading-[0.9] mb-8 tracking-tighter uppercase break-words drop-shadow-2xl">
                         THE APEX OF
                         <br />
-                        <span className="gradient-text">INTELLIGENCE.</span>
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-fire via-[#ff7a33] to-red-500 drop-shadow-[0_0_25px_rgba(255,77,0,0.4)]">
+                            INTELLIGENCE.
+                        </span>
                     </motion.h1>
 
                     {/* Subtitle */}
@@ -206,10 +216,13 @@ function Hero() {
                     <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-6 items-start mb-12">
                         <Link
                             href="/dashboard"
-                            className="group bg-fire hover:bg-fire-hover text-white px-8 py-4 rounded-full font-bold text-lg transition-all btn-glow flex items-center gap-2 hover:shadow-xl hover:shadow-fire/30"
+                            className="group relative overflow-hidden bg-fire text-white px-10 py-5 rounded-full font-black text-sm tracking-[0.2em] transition-all hover:scale-105 shadow-[0_0_40px_rgba(255,77,0,0.4)] flex items-center gap-3 uppercase"
                         >
-                            GO PRO NOW
-                            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                            <span className="relative z-10 flex items-center justify-center gap-2">
+                                INITIALIZE TWIN
+                                <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
+                            </span>
+                            <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer" />
                         </Link>
 
                         <div className="flex items-center gap-3">
@@ -272,25 +285,25 @@ function StatsBar() {
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6 }}
-            className="py-16 px-4 border-y border-border"
+            transition={{ duration: 0.8 }}
+            className="py-20 px-4 border-y border-white/5 bg-gradient-to-b from-void to-[#0a0a0f]"
         >
-            <div className="max-w-6xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-8">
-                <div className="text-center" ref={s1.ref}>
-                    <div className="text-4xl sm:text-5xl font-display font-black gradient-text mb-2">{s1.value}</div>
-                    <div className="text-text-secondary text-sm">AI pipeline stages</div>
+            <div className="max-w-6xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-12">
+                <div className="text-center group" ref={s1.ref}>
+                    <div className="text-5xl sm:text-6xl font-display font-black text-white mb-3 tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] group-hover:scale-110 transition-transform">{s1.value}</div>
+                    <div className="text-text-secondary text-xs uppercase tracking-[0.2em] font-mono">Neural Layers</div>
                 </div>
-                <div className="text-center" ref={s2.ref}>
-                    <div className="text-4xl sm:text-5xl font-display font-black gradient-text mb-2">{s2.value}</div>
-                    <div className="text-text-secondary text-sm">body keypoints tracked</div>
+                <div className="text-center group" ref={s2.ref}>
+                    <div className="text-5xl sm:text-6xl font-display font-black text-white mb-3 tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] group-hover:scale-110 transition-transform">{s2.value}</div>
+                    <div className="text-text-secondary text-xs uppercase tracking-[0.2em] font-mono">Keypoints Mapped</div>
                 </div>
-                <div className="text-center" ref={s3.ref}>
-                    <div className="text-4xl sm:text-5xl font-display font-black gradient-text mb-2">{s3.value}+</div>
-                    <div className="text-text-secondary text-sm">games analyzed</div>
+                <div className="text-center group" ref={s3.ref}>
+                    <div className="text-5xl sm:text-6xl font-display font-black text-white mb-3 tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] group-hover:scale-110 transition-transform">{s3.value}+</div>
+                    <div className="text-text-secondary text-xs uppercase tracking-[0.2em] font-mono">Sessions Processed</div>
                 </div>
-                <div className="text-center">
-                    <div className="text-4xl sm:text-5xl font-display font-black gradient-text mb-2">&lt; 2min</div>
-                    <div className="text-text-secondary text-sm">full analysis time</div>
+                <div className="text-center group">
+                    <div className="text-5xl sm:text-6xl font-display font-black text-fire mb-3 tracking-tighter drop-shadow-[0_0_20px_rgba(255,77,0,0.5)] group-hover:scale-110 transition-transform">&lt; 2m</div>
+                    <div className="text-text-secondary text-xs uppercase tracking-[0.2em] font-mono">Engine Inference</div>
                 </div>
             </div>
         </motion.section>
@@ -363,34 +376,36 @@ function Features() {
     return (
         <motion.section
             id="features"
-            className="py-28 px-4"
+            className="py-28 px-4 bg-void relative overflow-hidden"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-100px" }}
             variants={containerVariants}
         >
-            <div className="max-w-7xl mx-auto">
+            <div className="absolute top-[10%] left-0 w-full h-[500px] bg-fire/5 rounded-full blur-[120px] pointer-events-none" />
+            <div className="max-w-7xl mx-auto relative z-10">
                 <motion.div variants={itemVariants} className="text-center mb-16">
-                    <span className="text-primary font-semibold text-sm uppercase tracking-wider font-display">Features</span>
-                    <h2 className="text-4xl sm:text-5xl font-display font-bold text-text-primary mt-3 mb-4">
-                        8 <span className="gradient-text">game-changing</span> features
+                    <span className="text-fire font-black text-xs uppercase tracking-[0.3em] font-mono mb-4 block">System Architecture</span>
+                    <h2 className="text-4xl sm:text-6xl font-display font-black text-white mt-1 mb-6 tracking-tighter">
+                        8 <span className="text-transparent bg-clip-text bg-gradient-to-r from-fire via-[#ff7a33] to-red-500 drop-shadow-[0_0_15px_rgba(255,77,0,0.3)]">GAME-CHANGING</span> MODULES
                     </h2>
-                    <p className="text-text-secondary max-w-2xl mx-auto text-lg">
-                        Not just a shot counter. A real AI coach that analyzes every aspect of your game.
+                    <p className="text-text-secondary max-w-2xl mx-auto text-lg leading-relaxed">
+                        We didn't build a shot counter. We built an autonomous machine learning coach that analyzes every micro-movement.
                     </p>
                 </motion.div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {features.map((f, i) => (
                         <motion.div
                             variants={itemVariants}
                             key={i}
-                            className="group glass-card rounded-2xl p-6 hover:border-primary/30 transition-all duration-300 hover:-translate-y-1 card-shine"
+                            className="group relative bg-[#060608] border border-white/5 rounded-3xl p-8 hover:border-fire/30 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(255,77,0,0.15)] overflow-hidden"
                         >
-                            <div className={`${f.bg} ${f.color} w-11 h-11 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className={`${f.bg} ${f.color} w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 shadow-inner`}>
                                 {f.icon}
                             </div>
-                            <h3 className="text-base font-bold text-text-primary mb-2 font-display">{f.title}</h3>
+                            <h3 className="text-xl font-bold text-white mb-3 font-display tracking-tight">{f.title}</h3>
                             <p className="text-text-secondary text-sm leading-relaxed">{f.desc}</p>
                         </motion.div>
                     ))}
@@ -454,17 +469,17 @@ function Testimonials() {
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6 }}
-            className="py-28 px-4 overflow-hidden"
+            transition={{ duration: 0.8 }}
+            className="py-28 px-4 overflow-hidden bg-[#060608] border-y border-white/5"
         >
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-16">
-                    <span className="text-primary font-semibold text-sm uppercase tracking-wider font-display">Testimonials</span>
-                    <h2 className="text-4xl sm:text-5xl font-display font-bold text-text-primary mt-3 mb-4">
-                        They already <span className="gradient-text">leveled up</span>
+                    <span className="text-fire font-black text-xs uppercase tracking-[0.3em] font-mono mb-4 block">Testimonials</span>
+                    <h2 className="text-4xl sm:text-6xl font-display font-black text-white mt-1 mb-6 tracking-tighter">
+                        THEY ALREADY <span className="text-transparent bg-clip-text bg-gradient-to-r from-fire via-[#ff7a33] to-red-500 drop-shadow-[0_0_15px_rgba(255,77,0,0.3)]">LEVELED UP</span>
                     </h2>
-                    <p className="text-text-secondary max-w-xl mx-auto">
-                        Players, coaches, and academies trust CourtVision during beta.
+                    <p className="text-text-secondary max-w-xl mx-auto text-lg">
+                        Players, coaches, and academies trust CourtVision.
                     </p>
                 </div>
 
@@ -476,15 +491,15 @@ function Testimonials() {
                         {[...testimonials, ...testimonials].map((t, i) => (
                             <div
                                 key={i}
-                                className="glass-card rounded-2xl p-6 w-[360px] flex-shrink-0 hover:border-primary/20 transition-colors"
+                                className="bg-void border border-white/5 rounded-3xl p-8 w-[400px] flex-shrink-0 hover:border-fire/20 hover:shadow-[0_0_20px_rgba(255,77,0,0.1)] transition-all duration-300"
                             >
-                                <div className="flex items-center gap-1 mb-3">
+                                <div className="flex items-center gap-1 mb-4">
                                     {[...Array(t.rating)].map((_, j) => (
-                                        <Star key={j} size={13} className="fill-yellow text-yellow" />
+                                        <Star key={j} size={14} className="fill-yellow text-yellow drop-shadow-[0_0_5px_rgba(255,215,0,0.5)]" />
                                     ))}
                                 </div>
-                                <Quote size={16} className="text-primary/30 mb-2" />
-                                <p className="text-text-secondary text-sm leading-relaxed mb-4">{t.text}</p>
+                                <Quote size={20} className="text-fire/40 mb-4" />
+                                <p className="text-text-secondary text-[15px] leading-relaxed mb-6 font-medium">"{t.text}"</p>
                                 <div className="flex items-center gap-3 pt-3 border-t border-border">
                                     <span className="text-xl">{t.avatar}</span>
                                     <div>
@@ -515,29 +530,29 @@ function HowItWorks() {
     return (
         <motion.section
             id="how-it-works"
-            className="py-28 px-4 bg-surface"
+            className="py-28 px-4"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-100px" }}
             variants={containerVariants}
         >
-            <div className="max-w-5xl mx-auto">
-                <motion.div variants={itemVariants} className="text-center mb-16">
-                    <span className="text-primary font-semibold text-sm uppercase tracking-wider font-display">How It Works</span>
-                    <h2 className="text-4xl sm:text-5xl font-display font-bold text-text-primary mt-3 mb-4">
-                        Simple as <span className="gradient-text">1-2-3-4</span>
+            <div className="max-w-6xl mx-auto">
+                <motion.div variants={itemVariants} className="text-center mb-20">
+                    <span className="text-fire font-black text-xs uppercase tracking-[0.3em] font-mono mb-4 block">Operation Flow</span>
+                    <h2 className="text-4xl sm:text-6xl font-display font-black text-white mt-1">
+                        SIMPLE AS <span className="text-transparent bg-clip-text bg-gradient-to-r from-fire via-[#ff7a33] to-red-500 drop-shadow-[0_0_15px_rgba(255,77,0,0.3)]">1-2-3-4</span>
                     </h2>
                 </motion.div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     {steps.map((step, i) => (
-                        <motion.div variants={itemVariants} key={i} className="relative group">
-                            <div className="text-6xl font-display font-black text-primary/10 mb-4 group-hover:text-primary/20 transition-colors">{step.num}</div>
-                            <div className="text-primary mb-3 group-hover:scale-110 transition-transform inline-block">{step.icon}</div>
-                            <h3 className="text-xl font-display font-bold text-text-primary mb-2">{step.title}</h3>
+                        <motion.div variants={itemVariants} key={i} className="relative group p-6 rounded-3xl border border-transparent hover:border-white/5 hover:bg-white/[0.01] transition-colors">
+                            <div className="text-[5rem] leading-none font-display font-black text-white/5 mb-6 group-hover:text-fire/10 transition-colors drop-shadow-md">{step.num}</div>
+                            <div className="text-fire mb-4 group-hover:scale-110 transition-transform inline-block drop-shadow-[0_0_10px_rgba(255,77,0,0.5)]">{step.icon}</div>
+                            <h3 className="text-xl font-display font-black text-white mb-3 tracking-tight">{step.title}</h3>
                             <p className="text-text-secondary text-sm leading-relaxed">{step.desc}</p>
                             {i < steps.length - 1 && (
-                                <ChevronRight className="hidden lg:block absolute top-8 -right-4 text-border-strong" size={24} />
+                                <ChevronRight className="hidden lg:block absolute top-12 -right-6 text-white/10" size={32} />
                             )}
                         </motion.div>
                     ))}
@@ -604,7 +619,7 @@ function Pricing() {
     return (
         <motion.section
             id="pricing"
-            className="py-28 px-4"
+            className="py-28 px-4 bg-[#060608] border-y border-white/5"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-100px" }}
@@ -612,12 +627,12 @@ function Pricing() {
         >
             <div className="max-w-6xl mx-auto">
                 <motion.div variants={itemVariants} className="text-center mb-16">
-                    <span className="text-primary font-semibold text-sm uppercase tracking-wider font-display">Pricing</span>
-                    <h2 className="text-4xl sm:text-5xl font-display font-bold text-text-primary mt-3 mb-4">
-                        A plan for every <span className="gradient-text">ambition</span>
+                    <span className="text-fire font-black text-xs uppercase tracking-[0.3em] font-mono mb-4 block">Billing</span>
+                    <h2 className="text-4xl sm:text-6xl font-display font-black text-white mt-1 mb-6 tracking-tighter">
+                        A PLAN FOR EVERY <span className="text-transparent bg-clip-text bg-gradient-to-r from-fire via-[#ff7a33] to-red-500 drop-shadow-[0_0_15px_rgba(255,77,0,0.3)]">AMBITION</span>
                     </h2>
-                    <p className="text-text-secondary max-w-xl mx-auto">
-                        Start free during beta. No credit card required.
+                    <p className="text-text-secondary max-w-xl mx-auto text-lg">
+                        Start free. Scale when you turn pro.
                     </p>
                 </motion.div>
 
@@ -626,35 +641,35 @@ function Pricing() {
                         <motion.div
                             variants={itemVariants}
                             key={i}
-                            className={`relative rounded-2xl p-8 border transition-all duration-300 hover:-translate-y-1 card-shine ${plan.popular
-                                ? 'glass-amber shadow-lg shadow-primary/10 scale-[1.02]'
-                                : 'glass-card'
+                            className={`relative rounded-3xl p-8 border transition-all duration-500 hover:-translate-y-2 ${plan.popular
+                                ? 'bg-void border-fire/40 shadow-[0_0_30px_rgba(255,77,0,0.2)] scale-[1.03] z-10'
+                                : 'bg-void border-white/5 hover:border-white/10 shadow-2xl'
                                 }`}
                         >
                             {plan.popular && (
-                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg shadow-primary/30 font-display">
+                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-fire text-white text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full shadow-[0_0_10px_rgba(255,77,0,0.5)]">
                                     Most Popular
                                 </div>
                             )}
-                            <h3 className="text-xl font-display font-bold text-text-primary mb-1">{plan.name}</h3>
+                            <h3 className="text-2xl font-display font-black text-white mb-2">{plan.name}</h3>
                             <p className="text-text-secondary text-sm mb-6">{plan.desc}</p>
-                            <div className="flex items-baseline gap-1 mb-6">
-                                <span className="text-5xl font-display font-black text-text-primary">${plan.price}</span>
-                                <span className="text-text-secondary">{plan.period}</span>
+                            <div className="flex items-baseline gap-1 mb-8">
+                                <span className="text-5xl font-display font-black text-white">${plan.price}</span>
+                                <span className="text-text-tertiary"> {plan.period}</span>
                             </div>
-                            <ul className="space-y-3 mb-8">
+                            <ul className="space-y-4 mb-10">
                                 {plan.features.map((f, fi) => (
-                                    <li key={fi} className="flex items-start gap-2.5 text-sm text-text-secondary">
-                                        <Check size={16} className="text-green mt-0.5 flex-shrink-0" />
+                                    <li key={fi} className="flex items-start gap-3 text-sm text-text-secondary">
+                                        <Check size={18} className="text-fire mt-0.5 flex-shrink-0 drop-shadow-[0_0_5px_rgba(255,77,0,0.6)]" />
                                         {f}
                                     </li>
                                 ))}
                             </ul>
                             <Link
                                 href="/dashboard"
-                                className={`block text-center py-3 rounded-full font-semibold transition-all ${plan.popular
-                                    ? 'bg-fire hover:bg-fire-hover text-white hover:shadow-lg hover:shadow-fire/25 shadow-lg shadow-fire/10'
-                                    : 'bg-elevated border border-border hover:border-fire/30 text-text-primary hover:bg-overlay'
+                                className={`block text-center py-4 rounded-full font-black text-xs uppercase tracking-[0.2em] transition-all ${plan.popular
+                                    ? 'bg-fire hover:bg-[#ff5500] text-white shadow-[0_0_20px_rgba(255,77,0,0.4)] hover:shadow-[0_0_30px_rgba(255,77,0,0.6)] hover:scale-105'
+                                    : 'bg-white/5 border border-white/10 hover:bg-white/10 text-white hover:scale-105'
                                     }`}
                             >
                                 {plan.cta}
@@ -727,7 +742,7 @@ function FAQ() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6 }}
-            className="py-28 px-4 bg-surface"
+            className="py-28 px-4"
         >
             <div className="max-w-3xl mx-auto">
                 <div className="text-center mb-12">
@@ -819,17 +834,17 @@ function Waitlist() {
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6 }}
         >
-            <div className="max-w-3xl mx-auto text-center">
-                <div className="relative glass-amber rounded-3xl p-12 overflow-hidden noise-overlay">
+            <div className="max-w-4xl mx-auto text-center">
+                <div className="relative bg-[#060608] border border-white/5 rounded-[3rem] p-16 overflow-hidden">
                     {/* Decorative orbs */}
-                    <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 rounded-full blur-[80px]" />
-                    <div className="absolute bottom-0 left-0 w-36 h-36 bg-accent/10 rounded-full blur-[60px]" />
+                    <div className="absolute top-[-20%] right-[-10%] w-96 h-96 bg-fire/20 rounded-full blur-[100px] pointer-events-none mix-blend-screen" />
+                    <div className="absolute bottom-[-20%] left-[-10%] w-96 h-96 bg-accent/20 rounded-full blur-[100px] pointer-events-none mix-blend-screen" />
 
                     <div className="relative z-10">
-                        <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-6">
-                            <Flame size={28} className="text-primary" />
+                        <div className="w-16 h-16 rounded-2xl bg-fire/10 border border-fire/20 flex items-center justify-center mx-auto mb-8 shadow-[0_0_30px_rgba(255,77,0,0.2)]">
+                            <Flame size={32} className="text-fire drop-shadow-[0_0_8px_rgba(255,77,0,0.5)]" />
                         </div>
-                        <h2 className="text-3xl sm:text-4xl font-display font-black text-text-primary mb-4 uppercase tracking-tighter italic">
+                        <h2 className="text-4xl sm:text-6xl font-display font-black text-white mb-6 uppercase tracking-tighter">
                             UNLEASH YOUR DIGITAL TWIN
                         </h2>
                         <p className="text-text-secondary mb-8 max-w-lg mx-auto uppercase text-[12px] tracking-[0.2em] font-mono opacity-70">
@@ -850,17 +865,17 @@ function Waitlist() {
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
                                     aria-label="Email address"
-                                    className="flex-1 bg-background border border-border-light rounded-full px-5 py-3 text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                                    className="flex-1 bg-void border border-white/10 rounded-full px-6 py-4 text-white placeholder-white/30 focus:outline-none focus:border-fire focus:ring-1 focus:ring-fire/50 transition-all font-medium text-sm"
                                 />
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="bg-primary hover:bg-primary-hover disabled:opacity-60 text-white px-8 py-3 rounded-full font-bold transition-all whitespace-nowrap btn-glow hover:shadow-lg hover:shadow-primary/30"
+                                    className="bg-fire hover:bg-[#ff5500] disabled:opacity-60 text-white px-10 py-4 rounded-full font-black text-xs uppercase tracking-[0.2em] transition-all whitespace-nowrap shadow-[0_0_20px_rgba(255,77,0,0.4)] hover:shadow-[0_0_30px_rgba(255,77,0,0.6)] hover:scale-105 flex items-center justify-center"
                                 >
                                     {loading ? (
-                                        <span className="flex items-center justify-center gap-2">
+                                        <span className="flex items-center gap-2">
                                             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                            SYNCING...
+                                            SYNCING
                                         </span>
                                     ) : (
                                         'ENTER THE ARENA'

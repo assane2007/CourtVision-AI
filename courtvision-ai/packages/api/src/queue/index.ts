@@ -5,6 +5,11 @@ import { initSpatialWorker } from './nerf.worker';
 // import { initVideoProcessorWorker } from './videoProcessor';
 
 export function initializeQueues() {
+    if (!process.env.REDIS_URL || process.env.REDIS_URL.trim() === '') {
+        console.log('[Queue] REDIS_URL missing. Skipping BullMQ initialization.');
+        return null;
+    }
+
     console.log('[Queue] Initializing all BullMQ Workers...');
 
     try {

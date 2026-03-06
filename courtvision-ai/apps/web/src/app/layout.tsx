@@ -105,7 +105,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
                 />
             </head>
-            <body className="font-body antialiased bg-void text-text-primary selection:bg-fire selection:text-white">
+            <body className="font-body antialiased bg-void text-text-primary selection:bg-fire selection:text-white overflow-x-hidden">
                 <NeuralHUD />
                 <PageTransition>
                     {children}

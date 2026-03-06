@@ -55,8 +55,10 @@ export default function OnboardingCamera() {
 
     const handleLaunch = () => {
         if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-        // Zero friction: go straight to dashboard
-        router.push('/(dashboard)')
+        // Simulate a lock-on delay before navigating
+        setTimeout(() => {
+            router.push('/onboarding3')
+        }, 600)
     }
 
     return (
@@ -122,15 +124,35 @@ export default function OnboardingCamera() {
 
                 {/* Target Demo Box */}
                 <Animated.View entering={FadeIn.delay(900).duration(500)} style={{ marginTop: 20, alignItems: 'center' }}>
-                    <View style={{ width: 200, height: 120, borderWidth: 1, borderColor: '#333', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
-                        {/* Corner markers */}
-                        <View style={{ position: 'absolute', top: -1, left: -1, width: 10, height: 10, borderTopWidth: 2, borderLeftWidth: 2, borderColor: T.color.brand.primary }} />
-                        <View style={{ position: 'absolute', top: -1, right: -1, width: 10, height: 10, borderTopWidth: 2, borderRightWidth: 2, borderColor: T.color.brand.primary }} />
-                        <View style={{ position: 'absolute', bottom: -1, left: -1, width: 10, height: 10, borderBottomWidth: 2, borderLeftWidth: 2, borderColor: T.color.brand.primary }} />
-                        <View style={{ position: 'absolute', bottom: -1, right: -1, width: 10, height: 10, borderBottomWidth: 2, borderRightWidth: 2, borderColor: T.color.brand.primary }} />
+                    <View style={{ width: 280, height: 380, borderWidth: 1, borderColor: '#333', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
+                        {/* Biometric Corner markers */}
+                        <View style={{ position: 'absolute', top: -2, left: -2, width: 20, height: 20, borderTopWidth: 3, borderLeftWidth: 3, borderColor: T.color.brand.primary }} />
+                        <View style={{ position: 'absolute', top: -2, right: -2, width: 20, height: 20, borderTopWidth: 3, borderRightWidth: 3, borderColor: T.color.brand.primary }} />
+                        <View style={{ position: 'absolute', bottom: -2, left: -2, width: 20, height: 20, borderBottomWidth: 3, borderLeftWidth: 3, borderColor: T.color.brand.primary }} />
+                        <View style={{ position: 'absolute', bottom: -2, right: -2, width: 20, height: 20, borderBottomWidth: 3, borderRightWidth: 3, borderColor: T.color.brand.primary }} />
 
-                        <Feather name="video" size={32} color="#555" />
-                        <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: T.color.brand.primary, fontSize: 10, position: 'absolute', bottom: 8 }}>PLAYER_LOCK_READY</Text>
+                        {/* Dynamic Grid Overlay */}
+                        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.2 }}>
+                            {[...Array(8)].map((_, i) => (
+                                <View key={`g-h-${i}`} style={{ width: '100%', height: 1, backgroundColor: T.color.brand.primary, marginTop: 45 }} />
+                            ))}
+                            <View style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: 1, backgroundColor: T.color.brand.primary }} />
+                        </View>
+
+                        {/* Central Focus Ring */}
+                        <View style={{ width: 120, height: 120, borderRadius: 60, borderWidth: 1, borderColor: T.color.brand.primary, justifyContent: 'center', alignItems: 'center', opacity: 0.5 }}>
+                            <View style={{ width: 80, height: 80, borderRadius: 40, borderWidth: 1, borderColor: T.color.brand.primary, borderStyle: 'dashed' }} />
+                        </View>
+
+                        <Feather name="target" size={48} color={T.color.brand.primary} style={{ position: 'absolute', opacity: 0.8 }} />
+
+                        <View style={{ position: 'absolute', bottom: 16, backgroundColor: 'rgba(255, 77, 0, 0.1)', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: T.color.brand.primary }}>
+                            <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: T.color.brand.primary, fontSize: 12, fontWeight: 'bold' }}>BIOMETRIC_LOCK_READY</Text>
+                        </View>
+
+                        {/* Floating Stats */}
+                        <Text style={{ position: 'absolute', top: 10, right: 10, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: T.color.brand.primary, fontSize: 8 }}>LAT: 12ms</Text>
+                        <Text style={{ position: 'absolute', top: 22, right: 10, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: T.color.brand.primary, fontSize: 8 }}>FPS: 60.0</Text>
                     </View>
                 </Animated.View>
 

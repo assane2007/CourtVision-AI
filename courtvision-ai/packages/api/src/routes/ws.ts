@@ -4,10 +4,11 @@ import { z } from 'zod'
 export default async function wsRoutes(fastify: FastifyInstance) {
     // ⚠️ We use fastify-websocket to handle ws connections 
     // WebSocket endpoint: /ws/sessions/:id
-    fastify.get('/sessions/:id', { websocket: true }, (connection: import('ws').WebSocket, req: any) => {
+    fastify.get('/sessions/:id', { websocket: true }, (connectionParam: any, req: any) => {
+        const socket = connectionParam.socket || connectionParam;
         const sessionId = req.params.id
 
-        connection.on('message', (message: import('ws').RawData) => {
+        socket.on('message', (message: import('ws').RawData) => {
             // For now, we simulate receiving a TrackingFrame and returning analyzed data
             // In reality, this would pipe to the LiveCoachEngine as established in live.ts
             try {
@@ -15,7 +16,7 @@ export default async function wsRoutes(fastify: FastifyInstance) {
                 // Basic validation
                 if (data.type === 'frame') {
                     const payload = data.payload || {}
-                    connection.send(JSON.stringify({
+                    socket.send(JSON.stringify({
                         type: 'frame_ack',
                         frameId: data.frameId,
                         response: {
@@ -31,7 +32,7 @@ export default async function wsRoutes(fastify: FastifyInstance) {
 
                     // Periodically send a random alert if playing around
                     if (Math.random() > 0.95) {
-                        connection.send(JSON.stringify({
+                        socket.send(JSON.stringify({
                             type: 'alert',
                             alerts: [{
                                 id: `alert_${Date.now()}`,
@@ -53,12 +54,12 @@ export default async function wsRoutes(fastify: FastifyInstance) {
             }
         })
 
-        connection.on('close', () => {
+        socket.on('close', () => {
             // Cleanup
         })
 
         // Initial handshake payload
-        connection.send(JSON.stringify({
+        socket.send(JSON.stringify({
             sessionId,
             status: 'connected',
             timestamp: Date.now(),

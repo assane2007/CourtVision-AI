@@ -11,6 +11,9 @@ import {
 
 import fastifyWebsocket from '@fastify/websocket'
 
+import * as Sentry from '@sentry/node'
+import { nodeProfilingIntegration } from '@sentry/profiling-node'
+
 import { supabasePlugin } from './plugins/supabase'
 import { authPlugin } from './plugins/auth'
 import { initV5Orchestrator } from './services/v5Orchestrator'
@@ -42,9 +45,20 @@ import wsRoutes from './routes/ws'
 import playersRoutes from './routes/players'
 import shadowRoutes from './routes/shadow'
 import spatialRoutes from './routes/spatial'
+import precogRoutes from './routes/precog'
 
 export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
-    const app = fastify(opts).withTypeProvider<ZodTypeProvider>()
+    // Initialize Sentry early (C-2)
+    Sentry.init({
+        dsn: env.isProduction ? process.env.SENTRY_DSN : '',
+        integrations: [
+            nodeProfilingIntegration(),
+        ],
+        // Tracing
+        tracesSampleRate: env.isProduction ? 0.2 : 1.0,
+    })
+
+    const app = fastify({ ...opts, logger: true }).withTypeProvider<ZodTypeProvider>()
 
     // Zod Compilers
     app.setValidatorCompiler(validatorCompiler)
@@ -104,6 +118,13 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
             method: request.method,
             userId: request.user?.id,
         }, `API Error: ${error.message}`)
+
+        // Capture to Sentry
+        if (statusCode >= 500) {
+            Sentry.captureException(error, {
+                extra: { url: request.url, method: request.method, userId: request.user?.id }
+            });
+        }
 
         // Zod validation errors — safe to expose field details
         if (error.name === 'ZodError') {
@@ -191,6 +212,7 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     app.register(playersRoutes, { prefix: '/api/players' })
     app.register(shadowRoutes, { prefix: '/api/shadow' })
     app.register(spatialRoutes, { prefix: '/api/spatial' })
+    app.register(precogRoutes, { prefix: '/api/precog' })
 
     // Health check — deep check with DB + Redis connectivity (M-9)
     app.get('/health', async (request) => {
@@ -201,6 +223,12 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
             const { error } = await app.supabase.from('users').select('id').limit(1)
             checks.database = error ? 'error' : 'ok'
         } catch { checks.database = 'error' }
+
+        // CV Engine (Python worker) connectivity
+        try {
+            const res = await fetch(`${env.CV_ENGINE_URL}/health`, { method: 'GET', signal: AbortSignal.timeout(2000) })
+            checks.cvEngine = res.ok ? 'ok' : 'error'
+        } catch { checks.cvEngine = 'error' }
 
         const allOk = Object.values(checks).every(v => v === 'ok')
 

@@ -25,7 +25,7 @@ import { BlurView } from 'expo-blur'
 import { Feather, AntDesign } from '@expo/vector-icons'
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import * as Haptics from 'expo-haptics'
+import { HapticFeedback } from '../lib/haptics'
 import { T } from '../lib/theme'
 import { useStore } from '../lib/store'
 
@@ -177,9 +177,7 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
                             canPreventDefault: true,
                         })
                         if (!isFocused && !event.defaultPrevented) {
-                            if (Platform.OS !== 'web') {
-                                Haptics.selectionAsync()
-                            }
+                            HapticFeedback.selection()
                             navigation.navigate(route.name)
                         }
                     }

@@ -12,6 +12,7 @@
 
 import Constants from 'expo-constants'
 import * as SecureStore from 'expo-secure-store'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { supabase } from './supabase'
 
 const AUTH_TOKEN_KEY = 'courtvision_auth_token'
@@ -141,6 +142,8 @@ export async function apiFetch<T = unknown>(
     const token = await getAuthToken()
     const url = `${API_BASE_URL}${path}`
     const { timeoutMs = DEFAULT_TIMEOUT_MS, _isRetry = false, ...fetchOptions } = options
+    const isGet = (fetchOptions.method || 'GET').toUpperCase() === 'GET'
+    const cacheKey = `@api_cache:${path}`
 
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -195,18 +198,38 @@ export async function apiFetch<T = unknown>(
             // 204 No Content
             if (response.status === 204) return undefined as unknown as T
 
-            return response.json() as Promise<T>
+            const jsonData = await response.json() as T
+
+            // Cache successful GET responses
+            if (isGet) {
+                AsyncStorage.setItem(cacheKey, JSON.stringify(jsonData)).catch(() => { })
+            }
+
+            return jsonData
         } catch (err) {
             clearTimeout(timeoutId)
             if (err instanceof ApiError) throw err
-            if ((err as Error).name === 'AbortError') throw new NetworkError('La requête a expiré')
 
-            lastError = err as Error
+            const isAbort = (err as Error).name === 'AbortError'
+            lastError = isAbort ? new NetworkError('La requête a expiré') : (err as Error)
 
             // Retry uniquement sur erreur réseau, pas sur les dernières tentatives
-            if (attempt < MAX_RETRIES) {
+            if (!isAbort && attempt < MAX_RETRIES) {
                 await sleep(RETRY_DELAY_MS * (attempt + 1))
                 continue
+            }
+
+            // Offline Fallback for GET queries
+            if (isGet) {
+                try {
+                    const cached = await AsyncStorage.getItem(cacheKey)
+                    if (cached) {
+                        console.warn(`[API] Network failed for ${path}, returning cached data.`)
+                        return JSON.parse(cached) as T
+                    }
+                } catch (cacheErr) {
+                    // Ignore cache errors
+                }
             }
         }
     }

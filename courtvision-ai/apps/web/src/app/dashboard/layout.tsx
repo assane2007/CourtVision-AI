@@ -38,8 +38,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <motion.aside
                         initial={{ x: -280 }}
                         animate={{ x: 0 }}
-                        exit={{ x: -280 }}
-                        className="fixed inset-y-0 left-0 z-50 w-72 bg-surface backdrop-blur-2xl border-r border-white/5 flex flex-col"
+                        className="fixed inset-y-0 left-0 z-50 w-72 max-w-[80vw] bg-surface backdrop-blur-2xl border-r border-white/5 flex flex-col"
                     >
                         <div className="p-8 flex items-center justify-between">
                             <Link href="/" className="flex items-center gap-3">
@@ -59,8 +58,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                         key={item.name}
                                         href={item.href}
                                         className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all group ${isActive
-                                                ? 'bg-fire/10 text-fire border border-fire/20 shadow-lg shadow-fire/5'
-                                                : 'text-text-secondary hover:bg-surface hover:text-text-primary'
+                                            ? 'bg-fire/10 text-fire border border-fire/20 shadow-lg shadow-fire/5'
+                                            : 'text-text-secondary hover:bg-surface hover:text-text-primary'
                                             }`}
                                     >
                                         <item.icon size={20} className={isActive ? 'text-fire' : 'text-text-tertiary group-hover:text-fire transition-colors'} />
@@ -81,10 +80,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 )}
             </AnimatePresence>
 
-            {/* Main Content */}
-            <main className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'pl-72' : 'pl-0'}`}>
+            <main className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'lg:pl-72' : 'pl-0'}`}>
                 {/* Header */}
-                <header className="h-20 bg-void/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-8 sticky top-0 z-40">
+                <header className="h-20 bg-void/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-40">
                     <div className="flex items-center gap-6">
                         {!isSidebarOpen && (
                             <button onClick={() => setIsSidebarOpen(true)} className="text-text-secondary hover:text-fire transition-colors">
@@ -127,7 +125,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </header>
 
                 {/* Page Content */}
-                <div className="flex-1 p-8 max-w-7xl mx-auto w-full">
+                <div className="flex-1 p-4 sm:p-8 max-w-7xl mx-auto w-full">
                     {children}
                 </div>
             </main>

@@ -35,31 +35,35 @@ const logger = pino({
 let redisConnection: Redis | null = null
 let redisAvailable = false
 
-try {
-    redisConnection = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
-        maxRetriesPerRequest: null, // Critical for BullMQ
-        retryStrategy(times) {
-            return Math.min(times * 200, 5000)
-        },
-        lazyConnect: true,
-        showFriendlyErrorStack: false,
-    })
-    redisConnection.on('connect', () => {
-        redisAvailable = true
-        logger.info('[Redis] ✅ Connected')
-    })
-    redisConnection.on('error', (err) => {
-        if (redisAvailable) {
-            logger.warn({ err }, '[Redis] Connection lost')
-        }
-        redisAvailable = false
-    })
-    redisConnection.connect().catch((err) => {
-        logger.warn({ err }, '[Redis] ⚠️ Not available (dev mode)')
-        redisAvailable = false
-    })
-} catch (err) {
-    logger.error({ err }, '[Redis] ⚠️ Initialization failed')
+if (process.env.REDIS_URL && process.env.REDIS_URL.trim() !== '') {
+    try {
+        redisConnection = new Redis(process.env.REDIS_URL, {
+            maxRetriesPerRequest: null, // Critical for BullMQ
+            retryStrategy(times) {
+                return Math.min(times * 200, 5000)
+            },
+            lazyConnect: true,
+            showFriendlyErrorStack: false,
+        })
+        redisConnection.on('connect', () => {
+            redisAvailable = true
+            logger.info('[Redis] ✅ Connected')
+        })
+        redisConnection.on('error', (err) => {
+            if (redisAvailable) {
+                logger.warn({ err }, '[Redis] Connection lost')
+            }
+            redisAvailable = false
+        })
+        redisConnection.connect().catch((err) => {
+            logger.warn({ err }, '[Redis] ⚠️ Not available (dev mode)')
+            redisAvailable = false
+        })
+    } catch (err) {
+        logger.error({ err }, '[Redis] ⚠️ Initialization failed')
+    }
+} else {
+    logger.warn('[Redis] ⚠️ REDIS_URL is empty - Running in degraded mode without background worker')
 }
 
 // Supabase lazy client — C-4: fail-fast instead of placeholder credentials

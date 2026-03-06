@@ -45,6 +45,8 @@ import {
 import { T, typePresets } from '../../lib/theme'
 import type { HighlightClip } from '../../lib/store'
 import { InteractiveTerrainVisualizer } from '../../components/dashboard/InteractiveTerrainVisualizer'
+import { HapticFeedback } from '../../lib/haptics'
+import { useRevenueCat } from '../../lib/revenuecat'
 
 const { width: SCREEN_W } = Dimensions.get('window')
 
@@ -225,7 +227,15 @@ const EmptyTodayCard = memo(function EmptyTodayCard({ onUpload }: { onUpload: ()
                 <CVText preset="body" color="secondary" align="center">
                     {'Film your game and let AI break down\nevery shot, every detail.'}
                 </CVText>
-                <PrimaryButton label="Start Today's Session" icon="video" onPress={onUpload} size="md" />
+                <PrimaryButton
+                    label="Start Today's Session"
+                    icon="video"
+                    onPress={() => {
+                        HapticFeedback.light();
+                        onUpload();
+                    }}
+                    size="md"
+                />
             </View>
         </Animated.View>
     )
@@ -241,6 +251,7 @@ const highlightKey = (item: HighlightClip) => item.id
 
 export default function DashboardIndex() {
     const router = useRouter()
+    const { isPro } = useRevenueCat()
     const [refreshing, setRefreshing] = useState(false)
 
     const weeklyData = useStore(selectWeekly)
@@ -284,7 +295,16 @@ export default function DashboardIndex() {
     ]
 
     const goUpload = useCallback(() => router.push('/(dashboard)/upload'), [router])
-    const goAnalytics = useCallback(() => router.push('/analytics'), [router])
+    const goAnalytics = useCallback(() => {
+        if (!isPro) return router.push('/paywall')
+        router.push('/analytics')
+    }, [router, isPro])
+
+    const goProFeature = useCallback((route: string) => {
+        if (isPro) router.push(route as any)
+        else router.push('/paywall')
+    }, [isPro, router])
+
     const goHighlight = useCallback(
         (id: string) => router.push(`/highlight/${id}`),
         [router],
@@ -408,15 +428,15 @@ export default function DashboardIndex() {
 
                 {/* ═══ QUICK ACTIONS ═══ */}
                 <Animated.View entering={FadeInDown.delay(240).duration(400)} style={ds.quickActionRow}>
-                    <QuickAction icon="zap" label="WORKOUT AI" color={T.color.brand.primary} onPress={() => router.push('/workout-setup')} />
-                    <QuickAction icon="radio" label="LIVE COACH" color={T.color.semantic.error} onPress={() => router.push('/live')} />
-                    <QuickAction icon="calendar" label="PROGRAM" color={T.color.semantic.success} onPress={() => router.push('/program')} />
+                    <QuickAction icon="cpu" label="PRE-COG 👑" color={T.color.brand.primary} onPress={() => goProFeature('/(app)/precog')} />
+                    <QuickAction icon="zap" label="WORKOUT AI" color="#FFBA00" onPress={() => router.push('/workout-setup')} />
+                    <QuickAction icon="message-circle" label="COACH CHAT 👑" color={T.color.semantic.error} onPress={() => goProFeature('/(app)/coach')} />
                 </Animated.View>
 
                 <Animated.View entering={FadeInDown.delay(280).duration(400)} style={ds.quickActionRowBottom}>
-                    <QuickAction icon="bar-chart-2" label="ANALYTICS" color="#8B5CF6" onPress={goAnalytics} />
+                    <QuickAction icon="calendar" label="PROGRAM" color={T.color.semantic.success} onPress={() => router.push('/program')} />
+                    <QuickAction icon="bar-chart-2" label="ANALYTICS 👑" color="#8B5CF6" onPress={goAnalytics} />
                     <QuickAction icon="award" label="CLASSEMENT" color="#FFD700" onPress={() => router.push('/leaderboard')} />
-                    <QuickAction icon="clock" label="HISTORIQUE" color="#06B6D4" onPress={() => router.push('/history')} />
                 </Animated.View>
 
                 {/* ═══ HIGHLIGHTS ═══ */}
@@ -436,9 +456,14 @@ export default function DashboardIndex() {
                         <CVText preset="caption" color="secondary" align="center">
                             {'No highlights yet.\nAnalyze a game to generate AI clips.'}
                         </CVText>
-                        <TouchableOpacity onPress={goUpload} style={ds.emptyHighlightsCTA}>
-                            <CVText preset="bodyBold" color="brand">Upload a video</CVText>
-                        </TouchableOpacity>
+                        <PrimaryButton
+                            label="Upload Highlights"
+                            variant="primary"
+                            icon="upload-cloud"
+                            size="sm"
+                            fullWidth={false}
+                            onPress={goUpload}
+                        />
                     </View>
                 ) : (
                     <FlatList

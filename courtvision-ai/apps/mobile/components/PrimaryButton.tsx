@@ -22,6 +22,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { Feather } from '@expo/vector-icons'
 import { T } from '../lib/theme'
+import { HapticFeedback } from '../lib/haptics'
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -108,6 +109,7 @@ export function PrimaryButton({
     const bg = useSharedValue(0) // 0=normal, 1=pressed
 
     const handlePressIn = () => {
+        HapticFeedback.light()
         scale.value = withSpring(0.95, { damping: 15, stiffness: 400 })
         bg.value = withTiming(1, { duration: 80 })
     }

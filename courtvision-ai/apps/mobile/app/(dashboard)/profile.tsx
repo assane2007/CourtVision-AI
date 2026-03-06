@@ -30,6 +30,7 @@ import { SkeletonLoader } from '../../components/SkeletonLoader'
 import { toast } from '../../lib/toast'
 import { apiFetch } from '../../lib/api'
 import { T, typePresets } from '../../lib/theme'
+import { HapticFeedback } from '../../lib/haptics'
 
 // ==========================================
 // Constants
@@ -184,15 +185,18 @@ const EditProfileModal = memo(function EditProfileModal({
 
     const handleSave = useCallback(async () => {
         setSaving(true)
+        HapticFeedback.medium()
         try {
             await apiFetch('/api/auth/profile', {
                 method: 'PATCH',
                 body: JSON.stringify({ full_name: fullName, username, position, level, bio }),
             })
             onSave({ full_name: fullName, username, position, level, bio })
+            HapticFeedback.success()
             toast.success('Profile saved', 'Your profile has been updated.')
             onClose()
         } catch {
+            HapticFeedback.error()
             toast.error('Save failed', 'Please try again.')
         } finally {
             setSaving(false)
@@ -202,7 +206,7 @@ const EditProfileModal = memo(function EditProfileModal({
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
             <Pressable style={s.modalOverlay} onPress={onClose}>
-                <Pressable onPress={() => {}}>
+                <Pressable onPress={() => { }}>
                     <View style={[s.modalSheet, T.glass.base]}>
                         <View style={s.modalHandle} />
                         <Text style={s.modalTitle}>Edit Profile</Text>
@@ -349,7 +353,7 @@ const BadgeDetailModal = memo(function BadgeDetailModal({ badge, onClose }: {
     return (
         <Modal visible={!!badge} transparent animationType="fade" onRequestClose={onClose}>
             <Pressable style={s.badgeOverlay} onPress={onClose}>
-                <Pressable onPress={() => {}}>
+                <Pressable onPress={() => { }}>
                     <Animated.View
                         entering={ZoomIn.duration(300)}
                         style={[

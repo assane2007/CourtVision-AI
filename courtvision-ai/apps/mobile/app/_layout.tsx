@@ -11,6 +11,12 @@ import { ToastContainer } from '../components/Toast';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { colors } from '../constants/tokens';
 
+import * as Sentry from '@sentry/react-native';
+
+import { T } from '../lib/theme';
+import { AnalyticsProvider } from '../lib/analytics';
+import { RevenueCatProvider } from '../lib/revenuecat';
+
 import {
     useFonts,
     BarlowCondensed_700Bold,
@@ -111,7 +117,15 @@ function AuthGuard() {
     return null;
 }
 
-export default function RootLayout() {
+// Initialize Sentry for React Native (C-2)
+Sentry.init({
+    dsn: process.env.EXPO_PUBLIC_SENTRY_DSN || 'https://public@sentry.example.com/1',
+    // Set tracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
+    // We recommend adjusting this value in production.
+    tracesSampleRate: 1.0,
+});
+
+function RootLayout() {
     const [fontsLoaded, fontError] = useFonts({
         BarlowCondensed_700Bold,
         BarlowCondensed_800ExtraBold_Italic,
@@ -133,25 +147,34 @@ export default function RootLayout() {
 
     return (
         <SafeAreaProvider>
-            <StatusBar barStyle="light-content" backgroundColor={colors.void} />
-            <AuthGuard />
-            <Stack
-                screenOptions={{
-                    headerShown: false,
-                    contentStyle: { backgroundColor: colors.void },
-                    animation: 'fade', // Simple cross-fade transitions by default
-                }}
-            >
-                {/* Auth stack handles the initial boot logo, then auth -> ai setup */}
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <AnalyticsProvider>
+                <RevenueCatProvider>
+                    <StatusBar barStyle="light-content" backgroundColor={colors.void} />
+                    <AuthGuard />
+                    <Stack
+                        screenOptions={{
+                            headerShown: false,
+                            contentStyle: { backgroundColor: colors.void },
+                            animation: 'fade', // Simple cross-fade transitions by default
+                        }}
+                    >
+                        {/* Auth stack handles the initial boot logo, then auth -> ai setup */}
+                        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
 
-                {/* Setup stack for hardware/camera config */}
-                <Stack.Screen name="(setup)" options={{ headerShown: false, animation: 'slide_from_right' }} />
+                        {/* Setup stack for hardware/camera config */}
+                        <Stack.Screen name="(setup)" options={{ headerShown: false, animation: 'slide_from_right' }} />
 
-                {/* Main app UI */}
-                <Stack.Screen name="(app)" options={{ headerShown: false, animation: 'slide_from_right' }} />
-            </Stack>
-            <ToastContainer />
+                        {/* Main app UI */}
+                        <Stack.Screen name="(app)" options={{ headerShown: false, animation: 'slide_from_right' }} />
+
+                        {/* Global modlas */}
+                        <Stack.Screen name="paywall" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+                    </Stack>
+                    <ToastContainer />
+                </RevenueCatProvider>
+            </AnalyticsProvider>
         </SafeAreaProvider>
     );
 }
+
+export default Sentry.wrap(RootLayout);

@@ -84,7 +84,7 @@ export default function DashboardPage() {
             >
                 <div>
                     <p className="text-text-tertiary font-mono text-xs uppercase tracking-[0.3em] mb-1">SYSTEM ONLINE // DATA SYNCHRONIZED</p>
-                    <h1 className="text-4xl font-display font-black italic uppercase italic">Welcome home, <span className="gradient-text">{data.username}.</span></h1>
+                    <h1 className="text-3xl sm:text-4xl font-display font-black italic uppercase">Welcome home, <span className="gradient-text">{data.username}.</span></h1>
                 </div>
                 <div className="flex items-center gap-3 bg-surface border border-white/5 rounded-2xl px-6 py-3">
                     <Calendar size={18} className="text-text-tertiary" />

@@ -235,6 +235,73 @@ export default async function billingRoutes(fastify: FastifyInstance) {
         }
     })
 
+    // ── REVENUECAT WEBHOOKS ──
+    // RevenueCat enverra des requêtes POST ici lorsqu'un utilisateur achète sur iOS/Android
+    fastify.post('/webhook/revenuecat', async (request, reply) => {
+        try {
+            const body = request.body as any
+            const event = body.event
+
+            // Sécurité globale (basic auth optionnelle, selon la configuration RevenueCat)
+            const authHeader = request.headers['authorization']
+            const expectedAuth = `Bearer ${env.REVENUECAT_WEBHOOK_SECRET || ''}`
+
+            if (env.REVENUECAT_WEBHOOK_SECRET && authHeader !== expectedAuth) {
+                return reply.code(401).send({ error: 'Unauthorized Webhook' })
+            }
+
+            if (!event || !event.type) {
+                return reply.code(400).send({ error: 'Mailformed Event' })
+            }
+
+            const userId = event.app_user_id // On as configuré RevenueCat avec l'UUID Supabase
+            const rcEntitlement = event.entitlement_ids ? event.entitlement_ids[0] : null
+            let targetPlan = 'free'
+
+            if (rcEntitlement === 'Premium') {
+                targetPlan = 'player' // default mapped pro plan
+            }
+
+            switch (event.type) {
+                case 'INITIAL_PURCHASE':
+                case 'RENEWAL':
+                    // On valide l'utilisateur comme premium sur Supabase
+                    await fastify.supabase.from('users').update({ plan: targetPlan }).eq('id', userId)
+
+                    // Store event inside subscriptions for trace logic unification
+                    await fastify.supabase.from('subscriptions').upsert({
+                        user_id: userId,
+                        plan: targetPlan,
+                        status: 'active',
+                        revenuecat_rc_id: event.original_app_user_id, // unique trace identifier
+                        updated_at: new Date().toISOString()
+                    }, { onConflict: 'user_id' }) // Assuming user has max 1 active subscription
+
+                    request.log.info({ userId, event: event.type }, 'RevenueCat handled: Upgraded to PRO')
+                    break;
+                case 'CANCELLATION':
+                case 'EXPIRATION':
+                    // Downgrade grace à free plan
+                    await fastify.supabase.from('users').update({ plan: 'free' }).eq('id', userId)
+
+                    await fastify.supabase.from('subscriptions').update({
+                        status: 'canceled',
+                        updated_at: new Date().toISOString()
+                    }).eq('user_id', userId)
+
+                    request.log.info({ userId }, 'RevenueCat handled: Downgraded to FREE')
+                    break;
+                default:
+                    request.log.info({ type: event.type }, 'RevenueCat Unhandled Event Type')
+            }
+
+            return reply.send({ received: true })
+        } catch (error: any) {
+            request.log.error(error, 'RevenueCat webhook processing failed')
+            return reply.code(500).send({ error: 'Internal Server Error' })
+        }
+    })
+
     fastify.get('/plans', async (request, reply) => {
         // Liste publique des plans
         return {
