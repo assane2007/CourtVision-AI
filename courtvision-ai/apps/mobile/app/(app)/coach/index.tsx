@@ -76,7 +76,7 @@ export default function CoachIndexScreen() {
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.color.brand.primary} />}
                 >
                     {/* Welcome Banner */}
-                    <GlassCard variant="vivid" style={styles.banner}>
+                    <GlassCard variant="accent" style={styles.banner}>
                         <Feather name="message-square" size={32} color={T.color.brand.primary} style={{ marginBottom: 12 }} />
                         <CVText preset="h2" color="primary" style={{ marginBottom: 8 }}>Ask Coach Anything</CVText>
                         <CVText preset="body" color="secondary">
