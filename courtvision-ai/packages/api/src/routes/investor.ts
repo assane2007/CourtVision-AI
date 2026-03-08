@@ -2,6 +2,9 @@ import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 
 export default async function investorRoutes(app: FastifyInstance) {
+    // Protect all investor routes — business-critical KPIs
+    app.addHook('preValidation', app.authenticate)
+
     /**
      * Get platform/user KPIs for investors
      */

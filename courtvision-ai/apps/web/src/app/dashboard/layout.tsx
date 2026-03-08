@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useAuth } from '@/lib/auth/authContext'
 
 const navItems = [
     { name: 'Overview', icon: LayoutDashboard, href: '/dashboard' },
@@ -29,6 +30,10 @@ const navItems = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
     const pathname = usePathname()
+    const { user, signOut, loading } = useAuth()
+
+    const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Player'
+    const initials = displayName.charAt(0).toUpperCase()
 
     return (
         <div className="min-h-screen bg-void text-text-primary flex overflow-hidden">
@@ -71,7 +76,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         </nav>
 
                         <div className="p-4 border-t border-white/5">
-                            <button className="flex items-center gap-4 w-full px-4 py-3 text-text-tertiary hover:text-fire hover:bg-fire/10 rounded-xl transition-all font-mono text-sm uppercase tracking-wider">
+                            <button
+                                onClick={signOut}
+                                className="flex items-center gap-4 w-full px-4 py-3 text-text-tertiary hover:text-fire hover:bg-fire/10 rounded-xl transition-all font-mono text-sm uppercase tracking-wider"
+                            >
                                 <LogOut size={20} />
                                 <span>Logout</span>
                             </button>
@@ -112,12 +120,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                         <div className="flex items-center gap-4 pl-6 border-l border-white/10">
                             <div className="text-right hidden sm:block">
-                                <p className="text-xs font-mono tracking-widest text-text-primary">M. ASSANE</p>
+                                <p className="text-xs font-mono tracking-widest text-text-primary">{displayName.toUpperCase()}</p>
                                 <p className="text-[10px] font-mono tracking-tighter text-fire uppercase">ELITE ATHLETE</p>
                             </div>
                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-fire to-fire-hover p-[1px] shadow-lg shadow-fire/20">
                                 <div className="w-full h-full bg-surface rounded-[11px] flex items-center justify-center overflow-hidden">
-                                    <div className="text-white font-black italic">A</div>
+                                    <div className="text-white font-black italic">{initials}</div>
                                 </div>
                             </div>
                         </div>

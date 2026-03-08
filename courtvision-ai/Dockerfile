@@ -40,6 +40,8 @@ COPY --from=base /app/packages/ai/package.json ./packages/ai/
 COPY --from=base /app/packages/shared/ ./packages/shared/
 
 ENV NODE_ENV=production
-EXPOSE 3001
+# fix(infra): Standardize on port 8080 to match packages/api config and docker-compose.yml
+ENV PORT=8080
+EXPOSE 8080
 
 CMD ["node", "packages/api/dist/server.js"]

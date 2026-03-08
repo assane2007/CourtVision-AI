@@ -46,6 +46,9 @@ const MOCK_CLIPS = [
 ]
 
 export default async function precogRoutes(fastify: FastifyInstance) {
+    // Protect all Pre-Cog routes — user-specific training data
+    fastify.addHook('preValidation', fastify.authenticate)
+
     // Schema for getting a session
     const GetSessionSchema = z.object({
         userId: z.string().uuid().optional(),

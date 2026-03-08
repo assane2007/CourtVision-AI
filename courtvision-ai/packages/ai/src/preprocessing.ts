@@ -45,7 +45,7 @@ function probeVideo(videoPath: string): Promise<ffmpeg.FfprobeData> {
  * @param framesDir - Répertoire de sortie pour les frames.
  * @param fps - Nombre d'images par seconde à extraire.
  */
-function extractFrames(videoPath: string, framesDir: string, fps: number): Promise<void> {
+function _extractFrames(videoPath: string, framesDir: string, fps: number): Promise<void> {
     return new Promise((resolve, reject) => {
         ffmpeg(videoPath)
             .outputOptions([

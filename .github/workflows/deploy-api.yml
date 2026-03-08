@@ -1,0 +1,36 @@
+# ci(deploy-api): Auto-deploy API to Railway on merge to main
+name: Deploy API to Railway
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [main]
+    types: [completed]
+  push:
+    branches: [main]
+    paths:
+      - 'courtvision-ai/packages/api/**'
+      - 'courtvision-ai/packages/ai/**'
+      - 'courtvision-ai/packages/shared/**'
+      - 'courtvision-ai/package.json'
+      - 'courtvision-ai/package-lock.json'
+      - 'courtvision-ai/Dockerfile'
+
+jobs:
+  deploy:
+    name: Deploy API
+    runs-on: ubuntu-latest
+    environment: production
+    # Only deploy if CI passed (when triggered by workflow_run)
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli@3
+      - name: Deploy to Railway
+        run: railway up --service api
+        working-directory: courtvision-ai
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

@@ -3,6 +3,15 @@
  */
 
 // ==========================================
+// Cross-cutting concerns (errors, logging, feature flags)
+// ==========================================
+export * from './errors'
+export { logger } from './logger'
+export type { LogLevel } from './logger'
+export { FEATURES, isFeatureEnabled } from './featureFlags'
+export type { FeatureName } from './featureFlags'
+
+// ==========================================
 // Enums & Constants
 // ==========================================
 

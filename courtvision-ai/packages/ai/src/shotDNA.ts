@@ -1,4 +1,4 @@
-import { ShotResult, ShotStats, computeShotStats, ShotZone } from './shotAnalysis'
+import { ShotResult, ShotZone } from './shotAnalysis'
 
 /**
  * Shot DNA™ — Empreinte de Tir Biométrique Unique
@@ -317,7 +317,7 @@ const NBA_ZONE_AVG: Record<ShotZone, number> = {
  * un tir du top3 est plus difficile (coeff plus bas).
  * Basé sur les Expected Points Per Shot (EPvS) de NBA Second Spectrum.
  */
-const ZONE_DIFFICULTY_COEFFICIENT: Record<ShotZone, number> = {
+const _ZONE_DIFFICULTY_COEFFICIENT: Record<ShotZone, number> = {
     restricted: 1.30,  // ~1.30 points par tir (65% * 2pts)
     paint: 0.84,       // ~0.84 points par tir (42% * 2pts)
     midrange: 0.83,    // ~0.83 points par tir (41.5% * 2pts)

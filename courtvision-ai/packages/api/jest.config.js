@@ -4,6 +4,11 @@ module.exports = {
     testEnvironment: 'node',
     testMatch: ['**/__tests__/**/*.test.ts'],
     moduleFileExtensions: ['ts', 'js', 'json', 'node'],
+    transform: {
+        '^.+\\.ts$': ['ts-jest', {
+            tsconfig: './tsconfig.test.json',
+        }],
+    },
     moduleNameMapper: {
         '^@courtvision/ai$': '<rootDir>/../ai/src/index.ts',
         '^@courtvision/ai/(.*)$': '<rootDir>/../ai/src/$1',

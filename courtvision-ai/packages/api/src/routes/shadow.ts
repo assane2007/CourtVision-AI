@@ -25,6 +25,8 @@ const simulateBodySchema = z.object({
 });
 
 const shadowRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
+    // Protect all Shadow League routes — prevents queue flooding DoS
+    app.addHook('preValidation', app.authenticate)
 
     app.post('/simulate', {
         schema: {

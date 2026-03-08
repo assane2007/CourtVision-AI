@@ -8,6 +8,8 @@ const reconstructBodySchema = z.object({
 });
 
 const spatialRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
+    // Protect all Spatial routes — GPU-intensive jobs, prevent unauthenticated DoS
+    app.addHook('preValidation', app.authenticate)
 
     app.post('/reconstruct', {
         schema: {

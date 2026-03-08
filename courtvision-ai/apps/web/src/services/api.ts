@@ -2,7 +2,9 @@
  * Base API Service for CourtVision AI Web
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+import { createClient } from '@/lib/supabase/client'
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
 export async function apiRequest<T = any>(
     endpoint: string,
@@ -10,18 +12,21 @@ export async function apiRequest<T = any>(
 ): Promise<T> {
     const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
-    // Mock handling for demo purposes if no token is available, 
-    // but we aim for real data.
     const headers = {
         'Content-Type': 'application/json',
         ...(options.headers || {}),
     } as Record<string, string>;
 
-    // Integrate with Supabase auth token here if needed
-    // const { data: { session } } = await supabase.auth.getSession();
-    // if (session?.access_token) {
-    //   headers['Authorization'] = `Bearer ${session.access_token}`;
-    // }
+    // Attach Supabase auth token if available
+    try {
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.access_token) {
+            headers['Authorization'] = `Bearer ${session.access_token}`
+        }
+    } catch {
+        // Auth not available (e.g., during SSR), proceed without token
+    }
 
     const response = await fetch(url, {
         ...options,

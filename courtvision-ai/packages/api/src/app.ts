@@ -49,6 +49,7 @@ import precogRoutes from './routes/precog'
 import voiceCoachRoutes from './routes/voiceCoach'
 import tiktokRoutes from './routes/tiktok'
 import investorRoutes from './routes/investor'
+import reportRoutes from './routes/reports'
 
 export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     // Initialize Sentry early (C-2)
@@ -219,6 +220,7 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     app.register(voiceCoachRoutes, { prefix: '/ws' })
     app.register(tiktokRoutes, { prefix: '/api/tiktok' })
     app.register(investorRoutes, { prefix: '/api/investor' })
+    app.register(reportRoutes, { prefix: '/api/reports' })
 
     // Health check — deep check with DB + Redis connectivity (M-9)
     app.get('/health', async (request) => {

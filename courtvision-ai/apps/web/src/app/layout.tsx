@@ -95,6 +95,7 @@ const jsonLd = {
 
 import NeuralHUD from '@/components/NeuralHUD'
 import PageTransition from '@/components/PageTransition'
+import { AuthProvider } from '@/lib/auth/authContext'
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
@@ -106,10 +107,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 />
             </head>
             <body className="font-body antialiased bg-void text-text-primary selection:bg-fire selection:text-white overflow-x-hidden">
-                <NeuralHUD />
-                <PageTransition>
-                    {children}
-                </PageTransition>
+                <AuthProvider>
+                    <NeuralHUD />
+                    <PageTransition>
+                        {children}
+                    </PageTransition>
+                </AuthProvider>
             </body>
         </html>
     )

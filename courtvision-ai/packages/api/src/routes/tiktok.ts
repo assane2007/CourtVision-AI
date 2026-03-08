@@ -3,6 +3,9 @@ import { z } from 'zod'
 import { tiktokService } from '../services/tiktokService'
 
 export default async function tiktokRoutes(app: FastifyInstance) {
+    // Protect all TikTok routes — user-specific write operations
+    app.addHook('preValidation', app.authenticate)
+
     /**
      * Link TikTok Account (OAuth Callback simulate)
      */

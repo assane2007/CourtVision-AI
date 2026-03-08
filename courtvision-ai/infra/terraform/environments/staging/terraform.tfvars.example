@@ -1,0 +1,35 @@
+# ============================================================
+# Staging — terraform.tfvars.example
+# Copy this file to terraform.tfvars and fill in real values.
+# ⚠️  NEVER commit terraform.tfvars — it contains secrets!
+# ============================================================
+
+github_repo = "yourorg/courtvision-ai"
+
+# Railway
+railway_token = "railway_token_here"
+
+# Supabase (staging project)
+supabase_staging_url              = "https://your-staging-project.supabase.co"
+supabase_staging_service_role_key = "eyJ..."
+jwt_secret                        = "your-jwt-secret-min-256-bits"
+
+# Stripe TEST keys (staging only)
+stripe_test_secret_key     = "sk_test_..."
+stripe_test_webhook_secret = "whsec_..."
+
+# Cloudflare
+cloudflare_account_id = "your-cloudflare-account-id"
+cloudflare_api_token  = "your-cloudflare-api-token"
+cloudflare_ai_token   = "your-cloudflare-ai-token"
+
+# AI
+groq_api_key = "gsk_..."
+
+# CV Engine
+cv_engine_secret = "your-cv-engine-internal-secret"
+
+# Monitoring
+sentry_org               = "courtvision"
+sentry_team              = "backend"
+slack_staging_channel_id = "C0123456789"

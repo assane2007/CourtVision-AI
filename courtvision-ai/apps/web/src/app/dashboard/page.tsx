@@ -1,10 +1,6 @@
 'use client'
 
-'use client'
-
-'use client'
-
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import {
     Zap,
@@ -14,46 +10,83 @@ import {
     Star,
     Calendar,
     ChevronRight,
-    Cpu
+    Cpu,
+    AlertTriangle
 } from 'lucide-react'
+import { useAuth } from '@/lib/auth/authContext'
+import { dashboardService } from '@/services/dashboardService'
 
-// We will fetch this from the API via dashboardService in the future
+interface DashboardState {
+    stats: { name: string; value: string; change: string; icon: any; color: string }[]
+    username: string
+    lastSession: {
+        name: string
+        date: string
+        duration: string
+        tags: string
+        jumpHeight: string
+        releaseTime: string
+        accuracy: string
+    } | null
+    neuralInsights: {
+        analysis: string
+        nextMilestone: string
+        progress: string
+    } | null
+}
+
 export default function DashboardPage() {
-    const [data, setData] = useState<{
-        stats: any[],
-        username: string,
-        lastSession: any,
-        neuralInsights: any
-    } | null>(null);
+    const { user } = useAuth()
+    const [data, setData] = useState<DashboardState | null>(null)
+    const [error, setError] = useState<string | null>(null)
+
+    const loadDashboard = useCallback(async () => {
+        try {
+            const response = await dashboardService.getDashboardData()
+            const apex = response.apexScore
+
+            setData({
+                username: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Player',
+                stats: [
+                    { name: 'APEX SCORE', value: apex?.overall?.toString() ?? '--', change: apex?.trend === 'rising' ? '+' : apex?.trend === 'declining' ? '-' : '~', icon: Target, color: 'text-fire' },
+                    { name: 'THIS WEEK', value: `${response.streaks?.sessionThisWeek ?? 0} sessions`, change: `${response.streaks?.shotsThisWeek ?? 0} shots`, icon: Cpu, color: 'text-ice' },
+                    { name: 'STREAK', value: `${response.streaks?.currentStreak ?? 0} days`, change: `Best: ${response.streaks?.longestStreak ?? 0}`, icon: Star, color: 'text-fire' },
+                    { name: 'SHOOT GRADE', value: apex?.grade ?? '--', change: `${apex?.shooting ?? 0}%`, icon: Activity, color: 'text-ice' }
+                ],
+                lastSession: null, // Will be populated when sessions endpoint is connected
+                neuralInsights: {
+                    analysis: apex
+                        ? `Your shooting consistency is at ${apex.consistency}%. Mental score: ${apex.mental}%. Focus on clutch situations (${apex.clutch}%) for next-level improvement.`
+                        : 'Complete your first session to unlock AI coaching insights.',
+                    nextMilestone: 'ELITE SHOOTER',
+                    progress: `${apex?.improvement ?? 0}%`
+                }
+            })
+        } catch (err: any) {
+            console.error('Dashboard load error:', err)
+            // Fallback to demo data if API is unavailable
+            setError(err.message)
+            setData({
+                username: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Player',
+                stats: [
+                    { name: 'APEX SCORE', value: '--', change: 'Connect API', icon: Target, color: 'text-fire' },
+                    { name: 'THIS WEEK', value: '0 sessions', change: '0 shots', icon: Cpu, color: 'text-ice' },
+                    { name: 'STREAK', value: '0 days', change: 'Best: 0', icon: Star, color: 'text-fire' },
+                    { name: 'SHOOT GRADE', value: '--', change: '0%', icon: Activity, color: 'text-ice' }
+                ],
+                lastSession: null,
+                neuralInsights: {
+                    analysis: 'API unavailable — showing placeholder data. Start recording sessions to see your real analytics.',
+                    nextMilestone: 'FIRST SESSION',
+                    progress: '0%'
+                }
+            })
+        }
+    }, [user])
 
     useEffect(() => {
-        // Mocking the real API call to /api/dashboard from the V5 Orchestrator
-        setTimeout(() => {
-            setData({
-                username: 'Assane',
-                stats: [
-                    { name: 'CAREER POINTS', value: '12,402', change: '+12%', icon: Target, color: 'text-fire' },
-                    { name: 'AVG NEURAL LOAD', value: '74%', change: '-5%', icon: Cpu, color: 'text-ice' },
-                    { name: 'GLOBAL RANK', value: '#482', change: 'Top 1%', icon: Star, color: 'text-fire' },
-                    { name: 'RECOVERY STATUS', value: 'OPTIMAL', change: 'Ready', icon: Activity, color: 'text-ice' }
-                ],
-                lastSession: {
-                    name: 'Midnight Grind',
-                    date: 'March 02, 2026',
-                    duration: '42m',
-                    tags: '3D Reconstructed',
-                    jumpHeight: '34.2"',
-                    releaseTime: '0.42s',
-                    accuracy: '98.4%'
-                },
-                neuralInsights: {
-                    analysis: "Your left-hand crossover efficiency has increased by 14%. Focus on driving the hip 5 degrees lower for maximum explosive power.",
-                    nextMilestone: "STEER CLUTCH SHOOTER",
-                    progress: '84%'
-                }
-            });
-        }, 1000);
-    }, []);
+        loadDashboard()
+    }, [loadDashboard])
 
     const handleView3DModel = () => {
         alert("Loading 3D Session Viewer... (Feature in beta)");
@@ -76,6 +109,24 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-10">
+            {/* API Error Banner */}
+            {error && (
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-yellow-500/10 border border-yellow-500/20 rounded-2xl px-6 py-4 flex items-center gap-4"
+                >
+                    <AlertTriangle className="text-yellow-400 shrink-0" size={20} />
+                    <div>
+                        <p className="text-sm text-yellow-400 font-mono">API connection failed — showing placeholder data</p>
+                        <p className="text-xs text-text-tertiary font-mono mt-1">{error}</p>
+                    </div>
+                    <button onClick={loadDashboard} className="ml-auto text-xs font-mono text-yellow-400 hover:text-yellow-300 uppercase tracking-wider">
+                        Retry
+                    </button>
+                </motion.div>
+            )}
+
             {/* Greeting */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -129,8 +180,13 @@ export default function DashboardPage() {
                 >
                     <div className="p-8 border-b border-white/5 flex items-center justify-between">
                         <div>
-                            <h3 className="text-xl font-display font-black italic uppercase tracking-tight">Last Session: <span className="text-fire">{data.lastSession.name}</span></h3>
-                            <p className="text-xs font-mono text-text-tertiary uppercase tracking-widest">{data.lastSession.date} // {data.lastSession.duration} // {data.lastSession.tags}</p>
+                            <h3 className="text-xl font-display font-black italic uppercase tracking-tight">Last Session: <span className="text-fire">{data.lastSession?.name ?? 'No Sessions Yet'}</span></h3>
+                            <p className="text-xs font-mono text-text-tertiary uppercase tracking-widest">
+                                {data.lastSession
+                                    ? `${data.lastSession.date} // ${data.lastSession.duration} // ${data.lastSession.tags}`
+                                    : 'Record your first session to see analytics here'
+                                }
+                            </p>
                         </div>
                         <button onClick={handleView3DModel} className="bg-surface hover:bg-fire/10 text-white hover:text-fire border border-white/10 px-4 py-2 rounded-xl text-xs font-mono transition-all flex items-center gap-2">
                             VIEW 3D MODEL <ArrowUpRight size={14} />
@@ -145,18 +201,18 @@ export default function DashboardPage() {
                                 <Zap className="text-fire" size={32} />
                             </div>
                             <p className="text-xs font-mono text-fire uppercase tracking-[0.2em] font-bold">Heatmap Active</p>
-                            <p className="text-[10px] font-mono text-text-tertiary uppercase mt-1">Skeletal Alignment: {data.lastSession.accuracy}</p>
+                            <p className="text-[10px] font-mono text-text-tertiary uppercase mt-1">Skeletal Alignment: {data.lastSession?.accuracy ?? 'N/A'}</p>
                         </div>
 
                         {/* Data overlays */}
                         <div className="absolute top-4 left-4 p-3 bg-void/80 border border-white/5 rounded-xl backdrop-blur-sm">
                             <div className="flex items-center gap-2 mb-2">
                                 <div className="w-1.5 h-1.5 rounded-full bg-fire" />
-                                <span className="text-[10px] font-mono text-text-secondary uppercase">JUMP HEIGHT: {data.lastSession.jumpHeight}</span>
+                                <span className="text-[10px] font-mono text-text-secondary uppercase">JUMP HEIGHT: {data.lastSession?.jumpHeight ?? 'N/A'}</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-1.5 h-1.5 rounded-full bg-ice" />
-                                <span className="text-[10px] font-mono text-text-secondary uppercase">RELEASE TIME: {data.lastSession.releaseTime}</span>
+                                <span className="text-[10px] font-mono text-text-secondary uppercase">RELEASE TIME: {data.lastSession?.releaseTime ?? 'N/A'}</span>
                             </div>
                         </div>
                     </div>
@@ -177,7 +233,7 @@ export default function DashboardPage() {
                         <div className="space-y-2">
                             <p className="text-[10px] font-mono text-fire uppercase tracking-widest">DRIVE ANALYSIS</p>
                             <p className="text-sm border-l-2 border-fire/30 pl-4 py-1 leading-relaxed italic text-text-secondary">
-                                "{data.neuralInsights.analysis}"
+                                &quot;{data.neuralInsights?.analysis ?? 'No insights available yet.'}&quot;
                             </p>
                         </div>
 
@@ -185,13 +241,13 @@ export default function DashboardPage() {
                             <p className="text-[10px] font-mono text-ice uppercase tracking-widest">NEXT MILESTONE</p>
                             <div className="bg-void/40 p-4 rounded-2xl border border-white/5">
                                 <div className="flex justify-between text-[10px] font-mono mb-2">
-                                    <span>{data.neuralInsights.nextMilestone}</span>
-                                    <span className="text-ice">{data.neuralInsights.progress}</span>
+                                    <span>{data.neuralInsights?.nextMilestone ?? 'FIRST SESSION'}</span>
+                                    <span className="text-ice">{data.neuralInsights?.progress ?? '0%'}</span>
                                 </div>
                                 <div className="h-1.5 bg-void rounded-full overflow-hidden">
                                     <motion.div
                                         initial={{ width: 0 }}
-                                        animate={{ width: data.neuralInsights.progress }}
+                                        animate={{ width: data.neuralInsights?.progress ?? '0%' }}
                                         className="h-full bg-ice shadow-[0_0_10px_rgba(0,240,255,0.4)]"
                                     />
                                 </div>

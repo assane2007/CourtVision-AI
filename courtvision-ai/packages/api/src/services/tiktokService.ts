@@ -43,12 +43,50 @@ export class TikTokService {
                 return { success: false, error: 'NO_LINKED_ACCOUNT' }
             }
 
-            // 2. Perform TikTok API share
-            // In a real implementation, we would use the TikTok Share API
-            // For now, we simulate the success response
-            logger.info({ userId, videoUrl }, '[TikTok] Simulating API upload...')
+            // TikTok Business API integration
+            // Requires TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET env vars
+            const tiktokClientKey = process.env.TIKTOK_CLIENT_KEY
+            if (!tiktokClientKey) {
+                logger.warn('[TikTok] TikTok integration not configured — TIKTOK_CLIENT_KEY missing')
+                return {
+                    success: false,
+                    error: 'TIKTOK_NOT_CONFIGURED',
+                    tiktok_available: false,
+                    reason: 'pending_approval',
+                    message: 'TikTok sharing requires Business API approval. Feature coming soon.'
+                }
+            }
 
-            await new Promise(r => setTimeout(r, 2000)) // Simulation latency
+            // Initiate TikTok Video Upload via Content Posting API
+            const initResponse = await fetch('https://open.tiktokapis.com/v2/post/publish/video/init/', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${credentials.access_token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    post_info: {
+                        title: caption.slice(0, 150),
+                        privacy_level: 'SELF_ONLY', // Safe default, user can change on TikTok
+                        disable_duet: false,
+                        disable_comment: false,
+                        disable_stitch: false,
+                    },
+                    source_info: {
+                        source: 'PULL_FROM_URL',
+                        video_url: videoUrl,
+                    }
+                })
+            })
+
+            if (!initResponse.ok) {
+                const errBody = await initResponse.json().catch(() => ({}))
+                logger.error({ errBody, status: initResponse.status }, '[TikTok] Upload init failed')
+                return { success: false, error: 'UPLOAD_INIT_FAILED', details: errBody }
+            }
+
+            const initData = await initResponse.json()
+            const publishId = initData?.data?.publish_id
 
             // 3. Log the activity
             await this.supabase.from('activity_feed').insert({
@@ -56,10 +94,10 @@ export class TikTokService {
                 type: 'viral_share',
                 title: 'Viral Highlight Shared!',
                 description: 'Your session highlight was posted to TikTok.',
-                metadata: { video_url: videoUrl, platform: 'tiktok' }
+                metadata: { video_url: videoUrl, platform: 'tiktok', publish_id: publishId }
             })
 
-            return { success: true, postId: `tt_${Date.now()}` }
+            return { success: true, postId: publishId || `tt_${Date.now()}` }
         } catch (err) {
             logger.error({ err, userId }, '[TikTok] Publish failed')
             return { success: false, error: 'PUBLISH_FAILED' }

@@ -1,4 +1,4 @@
-import { ShotResult, ShotStats, computeShotStats, ShotZone } from './shotAnalysis'
+import { ShotResult, ShotZone } from './shotAnalysis'
 import { MentalAnalysisResult } from './mentalAnalysis'
 
 /**
@@ -114,8 +114,6 @@ export class AdvancedAnalyticsEngine {
         if (shots.length === 0) {
             return this.emptyResult()
         }
-
-        const stats = computeShotStats(shots)
 
         // True Shooting % (simplified — no FTA in our context)
         const made = shots.filter(s => s.outcome === 'made').length
@@ -465,7 +463,7 @@ export class AdvancedAnalyticsEngine {
         return result
     }
 
-    private static efficiencyByFatigue(shots: ShotResult[], mental: MentalAnalysisResult): {
+    private static efficiencyByFatigue(shots: ShotResult[], _mental: MentalAnalysisResult): {
         low: number; medium: number; high: number
     } {
         // Divide shots into thirds (proxy for fatigue)

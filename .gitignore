@@ -48,6 +48,20 @@ read_docx.py
 __pycache__/
 *.pyc
 
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+*.tfplan
+.terraform/
+.terraform.lock.hcl
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
 # Large binary files
 *.zip
 *.tar.gz

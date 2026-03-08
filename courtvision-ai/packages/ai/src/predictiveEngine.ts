@@ -1,4 +1,3 @@
-import { MentalAnalysisResult } from './mentalAnalysis'
 import { ShotZone } from './shotAnalysis'
 
 /**
@@ -276,7 +275,7 @@ export class PredictiveEngine {
         return Math.max(10, Math.min(45, onset))
     }
 
-    private static predictZones(history: HistoricalSession[], input: PredictionInput): Record<ShotZone, ZonePrediction> {
+    private static predictZones(history: HistoricalSession[], _input: PredictionInput): Record<ShotZone, ZonePrediction> {
         const zones: ShotZone[] = ['restricted', 'paint', 'midrange', 'corner3', 'wing3', 'top3']
         const predictions: Record<ShotZone, ZonePrediction> = {} as any
 
@@ -375,7 +374,7 @@ export class PredictiveEngine {
 
     private static assessRiskFactors(
         input: PredictionInput,
-        predictedFG: number,
+        _predictedFG: number,
         predictedMental: number
     ): RiskFactor[] {
         const risks: RiskFactor[] = []
@@ -477,7 +476,7 @@ export class PredictiveEngine {
     private static generatePreGameTips(
         risks: RiskFactor[],
         zones: Record<ShotZone, ZonePrediction>,
-        input: PredictionInput
+        _input: PredictionInput
     ): string[] {
         const tips: string[] = []
 

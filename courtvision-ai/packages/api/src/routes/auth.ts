@@ -18,6 +18,17 @@ const refreshSchema = z.object({
     refresh_token: z.string()
 })
 
+const appleLoginSchema = z.object({
+    id_token: z.string().min(1, 'Apple ID token is required'),
+    nonce: z.string().optional(),
+    full_name: z.string().optional(),
+})
+
+const googleLoginSchema = z.object({
+    id_token: z.string().min(1, 'Google ID token is required'),
+    full_name: z.string().optional(),
+})
+
 const authRoutes: FastifyPluginAsyncZod = async (app) => {
     app.post('/signup', {
         schema: {
@@ -84,24 +95,101 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
         }
     })
 
-    app.post('/apple', async (request, reply) => {
-        const body = request.body as any
-        // Demo/Simulated implementation for OAuth login on backend mapping via token
-        const dummyToken = `dummy_apple_access_${Date.now()}`
+    app.post('/apple', {
+        schema: { body: appleLoginSchema }
+    }, async (request, reply) => {
+        const { id_token, nonce, full_name } = request.body as z.infer<typeof appleLoginSchema>
+
+        // Use Supabase's built-in Apple OAuth token verification
+        const { data, error } = await app.supabase.auth.signInWithIdToken({
+            provider: 'apple',
+            token: id_token,
+            nonce,
+        })
+
+        if (error) {
+            app.log.error(error, 'Apple Sign-In failed')
+            return reply.code(401).send({
+                success: false,
+                error: 'Apple authentication failed',
+                details: error.message
+            })
+        }
+
+        // Create or update user profile
+        if (data.user) {
+            const { error: profileError } = await app.supabase
+                .from('users')
+                .upsert({
+                    id: data.user.id,
+                    email: data.user.email,
+                    full_name: full_name || data.user.user_metadata?.full_name,
+                    auth_provider: 'apple',
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'id' })
+
+            if (profileError) {
+                app.log.error(profileError, 'Apple profile upsert error')
+            }
+        }
+
         return {
             success: true,
-            user: { id: `apple-${Date.now()}`, email: 'apple@example.com', role: 'player' },
-            tokens: { accessToken: dummyToken, refreshToken: 'dummy_refresh', expiresIn: 3600 }
+            user: { ...data.user, role: 'player' },
+            tokens: data.session ? {
+                accessToken: data.session.access_token,
+                refreshToken: data.session.refresh_token,
+                expiresIn: data.session.expires_in
+            } : null
         }
     })
 
-    app.post('/google', async (request, reply) => {
-        const body = request.body as any
-        const dummyToken = `dummy_google_access_${Date.now()}`
+    app.post('/google', {
+        schema: { body: googleLoginSchema }
+    }, async (request, reply) => {
+        const { id_token, full_name } = request.body as z.infer<typeof googleLoginSchema>
+
+        // Use Supabase's built-in Google OAuth token verification
+        const { data, error } = await app.supabase.auth.signInWithIdToken({
+            provider: 'google',
+            token: id_token,
+        })
+
+        if (error) {
+            app.log.error(error, 'Google Sign-In failed')
+            return reply.code(401).send({
+                success: false,
+                error: 'Google authentication failed',
+                details: error.message
+            })
+        }
+
+        // Create or update user profile
+        if (data.user) {
+            const { error: profileError } = await app.supabase
+                .from('users')
+                .upsert({
+                    id: data.user.id,
+                    email: data.user.email,
+                    full_name: full_name || data.user.user_metadata?.full_name,
+                    username: data.user.user_metadata?.name?.replace(/\s+/g, '_').toLowerCase(),
+                    auth_provider: 'google',
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'id' })
+
+            if (profileError) {
+                app.log.error(profileError, 'Google profile upsert error')
+            }
+        }
+
         return {
             success: true,
-            user: { id: `google-${Date.now()}`, email: 'google@example.com', role: 'player' },
-            tokens: { accessToken: dummyToken, refreshToken: 'dummy_refresh', expiresIn: 3600 }
+            user: { ...data.user, role: 'player' },
+            tokens: data.session ? {
+                accessToken: data.session.access_token,
+                refreshToken: data.session.refresh_token,
+                expiresIn: data.session.expires_in
+            } : null
         }
     })
 

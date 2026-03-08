@@ -7,7 +7,11 @@ export default async function wsRoutes(fastify: FastifyInstance) {
     const pipelines = new Map<string, RealtimePipelineEngine>();
 
     // WebSocket endpoint: /ws/sessions/:id
-    fastify.get('/sessions/:id', { websocket: true }, (connectionParam: any, req: any) => {
+    // Auth is validated on the HTTP upgrade request via preValidation
+    fastify.get('/sessions/:id', {
+        websocket: true,
+        preValidation: [fastify.authenticate]
+    }, (connectionParam: any, req: any) => {
         const socket = connectionParam.socket || connectionParam;
         const sessionId = req.params.id
 

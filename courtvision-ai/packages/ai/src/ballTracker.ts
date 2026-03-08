@@ -431,12 +431,12 @@ export class BallTrackerEngine {
         // Si le R² est élevé, c'est parabolique
         const n = points.length
         const t0 = points[0].timestamp
-        const ts = points.map(p => p.timestamp - t0)
+        const _ts = points.map(p => p.timestamp - t0)
         const ys = points.map(p => p.y)
 
         // Calcul simplifié du R²
         const meanY = ys.reduce((a, b) => a + b, 0) / n
-        const ssTotal = ys.reduce((sum, y) => sum + (y - meanY) ** 2, 0)
+        const _ssTotal = ys.reduce((sum, y) => sum + (y - meanY) ** 2, 0)
 
         // Régression quadratique par moindres carrés (forme simplifiée)
         // On vérifie juste si la tendance est cohérente : monte puis descend
