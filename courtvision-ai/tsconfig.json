@@ -3,9 +3,7 @@
         "baseUrl": ".",
         "paths": {
             "@courtvision/*": [
-                "packages/*",
                 "packages/*/src",
-                "apps/*",
                 "apps/*/src"
             ]
         },
@@ -30,6 +28,8 @@
     },
     "exclude": [
         "node_modules",
-        "dist"
+        "dist",
+        "**/dist",
+        "**/node_modules"
     ]
 }

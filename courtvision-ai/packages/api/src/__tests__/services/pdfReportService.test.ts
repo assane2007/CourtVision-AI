@@ -1,4 +1,4 @@
-import { PdfReportService, SessionReport } from '../../services/pdfReportService'
+import { PdfReportService } from '../../services/pdfReportService'
 import {
     mockDbSession,
     mockDbUser,

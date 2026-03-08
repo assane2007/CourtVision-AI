@@ -35,10 +35,10 @@ test.describe('Dashboard Access', () => {
         await expect(page.getByPlaceholder('EMAIL ADDRESS')).toBeVisible();
 
         // Should not have critical JS errors (filter out expected ones)
-        const criticalErrors = consoleErrors.filter(
+        // Filter critical errors (allow config/env errors during E2E)
+        void consoleErrors.filter(
             e => !e.includes('supabase') && !e.includes('NEXT_PUBLIC')
         );
-        // Allow for config/env errors during E2E but no crash errors
     });
 });
 
