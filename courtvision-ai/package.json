@@ -39,6 +39,7 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-react-hooks": "^7.0.1",
     "prettier": "^3.2.5",
+    "react-native-worklets": "^0.5.1",
     "typescript": "^5.4.2"
   },
   "dependencies": {
