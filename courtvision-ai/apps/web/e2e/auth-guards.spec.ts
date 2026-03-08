@@ -109,13 +109,13 @@ test.describe('API auth security (no data leak)', () => {
 
     test('API returns 401 without Bearer token', async ({ request }) => {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-        const res = await request.get(`${apiUrl}/api/dashboard/v5`)
+        const res = await request.get(`${apiUrl}/api/dashboard`)
         expect(res.status()).toBe(401)
     })
 
     test('API returns 401 with fake Bearer token', async ({ request }) => {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-        const res = await request.get(`${apiUrl}/api/dashboard/v5`, {
+        const res = await request.get(`${apiUrl}/api/dashboard`, {
             headers: { Authorization: 'Bearer totally-invalid-token' }
         })
         expect(res.status()).toBe(401)
