@@ -48,7 +48,7 @@ try:
 
     mp_pose = mp.solutions.pose
     MEDIAPIPE_AVAILABLE = True
-except ImportError:
+except (ImportError, AttributeError):
     MEDIAPIPE_AVAILABLE = False
 
 try:
