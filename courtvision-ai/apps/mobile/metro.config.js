@@ -21,4 +21,19 @@ config.resolver.extraNodeModules = {
     '@courtvision/shared': path.resolve(workspaceRoot, 'packages/shared/src'),
 };
 
+// 4. Resolve request overrides — prevent Node.js-only modules from being bundled.
+//    @supabase/realtime-js imports "ws" which imports Node's "stream".
+//    React Native has a global WebSocket, so ws/stream aren't needed at runtime.
+const originalResolveRequest = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+    // Return empty module for Node-only packages
+    if (moduleName === 'stream' || moduleName === 'ws' || moduleName.startsWith('ws/')) {
+        return { type: 'empty' };
+    }
+    if (originalResolveRequest) {
+        return originalResolveRequest(context, moduleName, platform);
+    }
+    return context.resolveRequest(context, moduleName, platform);
+};
+
 module.exports = config;
