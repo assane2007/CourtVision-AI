@@ -1,6 +1,5 @@
 const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
-const fs = require('fs');
 
 // Racine du projet mobile
 const projectRoot = __dirname;
@@ -20,26 +19,6 @@ config.resolver.nodeModulesPaths = [localModules, rootModules];
 // 3. Alias explicites
 config.resolver.extraNodeModules = {
     '@courtvision/shared': path.resolve(workspaceRoot, 'packages/shared/src'),
-};
-
-// 4. Forcer expo-font vers la version locale SDK 51 (v12).
-//    Le root node_modules contient expo-font@14 (SDK53) qui n'a pas registerWebModule
-//    en expo-modules-core v1.x, causant une erreur au runtime web.
-const localExpoFont = path.join(localModules, 'expo-font');
-
-config.resolver.resolveRequest = (context, moduleName, platform) => {
-    // Intercepter tout require de expo-font (package ou sous-chemin)
-    if (
-        fs.existsSync(localExpoFont) &&
-        (moduleName === 'expo-font' || moduleName.startsWith('expo-font/'))
-    ) {
-        return context.resolveRequest(
-            { ...context, originModulePath: path.join(localExpoFont, 'package.json') },
-            moduleName,
-            platform
-        );
-    }
-    return context.resolveRequest(context, moduleName, platform);
 };
 
 module.exports = config;

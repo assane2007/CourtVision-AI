@@ -18,18 +18,19 @@ import { AppState } from 'react-native'
 // ─── Config ────────────────────────────────────────────────────
 
 const SUPABASE_URL =
-    process.env.EXPO_PUBLIC_SUPABASE_URL ?? 'https://your-project.supabase.co'
+    process.env.EXPO_PUBLIC_SUPABASE_URL ?? ''
 
 const SUPABASE_ANON_KEY =
-    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? 'your-anon-key'
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? ''
 
 // ─── Demo mode detection ───────────────────────────────────────
-// True when Supabase credentials are still placeholders
+// True when Supabase credentials are missing or still placeholders
 export const isDemoMode =
     !SUPABASE_URL ||
     SUPABASE_URL.includes('your-project') ||
     !SUPABASE_ANON_KEY ||
-    SUPABASE_ANON_KEY === 'your-anon-key'
+    SUPABASE_ANON_KEY === 'your-anon-key' ||
+    SUPABASE_ANON_KEY.length < 20
 
 if (isDemoMode) {
     console.warn(
@@ -40,7 +41,10 @@ if (isDemoMode) {
 
 // ─── Client ────────────────────────────────────────────────────
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+const safeUrl = SUPABASE_URL || 'https://placeholder.supabase.co'
+const safeKey = SUPABASE_ANON_KEY || 'placeholder-key'
+
+export const supabase = createClient(safeUrl, safeKey, {
     auth: {
         storage: AsyncStorage,
         autoRefreshToken: true,

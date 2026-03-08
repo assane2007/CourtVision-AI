@@ -234,8 +234,7 @@ export default function HistoryScreen() {
     }, [loadData])
 
     const handleSessionPress = useCallback((sessionId: string) => {
-        // TODO: naviguer vers l'écran de détail de session
-        // router.push(`/session/${sessionId}`)
+        router.push(`/session/${sessionId}` as any)
     }, [router])
 
     if (loading) {

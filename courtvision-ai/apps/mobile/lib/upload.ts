@@ -86,7 +86,7 @@ export class UploadTask {
             try {
                 responseData = JSON.parse(result.body)
             } catch {
-                responseData = { url: result.body }
+                throw new Error(`Upload response parse failed: ${String(result.body).slice(0, 200)}`)
             }
 
             const url = responseData.url || responseData.video_url || responseData.publicUrl

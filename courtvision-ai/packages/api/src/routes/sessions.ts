@@ -61,7 +61,7 @@ const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
         if (error) throw error
 
         const sessions = (data ?? []).map((s: any) => {
-            const analysis = Array.isArray(s.analyses) ? s.analyses[0] : s.analyses
+            const analysis = Array.isArray(s.analyses) ? s.analyses[0] : (s.analyses ?? null)
             const attempts = analysis?.shot_attempts ?? 0
             const made = analysis?.shot_made ?? 0
             const shootingFgPct = attempts > 0 ? (made / attempts) * 100 : 0
