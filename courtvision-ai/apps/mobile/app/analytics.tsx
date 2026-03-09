@@ -38,6 +38,10 @@ import type {
     EWMAProjection,
     CausalImpact,
     ShotDistribution,
+    ShotSelectionResult,
+    ClutchResult,
+    ConsistencyProfile,
+    MechanicCluster,
 } from '../lib/analyticsEngine'
 
 const type = T.type
@@ -500,6 +504,132 @@ function DistributionRow({ dist }: { dist: ShotDistribution }) {
     )
 }
 
+function ShotSelectionRow({ sel }: { sel: ShotSelectionResult }) {
+    const effColor = sel.efficiency === 'elite' ? T.color.semantic.success
+        : sel.efficiency === 'good' ? T.color.brand.primary
+            : sel.efficiency === 'average' ? T.color.semantic.warning
+                : T.color.semantic.error
+
+    return (
+        <View style={styles.sciRow}>
+            <View style={styles.sciRowHeader}>
+                <Text style={styles.sciMetric}>{sel.zone}</Text>
+                <Text style={[styles.sciCorValue, { color: effColor }]}>{sel.expectedPoints.toFixed(2)} EPA</Text>
+            </View>
+            <View style={styles.distStatsRow}>
+                <View style={styles.distCell}>
+                    <Text style={styles.quartileLabel}>FG%</Text>
+                    <Text style={styles.distValue}>{sel.fgPct}%</Text>
+                </View>
+                <View style={styles.distCell}>
+                    <Text style={styles.quartileLabel}>Pts</Text>
+                    <Text style={styles.distValue}>{sel.pointValue}</Text>
+                </View>
+                <View style={styles.distCell}>
+                    <Text style={styles.quartileLabel}>Vol</Text>
+                    <Text style={styles.distValue}>{sel.volumeShare}%</Text>
+                </View>
+                <View style={styles.distCell}>
+                    <Text style={styles.quartileLabel}>Tier</Text>
+                    <Text style={[styles.distValue, { color: effColor }]}>{sel.efficiency}</Text>
+                </View>
+            </View>
+        </View>
+    )
+}
+
+function ClutchRow({ clutch, index }: { clutch: ClutchResult; index: number }) {
+    const color = clutch.label === 'clutch' ? T.color.semantic.success
+        : clutch.label === 'choke' ? T.color.semantic.error
+            : T.color.text.tertiary
+    const icon = clutch.label === 'clutch' ? '🔥' : clutch.label === 'choke' ? '❄️' : '➖'
+
+    return (
+        <Animated.View entering={FadeInDown.delay(index * 80).duration(200)} style={styles.sciRow}>
+            <View style={styles.sciRowHeader}>
+                <Text style={styles.sciMetric}>{icon} Session {index + 1}</Text>
+                <Text style={[styles.sciCorValue, { color }]}>{clutch.clutchDelta > 0 ? '+' : ''}{clutch.clutchDelta.toFixed(1)}%</Text>
+            </View>
+            <View style={styles.distStatsRow}>
+                <View style={styles.distCell}>
+                    <Text style={styles.quartileLabel}>Early FG%</Text>
+                    <Text style={styles.distValue}>{clutch.earlyFG.toFixed(1)}%</Text>
+                </View>
+                <View style={styles.distCell}>
+                    <Text style={styles.quartileLabel}>Late FG%</Text>
+                    <Text style={[styles.distValue, { color }]}>{clutch.lateFG.toFixed(1)}%</Text>
+                </View>
+            </View>
+        </Animated.View>
+    )
+}
+
+function ConsistencyRow({ profile }: { profile: ConsistencyProfile }) {
+    const stabColor = profile.stability === 'locked-in' ? T.color.semantic.success
+        : profile.stability === 'consistent' ? T.color.brand.primary
+            : profile.stability === 'variable' ? T.color.semantic.warning
+                : T.color.semantic.error
+    const trendIcon = profile.trend === 'improving' ? '↑' : profile.trend === 'declining' ? '↓' : '→'
+
+    return (
+        <View style={styles.sciRow}>
+            <View style={styles.sciRowHeader}>
+                <Text style={styles.sciMetric}>{profile.metric}</Text>
+                <Text style={[styles.sciCorValue, { color: stabColor }]}>{profile.stability}</Text>
+            </View>
+            <View style={styles.distStatsRow}>
+                <View style={styles.distCell}>
+                    <Text style={styles.quartileLabel}>Mean</Text>
+                    <Text style={styles.distValue}>{profile.overallMean.toFixed(1)}</Text>
+                </View>
+                <View style={styles.distCell}>
+                    <Text style={styles.quartileLabel}>CV</Text>
+                    <Text style={styles.distValue}>{(profile.overallCV * 100).toFixed(1)}%</Text>
+                </View>
+                <View style={styles.distCell}>
+                    <Text style={styles.quartileLabel}>Trend</Text>
+                    <Text style={styles.distValue}>{trendIcon} {profile.trend}</Text>
+                </View>
+            </View>
+        </View>
+    )
+}
+
+function ClusterRow({ cluster }: { cluster: MechanicCluster }) {
+    const color = cluster.isOptimal ? T.color.semantic.success
+        : cluster.label === 'Average Form' ? T.color.brand.primary
+            : T.color.semantic.error
+
+    return (
+        <View style={styles.sciRow}>
+            <View style={styles.sciRowHeader}>
+                <Text style={[styles.sciMetric, { color }]}>
+                    {cluster.isOptimal ? '⭐ ' : ''}{cluster.label}
+                </Text>
+                <Text style={[styles.sciCorValue, { color }]}>{cluster.fgPct.toFixed(1)}% FG</Text>
+            </View>
+            <View style={styles.distStatsRow}>
+                <View style={styles.distCell}>
+                    <Text style={styles.quartileLabel}>Elbow</Text>
+                    <Text style={styles.distValue}>{cluster.centroid.elbow.toFixed(1)}°</Text>
+                </View>
+                <View style={styles.distCell}>
+                    <Text style={styles.quartileLabel}>Release</Text>
+                    <Text style={styles.distValue}>{cluster.centroid.release.toFixed(3)}s</Text>
+                </View>
+                <View style={styles.distCell}>
+                    <Text style={styles.quartileLabel}>Posture</Text>
+                    <Text style={styles.distValue}>{cluster.centroid.posture.toFixed(0)}</Text>
+                </View>
+                <View style={styles.distCell}>
+                    <Text style={styles.quartileLabel}>Shots</Text>
+                    <Text style={styles.distValue}>{cluster.shotCount}</Text>
+                </View>
+            </View>
+        </View>
+    )
+}
+
 // ==========================================
 // Existing Sub-components
 // ==========================================
@@ -894,6 +1024,58 @@ export default function AnalyticsScreen() {
                                 </View>
                                 {report.distributions.map((dist) => (
                                     <DistributionRow key={dist.metric} dist={dist} />
+                                ))}
+                            </View>
+                        )}
+
+                        {/* Shot Selection */}
+                        {report && report.shotSelection.length > 0 && (
+                            <View style={[styles.card, T.glass.thin]}>
+                                <View style={styles.cardHeader}>
+                                    <Text style={{ fontSize: 14 }}>🎯</Text>
+                                    <Text style={styles.cardTitle}>Shot Selection (EPA)</Text>
+                                </View>
+                                {report.shotSelection.map((sel) => (
+                                    <ShotSelectionRow key={sel.zone} sel={sel} />
+                                ))}
+                            </View>
+                        )}
+
+                        {/* Clutch Performance */}
+                        {report && report.clutch.length > 0 && (
+                            <View style={[styles.card, T.glass.thin]}>
+                                <View style={styles.cardHeader}>
+                                    <Text style={{ fontSize: 14 }}>🔥</Text>
+                                    <Text style={styles.cardTitle}>Clutch Performance</Text>
+                                </View>
+                                {report.clutch.map((c, i) => (
+                                    <ClutchRow key={c.sessionId} clutch={c} index={i} />
+                                ))}
+                            </View>
+                        )}
+
+                        {/* Consistency Profile */}
+                        {report && report.consistencyProfile.length > 0 && (
+                            <View style={[styles.card, T.glass.thin]}>
+                                <View style={styles.cardHeader}>
+                                    <Text style={{ fontSize: 14 }}>📊</Text>
+                                    <Text style={styles.cardTitle}>Consistency Profile</Text>
+                                </View>
+                                {report.consistencyProfile.map((cp) => (
+                                    <ConsistencyRow key={cp.metric} profile={cp} />
+                                ))}
+                            </View>
+                        )}
+
+                        {/* Mechanic Clusters */}
+                        {report && report.mechanicClusters.length > 0 && (
+                            <View style={[styles.card, T.glass.thin]}>
+                                <View style={styles.cardHeader}>
+                                    <Text style={{ fontSize: 14 }}>🧬</Text>
+                                    <Text style={styles.cardTitle}>Mechanic Clusters (K-Means)</Text>
+                                </View>
+                                {report.mechanicClusters.map((cl) => (
+                                    <ClusterRow key={cl.clusterId} cluster={cl} />
                                 ))}
                             </View>
                         )}

@@ -24,6 +24,10 @@ import {
     type EWMAProjection,
     type CausalImpact,
     type ShotDistribution,
+    type ShotSelectionResult,
+    type ClutchResult,
+    type ConsistencyProfile,
+    type MechanicCluster,
 } from '../lib/analyticsEngine'
 
 // ── Cache ──────────────────────────────────────────────────────
@@ -55,12 +59,20 @@ export interface AnalyticsSummary {
     topCausalImpact: CausalImpact | null
     /** Number of zones with improving trends */
     improvingZones: number
+    /** Best zone by expected points per attempt (or null) */
+    bestZoneEPA: ShotSelectionResult | null
+    /** Clutch rating: avg delta across sessions */
+    clutchRating: number
+    /** Consistency grade from CV */
+    consistencyGrade: string
+    /** Optimal mechanic cluster label (or null) */
+    optimalFormLabel: string | null
     /** Key human-readable takeaway */
     headline: string
 }
 
 function buildSummary(report: FullAnalyticsReport): AnalyticsSummary {
-    const { significance, correlations, fatigueCurves, zoneProgression, hotHand, projections, causalImpacts } = report
+    const { significance, correlations, fatigueCurves, zoneProgression, hotHand, projections, causalImpacts, shotSelection, clutch, consistencyProfile, mechanicClusters } = report
 
     // Data quality
     const dq: AnalyticsSummary['dataQuality'] =
@@ -87,12 +99,26 @@ function buildSummary(report: FullAnalyticsReport): AnalyticsSummary {
     const topCausal = causalImpacts.find(c => c.significant) ?? null
     const improvingZones = zoneProgression.filter(z => z.trend === 'improving').length
 
+    // Basketball-specific summaries
+    const bestZoneEPA = shotSelection.length > 0 ? shotSelection[0] : null
+    const clutchRating = clutch.length > 0
+        ? Math.round(clutch.reduce((s, c) => s + c.clutchDelta, 0) / clutch.length * 10) / 10
+        : 0
+    const fgConsistency = consistencyProfile.find(p => p.metric === 'FG%')
+    const consistencyGrade = fgConsistency ? fgConsistency.stability : 'unknown'
+    const optimalCluster = mechanicClusters.find(c => c.isOptimal)
+    const optimalFormLabel = optimalCluster ? optimalCluster.label : null
+
     // Build headline
     let headline = ''
     if (dq === 'insufficient') {
         headline = 'Need at least 3 sessions for meaningful analytics.'
     } else if (topSig && topSig.direction === 'improved') {
         headline = `Your ${topSig.metric} improved significantly (p=${topSig.pValue.toFixed(3)}).`
+    } else if (bestZoneEPA && bestZoneEPA.efficiency === 'elite') {
+        headline = `${bestZoneEPA.zone} is your money zone (${bestZoneEPA.expectedPoints.toFixed(2)} EPA).`
+    } else if (clutchRating > 5) {
+        headline = `Clutch performer: +${clutchRating}% FG in crunch time.`
     } else if (topCausal) {
         headline = topCausal.explanation
     } else if (strongCorr && strongCorr.significant) {
@@ -112,6 +138,10 @@ function buildSummary(report: FullAnalyticsReport): AnalyticsSummary {
         fgProjection: fgProj,
         topCausalImpact: topCausal,
         improvingZones,
+        bestZoneEPA,
+        clutchRating,
+        consistencyGrade,
+        optimalFormLabel,
         headline,
     }
 }

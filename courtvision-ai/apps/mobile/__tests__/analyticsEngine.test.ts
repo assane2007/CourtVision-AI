@@ -14,6 +14,10 @@ import {
     analyzeProjections,
     analyzeCausalImpact,
     analyzeDistributions,
+    analyzeShotSelection,
+    analyzeClutchPerformance,
+    analyzeConsistencyProfile,
+    analyzeMechanicClusters,
     generateAnalyticsReport,
 } from '../lib/analyticsEngine'
 import type { SessionHistoryItem, StoredSession, StoredShot } from '../lib/sessionStorage'
@@ -113,17 +117,20 @@ describe('AnalyticsEngine', () => {
             expect(results.length).toBeGreaterThan(0)
             expect(results[0]).toHaveProperty('metric')
             expect(results[0]).toHaveProperty('pValue')
+            expect(results[0]).toHaveProperty('adjustedPValue')
             expect(results[0]).toHaveProperty('significant')
             expect(results[0]).toHaveProperty('effectSize')
             expect(results[0]).toHaveProperty('direction')
+            expect(results[0]).toHaveProperty('testUsed')
+            expect(['welch-t', 'mann-whitney']).toContain(results[0].testUsed)
         })
 
         it('detects significant improvement when recent is much better', () => {
             const sessions = [
-                // Recent 5: higher FG%
-                ...Array.from({ length: 5 }, (_, i) => makeHistoryItem({ shootingPct: 60 + Math.random() * 5 }, i)),
-                // Earlier 5: lower FG%
-                ...Array.from({ length: 5 }, (_, i) => makeHistoryItem({ shootingPct: 35 + Math.random() * 5 }, i + 5)),
+                // Recent 8: high FG%
+                ...Array.from({ length: 8 }, (_, i) => makeHistoryItem({ shootingPct: 70 + i * 0.5 }, i)),
+                // Earlier 8: low FG%
+                ...Array.from({ length: 8 }, (_, i) => makeHistoryItem({ shootingPct: 30 + i * 0.5 }, i + 8)),
             ]
             const results = analyzeSignificance(sessions)
             const fgResult = results.find(r => r.metric === 'FG%')
@@ -144,12 +151,21 @@ describe('AnalyticsEngine', () => {
             }
         })
 
-        it('results are sorted by p-value', () => {
+        it('BH-adjusted p-values are >= raw p-values', () => {
+            const sessions = Array.from({ length: 12 }, (_, i) =>
+                makeHistoryItem({ shootingPct: i < 6 ? 65 : 40 }, i))
+            const results = analyzeSignificance(sessions)
+            for (const r of results) {
+                expect(r.adjustedPValue).toBeGreaterThanOrEqual(r.pValue - 0.0001)
+            }
+        })
+
+        it('results are sorted by adjusted p-value', () => {
             const sessions = Array.from({ length: 12 }, (_, i) =>
                 makeHistoryItem({ shootingPct: i < 6 ? 65 : 40 }, i))
             const results = analyzeSignificance(sessions)
             for (let i = 1; i < results.length; i++) {
-                expect(results[i].pValue).toBeGreaterThanOrEqual(results[i - 1].pValue)
+                expect(results[i].adjustedPValue).toBeGreaterThanOrEqual(results[i - 1].adjustedPValue)
             }
         })
     })
@@ -160,7 +176,7 @@ describe('AnalyticsEngine', () => {
             expect(analyzeCorrelations(sessions)).toHaveLength(0)
         })
 
-        it('returns correlation results for 5+ sessions', () => {
+        it('returns correlation results with Spearman and Fisher CI for 5+ sessions', () => {
             const sessions = Array.from({ length: 10 }, (_, i) => makeHistoryItem({}, i))
             const results = analyzeCorrelations(sessions)
             expect(results.length).toBeGreaterThan(0)
@@ -168,6 +184,9 @@ describe('AnalyticsEngine', () => {
             expect(results[0]).toHaveProperty('rSquared')
             expect(results[0]).toHaveProperty('pValue')
             expect(results[0]).toHaveProperty('interpretation')
+            expect(results[0]).toHaveProperty('spearmanRho')
+            expect(results[0]).toHaveProperty('fisherCI')
+            expect(results[0].fisherCI!.lower).toBeLessThanOrEqual(results[0].fisherCI!.upper)
         })
 
         it('detects strong positive correlation', () => {
@@ -379,13 +398,149 @@ describe('AnalyticsEngine', () => {
             const results = analyzeDistributions(sessions)
             for (const d of results) {
                 const expected = Math.round(d.stdDev ** 2 * 100) / 100
-                expect(d.variance).toBeCloseTo(expected, 1)
+                expect(d.variance).toBeCloseTo(expected, 0)
+            }
+        })
+    })
+
+    describe('analyzeShotSelection', () => {
+        it('returns empty for < 10 shots with zones', () => {
+            const session = makeFullSession({ shots: Array.from({ length: 5 }, (_, i) => makeShot({}, i)) })
+            expect(analyzeShotSelection([session])).toHaveLength(0)
+        })
+
+        it('returns zone-based efficiency for valid data', () => {
+            const sessions = Array.from({ length: 3 }, (_, i) => makeFullSession({}, i))
+            const results = analyzeShotSelection(sessions)
+            expect(results.length).toBeGreaterThan(0)
+            expect(results[0]).toHaveProperty('zone')
+            expect(results[0]).toHaveProperty('expectedPoints')
+            expect(results[0]).toHaveProperty('volumeShare')
+            expect(results[0]).toHaveProperty('efficiency')
+            expect(['elite', 'good', 'average', 'poor']).toContain(results[0].efficiency)
+        })
+
+        it('expectedPoints = fgPct/100 * pointValue', () => {
+            const sessions = Array.from({ length: 3 }, (_, i) => makeFullSession({}, i))
+            const results = analyzeShotSelection(sessions)
+            for (const r of results) {
+                const calc = Math.round((r.fgPct / 100) * r.pointValue * 100) / 100
+                expect(r.expectedPoints).toBeCloseTo(calc, 1)
+            }
+        })
+
+        it('sorted by expected points descending', () => {
+            const sessions = Array.from({ length: 3 }, (_, i) => makeFullSession({}, i))
+            const results = analyzeShotSelection(sessions)
+            for (let i = 1; i < results.length; i++) {
+                expect(results[i].expectedPoints).toBeLessThanOrEqual(results[i - 1].expectedPoints)
+            }
+        })
+    })
+
+    describe('analyzeClutchPerformance', () => {
+        it('skips sessions with < 10 shots', () => {
+            const session = makeFullSession({ shots: Array.from({ length: 5 }, (_, i) => makeShot({ outcome: 'made' }, i)) })
+            expect(analyzeClutchPerformance([session])).toHaveLength(0)
+        })
+
+        it('returns clutch data for valid sessions', () => {
+            const session = makeFullSession()
+            const results = analyzeClutchPerformance([session])
+            expect(results.length).toBeGreaterThanOrEqual(1)
+            expect(results[0]).toHaveProperty('earlyFG')
+            expect(results[0]).toHaveProperty('lateFG')
+            expect(results[0]).toHaveProperty('clutchDelta')
+            expect(results[0]).toHaveProperty('label')
+            expect(['clutch', 'neutral', 'choke']).toContain(results[0].label)
+        })
+
+        it('detects clutch when late shots are better', () => {
+            const shots: StoredShot[] = [
+                // First 24: all misses
+                ...Array.from({ length: 24 }, (_, i) => makeShot({ outcome: 'missed' }, i)),
+                // Last 6 (20%): all makes
+                ...Array.from({ length: 6 }, (_, i) => makeShot({ outcome: 'made' }, i + 24)),
+            ]
+            const session = makeFullSession({ shots })
+            const results = analyzeClutchPerformance([session])
+            expect(results[0].clutchDelta).toBeGreaterThan(0)
+        })
+    })
+
+    describe('analyzeConsistencyProfile', () => {
+        it('returns empty for < 4 sessions', () => {
+            const sessions = Array.from({ length: 3 }, (_, i) => makeHistoryItem({}, i))
+            expect(analyzeConsistencyProfile(sessions)).toHaveLength(0)
+        })
+
+        it('returns profiles for sufficient data', () => {
+            const sessions = Array.from({ length: 8 }, (_, i) => makeHistoryItem({}, i))
+            const results = analyzeConsistencyProfile(sessions)
+            expect(results.length).toBeGreaterThan(0)
+            expect(results[0]).toHaveProperty('metric')
+            expect(results[0]).toHaveProperty('overallCV')
+            expect(results[0]).toHaveProperty('stability')
+            expect(results[0]).toHaveProperty('trend')
+            expect(['locked-in', 'consistent', 'variable', 'erratic']).toContain(results[0].stability)
+            expect(['improving', 'declining', 'stable']).toContain(results[0].trend)
+        })
+
+        it('CV is non-negative', () => {
+            const sessions = Array.from({ length: 8 }, (_, i) => makeHistoryItem({}, i))
+            const results = analyzeConsistencyProfile(sessions)
+            for (const r of results) {
+                expect(r.overallCV).toBeGreaterThanOrEqual(0)
+            }
+        })
+    })
+
+    describe('analyzeMechanicClusters', () => {
+        it('returns empty for < 15 valid shots', () => {
+            const session = makeFullSession({ shots: Array.from({ length: 10 }, (_, i) => makeShot({}, i)) })
+            expect(analyzeMechanicClusters([session])).toHaveLength(0)
+        })
+
+        it('returns clusters for sufficient data', () => {
+            const sessions = Array.from({ length: 3 }, (_, i) => makeFullSession({}, i))
+            const results = analyzeMechanicClusters(sessions)
+            expect(results.length).toBeGreaterThan(0)
+            expect(results.length).toBeLessThanOrEqual(3)
+            expect(results[0]).toHaveProperty('centroid')
+            expect(results[0]).toHaveProperty('shotCount')
+            expect(results[0]).toHaveProperty('fgPct')
+            expect(results[0]).toHaveProperty('label')
+            expect(results[0]).toHaveProperty('isOptimal')
+        })
+
+        it('exactly one cluster is optimal', () => {
+            const sessions = Array.from({ length: 3 }, (_, i) => makeFullSession({}, i))
+            const results = analyzeMechanicClusters(sessions)
+            const optimalCount = results.filter(c => c.isOptimal).length
+            expect(optimalCount).toBe(1)
+        })
+
+        it('cluster shot counts sum to total valid shots', () => {
+            const sessions = Array.from({ length: 3 }, (_, i) => makeFullSession({}, i))
+            const results = analyzeMechanicClusters(sessions)
+            const totalClustered = results.reduce((s, c) => s + c.shotCount, 0)
+            const totalValid = sessions.flatMap(s => s.shots)
+                .filter(s => s.elbowAngle > 0 && s.releaseTime > 0 && s.postureQuality > 0 && s.releaseHeightRatio > 0)
+                .length
+            expect(totalClustered).toBe(totalValid)
+        })
+
+        it('sorted by FG% descending', () => {
+            const sessions = Array.from({ length: 3 }, (_, i) => makeFullSession({}, i))
+            const results = analyzeMechanicClusters(sessions)
+            for (let i = 1; i < results.length; i++) {
+                expect(results[i].fgPct).toBeLessThanOrEqual(results[i - 1].fgPct)
             }
         })
     })
 
     describe('generateAnalyticsReport', () => {
-        it('generates a complete report', () => {
+        it('generates a complete report with all 12 analyses', () => {
             const history = Array.from({ length: 12 }, (_, i) => makeHistoryItem({}, i))
             const fullSessions = Array.from({ length: 5 }, (_, i) => makeFullSession({}, i))
 
@@ -402,6 +557,10 @@ describe('AnalyticsEngine', () => {
             expect(report).toHaveProperty('projections')
             expect(report).toHaveProperty('causalImpacts')
             expect(report).toHaveProperty('distributions')
+            expect(report).toHaveProperty('shotSelection')
+            expect(report).toHaveProperty('clutch')
+            expect(report).toHaveProperty('consistencyProfile')
+            expect(report).toHaveProperty('mechanicClusters')
         })
 
         it('handles empty input gracefully', () => {

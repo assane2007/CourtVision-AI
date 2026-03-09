@@ -1,15 +1,19 @@
 /**
- * AnalyticsEngine — Data-science-grade on-device analytics.
+ * AnalyticsEngine — Basketball data-science on-device analytics.
  *
- * Real statistical methods running purely on the phone:
- *   1. Welch's t-test for significance testing
- *   2. Pearson correlation between mechanics & outcomes
+ * Statistical methods running purely on the phone:
+ *   1. Welch's t-test + Benjamini-Hochberg FDR + Mann-Whitney U fallback
+ *   2. Pearson & Spearman correlation with Fisher z-transform CIs
  *   3. Fatigue curve modelling (within-session accuracy decay)
  *   4. Zone-specific progression tracking
  *   5. Hot-hand / streak detection (Wald–Wolfowitz runs test)
  *   6. Exponential-weighted moving average projections
  *   7. Causal impact estimation (before/after mechanic shifts)
  *   8. Shot distribution analysis (variance, skewness, percentiles)
+ *   9. Shot selection efficiency (expected points per zone)
+ *  10. Clutch performance analysis (late-session pressure)
+ *  11. Session-to-session consistency profiling (CV + stability)
+ *  12. Mechanic clustering (k-means on shot biomechanics)
  *
  * No external dependencies beyond SessionStorageService types.
  */
@@ -34,9 +38,15 @@ export interface SignificanceTest {
     periodB: { label: string; mean: number; stdDev: number; n: number }
     tStatistic: number
     pValue: number
+    /** p-value after Benjamini-Hochberg FDR correction */
+    adjustedPValue: number
     significant: boolean
     effectSize: number // Cohen's d
     direction: 'improved' | 'declined' | 'unchanged'
+    /** Mann-Whitney U p-value (non-parametric fallback for small n) */
+    mannWhitneyP?: number
+    /** Which test was used to determine significance */
+    testUsed: 'welch-t' | 'mann-whitney'
 }
 
 export interface CorrelationResult {
@@ -47,6 +57,8 @@ export interface CorrelationResult {
     pValue: number
     significant: boolean
     interpretation: string
+    spearmanRho?: number  // rank correlation (robust to non-linearity)
+    fisherCI?: { lower: number; upper: number } // 95% CI via Fisher z-transform
 }
 
 export interface FatigueCurve {
@@ -123,6 +135,51 @@ export interface ShotDistribution {
     interpretation: string
 }
 
+export interface ShotSelectionResult {
+    zone: string
+    attempts: number
+    makes: number
+    fgPct: number
+    /** Points per zone: 3 for 3pt zones, 2 otherwise */
+    pointValue: number
+    /** Expected points per attempt = fgPct/100 × pointValue */
+    expectedPoints: number
+    /** Volume share (% of total shots) */
+    volumeShare: number
+    efficiency: 'elite' | 'good' | 'average' | 'poor'
+}
+
+export interface ClutchResult {
+    sessionId: string
+    earlyFG: number
+    lateFG: number
+    clutchDelta: number     // lateFG - earlyFG (positive = clutch)
+    earlyMechanics: { elbow: number; release: number; posture: number }
+    lateMechanics: { elbow: number; release: number; posture: number }
+    isClutch: boolean       // positive delta beyond threshold
+    label: 'clutch' | 'neutral' | 'choke'
+}
+
+export interface ConsistencyProfile {
+    metric: string
+    sessionMeans: number[]   // per-session averages
+    overallMean: number
+    overallCV: number        // coefficient of variation (%)
+    stability: 'locked-in' | 'consistent' | 'variable' | 'erratic'
+    bestSession: { index: number; value: number }
+    worstSession: { index: number; value: number }
+    trend: 'improving' | 'declining' | 'stable'
+}
+
+export interface MechanicCluster {
+    clusterId: number
+    centroid: { elbow: number; release: number; posture: number; height: number }
+    shotCount: number
+    fgPct: number
+    label: string            // auto-generated description
+    isOptimal: boolean       // highest FG% cluster
+}
+
 export interface FullAnalyticsReport {
     generatedAt: string
     sessionsAnalyzed: number
@@ -135,6 +192,10 @@ export interface FullAnalyticsReport {
     projections: EWMAProjection[]
     causalImpacts: CausalImpact[]
     distributions: ShotDistribution[]
+    shotSelection: ShotSelectionResult[]
+    clutch: ClutchResult[]
+    consistencyProfile: ConsistencyProfile[]
+    mechanicClusters: MechanicCluster[]
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -350,12 +411,146 @@ function ewma(values: number[], alpha: number = 0.3): number[] {
     return result
 }
 
+/**
+ * Mann-Whitney U test — non-parametric alternative to t-test.
+ * Compares two independent samples without assuming normality.
+ * Returns approximate p-value via normal approximation (valid for n >= 8).
+ */
+function mannWhitneyU(a: number[], b: number[]): { U: number; z: number; p: number } {
+    const nA = a.length, nB = b.length
+    if (nA < 2 || nB < 2) return { U: 0, z: 0, p: 1 }
+
+    // Rank all values together
+    const combined: Array<{ value: number; group: 'a' | 'b' }> = [
+        ...a.map(v => ({ value: v, group: 'a' as const })),
+        ...b.map(v => ({ value: v, group: 'b' as const })),
+    ]
+    combined.sort((x, y) => x.value - y.value)
+
+    // Assign ranks with tie correction
+    const ranks = new Array(combined.length)
+    let i = 0
+    while (i < combined.length) {
+        let j = i
+        while (j < combined.length && combined[j].value === combined[i].value) j++
+        const avgRank = (i + 1 + j) / 2 // average rank for ties
+        for (let k = i; k < j; k++) ranks[k] = avgRank
+        i = j
+    }
+
+    // Sum ranks for group A
+    let rankSumA = 0
+    for (let k = 0; k < combined.length; k++) {
+        if (combined[k].group === 'a') rankSumA += ranks[k]
+    }
+
+    const U_A = rankSumA - (nA * (nA + 1)) / 2
+    const U_B = nA * nB - U_A
+    const U = Math.min(U_A, U_B)
+
+    // Normal approximation with tie correction
+    const n = nA + nB
+    const meanU = (nA * nB) / 2
+
+    // Tie correction factor
+    let tieCorrection = 0
+    let idx = 0
+    while (idx < combined.length) {
+        let end = idx
+        while (end < combined.length && combined[end].value === combined[idx].value) end++
+        const tieSize = end - idx
+        if (tieSize > 1) tieCorrection += tieSize ** 3 - tieSize
+        idx = end
+    }
+    const varU = (nA * nB / 12) * ((n + 1) - tieCorrection / (n * (n - 1)))
+
+    if (varU <= 0) return { U, z: 0, p: 1 }
+
+    const z = (U - meanU) / Math.sqrt(varU)
+    const p = 2 * (1 - normalCDF(Math.abs(z)))
+
+    return { U, z, p }
+}
+
+/**
+ * Spearman rank correlation — robust to non-linear monotonic relationships.
+ * Converts values to ranks, then computes Pearson on the ranks.
+ */
+function spearmanCorrelation(x: number[], y: number[]): { rho: number; p: number } {
+    const n = Math.min(x.length, y.length)
+    if (n < 3) return { rho: 0, p: 1 }
+
+    const rankX = assignRanks(x.slice(0, n))
+    const rankY = assignRanks(y.slice(0, n))
+
+    return { rho: pearsonCorrelation(rankX, rankY).r, p: pearsonCorrelation(rankX, rankY).p }
+}
+
+/** Assign average ranks to an array (1-based), handling ties */
+function assignRanks(arr: number[]): number[] {
+    const indexed = arr.map((v, i) => ({ v, i }))
+    indexed.sort((a, b) => a.v - b.v)
+    const ranks = new Array(arr.length)
+    let i = 0
+    while (i < indexed.length) {
+        let j = i
+        while (j < indexed.length && indexed[j].v === indexed[i].v) j++
+        const avgRank = (i + 1 + j) / 2
+        for (let k = i; k < j; k++) ranks[indexed[k].i] = avgRank
+        i = j
+    }
+    return ranks
+}
+
+/**
+ * Fisher z-transform — converts Pearson r to z-space for CI computation.
+ * Returns 95% CI bounds on r.
+ */
+function fisherZConfidence(r: number, n: number): { lower: number; upper: number } {
+    if (n < 4) return { lower: -1, upper: 1 }
+    const z = Math.atanh(Math.max(-0.999, Math.min(0.999, r)))
+    const se = 1 / Math.sqrt(n - 3)
+    const zLower = z - 1.96 * se
+    const zUpper = z + 1.96 * se
+    return {
+        lower: Math.round(Math.tanh(zLower) * 1000) / 1000,
+        upper: Math.round(Math.tanh(zUpper) * 1000) / 1000,
+    }
+}
+
+/**
+ * Benjamini-Hochberg FDR correction — adjusts p-values for multiple comparisons.
+ * Controls the false discovery rate at level q (default 0.05).
+ */
+function benjaminiHochberg(pValues: number[], q: number = 0.05): number[] {
+    const n = pValues.length
+    if (n === 0) return []
+
+    // Sort indices by p-value
+    const indices = Array.from({ length: n }, (_, i) => i)
+    indices.sort((a, b) => pValues[a] - pValues[b])
+
+    const adjusted = new Array(n)
+    let cumMin = 1
+
+    // Walk backwards: adjusted_p[i] = min(p[i] * n / rank, cumMin)
+    for (let rank = n; rank >= 1; rank--) {
+        const idx = indices[rank - 1]
+        const adj = Math.min(1, pValues[idx] * n / rank)
+        cumMin = Math.min(cumMin, adj)
+        adjusted[idx] = cumMin
+    }
+    return adjusted
+}
+
 // ══════════════════════════════════════════════════════════════
 // Analysis Functions
 // ══════════════════════════════════════════════════════════════
 
 /**
  * 1. Significance Testing — Are recent changes real or noise?
+ *    Uses Welch's t-test for n >= 10 per group, Mann-Whitney U for smaller samples.
+ *    Applies Benjamini-Hochberg FDR correction to control false positives across 6 metrics.
  */
 export function analyzeSignificance(sessions: SessionHistoryItem[]): SignificanceTest[] {
     if (sessions.length < 6) return []
@@ -373,38 +568,76 @@ export function analyzeSignificance(sessions: SessionHistoryItem[]): Significanc
         { key: 'Follow-Through', extract: s => s.followThroughPct },
     ]
 
-    const results: SignificanceTest[] = []
+    const rawResults: Array<SignificanceTest & { _rawP: number }> = []
 
     for (const m of metrics) {
         const a = recent.map(m.extract)
         const b = earlier.map(m.extract)
         const mA = mean(a), mB = mean(b)
         const sA = stdDev(a), sB = stdDev(b)
-        const { t, p } = welchTTest(a, b)
+
+        // Parametric test
+        const { t, p: welchP } = welchTTest(a, b)
+        // Non-parametric fallback
+        const { p: mwP } = mannWhitneyU(a, b)
+
+        // Use Mann-Whitney when either group has fewer than 10 observations
+        const useNonParametric = a.length < 10 || b.length < 10
+        const primaryP = useNonParametric ? mwP : welchP
 
         const pooledSD = Math.sqrt((sA ** 2 + sB ** 2) / 2)
         const d = pooledSD > 0 ? (mA - mB) / pooledSD : 0
 
         const isImproving = m.key === 'Release Time' ? mA < mB : mA > mB
 
-        results.push({
+        rawResults.push({
             metric: m.key,
             periodA: { label: `Recent (${recent.length})`, mean: mA, stdDev: sA, n: recent.length },
             periodB: { label: `Earlier (${earlier.length})`, mean: mB, stdDev: sB, n: earlier.length },
             tStatistic: t,
-            pValue: p,
-            significant: p < 0.05,
+            pValue: primaryP,
+            adjustedPValue: primaryP, // will be corrected below
+            significant: false, // will be set below
             effectSize: Math.abs(d),
-            direction: p >= 0.05 ? 'unchanged' :
-                isImproving ? 'improved' : 'declined',
+            direction: 'unchanged', // will be set below
+            mannWhitneyP: mwP,
+            testUsed: useNonParametric ? 'mann-whitney' : 'welch-t',
+            _rawP: primaryP,
         })
     }
 
-    return results.sort((a, b) => a.pValue - b.pValue)
+    // Benjamini-Hochberg FDR correction across all 6 metrics
+    const rawPValues = rawResults.map(r => r._rawP)
+    const adjustedPValues = benjaminiHochberg(rawPValues)
+
+    const results: SignificanceTest[] = rawResults.map((r, i) => {
+        const adjP = adjustedPValues[i]
+        const sig = adjP < 0.05
+        const mA = r.periodA.mean, mB = r.periodB.mean
+        const isImproving = r.metric === 'Release Time' ? mA < mB : mA > mB
+
+        return {
+            metric: r.metric,
+            periodA: r.periodA,
+            periodB: r.periodB,
+            tStatistic: r.tStatistic,
+            pValue: r.pValue,
+            adjustedPValue: Math.round(adjP * 10000) / 10000,
+            significant: sig,
+            effectSize: r.effectSize,
+            direction: !sig ? 'unchanged' : isImproving ? 'improved' : 'declined',
+            mannWhitneyP: r.mannWhitneyP,
+            testUsed: r.testUsed,
+        }
+    })
+
+    return results.sort((a, b) => a.adjustedPValue - b.adjustedPValue)
 }
 
 /**
  * 2. Correlation Matrix — Which mechanics drive accuracy?
+ *    Now includes Spearman rank correlation (robust to non-linearity)
+ *    and Fisher z-transform 95% confidence intervals on Pearson r.
  */
 export function analyzeCorrelations(sessions: SessionHistoryItem[]): CorrelationResult[] {
     if (sessions.length < 5) return []
@@ -423,6 +656,8 @@ export function analyzeCorrelations(sessions: SessionHistoryItem[]): Correlation
 
     for (const m of mechanics) {
         const { r, p } = pearsonCorrelation(m.values, fg)
+        const { rho } = spearmanCorrelation(m.values, fg)
+        const ci = fisherZConfidence(r, sessions.length)
 
         let interpretation = ''
         const absR = Math.abs(r)
@@ -441,13 +676,12 @@ export function analyzeCorrelations(sessions: SessionHistoryItem[]): Correlation
             pValue: p,
             significant: p < 0.05,
             interpretation,
+            spearmanRho: Math.round(rho * 1000) / 1000,
+            fisherCI: ci,
         })
     }
 
-    // Also add cross-mechanic correlations for the top 2
-    const sorted = results.sort((a, b) => Math.abs(b.r) - Math.abs(a.r))
-
-    return sorted
+    return results.sort((a, b) => Math.abs(b.r) - Math.abs(a.r))
 }
 
 /**
@@ -848,11 +1082,285 @@ export function analyzeDistributions(sessions: StoredSession[]): ShotDistributio
 }
 
 // ══════════════════════════════════════════════════════════════
+// Basketball-Specific Analysis Functions
+// ══════════════════════════════════════════════════════════════
+
+/** 3-point zone identifiers */
+const THREE_POINT_ZONES = new Set([
+    'corner3Left', 'corner3Right', 'wing3Left', 'wing3Right',
+    'top3', 'threePointLeft', 'threePointRight', 'threePoint',
+    'corner3', 'wing3', 'top3Left', 'top3Right',
+])
+
+/**
+ * 9. Shot Selection Efficiency — Are you taking smart shots?
+ *    Calculates expected points per attempt by zone (the metric NBA teams optimize).
+ */
+export function analyzeShotSelection(sessions: StoredSession[]): ShotSelectionResult[] {
+    const allShots = sessions.flatMap(s => s.shots).filter(s => s.zone)
+    if (allShots.length < 10) return []
+
+    const zoneMap = new Map<string, { attempts: number; makes: number }>()
+
+    for (const shot of allShots) {
+        const zone = shot.zone!
+        const entry = zoneMap.get(zone) || { attempts: 0, makes: 0 }
+        entry.attempts++
+        if (shot.outcome === 'made') entry.makes++
+        zoneMap.set(zone, entry)
+    }
+
+    const totalShots = allShots.length
+    const results: ShotSelectionResult[] = []
+
+    for (const [zone, { attempts, makes }] of zoneMap) {
+        if (attempts < 3) continue
+
+        const fgPct = Math.round((makes / attempts) * 1000) / 10
+        const pointValue = THREE_POINT_ZONES.has(zone) ? 3 : 2
+        const expectedPoints = Math.round((fgPct / 100) * pointValue * 100) / 100
+        const volumeShare = Math.round((attempts / totalShots) * 1000) / 10
+
+        // Efficiency thresholds based on point value
+        // NBA league average: ~1.0 ePPA for 2pt, ~1.08 for 3pt
+        const efficiency: ShotSelectionResult['efficiency'] =
+            expectedPoints >= pointValue * 0.55 ? 'elite' :
+                expectedPoints >= pointValue * 0.45 ? 'good' :
+                    expectedPoints >= pointValue * 0.35 ? 'average' : 'poor'
+
+        results.push({ zone, attempts, makes, fgPct, pointValue, expectedPoints, volumeShare, efficiency })
+    }
+
+    return results.sort((a, b) => b.expectedPoints - a.expectedPoints)
+}
+
+/**
+ * 10. Clutch Performance — How do you shoot under late-session pressure?
+ *     Compares the last 20% of shots (fatigued / pressure) vs. first 80%.
+ */
+export function analyzeClutchPerformance(sessions: StoredSession[]): ClutchResult[] {
+    const results: ClutchResult[] = []
+
+    for (const session of sessions.slice(0, 10)) {
+        const shots = session.shots.filter(s => s.outcome === 'made' || s.outcome === 'missed')
+        if (shots.length < 10) continue
+
+        const splitIdx = Math.floor(shots.length * 0.8)
+        const early = shots.slice(0, splitIdx)
+        const late = shots.slice(splitIdx)
+
+        const earlyMade = early.filter(s => s.outcome === 'made').length
+        const lateMade = late.filter(s => s.outcome === 'made').length
+
+        const earlyFG = Math.round((earlyMade / early.length) * 1000) / 10
+        const lateFG = late.length > 0 ? Math.round((lateMade / late.length) * 1000) / 10 : 0
+        const clutchDelta = Math.round((lateFG - earlyFG) * 10) / 10
+
+        const earlyMechanics = {
+            elbow: mean(early.map(s => s.elbowAngle)),
+            release: mean(early.map(s => s.releaseTime)),
+            posture: mean(early.map(s => s.postureQuality)),
+        }
+        const lateMechanics = {
+            elbow: mean(late.map(s => s.elbowAngle)),
+            release: mean(late.map(s => s.releaseTime)),
+            posture: mean(late.map(s => s.postureQuality)),
+        }
+
+        const label: ClutchResult['label'] =
+            clutchDelta > 5 ? 'clutch' : clutchDelta < -5 ? 'choke' : 'neutral'
+
+        results.push({
+            sessionId: session.id,
+            earlyFG, lateFG, clutchDelta,
+            earlyMechanics, lateMechanics,
+            isClutch: clutchDelta > 5,
+            label,
+        })
+    }
+
+    return results
+}
+
+/**
+ * 11. Consistency Profile — How stable are your mechanics session-to-session?
+ *     Uses coefficient of variation (CV) and trend analysis.
+ */
+export function analyzeConsistencyProfile(sessions: SessionHistoryItem[]): ConsistencyProfile[] {
+    if (sessions.length < 4) return []
+
+    const chrono = [...sessions].reverse() // oldest first
+
+    const metrics: Array<{ key: string; extract: (s: SessionHistoryItem) => number }> = [
+        { key: 'FG%', extract: s => s.shootingPct },
+        { key: 'Elbow Angle', extract: s => s.avgElbowAngle },
+        { key: 'Release Time', extract: s => s.avgReleaseTime },
+        { key: 'Posture Quality', extract: s => s.avgPostureQuality },
+        { key: 'Consistency Score', extract: s => s.mechanicConsistency },
+    ]
+
+    const results: ConsistencyProfile[] = []
+
+    for (const m of metrics) {
+        const values = chrono.map(m.extract)
+        const mn = mean(values)
+        const sd = stdDev(values)
+        const cv = mn > 0 ? Math.round((sd / mn) * 1000) / 10 : 0
+
+        const stability: ConsistencyProfile['stability'] =
+            cv < 3 ? 'locked-in' :
+                cv < 8 ? 'consistent' :
+                    cv < 15 ? 'variable' : 'erratic'
+
+        let bestIdx = 0, worstIdx = 0
+        const isLowerBetter = m.key === 'Release Time'
+        for (let i = 1; i < values.length; i++) {
+            if (isLowerBetter) {
+                if (values[i] < values[bestIdx]) bestIdx = i
+                if (values[i] > values[worstIdx]) worstIdx = i
+            } else {
+                if (values[i] > values[bestIdx]) bestIdx = i
+                if (values[i] < values[worstIdx]) worstIdx = i
+            }
+        }
+
+        // Trend: compare smoothed last 3 vs first 3
+        const firstN = Math.min(3, Math.floor(values.length / 2))
+        const earlyMean = mean(values.slice(0, firstN))
+        const lateMean = mean(values.slice(-firstN))
+        const delta = isLowerBetter ? earlyMean - lateMean : lateMean - earlyMean
+        const trend: ConsistencyProfile['trend'] =
+            delta > sd * 0.5 ? 'improving' : delta < -sd * 0.5 ? 'declining' : 'stable'
+
+        results.push({
+            metric: m.key,
+            sessionMeans: values.map(v => Math.round(v * 100) / 100),
+            overallMean: Math.round(mn * 100) / 100,
+            overallCV: cv,
+            stability,
+            bestSession: { index: bestIdx, value: Math.round(values[bestIdx] * 100) / 100 },
+            worstSession: { index: worstIdx, value: Math.round(values[worstIdx] * 100) / 100 },
+            trend,
+        })
+    }
+
+    return results
+}
+
+/**
+ * 12. Mechanic Clustering — Group shots by biomechanical similarity.
+ *     Lightweight k-means (k=3) on [elbowAngle, releaseTime, postureQuality, releaseHeight].
+ *     Identifies which "form" produces the best outcomes.
+ */
+export function analyzeMechanicClusters(sessions: StoredSession[]): MechanicCluster[] {
+    const allShots = sessions.flatMap(s => s.shots)
+        .filter(s => s.elbowAngle > 0 && s.releaseTime > 0 && s.postureQuality > 0 && s.releaseHeightRatio > 0)
+    if (allShots.length < 15) return []
+
+    // Normalize features to [0, 1] for equal weighting
+    const features = allShots.map(s => [s.elbowAngle, s.releaseTime, s.postureQuality, s.releaseHeightRatio])
+    const mins = [0, 0, 0, 0].map((_, d) => Math.min(...features.map(f => f[d])))
+    const maxes = [0, 0, 0, 0].map((_, d) => Math.max(...features.map(f => f[d])))
+    const ranges = maxes.map((max, d) => max - mins[d] || 1) // avoid div by zero
+
+    const normalized = features.map(f => f.map((v, d) => (v - mins[d]) / ranges[d]))
+
+    // K-means with k=3 (good form, average form, poor form)
+    const K = Math.min(3, allShots.length)
+    // Initialize centroids: pick first, middle, last after sorting by outcome quality
+    const sortedIndices = allShots
+        .map((s, i) => ({ i, score: (s.outcome === 'made' ? 1 : 0) + s.postureQuality / 100 }))
+        .sort((a, b) => a.score - b.score)
+        .map(x => x.i)
+
+    let centroids = [
+        [...normalized[sortedIndices[0]]],
+        [...normalized[sortedIndices[Math.floor(sortedIndices.length / 2)]]],
+        [...normalized[sortedIndices[sortedIndices.length - 1]]],
+    ].slice(0, K)
+
+    const assignments = new Array(normalized.length).fill(0)
+
+    // Iterate
+    for (let iter = 0; iter < 20; iter++) {
+        let changed = false
+
+        // Assign each point to nearest centroid
+        for (let i = 0; i < normalized.length; i++) {
+            let bestK = 0, bestDist = Infinity
+            for (let c = 0; c < K; c++) {
+                let dist = 0
+                for (let d = 0; d < 4; d++) dist += (normalized[i][d] - centroids[c][d]) ** 2
+                if (dist < bestDist) { bestDist = dist; bestK = c }
+            }
+            if (assignments[i] !== bestK) { assignments[i] = bestK; changed = true }
+        }
+
+        if (!changed) break
+
+        // Recompute centroids
+        for (let c = 0; c < K; c++) {
+            const members = normalized.filter((_, i) => assignments[i] === c)
+            if (members.length === 0) continue
+            centroids[c] = [0, 0, 0, 0].map((_, d) => mean(members.map(m => m[d])))
+        }
+    }
+
+    // Build cluster results in original scale
+    const clusters: MechanicCluster[] = []
+    let bestFgPct = -1, bestClusterId = 0
+
+    for (let c = 0; c < K; c++) {
+        const memberIndices = assignments.map((a, i) => a === c ? i : -1).filter(i => i >= 0)
+        if (memberIndices.length === 0) continue
+
+        const memberShots = memberIndices.map(i => allShots[i])
+        const made = memberShots.filter(s => s.outcome === 'made').length
+        const fgPct = Math.round((made / memberShots.length) * 1000) / 10
+
+        const centroid = {
+            elbow: Math.round(mean(memberShots.map(s => s.elbowAngle)) * 10) / 10,
+            release: Math.round(mean(memberShots.map(s => s.releaseTime)) * 1000) / 1000,
+            posture: Math.round(mean(memberShots.map(s => s.postureQuality)) * 10) / 10,
+            height: Math.round(mean(memberShots.map(s => s.releaseHeightRatio)) * 1000) / 1000,
+        }
+
+        // Auto-label based on FG% relative position
+        let label = `Form ${c + 1}`
+
+        if (fgPct > bestFgPct) { bestFgPct = fgPct; bestClusterId = c }
+
+        clusters.push({
+            clusterId: c,
+            centroid,
+            shotCount: memberShots.length,
+            fgPct,
+            label,
+            isOptimal: false, // set below
+        })
+    }
+
+    // Mark optimal cluster and generate labels
+    for (const cl of clusters) {
+        cl.isOptimal = cl.clusterId === bestClusterId
+        if (cl.isOptimal) {
+            cl.label = `Best Form (${cl.fgPct}% FG)`
+        } else if (cl.fgPct < bestFgPct - 10) {
+            cl.label = `Weak Form (${cl.fgPct}% FG)`
+        } else {
+            cl.label = `Average Form (${cl.fgPct}% FG)`
+        }
+    }
+
+    return clusters.sort((a, b) => b.fgPct - a.fgPct)
+}
+
+// ══════════════════════════════════════════════════════════════
 // Main Entry — Generate Full Report
 // ══════════════════════════════════════════════════════════════
 
 /**
- * Generates a complete data-science analytics report from sessions.
+ * Generates a complete basketball data-science analytics report.
  * Consumes both session-level summaries and raw shot-level data.
  */
 export function generateAnalyticsReport(
@@ -873,5 +1381,9 @@ export function generateAnalyticsReport(
         projections: analyzeProjections(historyItems),
         causalImpacts: analyzeCausalImpact(historyItems),
         distributions: analyzeDistributions(fullSessions),
+        shotSelection: analyzeShotSelection(fullSessions),
+        clutch: analyzeClutchPerformance(fullSessions),
+        consistencyProfile: analyzeConsistencyProfile(historyItems),
+        mechanicClusters: analyzeMechanicClusters(fullSessions),
     }
 }
