@@ -10,12 +10,13 @@
  *   1. Hero Header (greeting + SVG avatar XP ring)
  *   2. Hero Stat Card (dominant FG% with progress bar)
  *   3. Mini Stat Cards (3-col)
- *   4. Daily Challenge (amber-tinted card)
- *   5. Weekly Quest (multi-step weekly quest card)
- *   6. Weekly Progression Chart
- *   6. Interactive Terrain + Court Hotzones
- *   7. Quick Actions (2 rows × 3)
- *   8. Recent Highlights (horizontal FlatList)
+ *   4. AI Coach (cross-session intelligence insights)
+ *   5. Daily Challenge (amber-tinted card)
+ *   6. Weekly Quest (multi-step weekly quest card)
+ *   7. Weekly Progression Chart
+ *   8. Interactive Terrain + Court Hotzones
+ *   9. Quick Actions (2 rows × 3)
+ *  10. Recent Highlights (horizontal FlatList)
  */
 
 import {
@@ -36,6 +37,7 @@ import { SkeletonHighlight, SkeletonStatCard } from '../../components/SkeletonLo
 import { XPLevelBar } from '../../components/gamification/XPBadge'
 import { DailyChallengeCard } from '../../components/gamification/DailyChallengeCard'
 import { WeeklyQuestCard } from '../../components/gamification/WeeklyQuestCard'
+import { AICoachCard } from '../../components/gamification/AICoachCard'
 import { StreakReminderBanner } from '../../components/gamification/StreakReminderBanner'
 import { PrimaryButton } from '../../components/PrimaryButton'
 import { StatCard } from '../../components/dashboard/StatCard'
@@ -419,6 +421,12 @@ export default function DashboardIndex() {
                         </View>
                     </Animated.View>
                 )}
+
+                {/* ═══ AI COACH ═══ */}
+                <View style={ds.sectionWrap}>
+                    <SectionHeader title="AI Coach" />
+                    <AICoachCard />
+                </View>
 
                 {/* ═══ DAILY CHALLENGE ═══ */}
                 <View style={ds.sectionWrap}>

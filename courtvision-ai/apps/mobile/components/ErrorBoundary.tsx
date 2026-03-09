@@ -51,13 +51,13 @@ const styles = StyleSheet.create({
         padding: space[6],
     },
     title: {
-        fontFamily: typography.heading,
+        fontFamily: typography.h2.fontFamily,
         fontSize: 24,
         color: colors.snow,
         marginBottom: space[3],
     },
     message: {
-        fontFamily: typography.body,
+        fontFamily: typography.body.fontFamily,
         fontSize: 14,
         color: colors.cloud,
         textAlign: 'center',
@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     buttonText: {
-        fontFamily: typography.heading,
+        fontFamily: typography.h2.fontFamily,
         fontSize: 16,
         color: colors.snow,
     },

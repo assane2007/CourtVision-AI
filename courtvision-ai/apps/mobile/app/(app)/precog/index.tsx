@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { ArrowRight } from 'lucide-react-native';
+import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../../lib/api';
 import { useStore, selectIsDemoMode } from '../../../lib/store';
@@ -108,7 +108,7 @@ export default function PrecogDashboard() {
                     onPress={() => router.push('/(app)/precog/session')}
                 >
                     <Text style={styles.startText}>START TODAY'S SESSION</Text>
-                    <ArrowRight color="#050505" size={24} />
+                    <Feather name="arrow-right" size={24} color="#050505" />
                 </Pressable>
                 <Text style={styles.limitText}>MAXIMUM 1 SESSION PER DAY</Text>
             </View>
