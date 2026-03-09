@@ -316,6 +316,8 @@ export default function DashboardIndex() {
     const hasSession = !!shootingFgPct || !!mentalScore
 
     const [shooting3ptPct, setShooting3ptPct] = useState(0)
+    const [shootingHeatData, setShootingHeatData] = useState<Array<{ id: string; x: number; y: number; accuracy: number; shots: number }>>([])
+
     useEffect(() => {
         const storage = SessionStorageService.getInstance()
         storage.getZoneStats(50).then(stats => {
@@ -327,6 +329,28 @@ export default function DashboardIndex() {
                 if (s) { totalAttempts += s.attempts; totalMade += s.made }
             }
             setShooting3ptPct(totalAttempts > 0 ? Math.round((totalMade / totalAttempts) * 100) : 0)
+
+            // Build heatmap data from real zone stats
+            const zonePositions: Record<string, { x: number; y: number }> = {
+                paint:          { x: 50, y: 80 },
+                left_corner_3:  { x: 8,  y: 85 },
+                right_corner_3: { x: 92, y: 85 },
+                left_wing:      { x: 15, y: 45 },
+                right_wing:     { x: 85, y: 45 },
+                top_key:        { x: 50, y: 20 },
+                left_elbow:     { x: 30, y: 55 },
+                right_elbow:    { x: 70, y: 55 },
+                mid_range:      { x: 50, y: 55 },
+                free_throw:     { x: 50, y: 65 },
+            }
+            const heat: Array<{ id: string; x: number; y: number; accuracy: number; shots: number }> = []
+            for (const [zone, pos] of Object.entries(zonePositions)) {
+                const s = stats[zone]
+                if (s && s.attempts > 0) {
+                    heat.push({ id: zone, x: pos.x, y: pos.y, accuracy: s.pct, shots: s.attempts })
+                }
+            }
+            setShootingHeatData(heat)
         }).catch(() => {})
     }, [])
 
@@ -334,13 +358,6 @@ export default function DashboardIndex() {
         label: d.day,
         value: d.hasSession ? Math.max(d.mental || 0, d.shooting || 0) : 0,
     }))
-
-    const shootingHeatData = [
-        { id: '1', x: 20, y: 30, accuracy: 72, shots: 15 },
-        { id: '2', x: 50, y: 15, accuracy: 85, shots: 12 },
-        { id: '3', x: 80, y: 35, accuracy: 45, shots: 10 },
-        { id: '4', x: 50, y: 50, accuracy: 55, shots: 20 },
-    ]
 
     const goUpload = useCallback(() => router.push('/(dashboard)/upload'), [router])
     const goAnalytics = useCallback(() => {

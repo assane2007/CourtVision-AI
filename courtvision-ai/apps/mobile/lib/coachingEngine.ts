@@ -19,6 +19,7 @@
  */
 
 import type { SessionRealtimeStats, DetectedShot } from './realtimeAIService'
+import { getNBABenchmarks, BUNDLED_PLAYERS, type NBABenchmarks, type NBAPlayerReference } from './nbaApi'
 
 // ==========================================
 // Types
@@ -75,32 +76,12 @@ export interface CoachingReport {
 // NBA Reference Data (2023-24 Season)
 // ==========================================
 
-const NBA_BENCHMARKS = {
-    eliteElbowAngle: { min: 88, max: 98, ideal: 93 },
-    eliteReleaseHeight: { min: 1.10, max: 1.20, ideal: 1.15 },
-    eliteReleaseTime: { min: 0.35, max: 0.50, ideal: 0.42 },
-    elitePostureQuality: 85,
-    eliteFollowThrough: 92,
-    eliteConsistency: 85,
-    eliteFgPct: 47.2,
-    // League averages
-    avgElbowAngle: 100,
-    avgReleaseHeight: 1.08,
-    avgReleaseTime: 0.52,
-    avgPostureQuality: 62,
-    avgFgPct: 37.6,
-}
+// NBA reference data loaded from lib/nbaApi.ts (single source of truth)
+const NBA_BENCHMARKS = getNBABenchmarks()
 
-const NBA_PLAYER_COMPARISONS = [
-    { name: 'Stephen Curry', elbowAngle: 91, releaseTime: 0.38, releaseHeight: 1.18, fgPct: 42.7, style: 'Quick release, deep range' },
-    { name: 'Klay Thompson', elbowAngle: 93, releaseTime: 0.42, releaseHeight: 1.15, fgPct: 41.3, style: 'Textbook form, catch-and-shoot' },
-    { name: 'Devin Booker', elbowAngle: 95, releaseTime: 0.44, releaseHeight: 1.14, fgPct: 49.2, style: 'Mid-range master, smooth release' },
-    { name: 'Luka Doncic', elbowAngle: 98, releaseTime: 0.48, releaseHeight: 1.12, fgPct: 48.7, style: 'Step-back specialist, high arc' },
-    { name: 'Kevin Durant', elbowAngle: 96, releaseTime: 0.45, releaseHeight: 1.22, fgPct: 52.3, style: 'Elevated release, unguardable' },
-    { name: 'Jayson Tatum', elbowAngle: 94, releaseTime: 0.43, releaseHeight: 1.16, fgPct: 47.1, style: 'All-around scorer' },
-    { name: 'Damian Lillard', elbowAngle: 92, releaseTime: 0.39, releaseHeight: 1.13, fgPct: 42.4, style: 'Logo range, ultra quick' },
-    { name: 'Kyrie Irving', elbowAngle: 93, releaseTime: 0.41, releaseHeight: 1.11, fgPct: 49.7, style: 'Artistic scorer, creative finisher' },
-]
+// NBA_PLAYER_COMPARISONS removed — use getNBAPlayers() from nbaApi.ts instead.
+// The coaching engine uses the same findNBAComparison logic but with API-sourced data.
+// We keep a local cache that gets updated when generateReport() is called.
 
 // ==========================================
 // Drill Library
@@ -226,6 +207,18 @@ const DRILL_LIBRARY: DrillRecommendation[] = [
 // ==========================================
 
 export class CoachingEngine {
+    private _nbaPlayers: NBAPlayerReference[] = []
+
+    /** Pre-load NBA reference data from API (call once at app start) */
+    async loadNBAData(): Promise<void> {
+        try {
+            const { getNBAPlayers } = require('./nbaApi')
+            this._nbaPlayers = await getNBAPlayers()
+        } catch {
+            // Bundled fallback already in nbaApi
+        }
+    }
+
     /**
      * Generates a complete coaching report for a session.
      */
@@ -489,10 +482,13 @@ export class CoachingEngine {
         similarity: number
         keyDifference: string
     } {
-        let closest = NBA_PLAYER_COMPARISONS[0]
+        // Use API-loaded data if available, else bundled fallback
+        const players = this._nbaPlayers.length > 0 ? this._nbaPlayers : BUNDLED_PLAYERS
+
+        let closest = players[0]
         let minDist = Infinity
 
-        for (const player of NBA_PLAYER_COMPARISONS) {
+        for (const player of players) {
             const dist =
                 Math.abs(stats.avgElbowAngle - player.elbowAngle) / 10 +
                 Math.abs(stats.avgReleaseTime - player.releaseTime) / 0.1 +

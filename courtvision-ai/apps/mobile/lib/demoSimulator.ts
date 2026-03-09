@@ -122,24 +122,24 @@ const PROFILES: Record<DemoPlayerProfile, PlayerMechanics> = {
 
 const FEEDBACK_TEMPLATES = {
     greatShot: [
-        { message: 'Mécanique parfaite ! 🔥', detail: 'Angle et release dans la zone NBA optimale' },
-        { message: 'Tir de sniper ! 🎯', detail: 'Release rapide et propre, continue comme ça' },
-        { message: 'Forme élite ! ⭐', detail: 'Ta mécanique rivalise avec les meilleurs' },
+        { message: 'Perfect mechanics! 🔥', detail: 'Angle and release in the optimal NBA zone' },
+        { message: 'Sniper shot! 🎯', detail: 'Quick clean release, keep it up' },
+        { message: 'Elite form! ⭐', detail: 'Your mechanics rival the best' },
     ],
     goodShot: [
-        { message: 'Bon tir ! 👍', detail: 'Mécanique solide, quelques ajustements possibles' },
-        { message: 'Bien joué !', detail: 'Base stable et release correct' },
-        { message: 'Consistant 💪', detail: 'Tu maintiens une bonne forme' },
+        { message: 'Good shot! 👍', detail: 'Solid mechanics, some adjustments possible' },
+        { message: 'Well done!', detail: 'Stable base and correct release' },
+        { message: 'Consistent 💪', detail: 'You\'re maintaining good form' },
     ],
     improvementNeeded: [
-        { message: 'Redresse le coude', detail: 'Vise 90-95° pour plus de consistance' },
-        { message: 'Release plus haut', detail: 'Le point de release est un peu bas' },
-        { message: 'Flexion des genoux', detail: 'Plus de puissance vient des jambes' },
+        { message: 'Straighten the elbow', detail: 'Aim for 90-95° for more consistency' },
+        { message: 'Release higher', detail: 'The release point is a bit low' },
+        { message: 'Bend your knees', detail: 'More power comes from the legs' },
     ],
     missAnalysis: [
-        { message: 'Court → plus d\'arc', detail: 'Le tir était court, augmente l\'angle de release' },
-        { message: 'Vérifie l\'alignement', detail: 'Coude légèrement décalé à gauche' },
-        { message: 'Follow-through !', detail: 'Le poignet ne reste pas assez longtemps' },
+        { message: 'Short → more arc', detail: 'The shot was short, increase the release angle' },
+        { message: 'Check alignment', detail: 'Elbow slightly off to the left' },
+        { message: 'Follow-through!', detail: 'Wrist doesn\'t stay up long enough' },
     ],
 }
 
@@ -340,8 +340,9 @@ export class DemoSimulator {
                 duration: feedback.duration,
                 position: feedback.position,
             } : null,
-            processingTimeMs: 28 + Math.random() * 15, // 28-43ms simulé
+            processingTimeMs: 28 + Math.random() * 15, // 28-43ms simulated
             currentFps: clamp(currentFps, 24, 34),
+            isDemo: true,
         }
     }
 
@@ -536,7 +537,7 @@ export class DemoSimulator {
         if (biomechanics && this.currentPhase !== 'idle') {
             bioIndicators.push({
                 position: { x: 0.28, y: 0.34 },
-                label: 'Coude',
+                label: 'Elbow',
                 value: `${biomechanics.elbowAngle}°`,
                 color: Math.abs(biomechanics.elbowAngle - 93) < 8
                     ? '#00C67A' : Math.abs(biomechanics.elbowAngle - 93) < 15

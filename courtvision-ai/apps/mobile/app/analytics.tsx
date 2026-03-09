@@ -28,6 +28,7 @@ import Animated, {
 import { T } from '../lib/theme'
 import { CourtZoneSelector, type CourtZoneData } from '../components/workout/CourtZoneSelector'
 import { SessionStorageService, type SessionHistoryItem, type StoredSession } from '../lib/sessionStorage'
+import { getNBAPlayers, findNBAComparisons, type NBAPlayerReference } from '../lib/nbaApi'
 import { useAdvancedAnalytics } from '../hooks/useAdvancedAnalytics'
 import type {
     SignificanceTest,
@@ -47,31 +48,7 @@ import type {
 const type = T.type
 const { width: SCREEN_W } = Dimensions.get('window')
 
-// ==========================================
-// NBA Reference Data (2023-24 Season)
-// ==========================================
-
-interface NBAPlayerComp {
-    name: string
-    team: string
-    similarity: number
-    elbowAngle: number
-    releaseHeight: number
-    releaseTime: number
-    fgPct: number
-    style: string
-}
-
-const NBA_COMPS: NBAPlayerComp[] = [
-    { name: 'Stephen Curry', team: 'GSW', similarity: 0, elbowAngle: 92, releaseHeight: 1.18, releaseTime: 0.38, fgPct: 45.0, style: 'Quick Release, High Arc' },
-    { name: 'Klay Thompson', team: 'GSW', similarity: 0, elbowAngle: 94, releaseHeight: 1.15, releaseTime: 0.40, fgPct: 43.2, style: 'Textbook Form, Catch & Shoot' },
-    { name: 'Devin Booker', team: 'PHX', similarity: 0, elbowAngle: 96, releaseHeight: 1.14, releaseTime: 0.42, fgPct: 49.2, style: 'Smooth Mid-Range, Pull-Up' },
-    { name: 'Jayson Tatum', team: 'BOS', similarity: 0, elbowAngle: 95, releaseHeight: 1.20, releaseTime: 0.43, fgPct: 47.1, style: 'High Release, Versatile' },
-    { name: 'Kevin Durant', team: 'PHX', similarity: 0, elbowAngle: 93, releaseHeight: 1.25, releaseTime: 0.44, fgPct: 52.3, style: 'Unblockable Release' },
-    { name: 'Damian Lillard', team: 'MIL', similarity: 0, elbowAngle: 91, releaseHeight: 1.12, releaseTime: 0.36, fgPct: 42.4, style: 'Deep Range, Quick Release' },
-    { name: 'Luka Dončić', team: 'DAL', similarity: 0, elbowAngle: 98, releaseHeight: 1.13, releaseTime: 0.46, fgPct: 48.7, style: 'Step-Back Master' },
-    { name: 'Shai Gilgeous-Alexander', team: 'OKC', similarity: 0, elbowAngle: 95, releaseHeight: 1.16, releaseTime: 0.44, fgPct: 53.5, style: 'Efficient Mid-Range' },
-]
+// NBA Reference Data now loaded from lib/nbaApi.ts (API + cache + fallback)
 
 // ==========================================
 // Shot DNA Profile
@@ -127,21 +104,7 @@ function computeShotDNA(sessions: SessionHistoryItem[]): ShotDNAProfile | null {
     }
 }
 
-function findNBAComps(
-    elbowAngle: number,
-    releaseHeight: number,
-    releaseTime: number,
-): NBAPlayerComp[] {
-    return NBA_COMPS.map(p => {
-        const elbowDiff = Math.abs(p.elbowAngle - elbowAngle) / 10
-        const heightDiff = Math.abs(p.releaseHeight - releaseHeight) / 0.1
-        const timeDiff = Math.abs(p.releaseTime - releaseTime) / 0.1
-        const similarity = Math.max(0, 100 - (elbowDiff * 25 + heightDiff * 35 + timeDiff * 40))
-        return { ...p, similarity: Math.round(similarity) }
-    })
-        .sort((a, b) => b.similarity - a.similarity)
-        .slice(0, 3)
-}
+// findNBAComparisons() is now imported from lib/nbaApi.ts
 
 // ==========================================
 // Sub-components
@@ -182,7 +145,7 @@ function TabSelector({
     )
 }
 
-function NBACompCard({ comp, rank, delay = 0 }: { comp: NBAPlayerComp; rank: number; delay?: number }) {
+function NBACompCard({ comp, rank, delay = 0 }: { comp: NBAPlayerReference & { similarity: number }; rank: number; delay?: number }) {
     const simColor = comp.similarity >= 75 ? T.color.semantic.success
         : comp.similarity >= 50 ? T.color.semantic.warning
             : T.color.text.tertiary
@@ -746,10 +709,13 @@ export default function AnalyticsScreen() {
 
     const shotDNA = useMemo(() => computeShotDNA(sessions), [sessions])
 
+    const [nbaPlayers, setNbaPlayers] = useState<NBAPlayerReference[]>([])
+    useEffect(() => { getNBAPlayers().then(setNbaPlayers).catch(() => {}) }, [])
+
     const nbaComps = useMemo(() => {
-        if (!shotDNA) return []
-        return findNBAComps(shotDNA.elbowAngle.value, shotDNA.releaseHeight.value, shotDNA.releaseTime.value)
-    }, [shotDNA])
+        if (!shotDNA || nbaPlayers.length === 0) return []
+        return findNBAComparisons(nbaPlayers, shotDNA.elbowAngle.value, shotDNA.releaseHeight.value, shotDNA.releaseTime.value)
+    }, [shotDNA, nbaPlayers])
 
     // Advanced analytics engine
     const { report, summary, loading: analyticsLoading } = useAdvancedAnalytics()
@@ -859,7 +825,7 @@ export default function AnalyticsScreen() {
                                 <View style={[styles.card, T.glass.thin]}>
                                     <View style={styles.cardHeader}>
                                         <Feather name="users" size={14} color={T.color.brand.primary} />
-                                        <Text style={styles.cardTitle}>NBA Comparisons 2023-24</Text>
+                                        <Text style={styles.cardTitle}>NBA Comparisons {nbaComps[0]?.season ?? ''}</Text>
                                     </View>
                                     <Text style={styles.compDescription}>
                                         Based on your elbow angle ({shotDNA?.elbowAngle.value}°),

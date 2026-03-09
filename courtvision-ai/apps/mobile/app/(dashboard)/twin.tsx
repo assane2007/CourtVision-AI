@@ -17,6 +17,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useDigitalTwin } from '../../hooks/useDigitalTwin'
 import { useViralShare } from '../../hooks/useViralShare'
+import { getSimulationPlayers } from '../../lib/nbaApi'
 import type { SharePlatform, TwinCardData } from '../../hooks/useViralShare'
 import { ShareButton, ShareModal } from '../../components/dashboard/ShareCard'
 import type {
@@ -45,11 +46,7 @@ const STYLE_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
     paint_beast: 'box', balanced: 'compass',
 }
 
-const NBA_PLAYERS_FOR_SIMULATION = [
-    'Stephen Curry', 'LeBron James', 'Kevin Durant', 'Giannis Antetokounmpo',
-    'Luka Dončić', 'Kawhi Leonard', 'Ja Morant', 'Klay Thompson',
-    'Kyrie Irving', 'Karl-Anthony Towns',
-]
+const NBA_PLAYERS_FOR_SIMULATION = getSimulationPlayers()
 
 const TAB_CONFIG: { key: TwinTab; label: string; icon: keyof typeof Feather.glyphMap }[] = [
     { key: 'overview',   label: 'DNA',     icon: 'hexagon' },
