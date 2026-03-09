@@ -16,6 +16,7 @@ import * as Sentry from '@sentry/react-native';
 import { T } from '../lib/theme';
 import { AnalyticsProvider } from '../lib/analytics';
 import { RevenueCatProvider } from '../lib/revenuecat';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 import {
     useFonts,
@@ -32,6 +33,14 @@ import {
 import {
     JetBrainsMono_400Regular
 } from '@expo-google-fonts/jetbrains-mono';
+
+import {
+    Sora_400Regular,
+    Sora_500Medium,
+    Sora_600SemiBold,
+    Sora_700Bold,
+    Sora_800ExtraBold,
+} from '@expo-google-fonts/sora';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -118,12 +127,13 @@ function AuthGuard() {
 }
 
 // Initialize Sentry for React Native (C-2)
-Sentry.init({
-    dsn: process.env.EXPO_PUBLIC_SENTRY_DSN || 'https://public@sentry.example.com/1',
-    // Set tracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
-    // We recommend adjusting this value in production.
-    tracesSampleRate: 1.0,
-});
+const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
+if (sentryDsn && !sentryDsn.includes('example.com')) {
+    Sentry.init({
+        dsn: sentryDsn,
+        tracesSampleRate: 1.0,
+    });
+}
 
 function RootLayout() {
     const [fontsLoaded, fontError] = useFonts({
@@ -132,7 +142,12 @@ function RootLayout() {
         DMSans_400Regular,
         DMSans_500Medium,
         DMSans_700Bold,
-        JetBrainsMono_400Regular
+        JetBrainsMono_400Regular,
+        Sora_400Regular,
+        Sora_500Medium,
+        Sora_600SemiBold,
+        Sora_700Bold,
+        Sora_800ExtraBold,
     });
 
     useEffect(() => {
@@ -146,6 +161,7 @@ function RootLayout() {
     }
 
     return (
+        <ErrorBoundary>
         <SafeAreaProvider>
             <AnalyticsProvider>
                 <RevenueCatProvider>
@@ -172,6 +188,7 @@ function RootLayout() {
                 </RevenueCatProvider>
             </AnalyticsProvider>
         </SafeAreaProvider>
+        </ErrorBoundary>
     );
 }
 

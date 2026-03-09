@@ -34,7 +34,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "CourtVision AI utilise la caméra pour analyser ton jeu en temps réel."
+          "cameraPermission": "CourtVision AI uses the camera to analyze your game in real time."
         }
       ],
       "expo-font",
@@ -43,7 +43,7 @@
         "expo-notifications",
         {
           "icon": "./assets/icon.png",
-          "color": "#1A73E8",
+          "color": "#FF5C00",
           "sounds": [],
           "iosDisplayInForeground": true
         }
@@ -51,12 +51,17 @@
     ],
     "notification": {
       "icon": "./assets/icon.png",
-      "color": "#1A73E8",
+      "color": "#FF5C00",
       "iosDisplayInForeground": true
     },
     "experiments": {
       "typedRoutes": true
     },
-    "newArchEnabled": false
+    "newArchEnabled": false,
+    "extra": {
+      "eas": {
+        "projectId": "your-eas-project-id"
+      }
+    }
   }
 }

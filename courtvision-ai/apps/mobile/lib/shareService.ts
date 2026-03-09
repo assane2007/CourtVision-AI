@@ -96,20 +96,20 @@ export class ShareService {
         const lines = [
             `${emoji} Session CourtVision AI — Grade ${grade} (${score}/100)`,
             '',
-            `🎯 ${stats.totalShots} tirs · ${stats.madeShots}/${stats.totalShots} (${stats.shootingPct}%)`,
+            `🎯 ${stats.totalShots} shots · ${stats.madeShots}/${stats.totalShots} (${stats.shootingPct}%)`,
             `⏱️ ${formatDuration(stats.sessionDurationSec)}`,
             '',
-            '📐 Biomécanique :',
-            `   • Coude : ${stats.avgElbowAngle.toFixed(1)}°`,
-            `   • Release Height : ${stats.avgReleaseHeight.toFixed(3)}x`,
-            `   • Release Time : ${(stats.avgReleaseTime * 1000).toFixed(0)}ms`,
-            `   • Posture : ${stats.avgPostureQuality.toFixed(0)}/100`,
-            `   • Consistance : ${stats.mechanicConsistency}/100`,
+            '📐 Biomechanics:',
+            `   • Elbow: ${stats.avgElbowAngle.toFixed(1)}°`,
+            `   • Release Height: ${stats.avgReleaseHeight.toFixed(3)}x`,
+            `   • Release Time: ${(stats.avgReleaseTime * 1000).toFixed(0)}ms`,
+            `   • Posture: ${stats.avgPostureQuality.toFixed(0)}/100`,
+            `   • Consistency: ${stats.mechanicConsistency}/100`,
             '',
         ]
 
         if (stats.trends && stats.trends.length > 0) {
-            lines.push('📈 Tendances :')
+            lines.push('📈 Trends:')
             stats.trends.forEach(t => {
                 const icon = t.direction === 'improving' ? '↗️' : t.direction === 'declining' ? '↘️' : '→'
                 lines.push(`   ${icon} ${t.description}`)
@@ -118,7 +118,7 @@ export class ShareService {
         }
 
         lines.push('🏀 #CourtVisionAI #Basketball #AI')
-        lines.push('📲 Télécharge CourtVision AI → courtvision.ai')
+        lines.push('📲 Download CourtVision AI → courtvision.ai')
 
         return lines.join('\n')
     }
@@ -135,20 +135,20 @@ export class ShareService {
         bestGrade: string
     }): Promise<void> {
         const message = [
-            '🏀 Mon profil CourtVision AI',
+            '🏀 My CourtVision AI Profile',
             '',
-            `📊 ${data.totalSessions} sessions · ${data.totalShots} tirs`,
-            `🎯 FG% global : ${data.overallFgPct}%`,
-            `💯 Score moyen : ${data.avgScore}/100`,
-            `🔥 Streak : ${data.streak} jours`,
-            `🏆 Meilleur grade : ${data.bestGrade}`,
+            `📊 ${data.totalSessions} sessions · ${data.totalShots} shots`,
+            `🎯 Overall FG%: ${data.overallFgPct}%`,
+            `💯 Avg Score: ${data.avgScore}/100`,
+            `🔥 Streak: ${data.streak} days`,
+            `🏆 Best Grade: ${data.bestGrade}`,
             '',
             '📲 #CourtVisionAI #Basketball',
         ].join('\n')
 
         try {
             await Share.share({
-                title: 'Mon profil CourtVision AI',
+                title: 'My CourtVision AI Profile',
                 message,
             })
         } catch (err) {

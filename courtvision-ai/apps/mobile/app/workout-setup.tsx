@@ -1,14 +1,14 @@
 /**
  * CourtVision AI — Workout Setup Screen
- * Guide de placement caméra avant l'entraînement.
+ * Camera placement guide before training.
  *
- * Étapes :
- * 1. Positionnement : placer le téléphone en mode paysage/portrait
- * 2. Calibration : vérifier que le terrain est visible
- * 3. Profil : sélection rapide de la zone de tir
- * 4. Démarrage : transition vers workout.tsx
+ * Steps:
+ * 1. Positioning: place phone in landscape/portrait
+ * 2. Calibration: check that the court is visible
+ * 3. Profile: quick shooting zone selection
+ * 4. Start: transition to workout.tsx
  *
- * Design V4 : glass cards, amber accent, animations fluides.
+ * Design V4: glass cards, amber accent, smooth animations.
  */
 
 import React, { useState, useCallback } from 'react'
@@ -47,49 +47,49 @@ interface SetupStep {
 const SETUP_STEPS: SetupStep[] = [
     {
         key: 'position',
-        title: 'Placement du téléphone',
-        description: 'Place ton téléphone pour capturer ta mécanique de tir complète.',
+        title: 'Phone Placement',
+        description: 'Position your phone to capture your complete shooting form.',
         icon: 'smartphone',
         tips: [
-            'À 3-4 mètres de toi, à hauteur de taille',
-            'Angle légèrement vers le haut (15-30°)',
-            'Surface stable (trépied recommandé)',
-            'Vue latérale préférée (profil droit ou gauche)',
+            '3-4 meters away from you, at waist height',
+            'Slight upward angle (15-30°)',
+            'Stable surface (tripod recommended)',
+            'Side view preferred (right or left profile)',
         ],
     },
     {
         key: 'lighting',
-        title: 'Éclairage',
-        description: 'Un bon éclairage améliore considérablement la précision de l\'IA.',
+        title: 'Lighting',
+        description: 'Good lighting significantly improves AI accuracy.',
         icon: 'sun',
         tips: [
-            'Lumière naturelle idéale (extérieur ou gym bien éclairée)',
-            'Évite le contre-jour (ne pointe pas vers le soleil)',
-            'Les gymnasiums avec éclairage LED fonctionnent très bien',
-            'Évite les ombres fortes au sol',
+            'Natural light is ideal (outdoors or well-lit gym)',
+            'Avoid backlighting (don\'t point toward the sun)',
+            'Gyms with LED lighting work great',
+            'Avoid strong shadows on the ground',
         ],
     },
     {
         key: 'clothing',
-        title: 'Tenue & visibilité',
-        description: 'L\'IA détecte ton corps plus facilement avec le bon contraste.',
+        title: 'Clothing & Visibility',
+        description: 'AI detects your body more easily with proper contrast.',
         icon: 'user',
         tips: [
-            'Porte des vêtements ajustés (pas trop larges)',
-            'Bon contraste avec l\'arrière-plan',
-            'Bras et jambes visibles (pas de veste longue)',
-            'Chaussures de basket standard',
+            'Wear fitted clothing (not too loose)',
+            'Good contrast with the background',
+            'Arms and legs visible (no long jacket)',
+            'Standard basketball shoes',
         ],
     },
     {
         key: 'mode',
-        title: 'Mode d\'entraînement',
-        description: 'Choisis comment tu veux t\'entraîner aujourd\'hui.',
+        title: 'Training Mode',
+        description: 'Choose how you want to train today.',
         icon: 'zap',
         tips: [
-            '🤖 Mode IA Réelle — Caméra active, analyse en temps réel',
-            '🎮 Mode Démo — Simule des tirs pour découvrir l\'app',
-            '✏️ Mode Manuel — Tu enregistres make/miss manuellement',
+            '🤖 Real AI Mode — Active camera, real-time analysis',
+            '🎮 Demo Mode — Simulates shots to explore the app',
+            '✏️ Manual Mode — Record make/miss manually',
         ],
     },
 ]
@@ -244,24 +244,24 @@ export default function WorkoutSetupScreen() {
                         <View style={styles.modeList}>
                             <ModeOption
                                 icon="camera"
-                                title="Mode IA Réelle"
-                                description="La caméra analyse chaque tir en temps réel"
+                                title="Real AI Mode"
+                                description="Camera analyzes every shot in real time"
                                 selected={selectedMode === 'camera'}
                                 onPress={() => setSelectedMode('camera')}
                                 delay={100}
                             />
                             <ModeOption
                                 icon="zap"
-                                title="Mode Démo"
-                                description="Simule des tirs avec des données NBA réalistes"
+                                title="Demo Mode"
+                                description="Simulates shots with realistic NBA data"
                                 selected={selectedMode === 'demo'}
                                 onPress={() => setSelectedMode('demo')}
                                 delay={200}
                             />
                             <ModeOption
                                 icon="edit-3"
-                                title="Mode Manuel"
-                                description="Enregistre tes tirs manuellement (make/miss)"
+                                title="Manual Mode"
+                                description="Record your shots manually (make/miss)"
                                 selected={selectedMode === 'manual'}
                                 onPress={() => setSelectedMode('manual')}
                                 delay={300}
@@ -281,7 +281,7 @@ export default function WorkoutSetupScreen() {
             <View style={styles.footer}>
                 <TouchableOpacity style={styles.nextBtn} onPress={handleNext} activeOpacity={0.8}>
                     <Text style={styles.nextBtnText}>
-                        {step === SETUP_STEPS.length - 1 ? 'Démarrer l\'entraînement' : 'Suivant'}
+                        {step === SETUP_STEPS.length - 1 ? 'Start Training' : 'Next'}
                     </Text>
                     <Feather
                         name={step === SETUP_STEPS.length - 1 ? 'play' : 'arrow-right'}

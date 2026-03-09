@@ -68,6 +68,11 @@ type AnalysisSummary = {
     mental_score: number | null
 }
 
+/** Unwrap API responses that may be `{ data: T }` or `T` directly */
+function unwrapResponse<T>(data: { data?: T } & Record<string, unknown>): T {
+    return (data.data !== undefined ? data.data : data) as T
+}
+
 const SAMPLE_VIDEO_URL = process.env.EXPO_PUBLIC_SAMPLE_VIDEO_URL
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
 const MAX_VIDEO_MB = 500
@@ -220,8 +225,8 @@ export default function UploadAnalyze() {
 
         statusIntervalRef.current = setInterval(async () => {
             try {
-                const res = await api.get<{ data: { status: string } }>(`/api/sessions/${sessionId}`)
-                const status = (res.data as any).data?.status ?? res.data.status
+                const res = await api.get<{ data?: { status: string }; status?: string }>(`/api/sessions/${sessionId}`)
+                const status = unwrapResponse<{ status: string }>(res.data).status
 
                 if (status === 'complete') {
                     if (statusIntervalRef.current) clearInterval(statusIntervalRef.current)
@@ -229,8 +234,8 @@ export default function UploadAnalyze() {
                     progressBar.value = withTiming(100, { duration: 400 })
 
                     try {
-                        const analysisRes = await api.get<{ data: AnalysisSummary }>(`/api/analyses/${sessionId}`)
-                        const analysis = ((analysisRes.data as any).data ?? analysisRes.data) as AnalysisSummary
+                        const analysisRes = await api.get<{ data?: AnalysisSummary } & Record<string, unknown>>(`/api/analyses/${sessionId}`)
+                        const analysis = unwrapResponse<AnalysisSummary>(analysisRes.data)
                         const attempts = analysis.shot_attempts ?? 0
                         const made = analysis.shot_made ?? 0
                         const fgPct = attempts > 0 ? (made / attempts) * 100 : 0
@@ -423,11 +428,11 @@ export default function UploadAnalyze() {
 
             // Fallback: use URL-based upload if file upload is not supported
             if (videoUrl) {
-                const res = await api.post<{ data: { id: string } }>('/api/sessions/upload', {
+                const res = await api.post<{ data?: { id: string }; id?: string } & Record<string, unknown>>('/api/sessions/upload', {
                     type: 'training',
                     video_url: videoUrl,
                 })
-                const sessionId = ((res.data as any).data?.id ?? (res.data as any).id) as string
+                const sessionId = unwrapResponse<{ id: string }>(res.data).id
                 setCurrentSessionId(sessionId)
                 startPollingSession(sessionId)
             } else {

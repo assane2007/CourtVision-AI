@@ -8,7 +8,7 @@ import { View, Text, TouchableOpacity } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { T } from '../../lib/theme'
 
-const type = (T as any).type
+const type = T.type
 
 interface WeeklyDotsProps {
     data: { day: string; hasSession: boolean; isToday: boolean; score?: number }[]
@@ -20,7 +20,7 @@ function WeeklyDotsInner({ data, onDayPress }: WeeklyDotsProps) {
         <Animated.View
             entering={FadeInDown.delay(160).duration(400)}
             style={{
-                ...(T as any).glass?.regular ?? T.glass.base,
+                ...T.glass.base,
                 borderRadius: T.radius.lg,
                 padding: T.spacing[4],
             }}

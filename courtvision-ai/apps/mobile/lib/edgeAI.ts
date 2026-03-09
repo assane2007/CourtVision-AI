@@ -3,10 +3,19 @@ import { create } from 'zustand'
 /**
  * CourtVision Edge AI — Live Tracking State
  *
- * On-device inference state machine for ball & rim detection.
+ * STATUS: ON-DEVICE MODELS NOT YET AVAILABLE.
+ * All shot detection currently requires server-side processing via
+ * LiveCoachService.sendFrame() → cv-engine (Python/YOLO).
+ *
  * Architecture:
  * - If TFLite models are loaded → run real on-device inference via worklet
  * - Otherwise → return null (no fake data) so callers know detection is unavailable
+ *   and must fall back to the server pipeline.
+ *
+ * To enable edge AI:
+ * 1. Bundle ball_detector.tflite + rim_detector.tflite in assets/
+ * 2. Install react-native-fast-tflite
+ * 3. Implement initializeEdgeModels() and processFrameEdge() with real model calls
  */
 
 interface DetectionResult {

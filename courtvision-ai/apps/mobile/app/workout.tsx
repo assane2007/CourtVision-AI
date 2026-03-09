@@ -113,12 +113,12 @@ export default function WorkoutScreen() {
     const handleEnd = useCallback(() => {
         impact.light()
         Alert.alert(
-            'Terminer la session ?',
-            'Tu verras un résumé complet de ta performance.',
+            'End Session?',
+            'You\'ll see a full summary of your performance.',
             [
-                { text: 'Annuler', style: 'cancel' },
+                { text: 'Cancel', style: 'cancel' },
                 {
-                    text: 'Terminer',
+                    text: 'End',
                     style: 'destructive',
                     onPress: () => ai.endSession(),
                 },
@@ -138,10 +138,10 @@ export default function WorkoutScreen() {
             })
             setSaveSuccess(true)
             impact.success()
-            Alert.alert('✅ Sauvegardé', 'Ta session a été enregistrée et sera synchronisée.')
+            Alert.alert('✅ Saved', 'Your session has been saved and will be synced.')
         } catch (err) {
             impact.error()
-            Alert.alert('Erreur', 'Impossible de sauvegarder la session.')
+            Alert.alert('Error', 'Unable to save the session.')
         } finally {
             setIsSaving(false)
         }
@@ -178,12 +178,12 @@ export default function WorkoutScreen() {
     const handleBack = useCallback(() => {
         if (ai.phase === 'active') {
             Alert.alert(
-                'Session en cours',
-                'Tu veux vraiment quitter ? La session sera terminée.',
+                'Session in Progress',
+                'Do you really want to leave? The session will end.',
                 [
-                    { text: 'Continuer', style: 'cancel' },
+                    { text: 'Continue', style: 'cancel' },
                     {
-                        text: 'Quitter',
+                        text: 'Leave',
                         style: 'destructive',
                         onPress: () => {
                             ai.endSession()
@@ -212,13 +212,13 @@ export default function WorkoutScreen() {
                             onPress={() => setShowCoaching(false)}
                         >
                             <Feather name="arrow-left" size={18} color={T.color.text.secondary} />
-                            <Text style={styles.backToSummaryText}>Retour au résumé</Text>
+                            <Text style={styles.backToSummaryText}>Back to summary</Text>
                         </TouchableOpacity>
 
                         {/* Coaching Grade */}
                         <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.coachingGradeCard}>
                             <Text style={styles.coachingGradeValue}>{coachingReport.grade}</Text>
-                            <Text style={styles.coachingGradeLabel}>Note de session</Text>
+                            <Text style={styles.coachingGradeLabel}>Session Grade</Text>
                             <Text style={styles.coachingHeadline}>{coachingReport.headline}</Text>
                         </Animated.View>
 
@@ -226,11 +226,11 @@ export default function WorkoutScreen() {
                         <Animated.View entering={FadeInDown.delay(200).duration(400)} style={styles.nbaCompCard}>
                             <View style={styles.nbaCompHeader}>
                                 <Feather name="star" size={16} color={T.color.signature.primary} />
-                                <Text style={styles.nbaCompTitle}>Comparaison NBA</Text>
+                                <Text style={styles.nbaCompTitle}>NBA Comparison</Text>
                             </View>
                             <Text style={styles.nbaCompPlayer}>{coachingReport.nbaComparison.closestPlayer}</Text>
                             <Text style={styles.nbaCompSimilarity}>
-                                {Math.round(coachingReport.nbaComparison.similarity * 100)}% de similarité
+                                {Math.round(coachingReport.nbaComparison.similarity * 100)}% similarity
                             </Text>
                             <Text style={styles.nbaCompDiff}>{coachingReport.nbaComparison.keyDifference}</Text>
                         </Animated.View>
@@ -256,7 +256,7 @@ export default function WorkoutScreen() {
                         ))}
 
                         {/* Drills */}
-                        <Text style={styles.coachingSectionTitle}>🎯 Exercices recommandés</Text>
+                        <Text style={styles.coachingSectionTitle}>🎯 Recommended Drills</Text>
                         {coachingReport.drills.slice(0, 3).map((drill, i) => (
                             <Animated.View
                                 key={drill.id}
@@ -285,7 +285,7 @@ export default function WorkoutScreen() {
                         <Animated.View entering={FadeInDown.delay(900).duration(400)} style={styles.nextFocusCard}>
                             <Feather name="target" size={18} color={T.color.signature.primary} />
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.nextFocusLabel}>Focus prochaine session</Text>
+                                <Text style={styles.nextFocusLabel}>Focus for Next Session</Text>
                                 <Text style={styles.nextFocusText}>{coachingReport.nextSessionFocus}</Text>
                             </View>
                         </Animated.View>
@@ -311,13 +311,13 @@ export default function WorkoutScreen() {
                                         activeOpacity={0.7}
                                     >
                                         <Feather name="book-open" size={16} color={T.color.signature.primary} />
-                                        <Text style={styles.coachingBtnText}>Rapport de coaching</Text>
+                                        <Text style={styles.coachingBtnText}>Coaching Report</Text>
                                     </TouchableOpacity>
                                 ) : null}
                                 {saveSuccess ? (
                                     <View style={styles.savedBadge}>
                                         <Feather name="check" size={14} color={T.color.semantic.success} />
-                                        <Text style={styles.savedText}>Sauvegardé</Text>
+                                        <Text style={styles.savedText}>Saved</Text>
                                     </View>
                                 ) : null}
                             </View>
@@ -352,7 +352,7 @@ export default function WorkoutScreen() {
                 {ai.phase === 'active' ? (
                     <TouchableOpacity onPress={handleEnd} style={styles.endBtn}>
                         <Feather name="square" size={16} color={T.color.semantic.error} />
-                        <Text style={styles.endBtnText}>Fin</Text>
+                        <Text style={styles.endBtnText}>End</Text>
                     </TouchableOpacity>
                 ) : (
                     <View style={{ width: 60 }} />
@@ -383,10 +383,10 @@ export default function WorkoutScreen() {
                 {/* Start button (quand pas encore actif) */}
                 {ai.phase === 'ready' ? (
                     <Animated.View entering={FadeInDown.duration(400)} style={styles.startContainer}>
-                        <Text style={styles.readyTitle}>Prêt à t'entraîner ?</Text>
+                        <Text style={styles.readyTitle}>Ready to train?</Text>
                         <Text style={styles.readyText}>
-                            Place ton téléphone pour capturer ta mécanique de tir.
-                            L'IA analyse chaque tir en temps réel.
+                            Position your phone to capture your shooting form.
+                            AI analyzes every shot in real time.
                         </Text>
 
                         {/* Demo mode toggle */}
@@ -408,13 +408,13 @@ export default function WorkoutScreen() {
                                 styles.demoToggleText,
                                 demoMode && { color: T.color.signature.primary }
                             ]}>
-                                {demoMode ? 'Mode Démo (IA simulée)' : 'Mode Caméra (IA réelle)'}
+                                {demoMode ? 'Demo Mode (simulated AI)' : 'Camera Mode (real AI)'}
                             </Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity style={styles.startBtn} onPress={handleStart} activeOpacity={0.8}>
                             <Feather name="play" size={22} color="#FFF" />
-                            <Text style={styles.startBtnText}>Démarrer la session</Text>
+                            <Text style={styles.startBtnText}>Start Session</Text>
                         </TouchableOpacity>
                     </Animated.View>
                 ) : null}
@@ -422,7 +422,7 @@ export default function WorkoutScreen() {
                 {/* Loading state */}
                 {ai.phase === 'uninitialized' ? (
                     <Animated.View entering={FadeIn.duration(300)} style={styles.loadingContainer}>
-                        <Text style={styles.loadingText}>Initialisation de l'IA...</Text>
+                        <Text style={styles.loadingText}>Initializing AI...</Text>
                     </Animated.View>
                 ) : null}
 
@@ -480,10 +480,10 @@ export default function WorkoutScreen() {
                             <Animated.View entering={FadeIn.duration(300)} style={styles.waitingBio}>
                                 <Feather name="target" size={24} color={T.color.text.tertiary} />
                                 <Text style={styles.waitingText}>
-                                    En attente du premier tir...
+                                    Waiting for first shot...
                                 </Text>
                                 <Text style={styles.waitingSubtext}>
-                                    Tire un panier et l'IA analysera ta mécanique
+                                    Take a shot and AI will analyze your form
                                 </Text>
                             </Animated.View>
                         )}

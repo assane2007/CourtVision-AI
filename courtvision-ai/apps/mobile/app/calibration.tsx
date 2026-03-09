@@ -61,10 +61,10 @@ interface CheckItem {
 // ==========================================
 
 const STEPS: { key: CalibrationStep; title: string; subtitle: string; icon: string }[] = [
-    { key: 'camera', title: 'Caméra & Détection', subtitle: 'Test de la détection corporelle', icon: 'camera' },
-    { key: 'distance', title: 'Distance & Position', subtitle: 'Vérification du placement', icon: 'maximize-2' },
-    { key: 'lighting', title: 'Luminosité', subtitle: 'Qualité de l\'image', icon: 'sun' },
-    { key: 'complete', title: 'Calibration terminée', subtitle: 'Tout est prêt !', icon: 'check-circle' },
+    { key: 'camera', title: 'Camera & Detection', subtitle: 'Body detection test', icon: 'camera' },
+    { key: 'distance', title: 'Distance & Position', subtitle: 'Placement verification', icon: 'maximize-2' },
+    { key: 'lighting', title: 'Lighting', subtitle: 'Image quality', icon: 'sun' },
+    { key: 'complete', title: 'Calibration Complete', subtitle: 'All set!', icon: 'check-circle' },
 ]
 
 // ==========================================
@@ -73,21 +73,21 @@ const STEPS: { key: CalibrationStep; title: string; subtitle: string; icon: stri
 
 const CHECK_DEFINITIONS: Record<CalibrationStep, CheckItem[]> = {
     camera: [
-        { id: 'camera_access', label: 'Accès caméra', status: 'pending' },
-        { id: 'body_detection', label: 'Détection corporelle', status: 'pending' },
-        { id: 'pose_landmarks', label: 'Points de référence (33 joints)', status: 'pending' },
-        { id: 'tracking_fps', label: 'Fréquence de suivi', status: 'pending' },
+        { id: 'camera_access', label: 'Camera access', status: 'pending' },
+        { id: 'body_detection', label: 'Body detection', status: 'pending' },
+        { id: 'pose_landmarks', label: 'Reference points (33 joints)', status: 'pending' },
+        { id: 'tracking_fps', label: 'Tracking frequency', status: 'pending' },
     ],
     distance: [
-        { id: 'body_visible', label: 'Corps entier visible', status: 'pending' },
-        { id: 'distance_range', label: 'Distance 3-5m estimée', status: 'pending' },
-        { id: 'angle_check', label: 'Angle optimal', status: 'pending' },
-        { id: 'stability', label: 'Stabilité de l\'image', status: 'pending' },
+        { id: 'body_visible', label: 'Full body visible', status: 'pending' },
+        { id: 'distance_range', label: 'Estimated distance 3-5m', status: 'pending' },
+        { id: 'angle_check', label: 'Optimal angle', status: 'pending' },
+        { id: 'stability', label: 'Image stability', status: 'pending' },
     ],
     lighting: [
-        { id: 'brightness', label: 'Luminosité suffisante', status: 'pending' },
-        { id: 'contrast', label: 'Contraste acceptable', status: 'pending' },
-        { id: 'backlight', label: 'Pas de contre-jour', status: 'pending' },
+        { id: 'brightness', label: 'Sufficient brightness', status: 'pending' },
+        { id: 'contrast', label: 'Acceptable contrast', status: 'pending' },
+        { id: 'backlight', label: 'No backlight', status: 'pending' },
     ],
     complete: [],
 }
@@ -154,11 +154,11 @@ async function runCalibrationChecks(
         // Real local checks where possible
         if (stepChecks[i].id === 'camera_access') {
             stepChecks[i].status = 'pass'
-            stepChecks[i].detail = 'Caméra arrière activée'
+            stepChecks[i].detail = 'Rear camera activated'
         } else {
             // AI-dependent checks: pass with note that full validation requires server
             stepChecks[i].status = 'pass'
-            stepChecks[i].detail = 'Vérifié localement'
+            stepChecks[i].detail = 'Verified locally'
         }
 
         onUpdate([...stepChecks])
@@ -251,9 +251,9 @@ function CalibrationScore({ score }: { score: number }) {
                 <Text style={styles.scoreUnit}>/ 100</Text>
             </View>
             <Text style={styles.scoreLabel}>
-                {score >= 90 ? 'Configuration Optimale' :
-                 score >= 70 ? 'Bonne Configuration' :
-                 'Configuration Acceptable'}
+                {score >= 90 ? 'Optimal Setup' :
+                 score >= 70 ? 'Good Setup' :
+                 'Acceptable Setup'}
             </Text>
         </View>
     )
@@ -344,15 +344,15 @@ export default function CalibrationScreen() {
                     <View style={styles.permissionIcon}>
                         <Feather name="camera" size={40} color={T.color.signature.primary} />
                     </View>
-                    <Text style={styles.permissionTitle}>Accès caméra requis</Text>
+                    <Text style={styles.permissionTitle}>Camera access required</Text>
                     <Text style={styles.permissionText}>
-                        La calibration nécessite l'accès à ta caméra pour tester la détection IA.
+                        Calibration requires camera access to test AI detection.
                     </Text>
                     <TouchableOpacity style={styles.permissionBtn} onPress={requestPermission}>
-                        <Text style={styles.permissionBtnText}>Autoriser la caméra</Text>
+                        <Text style={styles.permissionBtnText}>Allow Camera</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.skipPermissionBtn} onPress={handleSkip}>
-                        <Text style={styles.skipPermissionText}>Passer pour le moment</Text>
+                        <Text style={styles.skipPermissionText}>Skip for now</Text>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
@@ -370,13 +370,13 @@ export default function CalibrationScreen() {
                     <Feather name="arrow-left" size={22} color={T.color.text.primary} />
                 </TouchableOpacity>
                 <View style={styles.headerCenter}>
-                    <Text style={styles.headerTitle}>Calibration IA</Text>
+                    <Text style={styles.headerTitle}>AI Calibration</Text>
                     <Text style={styles.headerSub}>
-                        Étape {currentStepIndex + 1}/{STEPS.length}
+                        Step {currentStepIndex + 1}/{STEPS.length}
                     </Text>
                 </View>
                 <TouchableOpacity onPress={handleSkip} style={styles.skipBtn}>
-                    <Text style={styles.skipText}>Passer</Text>
+                    <Text style={styles.skipText}>Skip</Text>
                 </TouchableOpacity>
             </View>
 
@@ -423,8 +423,8 @@ export default function CalibrationScreen() {
                     <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.completeMessage}>
                         <Feather name="check-circle" size={24} color={T.color.semantic.success} />
                         <Text style={styles.completeText}>
-                            Ta configuration est optimale pour l'analyse IA en temps réel.
-                            Chaque tir sera analysé avec précision.
+                            Your setup is optimal for real-time AI analysis.
+                            Every shot will be analyzed with precision.
                         </Text>
                     </Animated.View>
                 ) : (
@@ -443,7 +443,7 @@ export default function CalibrationScreen() {
                     disabled={!stepComplete}
                 >
                     <Text style={styles.nextBtnText}>
-                        {currentStep.key === 'complete' ? 'Commencer' : 'Suivant'}
+                        {currentStep.key === 'complete' ? 'Start' : 'Next'}
                     </Text>
                     <Feather
                         name={currentStep.key === 'complete' ? 'play' : 'arrow-right'}

@@ -19,7 +19,7 @@ import { PrimaryButton } from '../../components/PrimaryButton'
 import { T, typePresets } from '../../lib/theme'
 
 const type = typePresets
-const glass = (T as any).glass
+const glass = T.glass
 
 // ─── Constants ──────────────────────────────────────────────
 

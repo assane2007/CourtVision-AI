@@ -183,13 +183,13 @@ const DEMO_ACTIVITY: ActivityEvent[] = [
 // ─── Default empty state (shown while loading) ────────────────
 
 const EMPTY_WEEKLY: WeekDay[] = [
-    { day: 'L', mental: 0, shooting: 0, hasSession: false },
     { day: 'M', mental: 0, shooting: 0, hasSession: false },
-    { day: 'M', mental: 0, shooting: 0, hasSession: false },
-    { day: 'J', mental: 0, shooting: 0, hasSession: false },
-    { day: 'V', mental: 0, shooting: 0, hasSession: false },
+    { day: 'T', mental: 0, shooting: 0, hasSession: false },
+    { day: 'W', mental: 0, shooting: 0, hasSession: false },
+    { day: 'T', mental: 0, shooting: 0, hasSession: false },
+    { day: 'F', mental: 0, shooting: 0, hasSession: false },
     { day: 'S', mental: 0, shooting: 0, hasSession: false },
-    { day: 'D', mental: 0, shooting: 0, hasSession: false },
+    { day: 'S', mental: 0, shooting: 0, hasSession: false },
 ]
 
 // ─── Demo user profile ───────────────────────────────────────
@@ -430,13 +430,13 @@ export const useStore = create<CourtVisionState>()(
                     if (isDemoMode) {
                         set({
                             weeklyData: [
-                                { day: 'L', mental: 72, shooting: 58, hasSession: true },
-                                { day: 'M', mental: 80, shooting: 64, hasSession: true },
-                                { day: 'M', mental: 0, shooting: 0, hasSession: false },
-                                { day: 'J', mental: 85, shooting: 70, hasSession: true },
-                                { day: 'V', mental: 78, shooting: 62, hasSession: true },
+                                { day: 'M', mental: 72, shooting: 58, hasSession: true },
+                                { day: 'T', mental: 80, shooting: 64, hasSession: true },
+                                { day: 'W', mental: 0, shooting: 0, hasSession: false },
+                                { day: 'T', mental: 85, shooting: 70, hasSession: true },
+                                { day: 'F', mental: 78, shooting: 62, hasSession: true },
                                 { day: 'S', mental: 0, shooting: 0, hasSession: false },
-                                { day: 'D', mental: 91, shooting: 75, hasSession: true },
+                                { day: 'S', mental: 91, shooting: 75, hasSession: true },
                             ],
                             weeklyLoading: false,
                         })

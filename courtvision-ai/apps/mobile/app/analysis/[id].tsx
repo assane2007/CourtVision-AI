@@ -201,7 +201,7 @@ function Glass({ children, style, accent = false }: any) {
     return (
         <View style={[{
             borderRadius: T.borderRadius.lg, padding: T.spacing[4],
-            ...((accent ? T.glass.vivid : (T as any).glass?.regular) ?? T.glass.thin),
+            ...(accent ? T.glass.vivid : T.glass.base),
         }, style]}>
             {children}
         </View>
@@ -441,7 +441,7 @@ export default function AnalysisReport() {
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     style={{
                         width: 36, height: 36, borderRadius: T.borderRadius.md,
-                        ...(T as any).glass?.regular ?? T.glass.thin,
+                        ...T.glass.base,
                         justifyContent: 'center', alignItems: 'center', marginRight: T.spacing[3],
                     }}
                     accessibilityLabel="Go back"
@@ -460,7 +460,7 @@ export default function AnalysisReport() {
                 <TouchableOpacity
                     onPress={handleShare}
                     style={{
-                        ...(T as any).glass?.regular ?? T.glass.thin,
+                        ...T.glass.base,
                         borderRadius: T.borderRadius.md,
                         paddingHorizontal: T.spacing[3], paddingVertical: T.spacing[2],
                         flexDirection: 'row', alignItems: 'center', gap: 4,

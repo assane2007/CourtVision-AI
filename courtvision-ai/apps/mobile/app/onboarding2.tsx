@@ -112,12 +112,12 @@ export default function Onboarding2() {
             if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
 
             // Setup user in store
-            useStore.setState((s: any) => ({
+            useStore.setState((s) => ({
                 user: s.user
-                    ? { ...s.user, position: selectedPos ?? 'PG', level: selectedLevel }
+                    ? { ...s.user, position: selectedPos ?? 'PG', level: selectedLevel ?? 'Beginner' }
                     : {
                         id: '', username: '', full_name: 'Player',
-                        position: selectedPos ?? 'PG', level: selectedLevel,
+                        position: selectedPos ?? 'PG', level: selectedLevel ?? 'Beginner',
                         streak: 0, mental_score: 0, shooting_grade: 'B',
                         shooting_fg_pct: 0, xp: 0, xp_level: 1,
                         total_sessions: 0, badges_count: 0,

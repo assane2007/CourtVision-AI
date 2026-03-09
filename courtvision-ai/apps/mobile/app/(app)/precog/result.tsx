@@ -9,15 +9,15 @@ export default function PrecogResult() {
         <View style={styles.container}>
             <View style={styles.content}>
                 {/* As per spec: extreme minimalism */}
-                <Text style={styles.resultText}>Aujourd'hui : {accuracy || 0}%</Text>
-                <Text style={styles.resultText}>La semaine passée : 58%</Text>
+                <Text style={styles.resultText}>Today: {accuracy || 0}%</Text>
+                <Text style={styles.resultText}>Last week: 58%</Text>
             </View>
 
             <Pressable
                 style={styles.closeButton}
                 onPress={() => router.replace('/(app)')}
             >
-                <Text style={styles.closeText}>TERMINER</Text>
+                <Text style={styles.closeText}>FINISH</Text>
             </Pressable>
         </View>
     );

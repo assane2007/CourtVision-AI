@@ -87,8 +87,8 @@ async function fetchAchievements(): Promise<Achievement[]> {
 
 function PeriodTabs({ selected, onSelect }: { selected: Period; onSelect: (p: Period) => void }) {
     const tabs: Array<{ key: Period; label: string }> = [
-        { key: 'weekly', label: 'Semaine' },
-        { key: 'monthly', label: 'Mois' },
+        { key: 'weekly', label: 'Weekly' },
+        { key: 'monthly', label: 'Monthly' },
         { key: 'alltime', label: 'All-Time' },
     ]
 
@@ -114,7 +114,7 @@ function MetricSelector({ selected, onSelect }: { selected: Metric; onSelect: (m
     const metrics: Array<{ key: Metric; label: string; icon: string }> = [
         { key: 'score', label: 'Score', icon: 'star' },
         { key: 'fgPct', label: 'FG%', icon: 'target' },
-        { key: 'consistency', label: 'Consistance', icon: 'repeat' },
+        { key: 'consistency', label: 'Consistency', icon: 'repeat' },
         { key: 'sessions', label: 'Sessions', icon: 'calendar' },
     ]
 
@@ -181,7 +181,7 @@ function LeaderboardRow({ entry, delay = 0 }: { entry: LeaderboardEntry; delay?:
                     <Text style={[styles.leaderName, entry.isCurrentUser && styles.leaderNameCurrent]}>
                         {entry.displayName}
                     </Text>
-                    <Text style={styles.leaderLevel}>Niveau {entry.level}</Text>
+                    <Text style={styles.leaderLevel}>Level {entry.level}</Text>
                 </View>
 
                 {/* Value + Delta */}
@@ -282,7 +282,7 @@ export default function LeaderboardScreen() {
                     <Feather name="arrow-left" size={22} color={T.color.text.primary} />
                 </TouchableOpacity>
                 <View style={styles.headerCenter}>
-                    <Text style={styles.headerTitle}>Classement</Text>
+                    <Text style={styles.headerTitle}>Leaderboard</Text>
                 </View>
                 <View style={{ width: 40 }} />
             </View>
@@ -308,7 +308,7 @@ export default function LeaderboardScreen() {
                 {/* Current User Position */}
                 {currentUser ? (
                     <Animated.View entering={FadeIn.duration(300)} style={styles.currentUserCard}>
-                        <Text style={styles.currentUserLabel}>Ta position</Text>
+                        <Text style={styles.currentUserLabel}>Your Position</Text>
                         <View style={styles.currentUserRow}>
                             <View style={styles.currentUserRank}>
                                 <Text style={styles.currentUserRankText}>#{currentUser.rank}</Text>
@@ -320,7 +320,7 @@ export default function LeaderboardScreen() {
                                 </Text>
                             </View>
                             <View>
-                                <Text style={styles.currentUserOf}>sur {entries.length}</Text>
+                                <Text style={styles.currentUserOf}>of {entries.length}</Text>
                             </View>
                         </View>
                     </Animated.View>
@@ -330,7 +330,7 @@ export default function LeaderboardScreen() {
                 <View style={styles.card}>
                     <View style={styles.cardHeader}>
                         <Feather name="award" size={14} color={T.color.signature.primary} />
-                        <Text style={styles.cardTitle}>Top joueurs</Text>
+                        <Text style={styles.cardTitle}>Top Players</Text>
                     </View>
 
                     {entries.slice(0, 20).map((entry, i) => (
@@ -343,7 +343,7 @@ export default function LeaderboardScreen() {
                 <View style={[styles.card, { marginTop: 12 }]}>
                     <View style={styles.cardHeader}>
                         <Feather name="star" size={14} color={T.color.signature.primary} />
-                        <Text style={styles.cardTitle}>Badges récents</Text>
+                        <Text style={styles.cardTitle}>Recent Badges</Text>
                     </View>
                     <View style={styles.achievementsRow}>
                         {achievements.map((a, i) => (

@@ -64,7 +64,7 @@ export default function PrecogDashboard() {
 
             <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
                 <Pressable onPress={() => router.back()} style={styles.backButton}>
-                    <Text style={styles.backText}>← RETOUR</Text>
+                    <Text style={styles.backText}>← BACK</Text>
                 </Pressable>
                 <Text style={styles.title}>PRE-COG</Text>
                 <View style={styles.placeholder} />
@@ -81,7 +81,7 @@ export default function PrecogDashboard() {
                 </View>
 
                 <View style={styles.graphContainer}>
-                    <Text style={styles.graphTitle}>PROGRESSION (8 SEMAINES)</Text>
+                    <Text style={styles.graphTitle}>PROGRESSION (8 WEEKS)</Text>
                     <View style={styles.mockGraph}>
                         <View style={styles.barContainer}>
                             {(data?.weeklyProgress ?? []).map((pct, i, arr) => (
@@ -107,10 +107,10 @@ export default function PrecogDashboard() {
                     style={styles.startButton}
                     onPress={() => router.push('/(app)/precog/session')}
                 >
-                    <Text style={styles.startText}>LANCER LA SESSION DU JOUR</Text>
+                    <Text style={styles.startText}>START TODAY'S SESSION</Text>
                     <ArrowRight color="#050505" size={24} />
                 </Pressable>
-                <Text style={styles.limitText}>MAXIMUM 1 SESSION PAR JOUR</Text>
+                <Text style={styles.limitText}>MAXIMUM 1 SESSION PER DAY</Text>
             </View>
         </View>
     );

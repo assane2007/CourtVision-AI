@@ -75,6 +75,19 @@ export interface UseLiveCoachState {
     endReport: LiveEndResponse | null
     /** Connexion SSE active */
     sseConnected: boolean
+    /** Tracked player detections from CV engine */
+    detections: Detection[]
+    /** Frames per second from CV engine */
+    fps: number
+}
+
+export interface Detection {
+    x: number
+    y: number
+    width?: number
+    height?: number
+    player?: number
+    speed?: number
 }
 
 export interface UseLiveCoachActions {
@@ -132,6 +145,8 @@ export function useLiveCoach(sessionId: string): UseLiveCoachReturn {
     const [error, setError] = useState<string | null>(null)
     const [endReport, setEndReport] = useState<LiveEndResponse | null>(null)
     const [sseConnected, setSseConnected] = useState(false)
+    const [detections, setDetections] = useState<Detection[]>([])
+    const [fps, setFps] = useState(0)
 
     // ---- Refs ----
     const serviceRef = useRef<LiveCoachService | null>(null)
@@ -275,12 +290,12 @@ export function useLiveCoach(sessionId: string): UseLiveCoachReturn {
             frameTimerRef.current = setInterval(() => {
                 const now = Date.now()
                 const demoAlerts: LiveAlertPayload[] = [
-                    { id: `d-${now}-1`, type: 'form' as any, message: 'Keep your elbow tucked on release', severity: 'info' as AlertSeverity, emoji: '💪', vibrate: false, vibrationPattern: [], timestamp: now },
-                    { id: `d-${now}-2`, type: 'form' as any, message: 'Great follow-through on last shot!', severity: 'info' as AlertSeverity, emoji: '✅', vibrate: false, vibrationPattern: [], timestamp: now },
-                    { id: `d-${now}-3`, type: 'fatigue' as any, message: 'Fatigue detected — slow your pace', severity: 'warning' as AlertSeverity, emoji: '⚠️', vibrate: true, vibrationPattern: [0, 200, 100, 200], timestamp: now },
-                    { id: `d-${now}-4`, type: 'form' as any, message: 'Shot arc too flat — aim higher', severity: 'warning' as AlertSeverity, emoji: '📐', vibrate: false, vibrationPattern: [], timestamp: now },
-                    { id: `d-${now}-5`, type: 'mental' as any, message: 'Excellent court vision!', severity: 'info' as AlertSeverity, emoji: '👁️', vibrate: false, vibrationPattern: [], timestamp: now },
-                    { id: `d-${now}-6`, type: 'posture' as any, message: 'Balance shifting left — center up', severity: 'info' as AlertSeverity, emoji: '⚖️', vibrate: false, vibrationPattern: [], timestamp: now },
+                    { id: `d-${now}-1`, type: 'posture', message: 'Keep your elbow tucked on release', severity: 'info', emoji: '💪', vibrate: false, vibrationPattern: [], timestamp: now },
+                    { id: `d-${now}-2`, type: 'shooting_hot', message: 'Great follow-through on last shot!', severity: 'info', emoji: '✅', vibrate: false, vibrationPattern: [], timestamp: now },
+                    { id: `d-${now}-3`, type: 'fatigue', message: 'Fatigue detected — slow your pace', severity: 'warning', emoji: '⚠️', vibrate: true, vibrationPattern: [0, 200, 100, 200], timestamp: now },
+                    { id: `d-${now}-4`, type: 'shot_selection', message: 'Shot arc too flat — aim higher', severity: 'warning', emoji: '📐', vibrate: false, vibrationPattern: [], timestamp: now },
+                    { id: `d-${now}-5`, type: 'mental_recovery', message: 'Excellent court vision!', severity: 'info', emoji: '👁️', vibrate: false, vibrationPattern: [], timestamp: now },
+                    { id: `d-${now}-6`, type: 'posture', message: 'Balance shifting left — center up', severity: 'info', emoji: '⚖️', vibrate: false, vibrationPattern: [], timestamp: now },
                 ]
                 const alert = demoAlerts[Math.floor(Math.random() * demoAlerts.length)]
                 setAlerts(prev => [alert, ...prev].slice(0, MAX_ALERTS))
@@ -443,16 +458,37 @@ export function useLiveCoach(sessionId: string): UseLiveCoachReturn {
 
         // Demo mode: generate local report
         if (isDemoMode) {
-            const demoReport = {
-                mentalScore,
-                shootingPct: (makeCount + missCount) > 0 ? Math.round((makeCount / (makeCount + missCount)) * 100) : 0,
-                makes: makeCount,
-                attempts: makeCount + missCount,
-                quarter,
-                recommendations: generateLocalRecommendations(),
-                stats: null,
+            const recs = generateLocalRecommendations()
+            const pct = (makeCount + missCount) > 0 ? Math.round((makeCount / (makeCount + missCount)) * 100) : 0
+            const demoReport: LiveEndResponse = {
+                sessionId,
+                status: 'complete',
+                summary: {
+                    id: `end-${Date.now()}`,
+                    type: 'quarter_summary',
+                    severity: 'info',
+                    message: `Session complete — ${pct}% shooting`,
+                    emoji: '🏁',
+                    vibrate: false,
+                    vibrationPattern: [],
+                    timestamp: Date.now(),
+                },
+                stats: {
+                    playTime: elapsedTime,
+                    shotsDetected: makeCount + missCount,
+                    shotsMade: makeCount,
+                    shootingPct: pct,
+                    avgMentalScore: mentalScore,
+                    mentalByQuarter: { [quarter]: mentalHistory },
+                    distanceCovered: 0,
+                    alertsSent: alerts.length,
+                    peakMoment: null,
+                    lowMoment: null,
+                },
                 mentalTimeline: mentalHistory,
-            } as any
+                recommendations: recs,
+                message: 'Demo session complete',
+            }
             setPhase('ended')
             setEndReport(demoReport)
             setRecommendations(demoReport.recommendations)
@@ -479,7 +515,7 @@ export function useLiveCoach(sessionId: string): UseLiveCoachReturn {
             setRecommendations(generateLocalRecommendations())
             toast.warning('Offline report', 'Reconnect for full analysis')
         }
-    }, [clearTimers, makeCount, missCount, mentalScore, fatigueIndex])
+    }, [clearTimers, makeCount, missCount, mentalScore, fatigueIndex, sessionId, elapsedTime, quarter, mentalHistory, alerts])
 
     const reset = useCallback(() => {
         clearTimers()
@@ -501,6 +537,8 @@ export function useLiveCoach(sessionId: string): UseLiveCoachReturn {
         setError(null)
         setEndReport(null)
         setSseConnected(false)
+        setDetections([])
+        setFps(0)
     }, [sessionId, clearTimers])
 
     // ---- Local recommendations fallback ----
@@ -541,6 +579,8 @@ export function useLiveCoach(sessionId: string): UseLiveCoachReturn {
         error,
         endReport,
         sseConnected,
+        detections,
+        fps,
         // Actions
         start,
         sendFrame,

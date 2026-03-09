@@ -231,6 +231,25 @@ export class SessionStorageService {
         })
     }
 
+    /** Get aggregated shot zone stats across recent sessions */
+    async getZoneStats(limit = 30): Promise<Record<string, { attempts: number; made: number; pct: number }>> {
+        await this.load()
+        const zones: Record<string, { attempts: number; made: number }> = {}
+        for (const session of this.sessions.slice(0, limit)) {
+            for (const shot of session.shots) {
+                if (!shot.zone) continue
+                if (!zones[shot.zone]) zones[shot.zone] = { attempts: 0, made: 0 }
+                zones[shot.zone].attempts++
+                if (shot.outcome === 'made') zones[shot.zone].made++
+            }
+        }
+        const result: Record<string, { attempts: number; made: number; pct: number }> = {}
+        for (const [zone, data] of Object.entries(zones)) {
+            result[zone] = { ...data, pct: data.attempts > 0 ? Math.round((data.made / data.attempts) * 100) : 0 }
+        }
+        return result
+    }
+
     // ---- Get Full Session ----
 
     async getSession(sessionId: string): Promise<StoredSession | null> {
@@ -396,12 +415,20 @@ export class SessionStorageService {
         let failed = 0
 
         for (const session of unsynced) {
-            try {
-                await this.syncSessionToCloud(session)
-                synced++
-            } catch {
-                failed++
+            let success = false
+            for (let attempt = 0; attempt < 3; attempt++) {
+                try {
+                    await this.syncSessionToCloud(session)
+                    success = true
+                    break
+                } catch {
+                    if (attempt < 2) {
+                        await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)))
+                    }
+                }
             }
+            if (success) synced++
+            else failed++
         }
 
         if (synced > 0) await this.persist()

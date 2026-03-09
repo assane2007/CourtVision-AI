@@ -47,6 +47,7 @@ import type { HighlightClip } from '../../lib/store'
 import { InteractiveTerrainVisualizer } from '../../components/dashboard/InteractiveTerrainVisualizer'
 import { HapticFeedback } from '../../lib/haptics'
 import { useRevenueCat } from '../../lib/revenuecat'
+import { SessionStorageService } from '../../lib/sessionStorage'
 
 const { width: SCREEN_W } = Dimensions.get('window')
 
@@ -280,7 +281,21 @@ export default function DashboardIndex() {
     const mentalScore = user?.mental_score ?? 0
     const headlineStat = shootingFgPct > 0 ? shootingFgPct : mentalScore
     const hasSession = !!shootingFgPct || !!mentalScore
-    const shooting3ptPct = (user as any)?.shooting_3pt_pct ?? 0
+
+    const [shooting3ptPct, setShooting3ptPct] = useState(0)
+    useEffect(() => {
+        const storage = SessionStorageService.getInstance()
+        storage.getZoneStats(50).then(stats => {
+            const threePointZones = ['left_corner_3', 'right_corner_3', 'left_wing', 'right_wing', 'top_key']
+            let totalAttempts = 0
+            let totalMade = 0
+            for (const zone of threePointZones) {
+                const s = stats[zone]
+                if (s) { totalAttempts += s.attempts; totalMade += s.made }
+            }
+            setShooting3ptPct(totalAttempts > 0 ? Math.round((totalMade / totalAttempts) * 100) : 0)
+        }).catch(() => {})
+    }, [])
 
     const chartData = weeklyData.map(d => ({
         label: d.day,
@@ -436,7 +451,7 @@ export default function DashboardIndex() {
                 <Animated.View entering={FadeInDown.delay(280).duration(400)} style={ds.quickActionRowBottom}>
                     <QuickAction icon="calendar" label="PROGRAM" color={T.color.semantic.success} onPress={() => router.push('/program')} />
                     <QuickAction icon="bar-chart-2" label="ANALYTICS 👑" color="#8B5CF6" onPress={goAnalytics} />
-                    <QuickAction icon="award" label="CLASSEMENT" color="#FFD700" onPress={() => router.push('/leaderboard')} />
+                    <QuickAction icon="award" label="LEADERBOARD" color="#FFD700" onPress={() => router.push('/leaderboard')} />
                 </Animated.View>
 
                 {/* ═══ HIGHLIGHTS ═══ */}

@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, ActivityIndicator } from 'react-native';
+﻿import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -25,17 +25,17 @@ export default function PaywallScreen() {
         return (
             <View style={{ flex: 1, backgroundColor: '#050505', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
                 <Feather name="check-circle" size={64} color={T.color.semantic.success} style={{ marginBottom: 20 }} />
-                <Text style={{ color: '#fff', fontSize: 24, fontWeight: 'bold', fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', textAlign: 'center' }}>
+                <Text style={{ color: '#fff', fontSize: 24, fontWeight: 'bold', fontFamily: 'Sora_700Bold', textAlign: 'center' }}>
                     SUBSCRIPTION ACTIVE
                 </Text>
-                <Text style={{ color: '#888', fontSize: 14, marginTop: 10, textAlign: 'center', fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' }}>
+                <Text style={{ color: '#888', fontSize: 14, marginTop: 10, textAlign: 'center', fontFamily: 'Sora_700Bold' }}>
                     You currently have full access to CourtVision AI PRO.
                 </Text>
                 <TouchableOpacity
                     style={{ marginTop: 40, padding: 15, borderWidth: 1, borderColor: '#333' }}
                     onPress={() => router.back()}
                 >
-                    <Text style={{ color: '#fff', fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' }}>RETURN TO DASHBOARD</Text>
+                    <Text style={{ color: '#fff', fontFamily: 'Sora_700Bold' }}>RETURN TO DASHBOARD</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -71,7 +71,7 @@ export default function PaywallScreen() {
                 <TouchableOpacity onPress={() => router.back()}>
                     <Feather name="x" size={24} color="#888" />
                 </TouchableOpacity>
-                <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: T.color.brand.primary, fontSize: 14, fontWeight: 'bold' }}>
+                <Text style={{ fontFamily: 'Sora_700Bold', color: T.color.brand.primary, fontSize: 14, fontWeight: 'bold' }}>
                     UPGRADE_LINK
                 </Text>
                 <View style={{ width: 24 }} />
@@ -79,20 +79,20 @@ export default function PaywallScreen() {
 
             <ScrollView contentContainerStyle={{ padding: T.spacing[5] }}>
                 <Animated.View entering={FadeInUp.duration(500)}>
-                    <Text style={{ color: '#fff', fontSize: 32, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontWeight: 'bold', marginBottom: 10 }}>
+                    <Text style={{ color: '#fff', fontSize: 32, fontFamily: 'Sora_700Bold', fontWeight: 'bold', marginBottom: 10 }}>
                         UNLOCK PRO
                     </Text>
-                    <Text style={{ color: '#888', fontSize: 14, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', lineHeight: 20, marginBottom: 30 }}>
+                    <Text style={{ color: '#888', fontSize: 14, fontFamily: 'Sora_700Bold', lineHeight: 20, marginBottom: 30 }}>
                         Gain unlimited access to AI shot tracking, PRE-COG cognitive training, and personalized digital twin insights.
                     </Text>
                 </Animated.View>
 
                 {packages.length === 0 ? (
                     <View style={{ padding: 20, backgroundColor: '#111', borderWidth: 1, borderColor: '#333' }}>
-                        <Text style={{ color: '#888', fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', textAlign: 'center' }}>
+                        <Text style={{ color: '#888', fontFamily: 'Sora_700Bold', textAlign: 'center' }}>
                             [NO PACKAGES CONFIGURED]
                         </Text>
-                        <Text style={{ color: '#555', fontSize: 10, marginTop: 10, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', textAlign: 'center' }}>
+                        <Text style={{ color: '#555', fontSize: 10, marginTop: 10, fontFamily: 'Sora_700Bold', textAlign: 'center' }}>
                             Configure RevenueCat in your environment variables and dashboard to see offers.
                         </Text>
                     </View>
@@ -108,15 +108,15 @@ export default function PaywallScreen() {
                                 disabled={processing}
                             >
                                 <View>
-                                    <Text style={{ color: '#fff', fontSize: 18, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontWeight: 'bold' }}>
+                                    <Text style={{ color: '#fff', fontSize: 18, fontFamily: 'Sora_700Bold', fontWeight: 'bold' }}>
                                         {pkg.product.title}
                                     </Text>
-                                    <Text style={{ color: T.color.brand.primary, fontSize: 12, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', marginTop: 4 }}>
+                                    <Text style={{ color: T.color.brand.primary, fontSize: 12, fontFamily: 'Sora_700Bold', marginTop: 4 }}>
                                         {pkg.product.description}
                                     </Text>
                                 </View>
                                 <View>
-                                    <Text style={{ color: '#fff', fontSize: 20, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontWeight: 'bold' }}>
+                                    <Text style={{ color: '#fff', fontSize: 20, fontFamily: 'Sora_700Bold', fontWeight: 'bold' }}>
                                         {pkg.product.priceString}
                                     </Text>
                                 </View>
@@ -130,7 +130,7 @@ export default function PaywallScreen() {
             <View style={{ padding: T.spacing[5], borderTopWidth: 1, borderColor: '#222' }}>
                 <TouchableOpacity onPress={handleRestore} disabled={processing} style={{ alignItems: 'center', padding: 10 }}>
                     {processing ? <ActivityIndicator color={T.color.brand.primary} size="small" /> : (
-                        <Text style={{ color: '#666', fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', textDecorationLine: 'underline', fontSize: 12 }}>
+                        <Text style={{ color: '#666', fontFamily: 'Sora_700Bold', textDecorationLine: 'underline', fontSize: 12 }}>
                             RESTORE_PREVIOUS_PURCHASES
                         </Text>
                     )}

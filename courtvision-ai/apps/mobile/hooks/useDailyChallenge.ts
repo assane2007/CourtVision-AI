@@ -13,6 +13,7 @@ import { apiFetch } from '../lib/api'
 import { useStore } from '../lib/store'
 import { toast } from '../lib/toast'
 import { T } from '../lib/theme'
+import { SessionStorageService } from '../lib/sessionStorage'
 import * as Haptics from 'expo-haptics'
 
 export interface DailyChallenge {
@@ -58,6 +59,34 @@ export const DIFFICULTY_LABELS: Record<string, string> = {
 }
 
 // ── Défis locaux (fallback sans serveur) ─────────────────────────
+
+async function computeTodayProgress(metric: DailyChallenge['metric']): Promise<number> {
+    const storage = SessionStorageService.getInstance()
+    const history = await storage.getSessionHistory(50)
+    const todayStr = new Date().toISOString().slice(0, 10)
+    const todaySessions = history.filter(s => s.createdAt.slice(0, 10) === todayStr)
+
+    switch (metric) {
+        case 'shots_made':
+            return todaySessions.reduce((sum, s) => sum + s.madeShots, 0)
+        case 'mental_score':
+            if (todaySessions.length === 0) return 0
+            return Math.round(
+                todaySessions.reduce((sum, s) => sum + s.avgPostureQuality, 0) / todaySessions.length
+            )
+        case 'sessions':
+            return todaySessions.length
+        case 'shooting_pct':
+            if (todaySessions.length === 0) return 0
+            return Math.round(
+                todaySessions.reduce((sum, s) => sum + s.shootingPct, 0) / todaySessions.length
+            )
+        case 'streak':
+            return todaySessions.length > 0 ? 1 : 0
+        default:
+            return 0
+    }
+}
 
 function getLocalDailyChallenge(): DailyChallenge {
     const today = new Date()
@@ -190,8 +219,12 @@ export function useDailyChallenge(): DailyChallengeState {
             const data = await apiFetch<DailyChallenge>('/api/community/challenges/daily')
             setChallenge(data)
         } catch {
-            // Fallback local
-            setChallenge(getLocalDailyChallenge())
+            // Fallback local — compute current from today's sessions
+            const local = getLocalDailyChallenge()
+            const current = await computeTodayProgress(local.metric)
+            local.current = current
+            local.completed = current >= local.target
+            setChallenge(local)
         } finally {
             setLoading(false)
         }

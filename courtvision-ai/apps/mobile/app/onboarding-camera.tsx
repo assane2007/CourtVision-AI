@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     trackingText: {
         position: 'absolute',
         top: -20, left: 0,
-        fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+        fontFamily: 'Sora_700Bold',
         fontSize: 10,
         fontWeight: 'bold',
     },
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
         paddingVertical: space[4],
     },
     hudTitle: {
-        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+        fontFamily: 'Sora_800ExtraBold',
         fontSize: 18,
         fontWeight: '900',
         color: colors.snow,
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
         marginRight: 6,
     },
     statusText: {
-        fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+        fontFamily: 'Sora_700Bold',
         fontSize: 12,
         fontWeight: 'bold',
         color: '#ff0000',
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
         marginTop: space[2],
     },
     logText: {
-        fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+        fontFamily: 'Sora_400Regular',
         fontSize: 10,
         color: colors.live,
         marginBottom: 2,
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.1)',
     },
     infoTitle: {
-        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+        fontFamily: 'Sora_800ExtraBold',
         fontSize: 24,
         fontWeight: '900',
         color: colors.snow,
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
         letterSpacing: -0.5,
     },
     infoDesc: {
-        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+        fontFamily: 'DMSans_400Regular',
         fontSize: 15,
         color: colors.fog,
         lineHeight: 22,
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     primaryBtnText: {
-        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+        fontFamily: 'Sora_800ExtraBold',
         color: '#000',
         fontSize: 18,
         fontWeight: '900',

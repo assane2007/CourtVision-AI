@@ -8,7 +8,7 @@ import { View, Text } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { T } from '../../lib/theme'
 
-const type = (T as any).type
+const type = T.type
 
 interface Metric {
     label: string   // 'SHOT TYPE', 'RELEASE TIME'...
@@ -30,7 +30,7 @@ function ShotScienceGridInner({ metrics }: ShotScienceGridProps) {
         <Animated.View
             entering={FadeInDown.delay(160).duration(400)}
             style={{
-                ...(T as any).glass?.regular ?? T.glass.thin,
+                ...T.glass.base,
                 borderRadius: T.borderRadius.lg,
                 overflow: 'hidden',
             }}

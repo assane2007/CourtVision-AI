@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +9,8 @@ import { colors, typography, space, shadows, radius } from '../../constants/toke
 import { Badge } from '../../components/ui/Badge';
 import { useLiveCoach } from '../../hooks/useLiveCoach';
 import { Check } from 'lucide-react-native';
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
 
 function BoundingBox({ x, y, width, height, playerNumber, delay = 0, speed = 20 }: any) {
     const pulse = useSharedValue(0.2);
@@ -47,15 +49,18 @@ function BoundingBox({ x, y, width, height, playerNumber, delay = 0, speed = 20 
 export default function RecordScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const live = useLiveCoach('session-test-id');
+    const sessionIdRef = useRef(uuidv4());
+    const live = useLiveCoach(sessionIdRef.current);
 
     const [permission, requestPermission] = useCameraPermissions();
 
     useEffect(() => {
-        if (!permission?.granted && permission?.canAskAgain) {
-            requestPermission();
-        }
-        live.start({ mode: 'record_only' });
+        (async () => {
+            if (!permission?.granted && permission?.canAskAgain) {
+                await requestPermission();
+            }
+            live.start({ mode: 'record_only' });
+        })();
         return () => {
             live.end();
         };
@@ -72,7 +77,7 @@ export default function RecordScreen() {
 
     const handleStop = () => {
         live.end();
-        router.replace('/(app)/sessions/live-01');
+        router.replace(`/(app)/sessions/${sessionIdRef.current}`);
     };
 
     return (
@@ -99,7 +104,7 @@ export default function RecordScreen() {
             </View>
 
             {/* Player Tracking Boxes — rendered from live detection data */}
-            {live.phase === 'active' && (live as any).detections?.map((det: any, i: number) => (
+            {live.phase === 'active' && live.detections?.map((det, i) => (
                 <BoundingBox
                     key={i}
                     x={`${det.x}%`}
@@ -132,7 +137,7 @@ export default function RecordScreen() {
             <Animated.View entering={FadeIn.delay(500)} style={[styles.statsHud, { top: insets.top + 70 }]}>
                 <View style={styles.statCard}>
                     <Activity color={colors.cloud} size={14} />
-                    <Text style={styles.statLineText}>FPS: <Text style={{ color: colors.snow, fontFamily: 'JetBrainsMono_400Regular' }}>{(live as any).fps ?? 30}</Text></Text>
+                    <Text style={styles.statLineText}>FPS: <Text style={{ color: colors.snow, fontFamily: 'JetBrainsMono_400Regular' }}>{live.fps || 30}</Text></Text>
                 </View>
                 <View style={styles.statCard}>
                     <Zap color={colors.cloud} size={14} />
@@ -140,7 +145,7 @@ export default function RecordScreen() {
                 </View>
                 <View style={styles.statCard}>
                     <Users color={colors.cloud} size={14} />
-                    <Text style={styles.statLineText}>Players Tracked: <Text style={{ color: colors.snow, fontFamily: 'JetBrainsMono_400Regular' }}>{(live as any).detections?.length ?? 0}</Text></Text>
+                    <Text style={styles.statLineText}>Players Tracked: <Text style={{ color: colors.snow, fontFamily: 'JetBrainsMono_400Regular' }}>{live.detections?.length ?? 0}</Text></Text>
                 </View>
                 {live.alerts.slice(0, 1).map((alert, i) => (
                     <View key={i} style={[styles.statCard, { borderColor: alert.severity === 'critical' || alert.severity === 'warning' ? colors.fire : colors.live }]}>
@@ -150,44 +155,62 @@ export default function RecordScreen() {
             </Animated.View>
 
             {/* In-game Active Playbook  */}
-            {live.phase === 'active' && (
+            {live.phase === 'active' && (() => {
+                    const SHOT_TARGET = 5;
+                    const MENTAL_TARGET = 70;
+                    const TIME_TARGET = 600;
+                    const shotProgress = Math.min(live.makeCount, SHOT_TARGET);
+                    const shotDone = shotProgress >= SHOT_TARGET;
+                    const mentalDone = live.mentalScore >= MENTAL_TARGET;
+                    const timeProgress = Math.min(live.elapsedTime, TIME_TARGET);
+                    const timeDone = timeProgress >= TIME_TARGET;
+                    return (
                 <Animated.View entering={FadeIn.delay(800)} style={[styles.activePlaybook, { top: insets.top + 70 }]}>
                     <Text style={styles.playbookTitle}>AI OBJECTIVES</Text>
 
-                    {/* Goal 1: Active */}
-                    <View style={styles.playbookActiveRow}>
-                        <View style={styles.playbookBox} />
-                        <Text style={styles.playbookText}>Hit 5 catch-and-shoot 3s</Text>
-                    </View>
-                    <View style={styles.playbookSubRow}>
-                        <View style={styles.playbookProgress}>
-                            <View style={[styles.playbookProgressFill, { width: '40%' }]} />
+                    {/* Goal 1: Make shots */}
+                    <View style={[styles.playbookActiveRow, shotDone && { opacity: 0.5 }]}>
+                        <View style={[styles.playbookBox, shotDone && { backgroundColor: colors.live, borderColor: colors.live }]}>
+                            {shotDone && <Check color={colors.base} size={10} strokeWidth={4} />}
                         </View>
-                        <Text style={styles.playbookProgressText}>2/5</Text>
+                        <Text style={[styles.playbookText, shotDone && { textDecorationLine: 'line-through' }]}>Make {SHOT_TARGET} shots</Text>
+                    </View>
+                    {!shotDone && (
+                        <View style={styles.playbookSubRow}>
+                            <View style={styles.playbookProgress}>
+                                <View style={[styles.playbookProgressFill, { width: `${(shotProgress / SHOT_TARGET) * 100}%` }]} />
+                            </View>
+                            <Text style={styles.playbookProgressText}>{shotProgress}/{SHOT_TARGET}</Text>
+                        </View>
+                    )}
+
+                    {/* Goal 2: Mental score */}
+                    <View style={[styles.playbookActiveRow, mentalDone && { opacity: 0.5 }]}>
+                        <View style={[styles.playbookBox, mentalDone && { backgroundColor: colors.live, borderColor: colors.live }]}>
+                            {mentalDone && <Check color={colors.base} size={10} strokeWidth={4} />}
+                        </View>
+                        <Text style={[styles.playbookText, mentalDone && { textDecorationLine: 'line-through' }]}>Mental score &ge; {MENTAL_TARGET}</Text>
                     </View>
 
-                    {/* Goal 2: Completed */}
-                    <View style={[styles.playbookActiveRow, { opacity: 0.5 }]}>
-                        <View style={[styles.playbookBox, { backgroundColor: colors.live, borderColor: colors.live }]}>
-                            <Check color={colors.base} size={10} strokeWidth={4} />
+                    {/* Goal 3: Play time */}
+                    <View style={[styles.playbookActiveRow, timeDone && { opacity: 0.5 }]}>
+                        <View style={[styles.playbookBox, timeDone && { backgroundColor: colors.live, borderColor: colors.live }]}>
+                            {timeDone && <Check color={colors.base} size={10} strokeWidth={4} />}
                         </View>
-                        <Text style={[styles.playbookText, { textDecorationLine: 'line-through' }]}>Keep elbow &lt; 5°</Text>
+                        <Text style={[styles.playbookText, timeDone && { textDecorationLine: 'line-through' }]}>Play for 10 minutes</Text>
                     </View>
-
-                    {/* Goal 3: Pending */}
-                    <View style={styles.playbookActiveRow}>
-                        <View style={styles.playbookBox} />
-                        <Text style={styles.playbookText}>10 intense sprints</Text>
-                    </View>
-                    <View style={styles.playbookSubRow}>
-                        <View style={styles.playbookProgress}>
-                            <View style={[styles.playbookProgressFill, { width: '10%' }]} />
+                    {!timeDone && (
+                        <View style={styles.playbookSubRow}>
+                            <View style={styles.playbookProgress}>
+                                <View style={[styles.playbookProgressFill, { width: `${(timeProgress / TIME_TARGET) * 100}%` }]} />
+                            </View>
+                            <Text style={styles.playbookProgressText}>{Math.floor(timeProgress / 60)}/{Math.floor(TIME_TARGET / 60)} min</Text>
                         </View>
-                        <Text style={styles.playbookProgressText}>1/10</Text>
-                    </View>
+                    )}
 
                 </Animated.View>
-            )}
+                    );
+                })()}
 
             {/* Bottom Controls */}
             <View style={[styles.bottomControls, { paddingBottom: Math.max(insets.bottom + space[4], space[10]) }]}>

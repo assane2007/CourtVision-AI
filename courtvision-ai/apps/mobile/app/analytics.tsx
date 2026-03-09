@@ -88,11 +88,11 @@ function computeShotDNA(sessions: SessionHistoryItem[]): ShotDNAProfile | null {
     }
 
     const label = (pct: number) => {
-        if (pct >= 90) return 'Élite'
-        if (pct >= 75) return 'Au-dessus de la moyenne'
-        if (pct >= 50) return 'Moyenne'
-        if (pct >= 25) return 'En dessous de la moyenne'
-        return 'À développer'
+        if (pct >= 90) return 'Elite'
+        if (pct >= 75) return 'Above Average'
+        if (pct >= 50) return 'Average'
+        if (pct >= 25) return 'Below Average'
+        return 'Needs Work'
     }
 
     const elbowPct = percentile(avgElbow, 95, 5)
@@ -181,14 +181,14 @@ function NBACompCard({ comp, rank, delay = 0 }: { comp: NBAPlayerComp; rank: num
                 <Text style={styles.compName}>{comp.name}</Text>
                 <Text style={styles.compTeam}>{comp.team} · {comp.style}</Text>
                 <View style={styles.compStatsRow}>
-                    <Text style={styles.compStat}>Coude: {comp.elbowAngle}°</Text>
+                    <Text style={styles.compStat}>Elbow: {comp.elbowAngle}°</Text>
                     <Text style={styles.compStat}>Release: {comp.releaseHeight}x</Text>
-                    <Text style={styles.compStat}>Temps: {comp.releaseTime}s</Text>
+                    <Text style={styles.compStat}>Time: {comp.releaseTime}s</Text>
                 </View>
             </View>
             <View style={styles.compSimilarity}>
                 <Text style={[styles.compSimValue, { color: simColor }]}>{comp.similarity}%</Text>
-                <Text style={styles.compSimLabel}>Similarité</Text>
+                <Text style={styles.compSimLabel}>Similarity</Text>
             </View>
         </Animated.View>
     )
@@ -196,12 +196,12 @@ function NBACompCard({ comp, rank, delay = 0 }: { comp: NBAPlayerComp; rank: num
 
 function ShotDNACard({ dna }: { dna: ShotDNAProfile }) {
     const metrics = [
-        { key: 'elbowAngle', displayLabel: 'Angle du coude', displayValue: `${dna.elbowAngle.value}°`, percentile: dna.elbowAngle.percentile },
-        { key: 'releaseHeight', displayLabel: 'Hauteur de release', displayValue: `${dna.releaseHeight.value}x`, percentile: dna.releaseHeight.percentile },
-        { key: 'releaseTime', displayLabel: 'Temps de release', displayValue: `${(dna.releaseTime.value * 1000).toFixed(0)}ms`, percentile: dna.releaseTime.percentile },
-        { key: 'consistency', displayLabel: 'Consistance', displayValue: `${dna.consistency.value}/100`, percentile: dna.consistency.percentile },
+        { key: 'elbowAngle', displayLabel: 'Elbow Angle', displayValue: `${dna.elbowAngle.value}°`, percentile: dna.elbowAngle.percentile },
+        { key: 'releaseHeight', displayLabel: 'Release Height', displayValue: `${dna.releaseHeight.value}x`, percentile: dna.releaseHeight.percentile },
+        { key: 'releaseTime', displayLabel: 'Release Time', displayValue: `${(dna.releaseTime.value * 1000).toFixed(0)}ms`, percentile: dna.releaseTime.percentile },
+        { key: 'consistency', displayLabel: 'Consistency', displayValue: `${dna.consistency.value}/100`, percentile: dna.consistency.percentile },
         { key: 'followThrough', displayLabel: 'Follow-Through', displayValue: `${dna.followThrough.value}%`, percentile: dna.followThrough.percentile },
-        { key: 'postureQuality', displayLabel: 'Qualité posture', displayValue: `${dna.postureQuality.value}/100`, percentile: dna.postureQuality.percentile },
+        { key: 'postureQuality', displayLabel: 'Posture Quality', displayValue: `${dna.postureQuality.value}/100`, percentile: dna.postureQuality.percentile },
     ]
 
     return (
@@ -252,7 +252,7 @@ function ProgressionChart({
         return (
             <View style={styles.emptyChart}>
                 <Text style={styles.emptyChartText}>
-                    2+ sessions requises pour voir la progression
+                    2+ sessions required to see progression
                 </Text>
             </View>
         )
@@ -266,8 +266,8 @@ function ProgressionChart({
     const metricLabels: Record<string, string> = {
         shootingPct: 'FG%',
         avgPostureQuality: 'Posture',
-        mechanicConsistency: 'Consistance',
-        avgElbowAngle: 'Angle coude',
+        mechanicConsistency: 'Consistency',
+        avgElbowAngle: 'Elbow Angle',
     }
 
     return (
@@ -311,7 +311,7 @@ const TABS = [
     { key: 'shotchart', label: 'Shot Chart', icon: 'target' },
     { key: 'dna', label: 'Shot DNA', icon: 'cpu' },
     { key: 'nba', label: 'NBA Comp', icon: 'users' },
-    { key: 'progress', label: 'Tendances', icon: 'trending-up' },
+    { key: 'progress', label: 'Trends', icon: 'trending-up' },
 ]
 
 export default function AnalyticsScreen() {
@@ -338,28 +338,16 @@ export default function AnalyticsScreen() {
     }, [])
 
     // Compute aggregated zone data from all sessions
-    const zoneData = useMemo<Partial<CourtZoneData>>(() => {
-        // In a real app, this would aggregate from session shots' zone info
-        // For now, return mock data based on session stats
-        if (sessions.length === 0) return {}
+    const [zoneData, setZoneData] = useState<Partial<CourtZoneData>>({})
 
-        const totalShots = sessions.reduce((sum, s) => sum + s.totalShots, 0)
-        const totalMade = sessions.reduce((sum, s) => sum + s.madeShots, 0)
-        const avgPct = totalShots > 0 ? (totalMade / totalShots) * 100 : 0
-
-        // Distribute shots by zone with realistic proportions
-        return {
-            restrictedArea: { attempts: Math.round(totalShots * 0.22), made: Math.round(totalShots * 0.22 * 0.62), pct: Math.round(avgPct * 1.35) },
-            paint: { attempts: Math.round(totalShots * 0.12), made: Math.round(totalShots * 0.12 * 0.42), pct: Math.round(avgPct * 0.92) },
-            midRangeLeft: { attempts: Math.round(totalShots * 0.08), made: Math.round(totalShots * 0.08 * 0.40), pct: Math.round(avgPct * 0.88) },
-            midRangeRight: { attempts: Math.round(totalShots * 0.08), made: Math.round(totalShots * 0.08 * 0.41), pct: Math.round(avgPct * 0.90) },
-            midRangeCenter: { attempts: Math.round(totalShots * 0.06), made: Math.round(totalShots * 0.06 * 0.43), pct: Math.round(avgPct * 0.95) },
-            corner3Left: { attempts: Math.round(totalShots * 0.07), made: Math.round(totalShots * 0.07 * 0.38), pct: Math.round(avgPct * 0.83) },
-            corner3Right: { attempts: Math.round(totalShots * 0.07), made: Math.round(totalShots * 0.07 * 0.39), pct: Math.round(avgPct * 0.85) },
-            wing3Left: { attempts: Math.round(totalShots * 0.10), made: Math.round(totalShots * 0.10 * 0.36), pct: Math.round(avgPct * 0.80) },
-            wing3Right: { attempts: Math.round(totalShots * 0.10), made: Math.round(totalShots * 0.10 * 0.37), pct: Math.round(avgPct * 0.81) },
-            topKey3: { attempts: Math.round(totalShots * 0.10), made: Math.round(totalShots * 0.10 * 0.35), pct: Math.round(avgPct * 0.78) },
-        }
+    useEffect(() => {
+        (async () => {
+            const storage = SessionStorageService.getInstance()
+            const stats = await storage.getZoneStats(30)
+            if (Object.keys(stats).length > 0) {
+                setZoneData(stats)
+            }
+        })()
     }, [sessions])
 
     const shotDNA = useMemo(() => computeShotDNA(sessions), [sessions])
@@ -383,7 +371,7 @@ export default function AnalyticsScreen() {
                 <View style={styles.headerCenter}>
                     <Text style={styles.headerTitle}>Analytics</Text>
                     <Text style={styles.headerSub}>
-                        {sessions.length} sessions · {sessions.reduce((sum, s) => sum + s.totalShots, 0)} tirs
+                        {sessions.length} sessions · {sessions.reduce((sum, s) => sum + s.totalShots, 0)} shots
                     </Text>
                 </View>
                 <View style={{ width: 40 }} />
@@ -415,20 +403,20 @@ export default function AnalyticsScreen() {
                         <View style={[styles.card, { marginTop: 12 }, T.glass.thin]}>
                             <View style={styles.cardHeader}>
                                 <Feather name="bar-chart-2" size={14} color={T.color.brand.primary} />
-                                <Text style={styles.cardTitle}>Détail par zone</Text>
+                                <Text style={styles.cardTitle}>Zone Breakdown</Text>
                             </View>
                             {Object.entries(zoneData).map(([zone, stats]) => {
                                 if (!stats || stats.attempts === 0) return null
                                 const zoneLabels: Record<string, string> = {
                                     restrictedArea: 'Restricted Area',
                                     paint: 'Paint',
-                                    midRangeLeft: 'Mid-Range Gauche',
-                                    midRangeRight: 'Mid-Range Droit',
-                                    midRangeCenter: 'Mid-Range Centre',
-                                    corner3Left: 'Corner 3 Gauche',
-                                    corner3Right: 'Corner 3 Droit',
-                                    wing3Left: 'Wing 3 Gauche',
-                                    wing3Right: 'Wing 3 Droit',
+                                    midRangeLeft: 'Mid-Range Left',
+                                    midRangeRight: 'Mid-Range Right',
+                                    midRangeCenter: 'Mid-Range Center',
+                                    corner3Left: 'Corner 3 Left',
+                                    corner3Right: 'Corner 3 Right',
+                                    wing3Left: 'Wing 3 Left',
+                                    wing3Right: 'Wing 3 Right',
                                     topKey3: 'Top of Key 3',
                                 }
                                 return (
@@ -457,9 +445,9 @@ export default function AnalyticsScreen() {
                         ) : (
                             <View style={styles.emptyState}>
                                 <Feather name="cpu" size={32} color={T.color.text.tertiary} />
-                                <Text style={styles.emptyTitle}>Pas encore de Shot DNA</Text>
+                                <Text style={styles.emptyTitle}>No Shot DNA Yet</Text>
                                 <Text style={styles.emptyText}>
-                                    Complète quelques sessions pour générer ton profil biomécanique unique.
+                                    Complete a few sessions to generate your unique biomechanics profile.
                                 </Text>
                             </View>
                         )}
@@ -474,12 +462,12 @@ export default function AnalyticsScreen() {
                                 <View style={[styles.card, T.glass.thin]}>
                                     <View style={styles.cardHeader}>
                                         <Feather name="users" size={14} color={T.color.brand.primary} />
-                                        <Text style={styles.cardTitle}>Comparaisons NBA 2023-24</Text>
+                                        <Text style={styles.cardTitle}>NBA Comparisons 2023-24</Text>
                                     </View>
                                     <Text style={styles.compDescription}>
-                                        Basé sur ton angle de coude ({shotDNA?.elbowAngle.value}°),
-                                        ta hauteur de release ({shotDNA?.releaseHeight.value}x),
-                                        et ton temps de release ({((shotDNA?.releaseTime.value ?? 0) * 1000).toFixed(0)}ms).
+                                        Based on your elbow angle ({shotDNA?.elbowAngle.value}°),
+                                        release height ({shotDNA?.releaseHeight.value}x),
+                                        and release time ({((shotDNA?.releaseTime.value ?? 0) * 1000).toFixed(0)}ms).
                                     </Text>
                                 </View>
                                 {nbaComps.map((comp, i) => (
@@ -494,9 +482,9 @@ export default function AnalyticsScreen() {
                         ) : (
                             <View style={styles.emptyState}>
                                 <Feather name="users" size={32} color={T.color.text.tertiary} />
-                                <Text style={styles.emptyTitle}>Données insuffisantes</Text>
+                                <Text style={styles.emptyTitle}>Insufficient Data</Text>
                                 <Text style={styles.emptyText}>
-                                    Complète quelques sessions pour voir à quel joueur NBA tu ressembles.
+                                    Complete a few sessions to see which NBA player you resemble.
                                 </Text>
                             </View>
                         )}

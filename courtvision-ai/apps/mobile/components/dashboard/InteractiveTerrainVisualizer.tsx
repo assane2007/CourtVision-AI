@@ -1,22 +1,33 @@
-import React, { useState, useRef, Suspense } from 'react'
+import React, { useState, useRef, useEffect, Suspense } from 'react'
 import { View, Dimensions, TouchableOpacity } from 'react-native'
 import { Canvas, useFrame } from '@react-three/fiber/native'
 import { T } from '../../lib/theme'
 import { GlassCard, CVText } from '../ui'
 import { Feather } from '@expo/vector-icons'
 import Animated, { FadeInDown } from 'react-native-reanimated'
+import { SessionStorageService } from '../../lib/sessionStorage'
 
 const { width: SCREEN_W } = Dimensions.get('window')
 const COURT_W = SCREEN_W - T.spacing[8]
 const COURT_H = COURT_W * 0.85
 
-const ZONES = [
-    { id: 'left_corner', label: 'Left Corner 3', x: -4, z: 2, accuracy: 42, attempts: 24, heat: 0.6 },
-    { id: 'right_corner', label: 'Right Corner 3', x: 4, z: 2, accuracy: 38, attempts: 18, heat: 0.4 },
-    { id: 'top_key', label: 'Top of Key', x: 0, z: -4, accuracy: 55, attempts: 40, heat: 0.8 },
-    { id: 'paint', label: 'In the Paint', x: 0, z: 2.5, accuracy: 68, attempts: 85, heat: 0.95 },
-    { id: 'left_wing', label: 'Left Wing', x: -3, z: -1.5, accuracy: 31, attempts: 30, heat: 0.3 },
-    { id: 'right_wing', label: 'Right Wing', x: 3, z: -1.5, accuracy: 48, attempts: 45, heat: 0.7 },
+interface ZoneData {
+    id: string
+    label: string
+    x: number
+    z: number
+    accuracy: number
+    attempts: number
+    heat: number
+}
+
+const ZONE_LAYOUT: Array<{ id: string; label: string; x: number; z: number; storageKey: string }> = [
+    { id: 'left_corner', label: 'Left Corner 3', x: -4, z: 2, storageKey: 'left_corner_3' },
+    { id: 'right_corner', label: 'Right Corner 3', x: 4, z: 2, storageKey: 'right_corner_3' },
+    { id: 'top_key', label: 'Top of Key', x: 0, z: -4, storageKey: 'top_key' },
+    { id: 'paint', label: 'In the Paint', x: 0, z: 2.5, storageKey: 'paint' },
+    { id: 'left_wing', label: 'Left Wing', x: -3, z: -1.5, storageKey: 'left_wing' },
+    { id: 'right_wing', label: 'Right Wing', x: 3, z: -1.5, storageKey: 'right_wing' },
 ]
 
 function CourtLines() {
@@ -75,7 +86,7 @@ function ZoneMarker({ zone, isSelected, onSelect }: any) {
     )
 }
 
-function Scene({ selectedZone, onSelectZone, perspective }: any) {
+function Scene({ selectedZone, onSelectZone, perspective, zones }: any) {
     const groupRef = useRef<any>(null)
 
     useFrame((state) => {
@@ -98,7 +109,7 @@ function Scene({ selectedZone, onSelectZone, perspective }: any) {
 
             <CourtLines />
 
-            {ZONES.map(z => (
+            {zones.map(z => (
                 <ZoneMarker
                     key={z.id}
                     zone={z}
@@ -111,8 +122,25 @@ function Scene({ selectedZone, onSelectZone, perspective }: any) {
 }
 
 export function InteractiveTerrainVisualizer() {
-    const [selectedZone, setSelectedZone] = useState<typeof ZONES[0] | null>(null)
+    const [selectedZone, setSelectedZone] = useState<ZoneData | null>(null)
     const [perspective, setPerspective] = useState<'3D' | '2D'>('3D')
+    const [zones, setZones] = useState<ZoneData[]>(() =>
+        ZONE_LAYOUT.map(z => ({ id: z.id, label: z.label, x: z.x, z: z.z, accuracy: 0, attempts: 0, heat: 0 }))
+    )
+
+    useEffect(() => {
+        const storage = SessionStorageService.getInstance()
+        storage.getZoneStats(50).then(stats => {
+            const maxAttempts = Math.max(1, ...Object.values(stats).map(s => s.attempts))
+            setZones(ZONE_LAYOUT.map(z => {
+                const s = stats[z.storageKey] || stats[z.id]
+                if (s) {
+                    return { id: z.id, label: z.label, x: z.x, z: z.z, accuracy: Math.round(s.pct), attempts: s.attempts, heat: s.attempts / maxAttempts }
+                }
+                return { id: z.id, label: z.label, x: z.x, z: z.z, accuracy: 0, attempts: 0, heat: 0 }
+            }))
+        }).catch(() => {})
+    }, [])
 
     const togglePerspective = () => setPerspective(p => p === '3D' ? '2D' : '3D')
 
@@ -136,6 +164,7 @@ export function InteractiveTerrainVisualizer() {
                             selectedZone={selectedZone}
                             onSelectZone={setSelectedZone}
                             perspective={perspective}
+                            zones={zones}
                         />
                     </Canvas>
                 </Suspense>

@@ -150,18 +150,18 @@ export default function SettingsScreen() {
 
     const handleExportData = useCallback(async () => {
         Alert.alert(
-            'Exporter mes données',
-            'Choisir le format d\'export',
+            'Export My Data',
+            'Choose export format',
             [
-                { text: 'Annuler', style: 'cancel' },
+                { text: 'Cancel', style: 'cancel' },
                 {
                     text: 'CSV',
                     onPress: async () => {
                         try {
                             const res = await api.get<{ url: string }>('/api/export?format=csv')
-                            Alert.alert('Export CSV', `Fichier prêt : ${res.url ?? 'Téléchargement lancé'}`)
+                            Alert.alert('CSV Export', `File ready: ${res.url ?? 'Download started'}`)
                         } catch {
-                            Alert.alert('Erreur', 'Export CSV impossible. Vérifie ta connexion.')
+                            Alert.alert('Error', 'CSV export failed. Check your connection.')
                         }
                     },
                 },
@@ -170,9 +170,9 @@ export default function SettingsScreen() {
                     onPress: async () => {
                         try {
                             const res = await api.get<{ url: string }>('/api/export?format=json')
-                            Alert.alert('Export JSON', `Fichier prêt : ${res.url ?? 'Téléchargement lancé'}`)
+                            Alert.alert('JSON Export', `File ready: ${res.url ?? 'Download started'}`)
                         } catch {
-                            Alert.alert('Erreur', 'Export JSON impossible. Vérifie ta connexion.')
+                            Alert.alert('Error', 'JSON export failed. Check your connection.')
                         }
                     },
                 },
@@ -182,12 +182,12 @@ export default function SettingsScreen() {
 
     const handleSignOut = useCallback(() => {
         Alert.alert(
-            'Déconnexion',
-            'Tu es sûr de vouloir te déconnecter ?',
+            'Sign Out',
+            'Are you sure you want to sign out?',
             [
-                { text: 'Annuler', style: 'cancel' },
+                { text: 'Cancel', style: 'cancel' },
                 {
-                    text: 'Déconnexion',
+                    text: 'Sign Out',
                     style: 'destructive',
                     onPress: () => {
                         logout()
@@ -200,12 +200,12 @@ export default function SettingsScreen() {
 
     const handleDeleteAccount = useCallback(() => {
         Alert.alert(
-            '⚠️ Supprimer mon compte',
-            'Toutes tes données seront définitivement supprimées. Cette action est irréversible.',
+            '⚠️ Delete My Account',
+            'All your data will be permanently deleted. This action cannot be undone.',
             [
-                { text: 'Annuler', style: 'cancel' },
+                { text: 'Cancel', style: 'cancel' },
                 {
-                    text: 'Supprimer',
+                    text: 'Delete',
                     style: 'destructive',
                     onPress: async () => {
                         try {
@@ -214,7 +214,7 @@ export default function SettingsScreen() {
                             logout()
                             router.replace('/')
                         } catch {
-                            Alert.alert('Erreur', 'Impossible de supprimer le compte. Contacte le support.')
+                            Alert.alert('Error', 'Unable to delete account. Contact support.')
                         }
                     },
                 },
@@ -224,12 +224,12 @@ export default function SettingsScreen() {
 
     const handleResetCalibration = useCallback(() => {
         Alert.alert(
-            'Recalibrer l\'IA',
-            'Cela réinitialisera les paramètres de calibration de ton téléphone.',
+            'Recalibrate AI',
+            'This will reset your phone\'s calibration settings.',
             [
-                { text: 'Annuler', style: 'cancel' },
+                { text: 'Cancel', style: 'cancel' },
                 {
-                    text: 'Recalibrer',
+                    text: 'Recalibrate',
                     onPress: () => router.push('/calibration'),
                 },
             ],
@@ -239,15 +239,15 @@ export default function SettingsScreen() {
     // ---- Section definitions ----
     const sections: SettingsSection[] = [
         {
-            title: 'Profil joueur',
+            title: 'Player Profile',
             items: [
                 {
-                    id: 'name', icon: 'user', label: 'Nom', type: 'input',
+                    id: 'name', icon: 'user', label: 'Name', type: 'input',
                     value: playerName,
                     onChange: setPlayerName,
                 },
                 {
-                    id: 'height', icon: 'maximize-2', label: 'Taille (cm)', type: 'input',
+                    id: 'height', icon: 'maximize-2', label: 'Height (cm)', type: 'input',
                     value: playerHeight,
                     onChange: (val: string) => {
                         setPlayerHeight(val)
@@ -268,10 +268,10 @@ export default function SettingsScreen() {
             ],
         },
         {
-            title: 'IA & Analyse',
+            title: 'AI & Analysis',
             items: [
                 {
-                    id: 'haptics', icon: 'smartphone', label: 'Retour haptique', type: 'toggle',
+                    id: 'haptics', icon: 'smartphone', label: 'Haptic Feedback', type: 'toggle',
                     value: haptics,
                     onToggle: updateSetting('haptics', setHaptics),
                 },
@@ -281,12 +281,12 @@ export default function SettingsScreen() {
                     onToggle: updateSetting('audioFeedback', setAudioFeedback),
                 },
                 {
-                    id: 'demo', icon: 'zap', label: 'Mode démo', type: 'toggle',
+                    id: 'demo', icon: 'zap', label: 'Demo Mode', type: 'toggle',
                     value: demoMode,
                     onToggle: updateSetting('demoMode', setDemoMode),
                 },
                 {
-                    id: 'calibrate', icon: 'crosshair', label: 'Recalibrer l\'IA',
+                    id: 'calibrate', icon: 'crosshair', label: 'Recalibrate AI',
                     type: 'action',
                     onPress: handleResetCalibration,
                     color: T.color.brand.primary,
@@ -302,17 +302,17 @@ export default function SettingsScreen() {
                     onToggle: updateSetting('notifications', setNotifications),
                 },
                 {
-                    id: 'reminder', icon: 'clock', label: 'Rappel quotidien', type: 'toggle',
+                    id: 'reminder', icon: 'clock', label: 'Daily Reminder', type: 'toggle',
                     value: dailyReminder,
                     onToggle: updateSetting('dailyReminder', setDailyReminder),
                 },
             ],
         },
         {
-            title: 'Données',
+            title: 'Data',
             items: [
                 {
-                    id: 'autosave', icon: 'save', label: 'Sauvegarde auto', type: 'toggle',
+                    id: 'autosave', icon: 'save', label: 'Auto Save', type: 'toggle',
                     value: autoSave,
                     onToggle: updateSetting('autoSave', setAutoSave),
                 },
@@ -322,7 +322,7 @@ export default function SettingsScreen() {
                     onToggle: updateSetting('cloudSync', setCloudSync),
                 },
                 {
-                    id: 'export', icon: 'download', label: 'Exporter mes données', type: 'action',
+                    id: 'export', icon: 'download', label: 'Export My Data', type: 'action',
                     onPress: handleExportData,
                 },
             ],
@@ -340,12 +340,12 @@ export default function SettingsScreen() {
                     value: Constants.expoConfig?.version ?? '1.0.0',
                 },
                 {
-                    id: 'signout', icon: 'log-out', label: 'Déconnexion', type: 'action',
+                    id: 'signout', icon: 'log-out', label: 'Sign Out', type: 'action',
                     onPress: handleSignOut,
                     destructive: true,
                 },
                 {
-                    id: 'delete', icon: 'trash-2', label: 'Supprimer mon compte', type: 'action',
+                    id: 'delete', icon: 'trash-2', label: 'Delete My Account', type: 'action',
                     onPress: handleDeleteAccount,
                     destructive: true,
                 },
@@ -362,7 +362,7 @@ export default function SettingsScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                     <Feather name="arrow-left" size={22} color={T.color.text.primary} />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, T.type.h3]}>Paramètres</Text>
+                <Text style={[styles.headerTitle, T.type.h3]}>Settings</Text>
                 <View style={{ width: 40 }} />
             </View>
 

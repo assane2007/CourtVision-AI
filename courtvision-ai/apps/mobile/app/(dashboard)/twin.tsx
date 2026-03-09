@@ -27,7 +27,7 @@ import { T, typePresets } from '../../lib/theme'
 import { PrimaryButton } from '../../components/PrimaryButton'
 
 const type = typePresets
-const glass = (T as any).glass
+const glass = T.glass
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
 // ==========================================
