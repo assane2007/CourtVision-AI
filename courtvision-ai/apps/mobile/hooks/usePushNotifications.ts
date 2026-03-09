@@ -22,6 +22,7 @@ import { useStore } from '../lib/store'
 import { api } from '../lib/api'
 import { toast } from '../lib/toast'
 import { T } from '../lib/theme'
+import Constants from 'expo-constants'
 
 // ── Configuration globale des notifications ───────────────────
 // À placer AVANT le premier rendu de l'app (dans _layout.tsx idéalement,
@@ -111,7 +112,7 @@ export function usePushNotifications() {
 
             // Récupérer le vrai Expo Push Token
             const tokenData = await Notifications.getExpoPushTokenAsync({
-                projectId: 'courtvision-ai', // correspond à app.json > slug
+                projectId: Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId ?? '',
             })
             const token = tokenData.data
             console.log('[PushNotifications] Token Expo:', token)

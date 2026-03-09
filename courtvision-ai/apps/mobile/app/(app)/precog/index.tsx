@@ -1,38 +1,54 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { Brain, Zap, ArrowRight, Lock } from 'lucide-react-native';
+import { ArrowRight } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { api } from '../../../lib/api';
+import { useStore, selectIsDemoMode } from '../../../lib/store';
+
+interface PrecogData {
+    currentSpeedMph: number;
+    baselineSpeedMph: number;
+    milestone: string;
+    weeklyProgress: number[];
+}
 
 export default function PrecogDashboard() {
     const insets = useSafeAreaInsets();
     const [loading, setLoading] = useState(true);
-    const [data, setData] = useState<any>(null);
+    const [data, setData] = useState<PrecogData | null>(null);
+    const isDemoMode = useStore(selectIsDemoMode);
 
     useEffect(() => {
-        // Fetch API
         const loadDashboard = async () => {
+            if (isDemoMode) {
+                setData({
+                    currentSpeedMph: 187,
+                    baselineSpeedMph: 145,
+                    milestone: "Ton cerveau anticipe maintenant 0.4 secondes plus vite qu'à ton arrivée",
+                    weeklyProgress: [40, 50, 65, 55, 80],
+                });
+                setLoading(false);
+                return;
+            }
             try {
-                // Default API path for mobile
-                const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
-
-                // MOCKING the fetch for immediate display
-                setTimeout(() => {
-                    setData({
-                        currentSpeedMph: 187,
-                        baselineSpeedMph: 145,
-                        milestone: "Ton cerveau anticipe maintenant 0.4 secondes plus vite qu'à ton arrivée"
-                    });
-                    setLoading(false);
-                }, 800);
+                const res = await api.get<{ data: PrecogData }>('/api/precog/dashboard');
+                setData(res.data ?? res as any);
             } catch (err) {
-                console.error(err);
+                console.warn('[Precog] Load failed:', err);
+                setData({
+                    currentSpeedMph: 0,
+                    baselineSpeedMph: 0,
+                    milestone: 'Unable to load precog data. Start a session to begin tracking.',
+                    weeklyProgress: [],
+                });
+            } finally {
                 setLoading(false);
             }
         };
 
         loadDashboard();
-    }, []);
+    }, [isDemoMode]);
 
     if (loading) {
         return (
@@ -58,7 +74,7 @@ export default function PrecogDashboard() {
                 <View style={styles.radarContainer}>
                     <Text style={styles.radarLabel}>VITESSE DE LECTURE ACTUELLE</Text>
                     <View style={styles.speedRow}>
-                        <Text style={styles.speedValue}>{data?.currentSpeedMph || 100}</Text>
+                        <Text style={styles.speedValue}>{data?.currentSpeedMph || 0}</Text>
                         <Text style={styles.speedUnit}>MPH</Text>
                     </View>
                     <Text style={styles.milestoneText}>{data?.milestone}</Text>
@@ -67,13 +83,20 @@ export default function PrecogDashboard() {
                 <View style={styles.graphContainer}>
                     <Text style={styles.graphTitle}>PROGRESSION (8 SEMAINES)</Text>
                     <View style={styles.mockGraph}>
-                        {/* Barre de progression stylisée pour le POC */}
                         <View style={styles.barContainer}>
-                            <View style={[styles.bar, { height: '40%' }]} />
-                            <View style={[styles.bar, { height: '50%' }]} />
-                            <View style={[styles.bar, { height: '65%' }]} />
-                            <View style={[styles.bar, { height: '55%' }]} />
-                            <View style={[styles.bar, { height: '80%', backgroundColor: '#FF4D00' }]} />
+                            {(data?.weeklyProgress ?? []).map((pct, i, arr) => (
+                                <View
+                                    key={i}
+                                    style={[
+                                        styles.bar,
+                                        { height: `${pct}%` },
+                                        i === arr.length - 1 && { backgroundColor: '#FF4D00' },
+                                    ]}
+                                />
+                            ))}
+                            {(data?.weeklyProgress ?? []).length === 0 && (
+                                <Text style={{ color: '#F8F5EF', opacity: 0.4, fontSize: 13 }}>No data yet</Text>
+                            )}
                         </View>
                     </View>
                 </View>

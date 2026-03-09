@@ -5,9 +5,13 @@ import { useStore } from './store'; // Using main auth store
 import { supabase, isDemoMode } from './supabase';
 
 const APIKeys = {
-    apple: process.env.EXPO_PUBLIC_REVENUECAT_APPLE_KEY || "appl_placeholder",
-    google: process.env.EXPO_PUBLIC_REVENUECAT_GOOGLE_KEY || "goog_placeholder"
+    apple: process.env.EXPO_PUBLIC_REVENUECAT_APPLE_KEY ?? '',
+    google: process.env.EXPO_PUBLIC_REVENUECAT_GOOGLE_KEY ?? '',
 };
+
+const isRevenueCatConfigured =
+    (APIKeys.apple.length > 5 && !APIKeys.apple.includes('placeholder')) ||
+    (APIKeys.google.length > 5 && !APIKeys.google.includes('placeholder'));
 
 interface RevenueCatContextState {
     packages: PurchasesPackage[];
@@ -38,9 +42,9 @@ export const RevenueCatProvider = ({ children }: { children: React.ReactNode }) 
     const updateUser = useStore(state => state.updateUser);
 
     useEffect(() => {
-        if (isDemoMode) {
-            setIsPro(true);
-            updateUser({ plan: 'player' });
+        if (isDemoMode || !isRevenueCatConfigured) {
+            setIsPro(isDemoMode);
+            if (isDemoMode) updateUser({ plan: 'player' });
             setLoading(false);
             return;
         }

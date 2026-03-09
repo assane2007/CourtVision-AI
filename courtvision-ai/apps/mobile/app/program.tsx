@@ -18,29 +18,32 @@ import Animated, {
     withTiming,
 } from 'react-native-reanimated'
 import { useStore } from '../lib/store'
+import { api } from '../lib/api'
 import { toast } from '../lib/toast'
 import { XPBadge } from '../components/gamification/XPBadge'
 import { T, typePresets } from '../lib/theme'
 
 const type = typePresets
 
-// ── Mock data ──────────────────────────────────────────────
+// ── Types ───────────────────────────────────────────────────
 
-const WEEKLY_PROGRAM = [
-    { day: 1, label: 'Mon', focus: 'Shot Mechanics', duration: 45, done: true, xp: 20 },
-    { day: 2, label: 'Tue', focus: 'Defense & Footwork', duration: 40, done: true, xp: 18 },
-    { day: 3, label: 'Wed', focus: 'Active Recovery', duration: 30, done: false, isToday: true, xp: 12 },
-    { day: 4, label: 'Thu', focus: '1v1 Creation', duration: 50, done: false, xp: 22 },
-    { day: 5, label: 'Fri', focus: 'Mental Pressure', duration: 45, done: false, xp: 20 },
-    { day: 6, label: 'Sat', focus: '2v2 Game', duration: 60, done: false, xp: 30 },
-    { day: 7, label: 'Sun', focus: 'Test & Film', duration: 30, done: false, xp: 15 },
-]
+interface ProgramDay {
+    day: number
+    label: string
+    focus: string
+    duration: number
+    done: boolean
+    isToday?: boolean
+    xp: number
+}
 
-const TODAY_EXERCISES = [
-    { name: 'Full-court sprints', reps: '10 round-trips', intensity: 'Moderate' as const, xp: 4, done: false },
-    { name: 'Mental visualization', reps: '15 minutes', intensity: 'Low' as const, xp: 3, done: false },
-    { name: 'Weak-hand dribbles', reps: '4 sets × 5 min', intensity: 'Moderate' as const, xp: 5, done: false },
-]
+interface Exercise {
+    name: string
+    reps: string
+    intensity: 'Low' | 'Moderate' | 'High'
+    xp: number
+    done: boolean
+}
 
 const INTENSITY_COLORS: Record<string, string> = {
     Low: T.color.semantic.success,
@@ -75,8 +78,41 @@ function ProgressBar({ progress }: { progress: number }) {
 export default function TrainingProgram() {
     const router = useRouter()
     const addXP = useStore(s => s.addXP)
-    const [exercises, setExercises] = useState(TODAY_EXERCISES)
+    const [weeklyProgram, setWeeklyProgram] = useState<ProgramDay[]>([])
+    const [exercises, setExercises] = useState<Exercise[]>([])
+    const [weeklyGoal, setWeeklyGoal] = useState('Focus on improving your game.')
+    const [loading, setLoading] = useState(true)
     const [xpPopup, setXpPopup] = useState<{ amount: number; label: string } | null>(null)
+
+    useEffect(() => {
+        loadProgram()
+    }, [])
+
+    const loadProgram = async () => {
+        try {
+            const res = await api.get<{ data: { weeklyProgram: ProgramDay[]; todayExercises: Exercise[]; weeklyGoal: string } }>('/api/coaching/program')
+            const d = res.data ?? (res as any)
+            if (d.weeklyProgram) setWeeklyProgram(d.weeklyProgram)
+            if (d.todayExercises) setExercises(d.todayExercises)
+            if (d.weeklyGoal) setWeeklyGoal(d.weeklyGoal)
+        } catch (err) {
+            console.warn('[Program] API fetch failed, using defaults:', err)
+            // Minimal fallback so screen isn't empty
+            const dayOfWeek = new Date().getDay()
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+            setWeeklyProgram(days.map((label, i) => ({
+                day: i + 1, label, focus: 'Training', duration: 30, done: false,
+                isToday: i === dayOfWeek, xp: 10,
+            })))
+            setExercises([
+                { name: 'Warm-up shooting', reps: '50 shots', intensity: 'Low', xp: 3, done: false },
+                { name: 'Free throws', reps: '20 shots', intensity: 'Low', xp: 2, done: false },
+                { name: 'Full-court sprints', reps: '10 round-trips', intensity: 'Moderate', xp: 4, done: false },
+            ])
+        } finally {
+            setLoading(false)
+        }
+    }
 
     const completedCount = exercises.filter(e => e.done).length
     const progressPct = (completedCount / exercises.length) * 100
@@ -147,7 +183,7 @@ export default function TrainingProgram() {
                             </Text>
                         </View>
                         <Text style={{ ...type.body, color: T.color.text.primary, lineHeight: 22 }}>
-                            Rebuild your confidence and stabilize your mental game under pressure. Focus on mid-range shots after drives.
+                            {weeklyGoal}
                         </Text>
                     </Animated.View>
 
@@ -160,7 +196,7 @@ export default function TrainingProgram() {
                         This Week
                     </Text>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: T.spacing[6] }}>
-                        {WEEKLY_PROGRAM.map((day, i) => (
+                        {weeklyProgram.map((day, i) => (
                             <Animated.View key={day.day} entering={FadeInUp.duration(300).delay(i * 50)} style={{ alignItems: 'center', flex: 1 }}>
                                 <Text style={{
                                     ...type.caption,

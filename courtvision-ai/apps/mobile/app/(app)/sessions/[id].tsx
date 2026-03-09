@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Pressable, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Share, Sparkles, BarChart2 } from 'lucide-react-native';
@@ -11,22 +11,29 @@ import { StatRing } from '../../../components/basketball/StatRing';
 import { GhostMode } from '../../../components/basketball/GhostMode';
 import { StoryViewer } from '../../../components/ui/StoryViewer';
 import { Card } from '../../../components/ui/Card';
+import { api } from '../../../lib/api';
 
 const { width } = Dimensions.get('window');
 
 const TABS = ['Overview', 'Ghost Mode', 'Shot DNA', 'Offense', 'Defense'];
 
-const MOCK_SHOTS: ShotPoint[] = [
-    { id: '1', x: 20, y: 70, outcome: 'made' },    // Left wing 3pt
-    { id: '2', x: 80, y: 65, outcome: 'missed' },  // Right wing 3pt
-    { id: '3', x: 50, y: 45, outcome: 'made' },    // Top of key
-    { id: '4', x: 30, y: 30, outcome: 'made' },    // Midrange left
-    { id: '5', x: 75, y: 25, outcome: 'missed' },  // Midrange right
-    { id: '6', x: 50, y: 15, outcome: 'made' },    // Float range
-    { id: '7', x: 45, y: 5, outcome: 'made' },     // Layup
-    { id: '8', x: 55, y: 5, outcome: 'missed' },   // Missed Layup
-    { id: '9', x: 10, y: 85, outcome: 'made' },    // Deep left 3
-];
+interface SessionData {
+    shots: ShotPoint[];
+    globalRating: number;
+    effortIndex: number;
+    topSpeed: number;
+    totalDistance: number;
+    sprints: number;
+    accels: number;
+    decels: number;
+    trackingPct: number;
+    elbowAngle: number;
+    releaseTime: number;
+    arcPeak: number;
+    jumpHeight: number;
+    title: string;
+    aiInsight: string;
+}
 
 export default function SessionAnalysisScreen() {
     const { id } = useLocalSearchParams();
@@ -35,6 +42,35 @@ export default function SessionAnalysisScreen() {
     const [activeTab, setActiveTab] = useState('Overview');
     const [storyVisible, setStoryVisible] = useState(false);
     const [is3DProcessing, setIs3DProcessing] = useState(false);
+    const [session, setSession] = useState<SessionData | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        loadSession();
+    }, [id]);
+
+    const loadSession = async () => {
+        try {
+            const res = await api.get<{ data: SessionData }>(`/api/sessions/${id}`);
+            setSession(res.data ?? res as any);
+        } catch (err) {
+            console.warn('[Session] Load failed:', err);
+            // Minimal fallback so screen isn't empty
+            setSession({
+                shots: [],
+                globalRating: 0, effortIndex: 0,
+                topSpeed: 0, totalDistance: 0, sprints: 0,
+                accels: 0, decels: 0, trackingPct: 0,
+                elbowAngle: 0, releaseTime: 0, arcPeak: 0, jumpHeight: 0,
+                title: `Session ${id}`,
+                aiInsight: 'Session data unavailable. Record a new session to see detailed analysis.',
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const s = session;
 
     return (
         <View style={styles.container}>
@@ -58,7 +94,7 @@ export default function SessionAnalysisScreen() {
                     </Pressable>
                     <View style={styles.headerTitles}>
                         <Text style={styles.headerSubtitle}>SESSION DETAILS</Text>
-                        <Text style={styles.headerTitle}>Mar 01 · vs City Lakers</Text>
+                        <Text style={styles.headerTitle}>{s?.title ?? `Session ${id}`}</Text>
                     </View>
                     <View style={styles.headerRight}>
                         <Pressable style={styles.iconButtonSmall}>
@@ -97,7 +133,7 @@ export default function SessionAnalysisScreen() {
                 <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.visContainer}>
                     {/* Dark Card surrounding the court */}
                     <View style={styles.courtCard}>
-                        <CourtMinimap animate={false} width="100%" height={180} shots={MOCK_SHOTS} />
+                        <CourtMinimap animate={false} width="100%" height={180} shots={s?.shots ?? []} />
                     </View>
                 </Animated.View>
 
@@ -106,16 +142,16 @@ export default function SessionAnalysisScreen() {
                         {/* Global Metrics Rings */}
                         <Animated.View entering={FadeInDown.delay(200).duration(400)} style={styles.ringsContainer}>
                             <StatRing
-                                percentage={94}
+                                percentage={s?.globalRating ?? 0}
                                 label="GLOBAL RATING"
-                                valueText="94%"
+                                valueText={`${s?.globalRating ?? 0}%`}
                                 size={100}
                                 delay={300}
                             />
                             <StatRing
-                                percentage={88}
+                                percentage={s?.effortIndex ?? 0}
                                 label="EFFORT INDEX"
-                                valueText="88%"
+                                valueText={`${s?.effortIndex ?? 0}%`}
                                 size={100}
                                 delay={500}
                             />
@@ -125,19 +161,19 @@ export default function SessionAnalysisScreen() {
                         <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.statsGrid}>
                             <Card style={styles.statCard}>
                                 <Text style={styles.statLabel}>Top Speed</Text>
-                                <Text style={styles.statValue}>26.4 <Text style={styles.statUnit}>km/h</Text></Text>
+                                <Text style={styles.statValue}>{s?.topSpeed ?? 0} <Text style={styles.statUnit}>km/h</Text></Text>
                             </Card>
                             <Card style={styles.statCard}>
                                 <Text style={styles.statLabel}>Total Distance</Text>
-                                <Text style={styles.statValue}>5.2 <Text style={styles.statUnit}>km</Text></Text>
+                                <Text style={styles.statValue}>{s?.totalDistance ?? 0} <Text style={styles.statUnit}>km</Text></Text>
                             </Card>
                             <Card style={styles.statCard}>
                                 <Text style={styles.statLabel}>Sprints</Text>
-                                <Text style={styles.statValue}>42</Text>
+                                <Text style={styles.statValue}>{s?.sprints ?? 0}</Text>
                             </Card>
                             <Card style={styles.statCard}>
                                 <Text style={styles.statLabel}>Accels / Decels</Text>
-                                <Text style={styles.statValue}>18 / 15</Text>
+                                <Text style={styles.statValue}>{s?.accels ?? 0} / {s?.decels ?? 0}</Text>
                             </Card>
                         </Animated.View>
 
@@ -146,9 +182,9 @@ export default function SessionAnalysisScreen() {
                             <Card style={styles.footerCard}>
                                 <Text style={styles.footerLabel}>AI Tracking Completeness</Text>
                                 <View style={styles.progressTrack}>
-                                    <View style={[styles.progressBar, { width: '98%' }]} />
+                                    <View style={[styles.progressBar, { width: `${s?.trackingPct ?? 0}%` }]} />
                                 </View>
-                                <Text style={styles.footerSubText}>98% frames successfully captured and analyzed</Text>
+                                <Text style={styles.footerSubText}>{s?.trackingPct ?? 0}% frames successfully captured and analyzed</Text>
                             </Card>
                         </Animated.View>
 
@@ -182,29 +218,29 @@ export default function SessionAnalysisScreen() {
                             <View style={styles.dnaMetricRow}>
                                 <View style={styles.dnaMetric}>
                                     <Text style={styles.statLabel}>Elbow Angle</Text>
-                                    <Text style={[styles.statValue, { color: colors.live }]}>94°</Text>
+                                    <Text style={[styles.statValue, { color: colors.live }]}>{s?.elbowAngle ?? 0}°</Text>
                                     <Text style={styles.footerSubText}>Optimal: 90-100°</Text>
                                 </View>
                                 <View style={styles.dnaMetric}>
                                     <Text style={styles.statLabel}>Release Time</Text>
-                                    <Text style={[styles.statValue, { color: colors.fire }]}>0.68s</Text>
+                                    <Text style={[styles.statValue, { color: colors.fire }]}>{s?.releaseTime ?? 0}s</Text>
                                     <Text style={styles.footerSubText}>Optimal: &lt;0.75s</Text>
                                 </View>
                             </View>
                             <View style={[styles.dnaMetricRow, { marginTop: space[4], borderTopWidth: 1, borderTopColor: colors.surface3, paddingTop: space[4] }]}>
                                 <View style={styles.dnaMetric}>
                                     <Text style={styles.statLabel}>Arc Peak (Max Height)</Text>
-                                    <Text style={[styles.statValue, { color: colors.snow }]}>4.2m</Text>
+                                    <Text style={[styles.statValue, { color: colors.snow }]}>{s?.arcPeak ?? 0}m</Text>
                                 </View>
                                 <View style={styles.dnaMetric}>
                                     <Text style={styles.statLabel}>Jump Height</Text>
-                                    <Text style={[styles.statValue, { color: colors.snow }]}>28cm</Text>
+                                    <Text style={[styles.statValue, { color: colors.snow }]}>{s?.jumpHeight ?? 0}cm</Text>
                                 </View>
                             </View>
 
                             <View style={styles.aiInsightBox}>
                                 <Text style={styles.aiInsightText}>
-                                    <Text style={{ color: colors.fire }}>AI INSIGHT:</Text> Your shooting elbow flares out slightly by ~8° on fatigue shots, causing misses to the right. Maintain form under fatigue.
+                                    <Text style={{ color: colors.fire }}>AI INSIGHT:</Text> {s?.aiInsight ?? 'No insight available for this session.'}
                                 </Text>
                             </View>
                         </Card>

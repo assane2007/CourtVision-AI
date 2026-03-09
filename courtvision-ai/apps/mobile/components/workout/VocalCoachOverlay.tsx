@@ -54,7 +54,9 @@ export const VocalCoachOverlay: React.FC<VocalCoachOverlayProps> = ({
     }, [active, user])
 
     const connectWS = () => {
-        const url = `ws://${process.env.EXPO_PUBLIC_API_URL?.replace('http', 'ws')}/ws/coach`
+        const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
+        const wsUrl = apiUrl.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
+        const url = `${wsUrl}/ws/coach`
         ws.current = new WebSocket(url)
 
         ws.current.onopen = () => {

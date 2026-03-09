@@ -6,6 +6,7 @@ import { ChevronLeft, Send, Sparkles } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 
 import { colors, typography, space, radius } from '../../../../constants/tokens';
+import { coachApi } from '../../../../lib/coach';
 
 interface Message {
     id: string;
@@ -20,17 +21,44 @@ export default function CoachChatScreen() {
     const router = useRouter();
     const scrollViewRef = useRef<ScrollView>(null);
     const [input, setInput] = useState('');
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            id: '1',
-            role: 'ai',
-            text: 'I\'ve analyzed your latest session. Your elbow flare increased by 8° in the 3rd quarter. Everything else looks solid. What do you want to work on?',
-            timestamp: Date.now() - 60000,
-        }
-    ]);
+    const [conversationId, setConversationId] = useState<string | null>(null);
+    const [messages, setMessages] = useState<Message[]>([]);
     const [isTyping, setIsTyping] = useState(false);
 
-    const handleSend = () => {
+    // Initialize conversation with session context
+    useEffect(() => {
+        initConversation();
+    }, [id]);
+
+    const initConversation = async () => {
+        try {
+            setIsTyping(true);
+            const res = await coachApi.createConversation(
+                'session_analysis',
+                `Analyze my session ${id} and give me key insights.`,
+                id as string
+            );
+            setConversationId(res.conversationId);
+            setMessages([{
+                id: '1',
+                role: 'ai',
+                text: res.response?.message ?? res.response?.content ?? "I've analyzed your session. What would you like to focus on?",
+                timestamp: Date.now(),
+            }]);
+        } catch (err) {
+            console.warn('[CoachChat] Init failed:', err);
+            setMessages([{
+                id: '1',
+                role: 'ai',
+                text: "I'm ready to discuss your session. Ask me about your shooting mechanics, speed, or anything else you'd like to improve.",
+                timestamp: Date.now(),
+            }]);
+        } finally {
+            setIsTyping(false);
+        }
+    };
+
+    const handleSend = async () => {
         if (!input.trim()) return;
 
         const userMsg: Message = {
@@ -41,31 +69,34 @@ export default function CoachChatScreen() {
         };
 
         setMessages(prev => [...prev, userMsg]);
+        const userText = input.trim();
         setInput('');
         setIsTyping(true);
 
-        // Mock AI response
-        setTimeout(() => {
+        try {
+            const cId = conversationId ?? 'default';
+            const res = await coachApi.sendMessage(cId, userText, 'session_analysis', id as string);
+            if (!conversationId && (res as any).conversationId) {
+                setConversationId((res as any).conversationId);
+            }
             const aiMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'ai',
-                text: getMockResponse(userMsg.text),
+                text: res.message ?? (res as any).content ?? "Let me think about that...",
                 timestamp: Date.now(),
             };
             setMessages(prev => [...prev, aiMsg]);
+        } catch (err) {
+            console.warn('[CoachChat] Send failed:', err);
+            setMessages(prev => [...prev, {
+                id: (Date.now() + 1).toString(),
+                role: 'ai',
+                text: "Sorry, I couldn't process that request. Please try again.",
+                timestamp: Date.now(),
+            }]);
+        } finally {
             setIsTyping(false);
-        }, 1500);
-    };
-
-    const getMockResponse = (query: string): string => {
-        const lowerQuery = query.toLowerCase();
-        if (lowerQuery.includes('elbow') || lowerQuery.includes('flare')) {
-            return "When fatigue sets in, you compensate by pushing your elbow out to generate force. Focus on bending your knees lower on the catch to use your legs for power, keeping the arm mechanics clean.";
         }
-        if (lowerQuery.includes('speed') || lowerQuery.includes('fast')) {
-            return "Your top speed was 26.4km/h, very impressive. However, your deceleration time is slightly delayed, meaning you're losing balance on quick stops. We should add eccentric loading drills.";
-        }
-        return "I can build a customized drill routine for tomorrow's practice based on these insights. Should I push it to your Training schedule?";
     };
 
     useEffect(() => {

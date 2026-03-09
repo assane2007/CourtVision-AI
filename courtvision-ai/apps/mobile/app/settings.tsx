@@ -11,7 +11,7 @@
  * Design V4 : dark premium, amber accent, glass cards.
  */
 
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import {
     View, Text, TouchableOpacity, ScrollView, Switch,
     StyleSheet, Alert, StatusBar, TextInput, Platform,
@@ -20,11 +20,12 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Feather } from '@expo/vector-icons'
 import Animated, { FadeInDown } from 'react-native-reanimated'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import Constants from 'expo-constants'
 import { T } from '../lib/theme'
 import { useStore, selectUser } from '../lib/store'
-import { ShareService } from '../lib/shareService'
-
-const type = T.type
+import { api } from '../lib/api'
+import { supabase } from '../lib/supabase'
 
 // ==========================================
 // Types
@@ -66,45 +67,117 @@ const POSITION_LABELS: Record<string, string> = {
 // Component
 // ==========================================
 
+const SETTINGS_KEY = '@courtvision_settings'
+
+interface PersistedSettings {
+    playerHeight: string
+    playerPosition: string
+    haptics: boolean
+    audioFeedback: boolean
+    demoMode: boolean
+    notifications: boolean
+    dailyReminder: boolean
+    autoSave: boolean
+    cloudSync: boolean
+    showDebug: boolean
+}
+
+const DEFAULT_SETTINGS: PersistedSettings = {
+    playerHeight: '185',
+    playerPosition: 'SG',
+    haptics: true,
+    audioFeedback: false,
+    demoMode: false,
+    notifications: true,
+    dailyReminder: true,
+    autoSave: true,
+    cloudSync: true,
+    showDebug: false,
+}
+
 export default function SettingsScreen() {
     const router = useRouter()
     const user = useStore(selectUser)
     const logout = useStore(s => s.logout)
 
-    // Local state for settings
     const [playerName, setPlayerName] = useState(user?.full_name ?? 'Player')
-    const [playerHeight, setPlayerHeight] = useState('185')
-    const [playerPosition, setPlayerPosition] = useState('SG')
-    const [haptics, setHaptics] = useState(true)
-    const [audioFeedback, setAudioFeedback] = useState(false)
-    const [demoMode, setDemoMode] = useState(false)
-    const [notifications, setNotifications] = useState(true)
-    const [dailyReminder, setDailyReminder] = useState(true)
-    const [autoSave, setAutoSave] = useState(true)
-    const [cloudSync, setCloudSync] = useState(true)
-    const [showDebug, setShowDebug] = useState(false)
+    const [playerHeight, setPlayerHeight] = useState(DEFAULT_SETTINGS.playerHeight)
+    const [playerPosition, setPlayerPosition] = useState(DEFAULT_SETTINGS.playerPosition)
+    const [haptics, setHaptics] = useState(DEFAULT_SETTINGS.haptics)
+    const [audioFeedback, setAudioFeedback] = useState(DEFAULT_SETTINGS.audioFeedback)
+    const [demoMode, setDemoMode] = useState(DEFAULT_SETTINGS.demoMode)
+    const [notifications, setNotifications] = useState(DEFAULT_SETTINGS.notifications)
+    const [dailyReminder, setDailyReminder] = useState(DEFAULT_SETTINGS.dailyReminder)
+    const [autoSave, setAutoSave] = useState(DEFAULT_SETTINGS.autoSave)
+    const [cloudSync, setCloudSync] = useState(DEFAULT_SETTINGS.cloudSync)
+    const [showDebug, setShowDebug] = useState(DEFAULT_SETTINGS.showDebug)
+
+    // Load persisted settings on mount
+    useEffect(() => {
+        AsyncStorage.getItem(SETTINGS_KEY).then(raw => {
+            if (!raw) return
+            try {
+                const saved: Partial<PersistedSettings> = JSON.parse(raw)
+                if (saved.playerHeight) setPlayerHeight(saved.playerHeight)
+                if (saved.playerPosition) setPlayerPosition(saved.playerPosition)
+                if (saved.haptics !== undefined) setHaptics(saved.haptics)
+                if (saved.audioFeedback !== undefined) setAudioFeedback(saved.audioFeedback)
+                if (saved.demoMode !== undefined) setDemoMode(saved.demoMode)
+                if (saved.notifications !== undefined) setNotifications(saved.notifications)
+                if (saved.dailyReminder !== undefined) setDailyReminder(saved.dailyReminder)
+                if (saved.autoSave !== undefined) setAutoSave(saved.autoSave)
+                if (saved.cloudSync !== undefined) setCloudSync(saved.cloudSync)
+                if (saved.showDebug !== undefined) setShowDebug(saved.showDebug)
+            } catch {}
+        })
+    }, [])
+
+    // Save settings whenever they change
+    const persistSettings = useCallback((patch: Partial<PersistedSettings>) => {
+        AsyncStorage.getItem(SETTINGS_KEY).then(raw => {
+            const current = raw ? JSON.parse(raw) : {}
+            AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...current, ...patch }))
+        })
+    }, [])
+
+    const updateSetting = <K extends keyof PersistedSettings>(
+        key: K,
+        setter: React.Dispatch<React.SetStateAction<PersistedSettings[K]>>,
+    ) => (val: PersistedSettings[K]) => {
+        setter(val)
+        persistSettings({ [key]: val })
+    }
 
     const handleExportData = useCallback(async () => {
-        try {
-            const shareService = new ShareService()
-            Alert.alert(
-                'Exporter mes données',
-                'Choisir le format d\'export',
-                [
-                    { text: 'Annuler', style: 'cancel' },
-                    {
-                        text: 'CSV',
-                        onPress: () => Alert.alert('Export', 'Export CSV en cours... (bientôt disponible)'),
+        Alert.alert(
+            'Exporter mes données',
+            'Choisir le format d\'export',
+            [
+                { text: 'Annuler', style: 'cancel' },
+                {
+                    text: 'CSV',
+                    onPress: async () => {
+                        try {
+                            const res = await api.get<{ url: string }>('/api/export?format=csv')
+                            Alert.alert('Export CSV', `Fichier prêt : ${res.url ?? 'Téléchargement lancé'}`)
+                        } catch {
+                            Alert.alert('Erreur', 'Export CSV impossible. Vérifie ta connexion.')
+                        }
                     },
-                    {
-                        text: 'JSON',
-                        onPress: () => Alert.alert('Export', 'Export JSON en cours... (bientôt disponible)'),
+                },
+                {
+                    text: 'JSON',
+                    onPress: async () => {
+                        try {
+                            const res = await api.get<{ url: string }>('/api/export?format=json')
+                            Alert.alert('Export JSON', `Fichier prêt : ${res.url ?? 'Téléchargement lancé'}`)
+                        } catch {
+                            Alert.alert('Erreur', 'Export JSON impossible. Vérifie ta connexion.')
+                        }
                     },
-                ],
-            )
-        } catch (err) {
-            Alert.alert('Erreur', 'Impossible d\'exporter les données.')
-        }
+                },
+            ],
+        )
     }, [])
 
     const handleSignOut = useCallback(() => {
@@ -134,11 +207,20 @@ export default function SettingsScreen() {
                 {
                     text: 'Supprimer',
                     style: 'destructive',
-                    onPress: () => Alert.alert('Info', 'Fonction en cours de développement.'),
+                    onPress: async () => {
+                        try {
+                            await api.post('/api/account/delete', {})
+                            await supabase.auth.signOut()
+                            logout()
+                            router.replace('/')
+                        } catch {
+                            Alert.alert('Erreur', 'Impossible de supprimer le compte. Contacte le support.')
+                        }
+                    },
                 },
             ],
         )
-    }, [])
+    }, [logout, router])
 
     const handleResetCalibration = useCallback(() => {
         Alert.alert(
@@ -146,10 +228,13 @@ export default function SettingsScreen() {
             'Cela réinitialisera les paramètres de calibration de ton téléphone.',
             [
                 { text: 'Annuler', style: 'cancel' },
-                { text: 'Recalibrer', onPress: () => Alert.alert('OK', 'Calibration réinitialisée.') },
+                {
+                    text: 'Recalibrer',
+                    onPress: () => router.push('/calibration'),
+                },
             ],
         )
-    }, [])
+    }, [router])
 
     // ---- Section definitions ----
     const sections: SettingsSection[] = [
@@ -164,7 +249,10 @@ export default function SettingsScreen() {
                 {
                     id: 'height', icon: 'maximize-2', label: 'Taille (cm)', type: 'input',
                     value: playerHeight,
-                    onChange: setPlayerHeight,
+                    onChange: (val: string) => {
+                        setPlayerHeight(val)
+                        persistSettings({ playerHeight: val })
+                    },
                 },
                 {
                     id: 'position', icon: 'target', label: 'Position', type: 'select',
@@ -174,6 +262,7 @@ export default function SettingsScreen() {
                         const idx = POSITIONS.indexOf(playerPosition)
                         const next = POSITIONS[(idx + 1) % POSITIONS.length]
                         setPlayerPosition(next)
+                        persistSettings({ playerPosition: next })
                     },
                 },
             ],
@@ -184,17 +273,17 @@ export default function SettingsScreen() {
                 {
                     id: 'haptics', icon: 'smartphone', label: 'Retour haptique', type: 'toggle',
                     value: haptics,
-                    onToggle: setHaptics,
+                    onToggle: updateSetting('haptics', setHaptics),
                 },
                 {
                     id: 'audio', icon: 'volume-2', label: 'Feedback audio', type: 'toggle',
                     value: audioFeedback,
-                    onToggle: setAudioFeedback,
+                    onToggle: updateSetting('audioFeedback', setAudioFeedback),
                 },
                 {
                     id: 'demo', icon: 'zap', label: 'Mode démo', type: 'toggle',
                     value: demoMode,
-                    onToggle: setDemoMode,
+                    onToggle: updateSetting('demoMode', setDemoMode),
                 },
                 {
                     id: 'calibrate', icon: 'crosshair', label: 'Recalibrer l\'IA',
@@ -210,12 +299,12 @@ export default function SettingsScreen() {
                 {
                     id: 'notifications', icon: 'bell', label: 'Notifications push', type: 'toggle',
                     value: notifications,
-                    onToggle: setNotifications,
+                    onToggle: updateSetting('notifications', setNotifications),
                 },
                 {
                     id: 'reminder', icon: 'clock', label: 'Rappel quotidien', type: 'toggle',
                     value: dailyReminder,
-                    onToggle: setDailyReminder,
+                    onToggle: updateSetting('dailyReminder', setDailyReminder),
                 },
             ],
         },
@@ -225,12 +314,12 @@ export default function SettingsScreen() {
                 {
                     id: 'autosave', icon: 'save', label: 'Sauvegarde auto', type: 'toggle',
                     value: autoSave,
-                    onToggle: setAutoSave,
+                    onToggle: updateSetting('autoSave', setAutoSave),
                 },
                 {
                     id: 'cloud', icon: 'cloud', label: 'Sync cloud', type: 'toggle',
                     value: cloudSync,
-                    onToggle: setCloudSync,
+                    onToggle: updateSetting('cloudSync', setCloudSync),
                 },
                 {
                     id: 'export', icon: 'download', label: 'Exporter mes données', type: 'action',
@@ -244,11 +333,11 @@ export default function SettingsScreen() {
                 {
                     id: 'debug', icon: 'terminal', label: 'Mode debug', type: 'toggle',
                     value: showDebug,
-                    onToggle: setShowDebug,
+                    onToggle: updateSetting('showDebug', setShowDebug),
                 },
                 {
                     id: 'version', icon: 'info', label: 'Version', type: 'info',
-                    value: '1.0.0 (build 42)',
+                    value: Constants.expoConfig?.version ?? '1.0.0',
                 },
                 {
                     id: 'signout', icon: 'log-out', label: 'Déconnexion', type: 'action',
@@ -323,10 +412,10 @@ export default function SettingsScreen() {
                 {/* Footer */}
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>
-                        CourtVision AI v1.0.0
+                        CourtVision AI v{Constants.expoConfig?.version ?? '1.0.0'}
                     </Text>
                     <Text style={styles.footerText}>
-                        Made with {Platform.OS === 'ios' ? '🏀' : '🏀'} for hoopers everywhere
+                        Made with 🏀 for hoopers everywhere
                     </Text>
                 </View>
             </ScrollView>

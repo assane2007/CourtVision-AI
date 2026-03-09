@@ -1,15 +1,48 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Bell, User, Play, BarChart2, Zap, Users } from 'lucide-react-native';
+import { Bell, Play, BarChart2, Zap, Users } from 'lucide-react-native';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { colors, typography, space, shadows, radius } from '../../constants/tokens';
 import { Badge } from '../../components/ui/Badge';
 import { useRouter } from 'expo-router';
+import { useStore, selectUser, selectIsDemoMode } from '../../lib/store';
+import { api } from '../../lib/api';
+
+interface DashboardData {
+    lastGameAccuracy: number | null;
+    rosterCount: number;
+    shadowLeague: {
+        matchupTitle: string;
+        rivalName: string;
+        simResult: string;
+        winRate: string;
+        releaseGap: string;
+        coachInsight: string;
+    } | null;
+    objectives: string[];
+    recentSessions: Array<{
+        id: string;
+        name: string;
+        details: string;
+        accuracy: number;
+    }>;
+}
+
+function getGreetingTime(): string {
+    const h = new Date().getHours();
+    if (h < 6) return 'Good night,';
+    if (h < 12) return 'Good morning,';
+    if (h < 18) return 'Good afternoon,';
+    return 'Good evening,';
+}
 
 export default function DashboardScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
+    const user = useStore(selectUser);
+    const isDemoMode = useStore(selectIsDemoMode);
+    const [data, setData] = useState<DashboardData | null>(null);
 
     // Pulse animation for the "Online" dot
     const dotOpacity = useSharedValue(1);
@@ -27,6 +60,52 @@ export default function DashboardScreen() {
     const animatedDot = useAnimatedStyle(() => ({
         opacity: dotOpacity.value
     }));
+
+    useEffect(() => {
+        loadDashboard();
+    }, []);
+
+    const loadDashboard = useCallback(async () => {
+        if (isDemoMode) {
+            setData({
+                lastGameAccuracy: 94.2,
+                rosterCount: 12,
+                shadowLeague: {
+                    matchupTitle: 'Morning Simulation: Matchup #842',
+                    rivalName: 'Rival Marc',
+                    simResult: 'L 2:3',
+                    winRate: '32%',
+                    releaseGap: '-0.2s',
+                    coachInsight: 'Marc a une détente (+4cm) plus rapide que ta capacité de contestation. Tu perds 68% des duels en "Switch Defense".',
+                },
+                objectives: [
+                    'Hit 5 catch-and-shoot 3s (>20km/h prep)',
+                    'Keep elbow flare < 5° under fatigue',
+                    'At least 10 high-intensity sprints',
+                ],
+                recentSessions: [
+                    { id: 'demo-01', name: 'Mar 01 · vs City Lakers', details: '1h 24min  ·  Full Court', accuracy: 94.2 },
+                    { id: 'demo-02', name: 'Feb 28 · Training', details: '45min  ·  Half Court', accuracy: 88.7 },
+                ],
+            });
+            return;
+        }
+        try {
+            const res = await api.get<{ data: DashboardData }>('/api/dashboard');
+            setData(res.data ?? res as any);
+        } catch {
+            setData({
+                lastGameAccuracy: null,
+                rosterCount: 0,
+                shadowLeague: null,
+                objectives: [],
+                recentSessions: [],
+            });
+        }
+    }, [isDemoMode]);
+
+    const displayName = user?.full_name ?? user?.email?.split('@')[0] ?? 'Player';
+    const initials = displayName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
 
     return (
         <View style={styles.container}>
@@ -52,15 +131,15 @@ export default function DashboardScreen() {
                             <View style={styles.bellBadge} />
                         </View>
                         <View style={styles.avatar}>
-                            <Text style={styles.avatarText}>CM</Text>
+                            <Text style={styles.avatarText}>{initials}</Text>
                         </View>
                     </View>
                 </View>
 
                 {/* Header Greeting */}
                 <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.greetingSection}>
-                    <Text style={styles.greetingTime}>Good evening,</Text>
-                    <Text style={styles.greetingName}>Coach Martin. 🏀</Text>
+                    <Text style={styles.greetingTime}>{getGreetingTime()}</Text>
+                    <Text style={styles.greetingName}>{displayName}. 🏀</Text>
 
                     <View style={styles.statusRow}>
                         <Animated.View style={[styles.statusDot, animatedDot]} />
@@ -83,7 +162,7 @@ export default function DashboardScreen() {
                         <Pressable style={styles.actionCardSecondary} onPress={() => router.push('/(app)/sessions/recent')}>
                             <View style={[styles.cardHeader, { justifyContent: 'space-between', flexDirection: 'row', width: '100%' }]}>
                                 <BarChart2 color={colors.fire} size={20} />
-                                <Text style={styles.miniStatText}>94.2%</Text>
+                                <Text style={styles.miniStatText}>{data?.lastGameAccuracy != null ? `${data.lastGameAccuracy}%` : '—'}</Text>
                             </View>
                             <Text style={styles.secondaryCardText}>LAST GAME</Text>
                         </Pressable>
@@ -91,7 +170,7 @@ export default function DashboardScreen() {
                             <View style={styles.cardHeader}>
                                 <Users color={colors.fire} size={20} />
                             </View>
-                            <Text style={styles.secondaryCardText}>ROSTER (12)</Text>
+                            <Text style={styles.secondaryCardText}>ROSTER ({data?.rosterCount ?? 0})</Text>
                         </Pressable>
                     </View>
                 </Animated.View>
@@ -107,6 +186,7 @@ export default function DashboardScreen() {
                 </Animated.View>
 
                 {/* THE SHADOW LEAGUE — MORNING REPORT */}
+                {data?.shadowLeague && (
                 <Animated.View entering={FadeInDown.delay(320).duration(400)} style={styles.shadowLeagueSection}>
                     <View style={styles.sectionHeader}>
                         <Text style={[styles.sectionTitle, { color: '#B088FF' }]}>THE SHADOW LEAGUE</Text>
@@ -120,40 +200,42 @@ export default function DashboardScreen() {
                                 <Users color="#B088FF" size={20} />
                             </View>
                             <View style={styles.shadowHeaderText}>
-                                <Text style={styles.shadowTitle}>Morning Simulation: Matchup #842</Text>
-                                <Text style={styles.shadowSubtitle}>Against Digital Twin: <Text style={{ color: colors.fire }}>'Rival Marc'</Text></Text>
+                                <Text style={styles.shadowTitle}>{data.shadowLeague.matchupTitle}</Text>
+                                <Text style={styles.shadowSubtitle}>Against Digital Twin: <Text style={{ color: colors.fire }}>'{data.shadowLeague.rivalName}'</Text></Text>
                             </View>
                         </View>
 
                         <View style={styles.shadowResultRow}>
                             <View style={styles.shadowMetric}>
-                                <Text style={styles.shadowMetricValue}>L 2:3</Text>
+                                <Text style={styles.shadowMetricValue}>{data.shadowLeague.simResult}</Text>
                                 <Text style={styles.shadowMetricLabel}>SIM RESULT</Text>
                             </View>
                             <View style={styles.shadowMetric}>
-                                <Text style={styles.shadowMetricValue}>32%</Text>
+                                <Text style={styles.shadowMetricValue}>{data.shadowLeague.winRate}</Text>
                                 <Text style={styles.shadowMetricLabel}>WIN RATE</Text>
                             </View>
                             <View style={styles.shadowMetric}>
-                                <Text style={styles.shadowMetricValue}>-0.2s</Text>
+                                <Text style={styles.shadowMetricValue}>{data.shadowLeague.releaseGap}</Text>
                                 <Text style={styles.shadowMetricLabel}>RELEASE GAP</Text>
                             </View>
                         </View>
 
                         <View style={styles.shadowReportBox}>
                             <Text style={styles.shadowReportText}>
-                                <Text style={{ fontWeight: '700', color: '#B088FF' }}>COACH AI:</Text> Marc a une détente (+4cm) plus rapide que ta capacité de contestation. Tu perds 68% des duels en "Switch Defense".
+                                <Text style={{ fontWeight: '700', color: '#B088FF' }}>COACH AI:</Text> {data.shadowLeague.coachInsight}
                             </Text>
                         </View>
 
                         <View style={styles.shadowCardFooter}>
-                            <Text style={styles.shadowFooterText}>View full 1,000 game logs</Text>
+                            <Text style={styles.shadowFooterText}>View full game logs</Text>
                             <Play color="#B088FF" size={12} />
                         </View>
                     </Pressable>
                 </Animated.View>
+                )}
 
                 {/* LIVE PLAYBOOK */}
+                {(data?.objectives?.length ?? 0) > 0 && (
                 <Animated.View entering={FadeInDown.delay(350).duration(400)} style={styles.playbookSection}>
                     <View style={styles.sectionHeader}>
                         <Text style={[styles.sectionTitle, { color: colors.fire }]}>LIVE PLAYBOOK</Text>
@@ -161,20 +243,15 @@ export default function DashboardScreen() {
                     </View>
                     <View style={styles.playbookCard}>
                         <Text style={styles.playbookTitle}>TODAY'S AI OBJECTIVES</Text>
-                        <View style={styles.goalRow}>
-                            <View style={styles.goalCheckbox} />
-                            <Text style={styles.goalText}>Hit 5 catch-and-shoot 3s (&gt;20km/h prep)</Text>
-                        </View>
-                        <View style={styles.goalRow}>
-                            <View style={styles.goalCheckbox} />
-                            <Text style={styles.goalText}>Keep elbow flare &lt; 5° under fatigue</Text>
-                        </View>
-                        <View style={styles.goalRow}>
-                            <View style={styles.goalCheckbox} />
-                            <Text style={styles.goalText}>At least 10 high-intensity sprints</Text>
-                        </View>
+                        {data!.objectives.map((goal, i) => (
+                            <View key={i} style={styles.goalRow}>
+                                <View style={styles.goalCheckbox} />
+                                <Text style={styles.goalText}>{goal}</Text>
+                            </View>
+                        ))}
                     </View>
                 </Animated.View>
+                )}
 
                 {/* Recent Sessions */}
                 <Animated.View entering={FadeInDown.delay(400).duration(400)} style={styles.recentSection}>
@@ -183,26 +260,17 @@ export default function DashboardScreen() {
                         <View style={styles.sectionLine} />
                     </View>
 
-                    <Pressable style={styles.sessionCard} onPress={() => router.push('/(app)/sessions/game-01')}>
-                        <View style={styles.sessionInfo}>
-                            <Text style={styles.sessionName}>Mar 01 · vs City Lakers</Text>
-                            <Text style={styles.sessionDetails}>1h 24min  ·  Full Court</Text>
-                            <View style={styles.sessionTags}>
-                                <View style={styles.tag}>
-                                    <Text style={styles.tagText}>🏀 Basketball</Text>
-                                </View>
-                            </View>
-                        </View>
-                        <View style={styles.accuracyBadge}>
-                            <Text style={styles.accuracyValue}>94.2%</Text>
-                            <Text style={styles.accuracyLabel}>accuracy</Text>
-                        </View>
-                    </Pressable>
+                    {(data?.recentSessions ?? []).length === 0 && (
+                        <Text style={{ color: colors.fog, fontFamily: 'DMSans_400Regular', fontSize: 14, textAlign: 'center', marginTop: space[4] }}>
+                            No sessions yet. Record your first session!
+                        </Text>
+                    )}
 
-                    <Pressable style={styles.sessionCard}>
+                    {(data?.recentSessions ?? []).map((session) => (
+                    <Pressable key={session.id} style={styles.sessionCard} onPress={() => router.push(`/(app)/sessions/${session.id}`)}>
                         <View style={styles.sessionInfo}>
-                            <Text style={styles.sessionName}>Feb 28 · Training</Text>
-                            <Text style={styles.sessionDetails}>45min  ·  Half Court</Text>
+                            <Text style={styles.sessionName}>{session.name}</Text>
+                            <Text style={styles.sessionDetails}>{session.details}</Text>
                             <View style={styles.sessionTags}>
                                 <View style={styles.tag}>
                                     <Text style={styles.tagText}>🏀 Basketball</Text>
@@ -210,10 +278,11 @@ export default function DashboardScreen() {
                             </View>
                         </View>
                         <View style={styles.accuracyBadge}>
-                            <Text style={styles.accuracyValue}>88.7%</Text>
+                            <Text style={styles.accuracyValue}>{session.accuracy}%</Text>
                             <Text style={styles.accuracyLabel}>accuracy</Text>
                         </View>
                     </Pressable>
+                    ))}
                 </Animated.View>
             </ScrollView>
         </View>

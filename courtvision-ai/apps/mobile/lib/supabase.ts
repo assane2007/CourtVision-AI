@@ -41,8 +41,9 @@ if (isDemoMode) {
 
 // ─── Client ────────────────────────────────────────────────────
 
-const safeUrl = SUPABASE_URL || 'https://placeholder.supabase.co'
-const safeKey = SUPABASE_ANON_KEY || 'placeholder-key'
+// In demo mode, use a dummy URL that won't make real requests
+const safeUrl = SUPABASE_URL || 'https://demo.supabase.co'
+const safeKey = SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.demo'
 
 export const supabase = createClient(safeUrl, safeKey, {
     auth: {

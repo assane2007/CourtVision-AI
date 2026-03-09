@@ -161,8 +161,8 @@ interface CourtVisionState {
     updateUser: (partial: Partial<UserProfile>) => void
 }
 
-// ─── Default Gamification Data ────────────────────────────────
-const DEFAULT_BADGES: Badge[] = [
+// ─── Default Gamification Data (used only in demo mode) ──────
+const DEMO_BADGES: Badge[] = [
     { id: 'b1', emoji: '🎯', name: 'Sniper', rarity: 'epic', xp: 500, desc: 'FG% > 60% over 5 sessions', earnedAt: new Date().toISOString() },
     { id: 'b2', emoji: '🔥', name: '7-Day Streak', rarity: 'rare', xp: 200, desc: '7 consecutive days', earnedAt: new Date().toISOString() },
     { id: 'b3', emoji: '🧠', name: 'Mental Pro', rarity: 'legendary', xp: 1000, desc: 'Mental score > 90', earnedAt: new Date().toISOString() },
@@ -172,7 +172,7 @@ const DEFAULT_BADGES: Badge[] = [
     { id: 'b7', emoji: '💎', name: 'Elite', rarity: 'legendary', xp: 2000, desc: 'Reach 90+ overall', earnedAt: new Date().toISOString() },
 ]
 
-const DEFAULT_ACTIVITY: ActivityEvent[] = [
+const DEMO_ACTIVITY: ActivityEvent[] = [
     { id: 'a1', icon: 'film', text: 'Session analyzed · Mental 91', time: '2h ago', color: T.color.signature.primary, timestamp: Date.now() - 7200000 },
     { id: 'a2', icon: 'zap', text: '7-day streak reached!', time: 'Yesterday', color: T.color.semantic.warning, timestamp: Date.now() - 86400000 },
     { id: 'a3', icon: 'arrow-up', text: 'Level 8 unlocked · +200 XP', time: 'Yesterday', color: T.color.semantic.success, timestamp: Date.now() - 86400000 },
@@ -180,16 +180,16 @@ const DEFAULT_ACTIVITY: ActivityEvent[] = [
     { id: 'a5', icon: 'award', text: 'Top 10 weekly leaderboard', time: '5d ago', color: T.color.gamification.gold, timestamp: Date.now() - 86400000 * 5 },
 ]
 
-// ─── Default mock data (shown while loading or on error) ──────
+// ─── Default empty state (shown while loading) ────────────────
 
-const DEFAULT_WEEKLY: WeekDay[] = [
-    { day: 'L', mental: 72, shooting: 58, hasSession: true },
-    { day: 'M', mental: 80, shooting: 64, hasSession: true },
+const EMPTY_WEEKLY: WeekDay[] = [
+    { day: 'L', mental: 0, shooting: 0, hasSession: false },
     { day: 'M', mental: 0, shooting: 0, hasSession: false },
-    { day: 'J', mental: 85, shooting: 70, hasSession: true },
-    { day: 'V', mental: 78, shooting: 62, hasSession: true },
+    { day: 'M', mental: 0, shooting: 0, hasSession: false },
+    { day: 'J', mental: 0, shooting: 0, hasSession: false },
+    { day: 'V', mental: 0, shooting: 0, hasSession: false },
     { day: 'S', mental: 0, shooting: 0, hasSession: false },
-    { day: 'D', mental: 91, shooting: 75, hasSession: true },
+    { day: 'D', mental: 0, shooting: 0, hasSession: false },
 ]
 
 // ─── Demo user profile ───────────────────────────────────────
@@ -229,7 +229,7 @@ export const useStore = create<CourtVisionState>()(
                 userError: null,
 
                 // Weekly
-                weeklyData: DEFAULT_WEEKLY,
+                weeklyData: EMPTY_WEEKLY,
                 weeklyLoading: false,
 
                 // Highlights
@@ -243,9 +243,9 @@ export const useStore = create<CourtVisionState>()(
                 // XP
                 xpEvents: [],
 
-                // Notifications & gamification
-                badges: DEFAULT_BADGES,
-                recentActivity: DEFAULT_ACTIVITY,
+                // Notifications & gamification — start empty, load from API
+                badges: [],
+                recentActivity: [],
 
                 // ── Hydration ──
                 setHydrated: () => set({ hydrated: true }),
@@ -357,7 +357,7 @@ export const useStore = create<CourtVisionState>()(
                     set({
                         isAuthenticated: false,
                         user: null,
-                        weeklyData: DEFAULT_WEEKLY,
+                        weeklyData: EMPTY_WEEKLY,
                         highlights: [],
                         sessions: [],
                         xpEvents: [],
@@ -369,7 +369,12 @@ export const useStore = create<CourtVisionState>()(
                 // ── Data actions ──
                 async loadProfile() {
                     if (isDemoMode) {
-                        set({ user: get().user ?? DEMO_USER, userLoading: false })
+                        set({
+                            user: get().user ?? DEMO_USER,
+                            userLoading: false,
+                            badges: DEMO_BADGES,
+                            recentActivity: DEMO_ACTIVITY,
+                        })
                         return
                     }
                     set({ userLoading: true, userError: null })
@@ -423,7 +428,18 @@ export const useStore = create<CourtVisionState>()(
 
                 async loadWeeklyData() {
                     if (isDemoMode) {
-                        set({ weeklyData: DEFAULT_WEEKLY, weeklyLoading: false })
+                        set({
+                            weeklyData: [
+                                { day: 'L', mental: 72, shooting: 58, hasSession: true },
+                                { day: 'M', mental: 80, shooting: 64, hasSession: true },
+                                { day: 'M', mental: 0, shooting: 0, hasSession: false },
+                                { day: 'J', mental: 85, shooting: 70, hasSession: true },
+                                { day: 'V', mental: 78, shooting: 62, hasSession: true },
+                                { day: 'S', mental: 0, shooting: 0, hasSession: false },
+                                { day: 'D', mental: 91, shooting: 75, hasSession: true },
+                            ],
+                            weeklyLoading: false,
+                        })
                         return
                     }
                     set({ weeklyLoading: true })
@@ -431,7 +447,6 @@ export const useStore = create<CourtVisionState>()(
                         const data = await api.get<WeekDay[]>('/api/sessions/weekly')
                         set({ weeklyData: data, weeklyLoading: false })
                     } catch {
-                        // Keep default/last known data on error
                         set({ weeklyLoading: false })
                     }
                 },
@@ -580,6 +595,7 @@ export const selectXPLevel = (s: CourtVisionState) => s.user?.xp_level ?? 1
 export const selectXPEvents = (s: CourtVisionState) => s.xpEvents
 export const selectIsAuthenticated = (s: CourtVisionState) => s.isAuthenticated
 export const selectHydrated = (s: CourtVisionState) => s.hydrated
+export const selectIsDemoMode = () => isDemoMode
 
 // ─── M-12: Shallow equality hooks (prevent unnecessary re-renders) ──
 // Use these instead of `useStore(s => ({ a: s.a, b: s.b }))` in components

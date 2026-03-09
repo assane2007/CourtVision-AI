@@ -21,10 +21,10 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 interface StoryViewerProps {
     visible: boolean;
     onClose: () => void;
-    // We would normally pass a video URI or ID here
+    videoUri?: string;
 }
 
-export function StoryViewer({ visible, onClose }: StoryViewerProps) {
+export function StoryViewer({ visible, onClose, videoUri }: StoryViewerProps) {
     const [videoLoaded, setVideoLoaded] = useState(false);
 
     // Animation Values
@@ -100,14 +100,9 @@ export function StoryViewer({ visible, onClose }: StoryViewerProps) {
             onRequestClose={onClose}
         >
             <View style={styles.container}>
-                {/* 
-                    In a real app, this would be a high-quality trimmed clip.
-                    For this prototype, we'll use a placeholder or generic sports video.
-                    Note: expo-av needs a valid URI. We'll use a public placeholder for the demo effect.
-                */}
+                {videoUri ? (
                 <Video
-                    source={{ uri: 'https://d23dyxeqlo5psv.cloudfront.net/big_buck_bunny.mp4' }} // Replace with actual basketball clip in prod
-                    // We'll simulate a black background until a real proxy video exists
+                    source={{ uri: videoUri }}
                     style={StyleSheet.absoluteFill}
                     resizeMode={ResizeMode.COVER}
                     shouldPlay={visible}
@@ -115,6 +110,15 @@ export function StoryViewer({ visible, onClose }: StoryViewerProps) {
                     isLooping={false}
                     onLoad={() => setVideoLoaded(true)}
                 />
+                ) : (
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.base }]}>
+                    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ color: colors.fog, fontSize: 14, fontFamily: 'DMSans_400Regular' }}>
+                            No highlight reel available yet
+                        </Text>
+                    </View>
+                </View>
+                )}
 
                 {/* Dark Vignette Overlay for readability */}
                 <View style={styles.vignetteTop} />

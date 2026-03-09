@@ -98,14 +98,19 @@ export default function RecordScreen() {
                 ))}
             </View>
 
-            {/* Bounding Boxes Simulation */}
-            {live.phase === 'active' && (
-                <>
-                    <BoundingBox x="20%" y="40%" width={60} height={140} playerNumber={1} delay={0} speed={4} />
-                    <BoundingBox x="60%" y="30%" width={70} height={150} playerNumber={2} delay={500} speed={12} />
-                    <BoundingBox x="35%" y="60%" width={90} height={180} playerNumber={3} delay={800} speed={18} />
-                </>
-            )}
+            {/* Player Tracking Boxes — rendered from live detection data */}
+            {live.phase === 'active' && (live as any).detections?.map((det: any, i: number) => (
+                <BoundingBox
+                    key={i}
+                    x={`${det.x}%`}
+                    y={`${det.y}%`}
+                    width={det.width ?? 70}
+                    height={det.height ?? 150}
+                    playerNumber={det.player ?? i + 1}
+                    delay={0}
+                    speed={det.speed ?? 0}
+                />
+            ))}
 
             {/* Top HUD */}
             <View style={[styles.topHud, { paddingTop: insets.top + space[2] }]}>
@@ -127,7 +132,7 @@ export default function RecordScreen() {
             <Animated.View entering={FadeIn.delay(500)} style={[styles.statsHud, { top: insets.top + 70 }]}>
                 <View style={styles.statCard}>
                     <Activity color={colors.cloud} size={14} />
-                    <Text style={styles.statLineText}>FPS: <Text style={{ color: colors.snow, fontFamily: 'JetBrainsMono_400Regular' }}>30</Text></Text>
+                    <Text style={styles.statLineText}>FPS: <Text style={{ color: colors.snow, fontFamily: 'JetBrainsMono_400Regular' }}>{(live as any).fps ?? 30}</Text></Text>
                 </View>
                 <View style={styles.statCard}>
                     <Zap color={colors.cloud} size={14} />
@@ -135,7 +140,7 @@ export default function RecordScreen() {
                 </View>
                 <View style={styles.statCard}>
                     <Users color={colors.cloud} size={14} />
-                    <Text style={styles.statLineText}>Players Tracked: <Text style={{ color: colors.snow, fontFamily: 'JetBrainsMono_400Regular' }}>3</Text></Text>
+                    <Text style={styles.statLineText}>Players Tracked: <Text style={{ color: colors.snow, fontFamily: 'JetBrainsMono_400Regular' }}>{(live as any).detections?.length ?? 0}</Text></Text>
                 </View>
                 {live.alerts.slice(0, 1).map((alert, i) => (
                     <View key={i} style={[styles.statCard, { borderColor: alert.severity === 'critical' || alert.severity === 'warning' ? colors.fire : colors.live }]}>

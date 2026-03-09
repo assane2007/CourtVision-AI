@@ -22,7 +22,7 @@ const REFRESH_TOKEN_KEY = 'courtvision_refresh_token'
 export const API_BASE_URL =
     Constants.expoConfig?.extra?.apiUrl
     ?? process.env.EXPO_PUBLIC_API_URL
-    ?? 'http://localhost:8080'
+    ?? (Platform.OS === 'android' ? 'http://10.0.2.2:8080' : 'http://localhost:8080')
 
 // ─── Token management (SecureStore) ──────────────────────────
 

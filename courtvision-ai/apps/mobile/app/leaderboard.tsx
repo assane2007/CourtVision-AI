@@ -14,7 +14,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
     View, Text, TouchableOpacity, ScrollView, StatusBar,
-    StyleSheet, RefreshControl,
+    StyleSheet, RefreshControl, ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
@@ -25,6 +25,8 @@ import Animated, {
     ZoomIn,
 } from 'react-native-reanimated'
 import { T, typePresets } from '../lib/theme'
+import { api } from '../lib/api'
+import { useStore, selectUser } from '../lib/store'
 
 const type = typePresets
 
@@ -56,85 +58,28 @@ type Period = 'weekly' | 'monthly' | 'alltime'
 type Metric = 'score' | 'fgPct' | 'consistency' | 'sessions'
 
 // ==========================================
-// Mock Data (à remplacer par l'API)
+// API-backed data fetching
 // ==========================================
 
-function generateMockLeaderboard(metric: Metric, currentUserId: string): LeaderboardEntry[] {
-    const names = [
-        'Jordan M.', 'LeBron J.', 'Kobe B.', 'Steph C.', 'Kevin D.',
-        'Giannis A.', 'Luka D.', 'Jayson T.', 'Shai G.', 'Anthony E.',
-        'Ja M.', 'Trae Y.', 'Devin B.', 'Bam A.', 'Domantas S.',
-    ]
-
-    const getBaseValue = (m: Metric) => {
-        switch (m) {
-            case 'score': return { mean: 72, std: 12 }
-            case 'fgPct': return { mean: 42, std: 8 }
-            case 'consistency': return { mean: 65, std: 15 }
-            case 'sessions': return { mean: 18, std: 8 }
-        }
+async function fetchLeaderboard(metric: Metric, period: Period): Promise<LeaderboardEntry[]> {
+    try {
+        const res = await api.get<{ data: LeaderboardEntry[] }>(`/api/leaderboard?metric=${metric}&period=${period}`)
+        return res.data ?? res as any
+    } catch (err) {
+        console.warn('[Leaderboard] API fetch failed, returning empty:', err)
+        return []
     }
-
-    const base = getBaseValue(metric)
-    const entries: LeaderboardEntry[] = names.map((name, i) => {
-        const value = Math.round(base.mean + (Math.random() - 0.3) * base.std * 2)
-        return {
-            rank: 0,
-            userId: `user_${i}`,
-            displayName: name,
-            avatarInitials: name.split(' ').map(n => n[0]).join(''),
-            level: Math.floor(Math.random() * 20) + 5,
-            value: Math.max(0, value),
-            delta: Math.round((Math.random() - 0.4) * 10),
-            isCurrentUser: false,
-        }
-    })
-
-    // Insert current user at a random position
-    entries.push({
-        rank: 0,
-        userId: currentUserId,
-        displayName: 'Toi',
-        avatarInitials: 'ME',
-        level: 8,
-        value: Math.round(base.mean + (Math.random() - 0.2) * base.std),
-        delta: Math.round(Math.random() * 5),
-        isCurrentUser: true,
-    })
-
-    // Sort and assign ranks
-    entries.sort((a, b) => b.value - a.value)
-    entries.forEach((e, i) => { e.rank = i + 1 })
-
-    return entries
 }
 
-const MOCK_ACHIEVEMENTS: Achievement[] = [
-    {
-        id: '1',
-        title: 'Premier Workout',
-        description: 'Complété ton premier entraînement IA',
-        icon: 'award',
-        earnedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-        rarity: 'common',
-    },
-    {
-        id: '2',
-        title: 'Sniper',
-        description: '3 sessions consécutives avec FG% > 50%',
-        icon: 'crosshair',
-        earnedAt: new Date(Date.now() - 86400000).toISOString(),
-        rarity: 'rare',
-    },
-    {
-        id: '3',
-        title: 'Machine',
-        description: 'Score de consistance > 80 sur 5 sessions',
-        icon: 'cpu',
-        earnedAt: new Date().toISOString(),
-        rarity: 'epic',
-    },
-]
+async function fetchAchievements(): Promise<Achievement[]> {
+    try {
+        const res = await api.get<{ data: Achievement[] }>('/api/achievements/recent')
+        return res.data ?? res as any
+    } catch (err) {
+        console.warn('[Leaderboard] Achievements fetch failed:', err)
+        return []
+    }
+}
 
 // ==========================================
 // Sub-components
@@ -291,26 +236,39 @@ function AchievementCard({ achievement, delay = 0 }: { achievement: Achievement;
 
 export default function LeaderboardScreen() {
     const router = useRouter()
+    const user = useStore(selectUser)
     const [period, setPeriod] = useState<Period>('weekly')
     const [metric, setMetric] = useState<Metric>('score')
     const [entries, setEntries] = useState<LeaderboardEntry[]>([])
+    const [achievements, setAchievements] = useState<Achievement[]>([])
+    const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
 
-    useEffect(() => {
-        loadLeaderboard()
-    }, [period, metric])
+    const loadData = useCallback(async () => {
+        const [leaderboardData, achievementsData] = await Promise.all([
+            fetchLeaderboard(metric, period),
+            fetchAchievements(),
+        ])
+        // Mark current user in leaderboard
+        const marked = leaderboardData.map(e => ({
+            ...e,
+            isCurrentUser: e.userId === user?.id,
+        }))
+        setEntries(marked)
+        setAchievements(achievementsData)
+        setLoading(false)
+    }, [metric, period, user?.id])
 
-    const loadLeaderboard = useCallback(() => {
-        // En production, appel API
-        const data = generateMockLeaderboard(metric, 'current_user')
-        setEntries(data)
-    }, [metric])
+    useEffect(() => {
+        setLoading(true)
+        loadData()
+    }, [loadData])
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true)
-        loadLeaderboard()
-        setTimeout(() => setRefreshing(false), 500)
-    }, [loadLeaderboard])
+        await loadData()
+        setRefreshing(false)
+    }, [loadData])
 
     const currentUser = entries.find(e => e.isCurrentUser)
 
@@ -381,17 +339,19 @@ export default function LeaderboardScreen() {
                 </View>
 
                 {/* Achievements */}
+                {achievements.length > 0 && (
                 <View style={[styles.card, { marginTop: 12 }]}>
                     <View style={styles.cardHeader}>
                         <Feather name="star" size={14} color={T.color.signature.primary} />
                         <Text style={styles.cardTitle}>Badges récents</Text>
                     </View>
                     <View style={styles.achievementsRow}>
-                        {MOCK_ACHIEVEMENTS.map((a, i) => (
+                        {achievements.map((a, i) => (
                             <AchievementCard key={a.id} achievement={a} delay={i * 100} />
                         ))}
                     </View>
                 </View>
+                )}
             </ScrollView>
         </SafeAreaView>
     )

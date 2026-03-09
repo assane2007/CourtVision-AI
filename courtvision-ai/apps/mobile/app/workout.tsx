@@ -43,6 +43,7 @@ import { SessionStorageService } from '../lib/sessionStorage'
 import { T, typePresets, impact } from '../lib/theme'
 import { CVHUDStat, CVHUDTimer } from '../components/ui'
 import type { CapturedFrame } from '../lib/frameCapture'
+import Constants from 'expo-constants'
 
 const type = typePresets
 
@@ -133,7 +134,7 @@ export default function WorkoutScreen() {
             const storage = SessionStorageService.getInstance()
             await storage.saveSession(ai.stats, ai.shots, {
                 courtType: 'indoor',
-                appVersion: '1.0.0',
+                appVersion: Constants.expoConfig?.version ?? '1.0.0',
             })
             setSaveSuccess(true)
             impact.success()
