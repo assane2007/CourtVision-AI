@@ -20,6 +20,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Vibration, AppState, AppStateStatus } from 'react-native'
 import { LiveCoachService } from '../lib/liveCoachService'
+import { analyzeFrame, analyzeFrameFromUri, isCVEngineAvailable, type CVFrameResult } from '../lib/cvEngineService'
 import { isDemoMode } from '../lib/supabase'
 import { toast } from '../lib/toast'
 import { useStore } from '../lib/store'
@@ -147,6 +148,10 @@ export function useLiveCoach(sessionId: string): UseLiveCoachReturn {
     const [sseConnected, setSseConnected] = useState(false)
     const [detections, setDetections] = useState<Detection[]>([])
     const [fps, setFps] = useState(0)
+    const cvAvailableRef = useRef<boolean | null>(null)
+    const lastElbowAngles = useRef<number[]>([])
+    const lastKneeAngles = useRef<number[]>([])
+    const shotPhaseRef = useRef<'idle' | 'cocking' | 'releasing'>('idle')
 
     // ---- Refs ----
     const serviceRef = useRef<LiveCoachService | null>(null)
@@ -347,6 +352,135 @@ export function useLiveCoach(sessionId: string): UseLiveCoachReturn {
         // In demo mode, frames are simulated by the interval timer in start()
         if (isDemoMode) return
 
+        // ── CV Engine path: send real image data for pose estimation ──
+        const hasFrame = payload.frameBase64 || payload.frameUri
+        if (hasFrame) {
+            // Check CV Engine availability (cached for 30s)
+            if (cvAvailableRef.current === null) {
+                cvAvailableRef.current = await isCVEngineAvailable()
+                if (cvAvailableRef.current) {
+                    console.log('[LiveCoach] CV Engine connected — real AI analysis active')
+                }
+            }
+
+            if (cvAvailableRef.current) {
+                try {
+                    let cvResult: CVFrameResult
+                    if (payload.frameBase64) {
+                        cvResult = await analyzeFrame(payload.frameBase64)
+                    } else {
+                        cvResult = await analyzeFrameFromUri(payload.frameUri!)
+                    }
+
+                    // Map CV Engine result to hook state
+                    if (cvResult.success) {
+                        // Update posture score from real biomechanics
+                        const elbow = cvResult.elbow_angle
+                        const knee = cvResult.knee_angle
+
+                        if (elbow !== null) {
+                            lastElbowAngles.current.push(elbow)
+                            if (lastElbowAngles.current.length > 20) lastElbowAngles.current.shift()
+                        }
+                        if (knee !== null) {
+                            lastKneeAngles.current.push(knee)
+                            if (lastKneeAngles.current.length > 20) lastKneeAngles.current.shift()
+                        }
+
+                        // Compute posture quality from elbow alignment
+                        // NBA ideal elbow angle during shot: 90-100°
+                        const postureFromElbow = elbow !== null
+                            ? Math.max(0, 1 - Math.abs(elbow - 95) / 45)
+                            : 0.5
+                        setPostureScore(postureFromElbow)
+
+                        // Confidence from CV Engine success + landmark quality
+                        const lmCount = cvResult.landmarks_3d?.length ?? 0
+                        setConfidence(cvResult.success ? Math.min(0.95, 0.5 + lmCount / 66) : 0.1)
+
+                        // Player detections
+                        if (cvResult.players.length > 0) {
+                            setDetections(cvResult.players.map(p => ({
+                                x: p.x1, y: p.y1,
+                                width: p.x2 - p.x1, height: p.y2 - p.y1,
+                                player: p.track_id ?? undefined,
+                            })))
+                        }
+
+                        // FPS from inference time
+                        if (cvResult.inference_ms > 0) {
+                            setFps(Math.round(1000 / cvResult.inference_ms))
+                        }
+
+                        // Shot detection via elbow angle change heuristic
+                        // Cocking: elbow bends (angle decreasing rapidly)
+                        // Release: elbow extends (angle increasing rapidly) past 90°
+                        if (elbow !== null && lastElbowAngles.current.length >= 3) {
+                            const recent = lastElbowAngles.current
+                            const prev = recent[recent.length - 2]
+                            const delta = elbow - prev
+
+                            if (shotPhaseRef.current === 'idle' && delta < -8) {
+                                shotPhaseRef.current = 'cocking'
+                            } else if (shotPhaseRef.current === 'cocking' && delta > 12 && elbow > 85) {
+                                shotPhaseRef.current = 'releasing'
+                            } else if (shotPhaseRef.current === 'releasing') {
+                                // Shot completed — record it with real biomechanics
+                                shotPhaseRef.current = 'idle'
+
+                                const avgKnee = lastKneeAngles.current.length > 0
+                                    ? lastKneeAngles.current.reduce((a, b) => a + b) / lastKneeAngles.current.length
+                                    : 130
+
+                                // Determine outcome heuristic: if wrist ends above shoulder = good follow-through
+                                const skel = cvResult.skeleton
+                                const wristAbove = skel?.right_wrist && skel?.right_shoulder
+                                    ? skel.right_wrist.y < skel.right_shoulder.y
+                                    : false
+
+                                // This doesn't mean made/missed — we can't detect that from pose alone
+                                // Mark as null and let manual recording or ball tracking decide
+                                setMakeCount(p => wristAbove ? p : p)
+
+                                const alert: LiveAlertPayload = {
+                                    id: `cv-${Date.now()}`,
+                                    type: 'posture',
+                                    message: elbow >= 88 && elbow <= 100
+                                        ? `Great release! Elbow ${Math.round(elbow)}°`
+                                        : `Elbow ${Math.round(elbow)}° — aim for 90-100°`,
+                                    severity: elbow >= 85 && elbow <= 105 ? 'info' : 'warning',
+                                    emoji: elbow >= 88 && elbow <= 100 ? '✅' : '📐',
+                                    vibrate: elbow < 85 || elbow > 105,
+                                    vibrationPattern: [],
+                                    timestamp: Date.now(),
+                                }
+                                setAlerts(prev => [alert, ...prev].slice(0, MAX_ALERTS))
+                                vibrateForAlert(alert)
+                            }
+                        }
+                    }
+
+                    // Update mental score based on consistency of recent angles
+                    if (lastElbowAngles.current.length >= 5) {
+                        const angles = lastElbowAngles.current.slice(-10)
+                        const mean = angles.reduce((a, b) => a + b) / angles.length
+                        const variance = angles.reduce((a, b) => a + (b - mean) ** 2, 0) / angles.length
+                        const std = Math.sqrt(variance)
+                        // Lower std = more consistent = higher mental score
+                        const consistency = Math.max(30, Math.min(100, 100 - std * 3))
+                        setMentalScore(Math.round(consistency))
+                        setMentalHistory(prev => [...prev, Math.round(consistency)])
+                    }
+
+                    return // CV Engine handled this frame
+                } catch (err) {
+                    console.warn('[LiveCoach] CV Engine frame error:', (err as Error)?.message)
+                    // Fall through to API-based path
+                }
+            }
+        }
+
+        // ── Fallback: API-based processing (no frame data) ──
         if (!serviceRef.current) return
 
         try {

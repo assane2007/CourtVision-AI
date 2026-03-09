@@ -1,6 +1,6 @@
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
-import { AppState, AppStateStatus, StatusBar, View } from 'react-native';
+import { AppState, AppStateStatus, Platform, StatusBar, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
@@ -46,13 +46,15 @@ import {
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
-Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-    }),
-});
+if (Platform.OS !== 'web') {
+    Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: true,
+        }),
+    });
+}
 
 function AuthGuard() {
     const router = useRouter();
@@ -128,7 +130,7 @@ function AuthGuard() {
 
 // Initialize Sentry for React Native (C-2)
 const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
-if (sentryDsn && !sentryDsn.includes('example.com')) {
+if (sentryDsn && !sentryDsn.includes('example.com') && Platform.OS !== 'web') {
     Sentry.init({
         dsn: sentryDsn,
         tracesSampleRate: 1.0,
@@ -195,4 +197,4 @@ function RootLayout() {
     );
 }
 
-export default Sentry.wrap(RootLayout);
+export default Platform.OS === 'web' ? RootLayout : Sentry.wrap(RootLayout);

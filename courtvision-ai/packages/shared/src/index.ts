@@ -466,6 +466,10 @@ export interface LiveFramePayload {
     ballPosition?: { x: number; y: number }
     manualShotMade?: boolean
     manualShotMissed?: boolean
+    /** Base64-encoded JPEG frame from the camera (for CV Engine analysis) */
+    frameBase64?: string
+    /** File URI of the captured frame (native only) */
+    frameUri?: string
 }
 
 /** Réponse de l'analyse d'une frame */

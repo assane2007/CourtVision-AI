@@ -68,13 +68,15 @@ export function LiveCamera({ active, quarter, onFrame, compact = true }: LiveCam
 
             const photo = await cameraRef.current.takePictureAsync({
                 quality: 0.3,
-                base64: false,
+                base64: true,
                 skipProcessing: true,
             })
 
             const payload: LiveFramePayload = {
                 timestamp: elapsed,
                 quarter,
+                frameBase64: photo?.base64 ?? undefined,
+                frameUri: photo?.uri ?? undefined,
             }
 
             await onFrame(payload)

@@ -30,6 +30,7 @@
 
 import { DemoSimulator } from './demoSimulator'
 import { LiveCoachService } from './liveCoachService'
+import { analyzeFrame, analyzeFrameFromUri, isCVEngineAvailable, type CVFrameResult } from './cvEngineService'
 
 /** Landmark 3D (BlazePose / MoveNet) */
 export interface Landmark {
@@ -306,6 +307,11 @@ export class RealtimeAIService {
     // Server-side processing (real mode)
     private liveCoach: LiveCoachService | null = null
     private serverSessionStarted = false
+    private cvEngineAvailable = false
+
+    // Shot detection state for CV Engine mode
+    private recentElbowAngles: number[] = []
+    private shotPhase: 'idle' | 'cocking' | 'releasing' = 'idle'
 
     // Stats tracking
     private shots: DetectedShot[] = []
@@ -352,12 +358,15 @@ export class RealtimeAIService {
         // - PoseEstimationEngine.initialize() → charge BlazePose TFLite
         // - BallTrackerEngine.initialize() → charge YOLO ball detection
         //
-        // import { PoseEstimationEngine } from '@courtvision/ai'
-        // this.poseEngine = new PoseEstimationEngine(this.config.poseConfig)
-        // await this.poseEngine.initialize()
-        //
-        // Real mode: server-side processing via LiveCoachService is used
-        // until on-device models are bundled. No fake data is returned.
+        // Real mode: check CV Engine availability
+        if (!this.config.enableDemoMode) {
+            this.cvEngineAvailable = await isCVEngineAvailable()
+            if (this.cvEngineAvailable) {
+                console.log('[RealtimeAI] CV Engine available — real pose estimation active')
+            } else {
+                console.log('[RealtimeAI] CV Engine not available — will try API fallback')
+            }
+        }
 
         this.isInitialized = true
         this.config.onPipelineEvent?.({ type: 'initialized' })
@@ -482,30 +491,151 @@ export class RealtimeAIService {
             }
         }
 
-        // ---- MODE RÉEL : pipeline IA via serveur ----
+        // ---- MODE RÉEL : pipeline IA via CV Engine ----
 
-        // Send frame to server for processing (landmarks extracted on-device when available)
         let pose: PoseEstimationResult | null = null
+        let bodyAngles: BodyAngles | null = null
         let detectedShot: DetectedShot | null = null
         let ballPosition: BallPosition | null = null
+        let biomechanics: ShootingBiomechanics | null = null
         let arFrame: AROverlayFrame | null = null
         let instantFeedback: ARFeedback | null = null
 
-        if (this.liveCoach && this.serverSessionStarted) {
+        // ── Try CV Engine first (real pose estimation) ──
+        if (this.cvEngineAvailable && typeof frameData === 'string') {
             try {
-                // Send frame metadata to server (not raw pixels — the server-side
-                // live route processes landmarks and returns analysis)
+                const cvResult: CVFrameResult = frameData.startsWith('file://')
+                    ? await analyzeFrameFromUri(frameData)
+                    : await analyzeFrame(frameData)
+
+                if (cvResult.success && cvResult.landmarks_3d) {
+                    // Map CV Engine landmarks to PoseEstimationResult
+                    pose = {
+                        landmarks: cvResult.landmarks_3d.map(lm => ({
+                            x: lm.x, y: lm.y, z: lm.z, visibility: lm.visibility,
+                        })),
+                        normalizedLandmarks: cvResult.landmarks_3d.map((lm, i) => ({
+                            x: lm.x, y: lm.y, z: lm.z, visibility: lm.visibility,
+                            name: `landmark_${i}`,
+                        })),
+                        confidence: cvResult.landmarks_3d.reduce((sum, lm) => sum + lm.visibility, 0) / cvResult.landmarks_3d.length,
+                        boundingBox: { x: 0, y: 0, width: frameWidth, height: frameHeight },
+                        inferenceTimeMs: cvResult.inference_ms,
+                        frameIndex,
+                        timestamp,
+                    }
+
+                    // Real body angles from CV Engine
+                    const elbowAngle = cvResult.elbow_angle ?? 0
+                    const kneeAngle = cvResult.knee_angle ?? 0
+                    bodyAngles = {
+                        rightElbowAngle: elbowAngle,
+                        leftElbowAngle: 0,
+                        rightShoulderAngle: 0,
+                        rightKneeAngle: kneeAngle,
+                        leftKneeAngle: 0,
+                        trunkAngle: 0,
+                        rightHipAngle: 0,
+                    }
+
+                    // Build real biomechanics
+                    const skeleton = cvResult.skeleton
+                    const wristAboveShoulder = skeleton?.right_wrist && skeleton?.right_shoulder
+                        ? skeleton.right_wrist.y < skeleton.right_shoulder.y
+                        : false
+
+                    biomechanics = {
+                        elbowAngle,
+                        releaseHeightRatio: wristAboveShoulder ? 1.1 : 0.9,
+                        playerHeightPx: frameHeight * 0.7,
+                        ballPosition: cvResult.ball
+                            ? { x: (cvResult.ball.x1 + cvResult.ball.x2) / 2, y: (cvResult.ball.y1 + cvResult.ball.y2) / 2 }
+                            : { x: 0.5, y: 0.3 },
+                        hasGoodBase: kneeAngle >= 120 && kneeAngle <= 160,
+                        kneeFlexion: kneeAngle,
+                        isAligned: elbowAngle >= 80 && elbowAngle <= 110,
+                        postureQuality: Math.max(0, 100 - Math.abs(elbowAngle - 95) * 2),
+                    }
+
+                    // Ball position from YOLO
+                    if (cvResult.ball) {
+                        const b = cvResult.ball
+                        ballPosition = {
+                            x: (b.x1 + b.x2) / 2,
+                            y: (b.y1 + b.y2) / 2,
+                            radius: Math.max(b.x2 - b.x1, b.y2 - b.y1) / 2,
+                            confidence: b.confidence,
+                            velocityX: 0, velocityY: 0,
+                            timestamp,
+                        }
+                    }
+
+                    // Shot detection via elbow angle change
+                    this.recentElbowAngles.push(elbowAngle)
+                    if (this.recentElbowAngles.length > 20) this.recentElbowAngles.shift()
+
+                    if (this.recentElbowAngles.length >= 3) {
+                        const prev = this.recentElbowAngles[this.recentElbowAngles.length - 2]
+                        const delta = elbowAngle - prev
+
+                        if (this.shotPhase === 'idle' && delta < -8) {
+                            this.shotPhase = 'cocking'
+                        } else if (this.shotPhase === 'cocking' && delta > 12 && elbowAngle > 85) {
+                            this.shotPhase = 'releasing'
+                        } else if (this.shotPhase === 'releasing') {
+                            this.shotPhase = 'idle'
+
+                            detectedShot = {
+                                shotId: `cv_${Date.now()}`,
+                                completedPhase: 'resolved',
+                                phaseTimestamps: {
+                                    gatherStart: timestamp - 1.5,
+                                    releasePoint: timestamp - 0.6,
+                                    followThroughStart: timestamp - 0.3,
+                                    ballFlightStart: timestamp - 0.1,
+                                    resolved: timestamp,
+                                },
+                                releaseBiomechanics: biomechanics,
+                                setPointElbowAngle: elbowAngle,
+                                releaseTime: 0.6,
+                                hasFollowThrough: wristAboveShoulder,
+                                followThroughDuration: wristAboveShoulder ? 0.4 : 0.1,
+                                outcome: null, // Cannot determine made/missed from pose alone
+                                detectionConfidence: pose.confidence,
+                                angleTimeline: [bodyAngles],
+                                wristTrajectory: [],
+                            } as DetectedShot
+
+                            // Generate real feedback based on biomechanics
+                            const isGoodElbow = elbowAngle >= 88 && elbowAngle <= 100
+                            instantFeedback = {
+                                type: isGoodElbow ? 'success' : 'warning',
+                                message: isGoodElbow
+                                    ? `Great release! Elbow ${Math.round(elbowAngle)}°`
+                                    : `Elbow ${Math.round(elbowAngle)}° — aim for 90-100°`,
+                                detail: `Knee: ${Math.round(kneeAngle)}° | Follow-through: ${wristAboveShoulder ? 'Yes' : 'No'}`,
+                                icon: isGoodElbow ? '🎯' : '📐',
+                                duration: 3000,
+                                position: 'top',
+                                vibrate: !isGoodElbow,
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('[RealtimeAI] CV Engine frame error:', (err as Error)?.message)
+                // Fall through to LiveCoach API path
+            }
+        }
+
+        // ── Fallback: LiveCoach API (no CV Engine) ──
+        if (!pose && this.liveCoach && this.serverSessionStarted) {
+            try {
                 const serverResult = await this.liveCoach.sendFrame({
                     timestamp,
-                    quarter: 1, // Can be parameterized by session config
-                    frameData,
-                    frameIndex: this.frameCount,
-                    width: frameWidth,
-                    height: frameHeight
+                    quarter: 1,
                 } as any)
 
-                // Map server response to FrameProcessingResult
-                // The server tracks shots and returns cumulative stats + alerts
                 if (serverResult.alerts?.length > 0) {
                     const topAlert = serverResult.alerts[0]
                     instantFeedback = {
@@ -517,42 +647,7 @@ export class RealtimeAIService {
                         position: 'top',
                     }
                 }
-
-                // Check if a new shot was detected since last frame
-                const prevShotCount = this.shots.length
-                const serverShotsDetected = serverResult.stats?.shotsDetected ?? 0
-                if (serverShotsDetected > prevShotCount) {
-                    // Server detected a new shot — create a synthetic DetectedShot
-                    const shotOutcome = serverResult.stats.shootingPct > 0 ? 'made' : 'missed'
-                    detectedShot = {
-                        shotId: `shot_${Date.now()}`,
-                        completedPhase: 'resolved',
-                        phaseTimestamps: {
-                            gatherStart: timestamp - 1.5,
-                            releasePoint: timestamp - 0.8,
-                            followThroughStart: timestamp - 0.5,
-                            ballFlightStart: timestamp - 0.3,
-                            resolved: timestamp,
-                        },
-                        releaseBiomechanics: {
-                            elbowAngle: 93,
-                            releaseHeightRatio: 1.12,
-                            playerHeightPx: 400,
-                            ballPosition: { x: 0.5, y: 0.2 },
-                            hasGoodBase: serverResult.postureScore >= 70,
-                            kneeFlexion: 130,
-                            isAligned: serverResult.postureScore >= 60,
-                            postureQuality: serverResult.postureScore,
-                        },
-                        setPointElbowAngle: 93,
-                        releaseTime: 1.05,
-                        hasFollowThrough: true,
-                        followThroughDuration: 0.4,
-                        outcome: shotOutcome as 'made' | 'missed',
-                    } as DetectedShot
-                }
             } catch (err) {
-                // Server call failed — return empty result (no fake data)
                 console.warn('[RealtimeAI] Server frame processing failed:', (err as Error)?.message)
             }
         }
@@ -572,10 +667,10 @@ export class RealtimeAIService {
 
         return {
             pose,
-            bodyAngles: null,
-            biomechanics: detectedShot?.releaseBiomechanics ?? null,
+            bodyAngles,
+            biomechanics: detectedShot?.releaseBiomechanics ?? biomechanics,
             detectedShot,
-            shotPhase: detectedShot ? 'resolved' : 'idle',
+            shotPhase: detectedShot ? 'resolved' : (this.shotPhase !== 'idle' ? this.shotPhase : 'idle'),
             ballPosition,
             arFrame,
             instantFeedback,
