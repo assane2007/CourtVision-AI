@@ -9,15 +9,22 @@ Merci de ton intérêt pour CourtVision AI ! Voici comment contribuer.
 git clone https://github.com/ton-user/CourtVision-AI.git
 cd CourtVision-AI/courtvision-ai
 
-# Install
-npm install
+# Install (--legacy-peer-deps requis pour compatibilité React 18/19)
+npm install --legacy-peer-deps
 
 # Setup env
 cp .env.example .env
-# Remplis les variables
+# Remplis les variables (SUPABASE_URL, SUPABASE_ANON_KEY, etc.)
 
-# Lance le dev
-cd apps/web && npm run dev
+# Lance l'infra
+docker compose up -d
+
+# Build complet
+npm run build
+
+# Dev
+npm run dev:api    # API    → http://localhost:8080
+npm run dev:web    # Web    → http://localhost:3000
 ```
 
 ## 📋 Conventions
@@ -39,6 +46,7 @@ docs: mise à jour du README
 style: reformatage du code
 refactor: simplification du pipeline tracking
 test: ajout tests unitaires shotAnalysis
+chore: mise à jour dépendances
 ```
 
 ### Code Style
@@ -53,45 +61,78 @@ test: ajout tests unitaires shotAnalysis
 
 ```
 courtvision-ai/
-├── apps/          # Applications (mobile, web)
-├── packages/      # Packages partagés (ai, api, database, shared)
-├── docs/          # Documentation
-└── infra/         # Infrastructure
+├── apps/
+│   ├── mobile/         # React Native (Expo 54) — App iOS/Android
+│   ├── web/            # Next.js 14 — Landing + Dashboard
+│   └── cv-engine/      # Python FastAPI — YOLO, MediaPipe
+├── packages/
+│   ├── ai/             # Pipeline IA (20+ modules TS)
+│   ├── api/            # Fastify Backend (30+ routes)
+│   ├── shared/         # Types, erreurs, logger partagés
+│   ├── database/       # Schémas SQL, migrations, pgvector
+│   └── python/         # Scripts ML (tracker)
+├── docs/               # Documentation API, Architecture
+├── infra/              # Terraform (staging + production)
+└── scripts/            # Scripts utilitaires
 ```
 
 ## 🧪 Tests
 
 ```bash
-# Tests unitaires
-cd packages/api && npm test
+# Tous les tests (311 tests, 23 suites)
+npm test
+
+# Tests API uniquement (126 tests)
+npm run test:api
+
+# Tests AI uniquement (185 tests)
+npm run test:ai
+
+# Build complet (shared → ai → api → web)
+npm run build
 
 # Lint
 npm run lint
 ```
 
-## 📝 Pull Request
+> ⚠️ **Assurez-vous que tous les tests passent avant de soumettre une PR.**
 
-1. Crée une branche depuis `develop`
-2. Fais tes changements
-3. Écris / met à jour les tests
-4. Vérifie que le build passe
-5. Ouvre une PR avec une description claire
-6. Attends la review
+## 🔧 Ajouter une nouvelle feature
 
-## 💡 Idées de contribution
+### Nouvelle route API
+1. Créer le fichier dans `packages/api/src/routes/`
+2. Enregistrer la route dans `packages/api/src/app.ts`
+3. Ajouter les types dans `packages/shared/src/index.ts`
+4. Écrire les tests dans `packages/api/src/__tests__/`
+5. Documenter dans `docs/API.md`
 
-- 🐛 Corriger des bugs
-- 📖 Améliorer la documentation
-- 🧪 Ajouter des tests
-- 🌍 Traductions (i18n)
-- 🎨 Améliorer l'UI/UX
-- ⚡ Optimiser les performances
-- 🤖 Améliorer le pipeline IA
+### Nouveau module IA
+1. Créer le fichier dans `packages/ai/src/`
+2. Exporter dans `packages/ai/src/index.ts`
+3. Écrire les tests dans `packages/ai/__tests__/`
+4. Si le module est utilisé par l'API, l'intégrer dans le worker ou les routes
 
-## 📞 Contact
+### Nouveau composant mobile
+1. Créer dans `apps/mobile/components/`
+2. Utiliser le design system existant (Glassmorphism, NativeWind)
+3. Tester avec `expo start`
 
-- Issues GitHub pour les bugs
-- Discussions GitHub pour les questions
-- Discord pour le chat
+## 📤 Soumettre une PR
 
-Merci ! 🏀
+1. Fork le repo
+2. Créer une branche : `git checkout -b feature/ma-feature`
+3. Committer : `git commit -m "feat: description"`
+4. Pusher : `git push origin feature/ma-feature`
+5. Ouvrir une Pull Request vers `develop`
+
+## 🐛 Signaler un bug
+
+Ouvrir une issue avec :
+- Description du bug
+- Étapes pour reproduire
+- Comportement attendu vs observé
+- Environnement (OS, Node version, etc.)
+
+---
+
+Merci pour ta contribution ! 🏀
