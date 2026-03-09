@@ -27,7 +27,18 @@ import Animated, {
 } from 'react-native-reanimated'
 import { T } from '../lib/theme'
 import { CourtZoneSelector, type CourtZoneData } from '../components/workout/CourtZoneSelector'
-import { SessionStorageService, type SessionHistoryItem } from '../lib/sessionStorage'
+import { SessionStorageService, type SessionHistoryItem, type StoredSession } from '../lib/sessionStorage'
+import { useAdvancedAnalytics } from '../hooks/useAdvancedAnalytics'
+import type {
+    SignificanceTest,
+    CorrelationResult,
+    FatigueCurve,
+    ZoneProgression,
+    HotHandResult,
+    EWMAProjection,
+    CausalImpact,
+    ShotDistribution,
+} from '../lib/analyticsEngine'
 
 const type = T.type
 const { width: SCREEN_W } = Dimensions.get('window')
@@ -241,6 +252,258 @@ function ShotDNACard({ dna }: { dna: ShotDNAProfile }) {
     )
 }
 
+// ==========================================
+// Data Lab Sub-Components
+// ==========================================
+
+function SignificanceRow({ sig, delay = 0 }: { sig: SignificanceTest; delay?: number }) {
+    const color = sig.significant
+        ? sig.direction === 'improved' ? T.color.semantic.success
+            : sig.direction === 'declined' ? T.color.semantic.error
+                : T.color.text.tertiary
+        : T.color.text.tertiary
+
+    return (
+        <Animated.View entering={FadeInDown.delay(delay).duration(200)} style={styles.sciRow}>
+            <View style={styles.sciRowHeader}>
+                <Text style={[styles.sciMetric, { color }]}>{sig.metric}</Text>
+                <View style={[styles.pBadge, { borderColor: sig.significant ? `${color}40` : T.color.border.base }]}>
+                    <Text style={[styles.pText, { color: sig.significant ? color : T.color.text.tertiary }]}>
+                        p={sig.pValue < 0.001 ? '<.001' : sig.pValue.toFixed(3)}
+                        {sig.significant ? ' ✓' : ''}
+                    </Text>
+                </View>
+            </View>
+            <View style={styles.sciRowDetail}>
+                <Text style={styles.sciSub}>
+                    {sig.periodB.mean.toFixed(1)} → {sig.periodA.mean.toFixed(1)}
+                    {sig.significant ? ` · d=${sig.effectSize.toFixed(2)} (${sig.effectSize > 0.8 ? 'large' : sig.effectSize > 0.5 ? 'medium' : 'small'} effect)` : ' · not significant'}
+                </Text>
+            </View>
+        </Animated.View>
+    )
+}
+
+function CorrelationRow({ corr, delay = 0 }: { corr: CorrelationResult; delay?: number }) {
+    const absR = Math.abs(corr.r)
+    const barWidth = Math.round(absR * 100)
+    const color = absR >= 0.7 ? T.color.semantic.success
+        : absR >= 0.4 ? T.color.brand.primary
+            : absR >= 0.2 ? T.color.semantic.warning
+                : T.color.text.tertiary
+
+    return (
+        <Animated.View entering={FadeInDown.delay(delay).duration(200)} style={styles.sciRow}>
+            <View style={styles.sciRowHeader}>
+                <Text style={styles.sciMetric}>{corr.metricA}</Text>
+                <Text style={[styles.sciCorValue, { color }]}>r = {corr.r > 0 ? '+' : ''}{corr.r.toFixed(3)}</Text>
+            </View>
+            <View style={styles.corrBarBg}>
+                <View style={[styles.corrBar, { width: `${barWidth}%`, backgroundColor: color }]} />
+            </View>
+            <Text style={styles.sciSub}>{corr.interpretation}</Text>
+        </Animated.View>
+    )
+}
+
+function FatigueRow({ curve, index }: { curve: FatigueCurve; index: number }) {
+    const fatigueColor = curve.fatigueIndex > 40 ? T.color.semantic.error
+        : curve.fatigueIndex > 20 ? T.color.semantic.warning
+            : T.color.semantic.success
+
+    return (
+        <Animated.View entering={FadeInDown.delay(index * 80).duration(200)} style={styles.sciRow}>
+            <View style={styles.sciRowHeader}>
+                <Text style={styles.sciMetric}>Session {index + 1}</Text>
+                <Text style={[styles.sciFatigueIdx, { color: fatigueColor }]}>
+                    Fatigue: {curve.fatigueIndex}/100
+                </Text>
+            </View>
+            <View style={styles.quartilesRow}>
+                {curve.quartiles.map((q, qi) => (
+                    <View key={qi} style={styles.quartileCell}>
+                        <Text style={styles.quartileLabel}>{q.label}</Text>
+                        <Text style={[styles.quartileValue, {
+                            color: qi === 0 ? T.color.text.primary
+                                : q.fgPct < curve.quartiles[0].fgPct - 5 ? T.color.semantic.error
+                                    : T.color.text.secondary
+                        }]}>{q.fgPct}%</Text>
+                        <Text style={styles.quartileShots}>{q.shotCount} shots</Text>
+                    </View>
+                ))}
+            </View>
+            {curve.dropOffPoint != null && (
+                <Text style={styles.sciSub}>
+                    ⚠️ Accuracy drops in Q{curve.dropOffPoint + 1} — consider a break at {curve.dropOffPoint * 25}% through.
+                </Text>
+            )}
+        </Animated.View>
+    )
+}
+
+function ZoneProgressionRow({ zone: zp }: { zone: ZoneProgression }) {
+    const trendColor = zp.trend === 'improving' ? T.color.semantic.success
+        : zp.trend === 'declining' ? T.color.semantic.error
+            : T.color.text.tertiary
+    const trendIcon = zp.trend === 'improving' ? '↑' : zp.trend === 'declining' ? '↓' : '→'
+
+    return (
+        <View style={styles.sciRow}>
+            <View style={styles.sciRowHeader}>
+                <Text style={styles.sciMetric}>{zp.zone}</Text>
+                <Text style={[styles.sciTrend, { color: trendColor }]}>{trendIcon} {zp.trend}</Text>
+            </View>
+            <View style={styles.quartilesRow}>
+                {zp.periods.filter(p => p.attempts > 0).map((period, i) => (
+                    <View key={i} style={styles.quartileCell}>
+                        <Text style={styles.quartileLabel}>{period.label}</Text>
+                        <Text style={[styles.quartileValue, { color: T.color.text.primary }]}>{period.fgPct}%</Text>
+                        <Text style={styles.quartileShots}>{period.made}/{period.attempts}</Text>
+                    </View>
+                ))}
+            </View>
+        </View>
+    )
+}
+
+function HotHandRow({ hh }: { hh: HotHandResult }) {
+    const color = hh.streakiness === 'hot-hand' ? T.color.semantic.error
+        : hh.streakiness === 'cold-streaks' ? '#4FC3F7'
+            : T.color.text.tertiary
+
+    return (
+        <View style={styles.sciRow}>
+            <View style={styles.sciRowHeader}>
+                <View style={styles.streakRow}>
+                    <Text style={{ fontSize: 14 }}>
+                        {hh.streakiness === 'hot-hand' ? '🔥' : hh.streakiness === 'cold-streaks' ? '🧊' : '🎲'}
+                    </Text>
+                    <Text style={[styles.sciMetric, { color }]}>
+                        {hh.streakiness === 'hot-hand' ? 'Hot Hand' : hh.streakiness === 'cold-streaks' ? 'Cold Streaks' : 'Random'}
+                    </Text>
+                </View>
+                <View style={[styles.pBadge, { borderColor: hh.isStreaky ? `${color}40` : T.color.border.base }]}>
+                    <Text style={[styles.pText, { color: hh.isStreaky ? color : T.color.text.tertiary }]}>
+                        p={hh.runsTestP < 0.001 ? '<.001' : hh.runsTestP.toFixed(3)}
+                    </Text>
+                </View>
+            </View>
+            <Text style={styles.sciSub}>
+                Best streak: {hh.longestMadeStreak} makes · Worst: {hh.longestMissStreak} misses · Cluster ratio: {hh.clusterRatio}
+            </Text>
+        </View>
+    )
+}
+
+function ProjectionRow({ proj }: { proj: EWMAProjection }) {
+    const momentum = proj.momentum > 0 ? 'Accelerating' : proj.momentum < 0 ? 'Decelerating' : 'Steady'
+    const momColor = proj.momentum > 0 ? T.color.semantic.success : proj.momentum < 0 ? T.color.semantic.error : T.color.text.tertiary
+
+    return (
+        <View style={styles.sciRow}>
+            <View style={styles.sciRowHeader}>
+                <Text style={styles.sciMetric}>{proj.metric}</Text>
+                <Text style={[styles.sciCorValue, { color: momColor }]}>{momentum}</Text>
+            </View>
+            <View style={styles.projRow}>
+                <View style={styles.projCell}>
+                    <Text style={styles.quartileLabel}>Now</Text>
+                    <Text style={[styles.projValue, { color: T.color.text.primary }]}>{proj.currentValue}%</Text>
+                </View>
+                <Text style={styles.projArrow}>→</Text>
+                <View style={styles.projCell}>
+                    <Text style={styles.quartileLabel}>2 weeks</Text>
+                    <Text style={[styles.projValue, { color: T.color.brand.primary }]}>{proj.projected2w}%</Text>
+                </View>
+                <Text style={styles.projArrow}>→</Text>
+                <View style={styles.projCell}>
+                    <Text style={styles.quartileLabel}>4 weeks</Text>
+                    <Text style={[styles.projValue, { color: T.color.semantic.purple }]}>{proj.projected4w}%</Text>
+                </View>
+            </View>
+            <Text style={styles.sciSub}>
+                95% CI: {proj.confidence.lower}–{proj.confidence.upper}% · Trend: {(proj.trendStrength * 100).toFixed(0)}% strength
+            </Text>
+        </View>
+    )
+}
+
+function CausalRow({ impact }: { impact: CausalImpact }) {
+    const color = impact.significant ? (impact.lift > 0 ? T.color.semantic.success : T.color.semantic.error) : T.color.text.tertiary
+
+    return (
+        <View style={styles.sciRow}>
+            <View style={styles.sciRowHeader}>
+                <Text style={[styles.sciMetric, { color }]}>
+                    {impact.trigger} → {impact.lift > 0 ? '+' : ''}{impact.lift}% FG
+                </Text>
+                <View style={[styles.pBadge, { borderColor: impact.significant ? `${color}40` : T.color.border.base }]}>
+                    <Text style={[styles.pText, { color: impact.significant ? color : T.color.text.tertiary }]}>
+                        p={impact.pValue < 0.001 ? '<.001' : impact.pValue.toFixed(3)}
+                    </Text>
+                </View>
+            </View>
+            <Text style={styles.sciSub}>{impact.explanation}</Text>
+        </View>
+    )
+}
+
+function DistributionRow({ dist }: { dist: ShotDistribution }) {
+    const cvPct = dist.mean > 0 ? ((dist.stdDev / dist.mean) * 100).toFixed(1) : '0'
+
+    return (
+        <View style={styles.sciRow}>
+            <View style={styles.sciRowHeader}>
+                <Text style={styles.sciMetric}>{dist.metric}</Text>
+                <Text style={styles.sciSub}>{dist.n} shots</Text>
+            </View>
+            <View style={styles.distStatsRow}>
+                <View style={styles.distCell}>
+                    <Text style={styles.quartileLabel}>Mean</Text>
+                    <Text style={styles.distValue}>{dist.mean}</Text>
+                </View>
+                <View style={styles.distCell}>
+                    <Text style={styles.quartileLabel}>Median</Text>
+                    <Text style={styles.distValue}>{dist.median}</Text>
+                </View>
+                <View style={styles.distCell}>
+                    <Text style={styles.quartileLabel}>Std Dev</Text>
+                    <Text style={styles.distValue}>{dist.stdDev}</Text>
+                </View>
+                <View style={styles.distCell}>
+                    <Text style={styles.quartileLabel}>CV</Text>
+                    <Text style={styles.distValue}>{cvPct}%</Text>
+                </View>
+            </View>
+            <View style={styles.distStatsRow}>
+                <View style={styles.distCell}>
+                    <Text style={styles.quartileLabel}>P10</Text>
+                    <Text style={styles.distValue}>{dist.percentiles.p10}</Text>
+                </View>
+                <View style={styles.distCell}>
+                    <Text style={styles.quartileLabel}>P25</Text>
+                    <Text style={styles.distValue}>{dist.percentiles.p25}</Text>
+                </View>
+                <View style={styles.distCell}>
+                    <Text style={styles.quartileLabel}>P75</Text>
+                    <Text style={styles.distValue}>{dist.percentiles.p75}</Text>
+                </View>
+                <View style={styles.distCell}>
+                    <Text style={styles.quartileLabel}>P90</Text>
+                    <Text style={styles.distValue}>{dist.percentiles.p90}</Text>
+                </View>
+            </View>
+            <Text style={styles.sciSub}>
+                {dist.isNormal ? '✓ Normal distribution' : '✕ Non-normal'} · Skew: {dist.skewness} · {dist.interpretation}
+            </Text>
+        </View>
+    )
+}
+
+// ==========================================
+// Existing Sub-components
+// ==========================================
+
 function ProgressionChart({
     sessions,
     metric,
@@ -310,6 +573,7 @@ function ProgressionChart({
 const TABS = [
     { key: 'shotchart', label: 'Shot Chart', icon: 'target' },
     { key: 'dna', label: 'Shot DNA', icon: 'cpu' },
+    { key: 'science', label: 'Data Lab', icon: 'activity' },
     { key: 'nba', label: 'NBA Comp', icon: 'users' },
     { key: 'progress', label: 'Trends', icon: 'trending-up' },
 ]
@@ -356,6 +620,9 @@ export default function AnalyticsScreen() {
         if (!shotDNA) return []
         return findNBAComps(shotDNA.elbowAngle.value, shotDNA.releaseHeight.value, shotDNA.releaseTime.value)
     }, [shotDNA])
+
+    // Advanced analytics engine
+    const { report, summary, loading: analyticsLoading } = useAdvancedAnalytics()
 
     // ---- Render ----
 
@@ -485,6 +752,154 @@ export default function AnalyticsScreen() {
                                 <Text style={styles.emptyTitle}>Insufficient Data</Text>
                                 <Text style={styles.emptyText}>
                                     Complete a few sessions to see which NBA player you resemble.
+                                </Text>
+                            </View>
+                        )}
+                    </Animated.View>
+                )}
+
+                {/* Data Lab (Science) Tab */}
+                {activeTab === 'science' && (
+                    <Animated.View entering={FadeIn.duration(300)} style={{ gap: 12 }}>
+                        {/* Summary headline */}
+                        {summary && (
+                            <View style={[styles.card, T.glass.thin]}>
+                                <View style={styles.cardHeader}>
+                                    <Feather name="activity" size={14} color={T.color.brand.primary} />
+                                    <Text style={styles.cardTitle}>Data Lab</Text>
+                                    <View style={[styles.qualityBadge, {
+                                        backgroundColor: summary.dataQuality === 'excellent' ? `${T.color.semantic.success}15`
+                                            : summary.dataQuality === 'good' ? `${T.color.brand.primary}15`
+                                                : `${T.color.semantic.warning}15`
+                                    }]}>
+                                        <Text style={[styles.qualityText, {
+                                            color: summary.dataQuality === 'excellent' ? T.color.semantic.success
+                                                : summary.dataQuality === 'good' ? T.color.brand.primary
+                                                    : T.color.semantic.warning
+                                        }]}>
+                                            {summary.dataQuality.toUpperCase()}
+                                        </Text>
+                                    </View>
+                                </View>
+                                <Text style={styles.scienceHeadline}>{summary.headline}</Text>
+                                <Text style={styles.scienceSub}>
+                                    {report?.sessionsAnalyzed ?? 0} sessions · {report?.shotsAnalyzed ?? 0} shots analyzed
+                                </Text>
+                            </View>
+                        )}
+
+                        {/* Significance Tests */}
+                        {report && report.significance.length > 0 && (
+                            <View style={[styles.card, T.glass.thin]}>
+                                <View style={styles.cardHeader}>
+                                    <Text style={{ fontSize: 14 }}>📊</Text>
+                                    <Text style={styles.cardTitle}>Significance Tests</Text>
+                                </View>
+                                {report.significance.map((sig, i) => (
+                                    <SignificanceRow key={sig.metric} sig={sig} delay={i * 50} />
+                                ))}
+                            </View>
+                        )}
+
+                        {/* Correlation Matrix */}
+                        {report && report.correlations.length > 0 && (
+                            <View style={[styles.card, T.glass.thin]}>
+                                <View style={styles.cardHeader}>
+                                    <Text style={{ fontSize: 14 }}>🔗</Text>
+                                    <Text style={styles.cardTitle}>What Drives Your Accuracy?</Text>
+                                </View>
+                                {report.correlations.map((corr, i) => (
+                                    <CorrelationRow key={corr.metricA} corr={corr} delay={i * 50} />
+                                ))}
+                            </View>
+                        )}
+
+                        {/* Fatigue Curves */}
+                        {report && report.fatigueCurves.length > 0 && (
+                            <View style={[styles.card, T.glass.thin]}>
+                                <View style={styles.cardHeader}>
+                                    <Text style={{ fontSize: 14 }}>🔋</Text>
+                                    <Text style={styles.cardTitle}>Fatigue Analysis</Text>
+                                </View>
+                                {report.fatigueCurves.slice(0, 3).map((curve, i) => (
+                                    <FatigueRow key={curve.sessionId} curve={curve} index={i} />
+                                ))}
+                            </View>
+                        )}
+
+                        {/* Zone Progression */}
+                        {report && report.zoneProgression.length > 0 && (
+                            <View style={[styles.card, T.glass.thin]}>
+                                <View style={styles.cardHeader}>
+                                    <Text style={{ fontSize: 14 }}>🗺️</Text>
+                                    <Text style={styles.cardTitle}>Zone Progression</Text>
+                                </View>
+                                {report.zoneProgression.map((zone) => (
+                                    <ZoneProgressionRow key={zone.zone} zone={zone} />
+                                ))}
+                            </View>
+                        )}
+
+                        {/* Hot Hand */}
+                        {report && report.hotHand.length > 0 && (
+                            <View style={[styles.card, T.glass.thin]}>
+                                <View style={styles.cardHeader}>
+                                    <Text style={{ fontSize: 14 }}>🔥</Text>
+                                    <Text style={styles.cardTitle}>Streak Analysis</Text>
+                                </View>
+                                {report.hotHand.slice(0, 3).map((hh) => (
+                                    <HotHandRow key={hh.sessionId} hh={hh} />
+                                ))}
+                            </View>
+                        )}
+
+                        {/* Projections */}
+                        {report && report.projections.length > 0 && (
+                            <View style={[styles.card, T.glass.thin]}>
+                                <View style={styles.cardHeader}>
+                                    <Text style={{ fontSize: 14 }}>🎯</Text>
+                                    <Text style={styles.cardTitle}>EWMA Projections</Text>
+                                </View>
+                                {report.projections.map((proj) => (
+                                    <ProjectionRow key={proj.metric} proj={proj} />
+                                ))}
+                            </View>
+                        )}
+
+                        {/* Causal Impacts */}
+                        {report && report.causalImpacts.length > 0 && (
+                            <View style={[styles.card, T.glass.thin]}>
+                                <View style={styles.cardHeader}>
+                                    <Text style={{ fontSize: 14 }}>⚡</Text>
+                                    <Text style={styles.cardTitle}>Causal Impact</Text>
+                                </View>
+                                {report.causalImpacts.map((ci, i) => (
+                                    <CausalRow key={`${ci.trigger}-${i}`} impact={ci} />
+                                ))}
+                            </View>
+                        )}
+
+                        {/* Distributions */}
+                        {report && report.distributions.length > 0 && (
+                            <View style={[styles.card, T.glass.thin]}>
+                                <View style={styles.cardHeader}>
+                                    <Text style={{ fontSize: 14 }}>📈</Text>
+                                    <Text style={styles.cardTitle}>Shot Distributions</Text>
+                                </View>
+                                {report.distributions.map((dist) => (
+                                    <DistributionRow key={dist.metric} dist={dist} />
+                                ))}
+                            </View>
+                        )}
+
+                        {/* Empty state */}
+                        {(!report || (report.significance.length === 0 && report.correlations.length === 0)) && (
+                            <View style={styles.emptyState}>
+                                <Feather name="activity" size={32} color={T.color.text.tertiary} />
+                                <Text style={styles.emptyTitle}>Not Enough Data Yet</Text>
+                                <Text style={styles.emptyText}>
+                                    Complete 6+ sessions to unlock statistical significance testing,
+                                    correlation analysis, fatigue modeling, and more.
                                 </Text>
                             </View>
                         )}
@@ -846,5 +1261,167 @@ const styles = StyleSheet.create({
         lineHeight: 18,
         marginTop: 8,
         fontFamily: T.fonts.body.regular,
+    },
+
+    // Data Lab styles
+    qualityBadge: {
+        marginLeft: 'auto',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 6,
+    },
+    qualityText: {
+        fontSize: 9,
+        fontWeight: '700',
+        fontFamily: T.fonts.body.bold,
+        letterSpacing: 0.5,
+    },
+    scienceHeadline: {
+        color: T.color.text.primary,
+        fontSize: 14,
+        fontWeight: '600',
+        fontFamily: T.fonts.body.semibold,
+        lineHeight: 20,
+    },
+    scienceSub: {
+        color: T.color.text.tertiary,
+        fontSize: 11,
+        fontFamily: T.fonts.body.regular,
+        marginTop: 4,
+    },
+    sciRow: {
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: `${T.color.border.base}60`,
+    },
+    sciRowHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+    sciRowDetail: {
+        marginTop: 2,
+    },
+    sciMetric: {
+        color: T.color.text.primary,
+        fontSize: 13,
+        fontWeight: '700',
+        fontFamily: T.fonts.display.bold,
+    },
+    sciSub: {
+        color: T.color.text.secondary,
+        fontSize: 11,
+        fontFamily: T.fonts.body.regular,
+        lineHeight: 16,
+        marginTop: 4,
+    },
+    sciCorValue: {
+        fontSize: 12,
+        fontWeight: '700',
+        fontFamily: T.fonts.mono.regular,
+    },
+    sciFatigueIdx: {
+        fontSize: 12,
+        fontWeight: '700',
+        fontFamily: T.fonts.display.bold,
+    },
+    sciTrend: {
+        fontSize: 11,
+        fontWeight: '600',
+        fontFamily: T.fonts.body.semibold,
+    },
+    pBadge: {
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+        borderWidth: 1,
+        backgroundColor: 'rgba(255,255,255,0.02)',
+    },
+    pText: {
+        fontSize: 10,
+        fontFamily: T.fonts.mono.regular,
+    },
+    corrBarBg: {
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: `${T.color.text.tertiary}12`,
+        overflow: 'hidden',
+        marginVertical: 4,
+    },
+    corrBar: {
+        height: 4,
+        borderRadius: 2,
+    },
+    quartilesRow: {
+        flexDirection: 'row',
+        gap: 4,
+        marginTop: 6,
+    },
+    quartileCell: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 6,
+        backgroundColor: `${T.color.bg.tertiary}80`,
+        borderRadius: 8,
+    },
+    quartileLabel: {
+        color: T.color.text.tertiary,
+        fontSize: 9,
+        fontFamily: T.fonts.body.regular,
+        letterSpacing: 0.3,
+    },
+    quartileValue: {
+        fontSize: 14,
+        fontWeight: '700',
+        fontFamily: T.fonts.display.bold,
+        marginTop: 2,
+    },
+    quartileShots: {
+        color: T.color.text.tertiary,
+        fontSize: 9,
+        fontFamily: T.fonts.body.regular,
+    },
+    streakRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    projRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        marginTop: 6,
+    },
+    projCell: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    projValue: {
+        fontSize: 16,
+        fontWeight: '800',
+        fontFamily: T.fonts.display.bold,
+    },
+    projArrow: {
+        color: T.color.text.tertiary,
+        fontSize: 16,
+    },
+    distStatsRow: {
+        flexDirection: 'row',
+        gap: 4,
+        marginTop: 4,
+    },
+    distCell: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 4,
+        backgroundColor: `${T.color.bg.tertiary}60`,
+        borderRadius: 6,
+    },
+    distValue: {
+        color: T.color.text.primary,
+        fontSize: 12,
+        fontWeight: '600',
+        fontFamily: T.fonts.display.bold,
     },
 })

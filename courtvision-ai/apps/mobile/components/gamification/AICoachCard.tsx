@@ -20,6 +20,12 @@ const TYPE_ACCENT: Record<InsightType, string> = {
     record: T.color.semantic.gold,
     plan: T.color.semantic.info,
     milestone: T.color.semantic.purple,
+    significance: '#00E5FF',
+    correlation: '#7C4DFF',
+    causal: '#FF9100',
+    hot_hand: '#FF5252',
+    fatigue: '#FFD740',
+    projection: T.color.semantic.info,
 }
 
 const TYPE_LABEL: Record<InsightType, string> = {
@@ -30,6 +36,12 @@ const TYPE_LABEL: Record<InsightType, string> = {
     record: 'RECORD',
     plan: 'TRAINING PLAN',
     milestone: 'MILESTONE',
+    significance: 'STAT. SIG.',
+    correlation: 'CORRELATION',
+    causal: 'CAUSAL',
+    hot_hand: 'STREAK',
+    fatigue: 'FATIGUE',
+    projection: 'PROJECTION',
 }
 
 export const AICoachCard = memo(function AICoachCard() {
@@ -117,6 +129,14 @@ const InsightContent = memo(function InsightContent({ insight, accent }: { insig
                 <View style={{ flex: 1 }}>
                     <Text style={[styles.insightTitle, { color: accent }]}>{insight.title}</Text>
                     <Text style={styles.insightBody}>{insight.body}</Text>
+                    {insight.pValue != null && (
+                        <View style={[styles.pValueBadge, { borderColor: `${accent}40` }]}>
+                            <Text style={[styles.pValueText, { color: accent }]}>
+                                p = {insight.pValue < 0.001 ? '<0.001' : insight.pValue.toFixed(3)}
+                                {insight.pValue < 0.05 ? ' ✓' : ''}
+                            </Text>
+                        </View>
+                    )}
                 </View>
             </View>
         </Animated.View>
@@ -202,5 +222,19 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontFamily: T.fonts.body.regular,
         marginTop: 8,
+    },
+    pValueBadge: {
+        alignSelf: 'flex-start',
+        marginTop: 6,
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 6,
+        borderWidth: 1,
+        backgroundColor: 'rgba(255,255,255,0.03)',
+    },
+    pValueText: {
+        fontSize: 10,
+        fontFamily: T.fonts.mono.regular,
+        letterSpacing: 0.3,
     },
 })

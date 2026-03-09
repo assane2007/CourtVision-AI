@@ -17,7 +17,15 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { SessionStorageService, type SessionHistoryItem } from '../lib/sessionStorage'
+import { SessionStorageService, type SessionHistoryItem, type StoredSession } from '../lib/sessionStorage'
+import {
+    analyzeSignificance,
+    analyzeCorrelations,
+    analyzeHotHand,
+    analyzeFatigue,
+    analyzeCausalImpact,
+    analyzeProjections,
+} from '../lib/analyticsEngine'
 
 // ── Types ───────────────────────────────────────────────────────
 
@@ -29,6 +37,12 @@ export type InsightType =
     | 'record'         // new personal best
     | 'plan'           // adaptive training recommendation
     | 'milestone'      // approaching a milestone
+    | 'significance'   // statistically significant change (p < 0.05)
+    | 'correlation'    // mechanic ↔ accuracy relationship
+    | 'causal'         // causal impact detected
+    | 'hot_hand'       // streak detection
+    | 'fatigue'        // within-session fatigue pattern
+    | 'projection'     // EWMA-based projection with confidence
 
 export interface CoachInsight {
     id: string
@@ -42,6 +56,8 @@ export interface CoachInsight {
     metric?: string
     /** Progress 0-100 towards a goal, if applicable */
     progress?: number
+    /** Statistical confidence: p-value when available */
+    pValue?: number
 }
 
 export interface AICoachState {
@@ -101,7 +117,7 @@ function linearProjection(values: number[], targetWeeks: number): number {
     return yMean + slope * (n - 1 + targetWeeks)
 }
 
-function generateInsights(sessions: SessionHistoryItem[]): CoachInsight[] {
+function generateInsights(sessions: SessionHistoryItem[], fullSessions?: StoredSession[]): CoachInsight[] {
     if (sessions.length < 2) {
         return [{
             id: 'need-data',
@@ -409,6 +425,116 @@ function generateInsights(sessions: SessionHistoryItem[]): CoachInsight[] {
         }
     }
 
+    // ──────────────── ANALYTICS ENGINE (data-science layer) ────────────────
+
+    // Significance tests — real p-values
+    const sigTests = analyzeSignificance(sessions)
+    for (const sig of sigTests.filter(s => s.significant).slice(0, 2)) {
+        const dir = sig.direction === 'improved' ? '📈' : sig.direction === 'declined' ? '📉' : '➡️'
+        insights.push({
+            id: `sig-${sig.metric}`,
+            type: 'significance',
+            icon: dir,
+            title: `${sig.metric}: ${sig.direction} (p=${sig.pValue.toFixed(3)})`,
+            body: `Statistically verified: your ${sig.metric} shifted from ${sig.periodB.mean.toFixed(1)} → ${sig.periodA.mean.toFixed(1)} (effect size d=${sig.effectSize.toFixed(2)}). This is NOT noise.`,
+            priority: 1,
+            metric: sig.metric,
+            pValue: sig.pValue,
+        })
+    }
+
+    // Correlation insights
+    const corrs = analyzeCorrelations(sessions)
+    const topCorr = corrs.find(c => c.significant && Math.abs(c.r) >= 0.4)
+    if (topCorr) {
+        insights.push({
+            id: `corr-${topCorr.metricA}`,
+            type: 'correlation',
+            icon: '🔗',
+            title: `${topCorr.metricA} drives your accuracy (r=${topCorr.r.toFixed(2)})`,
+            body: topCorr.interpretation,
+            priority: 2,
+            metric: topCorr.metricA,
+            pValue: topCorr.pValue,
+        })
+    }
+
+    // Causal impact
+    const causal = analyzeCausalImpact(sessions)
+    const topCausal = causal.find(c => c.significant)
+    if (topCausal) {
+        insights.push({
+            id: `causal-${topCausal.trigger}`,
+            type: 'causal',
+            icon: '⚡',
+            title: `${topCausal.trigger} → ${topCausal.lift > 0 ? '+' : ''}${topCausal.lift.toFixed(1)}% FG`,
+            body: topCausal.explanation,
+            priority: 1,
+            pValue: topCausal.pValue,
+        })
+    }
+
+    // EWMA projections
+    const projections = analyzeProjections(sessions)
+    const fgProj = projections.find(p => p.metric === 'FG%')
+    if (fgProj && fgProj.trendStrength > 0.3) {
+        insights.push({
+            id: 'ewma-fg',
+            type: 'projection',
+            icon: '🎯',
+            title: `Projected: ${fgProj.projected2w}% FG in 2 weeks`,
+            body: `EWMA model (95% CI: ${fgProj.confidence.lower}–${fgProj.confidence.upper}%). Momentum: ${fgProj.momentum > 0 ? 'accelerating' : fgProj.momentum < 0 ? 'decelerating' : 'steady'}. Trend strength: ${(fgProj.trendStrength * 100).toFixed(0)}%.`,
+            priority: 2,
+            metric: 'shootingPct',
+            progress: Math.min(100, Math.round((fgProj.currentValue / fgProj.projected2w) * 100)),
+        })
+    }
+
+    // Hot hand & fatigue (need full sessions)
+    if (fullSessions && fullSessions.length > 0) {
+        const hotHandResults = analyzeHotHand(fullSessions)
+        const streaky = hotHandResults.filter(h => h.isStreaky)
+        if (streaky.length > 0) {
+            const hotCount = streaky.filter(h => h.streakiness === 'hot-hand').length
+            const coldCount = streaky.filter(h => h.streakiness === 'cold-streaks').length
+            const pattern = hotCount > coldCount ? 'hot-hand' : 'cold-streaks'
+            const best = hotHandResults.reduce((a, b) => a.longestMadeStreak > b.longestMadeStreak ? a : b)
+            insights.push({
+                id: 'hot-hand',
+                type: 'hot_hand',
+                icon: pattern === 'hot-hand' ? '🔥' : '🧊',
+                title: pattern === 'hot-hand'
+                    ? `Hot Hand confirmed (${hotCount}/${hotHandResults.length} sessions)`
+                    : `Cold streak pattern detected`,
+                body: pattern === 'hot-hand'
+                    ? `Runs test confirms non-random streaks. Your longest make streak: ${best.longestMadeStreak}. When you're hot, keep shooting — it's statistically real.`
+                    : `You tend to go on miss streaks. When you miss 3+, take a breath and reset your routine. Your longest cold streak: ${best.longestMissStreak}.`,
+                priority: 2,
+                pValue: streaky[0].runsTestP,
+            })
+        }
+
+        const fatigueCurves = analyzeFatigue(fullSessions)
+        const highFatigue = fatigueCurves.filter(f => f.fatigueIndex > 20)
+        if (highFatigue.length > fatigueCurves.length / 2 && fatigueCurves.length >= 3) {
+            const avgFI = Math.round(highFatigue.reduce((s, f) => s + f.fatigueIndex, 0) / highFatigue.length)
+            const avgDrop = highFatigue.filter(f => f.dropOffPoint !== null)
+            const dropQ = avgDrop.length > 0
+                ? Math.round(avgDrop.reduce((s, f) => s + (f.dropOffPoint ?? 0), 0) / avgDrop.length) + 1
+                : null
+            insights.push({
+                id: 'fatigue',
+                type: 'fatigue',
+                icon: '🔋',
+                title: `Fatigue detected (index: ${avgFI}/100)`,
+                body: dropQ
+                    ? `Your accuracy typically drops in Q${dropQ} of sessions. Consider shorter, more focused sessions or taking a 2-minute break at the ${(dropQ - 1) * 25}% mark.`
+                    : `Your late-session accuracy drops consistently. Try splitting long sessions into 2 focused blocks with a break.`,
+                priority: 2,
+            })
+        }
+    }
+
     return insights.sort((a, b) => a.priority - b.priority)
 }
 
@@ -438,7 +564,14 @@ export function useAICoach(): AICoachState {
             const history = await storage.getSessionHistory(100)
             setSessionsAnalyzed(history.length)
 
-            const generated = generateInsights(history)
+            // Load full sessions (with raw shots) for shot-level analytics
+            const fullSessions: StoredSession[] = []
+            for (const item of history.slice(0, 15)) {
+                const full = await storage.getSession(item.id)
+                if (full) fullSessions.push(full)
+            }
+
+            const generated = generateInsights(history, fullSessions)
             setInsights(generated)
 
             // Cache result

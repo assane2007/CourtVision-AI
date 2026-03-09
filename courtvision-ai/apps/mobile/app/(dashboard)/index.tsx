@@ -52,6 +52,7 @@ import { InteractiveTerrainVisualizer } from '../../components/dashboard/Interac
 import { HapticFeedback } from '../../lib/haptics'
 import { useRevenueCat } from '../../lib/revenuecat'
 import { SessionStorageService } from '../../lib/sessionStorage'
+import { useAdvancedAnalytics } from '../../hooks/useAdvancedAnalytics'
 
 const { width: SCREEN_W } = Dimensions.get('window')
 
@@ -246,6 +247,34 @@ const EmptyTodayCard = memo(function EmptyTodayCard({ onUpload }: { onUpload: ()
     )
 })
 
+// ─── Data Lab Summary Banner ────────────────────────────────
+
+const DataLabBanner = memo(function DataLabBanner({ onPress }: { onPress: () => void }) {
+    const { summary, loading } = useAdvancedAnalytics()
+    if (loading || !summary || summary.dataQuality === 'insufficient') return null
+
+    const qualityColor = summary.dataQuality === 'excellent' ? T.color.semantic.success
+        : summary.dataQuality === 'good' ? T.color.brand.primary
+            : T.color.semantic.warning
+
+    return (
+        <Animated.View entering={FadeInDown.delay(250).duration(400)}>
+            <TouchableOpacity style={[ds.dataLabBanner, T.glass.vivid]} onPress={onPress} activeOpacity={0.8}>
+                <View style={ds.dataLabBannerRow}>
+                    <View style={[ds.dataLabIcon, { backgroundColor: `${qualityColor}15` }]}>
+                        <Text style={{ fontSize: 16 }}>🧬</Text>
+                    </View>
+                    <View style={ds.dataLabTextCol}>
+                        <Text style={ds.dataLabTitle}>Data Lab</Text>
+                        <Text style={ds.dataLabHeadline} numberOfLines={2}>{summary.headline}</Text>
+                    </View>
+                    <Feather name="chevron-right" size={16} color={T.color.text.tertiary} />
+                </View>
+            </TouchableOpacity>
+        </Animated.View>
+    )
+})
+
 // ─── Highlight keyExtractor (stable ref) ────────────────────
 
 const highlightKey = (item: HighlightClip) => item.id
@@ -426,6 +455,11 @@ export default function DashboardIndex() {
                 <View style={ds.sectionWrap}>
                     <SectionHeader title="AI Coach" />
                     <AICoachCard />
+                </View>
+
+                {/* ═══ DATA LAB SUMMARY ═══ */}
+                <View style={ds.sectionWrap}>
+                    <DataLabBanner onPress={goAnalytics} />
                 </View>
 
                 {/* ═══ DAILY CHALLENGE ═══ */}
@@ -775,5 +809,42 @@ const ds = StyleSheet.create({
     skeletonHighlightRow: {
         flexDirection: 'row',
         gap: T.spacing[2],
+    },
+    // Data Lab banner
+    dataLabBanner: {
+        borderRadius: T.radius.lg,
+        padding: 14,
+        borderWidth: 1,
+        borderColor: `${T.color.semantic.purple}15`,
+    },
+    dataLabBannerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    dataLabIcon: {
+        width: 36,
+        height: 36,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    dataLabTextCol: {
+        flex: 1,
+    },
+    dataLabTitle: {
+        color: T.color.semantic.purple,
+        fontSize: 11,
+        fontWeight: '700',
+        fontFamily: T.fonts.body.bold,
+        letterSpacing: 0.5,
+        textTransform: 'uppercase',
+    },
+    dataLabHeadline: {
+        color: T.color.text.secondary,
+        fontSize: 12,
+        fontFamily: T.fonts.body.regular,
+        lineHeight: 17,
+        marginTop: 2,
     },
 })

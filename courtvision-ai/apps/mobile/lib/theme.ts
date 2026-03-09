@@ -125,6 +125,9 @@ const baseTheme = {
             semibold: 'DMSans_600SemiBold',
             bold: 'DMSans_700Bold',
         },
+        mono: {
+            regular: 'JetBrainsMono_400Regular',
+        },
     },
 
     fontSize: {
