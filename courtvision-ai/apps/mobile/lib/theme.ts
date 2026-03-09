@@ -256,7 +256,12 @@ const enhancedGlow = Object.assign(
 )
 
 export const ApexTheme = {
-    ...legacyT, glass: baseTheme.glass,
+    ...legacyT,
+    glass: {
+        ...baseTheme.glass,
+        regular: baseTheme.glass.base,       // alias: glass.regular → glass.base
+        accent: baseTheme.glass.vivid,        // alias: glass.accent → glass.vivid
+    },
     glow: enhancedGlow,
 }
 
@@ -265,7 +270,7 @@ export { ApexTheme as T }
 export const colors = ApexTheme.colors
 export const typePresets = baseTheme.type
 export const type = baseTheme.type
-export const glass = baseTheme.glass
+export const glass = ApexTheme.glass
 export const spacing = baseTheme.spacing
 export const typography = { fonts: baseTheme.fonts, sizes: baseTheme.fontSize }
 export const radius = baseTheme.radius

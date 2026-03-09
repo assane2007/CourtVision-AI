@@ -440,7 +440,7 @@ export default function DashboardIndex() {
                     <WeeklyQuestCard />
                 </View>
 
-                {/* ═══ WEEKLY PROGRESS ═══ */
+                {/* ═══ WEEKLY PROGRESS ═══ */}
                 <View style={ds.sectionWrapLg}>
                     <SectionHeader title="Progression" action="Full Stats" onAction={goAnalytics} />
                     <CVAnalyticsChart data={chartData} />

@@ -27,6 +27,7 @@ import {
 import {
     DMSans_400Regular,
     DMSans_500Medium,
+    DMSans_600SemiBold,
     DMSans_700Bold
 } from '@expo-google-fonts/dm-sans';
 
@@ -104,14 +105,13 @@ function AuthGuard() {
 
             // Simple segment check depending on where we are
             // segments[0] could be '(app)', '(auth)', '(setup)'
-            const inApp = segments[0] === '(app)';
-            // const inSetup = segments[0] === '(setup)';
+            const inApp = segments[0] === '(app)' || segments[0] === '(dashboard)';
 
             if (token && !inApp) {
                 await login(token);
                 if (!cancelled) {
                     await registerForPushNotifications();
-                    router.replace('/(app)');
+                    router.replace('/(dashboard)');
                 }
             } else if (!token && inApp) {
                 if (!cancelled) router.replace('/(auth)');
@@ -141,6 +141,7 @@ function RootLayout() {
         BarlowCondensed_800ExtraBold_Italic,
         DMSans_400Regular,
         DMSans_500Medium,
+        DMSans_600SemiBold,
         DMSans_700Bold,
         JetBrainsMono_400Regular,
         Sora_400Regular,
@@ -174,14 +175,16 @@ function RootLayout() {
                             animation: 'fade', // Simple cross-fade transitions by default
                         }}
                     >
-                        {/* Auth stack handles the initial boot logo, then auth -> ai setup */}
+                        {/* Auth stack */}
                         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
 
+                        {/* V5 primary dashboard */}
+                        <Stack.Screen name="(dashboard)" options={{ headerShown: false, animation: 'slide_from_right' }} />
 
-                        {/* Main app UI */}
+                        {/* Legacy app UI (fallback) */}
                         <Stack.Screen name="(app)" options={{ headerShown: false, animation: 'slide_from_right' }} />
 
-                        {/* Global modlas */}
+                        {/* Global modals */}
                         <Stack.Screen name="paywall" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
                     </Stack>
                     <ToastContainer />

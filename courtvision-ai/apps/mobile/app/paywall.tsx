@@ -72,7 +72,7 @@ export default function PaywallScreen() {
                     <Feather name="x" size={24} color="#888" />
                 </TouchableOpacity>
                 <Text style={{ fontFamily: 'Sora_700Bold', color: T.color.brand.primary, fontSize: 14, fontWeight: 'bold' }}>
-                    UPGRADE_LINK
+                    UPGRADE
                 </Text>
                 <View style={{ width: 24 }} />
             </View>
@@ -90,10 +90,10 @@ export default function PaywallScreen() {
                 {packages.length === 0 ? (
                     <View style={{ padding: 20, backgroundColor: '#111', borderWidth: 1, borderColor: '#333' }}>
                         <Text style={{ color: '#888', fontFamily: 'Sora_700Bold', textAlign: 'center' }}>
-                            [NO PACKAGES CONFIGURED]
+                            No packages available
                         </Text>
                         <Text style={{ color: '#555', fontSize: 10, marginTop: 10, fontFamily: 'Sora_700Bold', textAlign: 'center' }}>
-                            Configure RevenueCat in your environment variables and dashboard to see offers.
+                            In-app purchases will appear here once configured.
                         </Text>
                     </View>
                 ) : (
@@ -131,7 +131,7 @@ export default function PaywallScreen() {
                 <TouchableOpacity onPress={handleRestore} disabled={processing} style={{ alignItems: 'center', padding: 10 }}>
                     {processing ? <ActivityIndicator color={T.color.brand.primary} size="small" /> : (
                         <Text style={{ color: '#666', fontFamily: 'Sora_700Bold', textDecorationLine: 'underline', fontSize: 12 }}>
-                            RESTORE_PREVIOUS_PURCHASES
+                            Restore Purchases
                         </Text>
                     )}
                 </TouchableOpacity>

@@ -53,21 +53,21 @@ export interface CoachingReport {
     grade: string
     /** Score numérique 0-100 */
     score: number
-    /** Résumé en une phrase */
+    /** One-line summary */
     headline: string
-    /** Diagnostic détaillé */
+    /** Detailed diagnosis */
     insights: CoachingInsight[]
-    /** Exercices recommandés */
+    /** Recommended drills */
     drills: DrillRecommendation[]
-    /** Objectif prioritaire pour la prochaine session */
+    /** Priority focus for next session */
     nextSessionFocus: string
-    /** Comparaison NBA */
+    /** NBA comparison */
     nbaComparison: {
         closestPlayer: string
         similarity: number
         keyDifference: string
     }
-    /** Message motivant */
+    /** Motivational message */
     motivationMessage: string
 }
 
@@ -110,113 +110,113 @@ const DRILL_LIBRARY: DrillRecommendation[] = [
     {
         id: 'form_shooting',
         name: 'Form Shooting (Close Range)',
-        description: 'Travaille ta mécanique de base à 1-2m du panier. Focus sur le coude à 90° et le follow-through.',
+        description: 'Work on your basic mechanics from 1-2m range. Focus on 90° elbow and follow-through.',
         duration: '5 min',
         difficulty: 'easy',
         targetMetric: 'elbowAngle',
         icon: '🎯',
         steps: [
-            'Place-toi à 1m du panier',
-            'Tir à une main (main forte uniquement)',
-            '10 tirs, focus sur le coude à 90°',
-            'Ajoute la main guide pour 10 tirs',
-            'Recule à 2m et répète',
+            'Stand 1m from the basket',
+            'One-hand shooting (strong hand only)',
+            '10 shots, focus on 90° elbow angle',
+            'Add your guide hand for 10 more shots',
+            'Step back to 2m and repeat',
         ],
     },
     {
         id: 'release_speed',
         name: 'Quick Release Drill',
-        description: 'Accélère ton release en attrapant et tirant le plus vite possible.',
+        description: 'Speed up your release by catching and shooting as fast as possible.',
         duration: '8 min',
         difficulty: 'medium',
         targetMetric: 'releaseTime',
         icon: '⚡',
         steps: [
-            'Place 3 spots au coude et aux ailes',
-            'Un partenaire te passe le ballon',
-            'Attrape et tire en < 0.5 secondes',
-            '5 tirs par spot, 3 rotations',
-            'Chronomètre chaque tir si possible',
+            'Set up 3 spots at the elbow and wings',
+            'Have a partner pass you the ball',
+            'Catch and shoot in < 0.5 seconds',
+            '5 shots per spot, 3 rotations',
+            'Time each shot if possible',
         ],
     },
     {
         id: 'arc_height',
         name: 'High Arc Training',
-        description: 'Augmente l\'arc de ton tir pour un meilleur angle d\'entrée dans le panier.',
+        description: 'Increase your shot arc for a better entry angle into the rim.',
         duration: '7 min',
         difficulty: 'medium',
         targetMetric: 'releaseHeight',
         icon: '🌈',
         steps: [
-            'Tire depuis le coude (free-throw)',
-            'Vise le haut du rectangle sur la planche',
-            'Exagère l\'arc — le ballon doit monter très haut',
-            'Progressivement reviens à un arc naturel mais élevé',
-            '20 tirs au total',
+            'Shoot from the elbow (free-throw line)',
+            'Aim at the top of the square on the backboard',
+            'Exaggerate the arc — the ball should go really high',
+            'Gradually return to a natural but elevated arc',
+            '20 shots total',
         ],
     },
     {
         id: 'follow_through',
         name: 'Gooseneck Follow-Through',
-        description: 'Maintiens ton follow-through ("gooseneck") après chaque tir.',
+        description: 'Hold your follow-through ("gooseneck") after every shot.',
         duration: '5 min',
         difficulty: 'easy',
         targetMetric: 'followThrough',
         icon: '🦢',
         steps: [
-            'Tire depuis la ligne de lancer franc',
-            'Après chaque tir, GÈLE ta main en l\'air',
-            'Maintiens la position 2 secondes',
-            'Vérifie : poignet cassé, doigts vers le panier',
-            '15 tirs avec focus follow-through',
+            'Shoot from the free-throw line',
+            'After each shot, FREEZE your hand in the air',
+            'Hold the position for 2 seconds',
+            'Check: wrist snapped, fingers toward the rim',
+            '15 shots focusing on follow-through',
         ],
     },
     {
         id: 'consistency_drill',
         name: 'Consistency Sets',
-        description: 'Tire des séries identiques pour améliorer ta constance mécanique.',
+        description: 'Shoot identical sets to improve your mechanical consistency.',
         duration: '10 min',
         difficulty: 'hard',
         targetMetric: 'consistency',
         icon: '📐',
         steps: [
-            'Choisis UN spot fixe',
-            'Tire 10 tirs consécutifs',
-            'Objectif : même mécanique à chaque tir',
-            'Note mentalement le tir le plus différent',
-            'Répète 3 séries de 10 tirs',
+            'Pick ONE fixed spot',
+            'Shoot 10 consecutive shots',
+            'Goal: same mechanics on every shot',
+            'Mentally note the shot that felt most different',
+            'Repeat 3 sets of 10 shots',
         ],
     },
     {
         id: 'knee_flexion',
         name: 'Lower Body Power',
-        description: 'Améliore la puissance de tes jambes pour un tir plus fluide.',
+        description: 'Improve your lower body power for a smoother shot.',
         duration: '6 min',
         difficulty: 'medium',
         targetMetric: 'kneeFlexion',
         icon: '🦵',
         steps: [
-            'Squats sans ballon (10 reps, flex à 90°)',
-            'Tir avec focus sur la flexion des genoux',
-            'Jump shots avec exagération de la montée',
-            'Tire 10x en comptant "1-2-UP"',
-            'Compare la puissance avec/sans flexion',
+            'Bodyweight squats (10 reps, 90° flex)',
+            'Shoot with focus on knee bend',
+            'Jump shots with exaggerated lift',
+            'Shoot 10x counting "1-2-UP"',
+            'Compare power with/without knee flex',
         ],
     },
     {
         id: 'spot_shooting',
         name: '5-Spot Challenge',
-        description: 'Tire depuis 5 spots autour du terrain pour varier les zones.',
+        description: 'Shoot from 5 spots around the court to diversify your zones.',
         duration: '10 min',
         difficulty: 'hard',
         targetMetric: 'zoneVariety',
         icon: '🏀',
         steps: [
-            'Place 5 marqueurs : coin gauche, aile gauche, top, aile droite, coin droit',
-            'Tire 5x depuis chaque spot',
-            'Note ton % par spot',
-            'Reviens aux 2 pires spots pour 5 tirs supplémentaires',
-            'Objectif : 60%+ partout',
+            'Place 5 markers: left corner, left wing, top, right wing, right corner',
+            'Shoot 5x from each spot',
+            'Track your % per spot',
+            'Go back to your 2 worst spots for 5 more shots',
+            'Goal: 60%+ from everywhere',
         ],
     },
 ]
@@ -227,7 +227,7 @@ const DRILL_LIBRARY: DrillRecommendation[] = [
 
 export class CoachingEngine {
     /**
-     * Génère un rapport de coaching complet pour une session.
+     * Generates a complete coaching report for a session.
      */
     generateReport(
         stats: SessionRealtimeStats,
@@ -274,7 +274,7 @@ export class CoachingEngine {
     }
 
     private computeScore(stats: SessionRealtimeStats): number {
-        // Score composé de plusieurs métriques
+        // Score composed of multiple metrics
         const fgScore = Math.min(100, (stats.shootingPct / NBA_BENCHMARKS.eliteFgPct) * 100) * 0.30
         const elbowScore = this.scoreMetric(stats.avgElbowAngle, NBA_BENCHMARKS.eliteElbowAngle.ideal, 15) * 0.15
         const releaseTimeScore = this.scoreMetric(stats.avgReleaseTime, NBA_BENCHMARKS.eliteReleaseTime.ideal, 0.15) * 0.15
@@ -304,8 +304,8 @@ export class CoachingEngine {
         if (stats.shootingPct >= 50) {
             insights.push({
                 id: 'high_fg', category: 'strength', icon: '🔥',
-                title: 'Tir de feu',
-                description: `${stats.shootingPct}% au tir — tu es au-dessus de la moyenne NBA (${NBA_BENCHMARKS.avgFgPct}%).`,
+                title: 'Shooting on Fire',
+                description: `${stats.shootingPct}% FG — you're above the NBA average (${NBA_BENCHMARKS.avgFgPct}%).`,
                 priority: 2, metric: 'fgPct', currentValue: stats.shootingPct,
             })
         }
@@ -313,8 +313,8 @@ export class CoachingEngine {
         if (stats.avgElbowAngle >= NBA_BENCHMARKS.eliteElbowAngle.min && stats.avgElbowAngle <= NBA_BENCHMARKS.eliteElbowAngle.max) {
             insights.push({
                 id: 'elite_elbow', category: 'strength', icon: '💪',
-                title: 'Angle coude NBA',
-                description: `Ton angle moyen de ${stats.avgElbowAngle.toFixed(1)}° est dans la zone élite NBA (${NBA_BENCHMARKS.eliteElbowAngle.min}-${NBA_BENCHMARKS.eliteElbowAngle.max}°).`,
+                title: 'NBA-Level Elbow Angle',
+                description: `Your average angle of ${stats.avgElbowAngle.toFixed(1)}° is in the NBA elite zone (${NBA_BENCHMARKS.eliteElbowAngle.min}-${NBA_BENCHMARKS.eliteElbowAngle.max}°).`,
                 priority: 3, metric: 'elbowAngle', currentValue: stats.avgElbowAngle, targetValue: NBA_BENCHMARKS.eliteElbowAngle.ideal,
             })
         }
@@ -322,8 +322,8 @@ export class CoachingEngine {
         if (stats.avgReleaseTime <= 0.45) {
             insights.push({
                 id: 'quick_release', category: 'strength', icon: '⚡',
-                title: 'Release rapide',
-                description: `${stats.avgReleaseTime.toFixed(2)}s — comparable aux meilleurs shooteurs NBA.`,
+                title: 'Quick Release',
+                description: `${stats.avgReleaseTime.toFixed(2)}s — comparable to the best NBA shooters.`,
                 priority: 3, metric: 'releaseTime', currentValue: stats.avgReleaseTime,
                 nbaReference: 'Curry: 0.38s, Thompson: 0.42s',
             })
@@ -332,8 +332,8 @@ export class CoachingEngine {
         if (stats.followThroughPct >= 90) {
             insights.push({
                 id: 'great_ft', category: 'strength', icon: '🦢',
-                title: 'Follow-through exemplaire',
-                description: `${stats.followThroughPct.toFixed(0)}% de tes tirs ont un bon follow-through. Discipline élite.`,
+                title: 'Excellent Follow-Through',
+                description: `${stats.followThroughPct.toFixed(0)}% of your shots had proper follow-through. Elite discipline.`,
                 priority: 4, metric: 'followThrough', currentValue: stats.followThroughPct,
             })
         }
@@ -341,8 +341,8 @@ export class CoachingEngine {
         if (stats.mechanicConsistency >= 80) {
             insights.push({
                 id: 'consistent', category: 'strength', icon: '📐',
-                title: 'Mécanique très consistante',
-                description: `Score de consistance de ${stats.mechanicConsistency}/100 — ta répétabilité est ta force.`,
+                title: 'Highly Consistent Mechanics',
+                description: `Consistency score of ${stats.mechanicConsistency}/100 — your repeatability is your strength.`,
                 priority: 3, metric: 'consistency', currentValue: stats.mechanicConsistency,
             })
         }
@@ -351,8 +351,8 @@ export class CoachingEngine {
         if (stats.avgElbowAngle > 105) {
             insights.push({
                 id: 'wide_elbow', category: 'weakness', icon: '⚠️',
-                title: 'Coude trop ouvert',
-                description: `Ton angle moyen de ${stats.avgElbowAngle.toFixed(1)}° est trop large. Vise ${NBA_BENCHMARKS.eliteElbowAngle.ideal}° pour plus de précision.`,
+                title: 'Elbow Too Wide',
+                description: `Your average angle of ${stats.avgElbowAngle.toFixed(1)}° is too wide. Aim for ${NBA_BENCHMARKS.eliteElbowAngle.ideal}° for better accuracy.`,
                 priority: 1, metric: 'elbowAngle', currentValue: stats.avgElbowAngle, targetValue: NBA_BENCHMARKS.eliteElbowAngle.ideal,
             })
         }
@@ -360,8 +360,8 @@ export class CoachingEngine {
         if (stats.avgReleaseTime > 0.55) {
             insights.push({
                 id: 'slow_release', category: 'weakness', icon: '🐌',
-                title: 'Release trop lent',
-                description: `${stats.avgReleaseTime.toFixed(2)}s — tu perds du temps et tu peux être contré. Objectif : < 0.50s.`,
+                title: 'Release Too Slow',
+                description: `${stats.avgReleaseTime.toFixed(2)}s — you're losing time and can get blocked. Target: < 0.50s.`,
                 priority: 1, metric: 'releaseTime', currentValue: stats.avgReleaseTime, targetValue: 0.45,
             })
         }
@@ -369,8 +369,8 @@ export class CoachingEngine {
         if (stats.avgReleaseHeight < 1.05) {
             insights.push({
                 id: 'low_release', category: 'weakness', icon: '📉',
-                title: 'Point de release bas',
-                description: `Release à ${stats.avgReleaseHeight.toFixed(2)}x ta taille — tu tires trop bas. Objectif : > 1.10x.`,
+                title: 'Low Release Point',
+                description: `Release at ${stats.avgReleaseHeight.toFixed(2)}x your height — you're shooting too low. Target: > 1.10x.`,
                 priority: 2, metric: 'releaseHeight', currentValue: stats.avgReleaseHeight, targetValue: 1.12,
             })
         }
@@ -378,8 +378,8 @@ export class CoachingEngine {
         if (stats.followThroughPct < 60) {
             insights.push({
                 id: 'bad_ft', category: 'weakness', icon: '❌',
-                title: 'Follow-through insuffisant',
-                description: `Seulement ${stats.followThroughPct.toFixed(0)}% de follow-through. Maintiens ta main en l'air après chaque tir.`,
+                title: 'Insufficient Follow-Through',
+                description: `Only ${stats.followThroughPct.toFixed(0)}% follow-through. Hold your hand up after every shot.`,
                 priority: 1, metric: 'followThrough', currentValue: stats.followThroughPct, targetValue: 85,
             })
         }
@@ -387,8 +387,8 @@ export class CoachingEngine {
         if (stats.mechanicConsistency < 50) {
             insights.push({
                 id: 'inconsistent', category: 'weakness', icon: '🎲',
-                title: 'Mécanique inconstante',
-                description: `Score de ${stats.mechanicConsistency}/100 — chaque tir est différent. Focus sur la répétition.`,
+                title: 'Inconsistent Mechanics',
+                description: `Score of ${stats.mechanicConsistency}/100 — every shot is different. Focus on repetition.`,
                 priority: 1, metric: 'consistency', currentValue: stats.mechanicConsistency, targetValue: 75,
             })
         }
@@ -396,8 +396,8 @@ export class CoachingEngine {
         if (stats.shootingPct < 35 && stats.totalShots >= 5) {
             insights.push({
                 id: 'low_fg', category: 'weakness', icon: '📊',
-                title: 'Efficacité à améliorer',
-                description: `${stats.shootingPct}% au tir sur ${stats.totalShots} tentatives. Travaille les fondamentaux.`,
+                title: 'Accuracy Needs Work',
+                description: `${stats.shootingPct}% FG on ${stats.totalShots} attempts. Work on fundamentals.`,
                 priority: 1, metric: 'fgPct', currentValue: stats.shootingPct, targetValue: 45,
             })
         }
@@ -409,7 +409,7 @@ export class CoachingEngine {
                 category: 'trend',
                 icon: trend.direction === 'improving' ? '📈' : trend.direction === 'declining' ? '📉' : '➡️',
                 title: trend.description,
-                description: `Tendance ${trend.direction === 'improving' ? 'positive' : trend.direction === 'declining' ? 'à surveiller' : 'stable'} détectée sur cette session.`,
+                description: `${trend.direction === 'improving' ? 'Positive' : trend.direction === 'declining' ? 'Declining' : 'Stable'} trend detected this session.`,
                 priority: trend.direction === 'declining' ? 2 : 4,
                 metric: trend.metric,
             })
@@ -419,16 +419,16 @@ export class CoachingEngine {
         if (stats.totalShots >= 50) {
             insights.push({
                 id: 'milestone_50', category: 'milestone', icon: '🏆',
-                title: '50 tirs cette session !',
-                description: 'Belle intensité d\'entraînement. La répétition forge la mémoire musculaire.',
+                title: '50 shots this session!',
+                description: 'Great training intensity. Repetition builds muscle memory.',
                 priority: 5,
             })
         }
         if (stats.totalShots >= 100) {
             insights.push({
                 id: 'milestone_100', category: 'milestone', icon: '💯',
-                title: '100 tirs ! Machine !',
-                description: 'Volume d\'entraînement digne d\'un pro. Kobe serait fier.',
+                title: '100 shots! Machine!',
+                description: 'Pro-level training volume. Kobe would be proud.',
                 priority: 5,
             })
         }
@@ -508,18 +508,18 @@ export class CoachingEngine {
 
         // Find the biggest difference
         const diffs = [
-            { metric: 'angle coude', diff: Math.abs(stats.avgElbowAngle - closest.elbowAngle), unit: '°' },
-            { metric: 'temps release', diff: Math.abs(stats.avgReleaseTime - closest.releaseTime), unit: 's' },
-            { metric: 'hauteur release', diff: Math.abs(stats.avgReleaseHeight - closest.releaseHeight), unit: 'x' },
+            { metric: 'elbow angle', diff: Math.abs(stats.avgElbowAngle - closest.elbowAngle), unit: '°' },
+            { metric: 'release time', diff: Math.abs(stats.avgReleaseTime - closest.releaseTime), unit: 's' },
+            { metric: 'release height', diff: Math.abs(stats.avgReleaseHeight - closest.releaseHeight), unit: 'x' },
         ].sort((a, b) => b.diff - a.diff)
 
         const keyDiff = diffs[0]
-        const direction = stats.avgElbowAngle > closest.elbowAngle ? 'plus ouvert' : 'plus serré'
+        const direction = stats.avgElbowAngle > closest.elbowAngle ? 'wider' : 'tighter'
 
         return {
             closestPlayer: closest.name,
             similarity,
-            keyDifference: `${keyDiff.metric} : ${keyDiff.diff.toFixed(1)}${keyDiff.unit} de différence (${closest.style})`,
+            keyDifference: `${keyDiff.metric}: ${keyDiff.diff.toFixed(1)}${keyDiff.unit} difference (${closest.style})`,
         }
     }
 
@@ -527,15 +527,15 @@ export class CoachingEngine {
 
     private generateHeadline(stats: SessionRealtimeStats, grade: string): string {
         if (grade.startsWith('A')) {
-            return `Session exceptionnelle ! ${stats.totalShots} tirs à ${stats.shootingPct}% — forme NBA.`
+            return `Outstanding session! ${stats.totalShots} shots at ${stats.shootingPct}% — NBA-level form.`
         }
         if (grade.startsWith('B')) {
-            return `Bonne session. ${stats.madeShots}/${stats.totalShots} réussis — continue sur cette lancée.`
+            return `Solid session. ${stats.madeShots}/${stats.totalShots} made — keep building on this.`
         }
         if (grade.startsWith('C')) {
-            return `Session correcte. Points d'amélioration identifiés pour progresser rapidement.`
+            return `Decent session. Key areas for improvement identified to level up fast.`
         }
-        return `Session d'entraînement complétée. Focus sur les fondamentaux pour monter en niveau.`
+        return `Training session completed. Focus on fundamentals to reach the next level.`
     }
 
     // ---- Next Focus ----
@@ -543,31 +543,31 @@ export class CoachingEngine {
     private determineNextFocus(insights: CoachingInsight[]): string {
         const weakness = insights.find(i => i.category === 'weakness')
         if (weakness) {
-            return `Focus sur : ${weakness.title.toLowerCase()}`
+            return `Focus on: ${weakness.title.toLowerCase()}`
         }
         const trend = insights.find(i => i.category === 'trend' && i.icon === '📉')
         if (trend) {
-            return `Attention : ${trend.title.toLowerCase()}`
+            return `Watch out: ${trend.title.toLowerCase()}`
         }
-        return 'Continue de perfectionner ta mécanique globale'
+        return 'Keep refining your overall shooting mechanics'
     }
 
     // ---- Motivation ----
 
     private generateMotivation(stats: SessionRealtimeStats, grade: string): string {
         const messages = {
-            'A+': '🔥 Tu es une machine à scorer. Continue ce travail de champion.',
-            'A': '💪 Mécanique élite. Encore un petit effort pour atteindre le sommet.',
-            'A-': '⭐ Excellent travail. Tu montres des qualités de shooteur de haut niveau.',
-            'B+': '🏀 Très bon entraînement. La constance va venir avec la répétition.',
-            'B': '👍 Solide. Chaque session te rapproche de ton meilleur niveau.',
-            'B-': '📈 Bonne base ! Focus sur les détails pour passer au niveau supérieur.',
-            'C+': '💪 Tu progresses. Rome ne s\'est pas construite en un jour.',
-            'C': '🎯 Continue de travailler. Les meilleurs shooteurs étaient moyens un jour.',
-            'C-': '📚 Chaque tir est un apprentissage. Reviens demain, tu seras meilleur.',
-            'D+': '🔄 Pas ta meilleure session, mais le fait d\'être là compte.',
-            'D': '💪 La persévérance est la clé. Curry tirait 500 tirs par jour à ton âge.',
-            'F': '🏀 Chaque expert a un jour été un débutant. Continue, tu vas y arriver.',
+            'A+': '🔥 You\'re a scoring machine. Keep up the champion\'s work.',
+            'A': '💪 Elite mechanics. One more push to reach the summit.',
+            'A-': '⭐ Excellent work. You\'re showing high-level shooter qualities.',
+            'B+': '🏀 Great workout. Consistency will come with repetition.',
+            'B': '👍 Solid. Every session brings you closer to your best.',
+            'B-': '📈 Good foundation! Focus on details to reach the next level.',
+            'C+': '💪 You\'re improving. Rome wasn\'t built in a day.',
+            'C': '🎯 Keep working. The best shooters were average once.',
+            'C-': '📚 Every shot is a lesson. Come back tomorrow, you\'ll be better.',
+            'D+': '🔄 Not your best session, but showing up is what counts.',
+            'D': '💪 Persistence is key. Curry shot 500 shots a day at your age.',
+            'F': '🏀 Every expert was once a beginner. Keep going, you\'ll get there.',
         }
         return messages[grade as keyof typeof messages] || messages['C']
     }

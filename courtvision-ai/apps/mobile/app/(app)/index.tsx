@@ -76,7 +76,7 @@ export default function DashboardScreen() {
                     simResult: 'L 2:3',
                     winRate: '32%',
                     releaseGap: '-0.2s',
-                    coachInsight: 'Marc a une détente (+4cm) plus rapide que ta capacité de contestation. Tu perds 68% des duels en "Switch Defense".',
+                    coachInsight: 'Marc has a faster vertical leap (+4cm) than your contest ability. You lose 68% of matchups in "Switch Defense".',
                 },
                 objectives: [
                     'Hit 5 catch-and-shoot 3s (>20km/h prep)',

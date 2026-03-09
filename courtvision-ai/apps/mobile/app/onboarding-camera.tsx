@@ -106,7 +106,7 @@ export default function OnboardingCamera() {
         // Haptic feedback loop for realism
         const hapticInterval = setInterval(() => {
             if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-        }, 200)
+        }, 1200)
 
         return () => {
             clearInterval(interval)

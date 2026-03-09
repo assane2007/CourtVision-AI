@@ -1,17 +1,17 @@
 /**
- * NotificationService — Notifications intelligentes et rappels d'entraînement.
+ * NotificationService — Smart notifications and training reminders.
  *
- * Fonctionnalités :
- * - Rappels quotidiens d'entraînement (configurable)
- * - Notifications post-session (résumé, coaching)
- * - Rappels de streak (maintien de la série)
- * - Notifications de milestone (records, niveaux)
+ * Features:
+ * - Configurable daily training reminders
+ * - Post-session notifications (summary, coaching)
+ * - Streak reminders
+ * - Milestone notifications (records, levels)
  * - Badge management
  *
- * Architecture :
- * - Utilise expo-notifications pour le scheduling local
- * - S'intègre avec le SessionStorageService pour les triggers
- * - Respecte les préférences utilisateur
+ * Architecture:
+ * - Uses expo-notifications for local scheduling
+ * - Integrates with SessionStorageService for triggers
+ * - Respects user preferences
  */
 
 import * as Notifications from 'expo-notifications'
@@ -24,19 +24,19 @@ import type { CoachingReport } from './coachingEngine'
 // ==========================================
 
 export interface NotificationPreferences {
-    /** Rappels quotidiens activés */
+    /** Daily reminders enabled */
     dailyReminder: boolean
-    /** Heure du rappel quotidien (format "HH:MM") */
+    /** Daily reminder time ("HH:MM" format) */
     dailyReminderTime: string
-    /** Notifications post-session */
+    /** Post-session notifications */
     postSession: boolean
-    /** Rappels de streak */
+    /** Streak reminders */
     streakReminder: boolean
-    /** Notifications de milestone */
+    /** Milestone notifications */
     milestones: boolean
-    /** Ne pas déranger (silence) */
+    /** Do not disturb (silent) */
     doNotDisturb: boolean
-    /** Jours de rappel (0=dim, 6=sam) */
+    /** Reminder days (0=Sun, 6=Sat) */
     reminderDays: number[]
 }
 
@@ -63,7 +63,7 @@ const DEFAULT_PREFERENCES: NotificationPreferences = {
     streakReminder: true,
     milestones: true,
     doNotDisturb: false,
-    reminderDays: [1, 2, 3, 4, 5], // Lun-Ven
+    reminderDays: [1, 2, 3, 4, 5], // Mon-Fri
 }
 
 // ==========================================
@@ -71,32 +71,32 @@ const DEFAULT_PREFERENCES: NotificationPreferences = {
 // ==========================================
 
 const DAILY_MESSAGES = [
-    { title: '🏀 C\'est l\'heure !', body: 'Ton terrain t\'attend. 15 minutes suffisent pour progresser.' },
-    { title: '🔥 Maintiens le rythme', body: 'Chaque session compte. Prêt pour aujourd\'hui ?' },
-    { title: '🎯 Objectif du jour', body: 'Un pas de plus vers ta meilleure mécanique.' },
-    { title: '⚡ Session rapide ?', body: '50 tirs, 10 minutes. L\'IA t\'analyse en temps réel.' },
-    { title: '💪 Let\'s go !', body: 'Les meilleurs shooters s\'entraînent tous les jours.' },
-    { title: '🏆 Challenge du jour', body: 'Bats ton record de FG% d\'hier. Tu peux le faire !' },
-    { title: '📈 Progression', body: 'Chaque tir analysé par l\'IA te rapproche de l\'élite.' },
+    { title: '🏀 It\'s time!', body: 'The court is waiting. 15 minutes is all you need to improve.' },
+    { title: '🔥 Keep the momentum', body: 'Every session counts. Ready for today?' },
+    { title: '🎯 Goal of the day', body: 'One step closer to your best mechanics.' },
+    { title: '⚡ Quick session?', body: '50 shots, 10 minutes. AI analyzes you in real time.' },
+    { title: '💪 Let\'s go!', body: 'The best shooters train every single day.' },
+    { title: '🏆 Daily challenge', body: 'Beat your FG% record from yesterday. You can do it!' },
+    { title: '📈 Progress', body: 'Every AI-analyzed shot brings you closer to elite.' },
 ]
 
 const STREAK_MESSAGES = [
-    { title: '🔥 Ton streak est en danger !', body: 'Tu n\'as pas tiré aujourd\'hui. Une session rapide ?' },
-    { title: '⚠️ Ne perds pas ta série !', body: 'Encore quelques heures pour maintenir ton streak.' },
-    { title: '📉 Streak alert', body: 'Tes progrès sont en jeu. 10 minutes suffisent !' },
+    { title: '🔥 Your streak is at risk!', body: 'You haven\'t shot today. Quick session?' },
+    { title: '⚠️ Don\'t lose your streak!', body: 'A few hours left to keep it going.' },
+    { title: '📉 Streak alert', body: 'Your progress is at stake. 10 minutes is enough!' },
 ]
 
 const MILESTONE_MESSAGES: Record<string, { title: string; body: string }> = {
-    first_session: { title: '🎉 Première session !', body: 'Bienvenue dans CourtVision AI. Ton parcours commence !' },
-    streak_3: { title: '🔥 3 jours de suite !', body: 'La régularité paie. Continue comme ça !' },
-    streak_7: { title: '🏆 7 jours de streak !', body: 'Une semaine complète ! Tu es un vrai shooter.' },
-    streak_30: { title: '👑 30 jours de streak !', body: 'Un mois d\'entraînement quotidien. Légende !' },
-    shots_100: { title: '💯 100 tirs analysés !', body: 'L\'IA a maintenant une bonne lecture de ta mécanique.' },
-    shots_500: { title: '🎯 500 tirs !', body: 'Tu deviens un expert. Ton Shot DNA est bien défini.' },
-    shots_1000: { title: '⭐ 1000 tirs !', body: 'Tu es dans le top 1% des utilisateurs CourtVision AI.' },
-    fg_50: { title: '🎯 50% FG !', body: 'Tu shootes à 50% aujourd\'hui. Niveau NBA !' },
-    fg_60: { title: '🔥 60% FG !', body: 'Performance exceptionnelle ! Continue !' },
-    grade_A: { title: '🏅 Grade A !', body: 'Ta session est notée A. Mécanique excellente.' },
+    first_session: { title: '🎉 First session!', body: 'Welcome to CourtVision AI. Your journey begins!' },
+    streak_3: { title: '🔥 3 days in a row!', body: 'Consistency pays off. Keep it up!' },
+    streak_7: { title: '🏆 7-day streak!', body: 'A full week! You\'re a true shooter.' },
+    streak_30: { title: '👑 30-day streak!', body: 'A month of daily training. Legend!' },
+    shots_100: { title: '💯 100 shots analyzed!', body: 'The AI now has a solid read on your mechanics.' },
+    shots_500: { title: '🎯 500 shots!', body: 'You\'re becoming an expert. Your Shot DNA is well defined.' },
+    shots_1000: { title: '⭐ 1000 shots!', body: 'You\'re in the top 1% of CourtVision AI users.' },
+    fg_50: { title: '🎯 50% FG!', body: 'You\'re shooting 50% today. NBA level!' },
+    fg_60: { title: '🔥 60% FG!', body: 'Outstanding performance! Keep going!' },
+    grade_A: { title: '🏅 Grade A!', body: 'Your session is rated A. Excellent mechanics.' },
 }
 
 // ==========================================

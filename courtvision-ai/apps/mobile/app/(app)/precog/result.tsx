@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
     resultText: {
         color: '#F8F5EF',
         fontSize: 24,
-        fontFamily: 'JetBrainsMono-Regular', // Assuming this as fallback, or just system font
+        fontFamily: 'JetBrainsMono_400Regular',
         marginBottom: 16,
         letterSpacing: 1,
     },
