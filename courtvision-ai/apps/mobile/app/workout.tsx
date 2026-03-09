@@ -38,6 +38,7 @@ import { BiomechanicsPanel } from '../components/workout/BiomechanicsPanel'
 import { SessionSummary } from '../components/workout/SessionSummary'
 import { VocalCoachOverlay } from '../components/workout/VocalCoachOverlay'
 import { ShareService } from '../lib/shareService'
+import { ShareCardModal } from '../components/share/ShareCardModal'
 import { CoachingEngine, type CoachingReport } from '../lib/coachingEngine'
 import { SessionStorageService } from '../lib/sessionStorage'
 import { T, typePresets, impact } from '../lib/theme'
@@ -73,6 +74,7 @@ export default function WorkoutScreen() {
     const [isSaving, setIsSaving] = useState(false)
     const [saveSuccess, setSaveSuccess] = useState(false)
     const [showCoaching, setShowCoaching] = useState(false)
+    const [showShareCard, setShowShareCard] = useState(false)
 
     // ---- Lifecycle ----
     useEffect(() => {
@@ -296,12 +298,7 @@ export default function WorkoutScreen() {
                         onRestart={handleRestart}
                         onClose={() => router.back()}
                         onSave={handleSaveSession}
-                        onShare={async () => {
-                            if (ai.stats) {
-                                const shareService = new ShareService()
-                                await shareService.shareSessionSummary(ai.stats)
-                            }
-                        }}
+                        onShare={() => setShowShareCard(true)}
                         extraActions={
                             <View style={styles.extraActions}>
                                 {coachingReport ? (
@@ -324,6 +321,15 @@ export default function WorkoutScreen() {
                         }
                     />
                 )}
+
+                {/* Visual Share Card Modal */}
+                {ai.stats ? (
+                    <ShareCardModal
+                        visible={showShareCard}
+                        onClose={() => setShowShareCard(false)}
+                        stats={ai.stats}
+                    />
+                ) : null}
             </SafeAreaView>
         )
     }

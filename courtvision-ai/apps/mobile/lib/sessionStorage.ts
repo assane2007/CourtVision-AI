@@ -55,6 +55,8 @@ export interface StoredShot {
     detectionConfidence: number
     zone?: string
     timestamp: number
+    /** Skeleton landmarks captured at release point (from CV Engine) */
+    landmarks?: Array<{ x: number; y: number; z: number; visibility: number }>
 }
 
 export interface SessionHistoryItem {

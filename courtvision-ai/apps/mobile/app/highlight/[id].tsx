@@ -12,11 +12,14 @@
  *   - Touch targets >= 44 px
  */
 
-import { View, Text, TouchableOpacity, StatusBar, Share, Modal, Pressable, StyleSheet } from 'react-native'
+import { View, Text, TouchableOpacity, StatusBar, Share, Modal, Pressable, StyleSheet, Dimensions } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Feather } from '@expo/vector-icons'
 import { useState, useCallback, useEffect, memo, useRef } from 'react'
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window')
+
 import Animated, {
     FadeIn,
     FadeInDown,
@@ -36,6 +39,7 @@ import { useStore } from '../../lib/store'
 import { api } from '../../lib/api'
 import { T, typePresets } from '../../lib/theme'
 import { MusicPicker, type MusicTrack } from '../../components/dashboard/MusicPicker'
+import { SkeletonOverlay, type SkeletonFrame } from '../../components/replay/SkeletonOverlay'
 
 // ── Music catalog (mirrored subset for mobile UI) ─────────────
 
@@ -71,12 +75,112 @@ type HighlightClipData = {
     startSec?: number
     endSec?: number
     overlayLabel?: string
+    skeleton?: SkeletonFrame
 }
 
 const FALLBACK_CLIPS: HighlightClipData[] = [
-    { time: '00:14', label: '3-Pt Made · Q1', score: 96, comment: 'Perfect high release — elbow at 90°. Excellent catch-and-shoot form.' },
-    { time: '01:32', label: 'Floater · Q2', score: 88, comment: 'Smart lane drive, well-controlled floater. Great decision-making.' },
-    { time: '02:45', label: 'And-1 Drive · Q3', score: 94, comment: 'Explosive first step — dominant body language under contact.' },
+    {
+        time: '00:14', label: '3-Pt Made · Q1', score: 96,
+        comment: 'Perfect high release — elbow at 90°. Excellent catch-and-shoot form.',
+        skeleton: {
+            landmarks: [
+                { x: 0.50, y: 0.12, z: 0, visibility: 0.9 }, // 0 nose
+                { x: 0.49, y: 0.11, z: 0, visibility: 0.8 }, // 1
+                { x: 0.48, y: 0.11, z: 0, visibility: 0.8 }, // 2
+                { x: 0.47, y: 0.11, z: 0, visibility: 0.7 }, // 3
+                { x: 0.51, y: 0.11, z: 0, visibility: 0.8 }, // 4
+                { x: 0.52, y: 0.11, z: 0, visibility: 0.8 }, // 5
+                { x: 0.53, y: 0.11, z: 0, visibility: 0.7 }, // 6
+                { x: 0.46, y: 0.11, z: 0, visibility: 0.6 }, // 7
+                { x: 0.54, y: 0.11, z: 0, visibility: 0.6 }, // 8
+                { x: 0.48, y: 0.13, z: 0, visibility: 0.7 }, // 9
+                { x: 0.52, y: 0.13, z: 0, visibility: 0.7 }, // 10
+                { x: 0.44, y: 0.22, z: 0, visibility: 0.95 }, // 11 left shoulder
+                { x: 0.56, y: 0.22, z: 0, visibility: 0.95 }, // 12 right shoulder
+                { x: 0.40, y: 0.32, z: 0, visibility: 0.9 },  // 13 left elbow
+                { x: 0.60, y: 0.18, z: 0, visibility: 0.95 }, // 14 right elbow (shooting)
+                { x: 0.42, y: 0.25, z: 0, visibility: 0.85 }, // 15 left wrist
+                { x: 0.58, y: 0.09, z: 0, visibility: 0.95 }, // 16 right wrist (high release)
+                { x: 0.43, y: 0.24, z: 0, visibility: 0.5 },  // 17
+                { x: 0.57, y: 0.08, z: 0, visibility: 0.5 },  // 18
+                { x: 0.42, y: 0.23, z: 0, visibility: 0.5 },  // 19
+                { x: 0.56, y: 0.07, z: 0, visibility: 0.5 },  // 20
+                { x: 0.43, y: 0.25, z: 0, visibility: 0.5 },  // 21
+                { x: 0.57, y: 0.09, z: 0, visibility: 0.5 },  // 22
+                { x: 0.46, y: 0.52, z: 0, visibility: 0.9 },  // 23 left hip
+                { x: 0.54, y: 0.52, z: 0, visibility: 0.9 },  // 24 right hip
+                { x: 0.45, y: 0.70, z: 0, visibility: 0.85 }, // 25 left knee
+                { x: 0.55, y: 0.68, z: 0, visibility: 0.85 }, // 26 right knee
+                { x: 0.46, y: 0.88, z: 0, visibility: 0.8 },  // 27 left ankle
+                { x: 0.54, y: 0.87, z: 0, visibility: 0.8 },  // 28 right ankle
+                { x: 0.46, y: 0.90, z: 0, visibility: 0.6 },  // 29
+                { x: 0.54, y: 0.89, z: 0, visibility: 0.6 },  // 30
+                { x: 0.45, y: 0.91, z: 0, visibility: 0.5 },  // 31
+                { x: 0.55, y: 0.90, z: 0, visibility: 0.5 },  // 32
+            ],
+            elbowAngle: 90,
+            kneeAngle: 142,
+            shotArc: [
+                { x: 0.58, y: 0.09 }, { x: 0.62, y: 0.05 },
+                { x: 0.68, y: 0.04 }, { x: 0.75, y: 0.08 },
+                { x: 0.80, y: 0.15 }, { x: 0.82, y: 0.22 },
+            ],
+        },
+    },
+    {
+        time: '01:32', label: 'Floater · Q2', score: 88,
+        comment: 'Smart lane drive, well-controlled floater. Great decision-making.',
+        skeleton: {
+            landmarks: [
+                { x: 0.55, y: 0.18, z: 0, visibility: 0.9 },
+                { x: 0.54, y: 0.17, z: 0, visibility: 0.7 }, { x: 0.53, y: 0.17, z: 0, visibility: 0.7 },
+                { x: 0.52, y: 0.17, z: 0, visibility: 0.6 }, { x: 0.56, y: 0.17, z: 0, visibility: 0.7 },
+                { x: 0.57, y: 0.17, z: 0, visibility: 0.7 }, { x: 0.58, y: 0.17, z: 0, visibility: 0.6 },
+                { x: 0.51, y: 0.17, z: 0, visibility: 0.5 }, { x: 0.59, y: 0.17, z: 0, visibility: 0.5 },
+                { x: 0.53, y: 0.19, z: 0, visibility: 0.6 }, { x: 0.57, y: 0.19, z: 0, visibility: 0.6 },
+                { x: 0.48, y: 0.28, z: 0, visibility: 0.9 }, { x: 0.62, y: 0.28, z: 0, visibility: 0.9 },
+                { x: 0.44, y: 0.35, z: 0, visibility: 0.85 }, { x: 0.65, y: 0.22, z: 0, visibility: 0.9 },
+                { x: 0.46, y: 0.30, z: 0, visibility: 0.8 }, { x: 0.64, y: 0.14, z: 0, visibility: 0.9 },
+                { x: 0.47, y: 0.29, z: 0, visibility: 0.4 }, { x: 0.63, y: 0.13, z: 0, visibility: 0.4 },
+                { x: 0.46, y: 0.29, z: 0, visibility: 0.4 }, { x: 0.62, y: 0.12, z: 0, visibility: 0.4 },
+                { x: 0.47, y: 0.30, z: 0, visibility: 0.4 }, { x: 0.63, y: 0.14, z: 0, visibility: 0.4 },
+                { x: 0.50, y: 0.55, z: 0, visibility: 0.85 }, { x: 0.60, y: 0.54, z: 0, visibility: 0.85 },
+                { x: 0.48, y: 0.72, z: 0, visibility: 0.8 }, { x: 0.62, y: 0.70, z: 0, visibility: 0.8 },
+                { x: 0.50, y: 0.90, z: 0, visibility: 0.75 }, { x: 0.60, y: 0.88, z: 0, visibility: 0.75 },
+                { x: 0.50, y: 0.92, z: 0, visibility: 0.5 }, { x: 0.60, y: 0.90, z: 0, visibility: 0.5 },
+                { x: 0.49, y: 0.93, z: 0, visibility: 0.4 }, { x: 0.61, y: 0.91, z: 0, visibility: 0.4 },
+            ],
+            elbowAngle: 85,
+            kneeAngle: 135,
+        },
+    },
+    {
+        time: '02:45', label: 'And-1 Drive · Q3', score: 94,
+        comment: 'Explosive first step — dominant body language under contact.',
+        skeleton: {
+            landmarks: [
+                { x: 0.45, y: 0.20, z: 0, visibility: 0.85 },
+                { x: 0.44, y: 0.19, z: 0, visibility: 0.7 }, { x: 0.43, y: 0.19, z: 0, visibility: 0.7 },
+                { x: 0.42, y: 0.19, z: 0, visibility: 0.6 }, { x: 0.46, y: 0.19, z: 0, visibility: 0.7 },
+                { x: 0.47, y: 0.19, z: 0, visibility: 0.7 }, { x: 0.48, y: 0.19, z: 0, visibility: 0.6 },
+                { x: 0.41, y: 0.19, z: 0, visibility: 0.5 }, { x: 0.49, y: 0.19, z: 0, visibility: 0.5 },
+                { x: 0.43, y: 0.21, z: 0, visibility: 0.6 }, { x: 0.47, y: 0.21, z: 0, visibility: 0.6 },
+                { x: 0.38, y: 0.30, z: 0, visibility: 0.9 }, { x: 0.52, y: 0.30, z: 0, visibility: 0.9 },
+                { x: 0.35, y: 0.38, z: 0, visibility: 0.85 }, { x: 0.55, y: 0.24, z: 0, visibility: 0.9 },
+                { x: 0.38, y: 0.34, z: 0, visibility: 0.8 }, { x: 0.52, y: 0.16, z: 0, visibility: 0.9 },
+                { x: 0.39, y: 0.33, z: 0, visibility: 0.4 }, { x: 0.51, y: 0.15, z: 0, visibility: 0.4 },
+                { x: 0.38, y: 0.33, z: 0, visibility: 0.4 }, { x: 0.50, y: 0.14, z: 0, visibility: 0.4 },
+                { x: 0.39, y: 0.34, z: 0, visibility: 0.4 }, { x: 0.51, y: 0.16, z: 0, visibility: 0.4 },
+                { x: 0.42, y: 0.56, z: 0, visibility: 0.85 }, { x: 0.52, y: 0.55, z: 0, visibility: 0.85 },
+                { x: 0.38, y: 0.74, z: 0, visibility: 0.8 }, { x: 0.56, y: 0.72, z: 0, visibility: 0.8 },
+                { x: 0.40, y: 0.90, z: 0, visibility: 0.75 }, { x: 0.54, y: 0.88, z: 0, visibility: 0.75 },
+                { x: 0.40, y: 0.92, z: 0, visibility: 0.5 }, { x: 0.54, y: 0.90, z: 0, visibility: 0.5 },
+                { x: 0.39, y: 0.93, z: 0, visibility: 0.4 }, { x: 0.55, y: 0.91, z: 0, visibility: 0.4 },
+            ],
+            elbowAngle: 95,
+            kneeAngle: 128,
+        },
+    },
 ]
 
 const SHARE_PLATFORMS = [
@@ -185,6 +289,7 @@ export default function HighlightPlayer() {
     const [controlsVisible, setControlsVisible] = useState(true)
     const [musicPickerVisible, setMusicPickerVisible] = useState(false)
     const [selectedTrack, setSelectedTrack] = useState<MusicTrack | null>(null)
+    const [skeletonVisible, setSkeletonVisible] = useState(true)
 
     // API-loaded clips + video
     const [clips, setClips] = useState<HighlightClipData[]>(FALLBACK_CLIPS)
@@ -321,6 +426,7 @@ export default function HighlightPlayer() {
     }, [progress])
     const openMusicPicker = useCallback(() => setMusicPickerVisible(true), [])
     const closeMusicPicker = useCallback(() => setMusicPickerVisible(false), [])
+    const toggleSkeleton = useCallback(() => setSkeletonVisible(v => !v), [])
     const handleSelectMusic = useCallback((track: MusicTrack | null) => {
         setSelectedTrack(track)
         if (track) {
@@ -373,6 +479,17 @@ export default function HighlightPlayer() {
                     </Animated.View>
                 )}
 
+                {/* Skeleton AR overlay */}
+                {skeletonVisible && clip?.skeleton && (
+                    <SkeletonOverlay
+                        frame={clip.skeleton}
+                        width={SCREEN_W}
+                        height={SCREEN_H}
+                        showAngles={true}
+                        showArc={true}
+                    />
+                )}
+
                 {/* Play button (when paused and no video playing) */}
                 {!playing && (
                     <Animated.View entering={FadeIn.duration(300)} style={hs.playOverlay}>
@@ -407,6 +524,21 @@ export default function HighlightPlayer() {
                                 />
                                 <Text style={[hs.commentaryText, aiCommentary && hs.commentaryTextOn]}>
                                     AI Commentary {aiCommentary ? 'ON' : 'OFF'}
+                                </Text>
+                            </TouchableOpacity>
+
+                            {/* Skeleton toggle */}
+                            <TouchableOpacity
+                                onPress={toggleSkeleton}
+                                style={[hs.commentaryToggle, skeletonVisible ? hs.commentaryOn : hs.commentaryOff]}
+                            >
+                                <Feather
+                                    name={skeletonVisible ? 'eye' : 'eye-off'}
+                                    size={14}
+                                    color={skeletonVisible ? '#00D97E' : T.color.text.secondary}
+                                />
+                                <Text style={[hs.commentaryText, skeletonVisible && { color: '#00D97E' }]}>
+                                    Skeleton {skeletonVisible ? 'ON' : 'OFF'}
                                 </Text>
                             </TouchableOpacity>
 
