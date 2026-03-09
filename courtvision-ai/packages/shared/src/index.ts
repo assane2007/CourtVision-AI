@@ -788,3 +788,475 @@ export interface WeeklyDigestPayload {
     apexScore: ApexScore
     nextWeekFocus: string[]
 }
+
+// ==========================================
+// V6.0 — Arena (Challenge Multi-joueurs Temps Réel)
+// ==========================================
+
+export const ARENA_MODES = ['shootout', 'accuracy', 'speed', 'clutch', 'knockout'] as const
+export type ArenaMode = (typeof ARENA_MODES)[number]
+
+export const ARENA_STATUSES = ['waiting', 'countdown', 'live', 'finished', 'cancelled'] as const
+export type ArenaStatus = (typeof ARENA_STATUSES)[number]
+
+export interface ArenaConfig {
+    mode: ArenaMode
+    maxPlayers: number
+    roundDurationSec: number
+    totalRounds: number
+    shotsPerRound: number
+    allowedZones?: string[]
+    minLevel?: number
+}
+
+export interface ArenaMatch {
+    id: string
+    hostId: string
+    hostUsername: string
+    mode: ArenaMode
+    status: ArenaStatus
+    config: ArenaConfig
+    players: ArenaPlayer[]
+    currentRound: number
+    startedAt: string | null
+    endedAt: string | null
+    createdAt: string
+}
+
+export interface ArenaPlayer {
+    userId: string
+    username: string
+    avatarUrl?: string
+    position?: Position
+    level: number
+    isReady: boolean
+    score: number
+    shotsMade: number
+    shotsTotal: number
+    accuracy: number
+    streak: number
+    isEliminated: boolean
+}
+
+export interface ArenaScoreboard {
+    matchId: string
+    mode: ArenaMode
+    round: number
+    totalRounds: number
+    timeRemainingSec: number
+    players: ArenaPlayer[]
+    status: ArenaStatus
+    lastEvent?: ArenaShotEvent
+}
+
+export interface ArenaShotEvent {
+    userId: string
+    username: string
+    result: 'made' | 'missed'
+    zone: string
+    timestamp: number
+    newScore: number
+    streak: number
+}
+
+export interface ArenaLeaderboardEntry {
+    rank: number
+    userId: string
+    username: string
+    avatarUrl?: string
+    wins: number
+    losses: number
+    winRate: number
+    avgAccuracy: number
+    eloRating: number
+    bestStreak: number
+}
+
+// ==========================================
+// V6.0 — HORSE IA
+// ==========================================
+
+export const HORSE_DIFFICULTIES = ['rookie', 'pro', 'allstar', 'legend'] as const
+export type HorseDifficulty = (typeof HORSE_DIFFICULTIES)[number]
+
+export const HORSE_CHALLENGE_TYPES = [
+    'zone_shot', 'fadeaway', 'stepback', 'bank_shot', 'swish_only',
+    'off_dribble', 'catch_and_shoot', 'turnaround', 'floater', 'logo_shot'
+] as const
+export type HorseChallengeType = (typeof HORSE_CHALLENGE_TYPES)[number]
+
+export interface HorseGame {
+    id: string
+    userId: string
+    difficulty: HorseDifficulty
+    status: 'active' | 'won' | 'lost' | 'abandoned'
+    letters: string        // e.g. "HOR" = 3 lettres
+    maxLetters: number     // 5 = HORSE
+    currentRound: number
+    score: number
+    challenges: HorseChallenge[]
+    startedAt: string
+    endedAt?: string
+}
+
+export interface HorseChallenge {
+    id: string
+    gameId: string
+    round: number
+    challengeType: HorseChallengeType
+    targetZone: string
+    targetTechnique: string
+    nbaInspiration?: string
+    description: string
+    difficulty: number
+    timeoutSec: number
+    attempt?: HorseAttempt
+}
+
+export interface HorseAttempt {
+    id: string
+    challengeId: string
+    userId: string
+    success: boolean
+    similarityScore: number  // 0-100 biomechanical match
+    shotData?: Record<string, any>
+    timestamp: string
+}
+
+export interface HorseGameState {
+    game: HorseGame
+    currentChallenge: HorseChallenge | null
+    playerLetters: string
+    aiLetters: string
+    round: number
+    isPlayerTurn: boolean
+    message: string
+}
+
+export interface HorseLeaderboardEntry {
+    rank: number
+    userId: string
+    username: string
+    avatarUrl?: string
+    gamesPlayed: number
+    gamesWon: number
+    winRate: number
+    bestScore: number
+    avgSimilarity: number
+    longestWinStreak: number
+}
+
+// ==========================================
+// V6.0 — Scout Report PDF
+// ==========================================
+
+export const REPORT_TEMPLATES = ['scout', 'session', 'season', 'player_card', 'custom'] as const
+export type ReportTemplate = (typeof REPORT_TEMPLATES)[number]
+
+export const REPORT_FORMATS = ['pdf', 'json', 'html'] as const
+export type ReportExportFormat = (typeof REPORT_FORMATS)[number]
+
+export interface ScoutReport {
+    reportId: string
+    template: ReportTemplate
+    format: ReportExportFormat
+    generatedAt: string
+    player: {
+        userId: string
+        name: string
+        position: string | null
+        avatarUrl: string | null
+        age?: number
+        height?: string
+        weight?: string
+        team?: string
+    }
+    apexScore: ApexScore | null
+    shotDna: ShotDNASummary | null
+    seasonStats: {
+        totalSessions: number
+        totalShots: number
+        avgFGPct: number
+        avgThreePct: number
+        avgMentalScore: number
+        bestGame: { date: string; fgPct: number; mentalScore: number } | null
+        consistencyRating: number
+    }
+    strengths: string[]
+    weaknesses: string[]
+    nbaComparisons: { player: string; similarity: number; reason: string }[]
+    scoutGrade: string
+    scoutNotes: string[]
+    projections: {
+        ceiling: string
+        floor: string
+        timeline: string
+        keyDevelopmentAreas: string[]
+    }
+    sections: ScoutReportSection[]
+}
+
+export interface ScoutReportSection {
+    title: string
+    type: 'stats' | 'chart' | 'text' | 'heatmap' | 'comparison' | 'grade'
+    data: Record<string, any>
+}
+
+export interface ScoutReportConfig {
+    template: ReportTemplate
+    format: ReportExportFormat
+    includeShotDna: boolean
+    includeHeatmaps: boolean
+    includeVideo: boolean
+    includeProjections: boolean
+    sessionsRange?: { from: string; to: string }
+    branding?: { logo?: string; teamName?: string; scoutName?: string }
+}
+
+export interface PlayerCardData {
+    userId: string
+    username: string
+    fullName: string
+    avatarUrl: string | null
+    position: string | null
+    overallRating: number
+    playStyle: string
+    topAttributes: { name: string; value: number; emoji: string }[]
+    seasonAvg: { fgPct: number; threePct: number; mentalScore: number }
+    badges: Badge[]
+    nbaComp: string | null
+    qrCodeUrl: string
+}
+
+// ==========================================
+// V6.0 — Apple Watch / Wearable HRV
+// ==========================================
+
+export const WEARABLE_PLATFORMS = ['apple_watch', 'garmin', 'fitbit', 'whoop', 'samsung', 'other'] as const
+export type WearablePlatform = (typeof WEARABLE_PLATFORMS)[number]
+
+export const WEARABLE_DATA_TYPES = [
+    'heart_rate', 'hrv', 'resting_hr', 'vo2max', 'calories',
+    'steps', 'sleep', 'blood_oxygen', 'respiratory_rate', 'body_temperature'
+] as const
+export type WearableDataType = (typeof WEARABLE_DATA_TYPES)[number]
+
+export interface WearableDevice {
+    id: string
+    userId: string
+    platform: WearablePlatform
+    deviceName: string
+    model?: string
+    lastSyncAt: string | null
+    isActive: boolean
+    connectedAt: string
+}
+
+export interface WearableSyncPayload {
+    deviceId: string
+    platform: WearablePlatform
+    readings: WearableReading[]
+    syncedAt: string
+}
+
+export interface WearableReading {
+    type: WearableDataType
+    value: number
+    unit: string
+    recordedAt: string
+    metadata?: Record<string, any>
+}
+
+export interface HRVReading {
+    id: string
+    userId: string
+    rmssd: number          // Root Mean Square of Successive Differences (ms)
+    sdnn: number           // Standard Deviation of NN intervals (ms)
+    lnRmssd: number        // Natural log of RMSSD
+    restingHR: number      // bpm
+    recordedAt: string
+}
+
+export interface WearableDashboard {
+    device: WearableDevice | null
+    lastSync: string | null
+    today: {
+        restingHR: number | null
+        hrv: number | null
+        vo2max: number | null
+        caloriesBurned: number | null
+        steps: number | null
+        sleepHours: number | null
+        sleepQuality: number | null
+    }
+    readiness: ReadinessEnhanced
+    trends: {
+        hrv7Day: { date: string; value: number }[]
+        restingHR7Day: { date: string; value: number }[]
+        sleepQuality7Day: { date: string; value: number }[]
+    }
+}
+
+export interface ReadinessEnhanced {
+    score: number            // 0-100
+    grade: string            // A+ to F
+    hrvBaseline: number      // Personal baseline
+    hrvCurrent: number       // Current reading
+    hrvDeviationPct: number  // % above/below baseline
+    restingHRBaseline: number
+    restingHRCurrent: number
+    sleepScore: number
+    recoveryScore: number
+    recommendation: string
+    trainingIntensity: 'rest' | 'light' | 'moderate' | 'normal' | 'push'
+    riskFactors: string[]
+    tips: string[]
+}
+
+export interface TrainingLoadPayload {
+    userId: string
+    date: string
+    acuteLoad: number       // 7-day rolling avg
+    chronicLoad: number     // 28-day rolling avg
+    acwr: number            // Acute:Chronic Workload Ratio
+    risk: 'low' | 'moderate' | 'high' | 'very_high'
+    recommendation: string
+    trend: 'increasing' | 'stable' | 'decreasing'
+}
+
+// ==========================================
+// V6.0 — Marketplace de Drills
+// ==========================================
+
+export const DRILL_CATEGORIES = [
+    'shooting', 'ball_handling', 'defense', 'conditioning',
+    'footwork', 'mental', 'team', 'post_moves', 'passing', 'agility'
+] as const
+export type DrillCategory = (typeof DRILL_CATEGORIES)[number]
+
+export const DRILL_DIFFICULTIES = ['beginner', 'intermediate', 'advanced', 'elite'] as const
+export type DrillDifficulty = (typeof DRILL_DIFFICULTIES)[number]
+
+export const DRILL_EQUIPMENT = [
+    'basketball', 'cones', 'resistance_band', 'ladder',
+    'weighted_ball', 'shooting_machine', 'none'
+] as const
+export type DrillEquipment = (typeof DRILL_EQUIPMENT)[number]
+
+export const DRILL_PACK_STATUSES = ['draft', 'review', 'published', 'rejected', 'archived'] as const
+export type DrillPackStatus = (typeof DRILL_PACK_STATUSES)[number]
+
+export interface DrillPack {
+    id: string
+    creatorId: string
+    creatorName: string
+    creatorAvatarUrl?: string
+    creatorVerified: boolean
+    title: string
+    description: string
+    coverImageUrl?: string
+    category: DrillCategory
+    difficulty: DrillDifficulty
+    equipment: DrillEquipment[]
+    priceCents: number        // 0 = free
+    currency: string
+    rating: number            // 0-5
+    reviewCount: number
+    salesCount: number
+    totalDuration: number     // minutes
+    drillCount: number
+    tags: string[]
+    status: DrillPackStatus
+    isPurchased?: boolean
+    isFeatured: boolean
+    createdAt: string
+    updatedAt: string
+}
+
+export interface DrillPackItem {
+    id: string
+    packId: string
+    title: string
+    description: string
+    instructions: string[]
+    durationMin: number
+    videoUrl?: string
+    thumbnailUrl?: string
+    difficulty: DrillDifficulty
+    reps?: number
+    sets?: number
+    restSec?: number
+    position: number
+    tips: string[]
+}
+
+export interface DrillReview {
+    id: string
+    userId: string
+    username: string
+    avatarUrl?: string
+    packId: string
+    rating: number
+    comment: string
+    helpfulCount: number
+    createdAt: string
+}
+
+export interface CreatorProfile {
+    id: string
+    userId: string
+    displayName: string
+    bio: string
+    avatarUrl?: string
+    verified: boolean
+    totalEarnings: number
+    totalSales: number
+    publishedPacks: number
+    avgRating: number
+    followers: number
+    specialties: DrillCategory[]
+    credentials: string[]
+    createdAt: string
+}
+
+export interface PurchaseRecord {
+    id: string
+    userId: string
+    packId: string
+    packTitle: string
+    pricePaid: number
+    currency: string
+    stripePaymentId: string
+    purchasedAt: string
+}
+
+export interface MarketplaceStats {
+    totalPacks: number
+    totalCreators: number
+    featuredPacks: DrillPack[]
+    trendingPacks: DrillPack[]
+    topCreators: CreatorProfile[]
+    categories: { name: DrillCategory; count: number }[]
+}
+
+export interface DrillPackCreatePayload {
+    title: string
+    description: string
+    category: DrillCategory
+    difficulty: DrillDifficulty
+    equipment: DrillEquipment[]
+    priceCents: number
+    tags: string[]
+    items: {
+        title: string
+        description: string
+        instructions: string[]
+        durationMin: number
+        videoUrl?: string
+        difficulty: DrillDifficulty
+        reps?: number
+        sets?: number
+        restSec?: number
+        tips: string[]
+    }[]
+}
