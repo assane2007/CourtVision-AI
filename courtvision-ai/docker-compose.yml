@@ -27,10 +27,11 @@ services:
       - CV_WORKERS=2
       - YOLO_MODEL=yolov8s.pt
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      test: ["CMD", "python", "-c", "import urllib.request, json; r=json.loads(urllib.request.urlopen('http://localhost:8000/health').read()); exit(0 if r.get('models_ready') else 1)"]
       interval: 30s
-      timeout: 5s
-      retries: 3
+      timeout: 10s
+      start_period: 120s
+      retries: 5
     deploy:
       resources:
         reservations:

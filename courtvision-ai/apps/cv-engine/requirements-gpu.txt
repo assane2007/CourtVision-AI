@@ -1,0 +1,7 @@
+# CourtVision CV Engine — GPU Dependencies (CUDA 12.1)
+# Install AFTER requirements.txt: pip install -r requirements-gpu.txt
+
+--index-url https://download.pytorch.org/whl/cu121
+
+torch==2.5.1+cu121
+torchvision==0.20.1+cu121

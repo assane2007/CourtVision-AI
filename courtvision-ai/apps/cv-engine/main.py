@@ -89,6 +89,10 @@ executor = ThreadPoolExecutor(max_workers=int(os.getenv("CV_WORKERS", "2")))
 # In-memory job store (production: swap for Redis)
 jobs: Dict[str, dict] = {}
 
+# Model readiness state (set after startup warm-up)
+_models_ready = False
+_models_loaded: Dict[str, bool] = {"yolo": False, "mediapipe": False}
+
 # ── Model lazy loaders ─────────────────────────────────────────
 
 _yolo_model: Optional["YOLO"] = None
@@ -103,7 +107,55 @@ def get_yolo():
         _yolo_model = YOLO(model_path)
         if GPU_AVAILABLE:
             _yolo_model.to(DEVICE)
+        # Warm-up: single dummy inference to trigger weight loading + JIT
+        dummy = np.zeros((640, 640, 3), dtype=np.uint8)
+        _yolo_model.predict(dummy, verbose=False, classes=[0, 32])
+        logger.info("YOLOv8 model warm-up complete")
     return _yolo_model
+
+
+def _warmup_mediapipe() -> bool:
+    """Run a dummy frame through MediaPipe to trigger model download + init."""
+    if not MEDIAPIPE_AVAILABLE:
+        return False
+    try:
+        with mp_pose.Pose(static_image_mode=True, model_complexity=1) as pose:
+            dummy = np.zeros((480, 640, 3), dtype=np.uint8)
+            pose.process(dummy)
+        logger.info("MediaPipe BlazePose warm-up complete")
+        return True
+    except Exception as exc:
+        logger.error("MediaPipe warm-up failed: %s", exc)
+        return False
+
+
+@app.on_event("startup")
+async def startup_warmup():
+    """Pre-load all ML models at startup so first request is fast."""
+    global _models_ready
+    logger.info("═" * 50)
+    logger.info("CourtVision CV Engine v3.0 — starting model warm-up")
+    logger.info("Device: %s | YOLO: %s | MediaPipe: %s", DEVICE, YOLO_AVAILABLE, MEDIAPIPE_AVAILABLE)
+    logger.info("═" * 50)
+
+    loop = asyncio.get_event_loop()
+
+    if YOLO_AVAILABLE:
+        try:
+            await loop.run_in_executor(executor, get_yolo)
+            _models_loaded["yolo"] = True
+        except Exception as exc:
+            logger.error("YOLO warm-up failed: %s", exc)
+
+    if MEDIAPIPE_AVAILABLE:
+        try:
+            ok = await loop.run_in_executor(executor, _warmup_mediapipe)
+            _models_loaded["mediapipe"] = ok
+        except Exception as exc:
+            logger.error("MediaPipe warm-up failed: %s", exc)
+
+    _models_ready = any(_models_loaded.values())
+    logger.info("Models ready: %s | YOLO=%s, MediaPipe=%s", _models_ready, _models_loaded["yolo"], _models_loaded["mediapipe"])
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -821,9 +873,11 @@ def _run_pipeline(
 @app.get("/health")
 def health():
     return {
-        "status": "ok",
+        "status": "ok" if _models_ready else "warming-up",
         "service": "cv-engine",
         "version": "3.0.0",
+        "models_ready": _models_ready,
+        "models": _models_loaded,
         "capabilities": {
             "yolo": YOLO_AVAILABLE,
             "mediapipe": MEDIAPIPE_AVAILABLE,

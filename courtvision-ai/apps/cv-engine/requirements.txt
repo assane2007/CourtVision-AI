@@ -1,11 +1,16 @@
-fastapi>=0.103.0
-uvicorn[standard]>=0.23.2
-opencv-python-headless>=4.8.0
-numpy>=1.25.2
-pydantic>=2.3.0
-ultralytics>=8.0.200
-mediapipe>=0.10.3
-python-multipart>=0.0.6
-torch>=2.1.0
-torchvision>=0.16.0
-onnxruntime>=1.16.0
+# CourtVision CV Engine — Production Dependencies (CPU)
+# For GPU support, also install: pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+opencv-python-headless==4.10.0.84
+numpy==1.26.4
+pydantic==2.10.4
+python-multipart==0.0.18
+
+# ML models
+ultralytics==8.3.57
+mediapipe==0.10.21
+
+# CPU inference (ONNX Runtime replaces PyTorch for lightweight deployment)
+onnxruntime==1.20.1

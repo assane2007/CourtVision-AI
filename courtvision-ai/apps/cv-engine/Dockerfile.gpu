@@ -1,0 +1,44 @@
+# CourtVision CV Engine — GPU Dockerfile (CUDA 12.1)
+# Use this for servers with NVIDIA GPUs for ~5x faster inference.
+# Build: docker build -f Dockerfile.gpu -t courtvision-cv-gpu .
+
+FROM nvidia/cuda:12.1.1-runtime-ubuntu22.04
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 python3.11-dev python3-pip \
+    libgl1-mesa-glx libglib2.0-0 ffmpeg \
+    && ln -sf /usr/bin/python3.11 /usr/bin/python \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt requirements-gpu.txt ./
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir -r requirements-gpu.txt
+
+# Pre-download models at build time (MUST succeed)
+RUN python -c "\
+from ultralytics import YOLO; \
+m = YOLO('yolov8s.pt'); \
+print('YOLOv8s downloaded')"
+
+RUN python -c "\
+import mediapipe as mp; \
+import numpy as np; \
+pose = mp.solutions.pose.Pose(static_image_mode=True, model_complexity=1); \
+pose.process(np.zeros((480,640,3), dtype=np.uint8)); \
+pose.close(); \
+print('MediaPipe BlazePose downloaded')"
+
+COPY . .
+
+ENV CV_WORKERS=2
+ENV YOLO_MODEL=yolov8s.pt
+ENV NVIDIA_VISIBLE_DEVICES=all
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD python -c "import urllib.request, json; r=json.loads(urllib.request.urlopen('http://localhost:8000/health').read()); exit(0 if r.get('models_ready') else 1)"
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
