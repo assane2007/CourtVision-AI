@@ -1,0 +1,42 @@
+# E2E: Quick actions and settings access
+appId: com.courtvision.app
+---
+- launchApp
+- tapOn: "Already a member"
+- tapOn: "Manual Email Entry"
+- tapOn: "name@domain.com"
+- inputText: "e2e-test@courtvision.app"
+- tapOn: "••••••••"
+- inputText: "TestPass123!"
+- tapOn: "TRANSMIT"
+
+- assertVisible:
+    text: "Court"
+    timeout: 10000
+
+# Open settings
+- tapOn:
+    label: "Settings"
+- assertVisible: "Settings"
+- back
+
+# Quick actions on dashboard
+- tapOn: "WORKOUT AI"
+- assertVisible:
+    text: "Workout|Setup"
+    isRegexp: true
+    timeout: 5000
+- back
+
+- tapOn: "ANALYTICS"
+- assertVisible:
+    text: "Analytics|Data"
+    isRegexp: true
+    timeout: 5000
+- back
+
+- tapOn: "LEADERBOARD"
+- assertVisible:
+    text: "Leaderboard|Ranking"
+    isRegexp: true
+    timeout: 5000

@@ -1,0 +1,6 @@
+# E2E: Verify app launches and shows boot screen
+appId: com.courtvision.app
+---
+- launchApp
+- assertVisible: "Begin Evolution"
+- assertVisible: "Already a member"

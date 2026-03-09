@@ -1,0 +1,31 @@
+# E2E: Full onboarding → email signup flow
+appId: com.courtvision.app
+---
+- launchApp
+- assertVisible: "Begin Evolution"
+- tapOn: "Begin Evolution"
+
+# Onboarding step 2: position + level
+- assertVisible: "Point Guard"
+- tapOn: "Point Guard"
+- tapOn: "Intermediate"
+- tapOn: "Continue"
+
+# Onboarding step 3: email signup
+- assertVisible: "Manual Email Entry"
+- tapOn: "Manual Email Entry"
+
+# Fill signup form
+- tapOn: "Player_One"
+- inputText: "e2e_test_user"
+- tapOn: "name@domain.com"
+- inputText: "e2e-test@courtvision.app"
+- tapOn: "••••••••"
+- inputText: "TestPass123!"
+
+- tapOn: "CREATE PROTOCOL"
+
+# Should navigate to dashboard or camera onboarding
+- assertVisible:
+    text: "Court|Camera"
+    isRegexp: true

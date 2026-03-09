@@ -1,0 +1,24 @@
+# E2E: Open Film tab (upload entry point)
+appId: com.courtvision.app
+---
+- launchApp
+- tapOn: "Already a member"
+- tapOn: "Manual Email Entry"
+- tapOn: "name@domain.com"
+- inputText: "e2e-test@courtvision.app"
+- tapOn: "••••••••"
+- inputText: "TestPass123!"
+- tapOn: "TRANSMIT"
+
+- assertVisible:
+    text: "Court"
+    timeout: 10000
+
+# Tap the Film FAB button
+- tapOn:
+    label: "Film"
+
+# Upload screen should show import button
+- assertVisible:
+    label: "Import video"
+    timeout: 5000

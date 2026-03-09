@@ -1,0 +1,32 @@
+# ci(deploy-cv-engine): Deploy CV Engine Docker image to Railway
+name: Deploy CV Engine
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [main]
+    types: [completed]
+  push:
+    branches: [main]
+    paths:
+      - 'courtvision-ai/apps/cv-engine/**'
+
+jobs:
+  deploy:
+    name: Deploy CV Engine
+    runs-on: ubuntu-latest
+    environment: production
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli@3
+
+      - name: Deploy to Railway
+        run: railway up --service cv-engine
+        working-directory: courtvision-ai/apps/cv-engine
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

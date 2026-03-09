@@ -1,0 +1,22 @@
+# E2E: Login with existing account
+appId: com.courtvision.app
+---
+- launchApp
+- tapOn: "Already a member"
+
+# Should be on login screen
+- assertVisible: "Manual Email Entry"
+- tapOn: "Manual Email Entry"
+
+# Fill login form
+- tapOn: "name@domain.com"
+- inputText: "e2e-test@courtvision.app"
+- tapOn: "••••••••"
+- inputText: "TestPass123!"
+
+- tapOn: "TRANSMIT"
+
+# Should reach dashboard
+- assertVisible:
+    text: "Court"
+    timeout: 10000

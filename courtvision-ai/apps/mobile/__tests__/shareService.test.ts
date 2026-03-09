@@ -57,7 +57,7 @@ describe('ShareService', () => {
             const call = Share.share.mock.calls[0][0]
             expect(call.title).toContain('CourtVision AI')
             expect(call.message).toContain('48%')
-            expect(call.message).toContain('25 tirs')
+            expect(call.message).toContain('25 shots')
             expect(call.message).toContain('94.2°')
         })
 
@@ -66,7 +66,7 @@ describe('ShareService', () => {
             await service.shareSessionSummary(mockStats)
 
             const message = Share.share.mock.calls[0][0].message
-            expect(message).toContain('Tendances')
+            expect(message).toContain('Trends')
             expect(message).toContain('Release accéléré')
         })
     })
@@ -111,7 +111,7 @@ describe('ShareService', () => {
             expect(Share.share).toHaveBeenCalledTimes(1)
             const message = Share.share.mock.calls[0][0].message
             expect(message).toContain('15 sessions')
-            expect(message).toContain('400 tirs')
+            expect(message).toContain('400 shots')
             expect(message).toContain('44%')
         })
     })

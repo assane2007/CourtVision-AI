@@ -14,6 +14,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { supabase } from './supabase'
+import { SyncQueueService } from './syncQueue'
 import type { SessionRealtimeStats, DetectedShot } from './realtimeAIService'
 
 // ==========================================
@@ -198,8 +199,9 @@ export class SessionStorageService {
 
         await this.persist()
 
-        // Tenter la sync cloud en arrière-plan
-        this.syncSessionToCloud(session).catch(() => {})
+        // Enqueue for cloud sync (auto-retried on connectivity restore)
+        const syncQueue = SyncQueueService.getInstance()
+        syncQueue.enqueue(session.id).catch(() => {})
 
         return session
     }
@@ -406,6 +408,23 @@ export class SessionStorageService {
     }
 
     // ---- Cloud Sync ----
+
+    /** Initialize sync queue — call once at app startup */
+    initSyncQueue(): void {
+        const syncQueue = SyncQueueService.getInstance()
+        syncQueue.start(async (sessionId: string) => {
+            const session = await this.getSession(sessionId)
+            if (!session) return
+            await this.syncSessionToCloud(session)
+        })
+    }
+
+    /** Sync a single session by ID (used by SyncQueue) */
+    async syncSessionById(sessionId: string): Promise<void> {
+        const session = await this.getSession(sessionId)
+        if (!session) return
+        await this.syncSessionToCloud(session)
+    }
 
     async syncToCloud(): Promise<{ synced: number; failed: number }> {
         await this.load()

@@ -75,6 +75,11 @@ jobs:
       - run: npm ci
       - run: npm run build:shared
       - run: npm test --workspace=@courtvision/mobile -- --coverage --passWithNoTests
+      - uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: mobile
         continue-on-error: true
 
   build-api:
@@ -95,6 +100,33 @@ jobs:
       - run: npm run build:shared
       - run: npm run build:ai
       - run: npm run build:api
+
+  e2e-mobile:
+    name: Mobile E2E (Maestro)
+    runs-on: macos-latest
+    needs: [test-mobile]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    defaults:
+      run:
+        working-directory: courtvision-ai
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: courtvision-ai/package-lock.json
+      - run: npm ci
+      - name: Install Maestro
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+      - name: Start Expo (background)
+        run: npx expo start --no-dev --port 8081 &
+        working-directory: courtvision-ai/apps/mobile
+      - name: Run Maestro flows
+        run: maestro test apps/mobile/.maestro/
+        continue-on-error: true
 
   build-web:
     name: Build Web
