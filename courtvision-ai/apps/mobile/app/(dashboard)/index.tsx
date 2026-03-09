@@ -11,7 +11,8 @@
  *   2. Hero Stat Card (dominant FG% with progress bar)
  *   3. Mini Stat Cards (3-col)
  *   4. Daily Challenge (amber-tinted card)
- *   5. Weekly Progression Chart
+ *   5. Weekly Quest (multi-step weekly quest card)
+ *   6. Weekly Progression Chart
  *   6. Interactive Terrain + Court Hotzones
  *   7. Quick Actions (2 rows × 3)
  *   8. Recent Highlights (horizontal FlatList)
@@ -34,6 +35,7 @@ import { useStore, selectWeekly, selectHighlights, selectStreak, selectXP, xpToL
 import { SkeletonHighlight, SkeletonStatCard } from '../../components/SkeletonLoader'
 import { XPLevelBar } from '../../components/gamification/XPBadge'
 import { DailyChallengeCard } from '../../components/gamification/DailyChallengeCard'
+import { WeeklyQuestCard } from '../../components/gamification/WeeklyQuestCard'
 import { StreakReminderBanner } from '../../components/gamification/StreakReminderBanner'
 import { PrimaryButton } from '../../components/PrimaryButton'
 import { StatCard } from '../../components/dashboard/StatCard'
@@ -424,7 +426,13 @@ export default function DashboardIndex() {
                     <DailyChallengeCard />
                 </View>
 
-                {/* ═══ WEEKLY PROGRESS ═══ */}
+                {/* ═══ WEEKLY QUEST ═══ */}
+                <View style={ds.sectionWrap}>
+                    <SectionHeader title="Weekly Quest" />
+                    <WeeklyQuestCard />
+                </View>
+
+                {/* ═══ WEEKLY PROGRESS ═══ */
                 <View style={ds.sectionWrapLg}>
                     <SectionHeader title="Progression" action="Full Stats" onAction={goAnalytics} />
                     <CVAnalyticsChart data={chartData} />
