@@ -1,21 +1,21 @@
 /**
  * CourtVision AI — Advanced Analytics Screen
- * Écran d'analyse avancée avec graphiques, comparaisons NBA, et Shot DNA.
+ * Charts, NBA comparisons, Shot DNA, and Data Lab (statistical engine).
  *
- * Sections :
- * 1. Shot Chart (court zones avec stats)
- * 2. Biomechanics Evolution (tendances sur les sessions)
- * 3. NBA Comparison (player comps)
- * 4. Shot DNA Profile (signature biomécanique)
+ * Tabs:
+ * 1. Shot Chart (court zones with stats)
+ * 2. Shot DNA Profile (biomechanical signature)
+ * 3. Data Lab (significance, correlations, fatigue, hot hand, projections)
+ * 4. NBA Comparison (player comps)
  * 5. Progression Graphs
  *
- * Design V4 : glass cards, amber accent.
+ * Design V4: glass cards, amber accent.
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
     View, Text, TouchableOpacity, ScrollView, StatusBar,
-    StyleSheet, Dimensions,
+    StyleSheet, Dimensions, ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
@@ -242,7 +242,7 @@ function ShotDNACard({ dna }: { dna: ShotDNAProfile }) {
                                 />
                             </View>
                             <Text style={[styles.dnaPctText, { color: barColor }]}>
-                                {m.percentile}e %ile
+                                {m.percentile}th %ile
                             </Text>
                         </View>
                     </View>
@@ -761,6 +761,12 @@ export default function AnalyticsScreen() {
                 {/* Data Lab (Science) Tab */}
                 {activeTab === 'science' && (
                     <Animated.View entering={FadeIn.duration(300)} style={{ gap: 12 }}>
+                        {analyticsLoading && !report && (
+                            <View style={styles.emptyState}>
+                                <ActivityIndicator size="small" color={T.color.brand.primary} />
+                                <Text style={styles.emptyTitle}>Crunching numbers…</Text>
+                            </View>
+                        )}
                         {/* Summary headline */}
                         {summary && (
                             <View style={[styles.card, T.glass.thin]}>

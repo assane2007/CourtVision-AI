@@ -143,13 +143,15 @@ export interface FullAnalyticsReport {
 
 function mean(arr: number[]): number {
     if (arr.length === 0) return 0
-    return arr.reduce((a, b) => a + b, 0) / arr.length
+    const result = arr.reduce((a, b) => a + b, 0) / arr.length
+    return isFinite(result) ? result : 0
 }
 
 function variance(arr: number[]): number {
     if (arr.length < 2) return 0
     const m = mean(arr)
-    return arr.reduce((s, v) => s + (v - m) ** 2, 0) / (arr.length - 1) // Bessel's correction
+    const result = arr.reduce((s, v) => s + (v - m) ** 2, 0) / (arr.length - 1) // Bessel's correction
+    return isFinite(result) ? result : 0
 }
 
 function stdDev(arr: number[]): number {
@@ -166,7 +168,7 @@ function median(arr: number[]): number {
 function percentile(arr: number[], p: number): number {
     if (arr.length === 0) return 0
     const sorted = [...arr].sort((a, b) => a - b)
-    const k = (p / 100) * (sorted.length - 1)
+    const k = Math.max(0, Math.min(1, p / 100)) * (sorted.length - 1)
     const f = Math.floor(k)
     const c = Math.ceil(k)
     if (f === c) return sorted[f]
@@ -251,8 +253,9 @@ function incompleteBeta(a: number, b: number, x: number): number {
     return Math.min(1, front * sum)
 }
 
-/** Log-gamma function (Stirling's approximation) */
+/** Log-gamma function (Lanczos approximation) */
 function gammaLn(x: number): number {
+    if (x <= 0) return 0
     const c = [76.18009172947146, -86.50532032941677, 24.01409824083091,
         -1.231739572450155, 0.001208650973866179, -0.000005395239384953]
     let y = x

@@ -565,11 +565,9 @@ export function useAICoach(): AICoachState {
             setSessionsAnalyzed(history.length)
 
             // Load full sessions (with raw shots) for shot-level analytics
-            const fullSessions: StoredSession[] = []
-            for (const item of history.slice(0, 15)) {
-                const full = await storage.getSession(item.id)
-                if (full) fullSessions.push(full)
-            }
+            const fullSessions = (await Promise.all(
+                history.slice(0, 15).map(item => storage.getSession(item.id)),
+            )).filter((s): s is StoredSession => s != null)
 
             const generated = generateInsights(history, fullSessions)
             setInsights(generated)
@@ -589,7 +587,7 @@ export function useAICoach(): AICoachState {
 
     useEffect(() => {
         refresh()
-    }, [])
+    }, [refresh])
 
     return {
         insights,

@@ -262,7 +262,7 @@ const DataLabBanner = memo(function DataLabBanner({ onPress }: { onPress: () => 
             <TouchableOpacity style={[ds.dataLabBanner, T.glass.vivid]} onPress={onPress} activeOpacity={0.8}>
                 <View style={ds.dataLabBannerRow}>
                     <View style={[ds.dataLabIcon, { backgroundColor: `${qualityColor}15` }]}>
-                        <Text style={{ fontSize: 16 }}>🧬</Text>
+                        <Text style={ds.dataLabEmoji}>🧬</Text>
                     </View>
                     <View style={ds.dataLabTextCol}>
                         <Text style={ds.dataLabTitle}>Data Lab</Text>
@@ -846,5 +846,8 @@ const ds = StyleSheet.create({
         fontFamily: T.fonts.body.regular,
         lineHeight: 17,
         marginTop: 2,
+    },
+    dataLabEmoji: {
+        fontSize: 16,
     },
 })
