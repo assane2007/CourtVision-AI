@@ -51,6 +51,13 @@ import tiktokRoutes from './routes/tiktok'
 import investorRoutes from './routes/investor'
 import reportRoutes from './routes/reports'
 
+// ── V6.0 "Arena" Routes ──
+import arenaRoutes from './routes/arena'
+import horseRoutes from './routes/horse'
+import wearableRoutes from './routes/wearable'
+import marketplaceRoutes from './routes/marketplace'
+import nbaRoutes from './routes/nba'
+
 export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     // Initialize Sentry early (C-2)
     Sentry.init({
@@ -222,6 +229,13 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     app.register(investorRoutes, { prefix: '/api/investor' })
     app.register(reportRoutes, { prefix: '/api/reports' })
 
+    // ── V6.0 "Arena" Routes ──
+    app.register(arenaRoutes, { prefix: '/api/arena' })
+    app.register(horseRoutes, { prefix: '/api/horse' })
+    app.register(wearableRoutes, { prefix: '/api/wearable' })
+    app.register(marketplaceRoutes, { prefix: '/api/marketplace' })
+    app.register(nbaRoutes, { prefix: '/api/nba' })
+
     // Health check — deep check with DB + Redis connectivity (M-9)
     app.get('/health', async (request) => {
         const checks: Record<string, 'ok' | 'error'> = { api: 'ok' }
@@ -243,8 +257,8 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
         return {
             status: allOk ? 'ok' : 'degraded',
             service: 'courtvision-api',
-            version: '5.3.0',
-            codename: 'Skill-Hardened',
+            version: '6.0.0',
+            codename: 'Arena',
             time: new Date().toISOString(),
             checks,
         }

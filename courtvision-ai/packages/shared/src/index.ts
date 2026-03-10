@@ -746,6 +746,32 @@ export interface V5DashboardPayload {
     } | null
 }
 
+/** V6 Dashboard Extension — Adds Arena + Wearable to the home screen */
+export interface V6DashboardPayload extends V5DashboardPayload {
+    arena: {
+        eloRating: number
+        wins: number
+        losses: number
+        winRate: number
+        currentWinStreak: number
+        rank: number | null
+    } | null
+    horse: {
+        gamesPlayed: number
+        gamesWon: number
+        winRate: number
+        bestScore: number
+    } | null
+    wearable: {
+        connected: boolean
+        readinessScore: number | null
+        readinessGrade: string | null
+        trainingIntensity: string | null
+        hrvCurrent: number | null
+        restingHR: number | null
+    } | null
+}
+
 /** Advanced Analytics Session Result */
 export interface AdvancedAnalyticsPayload {
     trueShooting: number

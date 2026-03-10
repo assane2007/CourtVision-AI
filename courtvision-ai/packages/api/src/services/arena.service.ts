@@ -3,13 +3,17 @@
  * CourtVision AI v6.0
  *
  * Gère la logique métier des matchs Arena :
- * - Création et gestion des matchs
+ * - Création et gestion des matchs (public & privé)
  * - Scoreboard temps réel
- * - Classement ELO
- * - Historique
+ * - Classement ELO avec K-Factor dynamique
+ * - Statistiques détaillées par joueur & par match
+ * - Système d'invitation par code
+ * - Anti-triche côté service
+ * - Historique paginé
  */
 import { SupabaseClient } from '@supabase/supabase-js'
 import pino from 'pino'
+import crypto from 'crypto'
 import type {
     ArenaMatch, ArenaPlayer, ArenaScoreboard,
     ArenaShotEvent, ArenaConfig, ArenaMode, ArenaStatus
@@ -25,7 +29,10 @@ const DEFAULT_CONFIG: ArenaConfig = {
     shotsPerRound: 10,
 }
 
-const ELO_K_FACTOR = 32
+/** ELO K-Factor dynamique : plus élevé pour les nouveaux joueurs */
+const ELO_K_BASE = 32
+const ELO_K_PROVISIONAL = 48 // <30 games
+const ELO_PROVISIONAL_THRESHOLD = 30
 
 export class ArenaService {
     constructor(private supabase: SupabaseClient) {}
@@ -33,8 +40,9 @@ export class ArenaService {
     /**
      * Create a new Arena match
      */
-    async createMatch(hostId: string, hostUsername: string, config: Partial<ArenaConfig> = {}): Promise<ArenaMatch> {
+    async createMatch(hostId: string, hostUsername: string, config: Partial<ArenaConfig> & { isPrivate?: boolean; password?: string } = {}): Promise<ArenaMatch> {
         const matchConfig: ArenaConfig = { ...DEFAULT_CONFIG, ...config }
+        const inviteCode = config.isPrivate ? this.generateInviteCode() : null
 
         const { data, error } = await this.supabase
             .from('arena_matches')
@@ -44,11 +52,14 @@ export class ArenaService {
                 status: 'waiting' as ArenaStatus,
                 config: matchConfig,
                 current_round: 0,
+                is_private: config.isPrivate || false,
+                invite_code: inviteCode,
+                password_hash: config.password ? this.hashPassword(config.password) : null,
             })
             .select()
             .single()
 
-        if (error) throw new Error(`Failed to create arena match: ${error.message}`)
+        if (error || !data) throw new Error(`Failed to create arena match: ${error?.message || 'No data returned'}`)
 
         // Add host as first player
         await this.supabase.from('arena_players').insert({
@@ -60,7 +71,7 @@ export class ArenaService {
             shots_total: 0,
         })
 
-        logger.info({ matchId: data.id, host: hostUsername, mode: matchConfig.mode }, '[Arena] Match created')
+        logger.info({ matchId: data.id, host: hostUsername, mode: matchConfig.mode, private: config.isPrivate }, '[Arena] Match created')
 
         return {
             id: data.id,
@@ -85,7 +96,8 @@ export class ArenaService {
             startedAt: null,
             endedAt: null,
             createdAt: data.created_at,
-        }
+            ...(inviteCode ? { inviteCode } : {}),
+        } as ArenaMatch & { inviteCode?: string }
     }
 
     /**
@@ -101,6 +113,7 @@ export class ArenaService {
 
         if (matchErr || !match) throw new Error('Match not found')
         if (match.status !== 'waiting') throw new Error('Match is not accepting players')
+        if (match.is_private) throw new Error('This match is private — use an invite link')
 
         const currentPlayers = match.arena_players?.length || 0
         if (currentPlayers >= match.config.maxPlayers) throw new Error('Match is full')
@@ -123,9 +136,61 @@ export class ArenaService {
     }
 
     /**
+     * Join a match via invite code
+     */
+    async joinMatchByInvite(
+        matchId: string,
+        userId: string,
+        username: string,
+        inviteCode: string,
+        password?: string
+    ): Promise<ArenaMatch> {
+        const { data: match, error } = await this.supabase
+            .from('arena_matches')
+            .select('*, arena_players(*)')
+            .eq('id', matchId)
+            .single()
+
+        if (error || !match) throw new Error('Match not found')
+        if (match.status !== 'waiting') throw new Error('Match is not accepting players')
+        if (match.invite_code !== inviteCode) throw new Error('Invalid invite code')
+        if (match.password_hash && (!password || this.hashPassword(password) !== match.password_hash)) {
+            throw new Error('Invalid invite password')
+        }
+
+        const currentPlayers = match.arena_players?.length || 0
+        if (currentPlayers >= match.config.maxPlayers) throw new Error('Match is full')
+
+        const alreadyJoined = match.arena_players?.some((p: any) => p.user_id === userId)
+        if (alreadyJoined) throw new Error('Already in this match')
+
+        await this.supabase.from('arena_players').insert({
+            match_id: matchId,
+            user_id: userId,
+            is_ready: false,
+            score: 0,
+            shots_made: 0,
+            shots_total: 0,
+        })
+
+        logger.info({ matchId, userId }, '[Arena] Player joined via invite')
+        return this.getMatch(matchId)
+    }
+
+    /**
      * Mark player as ready
      */
     async setReady(matchId: string, userId: string): Promise<{ allReady: boolean; match: ArenaMatch }> {
+        // Verify player is in the match
+        const { data: playerEntry } = await this.supabase
+            .from('arena_players')
+            .select('id')
+            .eq('match_id', matchId)
+            .eq('user_id', userId)
+            .single()
+
+        if (!playerEntry) throw new Error('Player not in this match')
+
         await this.supabase
             .from('arena_players')
             .update({ is_ready: true })
@@ -143,28 +208,42 @@ export class ArenaService {
 
             match.status = 'countdown'
             match.currentRound = 1
-            logger.info({ matchId }, '[Arena] All players ready — countdown starting')
+            logger.info({ matchId, playerCount: match.players.length }, '[Arena] All players ready — countdown starting')
         }
 
         return { allReady, match }
     }
 
     /**
-     * Record a shot in the Arena
+     * Record a shot in the Arena (with optional confidence & match state validation)
      */
     async recordShot(
         matchId: string,
         userId: string,
         username: string,
         result: 'made' | 'missed',
-        zone: string
+        zone: string,
+        confidence?: number
     ): Promise<ArenaShotEvent> {
-        // Log the shot
+        // Validate match is live
+        const { data: matchData } = await this.supabase
+            .from('arena_matches')
+            .select('status, current_round')
+            .eq('id', matchId)
+            .single()
+
+        if (!matchData || !['live', 'countdown'].includes(matchData.status)) {
+            throw new Error('Match is not live — cannot record shot')
+        }
+
+        // Log the shot with extended data
         await this.supabase.from('arena_shot_log').insert({
             match_id: matchId,
             user_id: userId,
             result,
             zone,
+            round: matchData.current_round,
+            confidence: confidence || null,
             timestamp: new Date().toISOString(),
         })
 
@@ -202,7 +281,7 @@ export class ArenaService {
             streak: newStreak,
         }
 
-        logger.debug({ matchId, userId, result, zone, newScore }, '[Arena] Shot recorded')
+        logger.debug({ matchId, userId, result, zone, newScore, streak: newStreak }, '[Arena] Shot recorded')
         return event
     }
 
@@ -224,10 +303,64 @@ export class ArenaService {
     }
 
     /**
+     * Get detailed match statistics
+     */
+    async getMatchStats(matchId: string): Promise<{
+        match: ArenaMatch
+        shotLog: any[]
+        zoneBreakdown: Record<string, { made: number; missed: number; pct: number }>
+        timeline: { timestamp: string; userId: string; result: string; zone: string }[]
+        mvp: { userId: string; username: string; score: number; accuracy: number } | null
+    }> {
+        const match = await this.getMatch(matchId)
+
+        // Get full shot log
+        const { data: shots } = await this.supabase
+            .from('arena_shot_log')
+            .select('user_id, result, zone, timestamp, round')
+            .eq('match_id', matchId)
+            .order('timestamp', { ascending: true })
+
+        const shotLog = shots || []
+
+        // Zone breakdown (aggregate)
+        const zoneBreakdown: Record<string, { made: number; missed: number; pct: number }> = {}
+        for (const shot of shotLog) {
+            if (!zoneBreakdown[shot.zone]) zoneBreakdown[shot.zone] = { made: 0, missed: 0, pct: 0 }
+            if (shot.result === 'made') zoneBreakdown[shot.zone].made++
+            else zoneBreakdown[shot.zone].missed++
+        }
+        for (const zone of Object.values(zoneBreakdown)) {
+            const total = zone.made + zone.missed
+            zone.pct = total > 0 ? Math.round((zone.made / total) * 1000) / 10 : 0
+        }
+
+        // Timeline
+        const timeline = shotLog.map((s: any) => ({
+            timestamp: s.timestamp,
+            userId: s.user_id,
+            result: s.result,
+            zone: s.zone,
+        }))
+
+        // MVP
+        const sortedPlayers = [...match.players].sort((a, b) => b.score - a.score)
+        const mvp = sortedPlayers.length > 0 ? {
+            userId: sortedPlayers[0].userId,
+            username: sortedPlayers[0].username,
+            score: sortedPlayers[0].score,
+            accuracy: sortedPlayers[0].accuracy,
+        } : null
+
+        return { match, shotLog, zoneBreakdown, timeline, mvp }
+    }
+
+    /**
      * End a match and calculate ELO changes
      */
     async endMatch(matchId: string): Promise<ArenaMatch> {
         const match = await this.getMatch(matchId)
+        if (match.status === 'finished') throw new Error('Match already finished')
 
         // Update match status
         await this.supabase
@@ -239,7 +372,7 @@ export class ArenaService {
         const sortedPlayers = [...match.players].sort((a, b) => b.score - a.score)
         const winnerId = sortedPlayers[0]?.userId
 
-        // Update arena leaderboard for each player
+        // Update arena leaderboard for each player with dynamic K-Factor
         for (let i = 0; i < sortedPlayers.length; i++) {
             const player = sortedPlayers[i]
             const isWinner = i === 0
@@ -251,18 +384,22 @@ export class ArenaService {
                 .single()
 
             if (existing) {
+                const totalGames = existing.wins + existing.losses
+                const kFactor = totalGames < ELO_PROVISIONAL_THRESHOLD ? ELO_K_PROVISIONAL : ELO_K_BASE
                 const newWins = existing.wins + (isWinner ? 1 : 0)
                 const newLosses = existing.losses + (isWinner ? 0 : 1)
-                const newElo = this.calculateElo(existing.elo_rating, isWinner)
+                const newElo = this.calculateElo(existing.elo_rating, isWinner, kFactor)
 
                 await this.supabase
                     .from('arena_leaderboard')
                     .update({
                         wins: newWins,
                         losses: newLosses,
-                        avg_accuracy: player.accuracy,
+                        avg_accuracy: this.rollingAvg(existing.avg_accuracy, player.accuracy, totalGames),
                         elo_rating: newElo,
                         best_streak: Math.max(existing.best_streak || 0, player.streak),
+                        win_streak: isWinner ? (existing.win_streak || 0) + 1 : 0,
+                        updated_at: new Date().toISOString(),
                     })
                     .eq('user_id', player.userId)
             } else {
@@ -271,17 +408,165 @@ export class ArenaService {
                     wins: isWinner ? 1 : 0,
                     losses: isWinner ? 0 : 1,
                     avg_accuracy: player.accuracy,
-                    elo_rating: this.calculateElo(1200, isWinner),
+                    elo_rating: this.calculateElo(1200, isWinner, ELO_K_PROVISIONAL),
                     best_streak: player.streak,
+                    win_streak: isWinner ? 1 : 0,
                 })
             }
         }
 
-        logger.info({ matchId, winnerId }, '[Arena] Match ended')
+        logger.info({ matchId, winnerId, playerCount: sortedPlayers.length }, '[Arena] Match ended')
 
         match.status = 'finished'
         match.endedAt = new Date().toISOString()
         return match
+    }
+
+    /**
+     * Cancel a match (host only, before live)
+     */
+    async cancelMatch(matchId: string): Promise<ArenaMatch> {
+        await this.supabase
+            .from('arena_matches')
+            .update({ status: 'cancelled', ended_at: new Date().toISOString() })
+            .eq('id', matchId)
+
+        logger.info({ matchId }, '[Arena] Match cancelled')
+        return this.getMatch(matchId)
+    }
+
+    /**
+     * Kick a player from a match
+     */
+    async kickPlayer(matchId: string, playerId: string): Promise<{ kicked: true; matchId: string; playerId: string }> {
+        const { data: player } = await this.supabase
+            .from('arena_players')
+            .select('id')
+            .eq('match_id', matchId)
+            .eq('user_id', playerId)
+            .single()
+
+        if (!player) throw new Error('Player not in match')
+
+        await this.supabase
+            .from('arena_players')
+            .delete()
+            .eq('match_id', matchId)
+            .eq('user_id', playerId)
+
+        logger.info({ matchId, playerId }, '[Arena] Player kicked')
+        return { kicked: true, matchId, playerId }
+    }
+
+    /**
+     * Generate an invite link for a match
+     */
+    async generateInviteLink(matchId: string): Promise<{ inviteCode: string; link: string }> {
+        const { data: match } = await this.supabase
+            .from('arena_matches')
+            .select('invite_code')
+            .eq('id', matchId)
+            .single()
+
+        let inviteCode = match?.invite_code
+        if (!inviteCode) {
+            inviteCode = this.generateInviteCode()
+            await this.supabase
+                .from('arena_matches')
+                .update({ invite_code: inviteCode })
+                .eq('id', matchId)
+        }
+
+        const baseUrl = process.env.APP_URL || 'https://courtvision.ai'
+        return {
+            inviteCode,
+            link: `${baseUrl}/arena/join/${matchId}?code=${inviteCode}`,
+        }
+    }
+
+    /**
+     * Get personal Arena stats for a player
+     */
+    async getPlayerStats(userId: string): Promise<{
+        totalMatches: number
+        wins: number
+        losses: number
+        winRate: number
+        eloRating: number
+        avgAccuracy: number
+        bestStreak: number
+        currentWinStreak: number
+        totalShotsMade: number
+        totalShotsAttempted: number
+        favoriteMode: string | null
+        rank: number | null
+    }> {
+        const { data: lb } = await this.supabase
+            .from('arena_leaderboard')
+            .select('*')
+            .eq('user_id', userId)
+            .single()
+
+        if (!lb) {
+            return {
+                totalMatches: 0, wins: 0, losses: 0, winRate: 0,
+                eloRating: 1200, avgAccuracy: 0, bestStreak: 0, currentWinStreak: 0,
+                totalShotsMade: 0, totalShotsAttempted: 0, favoriteMode: null, rank: null,
+            }
+        }
+
+        // Calculate rank
+        const { count } = await this.supabase
+            .from('arena_leaderboard')
+            .select('id', { count: 'exact', head: true })
+            .gt('elo_rating', lb.elo_rating)
+
+        // Favorite mode
+        const { data: playerMatches } = await this.supabase
+            .from('arena_players')
+            .select('match_id')
+            .eq('user_id', userId)
+
+        let favoriteMode: string | null = null
+        if (playerMatches && playerMatches.length > 0) {
+            const matchIds = playerMatches.map((p: any) => p.match_id)
+            const { data: matches } = await this.supabase
+                .from('arena_matches')
+                .select('mode')
+                .in('id', matchIds)
+
+            if (matches) {
+                const modeCounts: Record<string, number> = {}
+                for (const m of matches) {
+                    modeCounts[m.mode] = (modeCounts[m.mode] || 0) + 1
+                }
+                favoriteMode = Object.entries(modeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || null
+            }
+        }
+
+        // Total shots aggregated
+        const { data: allPlayerRecords } = await this.supabase
+            .from('arena_players')
+            .select('shots_made, shots_total')
+            .eq('user_id', userId)
+
+        const totalShotsMade = (allPlayerRecords || []).reduce((sum: number, r: any) => sum + (r.shots_made || 0), 0)
+        const totalShotsAttempted = (allPlayerRecords || []).reduce((sum: number, r: any) => sum + (r.shots_total || 0), 0)
+
+        return {
+            totalMatches: lb.wins + lb.losses,
+            wins: lb.wins,
+            losses: lb.losses,
+            winRate: lb.wins + lb.losses > 0 ? Math.round((lb.wins / (lb.wins + lb.losses)) * 100) : 0,
+            eloRating: lb.elo_rating,
+            avgAccuracy: Math.round(lb.avg_accuracy * 10) / 10,
+            bestStreak: lb.best_streak || 0,
+            currentWinStreak: lb.win_streak || 0,
+            totalShotsMade,
+            totalShotsAttempted,
+            favoriteMode,
+            rank: (count || 0) + 1,
+        }
     }
 
     /**
@@ -347,48 +632,53 @@ export class ArenaService {
             startedAt: match.started_at,
             endedAt: match.ended_at,
             createdAt: match.created_at,
-        }
+            ...(match.invite_code ? { inviteCode: match.invite_code } : {}),
+        } as ArenaMatch & { inviteCode?: string }
     }
 
     /**
-     * List available matches to join
+     * List available matches to join (with pagination)
      */
-    async getAvailableMatches(limit = 20): Promise<ArenaMatch[]> {
+    async getAvailableMatches(limit = 20, offset = 0): Promise<ArenaMatch[]> {
         const { data: matches } = await this.supabase
             .from('arena_matches')
             .select('id')
             .eq('status', 'waiting')
+            .eq('is_private', false)
             .order('created_at', { ascending: false })
-            .limit(limit)
+            .range(offset, offset + limit - 1)
 
         if (!matches || matches.length === 0) return []
 
+        // Batch fetch to reduce N+1 — but we still call getMatch for consistent mapping
         const results: ArenaMatch[] = []
-        for (const m of matches) {
-            try {
-                results.push(await this.getMatch(m.id))
-            } catch { /* skip broken matches */ }
+        const batchPromises = matches.map(m =>
+            this.getMatch(m.id).catch(() => null) // skip broken matches
+        )
+        const resolved = await Promise.all(batchPromises)
+        for (const match of resolved) {
+            if (match) results.push(match)
         }
         return results
     }
 
     /**
-     * Get arena leaderboard
+     * Get arena leaderboard (with pagination)
      */
-    async getLeaderboard(limit = 50): Promise<any[]> {
+    async getLeaderboard(limit = 50, offset = 0): Promise<any[]> {
         const { data, error } = await this.supabase
             .from('arena_leaderboard')
             .select(`
-                user_id, wins, losses, avg_accuracy, elo_rating, best_streak,
+                user_id, wins, losses, avg_accuracy, elo_rating, best_streak, win_streak,
                 users!inner ( username, avatar_url )
             `)
             .order('elo_rating', { ascending: false })
-            .limit(limit)
+            .range(offset, offset + limit - 1)
 
         if (error) throw error
 
         return (data || []).map((entry: any, index: number) => ({
-            rank: index + 1,
+            rank: offset + index + 1,
             userId: entry.user_id,
             username: entry.users.username,
             avatarUrl: entry.users.avatar_url,
@@ -400,29 +690,31 @@ export class ArenaService {
             avgAccuracy: entry.avg_accuracy,
             eloRating: entry.elo_rating,
             bestStreak: entry.best_streak,
+            currentWinStreak: entry.win_streak || 0,
         }))
     }
 
     /**
-     * Get match history for a user
+     * Get match history for a user (with pagination)
      */
-    async getHistory(userId: string, limit = 20): Promise<ArenaMatch[]> {
+    async getHistory(userId: string, limit = 20, offset = 0): Promise<ArenaMatch[]> {
+        // Join arena_players → arena_matches to get finished matches ordered by date
         const { data: playerRecords } = await this.supabase
             .from('arena_players')
-            .select('match_id')
+            .select('match_id, arena_matches!inner(id, status, created_at)')
             .eq('user_id', userId)
-            .limit(limit)
+            .eq('arena_matches.status', 'finished')
+            .order('arena_matches(created_at)', { ascending: false })
+            .range(offset, offset + limit - 1)
 
         if (!playerRecords || playerRecords.length === 0) return []
 
         const matchIds = playerRecords.map((r: any) => r.match_id)
-        const results: ArenaMatch[] = []
-        for (const id of matchIds) {
-            try {
-                results.push(await this.getMatch(id))
-            } catch { /* skip */ }
-        }
-        return results.filter(m => m.status === 'finished')
+        const batchPromises = matchIds.map((id: string) =>
+            this.getMatch(id).catch(() => null)
+        )
+        const resolved = await Promise.all(batchPromises)
+        return resolved.filter(Boolean) as ArenaMatch[]
     }
 
     // ── Private helpers ──
@@ -434,13 +726,18 @@ export class ArenaService {
             corner3: 3, wing3: 3, top3: 3,
         }
         const base = zonePoints[zone] || 2
-        const streakBonus = streak >= 5 ? 2 : streak >= 3 ? 1 : 0
+        // Progressive streak bonus: encourages hot hands
+        const streakBonus = streak >= 7 ? 3 : streak >= 5 ? 2 : streak >= 3 ? 1 : 0
         return base + streakBonus
     }
 
-    private calculateElo(currentElo: number, won: boolean): number {
+    private calculateElo(currentElo: number, won: boolean, kFactor = ELO_K_BASE): number {
         const expected = 1 / (1 + Math.pow(10, (1200 - currentElo) / 400))
-        return Math.round(currentElo + ELO_K_FACTOR * ((won ? 1 : 0) - expected))
+        return Math.round(currentElo + kFactor * ((won ? 1 : 0) - expected))
+    }
+
+    private rollingAvg(currentAvg: number, newValue: number, count: number): number {
+        return Math.round(((currentAvg * count + newValue) / (count + 1)) * 10) / 10
     }
 
     private calculateTimeRemaining(match: ArenaMatch): number {
@@ -448,5 +745,13 @@ export class ArenaService {
         const elapsed = (Date.now() - new Date(match.startedAt).getTime()) / 1000
         const roundTime = match.config.roundDurationSec * match.currentRound
         return Math.max(0, roundTime - elapsed)
+    }
+
+    private generateInviteCode(): string {
+        return crypto.randomBytes(4).toString('hex').toUpperCase()
+    }
+
+    private hashPassword(password: string): string {
+        return crypto.createHash('sha256').update(password).digest('hex')
     }
 }

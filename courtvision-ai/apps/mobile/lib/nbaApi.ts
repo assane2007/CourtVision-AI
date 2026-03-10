@@ -1,12 +1,14 @@
 /**
  * NBA Reference API — Live player shooting mechanics for comparisons.
  *
- * Primary: balldontlie.io (free, no auth for basic stats) + NBA.com CDN.
+ * Primary: balldontlie.io (free tier: 5 req/min, needs free API key)
  * Fallback: cached dataset bundled with the app, refreshed once per 24h.
  *
  * All biomechanics data (elbow angles, release heights, release times) are from
  * publicly available Sports Science / Second Spectrum tracking datasets averaged
  * over the 2024-25 season. These are fetched and merge-cached locally.
+ *
+ * API data is fetched LIVE — bundled data is only a fallback.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -52,10 +54,11 @@ export interface NBABenchmarks {
 const CACHE_KEY = '@courtvision_nba_reference';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const API_BASE = 'https://api.balldontlie.io/v1';
+const BDL_API_KEY = process.env.EXPO_PUBLIC_BDL_API_KEY || '';
 
 // ── Bundled Fallback Data (2024-25 Season) ─────────────────────
-// This is the single source of truth for NBA reference data.
-// Updated when API data is fetched; used offline or when API is down.
+// Used ONLY when the live API is unreachable.
+// The app always tries to fetch live data first.
 
 /** Bundled fallback for synchronous access (used by coaching engine) */
 export const BUNDLED_PLAYERS: NBAPlayerReference[] = [
@@ -144,7 +147,12 @@ async function fetchLiveStats(): Promise<NBAPlayerReference[]> {
   const timeout = setTimeout(() => controller.abort(), 8000);
 
   try {
-    const res = await fetch(url, { signal: controller.signal });
+    const headers: Record<string, string> = { 'Accept': 'application/json' };
+    if (BDL_API_KEY) {
+      headers['Authorization'] = BDL_API_KEY;
+    }
+
+    const res = await fetch(url, { signal: controller.signal, headers });
     if (!res.ok) throw new Error(`API ${res.status}`);
 
     const json = await res.json();
@@ -195,6 +203,47 @@ export function getNBABenchmarks(): NBABenchmarks {
 /** Get player names for Digital Twin matchup simulation */
 export function getSimulationPlayers(): string[] {
   return [...SIMULATION_PLAYERS];
+}
+
+/**
+ * Search for NBA players by name using the live API.
+ * Returns player name, team, position etc. from balldontlie.io.
+ */
+export async function searchNBAPlayers(search: string, limit = 10): Promise<{
+  id: number;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  position: string;
+  team: string;
+}[]> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+
+  try {
+    const headers: Record<string, string> = { 'Accept': 'application/json' };
+    if (BDL_API_KEY) {
+      headers['Authorization'] = BDL_API_KEY;
+    }
+
+    const url = `${API_BASE}/players?search=${encodeURIComponent(search)}&per_page=${limit}`;
+    const res = await fetch(url, { signal: controller.signal, headers });
+    if (!res.ok) throw new Error(`API ${res.status}`);
+
+    const json = await res.json();
+    return (json.data ?? []).map((p: any) => ({
+      id: p.id,
+      firstName: p.first_name,
+      lastName: p.last_name,
+      fullName: `${p.first_name} ${p.last_name}`,
+      position: p.position || '',
+      team: p.team?.full_name || p.team?.name || '',
+    }));
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 /**

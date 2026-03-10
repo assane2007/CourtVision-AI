@@ -12,6 +12,9 @@
 
 import { FastifyInstance } from 'fastify'
 import { V5Orchestrator } from '../services/v5Orchestrator'
+import { ArenaService } from '../services/arena.service'
+import { HorseService } from '../services/horse.service'
+import { WearableService } from '../services/wearable.service'
 
 export default async function dashboardRoutes(app: FastifyInstance) {
 
@@ -160,6 +163,81 @@ export default async function dashboardRoutes(app: FastifyInstance) {
         } catch (error: any) {
             request.log.error({ err: error }, '[Dashboard] Error computing percentiles')
             return reply.status(500).send({ error: 'Failed to compute percentiles' })
+        }
+    })
+
+    // ── V6 Dashboard — Enriched with Arena, HORSE & Wearable ─
+    app.get('/v6', {
+        preHandler: [app.authenticate],
+    }, async (request, reply) => {
+        const userId = request.user?.id
+        if (!userId) return reply.status(401).send({ error: 'Unauthorized' })
+
+        try {
+            const arenaService = new ArenaService(app.supabase)
+            const horseService = new HorseService(app.supabase)
+            const wearableService = new WearableService(app.supabase)
+
+            // Fire all queries in parallel for maximum speed
+            const [v5Dashboard, arenaStats, horseStats, wearableReadiness, wearableDevice] = await Promise.allSettled([
+                V5Orchestrator.buildDashboard(userId),
+                arenaService.getPlayerStats(userId),
+                horseService.getPlayerStats(userId),
+                wearableService.getReadiness(userId),
+                wearableService.getDevices(userId),
+            ])
+
+            const base = v5Dashboard.status === 'fulfilled' ? v5Dashboard.value : null
+
+            const arena = arenaStats.status === 'fulfilled' && arenaStats.value.totalMatches > 0
+                ? {
+                    eloRating: arenaStats.value.eloRating,
+                    wins: arenaStats.value.wins,
+                    losses: arenaStats.value.losses,
+                    winRate: arenaStats.value.winRate,
+                    currentWinStreak: arenaStats.value.currentWinStreak,
+                    rank: arenaStats.value.rank,
+                }
+                : null
+
+            const horse = horseStats.status === 'fulfilled' && horseStats.value.totalGames > 0
+                ? {
+                    gamesPlayed: horseStats.value.totalGames,
+                    gamesWon: horseStats.value.gamesWon,
+                    winRate: horseStats.value.winRate,
+                    bestScore: horseStats.value.bestScore,
+                }
+                : null
+
+            const devices = wearableDevice.status === 'fulfilled' ? wearableDevice.value : []
+            const hasActiveDevice = devices.some(d => d.isActive)
+            const readiness = wearableReadiness.status === 'fulfilled' ? wearableReadiness.value : null
+
+            const wearable = hasActiveDevice
+                ? {
+                    connected: true,
+                    readinessScore: readiness?.score ?? null,
+                    readinessGrade: readiness?.grade ?? null,
+                    trainingIntensity: readiness?.trainingIntensity ?? null,
+                    hrvCurrent: readiness?.hrvCurrent ?? null,
+                    restingHR: readiness?.restingHRCurrent ?? null,
+                }
+                : { connected: false, readinessScore: null, readinessGrade: null, trainingIntensity: null, hrvCurrent: null, restingHR: null }
+
+            return reply.send({
+                success: true,
+                data: {
+                    ...base,
+                    arena,
+                    horse,
+                    wearable,
+                },
+                version: 'v6-arena',
+                generatedAt: new Date().toISOString(),
+            })
+        } catch (error: any) {
+            request.log.error({ err: error }, '[Dashboard] Error building V6 dashboard')
+            return reply.status(500).send({ error: 'Failed to build V6 dashboard' })
         }
     })
 }

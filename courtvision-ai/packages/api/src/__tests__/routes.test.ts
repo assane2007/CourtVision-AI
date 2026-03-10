@@ -106,7 +106,7 @@ describe('CourtVision API', () => {
             const body = JSON.parse(response.body)
             expect(['ok', 'degraded']).toContain(body.status)
             expect(body.service).toBe('courtvision-api')
-            expect(body.version).toBe('5.3.0')
+            expect(body.version).toBe('6.0.0')
             expect(body.time).toBeDefined()
         })
     })
