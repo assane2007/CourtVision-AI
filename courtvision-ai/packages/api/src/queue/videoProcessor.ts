@@ -146,7 +146,15 @@ function cleanupTempFile(filePath: string): void {
     }
 }
 
-export const initWorker = () => {
+export const initWorker = async () => {
+    // Wait for Redis connection if URL is configured
+    if (redisConnection && !redisAvailable) {
+        await new Promise<void>((resolve) => {
+            const timeout = setTimeout(() => resolve(), 3000)
+            redisConnection!.once('connect', () => { clearTimeout(timeout); resolve() })
+            redisConnection!.once('error', () => { clearTimeout(timeout); resolve() })
+        })
+    }
     if (!redisConnection || !redisAvailable) {
         logger.warn('[Worker] ⚠️ Redis not available — worker not started')
         return { close: async () => { } }

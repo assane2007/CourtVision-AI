@@ -22,12 +22,16 @@ config.resolver.extraNodeModules = {
 };
 
 // 4. Resolve request overrides:
-//    - Force react/react-dom to local (19.1.0) instead of root (18.2.0)
+//    - Force ALL react/react-dom to local (19.1.0) — root monorepo has 18.2.0
+//      which causes duplicate React and "Invalid Hook Call" errors on web
 //    - Prevent Node.js-only modules from being bundled
 //    - Force zustand CJS on web (ESM build uses import.meta which Metro doesn't support)
-const localReactForce = {
-    'react': path.resolve(localModules, 'react'),
-    'react-dom': path.resolve(localModules, 'react-dom'),
+const reactForceMap = {
+    'react': path.resolve(localModules, 'react', 'index.js'),
+    'react/jsx-runtime': path.resolve(localModules, 'react', 'jsx-runtime.js'),
+    'react/jsx-dev-runtime': path.resolve(localModules, 'react', 'jsx-dev-runtime.js'),
+    'react-dom': path.resolve(localModules, 'react-dom', 'index.js'),
+    'react-dom/client': path.resolve(localModules, 'react-dom', 'client.js'),
 };
 
 const zustandRoot = path.dirname(require.resolve('zustand/package.json', { paths: [localModules, rootModules] }));
@@ -49,14 +53,21 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
     if (moduleName === 'stream' || moduleName === 'ws' || moduleName.startsWith('ws/')) {
         return { type: 'empty' };
     }
-    // Force react/react-dom to local node_modules (React 19) to prevent
-    // monorepo hoisting from resolving root React 18
-    if (localReactForce[moduleName]) {
-        return context.resolveRequest(
-            { ...context, nodeModulesPaths: [localModules] },
-            moduleName,
-            platform,
-        );
+    // On web: stub out @react-three/* and react-reconciler (they depend on
+    // React 18 internals and aren't needed for web rendering)
+    if (platform === 'web' && (
+        moduleName.startsWith('@react-three/') ||
+        moduleName === 'react-reconciler' ||
+        moduleName.startsWith('react-reconciler/') ||
+        moduleName === 'three' ||
+        moduleName.startsWith('three/')
+    )) {
+        return { type: 'empty' };
+    }
+    // Force react/react-dom to local node_modules (React 19)
+    // This prevents the monorepo root React 18 from being bundled
+    if (reactForceMap[moduleName]) {
+        return { type: 'sourceFile', filePath: reactForceMap[moduleName] };
     }
     // Force zustand CJS on web to avoid import.meta.env SyntaxError
     if (platform === 'web' && zustandCjsMap[moduleName]) {

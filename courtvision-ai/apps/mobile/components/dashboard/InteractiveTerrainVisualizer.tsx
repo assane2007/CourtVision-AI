@@ -1,11 +1,14 @@
 import React, { useState, useRef, useEffect, Suspense } from 'react'
-import { View, Dimensions, TouchableOpacity } from 'react-native'
-import { Canvas, useFrame } from '@react-three/fiber/native'
+import { View, Dimensions, TouchableOpacity, Platform } from 'react-native'
 import { T } from '../../lib/theme'
 import { GlassCard, CVText } from '../ui'
 import { Feather } from '@expo/vector-icons'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SessionStorageService } from '../../lib/sessionStorage'
+
+// @react-three/fiber is not compatible with web (uses react-reconciler pinned to React 18)
+const Canvas = Platform.OS !== 'web' ? require('@react-three/fiber/native').Canvas : View;
+const useFrame = Platform.OS !== 'web' ? require('@react-three/fiber/native').useFrame : () => {};
 
 const { width: SCREEN_W } = Dimensions.get('window')
 const COURT_W = SCREEN_W - T.spacing[8]

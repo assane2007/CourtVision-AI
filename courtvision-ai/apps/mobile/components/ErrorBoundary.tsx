@@ -1,4 +1,4 @@
-import React, { Component, type ReactNode } from 'react';
+import React, { Component, type ReactNode, type JSX } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { colors, typography, space } from '../constants/tokens';
 
@@ -13,6 +13,10 @@ interface State {
 
 export class ErrorBoundary extends Component<Props, State> {
     state: State = { hasError: false, error: null };
+    refs = {};
+
+    // Explicit return type to satisfy React 19 JSX type constraints
+    render(): JSX.Element {
 
     static getDerivedStateFromError(error: Error): State {
         return { hasError: true, error };
@@ -38,7 +42,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 </View>
             );
         }
-        return this.props.children;
+        return <>{this.props.children}</>;
     }
 }
 

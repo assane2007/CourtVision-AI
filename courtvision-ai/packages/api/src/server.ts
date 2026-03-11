@@ -14,7 +14,7 @@ const start = async () => {
     // Init worker (graceful — no-op if Redis not available)
     let worker: { close: () => Promise<void> }
     try {
-        worker = initWorker()
+        worker = await initWorker()
     } catch {
         console.warn('[Server] Worker init skipped (no Redis)')
         worker = { close: async () => { } }

@@ -1,37 +1,6 @@
 import { Stack, useRouter, useSegments } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { AppState, AppStateStatus, Platform, StatusBar, View, Text } from 'react-native';
-
-// Web global error catcher — shows errors on screen instead of blank page
-if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    const _origErr = console.error;
-    (window as any).__WEB_ERRORS = [] as string[];
-    window.addEventListener('error', (e) => {
-        (window as any).__WEB_ERRORS.push(e.message + '\n' + (e.error?.stack || ''));
-        const el = document.getElementById('__web_error_overlay');
-        if (el) el.innerText = (window as any).__WEB_ERRORS.join('\n---\n');
-        else {
-            const d = document.createElement('pre');
-            d.id = '__web_error_overlay';
-            d.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#1a0000;color:#ff4444;padding:20px;overflow:auto;font-size:14px;white-space:pre-wrap;';
-            d.innerText = (window as any).__WEB_ERRORS.join('\n---\n');
-            document.body.appendChild(d);
-        }
-    });
-    window.addEventListener('unhandledrejection', (e) => {
-        (window as any).__WEB_ERRORS.push('Unhandled rejection: ' + String(e.reason?.stack || e.reason));
-        const el = document.getElementById('__web_error_overlay');
-        if (el) el.innerText = (window as any).__WEB_ERRORS.join('\n---\n');
-        else {
-            const d = document.createElement('pre');
-            d.id = '__web_error_overlay';
-            d.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#1a0000;color:#ff4444;padding:20px;overflow:auto;font-size:14px;white-space:pre-wrap;';
-            d.innerText = (window as any).__WEB_ERRORS.join('\n---\n');
-            document.body.appendChild(d);
-        }
-    });
-}
-
+import { useEffect } from 'react';
+import { AppState, AppStateStatus, Platform, StatusBar, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
@@ -83,6 +52,8 @@ if (Platform.OS !== 'web') {
             shouldShowAlert: true,
             shouldPlaySound: true,
             shouldSetBadge: true,
+            shouldShowBanner: true,
+            shouldShowList: true,
         }),
     });
 }
@@ -228,34 +199,4 @@ function RootLayout() {
     );
 }
 
-function WebDebugWrapper() {
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        const handler = (event: ErrorEvent) => {
-            setError(event.message + '\n' + (event.error?.stack || ''));
-        };
-        const rejectionHandler = (event: PromiseRejectionEvent) => {
-            setError('Unhandled rejection: ' + String(event.reason));
-        };
-        window.addEventListener('error', handler);
-        window.addEventListener('unhandledrejection', rejectionHandler);
-        return () => {
-            window.removeEventListener('error', handler);
-            window.removeEventListener('unhandledrejection', rejectionHandler);
-        };
-    }, []);
-
-    if (error) {
-        return (
-            <View style={{ flex: 1, backgroundColor: '#1a0000', justifyContent: 'center', padding: 20 }}>
-                <Text style={{ color: '#ff4444', fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Web Error:</Text>
-                <Text style={{ color: '#ffaaaa', fontSize: 14 }}>{error}</Text>
-            </View>
-        );
-    }
-
-    return <RootLayout />;
-}
-
-export default Platform.OS === 'web' ? WebDebugWrapper : Sentry.wrap(RootLayout);
+export default Platform.OS === 'web' ? RootLayout : Sentry.wrap(RootLayout);
