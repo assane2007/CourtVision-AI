@@ -4,7 +4,7 @@ export default function NotFound() {
     return (
         <div className="min-h-screen bg-background flex items-center justify-center px-4">
             <div className="text-center">
-                <div className="text-8xl mb-6">ðŸ€</div>
+                <div className="text-8xl mb-6">🏀</div>
                 <h1 className="text-6xl font-display font-black text-text-primary mb-4">
                     4<span className="gradient-text">0</span>4
                 </h1>

@@ -1,4 +1,4 @@
-﻿/** @type {import('tailwindcss').Config} */
+/** @type {import('tailwindcss').Config} */
 module.exports = {
     content: [
         './src/**/*.{js,ts,jsx,tsx,mdx}',
@@ -11,6 +11,7 @@ module.exports = {
                 void: '#000000',
                 fire: {
                     DEFAULT: '#FF4D00',
+                    hover: '#FF6B22',
                     glow: 'rgba(255,107,0,0.35)',
                     dim: 'rgba(255,107,0,0.12)',
                 },
@@ -21,9 +22,9 @@ module.exports = {
                 },
                 // Legacy / Semantic Mapping
                 background: '#000000',
-                surface: '#000000',
-                elevated: '#000000',
-                overlay: '#000000',
+                surface: '#0A0A0A',
+                elevated: '#111111',
+                overlay: 'rgba(0,0,0,0.7)',
                 primary: {
                     DEFAULT: '#FF4D00',
                     hover: '#FF6B22',
@@ -36,7 +37,6 @@ module.exports = {
                     light: '#55FFFF',
                     dim: 'rgba(0,240,255,0.10)',
                 },
-                // Semantic
                 green: {
                     DEFAULT: '#00C67A',
                     light: '#33D49A',
@@ -57,17 +57,14 @@ module.exports = {
                     dim: 'rgba(167,139,250,0.10)',
                 },
                 gold: '#FFD700',
-                // Text
+                // ✅ FIX: Text tokens as proper CSS custom properties
+                // Use as: text-[var(--color-text-primary)] or via globals.css
+                // DO NOT map as Tailwind color keys to avoid overriding text-* utilities
+            },
+            textColor: {
                 'text-primary': '#FFFFFF',
-                'text-secondary': '#FFFFFF',
-                'text-tertiary': '#FFFFFF',
-                // Borders
-                border: {
-                    DEFAULT: 'rgba(255,255,255,0.05)',
-                    light: 'rgba(255,255,255,0.10)',
-                    strong: 'rgba(255,255,255,0.14)',
-                    amber: 'rgba(255,107,0,0.22)',
-                },
+                'text-secondary': 'rgba(255,255,255,0.65)',
+                'text-tertiary': 'rgba(255,255,255,0.35)',
             },
             fontFamily: {
                 display: ['var(--font-sora)', 'system-ui', 'sans-serif'],
