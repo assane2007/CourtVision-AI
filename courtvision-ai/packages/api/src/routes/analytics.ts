@@ -101,6 +101,17 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
         try {
             const user = request.user!
 
+            const cacheKey = `stats:career:${user.id}`
+            try {
+                const cached = await fastify.redis.get(cacheKey)
+                if (cached) {
+                    fastify.log.info({ cacheKey }, 'Cache hit for /career')
+                    return JSON.parse(cached)
+                }
+            } catch (redisErr) {
+                fastify.log.warn({ err: redisErr }, 'Redis cache get failed for /career')
+            }
+
             const { data: sessions, error } = await fastify.supabase
                 .from('sessions')
                 .select('created_at, type, duration_sec, analyses(shot_attempts, shot_made, mental_score, shot_zones)')
@@ -169,7 +180,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
                     avgMental: d.sessions > 0 ? Math.round((d.mental / d.sessions) * 10) / 10 : 0,
                 }))
 
-            return {
+            const responseData = {
                 data: {
                     totalSessions: sessions.length,
                     totalShots,
@@ -186,6 +197,15 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
                     coldZones: zones.filter(z => z.isCold).map(z => z.zone),
                 }
             }
+
+            try {
+                // Cache for 1 hour
+                await fastify.redis.setex(cacheKey, 3600, JSON.stringify(responseData))
+            } catch (redisErr) {
+                fastify.log.warn({ err: redisErr }, 'Redis cache set failed for /career')
+            }
+
+            return responseData
         } catch (error: any) {
             return reply.code(400).send({ error: error.message })
         }
@@ -362,6 +382,17 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
         try {
             const user = request.user!
 
+            const cacheKey = `stats:trends:${user.id}`
+            try {
+                const cached = await fastify.redis.get(cacheKey)
+                if (cached) {
+                    fastify.log.info({ cacheKey }, 'Cache hit for /trends')
+                    return JSON.parse(cached)
+                }
+            } catch (redisErr) {
+                fastify.log.warn({ err: redisErr }, 'Redis cache get failed for /trends')
+            }
+
             const since = new Date()
             since.setDate(since.getDate() - 30)
 
@@ -401,7 +432,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
             const mentalTrend = avgFn(second, 'mentalScore') - avgFn(first, 'mentalScore')
             const volumeTrend = avgFn(second, 'volume') - avgFn(first, 'volume')
 
-            return {
+            const responseData = {
                 data: {
                     points,
                     trends: {
@@ -413,6 +444,15 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
                     totalSessions: data.length,
                 }
             }
+
+            try {
+                // Cache for 1 hour
+                await fastify.redis.setex(cacheKey, 3600, JSON.stringify(responseData))
+            } catch (redisErr) {
+                fastify.log.warn({ err: redisErr }, 'Redis cache set failed for /trends')
+            }
+
+            return responseData
         } catch (error: any) {
             return reply.code(400).send({ error: error.message })
         }

@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import Stripe from 'stripe'
+import pRetry from 'p-retry'
 import { env, requireStripeConfig } from '../config/env'
 
 // Initialisation lazy de Stripe — uses validated env vars
@@ -56,11 +57,11 @@ export default async function billingRoutes(fastify: FastifyInstance) {
 
             if (!customerId) {
                 // Crée le customer Stripe
-                const customer = await getStripe().customers.create({
+                const customer = await pRetry(() => getStripe().customers.create({
                     email: dbUser.email,
                     name: dbUser.full_name,
                     metadata: { supabase_id: user.id }
-                })
+                }), { retries: 3, minTimeout: 500 })
                 customerId = customer.id
 
                 // Update user avec son nouveau customer_id
@@ -82,8 +83,8 @@ export default async function billingRoutes(fastify: FastifyInstance) {
             // Idempotency key prevents duplicate checkout sessions (H-3)
             const idempotencyKey = `checkout_${user.id}_${body.planName}_${Date.now()}`
 
-            // Création de la Checkout Session
-            const session = await getStripe().checkout.sessions.create({
+            // Création de la Checkout Session avec p-retry (Circuit Breaker)
+            const session = await pRetry(() => getStripe().checkout.sessions.create({
                 customer: customerId,
                 payment_method_types: ['card'],
                 line_items: [{ price: priceId, quantity: 1 }],
@@ -91,7 +92,7 @@ export default async function billingRoutes(fastify: FastifyInstance) {
                 success_url: 'https://courtvision.ai/dashboard?checkout=success',
                 cancel_url: 'https://courtvision.ai/dashboard?checkout=cancel',
                 metadata: { userId: user.id, planName: body.planName }
-            }, { idempotencyKey })
+            }, { idempotencyKey }), { retries: 3, minTimeout: 1000 })
 
             return { url: session.url }
         } catch (error: any) {

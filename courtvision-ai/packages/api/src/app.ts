@@ -16,6 +16,7 @@ import { nodeProfilingIntegration } from '@sentry/profiling-node'
 
 import { supabasePlugin } from './plugins/supabase'
 import { authPlugin } from './plugins/auth'
+import { redisPlugin } from './plugins/redis'
 import { initV5Orchestrator } from './services/v5Orchestrator'
 import { env } from './config/env'
 import { initializeQueues } from './queue'
@@ -69,7 +70,7 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
         tracesSampleRate: env.isProduction ? 0.2 : 1.0,
     })
 
-    const app = fastify({ ...opts, logger: true }).withTypeProvider<ZodTypeProvider>()
+    const app = fastify({ ...opts, logger: true, bodyLimit: 1048576, trustProxy: true }).withTypeProvider<ZodTypeProvider>()
 
     // Zod Compilers
     app.setValidatorCompiler(validatorCompiler)
@@ -94,6 +95,9 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
             : true,
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'stripe-signature'],
+        exposedHeaders: ['Content-Range', 'X-Content-Range'],
+        maxAge: 86400,
     })
 
     // WebSockets
@@ -102,6 +106,7 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     })
 
     // Plugins
+    app.register(redisPlugin)
     app.register(supabasePlugin)
     app.register(authPlugin)
 
@@ -117,7 +122,7 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     })
 
     // Global Error Handler (Production Optimized)
-    app.setErrorHandler((error, request, reply) => {
+    app.setErrorHandler((error: any, request, reply) => {
         const isProduction = process.env.NODE_ENV === 'production'
         const statusCode = error.statusCode || 500
 
