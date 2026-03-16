@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
+import { addXpAndActivity } from '../utils/gamification'
 
 // Mock Data representing real clips you will host on Supabase Storage
 const MOCK_CLIPS = [
@@ -122,6 +123,7 @@ export default async function precogRoutes(fastify: FastifyInstance) {
     }, async (request, reply) => {
         const data = request.body as z.infer<typeof FinishSessionSchema>;
         const userUid = data.userId || request.user?.id;
+        if (!userUid) return reply.status(401).send({ error: 'Unauthorized' });
 
         // Start Transactional approach (Supabase doesn't have native multi-table transactions in client, but we can chain)
         const { data: session, error: sessError } = await fastify.supabase
@@ -167,6 +169,42 @@ export default async function precogRoutes(fastify: FastifyInstance) {
             .from('profiles')
             .update({ precog_current_speed: newSpeed })
             .eq('id', userUid);
+
+        // Sync with public_profiles for leaderboard & community
+        const { data: publicProfile } = await fastify.supabase
+            .from('public_profiles')
+            .select('avg_mental_score, best_mental_score, total_sessions')
+            .eq('user_id', userUid)
+            .single();
+
+        if (publicProfile) {
+            const totalSess = (publicProfile.total_sessions || 0) + 1;
+            const newAvg = ((publicProfile.avg_mental_score || 0) * (totalSess - 1) + data.accuracyPercentage) / totalSess;
+            const newBest = Math.max(publicProfile.best_mental_score || 0, data.accuracyPercentage);
+
+            await fastify.supabase
+                .from('public_profiles')
+                .update({
+                    avg_mental_score: newAvg,
+                    best_mental_score: newBest,
+                    total_sessions: totalSess,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('user_id', userUid);
+        }
+
+        // Add to activity feed & award XP
+        await addXpAndActivity(
+            fastify,
+            userUid,
+            'session_complete',
+            `A terminé une session Pre-Cog avec ${data.accuracyPercentage}% de précision ! 🧠`,
+            {
+                accuracy: data.accuracyPercentage,
+                session_id: session.id,
+                module: 'precog'
+            }
+        );
 
         return reply.send({
             success: true,
