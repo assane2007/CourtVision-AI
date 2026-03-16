@@ -1,0 +1,73 @@
+version: 2
+updates:
+  # Docker image updates for docker-compose.yml
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+    open-pull-requests-limit: 10
+    pull-request-branch-name:
+      separator: "/"
+    reviewers:
+      - "owner"
+    assignees:
+      - "owner"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "chore(deps):"
+      prefix-minor: "chore(deps):"
+      prefix-patch: "chore(deps):"
+      include: "scope"
+    allow:
+      - dependency-type: "direct"
+    ignore:
+      # Add specific images/versions to ignore if needed
+      # - dependency-name: "redis"
+      #   versions: ["8.0"]
+
+  # npm/Node.js dependency updates
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    open-pull-requests-limit: 10
+    pull-request-branch-name:
+      separator: "/"
+    reviewers:
+      - "owner"
+    assignees:
+      - "owner"
+    labels:
+      - "dependencies"
+      - "npm"
+    commit-message:
+      prefix: "chore(deps):"
+      prefix-minor: "chore(deps):"
+      prefix-patch: "chore(deps):"
+      include: "scope"
+    allow:
+      - dependency-type: "direct"
+
+  # GitHub Actions updates
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "05:00"
+    open-pull-requests-limit: 5
+    pull-request-branch-name:
+      separator: "/"
+    reviewers:
+      - "owner"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci(deps):"

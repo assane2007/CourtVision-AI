@@ -1,0 +1,59 @@
+name: Docker Image Update Notifications
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - 'docker-compose.yml'
+      - '**/Dockerfile'
+
+jobs:
+  notify-updates:
+    runs-on: ubuntu-latest
+    if: startsWith(github.head_ref, 'dependabot/docker/')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract image and version info
+        id: extract
+        run: |
+          IMAGE=$(git diff origin/main..HEAD docker-compose.yml **/Dockerfile | grep -E '^\+.*image:|^\+.*FROM' | head -1)
+          echo "image_change=$IMAGE" >> $GITHUB_OUTPUT
+
+      - name: Comment on PR with update details
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const body = `
+## 🐳 Docker Image Update Detected
+
+**Updated service(s):** Check the diff for details.
+
+**Security notes:**
+- Verify changelog for breaking changes
+- Run \`docker compose up --pull always\` to test locally
+- Consider updating other services that may depend on this image
+
+**Next steps:**
+1. Review the changes
+2. Run tests locally
+3. Merge when ready
+            `;
+            github.rest.issues.createComment({
+              issue_number: pr.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+  validate-compose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate docker-compose.yml
+        run: |
+          docker-compose -f docker-compose.yml config --quiet && echo "✅ Compose file is valid" || exit 1
