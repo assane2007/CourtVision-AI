@@ -4,6 +4,8 @@ import { Video, ResizeMode, Audio } from 'expo-av';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAnalytics } from '../../../lib/analytics';
+import { api } from '../../../lib/api';
+
 
 type SessionState = 'LOADING' | 'PLAYING' | 'WAITING_INPUT' | 'FEEDBACK' | 'REST';
 
@@ -17,6 +19,10 @@ type Clip = {
 export default function PrecogSession() {
     const insets = useSafeAreaInsets();
     const videoRef = useRef<Video>(null);
+    const timerRef = useRef<any>(null);
+    const blinkRef = useRef<any>(null);
+    const restTimerRef = useRef<any>(null);
+    const playbackTimerRef = useRef<any>(null);
     const [currentClipIdx, setCurrentClipIdx] = useState(0);
     const [state, setState] = useState<SessionState>('LOADING');
     const [feedbackColor, setFeedbackColor] = useState<string>('transparent');
@@ -36,21 +42,21 @@ export default function PrecogSession() {
         // Fetch clips from API
         const fetchClips = async () => {
             try {
-                const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
-                const response = await fetch(`${apiUrl}/api/precog/clips`);
-                const data = await response.json();
+                const data = await api.get('/api/precog/clips') as any;
 
                 if (data.training) {
-                    const allClips = [...data.calibration, ...data.training].slice(0, 10);
+                    const allClips = [...data.calibration, ...data.training];
                     setClips(allClips);
                     setTimeout(() => setState('PLAYING'), 500);
                 } else {
-                    setState('LOADING'); // basic error handler
+                    setState('LOADING');
                 }
             } catch (e) {
-                console.error(e);
+                console.error('Fetch error:', e);
+                setState('LOADING');
             }
         };
+
 
         fetchClips();
     }, []);
@@ -67,7 +73,7 @@ export default function PrecogSession() {
     };
 
     useEffect(() => {
-        let timeout: NodeJS.Timeout;
+        let timeout: any;
 
         if (state === 'PLAYING') {
             // Clip stops playing after precise duration based on speed
@@ -119,7 +125,30 @@ export default function PrecogSession() {
             setState('PLAYING');
         } else {
             // Finish
-            const accuracy = results.filter(r => r.correct).length / clips.length * 100;
+            const accuracy = (results.filter(r => r.correct).length / clips.length) * 100;
+
+            // Save session to backend
+            const saveSession = async () => {
+                try {
+                    await api.post('/api/precog/session', {
+                        date: new Date().toISOString(),
+                        durationSeconds: (results.reduce((acc, r) => acc + r.time, 0)) / 1000,
+                        avgResponseMs: results.reduce((acc, r) => acc + r.time, 0) / results.length,
+                        accuracyPercentage: accuracy,
+                        responses: results.map((r, i) => ({
+                            clipId: clips[i].id,
+                            choice: r.correct ? clips[i].correct_answer : 'WRONG',
+                            correct: r.correct,
+                            responseTimeMs: r.time,
+                            speedMultiplier: 1.0 // Placeholder
+                        }))
+                    });
+                } catch (e) {
+                    console.error('Failed to save session:', e);
+                }
+            };
+
+            saveSession();
 
             // Push event to PostHog
             trackEvent('precog_session_completed', {
@@ -132,6 +161,7 @@ export default function PrecogSession() {
                 params: { accuracy: accuracy.toFixed(0) }
             });
         }
+
     };
 
     const isVisible = state === 'PLAYING' || state === 'WAITING_INPUT';

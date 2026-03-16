@@ -60,21 +60,41 @@ export default async function precogRoutes(fastify: FastifyInstance) {
             querystring: GetSessionSchema
         }
     }, async (request, reply) => {
-        // Logic: 
-        // 1. Fetch user baseline/current speed
-        // 2. Select 10 calibration + 40 training clips randomly based on user's current level
+        const { userId } = request.query as z.infer<typeof GetSessionSchema>;
+        const userUid = userId || request.user?.id;
 
-        let initialSpeed = 100; // default 100 mph
+        // Fetch user speed from profile
+        const { data: profile } = await fastify.supabase
+            .from('profiles')
+            .select('precog_current_speed')
+            .eq('id', userUid)
+            .single();
 
-        // Return mock data
-        // We will just repeat the mock clips to simulate a full session
-        const calibrationClips = Array(2).fill(MOCK_CLIPS).flat();
-        const trainingClips = Array(5).fill(MOCK_CLIPS).flat();
+        const initialSpeed = profile?.precog_current_speed || 100;
+
+        // Fetch clips from database
+        const { data: clips, error } = await fastify.supabase
+            .from('precog_clips')
+            .select('*')
+            .limit(50); // Get a pool of 50 clips
+
+        if (error || !clips || clips.length === 0) {
+            return reply.send({
+                speedMph: initialSpeed,
+                calibration: MOCK_CLIPS.slice(0, 2),
+                training: MOCK_CLIPS
+            });
+        }
+
+        // Randomize and split
+        const shuffled = clips.sort(() => 0.5 - Math.random());
+        const calibration = shuffled.slice(0, 5);
+        const training = shuffled.slice(5, 45);
 
         return reply.send({
             speedMph: initialSpeed,
-            calibration: calibrationClips,
-            training: trainingClips
+            calibration,
+            training
         });
     });
 
@@ -101,23 +121,58 @@ export default async function precogRoutes(fastify: FastifyInstance) {
         }
     }, async (request, reply) => {
         const data = request.body as z.infer<typeof FinishSessionSchema>;
+        const userUid = data.userId || request.user?.id;
 
-        // Analyze progression
+        // Start Transactional approach (Supabase doesn't have native multi-table transactions in client, but we can chain)
+        const { data: session, error: sessError } = await fastify.supabase
+            .from('precog_sessions')
+            .insert({
+                user_id: userUid,
+                duration_seconds: data.durationSeconds,
+                avg_response_ms: data.avgResponseMs,
+                accuracy_percentage: data.accuracyPercentage
+            })
+            .select()
+            .single();
+
+        if (sessError) throw sessError;
+
+        // Bulk insert responses
+        const responseData = data.responses.map(r => ({
+            session_id: session.id,
+            clip_id: r.clipId,
+            choice: r.choice,
+            correct: r.correct,
+            response_time_ms: r.responseTimeMs,
+            speed_multiplier: r.speedMultiplier
+        }));
+
+        await fastify.supabase.from('precog_responses').insert(responseData);
+
+        // Analyze progression & update profile
         let newSpeedOffset = 0;
-        if (data.accuracyPercentage > 75) {
-            newSpeedOffset = 10; // +10% speed
-        } else if (data.accuracyPercentage < 50) {
-            newSpeedOffset = -15; // -15% speed
-        }
+        if (data.accuracyPercentage > 75) newSpeedOffset = 5;
+        else if (data.accuracyPercentage < 50) newSpeedOffset = -5;
 
-        // In a real app we'd update Supabase users table here
-        // and insert session + responses.
+        const { data: currentProfile } = await fastify.supabase
+            .from('profiles')
+            .select('precog_current_speed')
+            .eq('id', userUid)
+            .single();
+        
+        const oldSpeed = currentProfile?.precog_current_speed || 100;
+        const newSpeed = oldSpeed + newSpeedOffset;
+
+        await fastify.supabase
+            .from('profiles')
+            .update({ precog_current_speed: newSpeed })
+            .eq('id', userUid);
 
         return reply.send({
             success: true,
             message: 'Session recorded successfully',
             speedAdjustment: newSpeedOffset,
-            newSpeedMph: 100 + newSpeedOffset // mocked
+            newSpeedMph: newSpeed
         });
     });
 
@@ -125,18 +180,29 @@ export default async function precogRoutes(fastify: FastifyInstance) {
     fastify.get('/progression/:userId', async (request, reply) => {
         const { userId } = request.params as { userId: string };
 
-        // Return mock progression
+        const { data: sessions } = await fastify.supabase
+            .from('precog_sessions')
+            .select('date, accuracy_percentage')
+            .eq('user_id', userId)
+            .order('date', { ascending: true })
+            .limit(10);
+
+        const { data: profile } = await fastify.supabase
+            .from('profiles')
+            .select('precog_current_speed, precog_baseline_speed')
+            .eq('id', userId)
+            .single();
+
         return reply.send({
-            currentSpeedMph: 187,
-            baselineSpeedMph: 145,
-            history: [
-                { date: '2026-02-01', speed: 145, accuracy: 60 },
-                { date: '2026-02-08', speed: 155, accuracy: 72 },
-                { date: '2026-02-15', speed: 165, accuracy: 80 },
-                { date: '2026-02-22', speed: 175, accuracy: 65 },
-                { date: '2026-03-01', speed: 187, accuracy: 78 }
-            ],
-            milestone: "Ton cerveau anticipe maintenant 0.4 secondes plus vite qu'à ton arrivée"
+            currentSpeedMph: profile?.precog_current_speed || 100,
+            baselineSpeedMph: profile?.precog_baseline_speed || 100,
+            history: sessions?.map(s => ({
+                date: s.date,
+                accuracy: s.accuracy_percentage
+            })) || [],
+            milestone: sessions && sessions.length > 5 
+                ? "Excellent travail ! Ta vitesse de traitement visuel est en hausse constante."
+                : "Continue tes sessions quotidiennes pour bâtir ton profil cognitif."
         });
     });
 }

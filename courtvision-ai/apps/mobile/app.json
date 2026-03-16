@@ -2,6 +2,7 @@
   "expo": {
     "name": "CourtVision AI",
     "slug": "courtvision-ai",
+    "owner": "assane2007",
     "version": "1.0.0",
     "scheme": "courtvision",
     "orientation": "portrait",
@@ -37,6 +38,13 @@
           "cameraPermission": "CourtVision AI uses the camera to analyze your game in real time."
         }
       ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "CourtVision AI needs access to your photos to upload game videos.",
+          "savePhotosPermission": "CourtVision AI needs permission to save processed videos to your library."
+        }
+      ],
       "expo-font",
       "expo-secure-store",
       [
@@ -60,7 +68,7 @@
     "newArchEnabled": false,
     "extra": {
       "eas": {
-        "projectId": "your-eas-project-id"
+        "projectId": "7c8e9b0a-1e2d-4b5c-8d9e-0f1a2b3c4d5e"
       }
     }
   }

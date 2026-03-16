@@ -42,9 +42,7 @@ export const RevenueCatProvider = ({ children }: { children: React.ReactNode }) 
     const updateUser = useStore(state => state.updateUser);
 
     useEffect(() => {
-        if (isDemoMode || !isRevenueCatConfigured) {
-            setIsPro(isDemoMode);
-            if (isDemoMode) updateUser({ plan: 'player' });
+        if (!isRevenueCatConfigured) {
             setLoading(false);
             return;
         }

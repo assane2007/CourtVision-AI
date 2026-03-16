@@ -21,16 +21,6 @@ export default function PrecogDashboard() {
 
     useEffect(() => {
         const loadDashboard = async () => {
-            if (isDemoMode) {
-                setData({
-                    currentSpeedMph: 187,
-                    baselineSpeedMph: 145,
-                    milestone: "Ton cerveau anticipe maintenant 0.4 secondes plus vite qu'à ton arrivée",
-                    weeklyProgress: [40, 50, 65, 55, 80],
-                });
-                setLoading(false);
-                return;
-            }
             try {
                 const res = await api.get<{ data: PrecogData }>('/api/precog/dashboard');
                 setData(res.data ?? res as any);

@@ -57,5 +57,6 @@ export function requireStripeConfig(): void {
         if (!env.STRIPE_PRICE_PLAYER) throw new Error('STRIPE_PRICE_PLAYER is required in production')
         if (!env.STRIPE_PRICE_COACH) throw new Error('STRIPE_PRICE_COACH is required in production')
         if (!env.STRIPE_PRICE_ACADEMY) throw new Error('STRIPE_PRICE_ACADEMY is required in production')
+        if (!env.REVENUECAT_WEBHOOK_SECRET) throw new Error('REVENUECAT_WEBHOOK_SECRET is required in production')
     }
 }
