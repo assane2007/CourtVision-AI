@@ -5,6 +5,7 @@ import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../../lib/api';
 import { useStore, selectIsDemoMode } from '../../../lib/store';
+import { usePreCog } from '../../../hooks/usePreCog';
 
 interface PrecogData {
     currentSpeedMph: number;
@@ -15,30 +16,14 @@ interface PrecogData {
 
 export default function PrecogDashboard() {
     const insets = useSafeAreaInsets();
-    const [loading, setLoading] = useState(true);
-    const [data, setData] = useState<PrecogData | null>(null);
     const isDemoMode = useStore(selectIsDemoMode);
+    const { loading, progression, fetchProgression } = usePreCog();
 
     useEffect(() => {
-        const loadDashboard = async () => {
-            try {
-                const res = await api.get<{ data: PrecogData }>('/api/precog/dashboard');
-                setData(res.data ?? res as any);
-            } catch (err) {
-                console.warn('[Precog] Load failed:', err);
-                setData({
-                    currentSpeedMph: 0,
-                    baselineSpeedMph: 0,
-                    milestone: 'Unable to load precog data. Start a session to begin tracking.',
-                    weeklyProgress: [],
-                });
-            } finally {
-                setLoading(false);
-            }
-        };
+        fetchProgression();
+    }, [fetchProgression, isDemoMode]);
 
-        loadDashboard();
-    }, [isDemoMode]);
+    const data = progression;
 
     if (loading) {
         return (
@@ -74,17 +59,17 @@ export default function PrecogDashboard() {
                     <Text style={styles.graphTitle}>PROGRESSION (8 WEEKS)</Text>
                     <View style={styles.mockGraph}>
                         <View style={styles.barContainer}>
-                            {(data?.weeklyProgress ?? []).map((pct, i, arr) => (
+                            {(data?.history ?? []).map((item, i, arr) => (
                                 <View
                                     key={i}
                                     style={[
                                         styles.bar,
-                                        { height: `${pct}%` },
+                                        { height: `${item.accuracy}%` },
                                         i === arr.length - 1 && { backgroundColor: '#FF4D00' },
                                     ]}
                                 />
                             ))}
-                            {(data?.weeklyProgress ?? []).length === 0 && (
+                            {(data?.history ?? []).length === 0 && (
                                 <Text style={{ color: '#F8F5EF', opacity: 0.4, fontSize: 13 }}>No data yet</Text>
                             )}
                         </View>

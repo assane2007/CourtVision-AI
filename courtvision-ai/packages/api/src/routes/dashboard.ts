@@ -81,18 +81,25 @@ export default async function dashboardRoutes(app: FastifyInstance) {
                 }
             })
 
-            // Build Highlights
+            // Build Highlights (Prioritize best highlights from last 10 sessions)
             const now = Date.now()
             const highlights = (highlightSessions ?? []).flatMap((session: any) => {
-                const analysis = Array.isArray(session.analyses) ? session.analyses[0] : null
+                const analysis = Array.isArray(session.analyses) ? session.analyses[0] : session.analyses
                 const hs: any[] = analysis?.highlights ?? []
-                return hs.slice(0, 1).map((h: any) => ({
-                    id: h.id ?? session.id,
-                    label: h.label ?? `Match ${new Date(session.created_at).toLocaleDateString('fr')}`,
-                    pts: h.pts ?? `${h.points ?? '--'} Pts`,
+                
+                // Pick the "best" highlight from this session (highest points or first labeled)
+                const sortedHs = [...hs].sort((a, b) => (b.points ?? 0) - (a.points ?? 0))
+                const topH = sortedHs[0]
+
+                if (!topH) return []
+
+                return [{
+                    id: topH.id ?? session.id,
+                    label: topH.label ?? `Match ${new Date(session.created_at).toLocaleDateString('fr')}`,
+                    pts: topH.pts ?? `${topH.points ?? '--'} Pts`,
                     daysAgo: Math.round((now - new Date(session.created_at).getTime()) / 86_400_000),
-                    thumbnail_url: h.thumbnail_url ?? null,
-                }))
+                    thumbnail_url: topH.thumbnail_url ?? null,
+                }]
             }).slice(0, 6)
 
             return reply.send({

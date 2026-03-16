@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAnalytics } from '../../../lib/analytics';
 import { api } from '../../../lib/api';
+import { usePreCog } from '../../../hooks/usePreCog';
 
 
 type SessionState = 'LOADING' | 'PLAYING' | 'WAITING_INPUT' | 'FEEDBACK' | 'REST';
@@ -26,8 +27,9 @@ export default function PrecogSession() {
     const [currentClipIdx, setCurrentClipIdx] = useState(0);
     const [state, setState] = useState<SessionState>('LOADING');
     const [feedbackColor, setFeedbackColor] = useState<string>('transparent');
-    const [clips, setClips] = useState<Clip[]>([]);
     const { trackEvent } = useAnalytics();
+    const { clips: clipsData, fetchClips, finishSession } = usePreCog();
+    const [sessionClips, setSessionClips] = useState<any[]>([]);
 
     // Results
     const [results, setResults] = useState<{ correct: boolean, time: number }[]>([]);
@@ -39,27 +41,18 @@ export default function PrecogSession() {
             playsInSilentModeIOS: true,
         });
 
-        // Fetch clips from API
-        const fetchClips = async () => {
-            try {
-                const data = await api.get('/api/precog/clips') as any;
-
-                if (data.training) {
-                    const allClips = [...data.calibration, ...data.training];
-                    setClips(allClips);
-                    setTimeout(() => setState('PLAYING'), 500);
-                } else {
-                    setState('LOADING');
-                }
-            } catch (e) {
-                console.error('Fetch error:', e);
-                setState('LOADING');
-            }
-        };
-
-
         fetchClips();
-    }, []);
+    }, [fetchClips]);
+
+    useEffect(() => {
+        if (clipsData) {
+            const all = [...clipsData.calibration, ...clipsData.training];
+            setSessionClips(all);
+            setTimeout(() => setState('PLAYING'), 500);
+        }
+    }, [clipsData]);
+
+    const clips = sessionClips;
 
     const playErrorBip = async () => {
         // Real app would load a local sound file, maybe 'require("../../assets/sounds/error.mp3")'
@@ -130,7 +123,7 @@ export default function PrecogSession() {
             // Save session to backend
             const saveSession = async () => {
                 try {
-                    await api.post('/api/precog/session', {
+                    await finishSession({
                         date: new Date().toISOString(),
                         durationSeconds: (results.reduce((acc, r) => acc + r.time, 0)) / 1000,
                         avgResponseMs: results.reduce((acc, r) => acc + r.time, 0) / results.length,

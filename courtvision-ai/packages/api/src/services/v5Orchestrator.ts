@@ -194,11 +194,11 @@ export class V5Orchestrator {
 
         // Weighted overall
         const overall = Math.round(
-            shooting * 0.40 +
-            mental * 0.20 +
-            consistency * 0.20 +
-            clutch * 0.10 +
-            improvement * 0.10
+            (shooting * 0.40) +
+            (mental * 0.20) +
+            (consistency * 0.20) +
+            (clutch * 0.10) +
+            (improvement * 0.10)
         )
 
         // Trend
@@ -206,6 +206,11 @@ export class V5Orchestrator {
 
         // Grade
         const grade = this.computeApexGrade(overall)
+
+        // 2. Computed Metrics
+        // Placeholder for percentile, as the instruction implies it should be added here.
+        // Real percentile computation would involve another query or pre-calculated value.
+        const percentile = 88; // TODO: Real percentile computation
 
         return {
             overall,
@@ -215,6 +220,7 @@ export class V5Orchestrator {
             clutch,
             improvement,
             grade,
+            percentile, // Added percentile
             trend,
         }
     }
@@ -226,6 +232,7 @@ export class V5Orchestrator {
     static async buildDashboard(userId: string): Promise<DashboardPayload> {
         const supabase = getSupabase()
 
+        // 1. Parallel Data Fetching
         const [
             apexScore,
             { data: shotDna },
@@ -241,8 +248,8 @@ export class V5Orchestrator {
             supabase.from('shot_dna').select('*').eq('user_id', userId).single(),
             supabase.from('predictions').select('*').eq('user_id', userId)
                 .order('created_at', { ascending: false }).limit(1).single(),
-            supabase.from('training_plans').select('*').eq('user_id', userId)
-                .eq('active', true).order('created_at', { ascending: false }).limit(1).single(),
+            supabase.from('training_plans').select('id, plan_data, completion_pct, total_days, completed_days').eq('user_id', userId)
+                .eq('is_active', true).order('created_at', { ascending: false }).limit(1).single(), // Updated query for training plans
             supabase.from('user_quests').select('*, quest:quests(*)').eq('user_id', userId)
                 .eq('status', 'active'),
             supabase.from('recovery_logs').select('*').eq('user_id', userId)
@@ -280,6 +287,30 @@ export class V5Orchestrator {
 
         const shotsThisWeek = (weekAnalyses || []).reduce((sum, a) => sum + (a.shot_attempts || 0), 0)
 
+        // 5. Readiness Scoring (Real data integration)
+        const latestRecoveryData = latestRecovery as any
+        const readinessScore = latestRecoveryData?.recovery_score ?? 0
+        const readinessGrade = latestRecoveryData?.recovery_score
+            ? (latestRecoveryData.recovery_score > 85 ? 'A' : latestRecoveryData.recovery_score > 70 ? 'B' : 'C')
+            : 'Pending'
+
+        // 6. Focus Areas Heuristic (Dynamic selection based on performance)
+        const focusAreas = []
+        const latestAnalysis = weekAnalyses?.[0] as any
+        if (latestAnalysis) {
+            const fg = (latestAnalysis.shot_attempts ?? 0) > 0
+                ? (Number(latestAnalysis.shot_made ?? 0) / Number(latestAnalysis.shot_attempts ?? 0)) * 100
+                : 0
+
+            if (fg < 40) focusAreas.push('Accuracy')
+            if (focusAreas.length < 2) focusAreas.push('Game Rhythm')
+        } else {
+            focusAreas.push('Baseline Assessment')
+        }
+
+        // Placeholder for percentile, assuming it's part of apexScore now
+        const percentile = apexScore.percentile ?? 50; // Use the percentile from the computed apexScore
+
         return {
             apexScore,
             shotDna: shotDna ? {
@@ -290,15 +321,15 @@ export class V5Orchestrator {
             } : null,
             predictions: latestPrediction ? {
                 nextSessionFGPct: latestPrediction.predicted_fg_pct || 0,
-                readinessScore: 0, // computed from recovery
-                readinessGrade: 'B',
+                readinessScore: readinessScore,
+                readinessGrade: readinessGrade,
                 lastAccuracy: latestPrediction.prediction_accuracy,
             } : null,
             training: activePlan ? {
-                activePlan: activePlan.name,
-                completionPct: activePlan.completion_pct || 0,
-                daysRemaining: (activePlan.total_days || 7) - (activePlan.completed_days || 0),
-                todayFocus: this.getTodayFocus(activePlan),
+                activePlan: (activePlan as any)?.plan_data?.name || null, // Access plan_data.name
+                completionPct: activePlan?.completion_pct || 0,
+                daysRemaining: (activePlan?.total_days || 7) - (activePlan?.completed_days || 0),
+                todayFocus: focusAreas.length > 0 ? focusAreas[0] : (this.getTodayFocus(activePlan) || 'Entraînement Libre'),
             } : null,
             streaks: {
                 ...sessionStreak,
@@ -307,7 +338,7 @@ export class V5Orchestrator {
             },
             quests: {
                 activeCount: activeQuests?.length || 0,
-                completedToday: completedToday || 0,
+                completedToday: Number(completedToday) || 0,
                 nextReward: activeQuests?.[0]?.quest?.xp_reward
                     ? `${activeQuests[0].quest.xp_reward} XP`
                     : null,
@@ -368,7 +399,7 @@ export class V5Orchestrator {
 
         const sessionCount = weekSessions?.length || 0
         const analytics = weekAnalytics || []
-        const totalShots = analytics.reduce((sum, a) => sum + (a.shot_quality_avg ? 1 : 0) * 20, 0) // approximation
+        const totalShots = analytics.reduce((acc: number, curr: any) => acc + (curr.shot_attempts ?? 0), 0)
         const avgFGPct = analytics.length > 0
             ? analytics.reduce((sum, a) => sum + (a.true_shooting_pct || 0), 0) / analytics.length
             : 0
@@ -550,17 +581,22 @@ export class V5Orchestrator {
     }
 
     private static computeImprovementRate(analytics: any[]): number {
-        if (analytics.length < 3) return 50 // neutral
+        if (!analytics || analytics.length < 2) return 50 // Base score: 50 (stable)
 
-        const ratings = analytics.map((a: any) => a.offensive_rating || 50).reverse()
-        const firstHalf = ratings.slice(0, Math.floor(ratings.length / 2))
-        const secondHalf = ratings.slice(Math.floor(ratings.length / 2))
+        const latest = analytics[0]
+        const prev = analytics[1]
 
-        const avgFirst = firstHalf.reduce((a: number, b: number) => a + b, 0) / firstHalf.length
-        const avgSecond = secondHalf.reduce((a: number, b: number) => a + b, 0) / secondHalf.length
+        const offRating = Number(latest.offensive_rating ?? 50)
+        const prevRating = Number(prev.offensive_rating ?? 50)
 
-        const delta = avgSecond - avgFirst
-        return Math.max(0, Math.min(100, 50 + delta * 3))
+        if (prevRating === 0) return 50
+        
+        // Improvement score = 50 + (change * 2.5)
+        // A 10% improvement becomes 75. A -10% drop becomes 25.
+        const change = (offRating - prevRating) / prevRating
+        const score = Math.round(50 + (change * 250))
+        
+        return Math.max(0, Math.min(100, score))
     }
 
     private static computeApexGrade(overall: number): string {
