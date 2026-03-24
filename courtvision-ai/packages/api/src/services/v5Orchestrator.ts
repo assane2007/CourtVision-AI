@@ -145,6 +145,7 @@ export class V5Orchestrator {
             { data: shotDna },
             { data: recentAnalytics },
             { data: profile },
+            percentiles
         ] = await Promise.all([
             supabase.from('sessions')
                 .select('id, created_at')
@@ -165,7 +166,8 @@ export class V5Orchestrator {
                 .select('avg_shooting_pct, avg_mental_score, total_sessions, total_shots')
                 .eq('user_id', userId)
                 .single(),
-        ])
+            this.computePercentiles(userId)
+        ]);
 
         const sessionCount = sessions?.length || 0
         const avgFGPct = profile?.avg_shooting_pct || 0
@@ -207,11 +209,6 @@ export class V5Orchestrator {
         // Grade
         const grade = this.computeApexGrade(overall)
 
-        // 2. Computed Metrics
-        // Placeholder for percentile, as the instruction implies it should be added here.
-        // Real percentile computation would involve another query or pre-calculated value.
-        const percentile = 88; // TODO: Real percentile computation
-
         return {
             overall,
             shooting,
@@ -220,7 +217,7 @@ export class V5Orchestrator {
             clutch,
             improvement,
             grade,
-            percentile, // Added percentile
+            percentile: percentiles.overall,
             trend,
         }
     }
@@ -302,14 +299,16 @@ export class V5Orchestrator {
                 ? (Number(latestAnalysis.shot_made ?? 0) / Number(latestAnalysis.shot_attempts ?? 0)) * 100
                 : 0
 
-            if (fg < 40) focusAreas.push('Accuracy')
-            if (focusAreas.length < 2) focusAreas.push('Game Rhythm')
+            if (fg < 40) {
+                focusAreas.push('Accuracy')
+            } else if (fg > 60) {
+                focusAreas.push('Extend Range')
+            } else {
+                focusAreas.push('Game Rhythm')
+            }
         } else {
             focusAreas.push('Baseline Assessment')
         }
-
-        // Placeholder for percentile, assuming it's part of apexScore now
-        const percentile = apexScore.percentile ?? 50; // Use the percentile from the computed apexScore
 
         return {
             apexScore,

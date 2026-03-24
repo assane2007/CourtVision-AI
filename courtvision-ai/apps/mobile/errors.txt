@@ -1,0 +1,114 @@
+﻿app/(app)/index.tsx(130,35): error TS2322: Type '{ color: "rgba(245,245,245,0.6)"; size: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+app/(app)/index.tsx(155,35): error TS2322: Type '{ fill: "#F5F5F5"; color: "#F5F5F5"; size: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'fill' does not exist on type 'IntrinsicAttributes & LucideProps'.
+app/(app)/index.tsx(164,44): error TS2322: Type '{ color: "#FF5C00"; size: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+app/(app)/index.tsx(171,40): error TS2322: Type '{ color: "#FF5C00"; size: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+app/(app)/index.tsx(181,30): error TS2322: Type '{ color: "#FF5C00"; size: number; style: { marginRight: number; }; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+app/(app)/index.tsx(200,40): error TS2322: Type '{ color: string; size: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+app/(app)/index.tsx(231,35): error TS2322: Type '{ color: string; size: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+app/(app)/record.tsx(13,30): error TS7016: Could not find a declaration file for module 'uuid'. 'D:/CourtVision-AI/courtvision-ai/apps/mobile/node_modules/uuid/dist/esm-browser/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/uuid` if it exists or add a new declaration (.d.ts) file containing `declare module 'uuid';`
+app/(app)/record.tsx(139,31): error TS2322: Type '{ color: "rgba(245,245,245,0.6)"; size: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+app/(app)/record.tsx(143,26): error TS2322: Type '{ color: "rgba(245,245,245,0.6)"; size: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+app/(app)/record.tsx(147,28): error TS2322: Type '{ color: "rgba(245,245,245,0.6)"; size: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+app/(app)/record.tsx(174,49): error TS2322: Type '{ color: "#0A0A0A"; size: number; strokeWidth: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+app/(app)/record.tsx(190,51): error TS2322: Type '{ color: "#0A0A0A"; size: number; strokeWidth: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+app/(app)/record.tsx(198,49): error TS2322: Type '{ color: "#0A0A0A"; size: number; strokeWidth: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+app/(app)/record.tsx(220,33): error TS2322: Type '{ color: "#0A0A0A"; fill: "#0A0A0A"; size: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+app/(app)/sessions/[id].tsx(93,38): error TS2322: Type '{ color: "#F5F5F5"; size: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+app/(app)/sessions/[id].tsx(101,36): error TS2322: Type '{ color: "rgba(245,245,245,0.6)"; size: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+app/(app)/sessions/[id].tsx(107,39): error TS2322: Type '{ color: "#FF5C00"; size: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+app/(app)/sessions/[id].tsx(198,43): error TS2322: Type '{ color: "#0A0A0A"; size: number; style: { marginRight: number; }; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+app/(app)/sessions/[id].tsx(207,44): error TS2322: Type '{ color: "#22C55E"; size: number; style: { marginRight: number; }; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+app/(app)/sessions/chat/[id].tsx(119,34): error TS2322: Type '{ color: "#F5F5F5"; size: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+app/(app)/sessions/chat/[id].tsx(123,35): error TS2322: Type '{ color: "#FF5C00"; size: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+app/(app)/sessions/chat/[id].tsx(190,31): error TS2322: Type '{ color: "#F5F5F5" | "rgba(245,245,245,0.6)"; size: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+app/(dashboard)/upload.tsx(229,67): error TS2345: Argument of type '{ status: string; } | undefined' is not assignable to parameter of type '{ data?: { status: string; } | undefined; } & Record<string, unknown>'.
+  Type 'undefined' is not assignable to type '{ data?: { status: string; } | undefined; } & Record<string, unknown>'.
+    Type 'undefined' is not assignable to type '{ data?: { status: string; } | undefined; }'.
+app/(dashboard)/upload.tsx(238,74): error TS2345: Argument of type 'AnalysisSummary | undefined' is not assignable to parameter of type '{ data?: AnalysisSummary | undefined; } & Record<string, unknown>'.
+  Type 'undefined' is not assignable to type '{ data?: AnalysisSummary | undefined; } & Record<string, unknown>'.
+    Type 'undefined' is not assignable to type '{ data?: AnalysisSummary | undefined; }'.
+app/(dashboard)/upload.tsx(385,72): error TS2353: Object literal may only specify known properties, and 'size' does not exist in type 'InfoOptions'.
+app/(dashboard)/upload.tsx(411,48): error TS2339: Property 'FileSystemUploadType' does not exist on type 'typeof import("D:/CourtVision-AI/courtvision-ai/node_modules/expo-file-system/build/index")'.
+app/(dashboard)/upload.tsx(435,66): error TS2345: Argument of type '{ id: string; } | undefined' is not assignable to parameter of type '{ data?: { id: string; } | undefined; } & Record<string, unknown>'.
+  Type 'undefined' is not assignable to type '{ data?: { id: string; } | undefined; } & Record<string, unknown>'.
+    Type 'undefined' is not assignable to type '{ data?: { id: string; } | undefined; }'.
+app/calibration.tsx(276,24): error TS2554: Expected 1 arguments, but got 0.
+app/onboarding3.tsx(173,44): error TS2820: Type '"apple1"' is not assignable to type '"number" | "function" | "calendar" | "wifi" | "warning" | "info" | "message" | "android" | "windows" | "search" | "bold" | "link" | "up" | "down" | "instagram" | "twitter" | "medium" | ... 432 more ... | undefined'. Did you mean '"apple"'?
+app/program.tsx(360,35): error TS2304: Cannot find name 'TODAY_EXERCISES'.
+app/program.tsx(360,59): error TS7006: Parameter 'a' implicitly has an 'any' type.
+app/program.tsx(360,62): error TS7006: Parameter 'e' implicitly has an 'any' type.
+components/dashboard/InteractiveTerrainVisualizer.tsx(38,9): error TS2339: Property 'group' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(39,13): error TS2339: Property 'mesh' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(40,17): error TS2339: Property 'planeGeometry' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(41,17): error TS2339: Property 'meshStandardMaterial' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(42,13): error TS2339: Property 'mesh' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(44,13): error TS2339: Property 'mesh' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(45,17): error TS2339: Property 'planeGeometry' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(46,17): error TS2339: Property 'meshStandardMaterial' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(47,13): error TS2339: Property 'mesh' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(49,13): error TS2339: Property 'mesh' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(50,17): error TS2339: Property 'ringGeometry' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(51,17): error TS2339: Property 'meshBasicMaterial' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(52,13): error TS2339: Property 'mesh' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(53,9): error TS2339: Property 'group' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(61,15): error TS7006: Parameter 'state' implicitly has an 'any' type.
+components/dashboard/InteractiveTerrainVisualizer.tsx(76,9): error TS2339: Property 'mesh' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(79,23): error TS7006: Parameter 'e' implicitly has an 'any' type.
+components/dashboard/InteractiveTerrainVisualizer.tsx(81,27): error TS2339: Property 'boxGeometry' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(81,68): error TS2339: Property 'sphereGeometry' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(82,13): error TS2339: Property 'meshStandardMaterial' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(88,9): error TS2339: Property 'mesh' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(95,15): error TS7006: Parameter 'state' implicitly has an 'any' type.
+components/dashboard/InteractiveTerrainVisualizer.tsx(108,9): error TS2339: Property 'group' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(109,13): error TS2339: Property 'ambientLight' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(110,13): error TS2339: Property 'pointLight' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(111,13): error TS2339: Property 'pointLight' does not exist on type 'JSX.IntrinsicElements'.
+components/dashboard/InteractiveTerrainVisualizer.tsx(115,24): error TS7006: Parameter 'z' implicitly has an 'any' type.
+components/dashboard/InteractiveTerrainVisualizer.tsx(123,9): error TS2339: Property 'group' does not exist on type 'JSX.IntrinsicElements'.
+components/ui/StoryViewer.tsx(135,38): error TS2322: Type '{ color: "#22C55E"; size: number; fill: string; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+components/ui/StoryViewer.tsx(139,32): error TS2322: Type '{ color: "#F5F5F5"; size: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+components/ui/StoryViewer.tsx(179,39): error TS2322: Type '{ color: "#F5F5F5"; size: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+components/ui/StoryViewer.tsx(182,37): error TS2322: Type '{ color: "#0A0A0A"; size: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+components/ui/TabBar.tsx(18,29): error TS2339: Property 'href' does not exist on type 'BottomTabNavigationOptions'.
+components/ui/TabBar.tsx(44,41): error TS2322: Type '{ color: "#F5F5F5"; size: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+components/ui/TabBar.tsx(67,40): error TS2322: Type '{ color: "#FF5C00" | "rgba(245,245,245,0.28)"; size: number; }' is not assignable to type 'IntrinsicAttributes & LucideProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & LucideProps'.
+components/workout/SmartCamera.tsx(167,30): error TS2345: Argument of type 'RefObject<CameraView | null>' is not assignable to parameter of type 'RefObject<CameraView>'.
+  Type 'CameraView | null' is not assignable to type 'CameraView'.
+    Type 'null' is not assignable to type 'CameraView'.
+hooks/useCommunity.ts(119,27): error TS2554: Expected 1 arguments, but got 0.
+hooks/usePushNotifications.ts(31,37): error TS2322: Type 'Promise<{ shouldShowAlert: true; shouldPlaySound: true; shouldSetBadge: true; }>' is not assignable to type 'Promise<NotificationBehavior>'.
+  Type '{ shouldShowAlert: true; shouldPlaySound: true; shouldSetBadge: true; }' is missing the following properties from type 'NotificationBehavior': shouldShowBanner, shouldShowList
+hooks/usePushNotifications.ts(144,22): error TS2352: Conversion of type '{ hour: number; minute: number; repeats: boolean; channelId: string; }' to type 'DailyTriggerInput' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'type' is missing in type '{ hour: number; minute: number; repeats: boolean; channelId: string; }' but required in type 'DailyTriggerInput'.
+hooks/usePushNotifications.ts(162,22): error TS2352: Conversion of type '{ hour: number; minute: number; repeats: boolean; channelId: string; }' to type 'DailyTriggerInput' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'type' is missing in type '{ hour: number; minute: number; repeats: boolean; channelId: string; }' but required in type 'DailyTriggerInput'.
+lib/upload.ts(61,44): error TS2339: Property 'FileSystemUploadType' does not exist on type 'typeof import("D:/CourtVision-AI/courtvision-ai/node_modules/expo-file-system/build/index")'.

@@ -139,7 +139,7 @@ describe('Dashboard Routes', () => {
             expect(response.statusCode).toBe(401)
         })
 
-        it('should return full dashboard when authenticated', async () => {
+        it('should return legacy v4 dashboard when authenticated', async () => {
             const response = await app.inject({
                 method: 'GET',
                 url: '/api/dashboard',
@@ -149,9 +149,8 @@ describe('Dashboard Routes', () => {
             expect(response.statusCode).toBe(200)
             const body = JSON.parse(response.body)
             expect(body.success).toBe(true)
-            expect(body.data.apexScore).toBeDefined()
-            expect(body.data.apexScore.overall).toBe(78)
-            expect(body.version).toBe('v5-apex')
+            expect(body.data.highlights).toBeDefined()
+            expect(body.version).toBe('v4')
         })
     })
 

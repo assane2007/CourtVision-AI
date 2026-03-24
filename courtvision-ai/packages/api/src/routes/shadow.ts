@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { shadowQueue } from '../queue/shadowLeague.worker';
 import { DigitalTwin } from '../services/simulation.service';
+import { V5Orchestrator } from '../services/v5Orchestrator';
 
 const simulateBodySchema = z.object({
     playerA: z.object({
@@ -38,6 +39,10 @@ const shadowRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
                     success: z.boolean(),
                     jobId: z.string(),
                     message: z.string()
+                }),
+                503: z.object({
+                    success: z.boolean(),
+                    message: z.string()
                 })
             }
         }
@@ -65,6 +70,25 @@ const shadowRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
             jobId: job.id as string,
             message: 'Simulation added to The Shadow League queue. Results will be ready soon.'
         });
+    });
+
+    app.get('/dashboard', { preHandler: [app.authenticate] }, async (request, reply) => {
+        const userId = request.user?.id
+        if (!userId) return reply.status(401).send({ error: 'Unauthorized' })
+
+        try {
+            const dashboard = await V5Orchestrator.buildDashboard(userId)
+            return reply.send({
+                success: true,
+                data: dashboard,
+                version: 'v5-apex',
+                isShadow: true,
+                generatedAt: new Date().toISOString(),
+            })
+        } catch (error: any) {
+            request.log.error({ err: error }, '[Shadow Dashboard] Error building v5 dashboard')
+            return reply.status(500).send({ error: 'Failed to build dashboard' })
+        }
     });
 
 };

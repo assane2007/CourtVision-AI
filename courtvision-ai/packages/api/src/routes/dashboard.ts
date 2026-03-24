@@ -18,7 +18,7 @@ import { WearableService } from '../services/wearable.service'
 
 export default async function dashboardRoutes(app: FastifyInstance) {
 
-    // ── Full V5 Dashboard ────────────────────────────────────
+    // ── Legacy V4 Dashboard ────────────────────────────────────
     app.get('/', {
         preHandler: [app.authenticate],
     }, async (request, reply) => {
@@ -26,15 +26,27 @@ export default async function dashboardRoutes(app: FastifyInstance) {
         if (!userId) return reply.status(401).send({ error: 'Unauthorized' })
 
         try {
-            const dashboard = await V5Orchestrator.buildDashboard(userId)
+            const [{ data: topPlays }, { data: stats }] = await Promise.all([
+                request.server.supabase.from('highlights').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(6),
+                request.server.supabase.from('public_profiles').select('total_sessions, avg_shooting_pct, total_shots').eq('user_id', userId).single()
+            ])
+            const highlights = (topPlays || []).map((h: any) => ({
+                id: h.id,
+                url: h.video_url,
+                thumbnail_url: h.thumbnail_url ?? null,
+                label: h.label ?? `Match ${new Date(h.created_at).toLocaleDateString()}`
+            }))
             return reply.send({
                 success: true,
-                data: dashboard,
-                version: 'v5-apex',
+                data: {
+                    stats,
+                    highlights,
+                },
+                version: 'v4',
                 generatedAt: new Date().toISOString(),
             })
         } catch (error: any) {
-            request.log.error({ err: error }, '[Dashboard] Error building dashboard')
+            request.log.error({ err: error }, '[Dashboard] Error building legacy dashboard')
             return reply.status(500).send({ error: 'Failed to build dashboard' })
         }
     })
