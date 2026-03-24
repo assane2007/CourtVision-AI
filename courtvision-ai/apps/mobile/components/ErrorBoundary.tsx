@@ -16,7 +16,6 @@ export class ErrorBoundary extends Component<Props, State> {
     refs = {};
 
     // Explicit return type to satisfy React 19 JSX type constraints
-    render(): JSX.Element {
 
     static getDerivedStateFromError(error: Error): State {
         return { hasError: true, error };

@@ -58,7 +58,7 @@ export class UploadTask {
                 this.uri,
                 {
                     httpMethod: 'POST',
-                    uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+                    uploadType: FileSystem.UploadType.MULTIPART,
                     fieldName: 'file',
                     headers: {
                         'Authorization': `Bearer ${token}`

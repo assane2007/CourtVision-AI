@@ -408,7 +408,7 @@ export default function UploadAnalyze() {
                     videoUri,
                     {
                         httpMethod: 'POST',
-                        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+                        uploadType: FileSystem.UploadType.MULTIPART,
                         fieldName: 'video',
                         parameters: { type: 'training' },
                     },

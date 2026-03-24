@@ -25,6 +25,7 @@ import { T } from './theme'
 export interface UserProfile {
     id: string
     username: string
+    email?: string
     full_name: string
     avatar_url?: string
     position: string
@@ -60,6 +61,8 @@ export interface Session {
     created_at: string
     mental_score: number
     shooting_grade: string
+    shooting_fg_pct?: number
+    shooting_accuracy?: number
     highlight_count: number
 }
 

@@ -75,5 +75,9 @@
     "@types/react": "~19.1.10",
     "eslint-plugin-react-hooks": "^7.0.1",
     "typescript": "~5.9.2"
+  },
+  "overrides": {
+    "@types/react": "~19.1.10",
+    "@types/react-dom": "~19.1.1"
   }
 }
