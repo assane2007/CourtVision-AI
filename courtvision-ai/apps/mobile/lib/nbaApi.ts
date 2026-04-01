@@ -1,17 +1,18 @@
 /**
  * NBA Reference API — Live player shooting mechanics for comparisons.
  *
- * Primary: balldontlie.io (free tier: 5 req/min, needs free API key)
+ * Primary: CourtVision backend /api/nba (powered by swar/nba_api)
  * Fallback: cached dataset bundled with the app, refreshed once per 24h.
  *
  * All biomechanics data (elbow angles, release heights, release times) are from
  * publicly available Sports Science / Second Spectrum tracking datasets averaged
  * over the 2024-25 season. These are fetched and merge-cached locally.
  *
- * API data is fetched LIVE — bundled data is only a fallback.
+ * API data is fetched LIVE via backend proxy — bundled data is only a fallback.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { api } from './api';
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -30,7 +31,7 @@ export interface NBAPlayerReference {
   style: string;
   /** Season the stats are from */
   season: string;
-  /** balldontlie player ID, if available */
+  /** NBA player ID (stats.nba.com ecosystem), if available */
   apiId?: number;
 }
 
@@ -53,8 +54,6 @@ export interface NBABenchmarks {
 
 const CACHE_KEY = '@courtvision_nba_reference';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
-const API_BASE = 'https://api.balldontlie.io/v1';
-const BDL_API_KEY = process.env.EXPO_PUBLIC_BDL_API_KEY || '';
 
 // ── Bundled Fallback Data (2024-25 Season) ─────────────────────
 // Used ONLY when the live API is unreachable.
@@ -127,50 +126,60 @@ async function setCache(players: NBAPlayerReference[]): Promise<void> {
 // ── API Fetch ──────────────────────────────────────────────────
 
 /**
- * Fetch live season averages from balldontlie.io for our reference players.
+ * Fetch live FG% values via backend (/api/nba/fg-pct) powered by swar/nba_api.
  * Merges FG% into the bundled data (biomechanics are from tracking data,
  * not available via this API).
  */
+type MaybeApiEnvelope<T> = { data?: T } | T;
+
+interface FgPctRow {
+  playerId?: number;
+  player_id?: number;
+  fgPct?: number;
+  fg_pct?: number;
+}
+
+function unwrapData<T>(payload: MaybeApiEnvelope<T>): T {
+  if (payload && typeof payload === 'object' && 'data' in payload) {
+    return (payload as { data: T }).data;
+  }
+  return payload as T;
+}
+
+function getCurrentSeasonLabel(): string {
+  const now = new Date();
+  const startYear = now.getMonth() >= 9 ? now.getFullYear() : now.getFullYear() - 1;
+  return `${startYear}-${(startYear + 1).toString().slice(2)}`;
+}
+
 async function fetchLiveStats(): Promise<NBAPlayerReference[]> {
   const playerIds = BUNDLED_PLAYERS
     .filter(p => p.apiId)
     .map(p => p.apiId!);
 
-  // balldontlie season_averages endpoint
-  const currentSeason = new Date().getFullYear();
-  const season = new Date().getMonth() >= 9 ? currentSeason : currentSeason - 1;
+  const season = getCurrentSeasonLabel();
+  const query = `/api/nba/fg-pct?playerIds=${encodeURIComponent(playerIds.join(','))}&season=${encodeURIComponent(season)}`;
 
-  const params = playerIds.map(id => `player_ids[]=${id}`).join('&');
-  const url = `${API_BASE}/season_averages?season=${season}&${params}`;
+  const response = await api.get<MaybeApiEnvelope<FgPctRow[]>>(query);
+  const rawRows = unwrapData<FgPctRow[]>(response);
+  const rows = Array.isArray(rawRows) ? rawRows : [];
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-
-  try {
-    const headers: Record<string, string> = { 'Accept': 'application/json' };
-    if (BDL_API_KEY) {
-      headers['Authorization'] = BDL_API_KEY;
+  const fgMap = new Map<number, number>();
+  for (const row of rows) {
+    const id = row.playerId ?? row.player_id;
+    const fg = row.fgPct ?? row.fg_pct;
+    if (typeof id === 'number' && typeof fg === 'number' && Number.isFinite(fg)) {
+      fgMap.set(id, Math.round(fg * 10) / 10);
     }
-
-    const res = await fetch(url, { signal: controller.signal, headers });
-    if (!res.ok) throw new Error(`API ${res.status}`);
-
-    const json = await res.json();
-    const apiData: Array<{ player_id: number; fg_pct: number }> = json.data ?? [];
-
-    // Merge live FG% into bundled data
-    const merged = BUNDLED_PLAYERS.map(player => {
-      const live = apiData.find(d => d.player_id === player.apiId);
-      if (live && typeof live.fg_pct === 'number') {
-        return { ...player, fgPct: Math.round(live.fg_pct * 1000) / 10, season: `${season}-${(season + 1).toString().slice(2)}` };
-      }
-      return player;
-    });
-
-    return merged;
-  } finally {
-    clearTimeout(timeout);
   }
+
+  return BUNDLED_PLAYERS.map(player => {
+    const liveFg = player.apiId ? fgMap.get(player.apiId) : undefined;
+    if (typeof liveFg === 'number') {
+      return { ...player, fgPct: liveFg, season };
+    }
+    return player;
+  });
 }
 
 // ── Public API ─────────────────────────────────────────────────
@@ -206,8 +215,7 @@ export function getSimulationPlayers(): string[] {
 }
 
 /**
- * Search for NBA players by name using the live API.
- * Returns player name, team, position etc. from balldontlie.io.
+ * Search for NBA players by name via backend /api/nba/players/search.
  */
 export async function searchNBAPlayers(search: string, limit = 10): Promise<{
   id: number;
@@ -217,32 +225,57 @@ export async function searchNBAPlayers(search: string, limit = 10): Promise<{
   position: string;
   team: string;
 }[]> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-
   try {
-    const headers: Record<string, string> = { 'Accept': 'application/json' };
-    if (BDL_API_KEY) {
-      headers['Authorization'] = BDL_API_KEY;
-    }
+    const query = `/api/nba/players/search?q=${encodeURIComponent(search)}&limit=${encodeURIComponent(String(limit))}`;
+    const response = await api.get<MaybeApiEnvelope<Array<Record<string, unknown>>>>(query);
+    const rawPlayers = unwrapData<Array<Record<string, unknown>>>(response);
+    const players = Array.isArray(rawPlayers) ? rawPlayers : [];
 
-    const url = `${API_BASE}/players?search=${encodeURIComponent(search)}&per_page=${limit}`;
-    const res = await fetch(url, { signal: controller.signal, headers });
-    if (!res.ok) throw new Error(`API ${res.status}`);
+    return players.map((p) => {
+      const firstName = typeof p.firstName === 'string'
+        ? p.firstName
+        : typeof p.first_name === 'string'
+          ? p.first_name
+          : '';
+      const lastName = typeof p.lastName === 'string'
+        ? p.lastName
+        : typeof p.last_name === 'string'
+          ? p.last_name
+          : '';
+      const fullName = typeof p.fullName === 'string'
+        ? p.fullName
+        : typeof p.full_name === 'string'
+          ? p.full_name
+          : `${firstName} ${lastName}`.trim();
 
-    const json = await res.json();
-    return (json.data ?? []).map((p: any) => ({
-      id: p.id,
-      firstName: p.first_name,
-      lastName: p.last_name,
-      fullName: `${p.first_name} ${p.last_name}`,
-      position: p.position || '',
-      team: p.team?.full_name || p.team?.name || '',
-    }));
+      let team = '';
+      if (typeof p.team === 'string') {
+        team = p.team;
+      } else if (p.team && typeof p.team === 'object') {
+        const teamObj = p.team as Record<string, unknown>;
+        team = typeof teamObj.fullName === 'string'
+          ? teamObj.fullName
+          : typeof teamObj.full_name === 'string'
+            ? teamObj.full_name
+            : typeof teamObj.name === 'string'
+              ? teamObj.name
+              : '';
+      }
+
+      const idRaw = p.id;
+      const id = typeof idRaw === 'number' ? idRaw : Number(idRaw ?? 0);
+
+      return {
+        id: Number.isFinite(id) ? id : 0,
+        firstName,
+        lastName,
+        fullName,
+        position: typeof p.position === 'string' ? p.position : '',
+        team,
+      };
+    }).filter((p) => p.id > 0 && p.fullName.length > 0);
   } catch {
     return [];
-  } finally {
-    clearTimeout(timeout);
   }
 }
 

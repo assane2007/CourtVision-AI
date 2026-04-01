@@ -27,6 +27,7 @@ import cv2
 import logging
 import numpy as np
 import os
+import random
 import subprocess
 import tempfile
 import time
@@ -35,7 +36,7 @@ from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.responses import JSONResponse
@@ -67,6 +68,14 @@ except ImportError:
     GPU_AVAILABLE = False
     DEVICE = "cpu"
 
+try:
+    from nba_api.stats.endpoints import commonallplayers, commonplayerinfo, leaguedashplayerstats
+    from nba_api.stats.static import teams as nba_teams_static
+
+    NBA_API_AVAILABLE = True
+except Exception:
+    NBA_API_AVAILABLE = False
+
 # ── Logging ────────────────────────────────────────────────────
 
 logging.basicConfig(
@@ -92,6 +101,374 @@ jobs: Dict[str, dict] = {}
 # Model readiness state (set after startup warm-up)
 _models_ready = False
 _models_loaded: Dict[str, bool] = {"yolo": False, "mediapipe": False}
+
+# NBA cache and fallback data
+NBA_CACHE_TTL_SEC = int(os.getenv("NBA_CACHE_TTL_SEC", "3600"))
+_nba_cache: Dict[str, Tuple[float, Any]] = {}
+
+_TEAM_META_BY_ABBR: Dict[str, Dict[str, str]] = {
+    "ATL": {"conference": "East", "division": "Southeast"},
+    "BOS": {"conference": "East", "division": "Atlantic"},
+    "BKN": {"conference": "East", "division": "Atlantic"},
+    "CHA": {"conference": "East", "division": "Southeast"},
+    "CHI": {"conference": "East", "division": "Central"},
+    "CLE": {"conference": "East", "division": "Central"},
+    "DAL": {"conference": "West", "division": "Southwest"},
+    "DEN": {"conference": "West", "division": "Northwest"},
+    "DET": {"conference": "East", "division": "Central"},
+    "GSW": {"conference": "West", "division": "Pacific"},
+    "HOU": {"conference": "West", "division": "Southwest"},
+    "IND": {"conference": "East", "division": "Central"},
+    "LAC": {"conference": "West", "division": "Pacific"},
+    "LAL": {"conference": "West", "division": "Pacific"},
+    "MEM": {"conference": "West", "division": "Southwest"},
+    "MIA": {"conference": "East", "division": "Southeast"},
+    "MIL": {"conference": "East", "division": "Central"},
+    "MIN": {"conference": "West", "division": "Northwest"},
+    "NOP": {"conference": "West", "division": "Southwest"},
+    "NYK": {"conference": "East", "division": "Atlantic"},
+    "OKC": {"conference": "West", "division": "Northwest"},
+    "ORL": {"conference": "East", "division": "Southeast"},
+    "PHI": {"conference": "East", "division": "Atlantic"},
+    "PHX": {"conference": "West", "division": "Pacific"},
+    "POR": {"conference": "West", "division": "Northwest"},
+    "SAC": {"conference": "West", "division": "Pacific"},
+    "SAS": {"conference": "West", "division": "Southwest"},
+    "TOR": {"conference": "East", "division": "Atlantic"},
+    "UTA": {"conference": "West", "division": "Northwest"},
+    "WAS": {"conference": "East", "division": "Southeast"},
+}
+
+FALLBACK_NBA_INSPIRATIONS: Dict[str, List[str]] = {
+    "zone_shot": ["Ray Allen", "Klay Thompson", "Reggie Miller"],
+    "fadeaway": ["Michael Jordan", "Kobe Bryant", "Dirk Nowitzki"],
+    "stepback": ["James Harden", "Luka Don\u010di\u0107", "Trae Young"],
+    "bank_shot": ["Tim Duncan", "Tony Parker", "Dwyane Wade"],
+    "swish_only": ["Stephen Curry", "Kevin Durant", "Devin Booker"],
+    "off_dribble": ["Chris Paul", "Kyrie Irving", "Damian Lillard"],
+    "catch_and_shoot": ["Klay Thompson", "JJ Redick", "Duncan Robinson"],
+    "turnaround": ["Hakeem Olajuwon", "Kevin McHale", "Nikola Joki\u0107"],
+    "floater": ["Tony Parker", "Trae Young", "Derrick Rose"],
+    "logo_shot": ["Stephen Curry", "Damian Lillard", "Trae Young"],
+}
+
+
+def _nba_cache_get(key: str) -> Optional[Any]:
+    entry = _nba_cache.get(key)
+    if not entry:
+        return None
+    expires_at, data = entry
+    if time.time() > expires_at:
+        _nba_cache.pop(key, None)
+        return None
+    return data
+
+
+def _nba_cache_set(key: str, data: Any) -> None:
+    _nba_cache[key] = (time.time() + NBA_CACHE_TTL_SEC, data)
+
+
+def _current_nba_season() -> str:
+    now = time.localtime()
+    start_year = now.tm_year if now.tm_mon >= 10 else now.tm_year - 1
+    return f"{start_year}-{str(start_year + 1)[-2:]}"
+
+
+def _empty_team() -> Dict[str, Any]:
+    return {
+        "id": 0,
+        "conference": "",
+        "division": "",
+        "city": "",
+        "name": "",
+        "full_name": "",
+        "abbreviation": "",
+    }
+
+
+def _get_static_teams() -> List[Dict[str, Any]]:
+    cached = _nba_cache_get("nba_teams")
+    if cached is not None:
+        return cached
+
+    if not NBA_API_AVAILABLE:
+        return []
+
+    teams_raw = nba_teams_static.get_teams()
+    teams: List[Dict[str, Any]] = []
+
+    for team in teams_raw:
+        abbr = str(team.get("abbreviation", ""))
+        meta = _TEAM_META_BY_ABBR.get(abbr, {"conference": "", "division": ""})
+        teams.append(
+            {
+                "id": int(team.get("id", 0)),
+                "conference": meta["conference"],
+                "division": meta["division"],
+                "city": str(team.get("city", "")),
+                "name": str(team.get("nickname", "")),
+                "full_name": str(team.get("full_name", "")),
+                "abbreviation": abbr,
+            }
+        )
+
+    teams.sort(key=lambda t: t["full_name"])
+    _nba_cache_set("nba_teams", teams)
+    return teams
+
+
+def _team_by_id(team_id: int) -> Dict[str, Any]:
+    for team in _get_static_teams():
+        if int(team.get("id", 0)) == int(team_id):
+            return team
+    return _empty_team()
+
+
+def _parse_name(full_name: str) -> Tuple[str, str]:
+    parts = full_name.strip().split()
+    if not parts:
+        return "", ""
+    if len(parts) == 1:
+        return parts[0], ""
+    return parts[0], " ".join(parts[1:])
+
+
+def _fetch_current_players_index() -> List[Dict[str, Any]]:
+    cached = _nba_cache_get("nba_current_players")
+    if cached is not None:
+        return cached
+
+    if not NBA_API_AVAILABLE:
+        return []
+
+    try:
+        season = _current_nba_season()
+        endpoint = commonallplayers.CommonAllPlayers(
+            is_only_current_season=1,
+            league_id="00",
+            season=season,
+            timeout=8,
+        )
+        payload = endpoint.get_normalized_dict()
+        players = payload.get("CommonAllPlayers", [])
+        _nba_cache_set("nba_current_players", players)
+        return players
+    except Exception as exc:
+        logger.warning("NBA current players index failed: %s", exc)
+        return []
+
+
+def _map_index_player(row: Dict[str, Any]) -> Dict[str, Any]:
+    player_id = int(row.get("PERSON_ID", 0))
+    full_name = str(row.get("DISPLAY_FIRST_LAST", "")).strip()
+    first_name, last_name = _parse_name(full_name)
+
+    team_id_raw = row.get("TEAM_ID")
+    team_id = int(team_id_raw) if str(team_id_raw).isdigit() else 0
+    team = _team_by_id(team_id) if team_id else _empty_team()
+
+    return {
+        "id": player_id,
+        "first_name": first_name,
+        "last_name": last_name,
+        "full_name": full_name,
+        "position": "",
+        "height": "",
+        "weight": "",
+        "jersey_number": "",
+        "college": None,
+        "country": "USA",
+        "draft_year": None,
+        "team": team,
+    }
+
+
+def _search_players(query: str, limit: int) -> List[Dict[str, Any]]:
+    q = query.strip().lower()
+    if not q:
+        return []
+
+    all_players = _fetch_current_players_index()
+    filtered = [
+        p for p in all_players if q in str(p.get("DISPLAY_FIRST_LAST", "")).lower()
+    ]
+    return [_map_index_player(p) for p in filtered[:limit]]
+
+
+def _get_player_by_id(player_id: int) -> Optional[Dict[str, Any]]:
+    cache_key = f"nba_player_{player_id}"
+    cached = _nba_cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    if not NBA_API_AVAILABLE:
+        return None
+
+    try:
+        endpoint = commonplayerinfo.CommonPlayerInfo(player_id=player_id, timeout=8)
+        payload = endpoint.get_normalized_dict()
+        rows = payload.get("CommonPlayerInfo", [])
+        if rows:
+            row = rows[0]
+
+            team_id = int(row.get("TEAM_ID", 0) or 0)
+            team = {
+                "id": team_id,
+                "conference": str(row.get("TEAM_CONFERENCE", "")),
+                "division": str(row.get("TEAM_DIVISION", "")),
+                "city": str(row.get("TEAM_CITY", "")),
+                "name": str(row.get("TEAM_NAME", "")),
+                "full_name": f"{row.get('TEAM_CITY', '')} {row.get('TEAM_NAME', '')}".strip(),
+                "abbreviation": str(row.get("TEAM_ABBREVIATION", "")),
+            }
+            if not team["conference"] or not team["division"]:
+                fallback_team = _team_by_id(team_id)
+                if fallback_team["id"]:
+                    team["conference"] = team["conference"] or fallback_team["conference"]
+                    team["division"] = team["division"] or fallback_team["division"]
+
+            draft_year_raw = str(row.get("DRAFT_YEAR", "")).strip()
+            draft_year = int(draft_year_raw) if draft_year_raw.isdigit() else None
+
+            player = {
+                "id": int(row.get("PERSON_ID", player_id)),
+                "first_name": str(row.get("FIRST_NAME", "")),
+                "last_name": str(row.get("LAST_NAME", "")),
+                "full_name": str(row.get("DISPLAY_FIRST_LAST", "")).strip(),
+                "position": str(row.get("POSITION", "")),
+                "height": str(row.get("HEIGHT", "")),
+                "weight": str(row.get("WEIGHT", "")),
+                "jersey_number": str(row.get("JERSEY", "")),
+                "college": str(row.get("SCHOOL", "")) or None,
+                "country": str(row.get("COUNTRY", "USA")) or "USA",
+                "draft_year": draft_year,
+                "team": team,
+            }
+            _nba_cache_set(cache_key, player)
+            return player
+    except Exception as exc:
+        logger.warning("NBA player lookup failed for %s: %s", player_id, exc)
+
+    for row in _fetch_current_players_index():
+        if int(row.get("PERSON_ID", 0)) == player_id:
+            player = _map_index_player(row)
+            _nba_cache_set(cache_key, player)
+            return player
+
+    return None
+
+
+def _pick_names(pool: List[str], n: int) -> List[str]:
+    if not pool:
+        return []
+    unique = list(dict.fromkeys(pool))
+    if len(unique) <= n:
+        return unique
+    return random.sample(unique, n)
+
+
+def _build_inspirations() -> Dict[str, List[str]]:
+    cached = _nba_cache_get("nba_inspirations")
+    if cached is not None:
+        return cached
+
+    if not NBA_API_AVAILABLE:
+        return FALLBACK_NBA_INSPIRATIONS
+
+    try:
+        season = _current_nba_season()
+        endpoint = leaguedashplayerstats.LeagueDashPlayerStats(
+            season=season,
+            per_mode_detailed="PerGame",
+            timeout=10,
+        )
+        rows = endpoint.get_normalized_dict().get("LeagueDashPlayerStats", [])
+        names = [str(r.get("PLAYER_NAME", "")).strip() for r in rows if r.get("PLAYER_NAME")]
+        if not names:
+            return FALLBACK_NBA_INSPIRATIONS
+
+        def top(metric: str, minimum_metric: Optional[str] = None, min_val: float = 0.0, limit: int = 25) -> List[str]:
+            scored = []
+            for row in rows:
+                metric_value = row.get(metric)
+                if metric_value is None:
+                    continue
+                if minimum_metric is not None and float(row.get(minimum_metric, 0.0) or 0.0) < min_val:
+                    continue
+                player_name = str(row.get("PLAYER_NAME", "")).strip()
+                if not player_name:
+                    continue
+                scored.append((float(metric_value), player_name))
+            scored.sort(key=lambda x: x[0], reverse=True)
+            return [name for _, name in scored[:limit]]
+
+        shooters = top("FG3_PCT", minimum_metric="FG3A", min_val=3.0)
+        scorers = top("PTS")
+        creators = top("AST")
+        finishers = top("FG_PCT", minimum_metric="FGA", min_val=8.0)
+
+        inspirations = {
+            "zone_shot": _pick_names(shooters or scorers or names, 4),
+            "fadeaway": _pick_names(scorers or names, 4),
+            "stepback": _pick_names((shooters + scorers) or names, 4),
+            "bank_shot": _pick_names(finishers or scorers or names, 4),
+            "swish_only": _pick_names(shooters or names, 4),
+            "off_dribble": _pick_names((scorers + creators) or names, 4),
+            "catch_and_shoot": _pick_names(shooters or names, 4),
+            "turnaround": _pick_names((finishers + scorers) or names, 4),
+            "floater": _pick_names((creators + finishers) or names, 4),
+            "logo_shot": _pick_names(shooters or scorers or names, 4),
+        }
+        _nba_cache_set("nba_inspirations", inspirations)
+        return inspirations
+    except Exception as exc:
+        logger.warning("NBA inspirations build failed: %s", exc)
+        return FALLBACK_NBA_INSPIRATIONS
+
+
+def _get_fg_percentages(player_ids: List[int], season: Optional[str]) -> List[Dict[str, Any]]:
+    if not player_ids:
+        return []
+
+    season_value = season or _current_nba_season()
+    key_ids = ",".join(str(pid) for pid in sorted(set(player_ids)))
+    cache_key = f"nba_fg_pct::{season_value}::{key_ids}"
+    cached = _nba_cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    if not NBA_API_AVAILABLE:
+        return []
+
+    try:
+        endpoint = leaguedashplayerstats.LeagueDashPlayerStats(
+            season=season_value,
+            per_mode_detailed="PerGame",
+            timeout=10,
+        )
+        rows = endpoint.get_normalized_dict().get("LeagueDashPlayerStats", [])
+    except Exception as exc:
+        logger.warning("NBA FG%% endpoint failed: %s", exc)
+        return []
+
+    by_id: Dict[int, float] = {}
+
+    for row in rows:
+        try:
+            pid = int(row.get("PLAYER_ID", 0) or 0)
+            fg_pct = row.get("FG_PCT")
+            if pid > 0 and fg_pct is not None:
+                by_id[pid] = round(float(fg_pct) * 100, 1)
+        except (TypeError, ValueError):
+            continue
+
+    result = [
+        {"player_id": pid, "fg_pct": by_id[pid]}
+        for pid in sorted(set(player_ids))
+        if pid in by_id
+    ]
+    _nba_cache_set(cache_key, result)
+    return result
 
 # ── Model lazy loaders ─────────────────────────────────────────
 
@@ -885,6 +1262,120 @@ def health():
             "device": DEVICE,
         },
     }
+
+
+@app.get("/nba/health")
+def nba_health():
+    if not NBA_API_AVAILABLE:
+        return {
+            "success": True,
+            "data": {
+                "api_available": False,
+                "provider": "swar/nba_api",
+                "reason": "nba_api package not installed",
+            },
+        }
+
+    try:
+        teams = _get_static_teams()
+        return {
+            "success": True,
+            "data": {
+                "api_available": len(teams) > 0,
+                "provider": "swar/nba_api",
+                "season": _current_nba_season(),
+            },
+        }
+    except Exception as exc:
+        logger.warning("NBA health failed: %s", exc)
+        return {
+            "success": True,
+            "data": {
+                "api_available": False,
+                "provider": "swar/nba_api",
+                "reason": str(exc),
+            },
+        }
+
+
+@app.get("/nba/teams")
+def nba_teams():
+    try:
+        teams = _get_static_teams()
+        return {"success": True, "data": teams, "provider": "swar/nba_api"}
+    except Exception as exc:
+        logger.warning("NBA teams fetch failed: %s", exc)
+        raise HTTPException(500, "Failed to fetch NBA teams")
+
+
+@app.get("/nba/players/search")
+def nba_search_players(
+    q: str = Query(..., min_length=1, max_length=100),
+    limit: int = Query(default=10, ge=1, le=25),
+):
+    try:
+        players = _search_players(q, limit)
+        return {"success": True, "data": players, "provider": "swar/nba_api"}
+    except Exception as exc:
+        logger.warning("NBA player search failed: %s", exc)
+        return {"success": True, "data": [], "provider": "swar/nba_api"}
+
+
+@app.get("/nba/players/{player_id}")
+def nba_get_player(player_id: int):
+    try:
+        player = _get_player_by_id(player_id)
+        if player is None:
+            raise HTTPException(404, "Player not found")
+        return {"success": True, "data": player, "provider": "swar/nba_api"}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("NBA player fetch failed for %s: %s", player_id, exc)
+        raise HTTPException(500, "Failed to fetch NBA player")
+
+
+@app.get("/nba/inspirations")
+def nba_inspirations():
+    try:
+        inspirations = _build_inspirations()
+        return {"success": True, "data": inspirations, "provider": "swar/nba_api"}
+    except Exception as exc:
+        logger.warning("NBA inspirations failed: %s", exc)
+        return {
+            "success": True,
+            "data": FALLBACK_NBA_INSPIRATIONS,
+            "provider": "swar/nba_api",
+            "fallback": True,
+        }
+
+
+@app.get("/nba/fg-pct")
+def nba_fg_percentages(
+    player_ids: str = Query(default="", description="Comma-separated NBA player IDs"),
+    season: Optional[str] = Query(default=None),
+):
+    try:
+        ids = [
+            int(part.strip())
+            for part in player_ids.split(",")
+            if part.strip().isdigit()
+        ]
+        data = _get_fg_percentages(ids, season)
+        return {
+            "success": True,
+            "data": data,
+            "season": season or _current_nba_season(),
+            "provider": "swar/nba_api",
+        }
+    except Exception as exc:
+        logger.warning("NBA FG%% fetch failed: %s", exc)
+        return {
+            "success": True,
+            "data": [],
+            "season": season or _current_nba_season(),
+            "provider": "swar/nba_api",
+        }
 
 
 @app.post("/detect/highlights")

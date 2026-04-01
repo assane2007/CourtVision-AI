@@ -1,7 +1,7 @@
 /**
- * NBA API Service — Fetches real NBA data from free APIs
+ * NBA API Service — Fetches NBA data from swar/nba_api (Python engine)
  *
- * Primary: balldontlie.io (free tier: 5 req/min, needs API key)
+ * Primary: swar/nba_api via CourtVision Python engine
  * Fallback: in-memory cache + minimal static fallback
  *
  * Provides:
@@ -68,10 +68,14 @@ export interface ChallengeInspirations {
     logo_shot: string[]
 }
 
+export interface NBAFieldGoalStat {
+    playerId: number
+    fgPct: number
+}
+
 // ── Config ────────────────────────────────────────────────────
 
-const BDL_API_BASE = 'https://api.balldontlie.io/v1'
-const BDL_API_KEY = process.env.BDL_API_KEY || ''
+const NBA_ENGINE_BASE = (process.env.NBA_ENGINE_URL || process.env.CV_ENGINE_URL || 'http://localhost:8000').replace(/\/$/, '')
 const CACHE_TTL_MS = 60 * 60 * 1000 // 1 hour
 const REQUEST_TIMEOUT_MS = 8000
 
@@ -100,8 +104,36 @@ function setCache<T>(key: string, data: T): void {
 
 // ── HTTP Helper ───────────────────────────────────────────────
 
-async function bdlFetch<T>(path: string, params?: Record<string, string>): Promise<T> {
-    const url = new URL(`${BDL_API_BASE}${path}`)
+type WrappedResponse<T> = { success?: boolean; data?: T; [key: string]: unknown } | T
+
+function unwrapData<T>(payload: WrappedResponse<T>): T {
+    if (payload && typeof payload === 'object' && 'data' in payload) {
+        return (payload as { data: T }).data
+    }
+    return payload as T
+}
+
+function toNumber(value: unknown, fallback = 0): number {
+    if (typeof value === 'number' && Number.isFinite(value)) return value
+    if (typeof value === 'string' && value.trim() !== '') {
+        const n = Number(value)
+        if (Number.isFinite(n)) return n
+    }
+    return fallback
+}
+
+function toNullableNumber(value: unknown): number | null {
+    if (value == null) return null
+    const n = toNumber(value, Number.NaN)
+    return Number.isFinite(n) ? n : null
+}
+
+function toStringValue(value: unknown): string {
+    return typeof value === 'string' ? value : ''
+}
+
+async function engineFetch<T>(path: string, params?: Record<string, string>): Promise<T> {
+    const url = new URL(`${NBA_ENGINE_BASE}${path}`)
     if (params) {
         for (const [key, value] of Object.entries(params)) {
             url.searchParams.append(key, value)
@@ -112,20 +144,15 @@ async function bdlFetch<T>(path: string, params?: Record<string, string>): Promi
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
 
     try {
-        const headers: Record<string, string> = {
-            'Accept': 'application/json',
-        }
-        if (BDL_API_KEY) {
-            headers['Authorization'] = BDL_API_KEY
-        }
-
         const res = await fetch(url.toString(), {
             signal: controller.signal,
-            headers,
+            headers: {
+                Accept: 'application/json',
+            },
         })
 
         if (!res.ok) {
-            throw new Error(`BDL API ${res.status}: ${res.statusText}`)
+            throw new Error(`NBA engine ${res.status}: ${res.statusText}`)
         }
 
         return await res.json() as T
@@ -136,34 +163,65 @@ async function bdlFetch<T>(path: string, params?: Record<string, string>): Promi
 
 // ── Mappers ───────────────────────────────────────────────────
 
-function mapPlayer(raw: any): NBAPlayer {
+function mapTeam(raw: unknown): NBATeam {
+    const team = (raw ?? {}) as Record<string, unknown>
     return {
-        id: raw.id,
-        firstName: raw.first_name,
-        lastName: raw.last_name,
-        fullName: `${raw.first_name} ${raw.last_name}`,
-        position: raw.position || '',
-        height: raw.height || '',
-        weight: raw.weight || '',
-        jerseyNumber: raw.jersey_number || '',
-        college: raw.college || null,
-        country: raw.country || 'USA',
-        draftYear: raw.draft_year || null,
-        team: raw.team ? mapTeam(raw.team) : {
-            id: 0, conference: '', division: '', city: '', name: '', fullName: '', abbreviation: '',
-        },
+        id: toNumber(team.id, 0),
+        conference: toStringValue(team.conference),
+        division: toStringValue(team.division),
+        city: toStringValue(team.city),
+        name: toStringValue(team.name),
+        fullName: toStringValue(team.full_name) || toStringValue(team.fullName),
+        abbreviation: toStringValue(team.abbreviation),
     }
 }
 
-function mapTeam(raw: any): NBATeam {
+function mapPlayer(raw: unknown): NBAPlayer {
+    const player = (raw ?? {}) as Record<string, unknown>
+    const firstName = toStringValue(player.first_name) || toStringValue(player.firstName)
+    const lastName = toStringValue(player.last_name) || toStringValue(player.lastName)
+    const fullName = toStringValue(player.full_name) || toStringValue(player.fullName) || `${firstName} ${lastName}`.trim()
+
+    const collegeValue = player.college
+    const college = typeof collegeValue === 'string' && collegeValue.trim() !== ''
+        ? collegeValue
+        : null
+
     return {
-        id: raw.id,
-        conference: raw.conference,
-        division: raw.division,
-        city: raw.city,
-        name: raw.name,
-        fullName: raw.full_name,
-        abbreviation: raw.abbreviation,
+        id: toNumber(player.id, 0),
+        firstName,
+        lastName,
+        fullName,
+        position: toStringValue(player.position),
+        height: toStringValue(player.height),
+        weight: toStringValue(player.weight),
+        jerseyNumber: toStringValue(player.jersey_number) || toStringValue(player.jerseyNumber),
+        college,
+        country: toStringValue(player.country) || 'USA',
+        draftYear: toNullableNumber(player.draft_year ?? player.draftYear),
+        team: mapTeam(player.team),
+    }
+}
+
+function mapInspirations(raw: unknown): ChallengeInspirations {
+    const data = (raw ?? {}) as Record<string, unknown>
+    const toNames = (key: keyof ChallengeInspirations): string[] => {
+        const value = data[key]
+        if (!Array.isArray(value)) return []
+        return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+    }
+
+    return {
+        zone_shot: toNames('zone_shot'),
+        fadeaway: toNames('fadeaway'),
+        stepback: toNames('stepback'),
+        bank_shot: toNames('bank_shot'),
+        swish_only: toNames('swish_only'),
+        off_dribble: toNames('off_dribble'),
+        catch_and_shoot: toNames('catch_and_shoot'),
+        turnaround: toNames('turnaround'),
+        floater: toNames('floater'),
+        logo_shot: toNames('logo_shot'),
     }
 }
 
@@ -182,6 +240,13 @@ const FALLBACK_INSPIRATIONS: ChallengeInspirations = {
     logo_shot: ['Stephen Curry', 'Damian Lillard', 'Trae Young'],
 }
 
+interface EngineFgPctRow {
+    player_id?: number
+    playerId?: number
+    fg_pct?: number
+    fgPct?: number
+}
+
 // ── NBA API Service ───────────────────────────────────────────
 
 export class NbaApiService {
@@ -194,11 +259,12 @@ export class NbaApiService {
         if (cached) return cached
 
         try {
-            const res = await bdlFetch<{ data: any[] }>('/players', {
-                search,
-                per_page: String(perPage),
+            const payload = await engineFetch<WrappedResponse<unknown[]>>('/nba/players/search', {
+                q: search,
+                limit: String(perPage),
             })
-            const players = (res.data || []).map(mapPlayer)
+            const rawPlayers = unwrapData<unknown[]>(payload)
+            const players = Array.isArray(rawPlayers) ? rawPlayers.map(mapPlayer) : []
             setCache(cacheKey, players)
             return players
         } catch (err) {
@@ -216,8 +282,9 @@ export class NbaApiService {
         if (cached) return cached
 
         try {
-            const res = await bdlFetch<{ data: any[] }>('/teams')
-            const teams = (res.data || []).map(mapTeam)
+            const payload = await engineFetch<WrappedResponse<unknown[]>>('/nba/teams')
+            const rawTeams = unwrapData<unknown[]>(payload)
+            const teams = Array.isArray(rawTeams) ? rawTeams.map(mapTeam) : []
             setCache(cacheKey, teams)
             return teams
         } catch (err) {
@@ -235,9 +302,10 @@ export class NbaApiService {
         if (cached) return cached
 
         try {
-            const res = await bdlFetch<{ data: any }>(`/players/${playerId}`)
-            if (!res.data) return null
-            const player = mapPlayer(res.data)
+            const payload = await engineFetch<WrappedResponse<unknown>>(`/nba/players/${playerId}`)
+            const rawPlayer = unwrapData<unknown>(payload)
+            if (!rawPlayer || typeof rawPlayer !== 'object') return null
+            const player = mapPlayer(rawPlayer)
             setCache(cacheKey, player)
             return player
         } catch (err) {
@@ -259,68 +327,18 @@ export class NbaApiService {
         if (cached) return cached
 
         try {
-            // Fetch top known players by searching common star names
-            // balldontlie free tier: 5 req/min, so we batch carefully
-            const starSearches = ['Curry', 'LeBron', 'Durant', 'Harden', 'Doncic', 'Jokic', 'Lillard', 'Irving', 'Tatum', 'Booker', 'Edwards', 'Young', 'Paul', 'Thompson', 'Morant']
+            const payload = await engineFetch<WrappedResponse<unknown>>('/nba/inspirations')
+            const rawInspirations = unwrapData<unknown>(payload)
+            const inspirations = mapInspirations(rawInspirations)
 
-            const allPlayers: NBAPlayer[] = []
-
-            // Do searches sequentially to respect rate limit (5 req/min)
-            for (const name of starSearches) {
-                try {
-                    const res = await bdlFetch<{ data: any[] }>('/players', {
-                        search: name,
-                        per_page: '5',
-                    })
-                    const players = (res.data || []).map(mapPlayer)
-                    allPlayers.push(...players)
-
-                    // Small delay to respect rate limit
-                    await new Promise(resolve => setTimeout(resolve, 250))
-                } catch {
-                    // Skip failed individual searches
-                }
-            }
-
-            if (allPlayers.length === 0) {
-                logger.warn('[NBA API] No players fetched, using fallback')
+            const hasData = Object.values(inspirations).some((names) => names.length > 0)
+            if (!hasData) {
+                logger.warn('[NBA API] Empty inspirations from engine, using fallback')
                 return FALLBACK_INSPIRATIONS
             }
 
-            // Deduplicate by player ID
-            const unique = new Map<number, NBAPlayer>()
-            for (const p of allPlayers) {
-                unique.set(p.id, p)
-            }
-            const players = Array.from(unique.values())
-
-            // Classify players by position and build inspirations
-            const guards = players.filter(p => p.position.includes('G')).map(p => p.fullName)
-            const forwards = players.filter(p => p.position.includes('F')).map(p => p.fullName)
-            const centers = players.filter(p => p.position.includes('C')).map(p => p.fullName)
-            const allNames = players.map(p => p.fullName)
-
-            // Pick random subsets for each category, with sensible defaults
-            const pick = (arr: string[], n: number): string[] => {
-                const shuffled = [...arr].sort(() => Math.random() - 0.5)
-                return shuffled.slice(0, Math.min(n, shuffled.length))
-            }
-
-            const inspirations: ChallengeInspirations = {
-                zone_shot: pick(guards.length >= 3 ? guards : allNames, 4),
-                fadeaway: pick(forwards.length >= 3 ? forwards : allNames, 4),
-                stepback: pick(guards.length >= 3 ? guards : allNames, 4),
-                bank_shot: pick([...forwards, ...centers].length >= 3 ? [...forwards, ...centers] : allNames, 4),
-                swish_only: pick(guards.length >= 3 ? guards : allNames, 4),
-                off_dribble: pick(guards.length >= 3 ? guards : allNames, 4),
-                catch_and_shoot: pick(guards.length >= 3 ? guards : allNames, 4),
-                turnaround: pick(centers.length >= 3 ? centers : [...forwards, ...centers].length >= 3 ? [...forwards, ...centers] : allNames, 4),
-                floater: pick(guards.length >= 3 ? guards : allNames, 4),
-                logo_shot: pick(guards.length >= 3 ? guards : allNames, 4),
-            }
-
             setCache(cacheKey, inspirations)
-            logger.info({ playerCount: players.length }, '[NBA API] Challenge inspirations loaded from API')
+            logger.info('[NBA API] Challenge inspirations loaded from swar/nba_api')
             return inspirations
         } catch (err) {
             logger.warn({ err }, '[NBA API] getChallengeInspirations failed, using fallback')
@@ -347,11 +365,55 @@ export class NbaApiService {
     }
 
     /**
+     * Get latest field goal percentages for a list of player IDs.
+     */
+    async getFieldGoalPercentages(playerIds: number[], season?: string): Promise<Record<number, number>> {
+        const uniqueIds = Array.from(new Set(playerIds.filter((id) => Number.isFinite(id) && id > 0)))
+        if (uniqueIds.length === 0) return {}
+
+        const cacheKey = `fg_pct_${season || 'current'}_${uniqueIds.sort((a, b) => a - b).join('_')}`
+        const cached = getCached<Record<number, number>>(cacheKey)
+        if (cached) return cached
+
+        try {
+            const payload = await engineFetch<WrappedResponse<EngineFgPctRow[]>>('/nba/fg-pct', {
+                player_ids: uniqueIds.join(','),
+                ...(season ? { season } : {}),
+            })
+            const raw = unwrapData<EngineFgPctRow[]>(payload)
+            const rows = Array.isArray(raw) ? raw : []
+
+            const result: Record<number, number> = {}
+            for (const row of rows) {
+                const playerId = toNumber(row.player_id ?? row.playerId, 0)
+                const fgPct = toNumber(row.fg_pct ?? row.fgPct, Number.NaN)
+                if (playerId > 0 && Number.isFinite(fgPct)) {
+                    result[playerId] = Math.round(fgPct * 10) / 10
+                }
+            }
+
+            setCache(cacheKey, result)
+            return result
+        } catch (err) {
+            logger.warn({ err }, '[NBA API] getFieldGoalPercentages failed')
+            return {}
+        }
+    }
+
+    /**
      * Check if the API is reachable (health check)
      */
     async isAvailable(): Promise<boolean> {
         try {
-            await bdlFetch<{ data: any[] }>('/teams')
+            const payload = await engineFetch<WrappedResponse<unknown>>('/nba/health')
+            const health = unwrapData<unknown>(payload)
+            if (typeof health === 'boolean') return health
+            if (Array.isArray(health)) return health.length > 0
+            if (health && typeof health === 'object') {
+                const data = health as Record<string, unknown>
+                if (typeof data.api_available === 'boolean') return data.api_available
+                if (typeof data.apiAvailable === 'boolean') return data.apiAvailable
+            }
             return true
         } catch {
             return false

@@ -4,7 +4,7 @@
  * Recréer le jeu HORSE classique en version numérique.
  * L'IA génère des défis, évalue la biomécanique via Shot DNA.
  *
- * NBA player data is fetched LIVE from balldontlie.io (free API).
+ * NBA player data is fetched LIVE from swar/nba_api (Python engine).
  * Static fallback is used only when the API is unreachable.
  */
 import type { SupabaseClient } from '@supabase/supabase-js'

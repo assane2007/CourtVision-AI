@@ -44,6 +44,7 @@ export const env = cleanEnv(process.env, {
     // ── Worker ──
     WORKER_CONCURRENCY: num({ default: 2, desc: 'BullMQ worker concurrency' }),
     CV_ENGINE_URL: str({ default: 'http://localhost:8000', desc: 'Python CV engine URL' }),
+    NBA_ENGINE_URL: str({ default: '', desc: 'Python NBA engine URL (defaults to CV_ENGINE_URL)' }),
 })
 
 /**

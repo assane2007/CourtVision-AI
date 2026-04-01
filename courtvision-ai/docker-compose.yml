@@ -55,6 +55,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - GROQ_API_KEY=${GROQ_API_KEY}
       - CV_ENGINE_URL=http://cv-engine:8000
+      - NBA_ENGINE_URL=http://cv-engine:8000
     depends_on:
       cv-engine:
         condition: service_healthy
