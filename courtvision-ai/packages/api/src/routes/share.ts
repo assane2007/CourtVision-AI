@@ -1,4 +1,4 @@
-import { FastifyInstance } from 'fastify'
+import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import crypto from 'crypto'
 import type { TwinProfile } from '@courtvision/ai'

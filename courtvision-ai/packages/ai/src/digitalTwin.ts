@@ -1,8 +1,10 @@
 import { generateReport } from './llm'
-import { ShotResult, ShotStats, computeShotStats, ShotZone } from './shotAnalysis'
-import { MentalAnalysisResult } from './mentalAnalysis'
-import { Reconstruction3DResult, CourtZone } from './reconstruction3d'
-import { TrackingResult } from './tracking'
+import type { ShotResult, ShotZone } from './shotAnalysis';
+import { ShotStats, computeShotStats } from './shotAnalysis'
+import type { MentalAnalysisResult } from './mentalAnalysis'
+import type { Reconstruction3DResult} from './reconstruction3d';
+import { CourtZone } from './reconstruction3d'
+import type { TrackingResult } from './tracking'
 
 /**
  * Digital Twin — Moteur de construction de l'avatar IA évolutif.

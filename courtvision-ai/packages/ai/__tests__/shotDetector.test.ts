@@ -1,5 +1,7 @@
-import { ShotDetectorEngine, DEFAULT_SHOT_DETECTOR_CONFIG, DetectedShot, ShotDetectorEvent, detectedShotToShotResult } from '../src/shotDetector'
-import { Landmark, LANDMARKS } from '../src/tracking'
+import type { DetectedShot, ShotDetectorEvent} from '../src/shotDetector';
+import { ShotDetectorEngine, DEFAULT_SHOT_DETECTOR_CONFIG, detectedShotToShotResult } from '../src/shotDetector'
+import type { Landmark} from '../src/tracking';
+import { LANDMARKS } from '../src/tracking'
 
 // ==========================================
 // Helper : séquences de landmarks pour simuler un tir

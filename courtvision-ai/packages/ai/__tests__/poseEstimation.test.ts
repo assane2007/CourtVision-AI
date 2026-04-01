@@ -1,5 +1,6 @@
 import { PoseEstimationEngine, BodyAngles, ShootingBiomechanics, BLAZEPOSE_LANDMARK_NAMES, DEFAULT_POSE_CONFIG } from '../src/poseEstimation'
-import { Landmark, LANDMARKS } from '../src/tracking'
+import type { Landmark} from '../src/tracking';
+import { LANDMARKS } from '../src/tracking'
 
 // ==========================================
 // Helper : générer des landmarks réalistes

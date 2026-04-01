@@ -1,6 +1,8 @@
-import { Queue, Worker, Job } from 'bullmq';
+import type { Job } from 'bullmq';
+import { Queue, Worker } from 'bullmq';
 // Logging disabled/swapped to console for MVP
-import { SimulationService, DigitalTwin } from '../services/simulation.service';
+import type { DigitalTwin } from '../services/simulation.service';
+import { SimulationService } from '../services/simulation.service';
 
 const redisUrl = process.env.REDIS_URL;
 const redisHost = process.env.REDIS_HOST;

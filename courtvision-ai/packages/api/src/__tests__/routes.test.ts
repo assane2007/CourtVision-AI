@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import { buildApp } from '../app'
-import { FastifyInstance } from 'fastify'
+import type { FastifyInstance } from 'fastify'
 
 /**
  * Tests unitaires pour l'API CourtVision

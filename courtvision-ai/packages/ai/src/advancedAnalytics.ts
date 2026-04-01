@@ -1,5 +1,5 @@
-import { ShotResult, ShotZone } from './shotAnalysis'
-import { MentalAnalysisResult } from './mentalAnalysis'
+import type { ShotResult, ShotZone } from './shotAnalysis'
+import type { MentalAnalysisResult } from './mentalAnalysis'
 
 /**
  * Advanced Analytics — NBA-Grade Metrics

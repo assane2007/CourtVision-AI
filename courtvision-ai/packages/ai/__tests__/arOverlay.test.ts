@@ -1,5 +1,6 @@
 import { AROverlayEngine, DEFAULT_AR_CONFIG, AROverlayFrame } from '../src/arOverlay'
-import { NormalizedLandmark, BodyAngles, ShootingBiomechanics, BLAZEPOSE_LANDMARK_NAMES } from '../src/poseEstimation'
+import type { NormalizedLandmark, BodyAngles, ShootingBiomechanics} from '../src/poseEstimation';
+import { BLAZEPOSE_LANDMARK_NAMES } from '../src/poseEstimation'
 import { LANDMARKS } from '../src/tracking'
 
 // ==========================================

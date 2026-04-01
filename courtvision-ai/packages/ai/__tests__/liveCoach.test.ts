@@ -10,8 +10,10 @@
  * - Stats cumulées
  */
 
-import { LiveCoachEngine, analyzeSingleFrame, LiveLandmarks, LiveCoachConfig } from '../src/liveCoach'
-import { Landmark, LANDMARKS } from '../src/tracking'
+import type { LiveLandmarks} from '../src/liveCoach';
+import { LiveCoachEngine, analyzeSingleFrame, LiveCoachConfig } from '../src/liveCoach'
+import type { Landmark} from '../src/tracking';
+import { LANDMARKS } from '../src/tracking'
 
 // ==========================================
 // Helpers

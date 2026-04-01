@@ -1,4 +1,5 @@
-import { BallKalmanFilter, BallTrackerEngine, DEFAULT_BALL_TRACKER_CONFIG, BallPosition } from '../src/ballTracker'
+import type { BallPosition } from '../src/ballTracker';
+import { BallKalmanFilter, BallTrackerEngine, DEFAULT_BALL_TRACKER_CONFIG } from '../src/ballTracker'
 
 // ==========================================
 // Tests Kalman Filter

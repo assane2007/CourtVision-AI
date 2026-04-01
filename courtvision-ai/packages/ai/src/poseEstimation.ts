@@ -24,7 +24,8 @@
  * - MoveNet: https://blog.tensorflow.org/2021/05/next-generation-pose-detection-with-movenet-and-tensorflowjs.html
  */
 
-import { Landmark, LANDMARKS } from './tracking'
+import type { Landmark} from './tracking';
+import { LANDMARKS } from './tracking'
 
 // ==========================================
 // Types

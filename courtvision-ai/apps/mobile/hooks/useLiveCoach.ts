@@ -18,7 +18,8 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Vibration, AppState, AppStateStatus } from 'react-native'
+import type { AppStateStatus } from 'react-native';
+import { Vibration, AppState } from 'react-native'
 import { LiveCoachService } from '../lib/liveCoachService'
 import { analyzeFrame, analyzeFrameFromUri, isCVEngineAvailable, type CVFrameResult } from '../lib/cvEngineService'
 import { isDemoMode } from '../lib/supabase'

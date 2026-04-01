@@ -15,6 +15,7 @@
  *   capture.stop()
  */
 
+import type { RefObject } from 'react'
 import type { CameraView } from 'expo-camera'
 
 // ==========================================
@@ -88,7 +89,7 @@ export class FrameCaptureService {
      * @param onFrame - Callback appelé pour chaque frame capturée
      */
     start(
-        cameraRef: React.RefObject<CameraView>,
+        cameraRef: RefObject<CameraView | null>,
         onFrame: FrameCallback,
     ): void {
         if (this.isCapturing) {

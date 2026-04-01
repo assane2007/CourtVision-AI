@@ -12,9 +12,10 @@
  */
 
 import React from 'react'
+import type {
+  ViewStyle, TextStyle} from 'react-native';
 import {
-  TouchableOpacity, Text, ActivityIndicator,
-  ViewStyle, TextStyle, View, Platform,
+  TouchableOpacity, Text, ActivityIndicator, View, Platform,
 } from 'react-native'
 import { Feather } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'

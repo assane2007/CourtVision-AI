@@ -10,7 +10,8 @@
  */
 
 import React from 'react'
-import { View, TouchableOpacity, StyleSheet, ViewStyle, Platform } from 'react-native'
+import type { ViewStyle} from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons'
 import { CVText } from './CVText'

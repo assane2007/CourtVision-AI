@@ -4,7 +4,7 @@
  * Gère la publication, l'achat et la gestion des drill packs.
  * Revenue share 70/30 via Stripe Connect.
  */
-import { SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import pino from 'pino'
 import type {
     DrillPack, DrillPackItem, DrillReview, CreatorProfile,

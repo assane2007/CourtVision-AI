@@ -11,7 +11,7 @@
  * - Anti-triche côté service
  * - Historique paginé
  */
-import { SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import pino from 'pino'
 import crypto from 'crypto'
 import type {

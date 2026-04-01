@@ -5,7 +5,7 @@
  * Templates : Scout Report, Session Report, Season Summary, Player Card.
  * Rendu server-side avec pdfkit, export en PDF, JSON, ou HTML.
  */
-import { SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import pino from 'pino'
 import type {
     ScoutReport, ScoutReportSection, ScoutReportConfig,

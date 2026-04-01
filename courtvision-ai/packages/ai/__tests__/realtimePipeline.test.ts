@@ -1,4 +1,5 @@
-import { RealtimePipelineEngine, PipelineEvent, PipelineFrameResult } from '../src/realtimePipeline'
+import type { PipelineEvent} from '../src/realtimePipeline';
+import { RealtimePipelineEngine, PipelineFrameResult } from '../src/realtimePipeline'
 
 // ==========================================
 // Tests Realtime Pipeline

@@ -37,9 +37,11 @@
  *          IDLE           IDLE
  */
 
-import { Landmark, LANDMARKS } from './tracking'
-import { PoseEstimationEngine, BodyAngles, ShootingBiomechanics } from './poseEstimation'
-import { ShotZone } from './shotAnalysis'
+import type { Landmark} from './tracking';
+import { LANDMARKS } from './tracking'
+import type { BodyAngles, ShootingBiomechanics } from './poseEstimation';
+import { PoseEstimationEngine } from './poseEstimation'
+import type { ShotZone } from './shotAnalysis'
 
 // ==========================================
 // Types

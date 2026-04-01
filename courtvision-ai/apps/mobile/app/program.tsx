@@ -357,7 +357,7 @@ export default function TrainingProgram() {
                                 color: T.color.text.secondary,
                                 marginTop: 6, textAlign: 'center',
                             }}>
-                                +{TODAY_EXERCISES.reduce((a, e) => a + e.xp, 0)} XP · Streak maintained
+                                +{exercises.reduce((a, e) => a + e.xp, 0)} XP · Streak maintained
                             </Text>
                             <TouchableOpacity
                                 style={{

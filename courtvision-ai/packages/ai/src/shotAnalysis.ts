@@ -1,5 +1,7 @@
-import { TrackingResult, TrackedPlayer, LANDMARKS, calculateAngle } from './tracking'
-import { Reconstruction3DResult, getCourtZone, CourtZone } from './reconstruction3d'
+import type { TrackingResult, TrackedPlayer} from './tracking';
+import { LANDMARKS, calculateAngle } from './tracking'
+import type { Reconstruction3DResult, CourtZone } from './reconstruction3d';
+import { getCourtZone } from './reconstruction3d'
 
 /** Zone de tir simplifiée pour les statistiques */
 export type ShotZone = 'corner3' | 'wing3' | 'top3' | 'midrange' | 'paint' | 'restricted'

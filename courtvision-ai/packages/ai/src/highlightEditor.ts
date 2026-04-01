@@ -2,7 +2,7 @@ import ffmpeg from 'fluent-ffmpeg'
 import path from 'path'
 import os from 'os'
 import fs from 'fs'
-import { ShotResult } from './shotAnalysis'
+import type { ShotResult } from './shotAnalysis'
 import {
     type MusicConfig,
     type MusicTrack,

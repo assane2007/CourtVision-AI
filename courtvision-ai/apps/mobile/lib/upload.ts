@@ -9,7 +9,7 @@
  */
 
 import { Platform } from 'react-native'
-import * as FileSystem from 'expo-file-system'
+import * as FileSystem from 'expo-file-system/legacy'
 import { getAuthToken, API_BASE_URL } from './api'
 
 export interface UploadOptions {
@@ -58,7 +58,7 @@ export class UploadTask {
                 this.uri,
                 {
                     httpMethod: 'POST',
-                    uploadType: FileSystem.UploadType.MULTIPART,
+                    uploadType: FileSystem.FileSystemUploadType.MULTIPART,
                     fieldName: 'file',
                     headers: {
                         'Authorization': `Bearer ${token}`

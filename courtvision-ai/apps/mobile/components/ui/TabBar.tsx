@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
-import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Home, Video, BarChart2, User, Camera } from 'lucide-react-native';
 import { colors, shadows } from '../../constants/tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,7 +15,8 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                 const isFocused = state.index === index;
 
                 // Respect the "href: null" option to hide sub-routes
-                if (options.href === null) return null;
+                const tabHref = (options as { href?: string | null }).href;
+                if (tabHref === null) return null;
 
                 const onPress = () => {
                     const event = navigation.emit({

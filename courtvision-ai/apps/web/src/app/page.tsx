@@ -9,7 +9,8 @@ import {
     TrendingUp, Award
 } from 'lucide-react'
 
-import { motion, animate, useInView, Variants } from 'framer-motion'
+import type { Variants } from 'framer-motion';
+import { motion, animate, useInView } from 'framer-motion'
 import Link from 'next/link'
 
 // ==========================================

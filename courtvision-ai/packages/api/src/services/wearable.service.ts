@@ -4,7 +4,7 @@
  * Gère la synchronisation des données wearable (Apple Watch, Garmin, etc.),
  * l'analyse HRV, le calcul de readiness enrichi et la charge d'entraînement.
  */
-import { SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import pino from 'pino'
 import type {
     WearableDevice, WearableSyncPayload, WearableReading,

@@ -7,14 +7,15 @@
  * NBA player data is fetched LIVE from balldontlie.io (free API).
  * Static fallback is used only when the API is unreachable.
  */
-import { SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import pino from 'pino'
 import type {
     HorseGame, HorseChallenge, HorseAttempt,
     HorseGameState, HorseDifficulty, HorseChallengeType,
     HorseLeaderboardEntry
 } from '@courtvision/shared'
-import { NbaApiService, getNbaApiService } from './nba-api.service'
+import type { NbaApiService} from './nba-api.service';
+import { getNbaApiService } from './nba-api.service'
 
 const logger = pino({ level: process.env.LOG_LEVEL || 'info' })
 
@@ -358,7 +359,7 @@ export class HorseService {
 
         if (error || !gameData) throw new Error('No active HORSE game found')
 
-        let playerLetters = (gameData.letters || '') + HORSE_WORD[gameData.letters?.length || 0]
+        const playerLetters = (gameData.letters || '') + HORSE_WORD[gameData.letters?.length || 0]
         const aiLetters = gameData.ai_letters || ''
         const newRound = gameData.current_round + 1
 

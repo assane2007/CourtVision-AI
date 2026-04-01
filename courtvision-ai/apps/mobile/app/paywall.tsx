@@ -6,7 +6,7 @@ import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
 import { useRevenueCat } from '../lib/revenuecat';
 import { T } from '../lib/theme';
-import { PurchasesPackage } from 'react-native-purchases';
+import type { PurchasesPackage } from 'react-native-purchases';
 
 export default function PaywallScreen() {
     const router = useRouter();

@@ -7,7 +7,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { T } from '../../../lib/theme';
 import { CVText, GlassCard } from '../../../components/ui';
-import { CoachConversation, CoachSuggestion, coachApi } from '../../../lib/coach';
+import type { CoachConversation, CoachSuggestion} from '../../../lib/coach';
+import { coachApi } from '../../../lib/coach';
 
 export default function CoachIndexScreen() {
     const router = useRouter();

@@ -5,8 +5,10 @@
  * comme FFmpeg, MediaPipe, etc.)
  */
 
-import { calculateAngle, calculateSpeed, getShoulderPosture, LANDMARKS, Landmark } from '../tracking'
-import { computeHomography, CalibrationPoints } from '../preprocessing'
+import type { Landmark } from '../tracking';
+import { calculateAngle, calculateSpeed, getShoulderPosture, LANDMARKS } from '../tracking'
+import type { CalibrationPoints } from '../preprocessing';
+import { computeHomography } from '../preprocessing'
 
 // ==========================================
 // Helpers

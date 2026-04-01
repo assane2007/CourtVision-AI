@@ -28,7 +28,7 @@ import Animated, {
     FadeIn, FadeInDown, FadeInUp, Easing,
 } from 'react-native-reanimated'
 import * as ImagePicker from 'expo-image-picker'
-import * as FileSystem from 'expo-file-system'
+import * as FileSystem from 'expo-file-system/legacy'
 import { useStore } from '../../lib/store'
 import { toast } from '../../lib/toast'
 import { api } from '../../lib/api'
@@ -69,7 +69,10 @@ type AnalysisSummary = {
 }
 
 /** Unwrap API responses that may be `{ data: T }` or `T` directly */
-function unwrapResponse<T>(data: { data?: T } & Record<string, unknown>): T {
+function unwrapResponse<T>(data: ({ data?: T } & Record<string, unknown>) | undefined): T {
+    if (!data) {
+        throw new Error('Empty API response')
+    }
     return (data.data !== undefined ? data.data : data) as T
 }
 
@@ -382,9 +385,9 @@ export default function UploadAnalyze() {
             const videoUri = pickerResult.assets[0].uri
 
             // Check file size
-            const fileInfo = await FileSystem.getInfoAsync(videoUri, { size: true })
-            const sizeMB = (fileInfo as { size?: number }).size
-                ? ((fileInfo as { size: number }).size / (1024 * 1024))
+            const fileInfo = await FileSystem.getInfoAsync(videoUri)
+            const sizeMB = fileInfo.exists && typeof fileInfo.size === 'number'
+                ? fileInfo.size / (1024 * 1024)
                 : 0
             if (sizeMB > MAX_VIDEO_MB) {
                 Alert.alert('File too large', `Video must be under ${MAX_VIDEO_MB} MB. Yours is ${Math.round(sizeMB)} MB.`)
@@ -400,7 +403,7 @@ export default function UploadAnalyze() {
 
             // Upload to Supabase Storage via API (multipart upload)
             // If the API expects a URL, we first upload the file and get the URL back
-            let videoUrl = SAMPLE_VIDEO_URL || ''
+            const videoUrl = SAMPLE_VIDEO_URL || ''
 
             try {
                 const uploadResp = await FileSystem.uploadAsync(
@@ -408,7 +411,7 @@ export default function UploadAnalyze() {
                     videoUri,
                     {
                         httpMethod: 'POST',
-                        uploadType: FileSystem.UploadType.MULTIPART,
+                        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
                         fieldName: 'video',
                         parameters: { type: 'training' },
                     },

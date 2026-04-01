@@ -498,7 +498,7 @@ export class RealtimeAIService {
         let detectedShot: DetectedShot | null = null
         let ballPosition: BallPosition | null = null
         let biomechanics: ShootingBiomechanics | null = null
-        let arFrame: AROverlayFrame | null = null
+        const arFrame: AROverlayFrame | null = null
         let instantFeedback: ARFeedback | null = null
 
         // ── Try CV Engine first (real pose estimation) ──

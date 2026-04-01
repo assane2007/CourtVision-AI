@@ -10,7 +10,8 @@
  */
 
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ViewStyle } from 'react-native'
+import type { ViewStyle } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native'
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg'
 import Animated, {
     useSharedValue,

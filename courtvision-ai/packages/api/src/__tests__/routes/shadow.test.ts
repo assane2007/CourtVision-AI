@@ -1,5 +1,5 @@
 import { buildApp } from '../../app'
-import { FastifyInstance } from 'fastify'
+import type { FastifyInstance } from 'fastify'
 
 jest.mock('../../plugins/supabase', () => {
     const fp = require('fastify-plugin')

@@ -37,12 +37,17 @@
  * 3. RECORDING_ONLY : capture et stocke, analyse post-session
  */
 
-import { PoseEstimationEngine, PoseEstimationResult, BodyAngles, ShootingBiomechanics, PoseEstimationConfig } from './poseEstimation'
-import { ShotDetectorEngine, DetectedShot, ShotDetectorConfig, ShotDetectorEvent, ShotDetectionPhase, detectedShotToShotResult } from './shotDetector'
-import { BallTrackerEngine, BallTrackerConfig, BallPosition, ShotOutcomeResult } from './ballTracker'
-import { AROverlayEngine, AROverlayFrame, AROverlayConfig, ARFeedback } from './arOverlay'
-import { ShotResult, ShotZone } from './shotAnalysis'
-import { ShotDNAEngine, ShotDNASignature } from './shotDNA'
+import type { PoseEstimationResult, BodyAngles, ShootingBiomechanics, PoseEstimationConfig } from './poseEstimation';
+import { PoseEstimationEngine } from './poseEstimation'
+import type { DetectedShot, ShotDetectorConfig, ShotDetectorEvent, ShotDetectionPhase} from './shotDetector';
+import { ShotDetectorEngine, detectedShotToShotResult } from './shotDetector'
+import type { BallTrackerConfig, BallPosition, ShotOutcomeResult } from './ballTracker';
+import { BallTrackerEngine } from './ballTracker'
+import type { AROverlayFrame, AROverlayConfig} from './arOverlay';
+import { AROverlayEngine, ARFeedback } from './arOverlay'
+import type { ShotResult, ShotZone } from './shotAnalysis'
+import type { ShotDNASignature } from './shotDNA';
+import { ShotDNAEngine } from './shotDNA'
 
 // ==========================================
 // Types

@@ -212,6 +212,7 @@ export class CoachingEngine {
     /** Pre-load NBA reference data from API (call once at app start) */
     async loadNBAData(): Promise<void> {
         try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
             const { getNBAPlayers } = require('./nbaApi')
             this._nbaPlayers = await getNBAPlayers()
         } catch {

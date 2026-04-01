@@ -16,7 +16,12 @@
   },
   "scripts": {
     "lint": "eslint . --ext .ts,.tsx",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "npm run typecheck:shared && npm run typecheck:ai && npm run typecheck:api && npm run typecheck:web && npm run typecheck:mobile",
+    "typecheck:shared": "npm -w @courtvision/shared run build",
+    "typecheck:ai": "npm -w @courtvision/ai run build",
+    "typecheck:api": "npm -w @courtvision/api run build",
+    "typecheck:web": "npm -w @courtvision/web exec tsc -- --noEmit",
+    "typecheck:mobile": "npm -w @courtvision/mobile exec tsc -- --noEmit",
     "test": "npm run test:api && npm run test:ai",
     "test:api": "npm -w @courtvision/api run test",
     "test:ai": "npm -w @courtvision/ai run test",

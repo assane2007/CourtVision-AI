@@ -1,5 +1,7 @@
-import { Queue, Worker, Job } from 'bullmq';
-import { SpatialService, SpatialJobResult } from '../services/spatial.service';
+import type { Job } from 'bullmq';
+import { Queue, Worker } from 'bullmq';
+import type { SpatialJobResult } from '../services/spatial.service';
+import { SpatialService } from '../services/spatial.service';
 
 const redisUrl = process.env.REDIS_URL;
 const redisHost = process.env.REDIS_HOST;

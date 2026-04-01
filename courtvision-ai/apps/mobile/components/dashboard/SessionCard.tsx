@@ -10,7 +10,8 @@
  */
 
 import React, { useEffect, memo } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native'
+import type { ViewStyle } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { Feather } from '@expo/vector-icons'
 import Animated, {
     useSharedValue, useAnimatedStyle,

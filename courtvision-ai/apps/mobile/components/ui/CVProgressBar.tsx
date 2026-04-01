@@ -9,12 +9,14 @@
  */
 
 import React, { useEffect } from 'react'
-import { View, ViewStyle } from 'react-native'
+import type { ViewStyle } from 'react-native';
+import { View } from 'react-native'
 import Animated, {
   useSharedValue, useAnimatedStyle,
   withTiming, withDelay, Easing,
 } from 'react-native-reanimated'
-import { CVText, TextColorAlias } from './CVText'
+import type { TextColorAlias } from './CVText';
+import { CVText } from './CVText'
 import { T } from '../../lib/theme'
 
 // ─── Types ────────────────────────────────────────────────────

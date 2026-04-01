@@ -32,7 +32,16 @@ import Animated, {
     useSharedValue, useAnimatedStyle, withTiming, withSpring,
 } from 'react-native-reanimated'
 import Svg, { Circle } from 'react-native-svg'
-import { useStore, selectWeekly, selectHighlights, selectStreak, selectXP, xpToLevel, xpToNextLevel } from '../../lib/store'
+import {
+    useStore,
+    selectWeekly,
+    selectHighlights,
+    selectStreak,
+    selectXP,
+    xpToLevel,
+    xpToNextLevel,
+    type HighlightClip,
+} from '../../lib/store'
 import { SkeletonHighlight, SkeletonStatCard } from '../../components/SkeletonLoader'
 import { XPLevelBar } from '../../components/gamification/XPBadge'
 import { DailyChallengeCard } from '../../components/gamification/DailyChallengeCard'
@@ -47,7 +56,6 @@ import {
     CVAnalyticsChart, CourtHeatmap,
 } from '../../components/ui'
 import { T, typePresets } from '../../lib/theme'
-import type { HighlightClip } from '../../lib/store'
 import { InteractiveTerrainVisualizer } from '../../components/dashboard/InteractiveTerrainVisualizer'
 import { HapticFeedback } from '../../lib/haptics'
 import { useRevenueCat } from '../../lib/revenuecat'

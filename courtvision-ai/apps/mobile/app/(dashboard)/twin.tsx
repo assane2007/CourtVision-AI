@@ -15,15 +15,19 @@ import Animated, {
     FadeInDown, FadeInRight,
     useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence, Easing,
 } from 'react-native-reanimated'
-import { useDigitalTwin } from '../../hooks/useDigitalTwin'
-import { useViralShare } from '../../hooks/useViralShare'
-import { getSimulationPlayers } from '../../lib/nbaApi'
-import type { SharePlatform, TwinCardData } from '../../hooks/useViralShare'
-import { ShareButton, ShareModal } from '../../components/dashboard/ShareCard'
-import type {
-    TwinTab, TwinAttributeCategory, TwinTrait,
-    NBAComparison, ComfortZone, TwinEvolutionPoint, MatchupSimulation,
+import {
+    useDigitalTwin,
+    type TwinTab,
+    type TwinAttributeCategory,
+    type TwinTrait,
+    type NBAComparison,
+    type ComfortZone,
+    type TwinEvolutionPoint,
+    type MatchupSimulation,
 } from '../../hooks/useDigitalTwin'
+import { useViralShare, type SharePlatform, type TwinCardData } from '../../hooks/useViralShare'
+import { getSimulationPlayers } from '../../lib/nbaApi'
+import { ShareButton, ShareModal } from '../../components/dashboard/ShareCard'
 import { T, typePresets } from '../../lib/theme'
 import { PrimaryButton } from '../../components/PrimaryButton'
 

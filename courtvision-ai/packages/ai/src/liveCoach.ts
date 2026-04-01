@@ -1,4 +1,5 @@
-import { LANDMARKS, calculateAngle, calculateSpeed, getShoulderPosture, Landmark } from './tracking'
+import type { Landmark } from './tracking';
+import { LANDMARKS, calculateAngle, calculateSpeed, getShoulderPosture } from './tracking'
 
 /**
  * Coach Live — Moteur d'analyse temps réel pour feedback instantané.

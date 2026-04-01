@@ -34,6 +34,7 @@ export const VocalCoachOverlay: React.FC<VocalCoachOverlayProps> = ({
             connectWS()
 
             // Listen to biomechanical faults from the AI service (Nuclear Integration)
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
             const RealtimeAIService = require('../../lib/realtimeAIService').RealtimeAIService
             const ai = RealtimeAIService.getInstance()
 

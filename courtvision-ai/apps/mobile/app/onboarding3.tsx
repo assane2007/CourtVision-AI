@@ -170,7 +170,7 @@ export default function Onboarding3() {
                                 onPress={() => handleOAuth('apple')}
                                 activeOpacity={0.8}
                             >
-                                <AntDesign name="apple1" size={24} color="#000" />
+                                <AntDesign name="apple" size={24} color="#000" />
                                 <Text style={[styles.actionBtnText, { color: '#000' }]}>Continue with Apple</Text>
                                 <Feather name="arrow-right" size={20} color="#000" style={{ position: 'absolute', right: 24 }} />
                             </TouchableOpacity>

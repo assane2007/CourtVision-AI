@@ -1,4 +1,4 @@
-import { FastifyInstance, FastifyPluginAsync } from 'fastify';
+import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { shadowQueue } from '../queue/shadowLeague.worker';
 import { DigitalTwin } from '../services/simulation.service';

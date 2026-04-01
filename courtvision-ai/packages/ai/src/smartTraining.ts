@@ -1,5 +1,6 @@
 import { generateReport } from './llm'
-import { ShotResult, ShotStats, computeShotStats, ShotZone } from './shotAnalysis'
+import type { ShotZone } from './shotAnalysis';
+import { ShotResult, ShotStats, computeShotStats } from './shotAnalysis'
 import { MentalAnalysisResult } from './mentalAnalysis'
 
 /**

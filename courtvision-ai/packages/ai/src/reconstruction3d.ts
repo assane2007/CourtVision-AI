@@ -1,4 +1,5 @@
-import { TrackingResult, LANDMARKS } from './tracking'
+import type { TrackingResult} from './tracking';
+import { LANDMARKS } from './tracking'
 import { applyHomography } from './preprocessing'
 
 /**

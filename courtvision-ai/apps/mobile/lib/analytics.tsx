@@ -27,7 +27,8 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
 }
 
 export const useAnalytics = () => {
-    const posthog = isPostHogConfigured ? usePostHog() : null;
+    const posthogClient = usePostHog();
+    const posthog = isPostHogConfigured ? posthogClient : null;
 
     const trackEvent = (eventName: string, properties?: Record<string, any>) => {
         posthog?.capture(eventName, properties);

@@ -12,8 +12,9 @@
  */
 
 import React, { useEffect, useState } from 'react'
+import type { ViewStyle, TextStyle} from 'react-native';
 import {
-    Text, ActivityIndicator, StyleSheet, ViewStyle, TextStyle,
+    Text, ActivityIndicator, StyleSheet,
     TouchableOpacity,
 } from 'react-native'
 import Animated, {

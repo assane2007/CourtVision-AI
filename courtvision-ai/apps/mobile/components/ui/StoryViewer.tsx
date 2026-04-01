@@ -8,6 +8,7 @@ import Animated, {
     withRepeat,
     withSequence,
     withDelay,
+    withSpring,
     Easing,
     interpolate,
     Extrapolation,
@@ -195,9 +196,6 @@ export function StoryViewer({ visible, onClose, videoUri }: StoryViewerProps) {
         </Modal>
     );
 }
-
-// Ensure withSpring is imported at the top if not already, adding it manually here for completeness.
-import { withSpring } from 'react-native-reanimated';
 
 const styles = StyleSheet.create({
     container: {

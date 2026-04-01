@@ -1,6 +1,11 @@
 import { create } from 'zustand'
 import { Platform } from 'react-native'
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const BALL_MODEL_ASSET = require('../assets/models/ball_detector.tflite')
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const RIM_MODEL_ASSET = require('../assets/models/rim_detector.tflite')
+
 /**
  * CourtVision Edge AI — On-Device Ball & Rim Detection
  *
@@ -23,6 +28,7 @@ import { Platform } from 'react-native'
 let TFLiteModule: any = null
 try {
     // react-native-fast-tflite provides GPU-delegate inference on both platforms
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     TFLiteModule = require('react-native-fast-tflite')
 } catch {
     // Package not installed — edge AI will be disabled, fall back to server
@@ -204,13 +210,13 @@ export async function initializeEdgeModels(): Promise<boolean> {
         const delegate = Platform.OS === 'ios' ? 'core-ml' : 'gpu'
 
         const [ball, rim] = await Promise.all([
-            loadModel(require('../assets/models/ball_detector.tflite'), delegate).catch((e: Error) => {
+            loadModel(BALL_MODEL_ASSET, delegate).catch((e: Error) => {
                 console.warn('[EdgeAI] Ball model load failed, trying CPU:', e.message)
-                return loadModel(require('../assets/models/ball_detector.tflite'), 'default')
+                return loadModel(BALL_MODEL_ASSET, 'default')
             }),
-            loadModel(require('../assets/models/rim_detector.tflite'), delegate).catch((e: Error) => {
+            loadModel(RIM_MODEL_ASSET, delegate).catch((e: Error) => {
                 console.warn('[EdgeAI] Rim model load failed, trying CPU:', e.message)
-                return loadModel(require('../assets/models/rim_detector.tflite'), 'default')
+                return loadModel(RIM_MODEL_ASSET, 'default')
             }),
         ])
 

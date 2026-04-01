@@ -3,11 +3,14 @@ import { View, Dimensions, TouchableOpacity, Platform } from 'react-native'
 import { T } from '../../lib/theme'
 import { GlassCard, CVText } from '../ui'
 import { Feather } from '@expo/vector-icons'
+import type { RootState, ThreeEvent } from '@react-three/fiber/native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SessionStorageService } from '../../lib/sessionStorage'
 
 // @react-three/fiber is not compatible with web (uses react-reconciler pinned to React 18)
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const Canvas = Platform.OS !== 'web' ? require('@react-three/fiber/native').Canvas : View;
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const useFrame = Platform.OS !== 'web' ? require('@react-three/fiber/native').useFrame : () => {};
 
 const { width: SCREEN_W } = Dimensions.get('window')
@@ -58,7 +61,7 @@ function ZoneMarker({ zone, isSelected, onSelect }: any) {
     const meshRef = useRef<any>(null)
     const heatColor = zone.heat > 0.7 ? T.color.semantic.success : zone.heat > 0.4 ? T.color.semantic.warning : T.color.semantic.error
 
-    useFrame((state) => {
+    useFrame((state: RootState) => {
         if (meshRef.current) {
             if (isSelected) {
                 meshRef.current.position.y = Math.sin(state.clock.elapsedTime * 4) * 0.2 + 0.4
@@ -76,7 +79,7 @@ function ZoneMarker({ zone, isSelected, onSelect }: any) {
         <mesh
             ref={meshRef}
             position={[zone.x, 0.2, zone.z]}
-            onClick={(e) => { e.stopPropagation(); onSelect(zone) }}
+            onClick={(e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); onSelect(zone) }}
         >
             {isSelected ? <boxGeometry args={[0.8, 0.8, 0.8]} /> : <sphereGeometry args={[0.4, 16, 16]} />}
             <meshStandardMaterial
@@ -92,7 +95,7 @@ function ZoneMarker({ zone, isSelected, onSelect }: any) {
 function Scene({ selectedZone, onSelectZone, perspective, zones }: any) {
     const groupRef = useRef<any>(null)
 
-    useFrame((state) => {
+    useFrame((state: RootState) => {
         if (groupRef.current) {
             if (perspective === '3D') {
                 groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.2) * 0.1
@@ -112,7 +115,7 @@ function Scene({ selectedZone, onSelectZone, perspective, zones }: any) {
 
             <CourtLines />
 
-            {zones.map(z => (
+            {zones.map((z: ZoneData) => (
                 <ZoneMarker
                     key={z.id}
                     zone={z}

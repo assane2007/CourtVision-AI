@@ -273,7 +273,7 @@ export default function CalibrationScreen() {
     const [stepComplete, setStepComplete] = useState(false)
     const [calibrationScore, setCalibrationScore] = useState(0)
     const [passedSteps, setPassedSteps] = useState(0)
-    const cleanupRef = useRef<(() => void) | undefined>()
+    const cleanupRef = useRef<(() => void) | undefined>(undefined)
 
     const currentStep = STEPS[currentStepIndex]
 

@@ -11,7 +11,7 @@
  *   GET    /api/shooting-sessions/leaderboard — Classement communautaire
  */
 
-import { FastifyInstance } from 'fastify'
+import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 
 // ==========================================

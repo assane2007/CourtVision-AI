@@ -6,7 +6,8 @@ import { Feather } from '@expo/vector-icons';
 
 import { T } from '../../../lib/theme';
 import { CVText } from '../../../components/ui';
-import { coachApi, CoachMessage } from '../../../lib/coach';
+import type { CoachMessage } from '../../../lib/coach';
+import { coachApi } from '../../../lib/coach';
 
 export default function CoachChatScreen() {
     const { id } = useLocalSearchParams();

@@ -10,7 +10,8 @@
 
 import React, { useRef, useEffect, useCallback, useState } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera'
+import type { CameraType} from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera'
 import { Feather } from '@expo/vector-icons'
 import type { LiveFramePayload } from '@courtvision/shared'
 import { T } from '../../lib/theme'

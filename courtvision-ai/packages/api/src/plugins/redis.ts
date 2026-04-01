@@ -1,5 +1,6 @@
 import fp from 'fastify-plugin'
-import Redis, { RedisOptions } from 'ioredis'
+import type { RedisOptions } from 'ioredis';
+import Redis from 'ioredis'
 import { env } from '../config/env'
 
 export interface RedisPluginOptions extends RedisOptions {}

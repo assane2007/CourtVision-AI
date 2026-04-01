@@ -2,13 +2,12 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Square, Activity, Users, Zap } from 'lucide-react-native';
+import { Square, Activity, Users, Zap, Check } from 'lucide-react-native';
 import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { colors, typography, space, shadows, radius } from '../../constants/tokens';
 import { Badge } from '../../components/ui/Badge';
 import { useLiveCoach } from '../../hooks/useLiveCoach';
-import { Check } from 'lucide-react-native';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 

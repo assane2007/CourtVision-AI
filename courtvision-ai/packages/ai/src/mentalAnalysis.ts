@@ -1,5 +1,6 @@
-import { TrackingResult, LANDMARKS, calculateSpeed, getShoulderPosture } from './tracking'
-import { ShotResult } from './shotAnalysis'
+import type { TrackingResult} from './tracking';
+import { LANDMARKS, calculateSpeed, getShoulderPosture } from './tracking'
+import type { ShotResult } from './shotAnalysis'
 
 /**
  * Analyse psychologique du joueur basée sur le langage corporel.

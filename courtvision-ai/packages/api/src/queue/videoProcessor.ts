@@ -1,4 +1,5 @@
-import { Queue, Worker, Job } from 'bullmq'
+import type { Job } from 'bullmq';
+import { Queue, Worker } from 'bullmq'
 import Redis from 'ioredis'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import fs from 'fs'

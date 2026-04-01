@@ -7,7 +7,7 @@
  * 
  * This service focuses on building the report payload from DB data.
  */
-import { SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import pino from 'pino'
 
 const logger = pino({ level: process.env.LOG_LEVEL || 'info' })

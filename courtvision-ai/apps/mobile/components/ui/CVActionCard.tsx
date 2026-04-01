@@ -15,12 +15,15 @@
  */
 
 import React from 'react'
-import { TouchableOpacity, View, StyleSheet, ViewStyle } from 'react-native'
+import type { ViewStyle } from 'react-native';
+import { TouchableOpacity, View, StyleSheet } from 'react-native'
 import { Feather } from '@expo/vector-icons'
 import Animated, { FadeInRight } from 'react-native-reanimated'
-import { GlassCard, GlassVariant } from './GlassCard'
+import type { GlassVariant } from './GlassCard';
+import { GlassCard } from './GlassCard'
 import { CVText, TextColorAlias } from './CVText'
-import { CVIcon, CVIconColor } from './CVIcon'
+import type { CVIconColor } from './CVIcon';
+import { CVIcon } from './CVIcon'
 import { T } from '../../lib/theme'
 
 // ─── Types ────────────────────────────────────────────────────

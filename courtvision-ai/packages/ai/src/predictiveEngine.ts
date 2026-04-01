@@ -1,4 +1,4 @@
-import { ShotZone } from './shotAnalysis'
+import type { ShotZone } from './shotAnalysis'
 
 /**
  * Predictive Engine — Prédictions IA Avant Match

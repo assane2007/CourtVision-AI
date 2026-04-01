@@ -14,7 +14,8 @@
  */
 
 import React from 'react'
-import { View, ViewStyle } from 'react-native'
+import type { ViewStyle } from 'react-native';
+import { View } from 'react-native'
 import { Feather } from '@expo/vector-icons'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { CVText } from './CVText'

@@ -22,8 +22,9 @@
  */
 
 import { Landmark, LANDMARKS } from './tracking'
-import { NormalizedLandmark, BodyAngles, ShootingBiomechanics, BLAZEPOSE_LANDMARK_NAMES } from './poseEstimation'
-import { ShotDetectionPhase } from './shotDetector'
+import type { NormalizedLandmark, BodyAngles, ShootingBiomechanics} from './poseEstimation';
+import { BLAZEPOSE_LANDMARK_NAMES } from './poseEstimation'
+import type { ShotDetectionPhase } from './shotDetector'
 
 // ==========================================
 // Types

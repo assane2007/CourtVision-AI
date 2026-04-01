@@ -6,7 +6,8 @@ import { ChevronLeft, Share, Sparkles, BarChart2 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 
 import { colors, typography, space, radius } from '../../../constants/tokens';
-import { CourtMinimap, ShotPoint } from '../../../components/basketball/CourtMinimap';
+import type { ShotPoint } from '../../../components/basketball/CourtMinimap';
+import { CourtMinimap } from '../../../components/basketball/CourtMinimap';
 import { StatRing } from '../../../components/basketball/StatRing';
 import { GhostMode } from '../../../components/basketball/GhostMode';
 import { StoryViewer } from '../../../components/ui/StoryViewer';

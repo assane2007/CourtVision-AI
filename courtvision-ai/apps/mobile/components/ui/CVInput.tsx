@@ -10,7 +10,8 @@
  */
 
 import React, { useState } from 'react'
-import { View, TextInput, Text, ViewStyle, TextInputProps } from 'react-native'
+import type { ViewStyle, TextInputProps } from 'react-native';
+import { View, TextInput, Text } from 'react-native'
 import { Feather } from '@expo/vector-icons'
 import { T } from '../../lib/theme'
 

@@ -9,8 +9,9 @@
  */
 
 import { useEffect } from 'react'
+import type { ViewStyle} from 'react-native';
 import {
-    View, Text, ViewStyle, StyleSheet,
+    View, Text, StyleSheet,
 } from 'react-native'
 import Animated, {
     useSharedValue, useAnimatedStyle,

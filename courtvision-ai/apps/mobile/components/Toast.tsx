@@ -20,7 +20,8 @@ import Animated, {
 import { BlurView } from 'expo-blur'
 import * as Haptics from 'expo-haptics'
 import { Feather, AntDesign } from '@expo/vector-icons'
-import { useToastStore, ToastMessage, ToastType } from '../lib/toast'
+import type { ToastMessage, ToastType } from '../lib/toast';
+import { useToastStore } from '../lib/toast'
 import { colors, space } from '../constants/tokens'
 
 const { width } = Dimensions.get('window')

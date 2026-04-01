@@ -1,7 +1,12 @@
-import { FastifyInstance } from 'fastify'
+import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { TwinBuilder, TwinSimulator, generateTwinInsights } from '@courtvision/ai'
-import type { TwinProfile, SessionAnalysisData } from '@courtvision/ai'
+import {
+    TwinBuilder,
+    TwinSimulator,
+    generateTwinInsights,
+    type TwinProfile,
+    type SessionAnalysisData,
+} from '@courtvision/ai'
 
 const simulateSchema = z.object({
     opponent: z.enum(['nba', 'user']).default('nba'),

@@ -1,5 +1,6 @@
 import fp from 'fastify-plugin'
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js'
 
 declare module 'fastify' {
     interface FastifyInstance {

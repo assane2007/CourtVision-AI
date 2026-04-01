@@ -1,5 +1,5 @@
 import { buildApp } from '../../app'
-import { FastifyInstance } from 'fastify'
+import type { FastifyInstance } from 'fastify'
 
 /**
  * Billing Webhook — Stripe Signature Security Tests

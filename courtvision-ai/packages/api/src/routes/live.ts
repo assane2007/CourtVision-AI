@@ -1,8 +1,7 @@
-import { FastifyInstance } from 'fastify'
+import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import Redis from 'ioredis'
-import { LiveCoachEngine, analyzeSingleFrame } from '@courtvision/ai'
-import type { Landmark } from '@courtvision/ai'
+import { LiveCoachEngine, analyzeSingleFrame, type Landmark } from '@courtvision/ai'
 import crypto from 'crypto'
 
 const liveParamsSchema = z.object({

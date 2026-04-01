@@ -11,7 +11,8 @@
  */
 
 import React from 'react'
-import { View, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native'
+import type { ViewStyle } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native'
 import { CVText } from './CVText'
 import { T } from '../../lib/theme'
 

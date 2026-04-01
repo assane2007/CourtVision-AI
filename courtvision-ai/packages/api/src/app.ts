@@ -1,11 +1,13 @@
-import fastify, { FastifyInstance, FastifyServerOptions } from 'fastify'
+import type { FastifyInstance, FastifyServerOptions } from 'fastify';
+import fastify from 'fastify'
 import cors from '@fastify/cors'
 import rateLimit from '@fastify/rate-limit'
 import helmet from '@fastify/helmet'
+import type {
+    ZodTypeProvider} from 'fastify-type-provider-zod';
 import {
     serializerCompiler,
     validatorCompiler,
-    ZodTypeProvider,
     jsonSchemaTransform
 } from 'fastify-type-provider-zod'
 

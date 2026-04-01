@@ -23,7 +23,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { BlurView } from 'expo-blur'
 import { Feather, AntDesign } from '@expo/vector-icons'
-import { BottomTabBarProps } from '@react-navigation/bottom-tabs'
+import type { BottomTabBarProps } from '@react-navigation/bottom-tabs'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { HapticFeedback } from '../lib/haptics'
 import { T } from '../lib/theme'

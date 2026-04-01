@@ -1,4 +1,4 @@
-import { ShotResult, ShotZone } from './shotAnalysis'
+import type { ShotResult, ShotZone } from './shotAnalysis'
 
 /**
  * Shot DNA™ — Empreinte de Tir Biométrique Unique

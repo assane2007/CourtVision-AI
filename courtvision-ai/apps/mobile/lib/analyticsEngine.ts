@@ -317,8 +317,8 @@ function incompleteBeta(a: number, b: number, x: number): number {
 /** Log-gamma function (Lanczos approximation) */
 function gammaLn(x: number): number {
     if (x <= 0) return 0
-    const c = [76.18009172947146, -86.50532032941677, 24.01409824083091,
-        -1.231739572450155, 0.001208650973866179, -0.000005395239384953]
+    const c = [76.1800917294715, -86.5053203294168, 24.0140982408309,
+        -1.23173957245016, 0.00120865097386618, -0.000005395239384953]
     let y = x
     let tmp = x + 5.5
     tmp -= (x + 0.5) * Math.log(tmp)
@@ -326,7 +326,7 @@ function gammaLn(x: number): number {
     for (let j = 0; j < 6; j++) {
         ser += c[j] / ++y
     }
-    return -tmp + Math.log(2.5066282746310005 * ser / x)
+    return -tmp + Math.log(2.506628274631 * ser / x)
 }
 
 /**
@@ -1273,7 +1273,7 @@ export function analyzeMechanicClusters(sessions: StoredSession[]): MechanicClus
         .sort((a, b) => a.score - b.score)
         .map(x => x.i)
 
-    let centroids = [
+    const centroids = [
         [...normalized[sortedIndices[0]]],
         [...normalized[sortedIndices[Math.floor(sortedIndices.length / 2)]]],
         [...normalized[sortedIndices[sortedIndices.length - 1]]],
@@ -1326,7 +1326,7 @@ export function analyzeMechanicClusters(sessions: StoredSession[]): MechanicClus
         }
 
         // Auto-label based on FG% relative position
-        let label = `Form ${c + 1}`
+        const label = `Form ${c + 1}`
 
         if (fgPct > bestFgPct) { bestFgPct = fgPct; bestClusterId = c }
 

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
-import Purchases, { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
+import type { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
+import Purchases from 'react-native-purchases';
 import { useStore } from './store'; // Using main auth store
 import { supabase, isDemoMode } from './supabase';
 

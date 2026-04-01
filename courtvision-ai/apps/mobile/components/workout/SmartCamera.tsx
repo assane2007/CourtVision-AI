@@ -24,7 +24,8 @@
 
 import React, { useRef, useEffect, useCallback, useState } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform } from 'react-native'
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera'
+import type { CameraType} from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera'
 import { Feather } from '@expo/vector-icons'
 import Animated, {
     FadeIn,

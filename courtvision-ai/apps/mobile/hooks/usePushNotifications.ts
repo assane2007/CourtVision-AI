@@ -30,6 +30,8 @@ import Constants from 'expo-constants'
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
         shouldShowAlert: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
         shouldPlaySound: true,
         shouldSetBadge: true,
     }),
@@ -142,6 +144,7 @@ export function usePushNotifications() {
             identifier: NOTIF_ID_STREAK,
             content: streakContent(streak),
             trigger: {
+                type: Notifications.SchedulableTriggerInputTypes.DAILY,
                 hour: 20,
                 minute: 0,
                 repeats: true,
@@ -160,6 +163,7 @@ export function usePushNotifications() {
             identifier: NOTIF_ID_CHALLENGE,
             content: challengeContent(),
             trigger: {
+                type: Notifications.SchedulableTriggerInputTypes.DAILY,
                 hour: 9,
                 minute: 0,
                 repeats: true,

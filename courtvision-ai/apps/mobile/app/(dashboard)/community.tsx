@@ -14,7 +14,8 @@ import { useState, useCallback } from 'react'
 import { Feather } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import Animated, { FadeInDown, FadeInRight, withSpring, useSharedValue, useAnimatedStyle } from 'react-native-reanimated'
-import { useCommunity, LeaderboardEntry, ChallengeItem, ActivityItem, SearchResult } from '../../hooks/useCommunity'
+import type { LeaderboardEntry, ChallengeItem, ActivityItem, SearchResult } from '../../hooks/useCommunity';
+import { useCommunity } from '../../hooks/useCommunity'
 import { PrimaryButton } from '../../components/PrimaryButton'
 import { T, typePresets } from '../../lib/theme'
 

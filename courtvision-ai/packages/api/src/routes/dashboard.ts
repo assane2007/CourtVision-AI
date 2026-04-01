@@ -10,7 +10,7 @@
  * nécessaires pour le home screen de l'app mobile.
  */
 
-import { FastifyInstance } from 'fastify'
+import type { FastifyInstance } from 'fastify'
 import { V5Orchestrator } from '../services/v5Orchestrator'
 import { ArenaService } from '../services/arena.service'
 import { HorseService } from '../services/horse.service'

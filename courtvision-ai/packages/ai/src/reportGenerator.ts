@@ -1,8 +1,9 @@
 import { generateReport } from './llm'
-import { TrackingResult } from './tracking'
-import { Reconstruction3DResult } from './reconstruction3d'
-import { ShotResult, ShotStats, computeShotStats } from './shotAnalysis'
-import { MentalAnalysisResult } from './mentalAnalysis'
+import type { TrackingResult } from './tracking'
+import type { Reconstruction3DResult } from './reconstruction3d'
+import type { ShotResult, ShotStats} from './shotAnalysis';
+import { computeShotStats } from './shotAnalysis'
+import type { MentalAnalysisResult } from './mentalAnalysis'
 import {
     type ShotDNAProfile,
     type AdvancedAnalyticsResult

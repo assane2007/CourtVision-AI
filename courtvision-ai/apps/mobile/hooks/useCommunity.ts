@@ -116,7 +116,7 @@ export function useCommunity() {
     const [challenges, setChallenges] = useState<ChallengeItem[]>([])
     const [feed, setFeed] = useState<ActivityItem[]>([])
     const [feedHasMore, setFeedHasMore] = useState(false)
-    const feedCursorRef = useRef<string | undefined>()
+    const feedCursorRef = useRef<string | undefined>(undefined)
 
     const [myBadges, setMyBadges] = useState<BadgeItem[]>([])
     const [notifications, setNotifications] = useState<NotificationItem[]>([])

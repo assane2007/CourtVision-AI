@@ -11,7 +11,8 @@
  */
 
 import React from 'react'
-import { View, ViewStyle, StyleSheet } from 'react-native'
+import type { ViewStyle} from 'react-native';
+import { View, StyleSheet } from 'react-native'
 import { T } from '../../lib/theme'
 
 // ─── Glass Presets ────────────────────────────────────────────
