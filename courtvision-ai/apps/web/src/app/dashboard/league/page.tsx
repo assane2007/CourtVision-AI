@@ -13,6 +13,14 @@ import {
     Box
 } from 'lucide-react'
 
+type LeagueScope = 'worldwide' | 'friends'
+
+const ARCHIVED_LEADERS = [
+    { rank: 5, name: 'Arc_Sniper', twin: 'Ray v2', points: '20,884', tier: 'PRIME', color: 'text-text-secondary', isFriend: false },
+    { rank: 6, name: 'CourtGhost', twin: 'Kyrie Mesh', points: '20,211', tier: 'PRIME', color: 'text-text-secondary', isFriend: true },
+    { rank: 7, name: 'SwishPilot', twin: 'Curry Node', points: '19,870', tier: 'PRIME', color: 'text-text-secondary', isFriend: false },
+]
+
 // Mocking backend data fetch for leaderboard
 const fetchLeaderboard = async () => {
     return new Promise<any>((resolve) => {
@@ -20,10 +28,10 @@ const fetchLeaderboard = async () => {
             resolve({
                 userRank: { rank: 4, name: 'Assane (YOU)', twin: 'User_442', points: '12,402', tier: 'PRIME', color: 'text-text-secondary' },
                 leaders: [
-                    { rank: 1, name: 'Apex_Baller', twin: 'LeBron Spec', points: '24,802', tier: 'APEX', color: 'text-fire' },
-                    { rank: 2, name: 'Neural_Kobe', twin: 'Mamba v4', points: '22,410', tier: 'ELITE', color: 'text-ice' },
-                    { rank: 3, name: 'DunkCloud', twin: 'Vince Spec', points: '21,950', tier: 'ELITE', color: 'text-ice' },
-                    { rank: 4, name: 'Assane (YOU)', twin: 'User_442', points: '12,402', tier: 'PRIME', color: 'text-text-secondary' },
+                    { rank: 1, name: 'Apex_Baller', twin: 'LeBron Spec', points: '24,802', tier: 'APEX', color: 'text-fire', isFriend: false },
+                    { rank: 2, name: 'Neural_Kobe', twin: 'Mamba v4', points: '22,410', tier: 'ELITE', color: 'text-ice', isFriend: true },
+                    { rank: 3, name: 'DunkCloud', twin: 'Vince Spec', points: '21,950', tier: 'ELITE', color: 'text-ice', isFriend: false },
+                    { rank: 4, name: 'Assane (YOU)', twin: 'User_442', points: '12,402', tier: 'PRIME', color: 'text-text-secondary', isFriend: true },
                 ],
                 nextTierPoints: 15000,
                 regionalRank: '#22 (EUROPE)'
@@ -35,6 +43,8 @@ const fetchLeaderboard = async () => {
 export default function LeaguePage() {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [scope, setScope] = useState<LeagueScope>('worldwide');
+    const [fullRankingsLoaded, setFullRankingsLoaded] = useState(false);
 
     useEffect(() => {
         let mounted = true;
@@ -48,8 +58,38 @@ export default function LeaguePage() {
     }, []);
 
     const handleLoadFullRankings = () => {
-        alert("Loading complete global leaderboard... Establishing secure connection.");
+        if (scope === 'friends') {
+            setScope('worldwide');
+            return;
+        }
+
+        if (fullRankingsLoaded) {
+            return;
+        }
+
+        setData((current: any) => {
+            if (!current) {
+                return current;
+            }
+            return {
+                ...current,
+                leaders: [...current.leaders, ...ARCHIVED_LEADERS],
+            };
+        });
+        setFullRankingsLoaded(true);
     };
+
+    const visibleLeaders = React.useMemo(() => {
+        if (!data?.leaders) {
+            return [];
+        }
+        if (scope === 'worldwide') {
+            return data.leaders;
+        }
+
+        const friendsOnly = data.leaders.filter((player: any) => player.isFriend);
+        return friendsOnly.length > 0 ? friendsOnly : data.leaders;
+    }, [data, scope]);
 
     if (loading) {
         return (
@@ -112,15 +152,27 @@ export default function LeaguePage() {
                 className="bg-surface backdrop-blur-md border border-white/5 rounded-[40px] overflow-hidden"
             >
                 <div className="p-8 border-b border-white/5 flex items-center justify-between">
-                    <h3 className="text-xl font-display font-black italic uppercase tracking-tight">Global <span className="text-fire">Neural</span> Ranking</h3>
+                    <h3 className="text-xl font-display font-black italic uppercase tracking-tight">
+                        {scope === 'friends' ? 'Friends' : 'Global'} <span className="text-fire">Neural</span> Ranking
+                    </h3>
                     <div className="flex gap-4">
-                        <button className="text-[10px] font-mono text-fire border-b border-fire pb-1 uppercase tracking-widest">WORLDWIDE</button>
-                        <button className="text-[10px] font-mono text-text-tertiary hover:text-white transition-colors uppercase tracking-widest">FRIENDS</button>
+                        <button
+                            onClick={() => setScope('worldwide')}
+                            className={`text-[10px] font-mono pb-1 uppercase tracking-widest transition-colors ${scope === 'worldwide' ? 'text-fire border-b border-fire' : 'text-text-tertiary hover:text-white'}`}
+                        >
+                            WORLDWIDE
+                        </button>
+                        <button
+                            onClick={() => setScope('friends')}
+                            className={`text-[10px] font-mono pb-1 uppercase tracking-widest transition-colors ${scope === 'friends' ? 'text-fire border-b border-fire' : 'text-text-tertiary hover:text-white'}`}
+                        >
+                            FRIENDS
+                        </button>
                     </div>
                 </div>
 
                 <div className="p-4">
-                    {data.leaders.map((player: any, i: number) => (
+                    {visibleLeaders.map((player: any, i: number) => (
                         <div
                             key={player.name}
                             className={`flex items-center justify-between p-6 rounded-[24px] transition-all cursor-pointer group ${player.name.includes('YOU') ? 'bg-fire/10 border border-fire/20' : 'hover:bg-surface'}`}
@@ -152,7 +204,17 @@ export default function LeaguePage() {
                 </div>
 
                 <div className="p-8 bg-void/30 flex justify-center">
-                    <button onClick={handleLoadFullRankings} className="text-[10px] font-mono text-text-tertiary uppercase tracking-[0.4em] hover:text-fire transition-all">LOAD FULL RANKINGS</button>
+                    <button
+                        onClick={handleLoadFullRankings}
+                        disabled={scope === 'worldwide' && fullRankingsLoaded}
+                        className="text-[10px] font-mono text-text-tertiary uppercase tracking-[0.4em] hover:text-fire transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                        {scope === 'friends'
+                            ? 'SWITCH TO WORLDWIDE'
+                            : fullRankingsLoaded
+                                ? 'RANKINGS UP TO DATE'
+                                : 'LOAD FULL RANKINGS'}
+                    </button>
                 </div>
             </motion.div>
         </div>

@@ -3,6 +3,7 @@
  */
 
 import { createClient } from '@/lib/supabase/client'
+import { isSupabaseConfigured } from '@/lib/supabase/env'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
@@ -18,14 +19,16 @@ export async function apiRequest<T = any>(
     } as Record<string, string>;
 
     // Attach Supabase auth token if available
-    try {
-        const supabase = createClient()
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session?.access_token) {
-            headers['Authorization'] = `Bearer ${session.access_token}`
+    if (isSupabaseConfigured()) {
+        try {
+            const supabase = createClient()
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session?.access_token) {
+                headers['Authorization'] = `Bearer ${session.access_token}`
+            }
+        } catch {
+            // Auth not available (e.g., during SSR), proceed without token
         }
-    } catch {
-        // Auth not available (e.g., during SSR), proceed without token
     }
 
     const response = await fetch(url, {

@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { getSupabaseEnv } from './env'
 
 export async function updateSession(request: NextRequest) {
     let response = NextResponse.next({
@@ -8,9 +9,22 @@ export async function updateSession(request: NextRequest) {
         },
     })
 
+    const env = getSupabaseEnv()
+
+    // Keep route protection behavior even when Supabase is not configured.
+    if (!env.configured) {
+        if (request.nextUrl.pathname.startsWith('/dashboard')) {
+            const url = request.nextUrl.clone()
+            url.pathname = '/login'
+            url.searchParams.set('redirect', request.nextUrl.pathname)
+            return NextResponse.redirect(url)
+        }
+        return response
+    }
+
     const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        env.url,
+        env.anonKey,
         {
             cookies: {
                 get(name: string) {

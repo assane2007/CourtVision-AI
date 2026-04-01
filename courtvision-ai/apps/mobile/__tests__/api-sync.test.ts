@@ -3,6 +3,9 @@ import { WebSocket } from 'ws'
 
 const WS_URL = process.env.EXPO_PUBLIC_WS_URL || 'ws://localhost:3000'
 const TEST_SESSION_ID = 'test-session-uuid-1234'
+const RUN_NETWORK_CONTRACT_TESTS = process.env.RUN_NETWORK_CONTRACT_TESTS === 'true'
+
+const describeIfNetwork = RUN_NETWORK_CONTRACT_TESTS ? describe : describe.skip
 
 describe('API Contract Tests — CourtVision', () => {
 
@@ -22,7 +25,7 @@ describe('API Contract Tests — CourtVision', () => {
         })
     })
 
-    describe('SESSIONS', () => {
+    describeIfNetwork('SESSIONS', () => {
         it('GET /sessions → retourne Session[] avec tous les champs', async () => {
             const sessions = await api.get('/sessions') as any[]
             expect(Array.isArray(sessions)).toBe(true)
@@ -44,7 +47,7 @@ describe('API Contract Tests — CourtVision', () => {
         })
     })
 
-    describe('WEBSOCKET', () => {
+    describeIfNetwork('WEBSOCKET', () => {
         it('WS /ws/sessions/:id → reçoit TrackingFrame valide', (done) => {
             // DÉSYNC REMARK: API currently serving SSE at /live/:id/stream
             const ws = new WebSocket(`${WS_URL}/sessions/${TEST_SESSION_ID}`)

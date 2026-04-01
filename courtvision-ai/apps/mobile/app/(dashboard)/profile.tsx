@@ -206,7 +206,7 @@ const EditProfileModal = memo(function EditProfileModal({
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
             <Pressable style={s.modalOverlay} onPress={onClose}>
-                <Pressable onPress={() => { }}>
+                <Pressable onPress={(event) => event.stopPropagation()}>
                     <View style={[s.modalSheet, T.glass.base]}>
                         <View style={s.modalHandle} />
                         <Text style={s.modalTitle}>Edit Profile</Text>
@@ -353,7 +353,7 @@ const BadgeDetailModal = memo(function BadgeDetailModal({ badge, onClose }: {
     return (
         <Modal visible={!!badge} transparent animationType="fade" onRequestClose={onClose}>
             <Pressable style={s.badgeOverlay} onPress={onClose}>
-                <Pressable onPress={() => { }}>
+                <Pressable onPress={(event) => event.stopPropagation()}>
                     <Animated.View
                         entering={ZoomIn.duration(300)}
                         style={[

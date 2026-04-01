@@ -1,5 +1,11 @@
 import { test, expect } from '@playwright/test'
 
+const RUN_API_E2E = process.env.RUN_API_E2E === 'true'
+const RUN_SUPABASE_AUTH_E2E = Boolean(
+    (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim() &&
+    (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim()
+)
+
 /**
  * Auth Guards — E2E Route Protection Tests
  *
@@ -75,6 +81,7 @@ test.describe('Login page functionality', () => {
     test('shows error message for invalid credentials', async ({ page, browserName }) => {
         // WebKit with dummy Supabase URL doesn't surface the error message in time
         test.skip(browserName === 'webkit', 'Supabase network error not surfaced on WebKit with dummy URL')
+        test.skip(!RUN_SUPABASE_AUTH_E2E, 'Requires configured Supabase auth backend.')
 
         // Arrange
         await page.goto('/login')
@@ -106,6 +113,7 @@ test.describe('Login page functionality', () => {
 })
 
 test.describe('API auth security (no data leak)', () => {
+    test.skip(!RUN_API_E2E, 'Set RUN_API_E2E=true and run the API server before executing API auth e2e checks.')
 
     test('API returns 401 without Bearer token', async ({ request }) => {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'

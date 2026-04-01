@@ -15,9 +15,40 @@ import {
     Zap
 } from 'lucide-react'
 
+type SessionItem = {
+    id: string
+    name: string
+    date: string
+    duration: string
+    accuracy: string
+    type: string
+    tags: string[]
+}
+
+const ARCHIVED_SESSIONS: SessionItem[] = [
+    {
+        id: 'S-7684',
+        name: 'Evening Jump Lab',
+        date: 'Feb 21, 2026',
+        duration: '35m',
+        accuracy: '94.3%',
+        type: 'Vertical Mechanics',
+        tags: ['Archived', 'Biomechanics'],
+    },
+    {
+        id: 'S-7670',
+        name: 'CourtVision Sprint Test',
+        date: 'Feb 19, 2026',
+        duration: '28m',
+        accuracy: '93.8%',
+        type: 'Conditioning',
+        tags: ['Archived', 'Heart Rate Sync'],
+    },
+]
+
 // Mocking the real API response for now until it's synced
 const fetchSessionsFromApi = async () => {
-    return new Promise<any[]>((resolve) => {
+    return new Promise<SessionItem[]>((resolve) => {
         setTimeout(() => {
             resolve([
                 {
@@ -62,8 +93,10 @@ const fetchSessionsFromApi = async () => {
 }
 
 export default function SessionsPage() {
-    const [sessions, setSessions] = useState<any[]>([]);
+    const [sessions, setSessions] = useState<SessionItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [activeMenuSessionId, setActiveMenuSessionId] = useState<string | null>(null);
+    const [archivedLoaded, setArchivedLoaded] = useState(false);
 
     useEffect(() => {
         let mounted = true;
@@ -91,6 +124,35 @@ export default function SessionsPage() {
     const handleShare = (e: React.MouseEvent) => {
         e.stopPropagation();
         alert("Generating shareable link...");
+    };
+
+    const handleToggleSessionMenu = (e: React.MouseEvent, sessionId: string) => {
+        e.stopPropagation();
+        setActiveMenuSessionId((current) => (current === sessionId ? null : sessionId));
+    };
+
+    const handleCopySessionId = async (e: React.MouseEvent, sessionId: string) => {
+        e.stopPropagation();
+        try {
+            if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(sessionId);
+                alert(`Session ID copied: ${sessionId}`);
+            } else {
+                window.prompt('Copy session ID', sessionId);
+            }
+        } catch {
+            window.prompt('Copy session ID', sessionId);
+        } finally {
+            setActiveMenuSessionId(null);
+        }
+    };
+
+    const handleLoadArchivedData = () => {
+        if (archivedLoaded) {
+            return;
+        }
+        setSessions((current) => [...current, ...ARCHIVED_SESSIONS]);
+        setArchivedLoaded(true);
     };
 
     return (
@@ -175,9 +237,34 @@ export default function SessionsPage() {
                                         <span className="text-xs font-mono text-text-secondary uppercase flex-1 truncate max-w-[100px]">{session.type}</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="relative flex items-center gap-2">
                                     <button onClick={handleShare} className="p-2 text-text-tertiary hover:text-fire transition-colors"><Share2 size={18} /></button>
-                                    <button className="p-2 text-text-tertiary hover:text-fire transition-colors"><MoreHorizontal size={18} /></button>
+                                    <button
+                                        onClick={(e) => handleToggleSessionMenu(e, session.id)}
+                                        className="p-2 text-text-tertiary hover:text-fire transition-colors"
+                                    >
+                                        <MoreHorizontal size={18} />
+                                    </button>
+                                    {activeMenuSessionId === session.id && (
+                                        <div className="absolute right-0 top-11 z-20 w-44 rounded-xl border border-white/10 bg-void/95 backdrop-blur-md overflow-hidden">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handlePlaySession(session.id);
+                                                    setActiveMenuSessionId(null);
+                                                }}
+                                                className="w-full px-3 py-2 text-left text-[10px] font-mono uppercase tracking-widest text-text-secondary hover:text-fire hover:bg-fire/10 transition-colors"
+                                            >
+                                                Open session
+                                            </button>
+                                            <button
+                                                onClick={(e) => { void handleCopySessionId(e, session.id); }}
+                                                className="w-full px-3 py-2 text-left text-[10px] font-mono uppercase tracking-widest text-text-secondary hover:text-fire hover:bg-fire/10 transition-colors"
+                                            >
+                                                Copy session ID
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </motion.div>
@@ -188,8 +275,12 @@ export default function SessionsPage() {
             {/* Pagination Placeholder */}
             {!loading && sessions.length > 0 && (
                 <div className="flex justify-center py-6">
-                    <button className="text-text-tertiary font-mono text-[10px] uppercase tracking-[0.3em] hover:text-fire transition-colors">
-                        LOAD ARCHIVED DATA
+                    <button
+                        onClick={handleLoadArchivedData}
+                        disabled={archivedLoaded}
+                        className="text-text-tertiary font-mono text-[10px] uppercase tracking-[0.3em] hover:text-fire transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                        {archivedLoaded ? 'ARCHIVES UP TO DATE' : 'LOAD ARCHIVED DATA'}
                     </button>
                 </div>
             )}

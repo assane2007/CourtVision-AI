@@ -27,13 +27,34 @@ const navItems = [
     { name: 'Profile', icon: User, href: '/dashboard/profile' },
 ]
 
+type DashboardNotification = {
+    id: string
+    title: string
+    time: string
+    read: boolean
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+    const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
+    const [notifications, setNotifications] = useState<DashboardNotification[]>([
+        { id: 'sync', title: 'Neural sync completed successfully', time: '2m ago', read: false },
+        { id: 'coach', title: 'AI Coach generated a new playbook tip', time: '14m ago', read: false },
+        { id: 'milestone', title: 'Milestone unlocked: 100 analyzed shots', time: '1h ago', read: true },
+    ])
     const pathname = usePathname()
     const { user, signOut, loading } = useAuth()
 
     const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Player'
     const initials = displayName.charAt(0).toUpperCase()
+    const unreadCount = notifications.filter((notification) => !notification.read).length
+
+    const toggleNotificationsPanel = () => {
+        if (!isNotificationsOpen && unreadCount > 0) {
+            setNotifications((current) => current.map((notification) => ({ ...notification, read: true })))
+        }
+        setIsNotificationsOpen((current) => !current)
+    }
 
     return (
         <div className="min-h-screen bg-void text-text-primary flex overflow-hidden">
@@ -113,10 +134,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             <span className="text-[10px] font-mono text-fire uppercase tracking-widest">Neural Link: ACTIVE</span>
                         </div>
 
-                        <button className="relative p-2 text-text-secondary hover:text-fire transition-colors">
-                            <Bell size={20} />
-                            <span className="absolute top-1 right-1 w-2 h-2 bg-fire rounded-full animate-pulse" />
-                        </button>
+                        <div className="relative">
+                            <button
+                                onClick={toggleNotificationsPanel}
+                                className="relative p-2 text-text-secondary hover:text-fire transition-colors"
+                            >
+                                <Bell size={20} />
+                                {unreadCount > 0 && (
+                                    <span className="absolute top-1 right-1 w-2 h-2 bg-fire rounded-full animate-pulse" />
+                                )}
+                            </button>
+
+                            {isNotificationsOpen && (
+                                <div className="absolute right-0 top-12 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-white/10 bg-surface/95 backdrop-blur-xl shadow-xl shadow-black/40 overflow-hidden">
+                                    <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+                                        <p className="text-xs font-mono uppercase tracking-widest text-text-primary">Notifications</p>
+                                        <button
+                                            onClick={() => setIsNotificationsOpen(false)}
+                                            className="text-[10px] font-mono uppercase tracking-widest text-text-tertiary hover:text-fire transition-colors"
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
+                                    <div className="max-h-72 overflow-y-auto">
+                                        {notifications.map((notification) => (
+                                            <div key={notification.id} className="px-4 py-3 border-b border-white/5 last:border-b-0">
+                                                <p className="text-sm text-text-primary">{notification.title}</p>
+                                                <p className="mt-1 text-[10px] font-mono uppercase tracking-widest text-text-tertiary">
+                                                    {notification.time}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
                         <div className="flex items-center gap-4 pl-6 border-l border-white/10">
                             <div className="text-right hidden sm:block">

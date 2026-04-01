@@ -24,6 +24,8 @@ const sections = [
 export default function ProfilePage() {
     const [profile, setProfile] = React.useState<any>(null);
     const [loading, setLoading] = React.useState(true);
+    const [avatarPreview, setAvatarPreview] = React.useState<string | null>(null);
+    const avatarInputRef = React.useRef<HTMLInputElement | null>(null);
 
     React.useEffect(() => {
         // Fetch profile data here in the future
@@ -47,6 +49,26 @@ export default function ProfilePage() {
         alert('Navigating to Billing Portal...');
     };
 
+    const handleOpenAvatarPicker = () => {
+        avatarInputRef.current?.click();
+    };
+
+    const handleAvatarSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) {
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            if (typeof reader.result === 'string') {
+                setAvatarPreview(reader.result);
+            }
+        };
+        reader.readAsDataURL(file);
+        event.currentTarget.value = '';
+    };
+
     const sectionsData = React.useMemo(() => [
         { title: 'Personal Information', icon: User, fields: [profile?.fullName || '---', `${profile?.age || '--'} YRS`, `${profile?.height || '--'} / ${profile?.weight || '--'}`] },
         { title: 'Biometric Devices', icon: Smartphone, fields: [profile?.hudVersion || '---', profile?.sensor || '---'] },
@@ -64,13 +86,35 @@ export default function ProfilePage() {
             >
                 <div className="relative group">
                     <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-fire to-ice p-[1px] shadow-2xl shadow-fire/10">
-                        <div className="w-full h-full bg-surface rounded-[23px] flex items-center justify-center overflow-hidden">
-                            <div className="text-4xl text-white font-black italic">{profile ? profile.fullName.charAt(0) : ''}</div>
+                        <div
+                            className="w-full h-full bg-surface rounded-[23px] flex items-center justify-center overflow-hidden"
+                            style={avatarPreview
+                                ? {
+                                    backgroundImage: `url(${avatarPreview})`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                }
+                                : undefined
+                            }
+                        >
+                            {!avatarPreview && (
+                                <div className="text-4xl text-white font-black italic">{profile ? profile.fullName.charAt(0) : ''}</div>
+                            )}
                         </div>
                     </div>
-                    <button className="absolute -bottom-2 -right-2 p-2 bg-fire rounded-xl text-white shadow-lg opacity-0 group-hover:opacity-100 transition-all">
+                    <button
+                        onClick={handleOpenAvatarPicker}
+                        className="absolute -bottom-2 -right-2 p-2 bg-fire rounded-xl text-white shadow-lg opacity-0 group-hover:opacity-100 transition-all"
+                    >
                         <Camera size={18} />
                     </button>
+                    <input
+                        ref={avatarInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleAvatarSelected}
+                    />
                 </div>
                 <div>
                     <h1 className="text-4xl font-display font-black italic uppercase italic">{loading ? 'LOADING...' : profile?.fullName}</h1>

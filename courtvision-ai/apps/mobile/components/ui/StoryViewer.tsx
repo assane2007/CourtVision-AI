@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Text, Modal, Pressable, Dimensions } from 'react-native';
+import { View, StyleSheet, Text, Modal, Pressable, Dimensions, Alert, Share } from 'react-native';
 import { Video, ResizeMode, InterruptionModeAndroid, InterruptionModeIOS, Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -27,6 +29,7 @@ interface StoryViewerProps {
 
 export function StoryViewer({ visible, onClose, videoUri }: StoryViewerProps) {
     const [videoLoaded, setVideoLoaded] = useState(false);
+    const [isActionBusy, setIsActionBusy] = useState(false);
 
     // Animation Values
     const progress = useSharedValue(0); // 0 to 1 for the top progress bar
@@ -45,6 +48,10 @@ export function StoryViewer({ visible, onClose, videoUri }: StoryViewerProps) {
             playThroughEarpieceAndroid: false,
         });
     }, []);
+
+    useEffect(() => {
+        setVideoLoaded(!videoUri);
+    }, [videoUri]);
 
     useEffect(() => {
         if (visible && videoLoaded) {
@@ -92,6 +99,83 @@ export function StoryViewer({ visible, onClose, videoUri }: StoryViewerProps) {
             { translateX: glitchTranslateX.value }
         ]
     }));
+
+    const handleShareReel = async (uriOverride?: string) => {
+        const sourceUri = uriOverride ?? videoUri;
+        if (!sourceUri) {
+            Alert.alert('No reel to share', 'Record a session first to generate a highlight reel.');
+            return;
+        }
+
+        setIsActionBusy(true);
+        try {
+            const canShareFile = sourceUri.startsWith('file://') && await Sharing.isAvailableAsync();
+
+            if (canShareFile) {
+                await Sharing.shareAsync(sourceUri, {
+                    dialogTitle: 'Share your CourtVision reel',
+                    mimeType: 'video/mp4',
+                    UTI: 'public.mpeg-4',
+                });
+            } else {
+                const isRemoteUri = sourceUri.startsWith('http://') || sourceUri.startsWith('https://');
+                await Share.share({
+                    title: 'CourtVision highlight reel',
+                    message: isRemoteUri
+                        ? `Check out my CourtVision AI highlight reel: ${sourceUri}`
+                        : 'Check out my CourtVision AI highlight reel.',
+                    url: isRemoteUri ? sourceUri : undefined,
+                });
+            }
+        } catch (error) {
+            console.warn('[StoryViewer] Failed to share highlight reel:', error);
+            Alert.alert('Share failed', 'Unable to share this reel right now. Please try again.');
+        } finally {
+            setIsActionBusy(false);
+        }
+    };
+
+    const handleDownloadReel = async () => {
+        if (!videoUri) {
+            Alert.alert('No reel to save', 'Record a session first to generate a highlight reel.');
+            return;
+        }
+
+        const baseDir = FileSystem.documentDirectory ?? FileSystem.cacheDirectory;
+        if (!baseDir) {
+            Alert.alert('Storage unavailable', 'This device cannot save files right now.');
+            return;
+        }
+
+        const targetUri = `${baseDir}courtvision-highlight-${Date.now()}.mp4`;
+
+        setIsActionBusy(true);
+        try {
+            let savedUri = targetUri;
+            const isRemoteUri = videoUri.startsWith('http://') || videoUri.startsWith('https://');
+
+            if (isRemoteUri) {
+                const result = await FileSystem.downloadAsync(videoUri, targetUri);
+                savedUri = result.uri;
+            } else {
+                await FileSystem.copyAsync({ from: videoUri, to: targetUri });
+            }
+
+            Alert.alert(
+                'Highlight saved',
+                'Your reel was saved on this device and is ready to share.',
+                [
+                    { text: 'Share now', onPress: () => { void handleShareReel(savedUri); } },
+                    { text: 'Close', style: 'cancel' },
+                ]
+            );
+        } catch (error) {
+            console.warn('[StoryViewer] Failed to save highlight reel:', error);
+            Alert.alert('Save failed', 'Unable to save this reel right now. Please try again.');
+        } finally {
+            setIsActionBusy(false);
+        }
+    };
 
     return (
         <Modal
@@ -176,10 +260,18 @@ export function StoryViewer({ visible, onClose, videoUri }: StoryViewerProps) {
                         <Text style={styles.sessionDate}>Feb 14, 2026 • COURT 4</Text>
                     </View>
                     <View style={styles.actionButtons}>
-                        <Pressable style={styles.actionBtn}>
+                        <Pressable
+                            style={styles.actionBtn}
+                            onPress={() => { void handleDownloadReel(); }}
+                            disabled={isActionBusy}
+                        >
                             <Download color={colors.snow} size={24} />
                         </Pressable>
-                        <Pressable style={[styles.actionBtn, styles.actionBtnPrimary]}>
+                        <Pressable
+                            style={[styles.actionBtn, styles.actionBtnPrimary]}
+                            onPress={() => { void handleShareReel(); }}
+                            disabled={isActionBusy}
+                        >
                             <Share2 color={colors.base} size={20} />
                             <Text style={styles.actionBtnText}>Share Reel</Text>
                         </Pressable>
@@ -187,7 +279,7 @@ export function StoryViewer({ visible, onClose, videoUri }: StoryViewerProps) {
                 </View>
 
                 {/* Loading State if video is slow */}
-                {!videoLoaded && (
+                {videoUri && !videoLoaded && (
                     <View style={[StyleSheet.absoluteFill, styles.loaderContainer]}>
                         <Text style={styles.loaderText}>GENERATING AI HIGHLIGHT...</Text>
                     </View>

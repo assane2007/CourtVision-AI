@@ -641,7 +641,7 @@ export default function HighlightPlayer() {
             {/* ── Share Modal ── */}
             <Modal visible={shareModal} transparent animationType="none" onRequestClose={closeShareModal}>
                 <Pressable style={hs.modalBackdrop} onPress={closeShareModal}>
-                    <Pressable onPress={() => {}}>
+                    <Pressable onPress={(event) => event.stopPropagation()}>
                         <Animated.View entering={SlideInDown.duration(350).damping(18)} style={hs.modalSheet}>
                             <View style={hs.modalHandle} />
 

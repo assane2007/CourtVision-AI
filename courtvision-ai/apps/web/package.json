@@ -3,8 +3,8 @@
     "version": "1.0.0",
     "private": true,
     "scripts": {
-        "dev": "next dev",
-        "build": "next build",
+        "dev": "cross-env NEXT_IGNORE_INCORRECT_LOCKFILE=1 next dev",
+        "build": "cross-env NEXT_IGNORE_INCORRECT_LOCKFILE=1 next build",
         "start": "next start",
         "lint": "next lint",
         "e2e": "playwright test"
@@ -23,6 +23,7 @@
         "three": "^0.174.0"
     },
     "devDependencies": {
+        "cross-env": "^7.0.3",
         "@playwright/test": "^1.58.2",
         "@types/node": "^20.11.24",
         "@types/react": "^18.2.45",

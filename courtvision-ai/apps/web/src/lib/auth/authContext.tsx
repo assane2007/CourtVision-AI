@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { isSupabaseConfigured } from '@/lib/supabase/env'
 import type { User, Session } from '@supabase/supabase-js'
 
 interface AuthState {
@@ -27,9 +28,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading: true,
     })
 
-    const supabase = createClient()
+    const supabase = React.useMemo(() => createClient(), [])
+    const supabaseConfigured = React.useMemo(() => isSupabaseConfigured(), [])
 
     useEffect(() => {
+        if (!supabaseConfigured) {
+            setState({ user: null, session: null, loading: false })
+            return
+        }
+
         // Get initial session
         supabase.auth.getSession().then(({ data: { session } }) => {
             setState({
@@ -51,14 +58,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         )
 
         return () => subscription.unsubscribe()
-    }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    }, [supabase, supabaseConfigured])
 
     const signIn = useCallback(async (email: string, password: string) => {
+        if (!supabaseConfigured) {
+            return { error: 'Supabase is not configured.' }
+        }
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         return { error: error?.message ?? null }
-    }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    }, [supabase, supabaseConfigured])
 
     const signUp = useCallback(async (email: string, password: string, name: string) => {
+        if (!supabaseConfigured) {
+            return { error: 'Supabase is not configured.' }
+        }
         const { error } = await supabase.auth.signUp({
             email,
             password,
@@ -67,26 +80,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             },
         })
         return { error: error?.message ?? null }
-    }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    }, [supabase, supabaseConfigured])
 
     const signInWithGoogle = useCallback(async () => {
+        if (!supabaseConfigured) {
+            return
+        }
         await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
                 redirectTo: `${window.location.origin}/dashboard`,
             },
         })
-    }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    }, [supabase, supabaseConfigured])
 
     const signOut = useCallback(async () => {
-        await supabase.auth.signOut()
+        if (supabaseConfigured) {
+            await supabase.auth.signOut()
+        }
         window.location.href = '/login'
-    }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    }, [supabase, supabaseConfigured])
 
     const getAccessToken = useCallback(async () => {
+        if (!supabaseConfigured) {
+            return null
+        }
         const { data: { session } } = await supabase.auth.getSession()
         return session?.access_token ?? null
-    }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    }, [supabase, supabaseConfigured])
 
     return (
         <AuthContext.Provider value={{ ...state, signIn, signUp, signInWithGoogle, signOut, getAccessToken }}>

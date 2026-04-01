@@ -7,7 +7,7 @@
 
 import {
     View, Text, ScrollView, TouchableOpacity, TextInput,
-    RefreshControl, ActivityIndicator, Platform,
+    RefreshControl, ActivityIndicator, Platform, Alert,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useState, useCallback } from 'react'
@@ -107,7 +107,7 @@ export default function Community() {
         challenges, fetchChallenges,
         feed, feedHasMore, fetchFeed, loadMoreFeed,
         followUser, unfollowUser,
-        myBadges, notifications, unreadCount,
+        myBadges, notifications, unreadCount, markNotificationsRead,
         searchResults, searchPlayers,
         loading, error,
     } = useCommunity()
@@ -119,6 +119,32 @@ export default function Community() {
         else if (activeTab === 'feed') await fetchFeed(true)
         setRefreshing(false)
     }, [activeTab, fetchLeaderboard, fetchChallenges, fetchFeed])
+
+    const handleNotificationsPress = useCallback(() => {
+        const unreadIds = notifications.filter((n) => !n.read).map((n) => n.id)
+        if (unreadIds.length > 0) {
+            void markNotificationsRead(unreadIds)
+        }
+
+        if (notifications.length === 0) {
+            Alert.alert('Notifications', 'No new community activity yet.')
+            return
+        }
+
+        const preview = notifications
+            .slice(0, 3)
+            .map((item) => `• ${item.title}`)
+            .join('\n')
+
+        Alert.alert(
+            'Community notifications',
+            preview,
+            [
+                { text: 'Open Feed', onPress: () => setActiveTab('feed') },
+                { text: 'Close', style: 'cancel' },
+            ]
+        )
+    }, [notifications, markNotificationsRead])
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: T.color.background.primary }}>
@@ -140,7 +166,7 @@ export default function Community() {
                             ...glass.regular ?? T.glass.thin,
                             justifyContent: 'center', alignItems: 'center',
                         }}
-                        onPress={() => { }}
+                        onPress={handleNotificationsPress}
                         accessibilityLabel="Notifications"
                         accessibilityRole="button"
                     >
