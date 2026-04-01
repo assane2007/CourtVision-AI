@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
     Play,
@@ -28,119 +28,70 @@ type SessionItem = {
     tags: string[]
 }
 
-const MOCK_SESSIONS: SessionItem[] = [
-    {
-        id: 'S-7721',
-        name: 'Midnight Grind',
-        date: 'March 02, 2026',
-        duration: '42m',
-        accuracy: '98.4%',
-        type: 'Team Scrimmage',
-        tags: ['Simulation Ready', '3D Reconstructed']
-    },
-    {
-        id: 'S-7718',
-        name: 'Free Throw Protocol',
-        date: 'March 01, 2026',
-        duration: '15m',
-        accuracy: '99.1%',
-        type: 'Solo Drills',
-        tags: ['Biometrics Only']
-    },
-    {
-        id: 'S-7712',
-        name: 'Shadow League Qualifier',
-        date: 'Feb 28, 2026',
-        duration: '22m',
-        accuracy: '97.8%',
-        type: '1v1 Matchup',
-        tags: ['Twin Sync OK', '3D']
-    },
-    {
-        id: 'S-7695',
-        name: 'Morning Cardio Scan',
-        date: 'Feb 25, 2026',
-        duration: '60m',
-        accuracy: '95.2%',
-        type: 'Fitness Track',
-        tags: ['Heart Rate Sync']
-    },
-]
-
-const ARCHIVED_SESSIONS: SessionItem[] = [
-    {
-        id: 'S-7684',
-        name: 'Evening Jump Lab',
-        date: 'Feb 21, 2026',
-        duration: '35m',
-        accuracy: '94.3%',
-        type: 'Vertical Mechanics',
-        tags: ['Archived', 'Biomechanics'],
-    },
-    {
-        id: 'S-7670',
-        name: 'CourtVision Sprint Test',
-        date: 'Feb 19, 2026',
-        duration: '28m',
-        accuracy: '93.8%',
-        type: 'Conditioning',
-        tags: ['Archived', 'Heart Rate Sync'],
-    },
-]
-
-const fetchSessionsFromApi = async () => {
-    try {
-        const data = await apiRequest<any[]>('/sessions')
-        if (!Array.isArray(data) || data.length === 0) {
-            return MOCK_SESSIONS
-        }
-
-        return data.map((session) => {
-            const shootingPct = Number(session.shooting_fg_pct ?? 0)
-            const highlights = Number(session.highlight_count ?? 0)
-            const status = String(session.status ?? 'complete').toUpperCase()
-            const createdAt = new Date(session.created_at)
-            return {
-                id: session.id,
-                name: `${String(session.type ?? 'Session').replace(/_/g, ' ')} ${session.id.slice(0, 4)}`,
-                date: createdAt.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
-                duration: session.duration_minutes != null ? `${session.duration_minutes}m` : '--',
-                accuracy: `${Math.round(shootingPct)}%`,
-                type: String(session.type ?? 'Session').replace(/_/g, ' '),
-                tags: highlights > 0
-                    ? [`${highlights} Highlights`, status]
-                    : [status],
-            }
-        })
-    } catch (error) {
-        console.warn('[SessionsPage] Failed to load sessions from API, using local dataset.', error)
-        return MOCK_SESSIONS
+const fetchSessionsFromApi = async (): Promise<SessionItem[]> => {
+    const data = await apiRequest<any[]>('/sessions')
+    if (!Array.isArray(data)) {
+        return []
     }
+
+    return data.map((session) => {
+        const sessionId = String(session.id ?? '')
+        const shootingPct = Number(session.shooting_fg_pct ?? 0)
+        const highlights = Number(session.highlight_count ?? 0)
+        const status = String(session.status ?? 'complete').toUpperCase()
+        const createdAt = new Date(session.created_at)
+
+        return {
+            id: sessionId,
+            name: `${String(session.type ?? 'Session').replace(/_/g, ' ')} ${sessionId.slice(0, 4) || 'N/A'}`,
+            date: Number.isNaN(createdAt.getTime())
+                ? '--'
+                : createdAt.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+            duration: session.duration_minutes != null ? `${session.duration_minutes}m` : '--',
+            accuracy: `${Math.round(shootingPct)}%`,
+            type: String(session.type ?? 'Session').replace(/_/g, ' '),
+            tags: highlights > 0
+                ? [`${highlights} Highlights`, status]
+                : [status],
+        }
+    })
 }
 
 export default function SessionsPage() {
     const router = useRouter()
-    const [sessions, setSessions] = useState<SessionItem[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [activeMenuSessionId, setActiveMenuSessionId] = useState<string | null>(null);
-    const [archivedLoaded, setArchivedLoaded] = useState(false);
-    const [isFilterOpen, setIsFilterOpen] = useState(false);
-    const [selectedType, setSelectedType] = useState<string>('ALL');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [activeSession, setActiveSession] = useState<SessionItem | null>(null);
-    const [feedback, setFeedback] = useState<string | null>(null);
+    const [sessions, setSessions] = useState<SessionItem[]>([])
+    const [loading, setLoading] = useState(true)
+    const [activeMenuSessionId, setActiveMenuSessionId] = useState<string | null>(null)
+    const [isFilterOpen, setIsFilterOpen] = useState(false)
+    const [selectedType, setSelectedType] = useState<string>('ALL')
+    const [searchTerm, setSearchTerm] = useState('')
+    const [activeSession, setActiveSession] = useState<SessionItem | null>(null)
+    const [feedback, setFeedback] = useState<string | null>(null)
+    const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+    const loadSessions = useCallback(async (successFeedback?: string) => {
+        setLoading(true)
+        setErrorMessage(null)
+        try {
+            const data = await fetchSessionsFromApi()
+            setSessions(data)
+            if (successFeedback) {
+                setFeedback(successFeedback)
+            }
+        } catch (loadError: unknown) {
+            const message = loadError instanceof Error
+                ? loadError.message
+                : 'Unable to load sessions.'
+            setSessions([])
+            setErrorMessage(message)
+        } finally {
+            setLoading(false)
+        }
+    }, [])
 
     useEffect(() => {
-        let mounted = true;
-        setLoading(true)
-        fetchSessionsFromApi().then(data => {
-            if (mounted) {
-                setSessions(data);
-                setLoading(false);
-            }
-        });
-        return () => { mounted = false; };
-    }, []);
+        void loadSessions()
+    }, [loadSessions])
 
     useEffect(() => {
         if (!feedback) {
@@ -189,47 +140,42 @@ export default function SessionsPage() {
     }
 
     const handleNewScan = () => {
-        router.push('/dashboard/twin?mode=scan');
-    };
+        router.push('/dashboard/twin?mode=scan')
+    }
 
     const handleFilter = () => {
-        setIsFilterOpen((current) => !current);
-    };
+        setIsFilterOpen((current) => !current)
+    }
 
     const handlePlaySession = (id: string) => {
         const selected = sessions.find((session) => session.id === id) ?? null
         setActiveSession(selected)
         setActiveMenuSessionId(null)
-    };
+    }
 
     const handleShare = async (e: React.MouseEvent, sessionId: string) => {
-        e.stopPropagation();
+        e.stopPropagation()
         const link = buildSessionShareUrl(sessionId)
         const copied = await copyToClipboard(link)
         setFeedback(copied ? 'Share link copied to clipboard.' : `Share link: ${link}`)
         setActiveMenuSessionId(null)
-    };
+    }
 
     const handleToggleSessionMenu = (e: React.MouseEvent, sessionId: string) => {
-        e.stopPropagation();
-        setActiveMenuSessionId((current) => (current === sessionId ? null : sessionId));
-    };
+        e.stopPropagation()
+        setActiveMenuSessionId((current) => (current === sessionId ? null : sessionId))
+    }
 
     const handleCopySessionId = async (e: React.MouseEvent, sessionId: string) => {
-        e.stopPropagation();
+        e.stopPropagation()
         const copied = await copyToClipboard(sessionId)
         setFeedback(copied ? 'Session ID copied.' : `Session ID: ${sessionId}`)
         setActiveMenuSessionId(null)
-    };
+    }
 
-    const handleLoadArchivedData = () => {
-        if (archivedLoaded) {
-            return;
-        }
-        setSessions((current) => [...current, ...ARCHIVED_SESSIONS]);
-        setArchivedLoaded(true);
-        setFeedback('Archived sessions loaded.');
-    };
+    const handleSyncSessions = () => {
+        void loadSessions('Sessions synchronized from API.')
+    }
 
     const handleSelectFilter = (type: string) => {
         setSelectedType(type)
@@ -290,6 +236,29 @@ export default function SessionsPage() {
                         <p className="font-mono text-text-tertiary uppercase tracking-[0.3em]">Loading Neural Archives...</p>
                     </div>
                 </div>
+            ) : errorMessage ? (
+                <div className="bg-surface border border-fire/20 rounded-3xl p-12 text-center">
+                    <h3 className="font-display font-black text-xl italic uppercase mb-2 text-fire">Unable To Load Sessions</h3>
+                    <p className="text-text-secondary font-mono text-sm max-w-sm mx-auto mb-6">{errorMessage}</p>
+                    <button
+                        onClick={() => { void loadSessions() }}
+                        className="bg-white text-void hover:bg-fire hover:text-white px-6 py-3 rounded-2xl font-bold font-mono text-xs uppercase tracking-widest transition-all"
+                    >
+                        RETRY
+                    </button>
+                </div>
+            ) : sessions.length === 0 ? (
+                <div className="bg-surface border border-white/5 rounded-3xl p-12 text-center">
+                    <CourtMap size={48} className="text-text-tertiary mx-auto mb-4 opacity-50" />
+                    <h3 className="font-display font-black text-xl italic uppercase mb-2">No Sessions Yet</h3>
+                    <p className="text-text-secondary font-mono text-sm max-w-sm mx-auto mb-6">Upload a new scan to start building your archive.</p>
+                    <button
+                        onClick={handleNewScan}
+                        className="bg-fire hover:bg-fire-hover text-white px-6 py-3 rounded-2xl font-bold font-mono text-xs uppercase tracking-widest transition-all"
+                    >
+                        START NEW SCAN
+                    </button>
+                </div>
             ) : visibleSessions.length === 0 ? (
                 <div className="bg-surface border border-white/5 rounded-3xl p-12 text-center">
                     <CourtMap size={48} className="text-text-tertiary mx-auto mb-4 opacity-50" />
@@ -317,7 +286,7 @@ export default function SessionsPage() {
                             onClick={() => handlePlaySession(session.id)}
                         >
                             <div className="aspect-video relative bg-void/80 flex items-center justify-center overflow-hidden">
-                                {/* Mock 3D Preview Grid */}
+                                {/* 3D Preview Grid */}
                                 <div className="absolute inset-0 opacity-10 pointer-events-none">
                                     <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle, #FF4D00 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
                                 </div>
@@ -389,11 +358,10 @@ export default function SessionsPage() {
             {!loading && sessions.length > 0 && (
                 <div className="flex justify-center py-6">
                     <button
-                        onClick={handleLoadArchivedData}
-                        disabled={archivedLoaded}
-                        className="text-text-tertiary font-mono text-[10px] uppercase tracking-[0.3em] hover:text-fire transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        onClick={handleSyncSessions}
+                        className="text-text-tertiary font-mono text-[10px] uppercase tracking-[0.3em] hover:text-fire transition-colors"
                     >
-                        {archivedLoaded ? 'ARCHIVES UP TO DATE' : 'LOAD ARCHIVED DATA'}
+                        SYNC WITH API
                     </button>
                 </div>
             )}

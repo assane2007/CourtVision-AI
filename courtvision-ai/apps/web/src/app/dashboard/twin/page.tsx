@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
     Cpu,
@@ -8,61 +8,159 @@ import {
     Zap,
     Shield,
     Crosshair,
-    Settings,
-    Activity,
-    Box
+    Box,
+    type LucideIcon,
 } from 'lucide-react'
+import { apiRequest } from '@/services/api'
 
-function bumpTwinVersion(version: string): string {
-    const match = version.match(/v?(\d+)\.(\d+)\.(\d+)(.*)/i)
-    if (!match) {
-        return version
-    }
-
-    const major = Number(match[1])
-    const minor = Number(match[2])
-    const patch = Number(match[3])
-    const suffix = match[4] || ''
-    return `v${major}.${minor}.${patch + 1}${suffix}`
+type TwinApiCategory = {
+    category?: string
+    overallScore?: number
 }
 
-// Mock fetching twin data
-const fetchTwinData = async () => {
-    return new Promise<any>((resolve) => {
-        setTimeout(() => {
-            resolve({
-                version: "v2.4.0-STABLE",
-                twinId: "USER_442_TWIN",
-                status: "FULLY SYNCHRONIZED",
-                attributes: [
-                    { name: 'EXPLOSIVENESS', value: 88, icon: Zap, color: 'text-fire' },
-                    { name: 'LATERAL SPEED', value: 72, icon: Wind, color: 'text-ice' },
-                    { name: 'SKELETAL DRIFT', value: 0.12, icon: Shield, color: 'text-green-400', unit: '%' },
-                    { name: 'NEURAL SYNC', value: 96, icon: Crosshair, color: 'text-fire' },
-                ]
-            });
-        }, 1000);
-    });
-};
+type TwinApiProfile = {
+    modelVersion?: string
+    sessionCount?: number
+    overallRating?: number
+    attributeCategories?: TwinApiCategory[]
+}
+
+type TwinApiEntity = {
+    user_id?: string
+    model_version?: string
+    twin_profile?: TwinApiProfile
+}
+
+type TwinApiPayload = {
+    profile?: TwinApiProfile
+    twin?: TwinApiEntity
+}
+
+type TwinViewAttribute = {
+    name: string
+    value: number
+    icon: LucideIcon
+    color: string
+    unit?: string
+}
+
+type TwinViewData = {
+    version: string
+    twinId: string
+    status: string
+    attributes: TwinViewAttribute[]
+}
+
+function formatTwinId(userId: string | undefined): string {
+    if (!userId) {
+        return 'UNAVAILABLE'
+    }
+    return `USER_${userId.slice(0, 8).toUpperCase()}`
+}
+
+function getAttributeVisual(label: string): { icon: LucideIcon; color: string } {
+    const normalized = label.toLowerCase()
+
+    if (normalized.includes('tir') || normalized.includes('shoot')) {
+        return { icon: Crosshair, color: 'text-fire' }
+    }
+    if (normalized.includes('mental')) {
+        return { icon: Shield, color: 'text-green-400' }
+    }
+    if (normalized.includes('physique') || normalized.includes('physical')) {
+        return { icon: Zap, color: 'text-fire' }
+    }
+    if (normalized.includes('tactique') || normalized.includes('tactic')) {
+        return { icon: Wind, color: 'text-ice' }
+    }
+
+    return { icon: Cpu, color: 'text-fire' }
+}
+
+function mapTwinData(payload: TwinApiPayload | undefined): TwinViewData {
+    const profile = payload?.profile ?? payload?.twin?.twin_profile
+    if (!profile) {
+        throw new Error('Twin profile unavailable for this account.')
+    }
+
+    const categories = Array.isArray(profile.attributeCategories)
+        ? profile.attributeCategories
+        : []
+
+    const attributes: TwinViewAttribute[] = categories.slice(0, 4).map((category, index) => {
+        const label = String(category.category ?? `Attribute ${index + 1}`).toUpperCase()
+        const numericValue = Number(category.overallScore ?? profile.overallRating ?? 0)
+        const { icon, color } = getAttributeVisual(label)
+        return {
+            name: label,
+            value: Math.max(0, Math.min(100, Math.round(numericValue))),
+            icon,
+            color,
+        }
+    })
+
+    if (attributes.length === 0 && typeof profile.overallRating === 'number') {
+        attributes.push({
+            name: 'OVERALL RATING',
+            value: Math.max(0, Math.min(100, Math.round(profile.overallRating))),
+            icon: Cpu,
+            color: 'text-fire',
+        })
+    }
+
+    const sessionCount = Number(profile.sessionCount ?? 0)
+
+    return {
+        version: String(profile.modelVersion ?? payload?.twin?.model_version ?? 'UNKNOWN'),
+        twinId: formatTwinId(payload?.twin?.user_id),
+        status: sessionCount > 0
+            ? 'FULLY SYNCHRONIZED'
+            : 'INITIALIZED // COLLECTING DATA',
+        attributes,
+    }
+}
+
+async function fetchTwinData(): Promise<TwinViewData> {
+    const response = await apiRequest<{ data?: TwinApiPayload }>('/twin/me')
+    return mapTwinData(response.data)
+}
+
+async function rebuildTwinData(): Promise<TwinViewData> {
+    const response = await apiRequest<{ data?: TwinApiPayload }>('/twin/rebuild', {
+        method: 'POST',
+    })
+    return mapTwinData(response.data)
+}
 
 export default function TwinPage() {
-    const [twinData, setTwinData] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const [twinData, setTwinData] = useState<TwinViewData | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
     const [isRecalibrating, setIsRecalibrating] = useState(false)
     const [recalibrationProgress, setRecalibrationProgress] = useState(0)
     const [isUpgrading, setIsUpgrading] = useState(false)
     const [systemMessage, setSystemMessage] = useState<string | null>(null)
 
+    const loadTwin = useCallback(async () => {
+        setLoading(true)
+        setError(null)
+        try {
+            const data = await fetchTwinData()
+            setTwinData(data)
+        } catch (loadError: unknown) {
+            const message = loadError instanceof Error
+                ? loadError.message
+                : 'Failed to load digital twin data.'
+            setError(message)
+            setTwinData(null)
+        } finally {
+            setLoading(false)
+        }
+    }, [])
+
     useEffect(() => {
-        let mounted = true;
-        fetchTwinData().then(data => {
-            if (mounted) {
-                setTwinData(data);
-                setLoading(false);
-            }
-        });
-        return () => { mounted = false; };
-    }, []);
+        void loadTwin()
+    }, [loadTwin])
 
     useEffect(() => {
         if (!isRecalibrating) {
@@ -71,69 +169,65 @@ export default function TwinPage() {
 
         const interval = window.setInterval(() => {
             setRecalibrationProgress((current) => {
-                const next = Math.min(100, current + 20)
-                if (next === 100) {
-                    window.clearInterval(interval)
-                    setIsRecalibrating(false)
-                    setSystemMessage('Recalibration complete. Neural sync now optimized.')
-                    setTwinData((currentTwin: any) => {
-                        if (!currentTwin) {
-                            return currentTwin
-                        }
-                        return {
-                            ...currentTwin,
-                            status: 'RECALIBRATED // SYNCHRONIZED',
-                            attributes: currentTwin.attributes.map((attribute: any) => {
-                                if (typeof attribute.value !== 'number') {
-                                    return attribute
-                                }
-
-                                const boosted = attribute.name === 'SKELETAL DRIFT'
-                                    ? Math.max(0.05, Number((attribute.value - 0.01).toFixed(2)))
-                                    : Math.min(99, Math.round(attribute.value + 1))
-                                return { ...attribute, value: boosted }
-                            }),
-                        }
-                    })
+                if (current >= 88) {
+                    return current
                 }
-                return next
+                return Math.min(88, current + 8)
             })
-        }, 300)
+        }, 250)
 
         return () => window.clearInterval(interval)
     }, [isRecalibrating])
 
-    const handleRecalibrate = () => {
+    const handleRecalibrate = async () => {
         if (isRecalibrating) {
             return
         }
+
         setSystemMessage('Running biometric recalibration sequence...')
-        setRecalibrationProgress(0)
+        setRecalibrationProgress(8)
         setIsRecalibrating(true)
+
+        try {
+            const rebuiltData = await rebuildTwinData()
+            setTwinData(rebuiltData)
+            setRecalibrationProgress(100)
+            setSystemMessage('Recalibration complete. Twin rebuilt from latest sessions.')
+        } catch (rebuildError: unknown) {
+            const message = rebuildError instanceof Error
+                ? rebuildError.message
+                : 'Recalibration failed.'
+            setSystemMessage(`Recalibration failed: ${message}`)
+        } finally {
+            window.setTimeout(() => {
+                setIsRecalibrating(false)
+                setRecalibrationProgress(0)
+            }, 450)
+        }
     }
 
-    const handleUpgrade = () => {
+    const handleUpgrade = async () => {
         if (isUpgrading) {
             return
         }
 
         setIsUpgrading(true)
-        setSystemMessage('Downloading neural engine firmware package...')
+        setSystemMessage('Synchronizing AI insights...')
 
-        window.setTimeout(() => {
-            setTwinData((currentTwin: any) => {
-                if (!currentTwin) {
-                    return currentTwin
-                }
-                return {
-                    ...currentTwin,
-                    version: bumpTwinVersion(currentTwin.version),
-                    status: 'ENGINE UPGRADED // SYNCHRONIZED',
-                }
-            })
+        try {
+            const response = await apiRequest<{ data?: { insights?: string; cached?: boolean } }>('/twin/insights')
+            const insightsMessage = response.data?.cached
+                ? 'Insights synchronized from cache.'
+                : 'New AI insights generated and synchronized.'
+            setSystemMessage(insightsMessage)
+        } catch (insightsError: unknown) {
+            const message = insightsError instanceof Error
+                ? insightsError.message
+                : 'Insights synchronization failed.'
+            setSystemMessage(`Insights synchronization failed: ${message}`)
+        } finally {
             setIsUpgrading(false)
-            setSystemMessage('Neural engine update installed successfully.')
-        }, 1200)
+        }
     }
 
     if (loading) {
@@ -144,7 +238,24 @@ export default function TwinPage() {
                     <p className="font-mono text-text-tertiary uppercase tracking-[0.3em]">Constructing Digital Twin...</p>
                 </div>
             </div>
-        );
+        )
+    }
+
+    if (error || !twinData) {
+        return (
+            <div className="flex h-[60vh] items-center justify-center">
+                <div className="max-w-md text-center space-y-4 rounded-3xl border border-fire/20 bg-fire/10 p-8">
+                    <p className="font-display text-xl font-black italic uppercase text-fire">Twin Unavailable</p>
+                    <p className="text-sm text-text-secondary">{error ?? 'Unable to load twin data right now.'}</p>
+                    <button
+                        onClick={() => { void loadTwin() }}
+                        className="bg-white text-void hover:bg-fire hover:text-white px-6 py-3 rounded-2xl font-bold font-mono text-xs uppercase tracking-widest transition-all"
+                    >
+                        RETRY
+                    </button>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -206,7 +317,7 @@ export default function TwinPage() {
 
                 {/* Attributes */}
                 <div className="space-y-6 flex flex-col h-full">
-                    {twinData.attributes.map((attr: any, i: number) => (
+                    {twinData.attributes.map((attr, i) => (
                         <motion.div
                             key={attr.name}
                             initial={{ opacity: 0, x: 20 }}
@@ -224,19 +335,26 @@ export default function TwinPage() {
                             <div className="h-1 bg-void rounded-full overflow-hidden">
                                 <motion.div
                                     initial={{ width: 0 }}
-                                    animate={{ width: typeof attr.value === 'number' ? `${Math.min(attr.value, 100)}%` : '100%' }}
+                                    animate={{ width: `${Math.min(attr.value, 100)}%` }}
                                     className={`h-full ${attr.color.replace('text', 'bg')} opacity-60`}
                                 />
                             </div>
                         </motion.div>
                     ))}
 
+                    {twinData.attributes.length === 0 && (
+                        <div className="rounded-3xl border border-white/10 bg-surface p-6 text-center">
+                            <p className="text-[10px] font-mono uppercase tracking-widest text-text-tertiary">No attribute categories yet</p>
+                            <p className="mt-2 text-sm text-text-secondary">Analyze more sessions to unlock detailed twin attributes.</p>
+                        </div>
+                    )}
+
                     <button
                         onClick={handleUpgrade}
                         disabled={isUpgrading}
                         className="bg-white text-void font-display font-black py-4 rounded-3xl uppercase italic tracking-widest hover:bg-fire hover:text-white transition-all shadow-xl shadow-white/5 disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                        {isUpgrading ? 'UPGRADING...' : 'UPGRADE NEURAL ENGINE'}
+                        {isUpgrading ? 'SYNCING...' : 'SYNC AI INSIGHTS'}
                     </button>
 
                     {systemMessage && (
