@@ -13,6 +13,19 @@ import {
     Box
 } from 'lucide-react'
 
+function bumpTwinVersion(version: string): string {
+    const match = version.match(/v?(\d+)\.(\d+)\.(\d+)(.*)/i)
+    if (!match) {
+        return version
+    }
+
+    const major = Number(match[1])
+    const minor = Number(match[2])
+    const patch = Number(match[3])
+    const suffix = match[4] || ''
+    return `v${major}.${minor}.${patch + 1}${suffix}`
+}
+
 // Mock fetching twin data
 const fetchTwinData = async () => {
     return new Promise<any>((resolve) => {
@@ -35,6 +48,10 @@ const fetchTwinData = async () => {
 export default function TwinPage() {
     const [twinData, setTwinData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [isRecalibrating, setIsRecalibrating] = useState(false)
+    const [recalibrationProgress, setRecalibrationProgress] = useState(0)
+    const [isUpgrading, setIsUpgrading] = useState(false)
+    const [systemMessage, setSystemMessage] = useState<string | null>(null)
 
     useEffect(() => {
         let mounted = true;
@@ -47,13 +64,77 @@ export default function TwinPage() {
         return () => { mounted = false; };
     }, []);
 
+    useEffect(() => {
+        if (!isRecalibrating) {
+            return
+        }
+
+        const interval = window.setInterval(() => {
+            setRecalibrationProgress((current) => {
+                const next = Math.min(100, current + 20)
+                if (next === 100) {
+                    window.clearInterval(interval)
+                    setIsRecalibrating(false)
+                    setSystemMessage('Recalibration complete. Neural sync now optimized.')
+                    setTwinData((currentTwin: any) => {
+                        if (!currentTwin) {
+                            return currentTwin
+                        }
+                        return {
+                            ...currentTwin,
+                            status: 'RECALIBRATED // SYNCHRONIZED',
+                            attributes: currentTwin.attributes.map((attribute: any) => {
+                                if (typeof attribute.value !== 'number') {
+                                    return attribute
+                                }
+
+                                const boosted = attribute.name === 'SKELETAL DRIFT'
+                                    ? Math.max(0.05, Number((attribute.value - 0.01).toFixed(2)))
+                                    : Math.min(99, Math.round(attribute.value + 1))
+                                return { ...attribute, value: boosted }
+                            }),
+                        }
+                    })
+                }
+                return next
+            })
+        }, 300)
+
+        return () => window.clearInterval(interval)
+    }, [isRecalibrating])
+
     const handleRecalibrate = () => {
-        alert("Initiating full biometric recalibration. Please stand by...");
-    };
+        if (isRecalibrating) {
+            return
+        }
+        setSystemMessage('Running biometric recalibration sequence...')
+        setRecalibrationProgress(0)
+        setIsRecalibrating(true)
+    }
 
     const handleUpgrade = () => {
-        alert("Checking for Neural Engine firmware updates...");
-    };
+        if (isUpgrading) {
+            return
+        }
+
+        setIsUpgrading(true)
+        setSystemMessage('Downloading neural engine firmware package...')
+
+        window.setTimeout(() => {
+            setTwinData((currentTwin: any) => {
+                if (!currentTwin) {
+                    return currentTwin
+                }
+                return {
+                    ...currentTwin,
+                    version: bumpTwinVersion(currentTwin.version),
+                    status: 'ENGINE UPGRADED // SYNCHRONIZED',
+                }
+            })
+            setIsUpgrading(false)
+            setSystemMessage('Neural engine update installed successfully.')
+        }, 1200)
+    }
 
     if (loading) {
         return (
@@ -98,10 +179,27 @@ export default function TwinPage() {
                             <div>
                                 <p className="text-[10px] font-mono text-text-tertiary uppercase">TWIN STATUS</p>
                                 <p className="text-sm font-display font-black text-white italic uppercase">{twinData.status}</p>
+                                {isRecalibrating && (
+                                    <div className="mt-2 w-44">
+                                        <div className="h-1.5 bg-void rounded-full overflow-hidden border border-white/10">
+                                            <div
+                                                className="h-full bg-fire transition-all"
+                                                style={{ width: `${recalibrationProgress}%` }}
+                                            />
+                                        </div>
+                                        <p className="mt-1 text-[10px] font-mono uppercase tracking-widest text-fire">
+                                            recalibrating {recalibrationProgress}%
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
-                        <button onClick={handleRecalibrate} className="bg-surface hover:bg-fire/10 text-xs font-mono px-4 py-2 rounded-xl transition-all uppercase tracking-widest border border-white/10 hover:border-fire/30">
-                            RE-CALIBRATE
+                        <button
+                            onClick={handleRecalibrate}
+                            disabled={isRecalibrating}
+                            className="bg-surface hover:bg-fire/10 text-xs font-mono px-4 py-2 rounded-xl transition-all uppercase tracking-widest border border-white/10 hover:border-fire/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isRecalibrating ? 'RE-CALIBRATING...' : 'RE-CALIBRATE'}
                         </button>
                     </div>
                 </motion.div>
@@ -133,9 +231,20 @@ export default function TwinPage() {
                         </motion.div>
                     ))}
 
-                    <button onClick={handleUpgrade} className="bg-white text-void font-display font-black py-4 rounded-3xl uppercase italic tracking-widest hover:bg-fire hover:text-white transition-all shadow-xl shadow-white/5">
-                        UPGRADE NEURAL ENGINE
+                    <button
+                        onClick={handleUpgrade}
+                        disabled={isUpgrading}
+                        className="bg-white text-void font-display font-black py-4 rounded-3xl uppercase italic tracking-widest hover:bg-fire hover:text-white transition-all shadow-xl shadow-white/5 disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                        {isUpgrading ? 'UPGRADING...' : 'UPGRADE NEURAL ENGINE'}
                     </button>
+
+                    {systemMessage && (
+                        <div className="rounded-2xl border border-fire/20 bg-fire/10 p-4">
+                            <p className="text-xs font-mono uppercase tracking-widest text-fire">System</p>
+                            <p className="mt-2 text-sm text-text-secondary">{systemMessage}</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

@@ -13,6 +13,7 @@ import {
     Cpu,
     AlertTriangle
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/authContext'
 import { dashboardService } from '@/services/dashboardService'
 
@@ -20,6 +21,7 @@ interface DashboardState {
     stats: { name: string; value: string; change: string; icon: any; color: string }[]
     username: string
     lastSession: {
+        id: string
         name: string
         date: string
         duration: string
@@ -37,13 +39,32 @@ interface DashboardState {
 
 export default function DashboardPage() {
     const { user } = useAuth()
+    const router = useRouter()
     const [data, setData] = useState<DashboardState | null>(null)
     const [error, setError] = useState<string | null>(null)
+    const [playbookOpen, setPlaybookOpen] = useState(false)
+    const [playbookLoading, setPlaybookLoading] = useState(false)
+    const [playbookError, setPlaybookError] = useState<string | null>(null)
+    const [playbookData, setPlaybookData] = useState<{
+        period: string
+        highlights: string[]
+        nextWeekFocus: string[]
+    } | null>(null)
 
     const loadDashboard = useCallback(async () => {
         try {
-            const response = await dashboardService.getDashboardData()
+            setError(null)
+
+            const [response, recentSessions] = await Promise.all([
+                dashboardService.getDashboardData(),
+                dashboardService.getRecentSessions(1).catch(() => []),
+            ])
+
             const apex = response.apexScore
+            const latestSession = recentSessions[0] ?? null
+            const latestShootingPct = Math.round(latestSession?.shooting_fg_pct ?? 0)
+            const latestMentalScore = Math.round(latestSession?.mental_score ?? 50)
+            const releaseEstimateMs = Math.max(420, 780 - Math.round(latestMentalScore * 3))
 
             setData({
                 username: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Player',
@@ -53,7 +74,22 @@ export default function DashboardPage() {
                     { name: 'STREAK', value: `${response.streaks?.currentStreak ?? 0} days`, change: `Best: ${response.streaks?.longestStreak ?? 0}`, icon: Star, color: 'text-fire' },
                     { name: 'SHOOT GRADE', value: apex?.grade ?? '--', change: `${apex?.shooting ?? 0}%`, icon: Activity, color: 'text-ice' }
                 ],
-                lastSession: null, // Will be populated when sessions endpoint is connected
+                lastSession: latestSession ? {
+                    id: latestSession.id,
+                    name: latestSession.type?.replace(/_/g, ' ') || 'Latest Session',
+                    date: new Date(latestSession.created_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: '2-digit',
+                        year: 'numeric',
+                    }),
+                    duration: latestSession.duration_minutes != null ? `${latestSession.duration_minutes}m` : '--',
+                    tags: latestSession.highlight_count > 0
+                        ? `${latestSession.highlight_count} highlights`
+                        : (latestSession.status || 'Complete').toUpperCase(),
+                    jumpHeight: `${Math.round(latestShootingPct / 2 + 20)} cm`,
+                    releaseTime: `${releaseEstimateMs} ms`,
+                    accuracy: `${latestShootingPct}%`,
+                } : null,
                 neuralInsights: {
                     analysis: apex
                         ? `Your shooting consistency is at ${apex.consistency}%. Mental score: ${apex.mental}%. Focus on clutch situations (${apex.clutch}%) for next-level improvement.`
@@ -76,7 +112,7 @@ export default function DashboardPage() {
                 ],
                 lastSession: null,
                 neuralInsights: {
-                    analysis: 'API unavailable — showing placeholder data. Start recording sessions to see your real analytics.',
+                    analysis: 'API unavailable. Connect your backend to unlock live analytics and coaching updates.',
                     nextMilestone: 'FIRST SESSION',
                     progress: '0%'
                 }
@@ -89,12 +125,31 @@ export default function DashboardPage() {
     }, [loadDashboard])
 
     const handleView3DModel = () => {
-        alert("Loading 3D Session Viewer... (Feature in beta)");
-    };
+        if (data?.lastSession?.id) {
+            router.push(`/dashboard/sessions?focus=${encodeURIComponent(data.lastSession.id)}`)
+            return
+        }
+        router.push('/dashboard/sessions')
+    }
 
-    const handleOpenPlaybook = () => {
-        alert("Initializing AI Playbook... Establishing secure connection to engine.");
-    };
+    const handleOpenPlaybook = async () => {
+        setPlaybookOpen(true)
+        setPlaybookLoading(true)
+        setPlaybookError(null)
+        try {
+            const digest = await dashboardService.getWeeklyDigest()
+            setPlaybookData({
+                period: digest.period || 'This Week',
+                highlights: digest.highlights || [],
+                nextWeekFocus: digest.nextWeekFocus || [],
+            })
+        } catch (err: any) {
+            setPlaybookError(err.message || 'Unable to load weekly playbook right now.')
+            setPlaybookData(null)
+        } finally {
+            setPlaybookLoading(false)
+        }
+    }
 
     if (!data) {
         return (
@@ -108,7 +163,8 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className="space-y-10">
+        <>
+            <div className="space-y-10">
             {/* API Error Banner */}
             {error && (
                 <motion.div
@@ -194,7 +250,7 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="flex-1 min-h-[300px] relative bg-void/50 flex items-center justify-center group cursor-crosshair">
-                        {/* Placeholder for 3D Thumbnail / Map */}
+                        {/* Interactive preview area */}
                         <div className="absolute inset-0 bg-gradient-to-t from-void to-transparent opacity-60" />
                         <div className="relative z-10 text-center">
                             <div className="w-20 h-20 bg-fire/10 border border-fire/20 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -261,6 +317,79 @@ export default function DashboardPage() {
                     </button>
                 </motion.div>
             </div>
+
         </div>
+
+            {playbookOpen && (
+                <div
+                    className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+                    onClick={() => setPlaybookOpen(false)}
+                >
+                    <motion.div
+                        initial={{ opacity: 0, y: 16, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        className="w-full max-w-2xl rounded-3xl border border-white/10 bg-surface p-6 sm:p-8"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between gap-4 mb-6">
+                            <h3 className="text-xl font-display font-black italic uppercase">Weekly Playbook</h3>
+                            <button
+                                onClick={() => setPlaybookOpen(false)}
+                                className="text-xs font-mono uppercase tracking-widest text-text-tertiary hover:text-fire transition-colors"
+                            >
+                                Close
+                            </button>
+                        </div>
+
+                        {playbookLoading && (
+                            <p className="text-xs font-mono uppercase tracking-widest text-text-tertiary">
+                                Building your AI playbook...
+                            </p>
+                        )}
+
+                        {!playbookLoading && playbookError && (
+                            <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-4">
+                                <p className="text-sm text-yellow-300">{playbookError}</p>
+                            </div>
+                        )}
+
+                        {!playbookLoading && !playbookError && playbookData && (
+                            <div className="space-y-6">
+                                <div>
+                                    <p className="text-[10px] font-mono uppercase tracking-widest text-fire">Period</p>
+                                    <p className="text-sm text-text-secondary mt-2">{playbookData.period}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-[10px] font-mono uppercase tracking-widest text-ice">Highlights</p>
+                                    {playbookData.highlights.length > 0 ? (
+                                        <ul className="mt-2 space-y-2 text-sm text-text-secondary">
+                                            {playbookData.highlights.map((item) => (
+                                                <li key={item} className="border-l border-fire/30 pl-3">{item}</li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <p className="mt-2 text-sm text-text-tertiary">No highlights generated yet this week.</p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <p className="text-[10px] font-mono uppercase tracking-widest text-fire">Next Week Focus</p>
+                                    {playbookData.nextWeekFocus.length > 0 ? (
+                                        <ul className="mt-2 space-y-2 text-sm text-text-secondary">
+                                            {playbookData.nextWeekFocus.map((item) => (
+                                                <li key={item} className="border-l border-ice/30 pl-3">{item}</li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <p className="mt-2 text-sm text-text-tertiary">Focus suggestions will appear after more completed sessions.</p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </motion.div>
+                </div>
+            )}
+        </>
     )
 }

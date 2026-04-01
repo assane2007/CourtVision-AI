@@ -13,6 +13,7 @@ import {
     ChevronRight,
     Camera
 } from 'lucide-react'
+import { apiRequest } from '@/services/api'
 
 const sections = [
     { title: 'Personal Information', icon: User, fields: ['Full Name', 'Age', 'Height / Weight'] },
@@ -26,6 +27,8 @@ export default function ProfilePage() {
     const [loading, setLoading] = React.useState(true);
     const [avatarPreview, setAvatarPreview] = React.useState<string | null>(null);
     const avatarInputRef = React.useRef<HTMLInputElement | null>(null);
+    const [isBillingLoading, setIsBillingLoading] = React.useState(false)
+    const [billingMessage, setBillingMessage] = React.useState<string | null>(null)
 
     React.useEffect(() => {
         // Fetch profile data here in the future
@@ -45,9 +48,21 @@ export default function ProfilePage() {
         }, 1000);
     }, []);
 
-    const handleRefillData = () => {
-        alert('Navigating to Billing Portal...');
-    };
+    const handleRefillData = async () => {
+        setIsBillingLoading(true)
+        setBillingMessage(null)
+        try {
+            const response = await apiRequest<{ url?: string }>('/billing/portal')
+            if (!response?.url) {
+                throw new Error('Billing portal URL unavailable')
+            }
+            window.location.href = response.url
+        } catch (error: any) {
+            setBillingMessage(error.message || 'Unable to open billing portal right now.')
+        } finally {
+            setIsBillingLoading(false)
+        }
+    }
 
     const handleOpenAvatarPicker = () => {
         avatarInputRef.current?.click();
@@ -163,11 +178,19 @@ export default function ProfilePage() {
                 </div>
                 <button
                     onClick={handleRefillData}
-                    className="bg-fire text-white px-8 py-3 rounded-2xl font-bold font-mono text-xs uppercase tracking-widest hover:bg-fire-hover transition-all shadow-lg shadow-fire/20"
+                    disabled={isBillingLoading}
+                    className="bg-fire text-white px-8 py-3 rounded-2xl font-bold font-mono text-xs uppercase tracking-widest hover:bg-fire-hover transition-all shadow-lg shadow-fire/20 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                    REFILL DATA
+                    {isBillingLoading ? 'OPENING PORTAL...' : 'REFILL DATA'}
                 </button>
             </motion.div>
+
+            {billingMessage && (
+                <div className="rounded-2xl border border-yellow-500/20 bg-yellow-500/10 px-5 py-4">
+                    <p className="text-xs font-mono uppercase tracking-widest text-yellow-300">Billing</p>
+                    <p className="mt-1 text-sm text-yellow-200">{billingMessage}</p>
+                </div>
+            )}
         </div>
     )
 }

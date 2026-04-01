@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
     Play,
@@ -8,12 +8,15 @@ import {
     Search,
     ChevronDown,
     Map as CourtMap,
-    Activity,
     Clock,
     Share2,
     MoreHorizontal,
-    Zap
+    Zap,
+    X,
+    CheckCircle2
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { apiRequest } from '@/services/api'
 
 type SessionItem = {
     id: string
@@ -24,6 +27,45 @@ type SessionItem = {
     type: string
     tags: string[]
 }
+
+const MOCK_SESSIONS: SessionItem[] = [
+    {
+        id: 'S-7721',
+        name: 'Midnight Grind',
+        date: 'March 02, 2026',
+        duration: '42m',
+        accuracy: '98.4%',
+        type: 'Team Scrimmage',
+        tags: ['Simulation Ready', '3D Reconstructed']
+    },
+    {
+        id: 'S-7718',
+        name: 'Free Throw Protocol',
+        date: 'March 01, 2026',
+        duration: '15m',
+        accuracy: '99.1%',
+        type: 'Solo Drills',
+        tags: ['Biometrics Only']
+    },
+    {
+        id: 'S-7712',
+        name: 'Shadow League Qualifier',
+        date: 'Feb 28, 2026',
+        duration: '22m',
+        accuracy: '97.8%',
+        type: '1v1 Matchup',
+        tags: ['Twin Sync OK', '3D']
+    },
+    {
+        id: 'S-7695',
+        name: 'Morning Cardio Scan',
+        date: 'Feb 25, 2026',
+        duration: '60m',
+        accuracy: '95.2%',
+        type: 'Fitness Track',
+        tags: ['Heart Rate Sync']
+    },
+]
 
 const ARCHIVED_SESSIONS: SessionItem[] = [
     {
@@ -46,60 +88,51 @@ const ARCHIVED_SESSIONS: SessionItem[] = [
     },
 ]
 
-// Mocking the real API response for now until it's synced
 const fetchSessionsFromApi = async () => {
-    return new Promise<SessionItem[]>((resolve) => {
-        setTimeout(() => {
-            resolve([
-                {
-                    id: 'S-7721',
-                    name: 'Midnight Grind',
-                    date: 'March 02, 2026',
-                    duration: '42m',
-                    accuracy: '98.4%',
-                    type: 'Team Scrimmage',
-                    tags: ['Simulation Ready', '3D Reconstructed']
-                },
-                {
-                    id: 'S-7718',
-                    name: 'Free Throw Protocol',
-                    date: 'March 01, 2026',
-                    duration: '15m',
-                    accuracy: '99.1%',
-                    type: 'Solo Drills',
-                    tags: ['Biometrics Only']
-                },
-                {
-                    id: 'S-7712',
-                    name: 'Shadow League Qualifier',
-                    date: 'Feb 28, 2026',
-                    duration: '22m',
-                    accuracy: '97.8%',
-                    type: '1v1 Matchup',
-                    tags: ['Twin Sync OK', '3D']
-                },
-                {
-                    id: 'S-7695',
-                    name: 'Morning Cardio Scan',
-                    date: 'Feb 25, 2026',
-                    duration: '60m',
-                    accuracy: '95.2%',
-                    type: 'Fitness Track',
-                    tags: ['Heart Rate Sync']
-                },
-            ]);
-        }, 1200);
-    });
+    try {
+        const data = await apiRequest<any[]>('/sessions')
+        if (!Array.isArray(data) || data.length === 0) {
+            return MOCK_SESSIONS
+        }
+
+        return data.map((session) => {
+            const shootingPct = Number(session.shooting_fg_pct ?? 0)
+            const highlights = Number(session.highlight_count ?? 0)
+            const status = String(session.status ?? 'complete').toUpperCase()
+            const createdAt = new Date(session.created_at)
+            return {
+                id: session.id,
+                name: `${String(session.type ?? 'Session').replace(/_/g, ' ')} ${session.id.slice(0, 4)}`,
+                date: createdAt.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+                duration: session.duration_minutes != null ? `${session.duration_minutes}m` : '--',
+                accuracy: `${Math.round(shootingPct)}%`,
+                type: String(session.type ?? 'Session').replace(/_/g, ' '),
+                tags: highlights > 0
+                    ? [`${highlights} Highlights`, status]
+                    : [status],
+            }
+        })
+    } catch (error) {
+        console.warn('[SessionsPage] Failed to load sessions from API, using local dataset.', error)
+        return MOCK_SESSIONS
+    }
 }
 
 export default function SessionsPage() {
+    const router = useRouter()
     const [sessions, setSessions] = useState<SessionItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeMenuSessionId, setActiveMenuSessionId] = useState<string | null>(null);
     const [archivedLoaded, setArchivedLoaded] = useState(false);
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [selectedType, setSelectedType] = useState<string>('ALL');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [activeSession, setActiveSession] = useState<SessionItem | null>(null);
+    const [feedback, setFeedback] = useState<string | null>(null);
 
     useEffect(() => {
         let mounted = true;
+        setLoading(true)
         fetchSessionsFromApi().then(data => {
             if (mounted) {
                 setSessions(data);
@@ -109,21 +142,72 @@ export default function SessionsPage() {
         return () => { mounted = false; };
     }, []);
 
+    useEffect(() => {
+        if (!feedback) {
+            return
+        }
+        const timer = window.setTimeout(() => setFeedback(null), 2400)
+        return () => window.clearTimeout(timer)
+    }, [feedback])
+
+    const sessionTypes = useMemo(
+        () => ['ALL', ...Array.from(new Set(sessions.map((session) => session.type.toUpperCase())))],
+        [sessions]
+    )
+
+    const visibleSessions = useMemo(() => {
+        return sessions.filter((session) => {
+            const matchesType = selectedType === 'ALL' || session.type.toUpperCase() === selectedType
+            const query = searchTerm.trim().toLowerCase()
+            const matchesSearch = query.length === 0
+                || session.name.toLowerCase().includes(query)
+                || session.id.toLowerCase().includes(query)
+                || session.tags.some((tag) => tag.toLowerCase().includes(query))
+            return matchesType && matchesSearch
+        })
+    }, [sessions, selectedType, searchTerm])
+
+    const closeFilter = () => setIsFilterOpen(false)
+
+    const copyToClipboard = async (value: string): Promise<boolean> => {
+        try {
+            if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(value)
+                return true
+            }
+            return false
+        } catch {
+            return false
+        }
+    }
+
+    const buildSessionShareUrl = (sessionId: string): string => {
+        if (typeof window === 'undefined') {
+            return `/dashboard/sessions?session=${encodeURIComponent(sessionId)}`
+        }
+        return `${window.location.origin}/dashboard/sessions?session=${encodeURIComponent(sessionId)}`
+    }
+
     const handleNewScan = () => {
-        alert("Initializing Neural Scanner... Please connect your camera device.");
+        router.push('/dashboard/twin?mode=scan');
     };
 
     const handleFilter = () => {
-        alert("Opening Advanced Filters...");
+        setIsFilterOpen((current) => !current);
     };
 
     const handlePlaySession = (id: string) => {
-        alert(`Loading 3D playback for Session ${id}...`);
+        const selected = sessions.find((session) => session.id === id) ?? null
+        setActiveSession(selected)
+        setActiveMenuSessionId(null)
     };
 
-    const handleShare = (e: React.MouseEvent) => {
+    const handleShare = async (e: React.MouseEvent, sessionId: string) => {
         e.stopPropagation();
-        alert("Generating shareable link...");
+        const link = buildSessionShareUrl(sessionId)
+        const copied = await copyToClipboard(link)
+        setFeedback(copied ? 'Share link copied to clipboard.' : `Share link: ${link}`)
+        setActiveMenuSessionId(null)
     };
 
     const handleToggleSessionMenu = (e: React.MouseEvent, sessionId: string) => {
@@ -133,18 +217,9 @@ export default function SessionsPage() {
 
     const handleCopySessionId = async (e: React.MouseEvent, sessionId: string) => {
         e.stopPropagation();
-        try {
-            if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-                await navigator.clipboard.writeText(sessionId);
-                alert(`Session ID copied: ${sessionId}`);
-            } else {
-                window.prompt('Copy session ID', sessionId);
-            }
-        } catch {
-            window.prompt('Copy session ID', sessionId);
-        } finally {
-            setActiveMenuSessionId(null);
-        }
+        const copied = await copyToClipboard(sessionId)
+        setFeedback(copied ? 'Session ID copied.' : `Session ID: ${sessionId}`)
+        setActiveMenuSessionId(null)
     };
 
     const handleLoadArchivedData = () => {
@@ -153,7 +228,13 @@ export default function SessionsPage() {
         }
         setSessions((current) => [...current, ...ARCHIVED_SESSIONS]);
         setArchivedLoaded(true);
+        setFeedback('Archived sessions loaded.');
     };
+
+    const handleSelectFilter = (type: string) => {
+        setSelectedType(type)
+        closeFilter()
+    }
 
     return (
         <div className="space-y-8">
@@ -164,14 +245,41 @@ export default function SessionsPage() {
                     <p className="text-text-tertiary font-mono text-[10px] uppercase tracking-widest mt-1">Audit your 3D gameplay reconstruction history</p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="relative flex items-center gap-3">
                     <button onClick={handleFilter} className="bg-surface border border-white/5 px-4 py-2.5 rounded-xl text-xs font-mono uppercase tracking-widest text-text-secondary hover:border-fire/50 transition-all flex items-center gap-2">
-                        <Filter size={14} /> FILTER
+                        <Filter size={14} /> FILTER <ChevronDown size={12} />
                     </button>
                     <button onClick={handleNewScan} className="bg-fire hover:bg-fire-hover text-white px-5 py-2.5 rounded-xl text-xs font-mono uppercase tracking-widest transition-all font-bold shadow-lg shadow-fire/10">
                         NEW SCAN
                     </button>
+
+                    {isFilterOpen && (
+                        <div className="absolute right-0 top-12 z-30 min-w-52 rounded-xl border border-white/10 bg-void/95 backdrop-blur-md overflow-hidden">
+                            {sessionTypes.map((type) => (
+                                <button
+                                    key={type}
+                                    onClick={() => handleSelectFilter(type)}
+                                    className={`w-full px-4 py-2.5 text-left text-[10px] font-mono uppercase tracking-widest transition-colors ${selectedType === type ? 'text-fire bg-fire/10' : 'text-text-secondary hover:text-fire hover:bg-fire/10'}`}
+                                >
+                                    {type}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
+            </div>
+
+            <div className="bg-surface border border-white/5 rounded-2xl px-4 py-3 flex items-center gap-3">
+                <Search size={16} className="text-text-tertiary" />
+                <input
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    placeholder="Search by session name, ID or tag"
+                    className="flex-1 bg-transparent text-sm text-white placeholder:text-text-tertiary focus:outline-none"
+                />
+                <span className="text-[10px] font-mono uppercase tracking-widest text-text-tertiary">
+                    {selectedType}
+                </span>
             </div>
 
             {/* Session Grid */}
@@ -182,18 +290,24 @@ export default function SessionsPage() {
                         <p className="font-mono text-text-tertiary uppercase tracking-[0.3em]">Loading Neural Archives...</p>
                     </div>
                 </div>
-            ) : sessions.length === 0 ? (
+            ) : visibleSessions.length === 0 ? (
                 <div className="bg-surface border border-white/5 rounded-3xl p-12 text-center">
                     <CourtMap size={48} className="text-text-tertiary mx-auto mb-4 opacity-50" />
-                    <h3 className="font-display font-black text-xl italic uppercase mb-2">No Active Data</h3>
-                    <p className="text-text-secondary font-mono text-sm max-w-sm mx-auto mb-6">Your neural repository is empty. Complete a session to begin logging biomechanical data.</p>
-                    <button onClick={handleNewScan} className="bg-white text-void hover:bg-fire hover:text-white px-6 py-3 rounded-2xl font-bold font-mono text-xs uppercase tracking-widest transition-all">
-                        INITIATE FIRST SCAN
+                    <h3 className="font-display font-black text-xl italic uppercase mb-2">No Matching Sessions</h3>
+                    <p className="text-text-secondary font-mono text-sm max-w-sm mx-auto mb-6">Try another filter or search term to find your archived neural sessions.</p>
+                    <button
+                        onClick={() => {
+                            setSearchTerm('')
+                            setSelectedType('ALL')
+                        }}
+                        className="bg-white text-void hover:bg-fire hover:text-white px-6 py-3 rounded-2xl font-bold font-mono text-xs uppercase tracking-widest transition-all"
+                    >
+                        RESET FILTERS
                     </button>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {sessions.map((session, i) => (
+                    {visibleSessions.map((session, i) => (
                         <motion.div
                             key={session.id}
                             initial={{ opacity: 0, y: 20 }}
@@ -238,7 +352,7 @@ export default function SessionsPage() {
                                     </div>
                                 </div>
                                 <div className="relative flex items-center gap-2">
-                                    <button onClick={handleShare} className="p-2 text-text-tertiary hover:text-fire transition-colors"><Share2 size={18} /></button>
+                                    <button onClick={(e) => { void handleShare(e, session.id); }} className="p-2 text-text-tertiary hover:text-fire transition-colors"><Share2 size={18} /></button>
                                     <button
                                         onClick={(e) => handleToggleSessionMenu(e, session.id)}
                                         className="p-2 text-text-tertiary hover:text-fire transition-colors"
@@ -251,7 +365,6 @@ export default function SessionsPage() {
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     handlePlaySession(session.id);
-                                                    setActiveMenuSessionId(null);
                                                 }}
                                                 className="w-full px-3 py-2 text-left text-[10px] font-mono uppercase tracking-widest text-text-secondary hover:text-fire hover:bg-fire/10 transition-colors"
                                             >
@@ -282,6 +395,67 @@ export default function SessionsPage() {
                     >
                         {archivedLoaded ? 'ARCHIVES UP TO DATE' : 'LOAD ARCHIVED DATA'}
                     </button>
+                </div>
+            )}
+
+            {activeSession && (
+                <div
+                    className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+                    onClick={() => setActiveSession(null)}
+                >
+                    <motion.div
+                        initial={{ opacity: 0, y: 14, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        className="w-full max-w-lg rounded-3xl border border-white/10 bg-surface p-6"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-display font-black italic uppercase">Session Preview</h3>
+                            <button onClick={() => setActiveSession(null)} className="text-text-tertiary hover:text-fire transition-colors">
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <div className="mt-5 space-y-3">
+                            <p className="text-sm font-display font-black text-white uppercase italic">{activeSession.name}</p>
+                            <p className="text-[10px] font-mono uppercase tracking-widest text-text-tertiary">{activeSession.id} • {activeSession.date}</p>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="rounded-xl border border-white/10 p-3">
+                                    <p className="text-[10px] font-mono uppercase tracking-widest text-text-tertiary">Duration</p>
+                                    <p className="mt-1 text-white font-display font-black italic">{activeSession.duration}</p>
+                                </div>
+                                <div className="rounded-xl border border-white/10 p-3">
+                                    <p className="text-[10px] font-mono uppercase tracking-widest text-text-tertiary">Accuracy</p>
+                                    <p className="mt-1 text-fire font-display font-black italic">{activeSession.accuracy}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                            <button
+                                onClick={() => {
+                                    router.push(`/dashboard/twin?session=${encodeURIComponent(activeSession.id)}`)
+                                    setActiveSession(null)
+                                }}
+                                className="flex-1 bg-fire hover:bg-fire-hover text-white py-3 rounded-xl text-xs font-mono uppercase tracking-widest transition-all"
+                            >
+                                Open in Twin
+                            </button>
+                            <button
+                                onClick={() => setActiveSession(null)}
+                                className="flex-1 bg-surface border border-white/10 hover:border-fire/40 text-text-secondary hover:text-fire py-3 rounded-xl text-xs font-mono uppercase tracking-widest transition-all"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+
+            {feedback && (
+                <div className="fixed bottom-6 right-6 z-40 rounded-xl border border-green-400/30 bg-green-400/10 px-4 py-3 text-sm text-green-200 flex items-center gap-2">
+                    <CheckCircle2 size={16} />
+                    <span>{feedback}</span>
                 </div>
             )}
         </div>
