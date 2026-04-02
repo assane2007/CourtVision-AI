@@ -53,12 +53,12 @@ CREATE TABLE IF NOT EXISTS public.arena_leaderboard (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_arena_matches_status ON public.arena_matches(status);
-CREATE INDEX idx_arena_matches_host ON public.arena_matches(host_id);
-CREATE INDEX idx_arena_players_match ON public.arena_players(match_id);
-CREATE INDEX idx_arena_players_user ON public.arena_players(user_id);
-CREATE INDEX idx_arena_shot_log_match ON public.arena_shot_log(match_id);
-CREATE INDEX idx_arena_leaderboard_elo ON public.arena_leaderboard(elo_rating DESC);
+CREATE INDEX IF NOT EXISTS idx_arena_matches_status ON public.arena_matches(status);
+CREATE INDEX IF NOT EXISTS idx_arena_matches_host ON public.arena_matches(host_id);
+CREATE INDEX IF NOT EXISTS idx_arena_players_match ON public.arena_players(match_id);
+CREATE INDEX IF NOT EXISTS idx_arena_players_user ON public.arena_players(user_id);
+CREATE INDEX IF NOT EXISTS idx_arena_shot_log_match ON public.arena_shot_log(match_id);
+CREATE INDEX IF NOT EXISTS idx_arena_leaderboard_elo ON public.arena_leaderboard(elo_rating DESC);
 
 -- ==========================================
 -- 2. HORSE IA — Jouer contre un avatar IA
@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS public.horse_games (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
   difficulty TEXT NOT NULL CHECK (difficulty IN ('rookie', 'pro', 'allstar', 'legend')),
+  ai_personality TEXT NOT NULL DEFAULT 'classic' CHECK (ai_personality IN ('classic', 'aggressive', 'creative', 'defensive')),
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'won', 'lost', 'abandoned')),
   letters TEXT DEFAULT '',
   ai_letters TEXT DEFAULT '',
@@ -119,15 +120,15 @@ CREATE TABLE IF NOT EXISTS public.horse_leaderboard (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_horse_games_user ON public.horse_games(user_id);
-CREATE INDEX idx_horse_games_status ON public.horse_games(status);
-CREATE INDEX idx_horse_games_user_status ON public.horse_games(user_id, status);
-CREATE INDEX idx_horse_challenges_game ON public.horse_challenges(game_id);
-CREATE INDEX idx_horse_challenges_game_round ON public.horse_challenges(game_id, round DESC);
-CREATE INDEX idx_horse_attempts_challenge ON public.horse_attempts(challenge_id);
-CREATE INDEX idx_horse_attempts_game ON public.horse_attempts(game_id);
-CREATE INDEX idx_horse_attempts_user ON public.horse_attempts(user_id);
-CREATE INDEX idx_horse_leaderboard_wins ON public.horse_leaderboard(games_won DESC);
+CREATE INDEX IF NOT EXISTS idx_horse_games_user ON public.horse_games(user_id);
+CREATE INDEX IF NOT EXISTS idx_horse_games_status ON public.horse_games(status);
+CREATE INDEX IF NOT EXISTS idx_horse_games_user_status ON public.horse_games(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_horse_challenges_game ON public.horse_challenges(game_id);
+CREATE INDEX IF NOT EXISTS idx_horse_challenges_game_round ON public.horse_challenges(game_id, round DESC);
+CREATE INDEX IF NOT EXISTS idx_horse_attempts_challenge ON public.horse_attempts(challenge_id);
+CREATE INDEX IF NOT EXISTS idx_horse_attempts_game ON public.horse_attempts(game_id);
+CREATE INDEX IF NOT EXISTS idx_horse_attempts_user ON public.horse_attempts(user_id);
+CREATE INDEX IF NOT EXISTS idx_horse_leaderboard_wins ON public.horse_leaderboard(games_won DESC);
 
 -- ==========================================
 -- 3. WEARABLE / APPLE WATCH HRV
@@ -182,11 +183,11 @@ CREATE TABLE IF NOT EXISTS public.training_load (
   UNIQUE(user_id, date)
 );
 
-CREATE INDEX idx_wearable_devices_user ON public.wearable_devices(user_id);
-CREATE INDEX idx_wearable_data_user_type ON public.wearable_data(user_id, type);
-CREATE INDEX idx_wearable_data_recorded ON public.wearable_data(recorded_at DESC);
-CREATE INDEX idx_hrv_readings_user ON public.hrv_readings(user_id, recorded_at DESC);
-CREATE INDEX idx_training_load_user ON public.training_load(user_id, date DESC);
+CREATE INDEX IF NOT EXISTS idx_wearable_devices_user ON public.wearable_devices(user_id);
+CREATE INDEX IF NOT EXISTS idx_wearable_data_user_type ON public.wearable_data(user_id, type);
+CREATE INDEX IF NOT EXISTS idx_wearable_data_recorded ON public.wearable_data(recorded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_hrv_readings_user ON public.hrv_readings(user_id, recorded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_training_load_user ON public.training_load(user_id, date DESC);
 
 -- ==========================================
 -- 4. MARKETPLACE DE DRILLS
@@ -273,16 +274,16 @@ CREATE TABLE IF NOT EXISTS public.drill_reviews (
   UNIQUE(user_id, pack_id)
 );
 
-CREATE INDEX idx_drill_packs_category ON public.drill_packs(category);
-CREATE INDEX idx_drill_packs_status ON public.drill_packs(status);
-CREATE INDEX idx_drill_packs_creator ON public.drill_packs(creator_id);
-CREATE INDEX idx_drill_packs_featured ON public.drill_packs(is_featured) WHERE is_featured = true;
-CREATE INDEX idx_drill_packs_rating ON public.drill_packs(rating DESC);
-CREATE INDEX idx_drill_pack_items_pack ON public.drill_pack_items(pack_id, position);
-CREATE INDEX idx_drill_purchases_user ON public.drill_purchases(user_id);
-CREATE INDEX idx_drill_purchases_pack ON public.drill_purchases(pack_id);
-CREATE INDEX idx_drill_reviews_pack ON public.drill_reviews(pack_id);
-CREATE INDEX idx_creator_profiles_user ON public.creator_profiles(user_id);
+CREATE INDEX IF NOT EXISTS idx_drill_packs_category ON public.drill_packs(category);
+CREATE INDEX IF NOT EXISTS idx_drill_packs_status ON public.drill_packs(status);
+CREATE INDEX IF NOT EXISTS idx_drill_packs_creator ON public.drill_packs(creator_id);
+CREATE INDEX IF NOT EXISTS idx_drill_packs_featured ON public.drill_packs(is_featured) WHERE is_featured = true;
+CREATE INDEX IF NOT EXISTS idx_drill_packs_rating ON public.drill_packs(rating DESC);
+CREATE INDEX IF NOT EXISTS idx_drill_pack_items_pack ON public.drill_pack_items(pack_id, position);
+CREATE INDEX IF NOT EXISTS idx_drill_purchases_user ON public.drill_purchases(user_id);
+CREATE INDEX IF NOT EXISTS idx_drill_purchases_pack ON public.drill_purchases(pack_id);
+CREATE INDEX IF NOT EXISTS idx_drill_reviews_pack ON public.drill_reviews(pack_id);
+CREATE INDEX IF NOT EXISTS idx_creator_profiles_user ON public.creator_profiles(user_id);
 
 -- ==========================================
 -- 5. RLS Policies (Row Level Security)
@@ -307,54 +308,79 @@ ALTER TABLE public.drill_purchases ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.drill_reviews ENABLE ROW LEVEL SECURITY;
 
 -- Arena: public matches can be read by all, but only host can modify
+DROP POLICY IF EXISTS "arena_matches_read" ON public.arena_matches;
 CREATE POLICY "arena_matches_read" ON public.arena_matches FOR SELECT USING (true);
+DROP POLICY IF EXISTS "arena_matches_insert" ON public.arena_matches;
 CREATE POLICY "arena_matches_insert" ON public.arena_matches FOR INSERT WITH CHECK (auth.uid() = host_id);
+DROP POLICY IF EXISTS "arena_matches_update" ON public.arena_matches;
 CREATE POLICY "arena_matches_update" ON public.arena_matches FOR UPDATE USING (auth.uid() = host_id);
 
 -- Arena players: visible to all, insert/update own
+DROP POLICY IF EXISTS "arena_players_read" ON public.arena_players;
 CREATE POLICY "arena_players_read" ON public.arena_players FOR SELECT USING (true);
+DROP POLICY IF EXISTS "arena_players_insert" ON public.arena_players;
 CREATE POLICY "arena_players_insert" ON public.arena_players FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "arena_players_update" ON public.arena_players;
 CREATE POLICY "arena_players_update" ON public.arena_players FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "arena_players_delete" ON public.arena_players;
 CREATE POLICY "arena_players_delete" ON public.arena_players FOR DELETE USING (
   auth.uid() = user_id OR auth.uid() = (SELECT host_id FROM public.arena_matches WHERE id = match_id)
 );
 
 -- Arena shot log: insert own shots in a match, read all for match participants
+DROP POLICY IF EXISTS "arena_shot_log_read" ON public.arena_shot_log;
 CREATE POLICY "arena_shot_log_read" ON public.arena_shot_log FOR SELECT USING (
   EXISTS (SELECT 1 FROM public.arena_players WHERE match_id = arena_shot_log.match_id AND user_id = auth.uid())
 );
+DROP POLICY IF EXISTS "arena_shot_log_insert" ON public.arena_shot_log;
 CREATE POLICY "arena_shot_log_insert" ON public.arena_shot_log FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Arena leaderboard: public read, service-managed writes (see SECURITY DEFINER functions below)
+DROP POLICY IF EXISTS "arena_leaderboard_read" ON public.arena_leaderboard;
 CREATE POLICY "arena_leaderboard_read" ON public.arena_leaderboard FOR SELECT USING (true);
 
 -- Horse: own games only
+DROP POLICY IF EXISTS "horse_games_all" ON public.horse_games;
 CREATE POLICY "horse_games_all" ON public.horse_games USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "horse_challenges_read" ON public.horse_challenges;
 CREATE POLICY "horse_challenges_read" ON public.horse_challenges FOR SELECT USING (
   EXISTS (SELECT 1 FROM public.horse_games WHERE id = game_id AND user_id = auth.uid())
 );
+DROP POLICY IF EXISTS "horse_challenges_insert" ON public.horse_challenges;
 CREATE POLICY "horse_challenges_insert" ON public.horse_challenges FOR INSERT WITH CHECK (
   EXISTS (SELECT 1 FROM public.horse_games WHERE id = game_id AND user_id = auth.uid())
 );
+DROP POLICY IF EXISTS "horse_attempts_all" ON public.horse_attempts;
 CREATE POLICY "horse_attempts_all" ON public.horse_attempts USING (auth.uid() = user_id);
 
 -- Wearable: own data only
+DROP POLICY IF EXISTS "wearable_devices_all" ON public.wearable_devices;
 CREATE POLICY "wearable_devices_all" ON public.wearable_devices USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "wearable_data_all" ON public.wearable_data;
 CREATE POLICY "wearable_data_all" ON public.wearable_data USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "hrv_readings_all" ON public.hrv_readings;
 CREATE POLICY "hrv_readings_all" ON public.hrv_readings USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "training_load_all" ON public.training_load;
 CREATE POLICY "training_load_all" ON public.training_load USING (auth.uid() = user_id);
 
 -- Marketplace: published packs readable by all, own packs editable
+DROP POLICY IF EXISTS "drill_packs_read" ON public.drill_packs;
 CREATE POLICY "drill_packs_read" ON public.drill_packs FOR SELECT USING (status = 'published' OR creator_id IN (SELECT id FROM public.creator_profiles WHERE user_id = auth.uid()));
+DROP POLICY IF EXISTS "drill_pack_items_read" ON public.drill_pack_items;
 CREATE POLICY "drill_pack_items_read" ON public.drill_pack_items FOR SELECT USING (true);
+DROP POLICY IF EXISTS "drill_purchases_own" ON public.drill_purchases;
 CREATE POLICY "drill_purchases_own" ON public.drill_purchases USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "drill_reviews_read" ON public.drill_reviews;
 CREATE POLICY "drill_reviews_read" ON public.drill_reviews FOR SELECT USING (true);
+DROP POLICY IF EXISTS "drill_reviews_insert" ON public.drill_reviews;
 CREATE POLICY "drill_reviews_insert" ON public.drill_reviews FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "creator_profiles_read" ON public.creator_profiles;
 CREATE POLICY "creator_profiles_read" ON public.creator_profiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "creator_profiles_own" ON public.creator_profiles;
 CREATE POLICY "creator_profiles_own" ON public.creator_profiles FOR UPDATE USING (auth.uid() = user_id);
 
 -- Leaderboards: public read
-CREATE POLICY "arena_leaderboard_read" ON public.arena_leaderboard FOR SELECT USING (true);
+DROP POLICY IF EXISTS "horse_leaderboard_read" ON public.horse_leaderboard;
 CREATE POLICY "horse_leaderboard_read" ON public.horse_leaderboard FOR SELECT USING (true);
 
 -- ==========================================
@@ -370,6 +396,7 @@ ALTER TABLE public.arena_shot_log ADD COLUMN IF NOT EXISTS round INTEGER;
 ALTER TABLE public.arena_shot_log ADD COLUMN IF NOT EXISTS confidence FLOAT;
 
 ALTER TABLE public.arena_leaderboard ADD COLUMN IF NOT EXISTS win_streak INTEGER DEFAULT 0;
+ALTER TABLE public.horse_games ADD COLUMN IF NOT EXISTS ai_personality TEXT NOT NULL DEFAULT 'classic' CHECK (ai_personality IN ('classic', 'aggressive', 'creative', 'defensive'));
 
 CREATE INDEX IF NOT EXISTS idx_arena_matches_invite ON public.arena_matches(invite_code) WHERE invite_code IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_arena_matches_private ON public.arena_matches(is_private);
@@ -387,6 +414,7 @@ CREATE INDEX IF NOT EXISTS idx_drill_wishlist_user ON public.drill_wishlist(user
 CREATE INDEX IF NOT EXISTS idx_drill_wishlist_pack ON public.drill_wishlist(pack_id);
 
 ALTER TABLE public.drill_wishlist ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "drill_wishlist_own" ON public.drill_wishlist;
 CREATE POLICY "drill_wishlist_own" ON public.drill_wishlist USING (auth.uid() = user_id);
 
 -- ==========================================

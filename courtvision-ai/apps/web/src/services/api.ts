@@ -13,10 +13,13 @@ export async function apiRequest<T = any>(
 ): Promise<T> {
     const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
-    const headers = {
-        'Content-Type': 'application/json',
-        ...(options.headers || {}),
-    } as Record<string, string>;
+    const headers = new Headers(options.headers || {})
+    const hasBody = options.body !== undefined && options.body !== null
+    const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData
+
+    if (hasBody && !isFormData && !headers.has('Content-Type')) {
+        headers.set('Content-Type', 'application/json')
+    }
 
     // Attach Supabase auth token if available
     if (isSupabaseConfigured()) {
@@ -24,7 +27,7 @@ export async function apiRequest<T = any>(
             const supabase = createClient()
             const { data: { session } } = await supabase.auth.getSession()
             if (session?.access_token) {
-                headers['Authorization'] = `Bearer ${session.access_token}`
+                headers.set('Authorization', `Bearer ${session.access_token}`)
             }
         } catch {
             // Auth not available (e.g., during SSR), proceed without token

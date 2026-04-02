@@ -1,5 +1,7 @@
 import fp from 'fastify-plugin'
 import type { FastifyRequest, FastifyReply } from 'fastify'
+import { createClient } from '@supabase/supabase-js'
+import { env } from '../config/env'
 
 declare module 'fastify' {
     interface FastifyInstance {
@@ -15,6 +17,15 @@ declare module 'fastify' {
 }
 
 export const authPlugin = fp(async (fastify, opts) => {
+    // Dedicated client for token verification only.
+    // Keeps the shared service-role DB client untouched by auth session state.
+    const authClient = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+        },
+    })
+
     fastify.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
         try {
             const authHeader = request.headers.authorization
@@ -35,7 +46,7 @@ export const authPlugin = fp(async (fastify, opts) => {
                 })
             }
 
-            const { data, error } = await fastify.supabase.auth.getUser(token)
+            const { data, error } = await authClient.auth.getUser(token)
 
             if (error || !data.user) {
                 request.log.warn({ error: error?.message }, 'Auth token validation failed')

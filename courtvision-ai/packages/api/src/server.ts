@@ -1,16 +1,18 @@
-import { buildApp } from './app'
 import dotenv from 'dotenv'
-import { initWorker } from './queue/videoProcessor'
 
 // Load .env BEFORE any env validation
 import { resolve } from 'path'
-dotenv.config({ path: resolve(__dirname, '../../.env') })
-dotenv.config() // Fallback to local .env in packages/api
-
-// Env validation — fail fast if critical vars are missing (C-5)
-import { env } from './config/env'
+dotenv.config({ path: resolve(__dirname, '../../.env'), override: true })
+dotenv.config({ path: resolve(__dirname, '../.env') }) // Optional fallback: packages/api/.env
 
 const start = async () => {
+    // Dynamic imports guarantee dotenv values are present before module initialization.
+    const [{ env }, { initWorker }, { buildApp }] = await Promise.all([
+        import('./config/env'),
+        import('./queue/videoProcessor'),
+        import('./app'),
+    ])
+
     // Init worker (graceful — no-op if Redis not available)
     let worker: { close: () => Promise<void> }
     try {

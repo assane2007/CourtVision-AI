@@ -1,6 +1,8 @@
 import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
+import { createClient } from '@supabase/supabase-js'
+import { env } from '../config/env'
 
 const signupSchema = z.object({
     email: z.string().email(),
@@ -30,6 +32,14 @@ const googleLoginSchema = z.object({
 })
 
 const authRoutes: FastifyPluginAsyncZod = async (app) => {
+    // Dedicated auth client: avoids mutating the shared service-role DB client session.
+    const authClient = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+        },
+    })
+
     app.post('/signup', {
         schema: {
             body: signupSchema
@@ -37,7 +47,7 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
     }, async (request, reply) => {
         const body = request.body as z.infer<typeof signupSchema>
 
-        const { data, error } = await app.supabase.auth.signUp({
+        const { data, error } = await authClient.auth.signUp({
             email: body.email,
             password: body.password,
             options: {
@@ -79,7 +89,7 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
         }
     }, async (request, reply) => {
         const body = request.body as z.infer<typeof loginSchema>
-        const { data, error } = await app.supabase.auth.signInWithPassword({
+        const { data, error } = await authClient.auth.signInWithPassword({
             email: body.email,
             password: body.password
         })
@@ -101,7 +111,7 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
         const { id_token, nonce, full_name } = request.body as z.infer<typeof appleLoginSchema>
 
         // Use Supabase's built-in Apple OAuth token verification
-        const { data, error } = await app.supabase.auth.signInWithIdToken({
+        const { data, error } = await authClient.auth.signInWithIdToken({
             provider: 'apple',
             token: id_token,
             nonce,
@@ -150,7 +160,7 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
         const { id_token, full_name } = request.body as z.infer<typeof googleLoginSchema>
 
         // Use Supabase's built-in Google OAuth token verification
-        const { data, error } = await app.supabase.auth.signInWithIdToken({
+        const { data, error } = await authClient.auth.signInWithIdToken({
             provider: 'google',
             token: id_token,
         })
@@ -207,7 +217,7 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
         }
     }, async (request, reply) => {
         const body = request.body as z.infer<typeof refreshSchema>
-        const { data, error } = await app.supabase.auth.refreshSession({ refresh_token: body.refresh_token })
+        const { data, error } = await authClient.auth.refreshSession({ refresh_token: body.refresh_token })
         if (error) throw error
         return { success: true, data }
     });

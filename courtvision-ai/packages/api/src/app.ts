@@ -126,7 +126,8 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     // Global Error Handler (Production Optimized)
     app.setErrorHandler((error: any, request, reply) => {
         const isProduction = process.env.NODE_ENV === 'production'
-        const statusCode = error.statusCode || 500
+        // Some upstream SDKs (e.g. Supabase Auth) expose HTTP status on `error.status`.
+        const statusCode = error.statusCode || error.status || 500
 
         // Log structured error with full context
         request.log.error({

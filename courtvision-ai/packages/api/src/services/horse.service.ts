@@ -126,21 +126,37 @@ export class HorseService {
             .eq('user_id', userId)
             .eq('status', 'active')
 
-        const { data, error } = await this.supabase
+        const basePayload = {
+            user_id: userId,
+            difficulty,
+            status: 'active',
+            letters: '',
+            ai_letters: '',
+            max_letters: HORSE_WORD.length,
+            current_round: 1,
+            score: 0,
+        }
+
+        let { data, error } = await this.supabase
             .from('horse_games')
             .insert({
-                user_id: userId,
-                difficulty,
+                ...basePayload,
                 ai_personality: aiPersonality,
-                status: 'active',
-                letters: '',
-                ai_letters: '',
-                max_letters: HORSE_WORD.length,
-                current_round: 1,
-                score: 0,
             })
             .select()
             .single()
+
+        // Backward compatibility: older schemas may not have ai_personality yet.
+        if (error?.message?.includes("ai_personality") && error.message.includes('horse_games')) {
+            logger.warn({ err: error.message }, '[HORSE] ai_personality column missing, retrying startGame with legacy schema')
+            const retry = await this.supabase
+                .from('horse_games')
+                .insert(basePayload)
+                .select()
+                .single()
+            data = retry.data
+            error = retry.error
+        }
 
         if (error || !data) throw new Error(`Failed to create HORSE game: ${error?.message || 'No data returned'}`)
 
