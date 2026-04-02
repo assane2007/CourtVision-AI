@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { addToQueue } from '../queue/videoProcessor'
+import { PdfReportService } from '../services/pdfReportService'
 
 const uploadSchema = z.object({
     type: z.enum(['match', 'training', 'shootaround']),
@@ -14,6 +15,7 @@ const getSessionParamsSchema = z.object({
 
 const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
     app.addHook('preValidation', app.authenticate)
+    const pdfReportService = new PdfReportService(app.supabase)
 
     app.post('/', {
         schema: {
@@ -274,17 +276,22 @@ const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
             params: getSessionParamsSchema
         }
     }, async (request, reply) => {
-        const params = request.params as z.infer<typeof getSessionParamsSchema>
-        const user = request.user!
+        try {
+            const params = request.params as z.infer<typeof getSessionParamsSchema>
+            const user = request.user!
+            const pdfBuffer = await pdfReportService.generateSessionReportPdf(params.id, user.id)
 
-        // Generate or fetch a PDF structure here for the session
-        // For now, this is a mock implementation returning a binary PDF payload.
-        reply.header('Content-Type', 'application/pdf')
-        reply.header('Content-Disposition', `attachment; filename="courtvision_report_${params.id}.pdf"`)
-
-        // Return dummy PDF buffer (P2 Stub)
-        const dummyPdfBuffer = Buffer.from('%PDF-1.4\n1 0 obj\n<<\n/Title (CourtVision Report)\n>>\nendobj\ntrailer\n<<\n/Root 1 0 R\n>>\n%%EOF')
-        return reply.send(dummyPdfBuffer)
+            reply.header('Content-Type', 'application/pdf')
+            reply.header('Content-Disposition', `attachment; filename="courtvision_report_${params.id}.pdf"`)
+            reply.header('Content-Length', String(pdfBuffer.length))
+            return reply.send(pdfBuffer)
+        } catch (error: any) {
+            if (error.message === 'Session not found') {
+                return reply.code(404).send({ error: 'Session not found' })
+            }
+            app.log.error({ err: error }, 'Session PDF generation failed')
+            return reply.code(500).send({ error: 'Failed to generate PDF report' })
+        }
     })
 }
 

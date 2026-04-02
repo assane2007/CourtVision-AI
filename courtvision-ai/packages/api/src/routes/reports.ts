@@ -36,6 +36,32 @@ export default async function reportRoutes(fastify: FastifyInstance) {
     const scoutService = new ScoutReportService(fastify.supabase)
 
     /**
+     * GET /reports/session/:sessionId/pdf
+     * Generate a binary PDF report for direct download.
+     */
+    fastify.get('/session/:sessionId/pdf', async (request, reply) => {
+        try {
+            const { sessionId } = reportParamsSchema.parse(request.params)
+            const user = request.user!
+
+            const pdfBuffer = await pdfService.generateSessionReportPdf(sessionId, user.id)
+            reply.header('Content-Type', 'application/pdf')
+            reply.header('Content-Disposition', `attachment; filename="courtvision_report_${sessionId}.pdf"`)
+            reply.header('Content-Length', String(pdfBuffer.length))
+            return reply.send(pdfBuffer)
+        } catch (error: any) {
+            if (error instanceof z.ZodError) {
+                return reply.code(400).send({ error: 'Invalid session ID format' })
+            }
+            if (error.message === 'Session not found') {
+                return reply.code(404).send({ error: 'Session not found' })
+            }
+            request.log.error({ err: error }, 'Failed to generate session PDF report')
+            return reply.code(500).send({ error: 'Failed to generate PDF report' })
+        }
+    })
+
+    /**
      * GET /reports/session/:sessionId
      * Generate a full session report (JSON payload for client-side PDF rendering)
      */

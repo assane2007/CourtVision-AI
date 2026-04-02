@@ -13,7 +13,8 @@ import {
     X,
     Search,
     Bell,
-    Cpu
+    Cpu,
+    Swords,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -24,6 +25,7 @@ const navItems = [
     { name: 'Sessions', icon: Video, href: '/dashboard/sessions' },
     { name: 'Shadow League', icon: Trophy, href: '/dashboard/league' },
     { name: 'Digital Twin', icon: Cpu, href: '/dashboard/twin' },
+    { name: 'V6 Arena+', icon: Swords, href: '/dashboard/v6' },
     { name: 'Profile', icon: User, href: '/dashboard/profile' },
 ]
 

@@ -297,9 +297,9 @@ docker compose up --build -d
 
 ---
 
-## 🗺️ Roadmap v6.x
+## 🗺️ Roadmap v6.0 (Plan Complet)
 
-### ✅ Complété (v5.3.0)
+### ✅ Base déjà livrée (v5.3.0)
 - [x] Pipeline IA 20+ modules TypeScript
 - [x] 30+ endpoints API avec validation Zod
 - [x] Shot DNA™ + Advanced Analytics NBA-grade
@@ -314,12 +314,56 @@ docker compose up --build -d
 - [x] 311 tests (100% pass)
 - [x] Dockerisation complète + Terraform infrastructure
 
-### 🔜 Prochainement (v6.0)
-- [ ] **Challenge Multi-joueurs** temps réel
-- [ ] **Mode Horse IA** — Jouer contre un avatar IA
-- [ ] **Export PDF** — Rapports de recrutement (Scout Report)
-- [ ] **Apple Watch** — Données HRV + récupération
-- [ ] **Marketplace de Drills** — Créer et partager des exercices
+### 🎯 Objectif produit v6.0
+Passer de la plateforme d'analyse individuelle à une expérience compétitive, monétisable et partageable à l'échelle club/coach.
+
+### 📦 Scope fonctionnel v6.0
+| Epic | Livrables Front/Mobile | Livrables API/Data | Critères d'acceptation | Status |
+|---|---|---|---|---|
+| **Challenge Multi-joueurs** temps réel | Création de lobby, invitation, ready check, scoreboard live | Matchmaking, rooms WebSocket, anti-duplication events, persistance des matchs | Latence perçue < 200 ms, reconnexion automatique, aucun désync critique en test multi-clients | 🟡 En cours |
+| **Mode Horse IA** | UI de duel H-O-R-S-E, feedback tir par tir, progression de difficulté | Moteur de règles Horse, sélection d'avatar IA, balancing par niveau | 100% des règles Horse validées en e2e, difficulté adaptative cohérente sur 10 matchs de test | 🟡 En cours |
+| **Export PDF** (Scout Report) | Génération on-demand depuis dashboard session/profil | Endpoint export, template PDF versionné, stockage sécurisé | PDF complet en < 10 s, sections stats + Twin + mental + recommandations, rendu stable sur 20 cas | 🟡 En cours |
+| **Marketplace de Drills** | Catalogue, recherche, filtres, achat/ajout, notation | CRUD drills, versioning contenu, permissions coach/joueur, suivi d'usage | Upload/édition robustes, contrôle d'accès validé, tracking adoption actif | 🟡 En cours |
+
+### 🧱 Chantiers techniques obligatoires
+- Stabilisation WebSocket (acknowledgements, retry idempotent, backoff exponentiel).
+- Hardening auth (session refresh, expiration gérée sans perte de contexte match).
+- Observabilité v6 (traces API, dashboards latence, alertes erreurs critiques).
+- Migration DB minimale pour rooms, rounds Horse, exports PDF, catalogue drills.
+- Sécurisation upload/asset pour Marketplace (validation MIME, quota, antivirus pipeline).
+
+### 🧪 Qualité requise avant release
+- Typecheck monorepo web/mobile/api/ai à 100% sans erreurs bloquantes.
+- Suites API et AI vertes, sans régression sur routes existantes.
+- E2E authentifié sur les 4 epics v6.0 (happy path + erreurs + reprise réseau).
+- Tests charge WebSocket sur sessions multi-joueurs concurrentes.
+- Vérification sécurité: RLS, tokens, permissions coach/joueur, exports sécurisés.
+
+### 🗓️ Plan de livraison (8 semaines)
+1. **S1-S2**: socle temps réel (rooms, events, scoreboard, monitoring basique).
+2. **S3-S4**: Mode Horse IA complet + équilibrage difficulté.
+3. **S5-S6**: Export PDF production-ready + versioning templates.
+4. **S7**: Marketplace drills (catalogue, publication, permissions, analytics usage).
+5. **S8**: hardening final, campagne e2e complète, release candidate et go-live.
+
+### 🚦 Go / No-Go v6.0
+- [ ] 0 bug critique ouvert sur les parcours principaux.
+- [ ] Tous les endpoints v6 documentés dans docs API.
+- [ ] Monitoring + alerting en place sur prod.
+- [ ] Runbook incident et rollback validés.
+- [ ] Validation finale multi-plateforme (web + mobile).
+
+### 📈 KPI cibles (30 jours post-release)
+- +25% de rétention hebdomadaire sur utilisateurs actifs.
+- >40% d'utilisateurs actifs ayant lancé au moins 1 challenge multi-joueurs.
+- >20% d'adoption du Mode Horse IA chez les utilisateurs actifs.
+- >15% de sessions exportées en PDF côté coach.
+- >10% d'utilisateurs ayant consommé un drill Marketplace.
+
+### 🔮 Suite prévue (v6.1)
+- Apple Watch (HRV + recovery en temps réel).
+- Recommandations de drills générées dynamiquement par profil Twin.
+- Ladders compétitives saisonnières avec reset et rewards.
 
 ---
 

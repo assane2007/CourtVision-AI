@@ -198,6 +198,121 @@ export class PdfReportService {
         return report
     }
 
+    /**
+     * Generate a binary PDF buffer for a session report.
+     * Kept dependency-free by using a compact single-page PDF renderer.
+     */
+    async generateSessionReportPdf(sessionId: string, userId: string): Promise<Buffer> {
+        const report = await this.generateSessionReport(sessionId, userId)
+        return this.renderPdfFromReport(report)
+    }
+
+    private renderPdfFromReport(report: SessionReport): Buffer {
+        const lines = this.buildPdfLines(report)
+        return this.createSimplePdfDocument(lines)
+    }
+
+    private buildPdfLines(report: SessionReport): string[] {
+        const lines: string[] = []
+        lines.push('CourtVision AI - Scout Session Report')
+        lines.push(`Report ID: ${report.reportId}`)
+        lines.push(`Generated: ${new Date(report.generatedAt).toLocaleString('en-US')}`)
+        lines.push('')
+        lines.push(`Player: ${report.player.name}`)
+        lines.push(`Position: ${report.player.position || 'N/A'}`)
+        lines.push(`Session ID: ${report.session.id}`)
+        lines.push(`Session Date: ${new Date(report.session.date).toLocaleDateString('en-US')}`)
+        lines.push(`Duration: ${Math.round(report.session.duration / 60)} min`)
+        lines.push('')
+
+        if (report.apexScore) {
+            lines.push('APEX SCORE')
+            lines.push(`Overall: ${report.apexScore.overall} (${report.apexScore.grade})`)
+            lines.push(`Shooting: ${report.apexScore.shooting} | Mental: ${report.apexScore.mental}`)
+            lines.push(`Consistency: ${report.apexScore.consistency} | Clutch: ${report.apexScore.clutch}`)
+            lines.push(`Improvement: ${report.apexScore.improvement}`)
+            lines.push('')
+        }
+
+        lines.push('SECTION SUMMARY')
+        report.sections.forEach((section, index) => {
+            lines.push(`${index + 1}. ${section.title} [${section.type}]`)
+        })
+        lines.push('')
+
+        lines.push('AI INSIGHTS')
+        if (report.aiInsights.length === 0) {
+            lines.push('- No insights available')
+        } else {
+            report.aiInsights.forEach((insight) => lines.push(`- ${insight}`))
+        }
+
+        return lines
+    }
+
+    private createSimplePdfDocument(lines: string[]): Buffer {
+        const maxLines = 42
+        const safeLines = lines.slice(0, maxLines)
+
+        const contentCommands: string[] = ['BT', '/F1 11 Tf']
+        let y = 790
+        for (const line of safeLines) {
+            const escaped = this.escapePdfText(line)
+            contentCommands.push(`1 0 0 1 50 ${y} Tm (${escaped}) Tj`)
+            y -= 18
+            if (y < 40) {
+                break
+            }
+        }
+        contentCommands.push('ET')
+
+        const stream = contentCommands.join('\n')
+        const objects = [
+            '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n',
+            '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n',
+            '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n',
+            '4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n',
+            `5 0 obj\n<< /Length ${Buffer.byteLength(stream, 'utf8')} >>\nstream\n${stream}\nendstream\nendobj\n`,
+        ]
+
+        const parts: Buffer[] = [Buffer.from('%PDF-1.4\n', 'utf8')]
+        const offsets: number[] = [0]
+
+        let totalLength = parts[0].length
+        for (const obj of objects) {
+            offsets.push(totalLength)
+            const chunk = Buffer.from(obj, 'utf8')
+            parts.push(chunk)
+            totalLength += chunk.length
+        }
+
+        const xrefStart = totalLength
+        const xrefRows = offsets
+            .map((offset, index) => (index === 0
+                ? '0000000000 65535 f '
+                : `${String(offset).padStart(10, '0')} 00000 n `))
+            .join('\n')
+
+        const trailer = [
+            `xref\n0 ${offsets.length}`,
+            xrefRows,
+            `trailer\n<< /Size ${offsets.length} /Root 1 0 R >>`,
+            `startxref\n${xrefStart}`,
+            '%%EOF',
+        ].join('\n')
+
+        parts.push(Buffer.from(`${trailer}\n`, 'utf8'))
+        return Buffer.concat(parts)
+    }
+
+    private escapePdfText(value: string): string {
+        return value
+            .replace(/\\/g, '\\\\')
+            .replace(/\(/g, '\\(')
+            .replace(/\)/g, '\\)')
+            .replace(/[\r\n]+/g, ' ')
+    }
+
     private groupShotsByZone(shots: any[]): Record<string, { made: number; total: number }> {
         const zones: Record<string, { made: number; total: number }> = {}
         for (const shot of shots) {
