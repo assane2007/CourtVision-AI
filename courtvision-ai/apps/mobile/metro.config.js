@@ -26,12 +26,15 @@ config.resolver.extraNodeModules = {
 //      which causes duplicate React and "Invalid Hook Call" errors on web
 //    - Prevent Node.js-only modules from being bundled
 //    - Force zustand CJS on web (ESM build uses import.meta which Metro doesn't support)
+const reactRoot = path.dirname(require.resolve('react/package.json', { paths: [localModules, rootModules] }));
+const reactDomRoot = path.dirname(require.resolve('react-dom/package.json', { paths: [localModules, rootModules] }));
+
 const reactForceMap = {
-    'react': path.resolve(localModules, 'react', 'index.js'),
-    'react/jsx-runtime': path.resolve(localModules, 'react', 'jsx-runtime.js'),
-    'react/jsx-dev-runtime': path.resolve(localModules, 'react', 'jsx-dev-runtime.js'),
-    'react-dom': path.resolve(localModules, 'react-dom', 'index.js'),
-    'react-dom/client': path.resolve(localModules, 'react-dom', 'client.js'),
+    'react': path.join(reactRoot, 'index.js'),
+    'react/jsx-runtime': path.join(reactRoot, 'jsx-runtime.js'),
+    'react/jsx-dev-runtime': path.join(reactRoot, 'jsx-dev-runtime.js'),
+    'react-dom': path.join(reactDomRoot, 'index.js'),
+    'react-dom/client': path.join(reactDomRoot, 'client.js'),
 };
 
 const zustandRoot = path.dirname(require.resolve('zustand/package.json', { paths: [localModules, rootModules] }));
