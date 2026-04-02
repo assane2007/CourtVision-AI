@@ -12,84 +12,160 @@ import {
     Users,
     Box
 } from 'lucide-react'
+import { apiRequest } from '@/services/api'
 
 type LeagueScope = 'worldwide' | 'friends'
 
-const ARCHIVED_LEADERS = [
-    { rank: 5, name: 'Arc_Sniper', twin: 'Ray v2', points: '20,884', tier: 'PRIME', color: 'text-text-secondary', isFriend: false },
-    { rank: 6, name: 'CourtGhost', twin: 'Kyrie Mesh', points: '20,211', tier: 'PRIME', color: 'text-text-secondary', isFriend: true },
-    { rank: 7, name: 'SwishPilot', twin: 'Curry Node', points: '19,870', tier: 'PRIME', color: 'text-text-secondary', isFriend: false },
-]
+type LeaderboardApiEntry = {
+    rank: number
+    user_id: string
+    username: string
+    full_name?: string | null
+    avatar_url?: string | null
+    position?: string | null
+    score: number
+    level?: number
+    is_me?: boolean
+}
 
-// Mocking backend data fetch for leaderboard
-const fetchLeaderboard = async () => {
-    return new Promise<any>((resolve) => {
-        setTimeout(() => {
-            resolve({
-                userRank: { rank: 4, name: 'Assane (YOU)', twin: 'User_442', points: '12,402', tier: 'PRIME', color: 'text-text-secondary' },
-                leaders: [
-                    { rank: 1, name: 'Apex_Baller', twin: 'LeBron Spec', points: '24,802', tier: 'APEX', color: 'text-fire', isFriend: false },
-                    { rank: 2, name: 'Neural_Kobe', twin: 'Mamba v4', points: '22,410', tier: 'ELITE', color: 'text-ice', isFriend: true },
-                    { rank: 3, name: 'DunkCloud', twin: 'Vince Spec', points: '21,950', tier: 'ELITE', color: 'text-ice', isFriend: false },
-                    { rank: 4, name: 'Assane (YOU)', twin: 'User_442', points: '12,402', tier: 'PRIME', color: 'text-text-secondary', isFriend: true },
-                ],
-                nextTierPoints: 15000,
-                regionalRank: '#22 (EUROPE)'
-            });
-        }, 1100);
-    });
-};
+type LeaderboardApiResponse = {
+    entries: LeaderboardApiEntry[]
+    metric: string
+    scope: 'global' | 'friends'
+    myRank?: number
+    totalPlayers: number
+}
+
+type LeaguePlayer = {
+    rank: number
+    name: string
+    twin: string
+    points: string
+    tier: string
+    color: string
+    isMe: boolean
+}
+
+type LeagueData = {
+    userRank: LeaguePlayer | null
+    leaders: LeaguePlayer[]
+    nextTierPoints: number
+    regionalRank: string
+    totalPlayers: number
+    topPercent: number | null
+}
+
+function mapTier(level?: number): { tier: string; color: string } {
+    if ((level ?? 0) >= 9) return { tier: 'APEX', color: 'text-fire' }
+    if ((level ?? 0) >= 6) return { tier: 'ELITE', color: 'text-ice' }
+    if ((level ?? 0) >= 3) return { tier: 'PRIME', color: 'text-text-secondary' }
+    return { tier: 'RISING', color: 'text-text-tertiary' }
+}
+
+function nextTierThreshold(score: number): number {
+    if (score <= 0) return 5000
+    return Math.ceil((score + 1) / 5000) * 5000
+}
+
+function normalizeLeaderboard(response: LeaderboardApiResponse): LeagueData {
+    const leaders: LeaguePlayer[] = (response.entries || []).map((entry) => {
+        const { tier, color } = mapTier(entry.level)
+        return {
+            rank: entry.rank,
+            name: (entry.full_name || entry.username || 'Player').toUpperCase(),
+            twin: `${(entry.position || 'PLAYER').toUpperCase()} TWIN`,
+            points: new Intl.NumberFormat('en-US').format(Math.max(0, Math.round(entry.score || 0))),
+            tier,
+            color,
+            isMe: !!entry.is_me,
+        }
+    })
+
+    const userRank = leaders.find((p) => p.isMe)
+        ?? (typeof response.myRank === 'number'
+            ? leaders.find((p) => p.rank === response.myRank) ?? null
+            : null)
+
+    const userScore = userRank ? Number(userRank.points.replace(/,/g, '')) : 0
+    const totalPlayers = Math.max(response.totalPlayers || 0, leaders.length)
+    const topPercent = userRank && totalPlayers > 0
+        ? Math.max(1, Math.round((userRank.rank / totalPlayers) * 100))
+        : null
+
+    return {
+        userRank,
+        leaders,
+        nextTierPoints: nextTierThreshold(userScore),
+        regionalRank: userRank ? `#${userRank.rank} (GLOBAL)` : '--',
+        totalPlayers,
+        topPercent,
+    }
+}
 
 export default function LeaguePage() {
-    const [data, setData] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-    const [scope, setScope] = useState<LeagueScope>('worldwide');
-    const [fullRankingsLoaded, setFullRankingsLoaded] = useState(false);
+    const [data, setData] = useState<LeagueData | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [scope, setScope] = useState<LeagueScope>('worldwide')
+    const [limit, setLimit] = useState(25)
+    const [error, setError] = useState<string | null>(null)
+
+    const fullRankingsLoaded = limit >= 100
 
     useEffect(() => {
-        let mounted = true;
-        fetchLeaderboard().then(res => {
-            if (mounted) {
-                setData(res);
-                setLoading(false);
+        let mounted = true
+        const load = async () => {
+            setLoading(true)
+            setError(null)
+            try {
+                const response = await apiRequest<LeaderboardApiResponse>(
+                    `/community/leaderboard?metric=overall&scope=${scope === 'friends' ? 'friends' : 'global'}&limit=${limit}`,
+                )
+                if (!mounted) return
+                setData(normalizeLeaderboard(response))
+            } catch (err: any) {
+                if (!mounted) return
+                setError(err?.message || 'Unable to load leaderboard')
+                setData({
+                    userRank: null,
+                    leaders: [],
+                    nextTierPoints: 5000,
+                    regionalRank: '--',
+                    totalPlayers: 0,
+                    topPercent: null,
+                })
+            } finally {
+                if (mounted) setLoading(false)
             }
-        });
-        return () => { mounted = false; };
-    }, []);
+        }
+
+        void load()
+        return () => {
+            mounted = false
+        }
+    }, [scope, limit])
 
     const handleLoadFullRankings = () => {
         if (scope === 'friends') {
-            setScope('worldwide');
-            return;
+            setScope('worldwide')
+            return
         }
 
         if (fullRankingsLoaded) {
-            return;
+            return
         }
 
-        setData((current: any) => {
-            if (!current) {
-                return current;
-            }
-            return {
-                ...current,
-                leaders: [...current.leaders, ...ARCHIVED_LEADERS],
-            };
-        });
-        setFullRankingsLoaded(true);
-    };
+        setLimit(100)
+    }
 
     const visibleLeaders = React.useMemo(() => {
         if (!data?.leaders) {
-            return [];
+            return []
         }
-        if (scope === 'worldwide') {
-            return data.leaders;
-        }
+        return data.leaders
+    }, [data])
 
-        const friendsOnly = data.leaders.filter((player: any) => player.isFriend);
-        return friendsOnly.length > 0 ? friendsOnly : data.leaders;
-    }, [data, scope]);
+    const myPoints = data?.userRank ? Number(data.userRank.points.replace(/,/g, '')) : 0
+    const pointsLeft = Math.max(0, (data?.nextTierPoints ?? 0) - myPoints)
 
     if (loading) {
         return (
@@ -121,7 +197,9 @@ export default function LeaguePage() {
                         </div>
                         <h1 className="text-5xl font-display font-black italic uppercase italic leading-tight">THE SHADOW <br /><span className="gradient-text">LEAGUE</span></h1>
                         <p className="text-text-secondary max-w-sm mt-4 font-mono text-xs uppercase tracking-widest leading-relaxed">
-                            Your Digital Twin is currently ranked in the <span className="text-white font-bold">Top 15%</span> of global athletes.
+                            {data?.topPercent != null
+                                ? <>Your Digital Twin is currently ranked in the <span className="text-white font-bold">Top {data.topPercent}%</span> of global athletes.</>
+                                : <>Your Digital Twin ranking will appear after your first synchronized sessions.</>}
                         </p>
                     </div>
                 </motion.div>
@@ -132,18 +210,25 @@ export default function LeaguePage() {
                             <Crown className="text-ice" size={32} />
                         </div>
                         <p className="text-[10px] font-mono text-text-tertiary uppercase tracking-widest">NEXT TIER AT</p>
-                        <p className="text-3xl font-display font-black italic mt-1">{data.nextTierPoints.toLocaleString()} <span className="text-sm font-mono text-ice">PTS</span></p>
-                        <p className="text-[10px] font-mono text-ice uppercase tracking-widest mt-2">+{data.nextTierPoints - parseInt(data.userRank.points.replace(',', ''))} LEFT</p>
+                        <p className="text-3xl font-display font-black italic mt-1">{(data?.nextTierPoints ?? 0).toLocaleString()} <span className="text-sm font-mono text-ice">PTS</span></p>
+                        <p className="text-[10px] font-mono text-ice uppercase tracking-widest mt-2">+{pointsLeft} LEFT</p>
                     </div>
                     <div className="bg-surface border border-white/5 p-6 rounded-[40px] flex items-center gap-4">
                         <div className="bg-surface p-3 rounded-2xl"><Globe className="text-text-tertiary" size={24} /></div>
                         <div>
                             <p className="text-[10px] font-mono text-text-tertiary uppercase">REGIONAL RANK</p>
-                            <p className="text-xl font-display font-black text-white italic tracking-tight">{data.regionalRank}</p>
+                            <p className="text-xl font-display font-black text-white italic tracking-tight">{data?.regionalRank ?? '--'}</p>
                         </div>
                     </div>
                 </div>
             </div>
+
+            {error && (
+                <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-4">
+                    <p className="text-xs font-mono uppercase tracking-widest text-yellow-300">Leaderboard</p>
+                    <p className="mt-1 text-sm text-yellow-200">{error}</p>
+                </div>
+            )}
 
             {/* Leaderboard Table */}
             <motion.div
@@ -172,10 +257,10 @@ export default function LeaguePage() {
                 </div>
 
                 <div className="p-4">
-                    {visibleLeaders.map((player: any, i: number) => (
+                    {visibleLeaders.map((player) => (
                         <div
-                            key={player.name}
-                            className={`flex items-center justify-between p-6 rounded-[24px] transition-all cursor-pointer group ${player.name.includes('YOU') ? 'bg-fire/10 border border-fire/20' : 'hover:bg-surface'}`}
+                            key={`${player.rank}-${player.name}`}
+                            className={`flex items-center justify-between p-6 rounded-[24px] transition-all cursor-pointer group ${player.isMe ? 'bg-fire/10 border border-fire/20' : 'hover:bg-surface'}`}
                         >
                             <div className="flex items-center gap-8">
                                 <span className={`text-xl font-display font-black italic w-6 ${player.rank === 1 ? 'text-fire' : 'text-text-tertiary'}`}>

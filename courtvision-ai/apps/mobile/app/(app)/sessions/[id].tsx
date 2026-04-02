@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Dimensions, Share as NativeShare } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Dimensions, Share as NativeShare, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -36,36 +36,165 @@ interface SessionData {
     aiInsight: string;
 }
 
+type SessionRow = {
+    id: string;
+    type?: string | null;
+    created_at?: string | null;
+    duration_sec?: number | null;
+};
+
+type AnalysisBodyLanguage = {
+    avgElbowAngle?: number;
+    avgReleaseTime?: number;
+    avgReleaseHeight?: number;
+    avgVertical?: number;
+} | null;
+
+type AnalysisRow = {
+    shot_attempts?: number;
+    shot_made?: number;
+    mental_score?: number;
+    heatmap_data?: { shots?: ShotPoint[] } | null;
+    body_language?: AnalysisBodyLanguage;
+    ai_report?: string | null;
+} | null;
+
+type SessionStats = {
+    trackingAccuracy?: number;
+    avgSpeed?: number;
+    mentalScore?: number;
+    shots?: number;
+    made?: number;
+} | null;
+
+const clampPercent = (value: number): number => Math.max(0, Math.min(100, Math.round(value)));
+
+function toNumber(value: unknown, fallback = 0): number {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : fallback;
+}
+
+function extractShots(analysis: AnalysisRow): ShotPoint[] {
+    const rawShots = analysis?.heatmap_data?.shots;
+    if (!Array.isArray(rawShots)) {
+        return [];
+    }
+
+    return rawShots
+        .map((shot: any, index: number): ShotPoint => ({
+            id: String(shot?.id ?? `${index}`),
+            x: toNumber(shot?.x, 50),
+            y: toNumber(shot?.y, 50),
+            outcome: shot?.outcome === 'missed' || shot?.made === false ? 'missed' : 'made',
+        }))
+        .filter((shot) => shot.x >= 0 && shot.x <= 100 && shot.y >= 0 && shot.y <= 100);
+}
+
+function buildInsight(fgPct: number, mentalScore: number, made: number, attempts: number, report: string | null | undefined): string {
+    if (report && report.trim().length > 0) {
+        return report;
+    }
+
+    if (attempts <= 0) {
+        return 'No analyzed shots yet. Complete a processed session to unlock AI insights.';
+    }
+
+    return `You shot ${fgPct}% (${made}/${attempts}) with mental score ${mentalScore}/100. Keep building consistency through repeated game-speed reps.`;
+}
+
+function mapSessionToView(sessionId: string, sessionRow: SessionRow, analysis: AnalysisRow, stats: SessionStats): SessionData {
+    const attempts = toNumber(analysis?.shot_attempts ?? stats?.shots, 0);
+    const made = toNumber(analysis?.shot_made ?? stats?.made, 0);
+    const fgPct = attempts > 0 ? Math.round((made / attempts) * 100) : 0;
+    const mentalScore = clampPercent(toNumber(analysis?.mental_score ?? stats?.mentalScore, 0));
+    const trackingPct = clampPercent(toNumber(stats?.trackingAccuracy, 0));
+
+    const globalRating = clampPercent(fgPct * 0.65 + mentalScore * 0.35);
+    const effortIndex = clampPercent(trackingPct * 0.6 + Math.min(40, attempts));
+
+    const topSpeed = Math.max(0, Number(toNumber(stats?.avgSpeed, 0).toFixed(1)));
+    const durationSeconds = Math.max(0, toNumber(sessionRow.duration_sec, 0));
+    const totalDistance = durationSeconds > 0
+        ? Number((topSpeed * (durationSeconds / 3600)).toFixed(1))
+        : 0;
+
+    const body = analysis?.body_language;
+    const createdAt = sessionRow.created_at ? new Date(sessionRow.created_at) : null;
+    const dateLabel = createdAt && !Number.isNaN(createdAt.getTime())
+        ? createdAt.toLocaleDateString('en-US', { month: 'short', day: '2-digit' })
+        : sessionId.slice(0, 8).toUpperCase();
+
+    return {
+        shots: extractShots(analysis),
+        globalRating,
+        effortIndex,
+        topSpeed,
+        totalDistance,
+        sprints: Math.max(0, Math.round(attempts / 5)),
+        accels: Math.max(0, Math.round(attempts / 7)),
+        decels: Math.max(0, Math.round(attempts / 8)),
+        trackingPct,
+        elbowAngle: Math.round(toNumber(body?.avgElbowAngle, 0)),
+        releaseTime: Number(toNumber(body?.avgReleaseTime, 0).toFixed(2)),
+        arcPeak: Number(toNumber(body?.avgReleaseHeight, 0).toFixed(2)),
+        jumpHeight: Number(toNumber(body?.avgVertical, 0).toFixed(1)),
+        title: `${String(sessionRow.type || 'Session').replace(/_/g, ' ').toUpperCase()} • ${dateLabel}`,
+        aiInsight: buildInsight(fgPct, mentalScore, made, attempts, analysis?.ai_report),
+    };
+}
+
 export default function SessionAnalysisScreen() {
     const { id } = useLocalSearchParams();
     const insets = useSafeAreaInsets();
     const router = useRouter();
+    const routeSessionId = Array.isArray(id) ? id[0] : id;
     const [activeTab, setActiveTab] = useState('Overview');
     const [storyVisible, setStoryVisible] = useState(false);
     const [is3DProcessing, setIs3DProcessing] = useState(false);
     const [session, setSession] = useState<SessionData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [resolvedSessionId, setResolvedSessionId] = useState<string | null>(null);
 
     useEffect(() => {
-        loadSession();
-    }, [id]);
+        void loadSession();
+    }, [routeSessionId]);
 
     const loadSession = async () => {
+        setLoading(true);
+        setError(null);
         try {
-            const res = await api.get<{ data: SessionData }>(`/api/sessions/${id}`);
-            setSession(res.data ?? res as any);
+            let targetSessionId = routeSessionId ? String(routeSessionId) : '';
+
+            if (!targetSessionId || targetSessionId.toLowerCase() === 'recent') {
+                const recentSessions = await api.get<Array<{ id?: string }>>('/api/sessions');
+                targetSessionId = recentSessions?.[0]?.id ? String(recentSessions[0].id) : '';
+            }
+
+            if (!targetSessionId) {
+                throw new Error('No processed sessions found yet.');
+            }
+
+            const [sessionRes, analysisRes, statsRes] = await Promise.all([
+                api.get<{ data?: SessionRow }>(`/api/sessions/${targetSessionId}`),
+                api.get<{ data?: AnalysisRow }>(`/api/analyses/${targetSessionId}`).catch(() => ({ data: null })),
+                api.get<SessionStats>(`/api/sessions/${targetSessionId}/stats`).catch(() => null),
+            ]);
+
+            const sessionRow = sessionRes?.data;
+            const analysisRow = analysisRes?.data ?? null;
+
+            if (!sessionRow) {
+                throw new Error('Session not found.');
+            }
+
+            setResolvedSessionId(targetSessionId);
+            setSession(mapSessionToView(targetSessionId, sessionRow, analysisRow, statsRes));
         } catch (err) {
             console.warn('[Session] Load failed:', err);
-            // Minimal fallback so screen isn't empty
-            setSession({
-                shots: [],
-                globalRating: 0, effortIndex: 0,
-                topSpeed: 0, totalDistance: 0, sprints: 0,
-                accels: 0, decels: 0, trackingPct: 0,
-                elbowAngle: 0, releaseTime: 0, arcPeak: 0, jumpHeight: 0,
-                title: `Session ${id}`,
-                aiInsight: 'Session data unavailable. Record a new session to see detailed analysis.',
-            });
+            setSession(null);
+            setResolvedSessionId(null);
+            setError(err instanceof Error ? err.message : 'Session data unavailable.');
         } finally {
             setLoading(false);
         }
@@ -82,14 +211,37 @@ export default function SessionAnalysisScreen() {
 
     const handleShareSession = async () => {
         try {
+            const sessionLabel = resolvedSessionId ?? routeSessionId ?? 'session';
             await NativeShare.share({
-                title: `Session ${id}`,
-                message: `Session ${id} - Rating ${s?.globalRating ?? 0}% - Effort ${s?.effortIndex ?? 0}% - Tracking ${s?.trackingPct ?? 0}%`,
+                title: `Session ${sessionLabel}`,
+                message: `Session ${sessionLabel} - Rating ${s?.globalRating ?? 0}% - Effort ${s?.effortIndex ?? 0}% - Tracking ${s?.trackingPct ?? 0}%`,
             });
         } catch {
             // user cancelled
         }
     };
+
+    if (loading) {
+        return (
+            <View style={styles.loadingState}>
+                <ActivityIndicator color={colors.fire} size="large" />
+                <Text style={styles.loadingLabel}>Loading Session Analysis...</Text>
+            </View>
+        );
+    }
+
+    if (!session) {
+        return (
+            <View style={styles.loadingState}>
+                <Feather name="alert-triangle" color={colors.fire} size={24} />
+                <Text style={styles.loadingLabel}>Session unavailable</Text>
+                <Text style={styles.loadingSubLabel}>{error ?? 'Unable to load this session.'}</Text>
+                <Pressable style={styles.retryButton} onPress={() => { void loadSession(); }}>
+                    <Text style={styles.retryButtonText}>Retry</Text>
+                </Pressable>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
@@ -113,7 +265,7 @@ export default function SessionAnalysisScreen() {
                     </Pressable>
                     <View style={styles.headerTitles}>
                         <Text style={styles.headerSubtitle}>SESSION DETAILS</Text>
-                        <Text style={styles.headerTitle}>{s?.title ?? `Session ${id}`}</Text>
+                        <Text style={styles.headerTitle}>{s?.title ?? `Session ${resolvedSessionId ?? routeSessionId ?? ''}`}</Text>
                     </View>
                     <View style={styles.headerRight}>
                         <Pressable style={styles.iconButtonSmall} onPress={handleShareSession}>
@@ -121,7 +273,13 @@ export default function SessionAnalysisScreen() {
                         </Pressable>
                         <Pressable
                             style={[styles.iconButtonSmall, { marginLeft: space[2] }]}
-                            onPress={() => router.push(`/(app)/sessions/chat/${id}`)}
+                            onPress={() => {
+                                const target = resolvedSessionId ?? routeSessionId;
+                                if (!target) {
+                                    return;
+                                }
+                                router.push(`/(app)/sessions/chat/${target}`);
+                            }}
                         >
                             <Feather name="cpu" color={colors.fire} size={20} />
                         </Pressable>
@@ -392,6 +550,39 @@ export default function SessionAnalysisScreen() {
 }
 
 const styles = StyleSheet.create({
+    loadingState: {
+        flex: 1,
+        backgroundColor: colors.base,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: space[6],
+    },
+    loadingLabel: {
+        marginTop: space[4],
+        fontFamily: 'BarlowCondensed_700Bold',
+        fontSize: 20,
+        color: colors.snow,
+    },
+    loadingSubLabel: {
+        marginTop: space[2],
+        color: colors.cloud,
+        textAlign: 'center',
+        fontFamily: 'DMSans_500Medium',
+        fontSize: 14,
+    },
+    retryButton: {
+        marginTop: space[5],
+        backgroundColor: colors.fire,
+        borderRadius: radius.pill,
+        paddingHorizontal: space[5],
+        paddingVertical: space[3],
+    },
+    retryButtonText: {
+        color: colors.base,
+        fontFamily: 'JetBrainsMono_700Bold',
+        fontSize: 12,
+        letterSpacing: 0.8,
+    },
     container: {
         flex: 1,
         backgroundColor: colors.base,

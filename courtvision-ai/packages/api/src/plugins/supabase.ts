@@ -40,5 +40,73 @@ export const supabasePlugin = fp(async (fastify, opts) => {
 
     fastify.decorate('supabase', supabase)
 
+    fastify.addHook('onReady', async () => {
+        const CHECK_TIMEOUT_MS = 5000
+
+        type BucketCheckResult =
+            | { kind: 'ok'; data: { name?: string; public?: boolean } | null }
+            | { kind: 'error'; message: string }
+            | { kind: 'timeout' }
+
+        try {
+            const bucketName = env.SUPABASE_VIDEO_BUCKET
+
+            const result = await Promise.race<BucketCheckResult>([
+                supabase.storage
+                    .getBucket(bucketName)
+                    .then(({ data, error }) => {
+                        if (error) {
+                            return { kind: 'error', message: error.message } as const
+                        }
+                        return {
+                            kind: 'ok',
+                            data: data
+                                ? {
+                                    name: data.name,
+                                    public: data.public,
+                                }
+                                : null,
+                        } as const
+                    })
+                    .catch((error: any) => ({ kind: 'error', message: String(error?.message || error) } as const)),
+                new Promise<BucketCheckResult>((resolve) => {
+                    setTimeout(() => resolve({ kind: 'timeout' }), CHECK_TIMEOUT_MS)
+                }),
+            ])
+
+            if (result.kind === 'timeout') {
+                fastify.log.error(
+                    { bucket: bucketName, timeoutMs: CHECK_TIMEOUT_MS },
+                    'Supabase video bucket check timed out during startup',
+                )
+                return
+            }
+
+            if (result.kind === 'error') {
+                fastify.log.error(
+                    { bucket: bucketName, error: result.message },
+                    'Supabase video bucket check failed: bucket is missing or inaccessible',
+                )
+                return
+            }
+
+            fastify.log.info(
+                {
+                    bucket: result.data?.name || bucketName,
+                    isPublic: result.data?.public ?? false,
+                },
+                'Supabase video bucket check passed',
+            )
+        } catch (error) {
+            fastify.log.error(
+                {
+                    bucket: env.SUPABASE_VIDEO_BUCKET,
+                    err: error,
+                },
+                'Supabase video bucket check failed: unable to reach storage API',
+            )
+        }
+    })
+
     fastify.log.info({ keyRoleHint }, 'Supabase client initialized successfully')
 })

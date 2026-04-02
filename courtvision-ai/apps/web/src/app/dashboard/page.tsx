@@ -41,6 +41,7 @@ export default function DashboardPage() {
     const { user } = useAuth()
     const router = useRouter()
     const [data, setData] = useState<DashboardState | null>(null)
+    const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [playbookOpen, setPlaybookOpen] = useState(false)
     const [playbookLoading, setPlaybookLoading] = useState(false)
@@ -52,6 +53,7 @@ export default function DashboardPage() {
     } | null>(null)
 
     const loadDashboard = useCallback(async () => {
+        setLoading(true)
         try {
             setError(null)
 
@@ -100,28 +102,14 @@ export default function DashboardPage() {
             })
         } catch (err: any) {
             console.error('Dashboard load error:', err)
-            // Fallback to demo data if API is unavailable
-            setError(err.message)
-            setData({
-                username: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Player',
-                stats: [
-                    { name: 'APEX SCORE', value: '--', change: 'Connect API', icon: Target, color: 'text-fire' },
-                    { name: 'THIS WEEK', value: '0 sessions', change: '0 shots', icon: Cpu, color: 'text-ice' },
-                    { name: 'STREAK', value: '0 days', change: 'Best: 0', icon: Star, color: 'text-fire' },
-                    { name: 'SHOOT GRADE', value: '--', change: '0%', icon: Activity, color: 'text-ice' }
-                ],
-                lastSession: null,
-                neuralInsights: {
-                    analysis: 'API unavailable. Connect your backend to unlock live analytics and coaching updates.',
-                    nextMilestone: 'FIRST SESSION',
-                    progress: '0%'
-                }
-            })
+            setError(err?.message || 'Unable to load dashboard data.')
+        } finally {
+            setLoading(false)
         }
     }, [user])
 
     useEffect(() => {
-        loadDashboard()
+        void loadDashboard()
     }, [loadDashboard])
 
     const handleView3DModel = () => {
@@ -151,7 +139,7 @@ export default function DashboardPage() {
         }
     }
 
-    if (!data) {
+    if (loading && !data) {
         return (
             <div className="flex h-[60vh] items-center justify-center">
                 <div className="text-center space-y-4">
@@ -160,6 +148,24 @@ export default function DashboardPage() {
                 </div>
             </div>
         );
+    }
+
+    if (!data) {
+        return (
+            <div className="flex h-[60vh] items-center justify-center px-4">
+                <div className="w-full max-w-lg rounded-3xl border border-fire/20 bg-fire/10 p-8 text-center">
+                    <AlertTriangle className="mx-auto text-fire" size={28} />
+                    <h2 className="mt-4 text-xl font-display font-black italic uppercase text-white">Dashboard Unavailable</h2>
+                    <p className="mt-3 text-sm text-text-secondary">{error || 'Unable to sync your dashboard right now.'}</p>
+                    <button
+                        onClick={() => { void loadDashboard() }}
+                        className="mt-6 bg-white text-void hover:bg-fire hover:text-white px-6 py-3 rounded-2xl font-bold font-mono text-xs uppercase tracking-widest transition-all"
+                    >
+                        RETRY
+                    </button>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -174,10 +180,10 @@ export default function DashboardPage() {
                 >
                     <AlertTriangle className="text-yellow-400 shrink-0" size={20} />
                     <div>
-                        <p className="text-sm text-yellow-400 font-mono">API connection failed — showing placeholder data</p>
+                        <p className="text-sm text-yellow-400 font-mono">API connection failed — keeping last synced data</p>
                         <p className="text-xs text-text-tertiary font-mono mt-1">{error}</p>
                     </div>
-                    <button onClick={loadDashboard} className="ml-auto text-xs font-mono text-yellow-400 hover:text-yellow-300 uppercase tracking-wider">
+                    <button onClick={() => { void loadDashboard() }} className="ml-auto text-xs font-mono text-yellow-400 hover:text-yellow-300 uppercase tracking-wider">
                         Retry
                     </button>
                 </motion.div>

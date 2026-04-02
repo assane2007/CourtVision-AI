@@ -139,7 +139,7 @@ export default function OnboardingCamera() {
     }, [cvAvailable])
 
     const retryCvConnection = useCallback(async () => {
-        const available = await isCVEngineAvailable()
+        const available = await isCVEngineAvailable(true)
         setCvAvailable(available)
         if (available) {
             setCaptureError(null)

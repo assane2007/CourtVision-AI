@@ -12,6 +12,7 @@ import {
 } from 'fastify-type-provider-zod'
 
 import fastifyWebsocket from '@fastify/websocket'
+import fastifyMultipart from '@fastify/multipart'
 
 import * as Sentry from '@sentry/node'
 import { nodeProfilingIntegration } from '@sentry/profiling-node'
@@ -72,7 +73,7 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
         tracesSampleRate: env.isProduction ? 0.2 : 1.0,
     })
 
-    const app = fastify({ ...opts, logger: true, bodyLimit: 1048576, trustProxy: true }).withTypeProvider<ZodTypeProvider>()
+    const app = fastify({ ...opts, logger: true, bodyLimit: 600 * 1024 * 1024, trustProxy: true }).withTypeProvider<ZodTypeProvider>()
 
     // Zod Compilers
     app.setValidatorCompiler(validatorCompiler)
@@ -105,6 +106,14 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     // WebSockets
     app.register(fastifyWebsocket, {
         options: { maxPayload: 1048576 }
+    })
+
+    // Multipart uploads (mobile video uploads)
+    app.register(fastifyMultipart, {
+        limits: {
+            files: 1,
+            fileSize: 500 * 1024 * 1024,
+        },
     })
 
     // Plugins

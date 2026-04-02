@@ -19,6 +19,7 @@ export const env = cleanEnv(process.env, {
     SUPABASE_URL: url({ desc: 'Supabase project URL' }),
     SUPABASE_ANON_KEY: str({ desc: 'Supabase anon/public key' }),
     SUPABASE_SERVICE_ROLE_KEY: str({ desc: 'Supabase service role key (server only)' }),
+    SUPABASE_VIDEO_BUCKET: str({ default: 'videos', desc: 'Supabase storage bucket used for uploaded videos' }),
 
     // ── Stripe (required in production, optional in dev) ──
     STRIPE_SECRET_KEY: str({ default: '', desc: 'Stripe secret API key' }),

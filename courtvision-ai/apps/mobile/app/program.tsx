@@ -45,6 +45,75 @@ interface Exercise {
     done: boolean
 }
 
+const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+function toIntensity(value: string | undefined): Exercise['intensity'] {
+    const normalized = (value || '').toLowerCase()
+    if (normalized === 'high' || normalized === 'max') return 'High'
+    if (normalized === 'moderate') return 'Moderate'
+    return 'Low'
+}
+
+function toExerciseXP(intensity: Exercise['intensity']): number {
+    if (intensity === 'High') return 6
+    if (intensity === 'Moderate') return 4
+    return 3
+}
+
+function mapTrainingPlanToProgram(planData: any): {
+    weeklyProgram: ProgramDay[]
+    todayExercises: Exercise[]
+    weeklyGoal: string
+} {
+    const days = Array.isArray(planData?.days) ? planData.days : []
+    const completedDays: number[] = Array.isArray(planData?.completedDays) ? planData.completedDays : []
+    const nextDay = planData?.nextDay && typeof planData.nextDay === 'object'
+        ? planData.nextDay
+        : days[0]
+
+    const weeklyProgram: ProgramDay[] = days.map((day: any, index: number) => {
+        const dayNumber = Number(day?.dayNumber ?? index + 1)
+        const difficulty = Number(day?.difficultyRating ?? 2)
+        return {
+            day: dayNumber,
+            label: WEEKDAY_LABELS[(dayNumber - 1) % WEEKDAY_LABELS.length],
+            focus: day?.focus || day?.title || 'Training',
+            duration: Number(day?.totalDurationMin ?? 30),
+            done: completedDays.includes(dayNumber),
+            isToday: Number(nextDay?.dayNumber) === dayNumber,
+            xp: Math.max(10, Math.round(difficulty * 8)),
+        }
+    })
+
+    const targetDay = days.find((d: any) => Number(d?.dayNumber) === Number(nextDay?.dayNumber)) || nextDay || days[0]
+    const drillList = targetDay
+        ? [targetDay.warmup, ...(Array.isArray(targetDay.drills) ? targetDay.drills : []), targetDay.cooldown, targetDay.mentalExercise]
+        : []
+
+    const todayExercises: Exercise[] = drillList
+        .filter(Boolean)
+        .map((drill: any): Exercise => {
+            const intensity = toIntensity(drill?.intensity)
+            const reps = drill?.reps
+                ? `${drill?.sets ? `${drill.sets} x ` : ''}${drill.reps}`
+                : (drill?.duration || '5 min')
+
+            return {
+                name: drill?.name || 'Training Drill',
+                reps,
+                intensity,
+                xp: toExerciseXP(intensity),
+                done: false,
+            }
+        })
+
+    return {
+        weeklyProgram,
+        todayExercises,
+        weeklyGoal: planData?.weeklyObjective || planData?.objective || 'Follow your AI training plan this week.',
+    }
+}
+
 const INTENSITY_COLORS: Record<string, string> = {
     Low: T.color.semantic.success,
     Moderate: T.color.semantic.warning,
@@ -90,11 +159,32 @@ export default function TrainingProgram() {
 
     const loadProgram = async () => {
         try {
-            const res = await api.get<{ data: { weeklyProgram: ProgramDay[]; todayExercises: Exercise[]; weeklyGoal: string } }>('/api/coaching/program')
-            const d = res.data ?? (res as any)
-            if (d.weeklyProgram) setWeeklyProgram(d.weeklyProgram)
-            if (d.todayExercises) setExercises(d.todayExercises)
-            if (d.weeklyGoal) setWeeklyGoal(d.weeklyGoal)
+            const currentRes = await api.get<{ data?: any; message?: string }>('/api/training/current')
+            let planData = currentRes?.data ?? null
+
+            if (!planData?.days?.length) {
+                const generated = await api.post<{ data?: any }>(
+                    '/api/training/generate',
+                    {
+                        goals: ['Improve shooting consistency'],
+                        availableDays: 5,
+                        sessionDurationMin: 45,
+                        hasGym: false,
+                        hasCourt: true,
+                        planType: 'weekly',
+                    },
+                )
+                planData = generated?.data ?? null
+            }
+
+            if (planData?.days?.length) {
+                const mapped = mapTrainingPlanToProgram(planData)
+                setWeeklyProgram(mapped.weeklyProgram)
+                setExercises(mapped.todayExercises)
+                setWeeklyGoal(mapped.weeklyGoal)
+            } else {
+                throw new Error('No training plan available')
+            }
         } catch (err) {
             console.warn('[Program] API fetch failed, using defaults:', err)
             // Minimal fallback so screen isn't empty

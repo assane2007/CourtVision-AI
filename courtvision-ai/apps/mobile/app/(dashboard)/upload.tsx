@@ -31,8 +31,7 @@ import * as ImagePicker from 'expo-image-picker'
 import * as FileSystem from 'expo-file-system/legacy'
 import { useStore } from '../../lib/store'
 import { toast } from '../../lib/toast'
-import { api } from '../../lib/api'
-import { isDemoMode } from '../../lib/supabase'
+import { api, API_BASE_URL, getAuthToken } from '../../lib/api'
 import { ScoreRing } from '../../components/workout/ScoreRing'
 import { PrimaryButton } from '../../components/PrimaryButton'
 import { T, typePresets } from '../../lib/theme'
@@ -76,8 +75,6 @@ function unwrapResponse<T>(data: ({ data?: T } & Record<string, unknown>) | unde
     return (data.data !== undefined ? data.data : data) as T
 }
 
-const SAMPLE_VIDEO_URL = process.env.EXPO_PUBLIC_SAMPLE_VIDEO_URL
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
 const MAX_VIDEO_MB = 500
 
 // ─── Pulsing Record Button ──────────────────────────────────
@@ -298,58 +295,10 @@ export default function UploadAnalyze() {
     // ── Upload handler ───────────────────────────────────────
 
     /**
-     * Pick or record a video, upload to Supabase Storage, then send URL to API.
-     * Falls back to SAMPLE_VIDEO_URL in demo mode or when no file picker is available.
+     * Pick or record a video, then upload it via authenticated multipart API.
      */
     const handleUpload = useCallback(async (source: 'gallery' | 'camera') => {
-        // Demo mode: simulate the full analysis pipeline
-        if (isDemoMode) {
-            setFlowState('processing')
-            setProgress(0)
-            progressBar.value = 0
-            setCurrentSessionId(null)
-            toast.info(
-                source === 'gallery' ? 'Video imported' : 'Camera ready',
-                'Demo analysis starting...',
-            )
-
-            let lastStep = -1
-            const totalDuration = 8000
-            const startedAt = Date.now()
-
-            const demoInterval = setInterval(() => {
-                const elapsed = Date.now() - startedAt
-                const pct = Math.min(100, Math.round((elapsed / totalDuration) * 100))
-                setProgress(pct)
-                progressBar.value = withTiming(pct, { duration: 300 })
-
-                const step = Math.min(
-                    Math.floor((pct / 100) * PIPELINE_STEPS.length),
-                    PIPELINE_STEPS.length - 1,
-                )
-                if (step !== lastStep && PIPELINE_STEPS[step]) {
-                    lastStep = step
-                    const s = PIPELINE_STEPS[step]
-                    toast.xp(`+${s.xp} XP`, s.label, 1500)
-                }
-
-                if (pct >= 100) {
-                    clearInterval(demoInterval)
-                    addXP(TOTAL_XP, 'Full game analysis')
-                    toast.success('Analysis complete!', `+${TOTAL_XP} XP earned`, 3500)
-                    const demoScore = 65 + Math.floor(Math.random() * 25)
-                    setResultScore(demoScore)
-                    setCurrentSessionId('demo-session-' + Date.now())
-                    setTimeout(() => setFlowState('result'), 800)
-                }
-            }, 200)
-
-            return
-        }
-
-        // Real API flow — pick video from device
         try {
-            // Request permissions
             let pickerResult: ImagePicker.ImagePickerResult | null = null
 
             if (source === 'gallery') {
@@ -362,7 +311,7 @@ export default function UploadAnalyze() {
                     mediaTypes: ImagePicker.MediaTypeOptions.Videos,
                     allowsEditing: false,
                     quality: 1,
-                    videoMaxDuration: 600, // 10 min max
+                    videoMaxDuration: 600,
                 })
             } else {
                 const perm = await ImagePicker.requestCameraPermissionsAsync()
@@ -379,78 +328,96 @@ export default function UploadAnalyze() {
             }
 
             if (!pickerResult || pickerResult.canceled || !pickerResult.assets?.[0]?.uri) {
-                return // User cancelled
+                return
             }
 
             const videoUri = pickerResult.assets[0].uri
 
-            // Check file size
             const fileInfo = await FileSystem.getInfoAsync(videoUri)
             const sizeMB = fileInfo.exists && typeof fileInfo.size === 'number'
                 ? fileInfo.size / (1024 * 1024)
                 : 0
+
             if (sizeMB > MAX_VIDEO_MB) {
                 Alert.alert('File too large', `Video must be under ${MAX_VIDEO_MB} MB. Yours is ${Math.round(sizeMB)} MB.`)
                 return
             }
 
-            // Start processing UI
+            const token = await getAuthToken()
+            if (!token) {
+                toast.error('Authentication required', 'Please sign in before uploading a video')
+                return
+            }
+
+            const lowerUri = videoUri.toLowerCase()
+            const mimeType = lowerUri.endsWith('.mov') ? 'video/quicktime' : 'video/mp4'
+
             setFlowState('processing')
             setProgress(0)
             progressBar.value = 0
             setCurrentSessionId(null)
             toast.info('Video selected', 'Uploading to cloud...')
 
-            // Upload to Supabase Storage via API (multipart upload)
-            // If the API expects a URL, we first upload the file and get the URL back
-            const videoUrl = SAMPLE_VIDEO_URL || ''
-
-            try {
-                const uploadResp = await FileSystem.uploadAsync(
-                    `${API_BASE_URL}/api/sessions/upload-file`,
-                    videoUri,
-                    {
-                        httpMethod: 'POST',
-                        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-                        fieldName: 'video',
-                        parameters: { type: 'training' },
+            const uploadResp = await FileSystem.uploadAsync(
+                `${API_BASE_URL}/api/sessions/upload-file`,
+                videoUri,
+                {
+                    httpMethod: 'POST',
+                    uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+                    fieldName: 'video',
+                    mimeType,
+                    parameters: { type: 'training' },
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        Accept: 'application/json',
                     },
-                )
-                if (uploadResp.status >= 200 && uploadResp.status < 300) {
-                    const parsed = JSON.parse(uploadResp.body)
-                    const sessionId = parsed.data?.id ?? parsed.id
-                    if (sessionId) {
-                        setCurrentSessionId(sessionId)
-                        startPollingSession(sessionId)
-                        return
-                    }
-                }
-            } catch {
-                // File upload endpoint not available — fall back to URL-based upload
+                },
+            )
+
+            if (uploadResp.status < 200 || uploadResp.status >= 300) {
+                const bodySnippet = uploadResp.body ? uploadResp.body.slice(0, 240) : ''
+                throw new Error(bodySnippet || `Upload failed (HTTP ${uploadResp.status})`)
             }
 
-            // Fallback: use URL-based upload if file upload is not supported
-            if (videoUrl) {
-                const res = await api.post<{ data?: { id: string }; id?: string } & Record<string, unknown>>('/api/sessions/upload', {
-                    type: 'training',
-                    video_url: videoUrl,
-                })
-                const sessionId = unwrapResponse<{ id: string }>(res.data).id
-                setCurrentSessionId(sessionId)
-                startPollingSession(sessionId)
-            } else {
-                toast.error('Upload failed', 'No upload endpoint available. Configure EXPO_PUBLIC_API_URL.')
-                setFlowState('select')
-                setProgress(0)
-                progressBar.value = 0
+            let parsedBody: Record<string, unknown> = {}
+            try {
+                parsedBody = JSON.parse(uploadResp.body) as Record<string, unknown>
+            } catch {
+                throw new Error('Upload completed but returned an invalid server response')
             }
+
+            const payload = (parsedBody.data && typeof parsedBody.data === 'object'
+                ? parsedBody.data
+                : parsedBody) as Record<string, unknown>
+            const sessionId = typeof payload.id === 'string' ? payload.id : null
+            const queue = parsedBody.queue && typeof parsedBody.queue === 'object'
+                ? parsedBody.queue as Record<string, unknown>
+                : null
+            const queueAccepted = queue?.accepted === true
+            const queueMessage = typeof queue?.message === 'string' ? queue.message : null
+
+            if (!sessionId) {
+                throw new Error('Upload completed but no session ID was returned')
+            }
+
+            if (!queueAccepted) {
+                toast.info(
+                    'Upload saved',
+                    queueMessage || 'Video uploaded, but processing worker is unavailable right now. Analysis may stay in processing until worker recovery.',
+                    4200,
+                )
+            }
+
+            setCurrentSessionId(sessionId)
+            startPollingSession(sessionId)
         } catch (err) {
             toast.error('Upload failed', err instanceof Error ? err.message : 'Please try again')
             setFlowState('select')
             setProgress(0)
             progressBar.value = 0
+            setCurrentSessionId(null)
         }
-    }, [progressBar, startPollingSession, addXP])
+    }, [progressBar, startPollingSession])
 
     const handleGallery = useCallback(() => handleUpload('gallery'), [handleUpload])
     const handleCamera = useCallback(() => handleUpload('camera'), [handleUpload])

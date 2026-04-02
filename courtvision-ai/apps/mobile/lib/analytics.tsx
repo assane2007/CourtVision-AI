@@ -4,6 +4,12 @@ import React from 'react';
 const POSTHOG_API_KEY = process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? '';
 const isPostHogConfigured = POSTHOG_API_KEY.length > 10 && !POSTHOG_API_KEY.includes('PLACEHOLDER');
 
+type AnalyticsMethods = {
+    posthog: ReturnType<typeof usePostHog> | null;
+    trackEvent: (eventName: string, properties?: Record<string, any>) => void;
+    identifyUser: (userId: string, properties?: Record<string, any>) => void;
+};
+
 export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     if (!isPostHogConfigured) {
         return <>{children}</>;
@@ -26,9 +32,16 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     );
 }
 
-export const useAnalytics = () => {
-    const posthogClient = usePostHog();
-    const posthog = isPostHogConfigured ? posthogClient : null;
+function useAnalyticsDisabled(): AnalyticsMethods {
+    return {
+        posthog: null,
+        trackEvent: () => { },
+        identifyUser: () => { },
+    };
+}
+
+function useAnalyticsEnabled(): AnalyticsMethods {
+    const posthog = usePostHog();
 
     const trackEvent = (eventName: string, properties?: Record<string, any>) => {
         posthog?.capture(eventName, properties);
@@ -39,4 +52,8 @@ export const useAnalytics = () => {
     };
 
     return { posthog, trackEvent, identifyUser };
-};
+}
+
+export const useAnalytics = isPostHogConfigured
+    ? useAnalyticsEnabled
+    : useAnalyticsDisabled;

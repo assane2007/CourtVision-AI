@@ -82,9 +82,9 @@ let _engineAvailable: boolean | null = null
 let _lastHealthCheck = 0
 const HEALTH_CHECK_INTERVAL_MS = 30_000
 
-export async function isCVEngineAvailable(): Promise<boolean> {
+export async function isCVEngineAvailable(forceRefresh = false): Promise<boolean> {
     const now = Date.now()
-    if (_engineAvailable !== null && now - _lastHealthCheck < HEALTH_CHECK_INTERVAL_MS) {
+    if (!forceRefresh && _engineAvailable !== null && now - _lastHealthCheck < HEALTH_CHECK_INTERVAL_MS) {
         return _engineAvailable
     }
     try {

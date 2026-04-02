@@ -112,12 +112,58 @@ export const videoQueue = redisConnection
     })
     : null
 
-export async function addToQueue(jobName: string, data: VideoProcessingJobData) {
+export type QueueDispatchReason = 'enqueued' | 'queue-not-configured' | 'redis-unavailable' | 'enqueue-failed'
+
+export type QueueDispatchResult = {
+    accepted: boolean
+    reason: QueueDispatchReason
+    message: string
+}
+
+export function getVideoQueueDiagnostics() {
+    const redisConfigured = Boolean(process.env.REDIS_URL && process.env.REDIS_URL.trim() !== '')
+    return {
+        redisConfigured,
+        redisAvailable,
+        queueConfigured: Boolean(videoQueue),
+    }
+}
+
+export async function addToQueue(jobName: string, data: VideoProcessingJobData): Promise<QueueDispatchResult> {
     if (videoQueue && redisAvailable) {
-        const job = await videoQueue.add(jobName, data)
-        logger.info({ jobId: job.id, sessionId: data.sessionId }, `[Queue] Job "${jobName}" added`)
-    } else {
-        logRedisOptional('[Queue] Redis not available; job skipped', { sessionId: data.sessionId })
+        try {
+            const job = await videoQueue.add(jobName, data)
+            logger.info({ jobId: job.id, sessionId: data.sessionId }, `[Queue] Job "${jobName}" added`)
+            return {
+                accepted: true,
+                reason: 'enqueued',
+                message: 'Processing job enqueued',
+            }
+        } catch (err) {
+            logger.error({ err, sessionId: data.sessionId }, '[Queue] Failed to enqueue job')
+            return {
+                accepted: false,
+                reason: 'enqueue-failed',
+                message: 'Upload saved, but processing queue failed to accept the job.',
+            }
+        }
+    }
+
+    const queueNotConfigured = !videoQueue
+    const reason: QueueDispatchReason = queueNotConfigured ? 'queue-not-configured' : 'redis-unavailable'
+    const message = queueNotConfigured
+        ? 'Upload saved, but processing worker is disabled because REDIS_URL is not configured.'
+        : 'Upload saved, but processing worker is unavailable because Redis is disconnected.'
+
+    logRedisOptional('[Queue] Redis not available; job skipped', {
+        sessionId: data.sessionId,
+        reason,
+    })
+
+    return {
+        accepted: false,
+        reason,
+        message,
     }
 }
 

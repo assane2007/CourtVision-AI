@@ -1,21 +1,91 @@
 import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
-import { addToQueue } from '../queue/videoProcessor'
+import { addToQueue, type QueueDispatchResult } from '../queue/videoProcessor'
 import { PdfReportService } from '../services/pdfReportService'
+import { randomUUID } from 'crypto'
+import { env } from '../config/env'
+
+const sessionTypeSchema = z.enum(['match', 'training', 'shootaround'])
 
 const uploadSchema = z.object({
-    type: z.enum(['match', 'training', 'shootaround']),
+    type: sessionTypeSchema,
     video_url: z.string().url()
+})
+
+const uploadFileTypeSchema = z.object({
+    type: sessionTypeSchema.default('training'),
 })
 
 const getSessionParamsSchema = z.object({
     id: z.string().uuid()
 })
 
+const MAX_UPLOAD_BYTES = 500 * 1024 * 1024
+const VIDEO_BUCKET = env.SUPABASE_VIDEO_BUCKET
+const ALLOWED_VIDEO_MIME_TYPES = new Set([
+    'video/mp4',
+    'video/quicktime',
+    'video/webm',
+    'video/x-matroska',
+])
+
+function inferVideoExtension(filename: string | undefined, mimetype: string | undefined): string {
+    const lower = (filename || '').toLowerCase()
+    if (lower.endsWith('.mov')) return 'mov'
+    if (lower.endsWith('.webm')) return 'webm'
+    if (lower.endsWith('.mkv')) return 'mkv'
+    if (lower.endsWith('.mp4')) return 'mp4'
+
+    if (mimetype === 'video/quicktime') return 'mov'
+    if (mimetype === 'video/webm') return 'webm'
+    if (mimetype === 'video/x-matroska') return 'mkv'
+    return 'mp4'
+}
+
+function queueResponse(queue: QueueDispatchResult) {
+    return {
+        accepted: queue.accepted,
+        reason: queue.reason,
+        message: queue.message,
+    }
+}
+
 const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
     app.addHook('preValidation', app.authenticate)
     const pdfReportService = new PdfReportService(app.supabase)
+
+    const createProcessingSession = async (
+        userId: string,
+        payload: z.infer<typeof uploadSchema>,
+    ) => {
+        const { data, error } = await app.supabase.from('sessions').insert({
+            user_id: userId,
+            type: payload.type,
+            video_url: payload.video_url,
+            status: 'processing'
+        }).select().single()
+
+        if (error) throw error
+
+        const queue = await addToQueue('process-video', {
+            sessionId: data.id,
+            videoUrl: data.video_url,
+            userId,
+        })
+
+        if (!queue.accepted) {
+            app.log.warn(
+                {
+                    sessionId: data.id,
+                    reason: queue.reason,
+                },
+                'Session created but processing job was not enqueued',
+            )
+        }
+
+        return { data, queue }
+    }
 
     app.post('/', {
         schema: {
@@ -25,22 +95,103 @@ const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
         const user = request.user!
         const body = request.body as z.infer<typeof uploadSchema>
 
-        const { data, error } = await app.supabase.from('sessions').insert({
-            user_id: user.id,
-            type: body.type,
-            video_url: body.video_url,
-            status: 'processing'
-        }).select().single()
+        const { data, queue } = await createProcessingSession(user.id, body)
+        return {
+            success: true,
+            data,
+            queue: queueResponse(queue),
+        }
+    })
 
-        if (error) throw error
+    // Compatibility alias used by older clients/docs.
+    app.post('/upload', {
+        schema: {
+            body: uploadSchema
+        }
+    }, async (request, reply) => {
+        const user = request.user!
+        const body = request.body as z.infer<typeof uploadSchema>
 
-        await addToQueue('process-video', {
-            sessionId: data.id,
-            videoUrl: data.video_url,
-            userId: user.id
+        const { data, queue } = await createProcessingSession(user.id, body)
+        return {
+            success: true,
+            data,
+            queue: queueResponse(queue),
+        }
+    })
+
+    app.post('/upload-file', async (request, reply) => {
+        const user = request.user!
+
+        const multipartFile = await (request as any).file()
+        if (!multipartFile) {
+            return reply.code(400).send({ error: 'No video file provided' })
+        }
+
+        const rawType = (multipartFile.fields?.type as any)?.value
+        const parsedType = uploadFileTypeSchema.safeParse({ type: rawType ?? 'training' })
+        if (!parsedType.success) {
+            return reply.code(400).send({ error: 'Invalid session type' })
+        }
+
+        if (!ALLOWED_VIDEO_MIME_TYPES.has(multipartFile.mimetype)) {
+            return reply.code(415).send({ error: `Unsupported video format: ${multipartFile.mimetype}` })
+        }
+
+        const videoBuffer = await multipartFile.toBuffer()
+        if (!videoBuffer.length) {
+            return reply.code(400).send({ error: 'Uploaded file is empty' })
+        }
+
+        if (videoBuffer.length > MAX_UPLOAD_BYTES) {
+            return reply.code(413).send({ error: 'Video file exceeds upload limit' })
+        }
+
+        const extension = inferVideoExtension(multipartFile.filename, multipartFile.mimetype)
+        const objectPath = `${user.id}/${Date.now()}-${randomUUID()}.${extension}`
+
+        const { error: uploadError } = await app.supabase.storage
+            .from(VIDEO_BUCKET)
+            .upload(objectPath, videoBuffer, {
+                contentType: multipartFile.mimetype,
+                upsert: false,
+                cacheControl: '3600',
+            })
+
+        if (uploadError) {
+            request.log.error({ err: uploadError, bucket: VIDEO_BUCKET, objectPath }, 'Storage upload failed')
+            return reply.code(500).send({ error: 'Failed to upload video file' })
+        }
+
+        const { data: publicUrlData } = app.supabase.storage
+            .from(VIDEO_BUCKET)
+            .getPublicUrl(objectPath)
+
+        const videoUrl = publicUrlData?.publicUrl
+        if (!videoUrl) {
+            return reply.code(500).send({ error: 'Failed to resolve uploaded video URL' })
+        }
+
+        const { data, queue } = await createProcessingSession(user.id, {
+            type: parsedType.data.type,
+            video_url: videoUrl,
         })
 
-        return { success: true, data }
+        return {
+            success: true,
+            data: {
+                id: data.id,
+                type: data.type,
+                video_url: data.video_url,
+                status: data.status,
+                created_at: data.created_at,
+            },
+            upload: {
+                bucket: VIDEO_BUCKET,
+                path: objectPath,
+            },
+            queue: queueResponse(queue),
+        }
     })
 
     app.get('/', async (request, reply) => {
