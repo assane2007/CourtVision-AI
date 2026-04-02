@@ -5,8 +5,14 @@ import { initSpatialWorker } from './nerf.worker';
 // import { initVideoProcessorWorker } from './videoProcessor';
 
 export function initializeQueues() {
-    if (!process.env.REDIS_URL || process.env.REDIS_URL.trim() === '') {
-        console.log('[Queue] REDIS_URL missing. Skipping BullMQ initialization.');
+    const redisUrl = process.env.REDIS_URL;
+    const redisHost = process.env.REDIS_HOST;
+    const hasRedis = (redisUrl && redisUrl.trim() !== '') || (redisHost && redisHost.trim() !== '');
+
+    if (!hasRedis) {
+        if (process.env.NODE_ENV === 'production') {
+            console.warn('[Queue] REDIS_URL/REDIS_HOST missing. Skipping BullMQ initialization.');
+        }
         return null;
     }
 
