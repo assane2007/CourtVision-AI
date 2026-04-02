@@ -7,7 +7,7 @@
  * Flow:
  * 1. Camera permission → live camera feed
  * 2. User films themselves shooting 3 times
- * 3. Each shot is captured & analyzed via CV Engine (or simulated)
+ * 3. Each shot is captured & analyzed via CV Engine
  * 4. Results shown with real elbow angle, posture score
  * 5. CTA → continue to login/signup
  */
@@ -18,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useEffect, useState, useRef, useCallback } from 'react'
 import Animated, {
     useSharedValue, useAnimatedStyle, withTiming, withRepeat,
-    withSequence, withSpring, FadeInDown, FadeIn, ZoomIn,
+    withSequence, FadeInDown, FadeIn, ZoomIn,
     Easing, interpolate,
 } from 'react-native-reanimated'
 import { Feather } from '@expo/vector-icons'
@@ -26,7 +26,7 @@ import * as Haptics from 'expo-haptics'
 import { BlurView } from 'expo-blur'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { colors, space } from '../constants/tokens'
-import { isCVEngineAvailable, analyzeFrame, type CVFrameResult } from '../lib/cvEngineService'
+import { isCVEngineAvailable, analyzeFrame } from '../lib/cvEngineService'
 
 const { width: SW, height: SH } = Dimensions.get('window')
 const TOTAL_SHOTS = 3
@@ -90,6 +90,7 @@ export default function OnboardingCamera() {
     const [shots, setShots] = useState<ShotResult[]>([])
     const [cvAvailable, setCvAvailable] = useState(false)
     const [capturing, setCapturing] = useState(false)
+    const [captureError, setCaptureError] = useState<string | null>(null)
 
     // Animations
     const ringProgress = useSharedValue(0)
@@ -128,66 +129,84 @@ export default function OnboardingCamera() {
     }))
 
     const handleStart = useCallback(() => {
+        if (!cvAvailable) {
+            setCaptureError('CV engine unavailable. Start backend services, then retry.')
+            return
+        }
         if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+        setCaptureError(null)
         setPhase('filming')
+    }, [cvAvailable])
+
+    const retryCvConnection = useCallback(async () => {
+        const available = await isCVEngineAvailable()
+        setCvAvailable(available)
+        if (available) {
+            setCaptureError(null)
+            if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+        } else {
+            setCaptureError('CV engine still unreachable. Check EXPO_PUBLIC_CV_ENGINE_URL and try again.')
+        }
     }, [])
 
     const captureShot = useCallback(async () => {
         if (capturing || shotCount >= TOTAL_SHOTS) return
         setCapturing(true)
+        setCaptureError(null)
 
         if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
 
-        let result: ShotResult
-
         try {
-            // Try real camera capture + CV Engine analysis
-            if (cameraRef.current && cvAvailable) {
-                const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.7 })
-                if (photo?.base64) {
-                    const cvResult = await analyzeFrame(photo.base64)
-                    if (cvResult.success && cvResult.elbow_angle != null) {
-                        const elbow = cvResult.elbow_angle
-                        const knee = cvResult.knee_angle ?? 135
-                        result = {
-                            elbowAngle: elbow,
-                            kneeAngle: knee,
-                            postureScore: Math.max(0, Math.round(100 - Math.abs(elbow - 95) * 2)),
-                            confidence: cvResult.landmarks_3d
-                                ? cvResult.landmarks_3d.reduce((s, l) => s + l.visibility, 0) / cvResult.landmarks_3d.length
-                                : 0.7,
-                        }
-                    } else {
-                        result = generateSimulatedShot()
-                    }
-                } else {
-                    result = generateSimulatedShot()
-                }
-            } else {
-                result = generateSimulatedShot()
+            if (!cvAvailable) {
+                throw new Error('CV engine unavailable')
             }
-        } catch {
-            result = generateSimulatedShot()
+
+            if (!cameraRef.current) {
+                throw new Error('Camera not ready')
+            }
+
+            const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.7 })
+            if (!photo?.base64) {
+                throw new Error('Unable to capture frame')
+            }
+
+            const cvResult = await analyzeFrame(photo.base64)
+            if (!cvResult.success || cvResult.elbow_angle == null) {
+                throw new Error('No valid pose detected. Keep full body in frame and retry.')
+            }
+
+            const elbow = cvResult.elbow_angle
+            const knee = cvResult.knee_angle ?? 135
+            const result: ShotResult = {
+                elbowAngle: elbow,
+                kneeAngle: knee,
+                postureScore: Math.max(0, Math.round(100 - Math.abs(elbow - 95) * 2)),
+                confidence: cvResult.landmarks_3d
+                    ? cvResult.landmarks_3d.reduce((s, l) => s + l.visibility, 0) / cvResult.landmarks_3d.length
+                    : 0.7,
+            }
+
+            const newShots = [...shots, result]
+            setShots(newShots)
+            const newCount = shotCount + 1
+            setShotCount(newCount)
+
+            ringProgress.value = withTiming(newCount / TOTAL_SHOTS, { duration: 600 })
+
+            if (newCount >= TOTAL_SHOTS) {
+                setPhase('analyzing')
+                if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+                setTimeout(() => setPhase('results'), 1800)
+            } else {
+                if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+            }
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Capture failed. Please retry.'
+            setCaptureError(message)
+            if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+        } finally {
+            setCapturing(false)
         }
-
-        const newShots = [...shots, result]
-        setShots(newShots)
-        const newCount = shotCount + 1
-        setShotCount(newCount)
-
-        // Animate ring progress
-        ringProgress.value = withTiming(newCount / TOTAL_SHOTS, { duration: 600 })
-
-        if (newCount >= TOTAL_SHOTS) {
-            // Brief analyzing phase
-            setPhase('analyzing')
-            if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-            setTimeout(() => setPhase('results'), 1800)
-        } else {
-            if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
-        }
-
-        setCapturing(false)
     }, [capturing, shotCount, shots, cvAvailable])
 
     const handleContinue = useCallback(() => {
@@ -321,9 +340,26 @@ export default function OnboardingCamera() {
                             Position your phone on a tripod or against a wall.{'\n'}
                             Film yourself shooting 3 times — we'll analyze your mechanics instantly.
                         </Text>
+
+                        <View style={[s.engineBadge, { backgroundColor: cvAvailable ? 'rgba(0,217,126,0.15)' : 'rgba(255,107,0,0.18)' }]}>
+                            <Text style={[s.engineBadgeText, { color: cvAvailable ? '#00D97E' : '#FF6B00' }]}>
+                                {cvAvailable ? 'CV Engine Connected' : 'CV Engine Disconnected'}
+                            </Text>
+                        </View>
+
+                        {captureError ? (
+                            <Text style={s.captureErrorText}>{captureError}</Text>
+                        ) : null}
+
                         <TouchableOpacity style={s.startBtn} onPress={handleStart} activeOpacity={0.8}>
                             <Text style={s.startBtnText}>START CALIBRATION</Text>
                         </TouchableOpacity>
+
+                        {!cvAvailable ? (
+                            <TouchableOpacity style={s.retryEngineBtn} onPress={retryCvConnection} activeOpacity={0.8}>
+                                <Text style={s.retryEngineText}>RETRY CONNECTION</Text>
+                            </TouchableOpacity>
+                        ) : null}
                     </BlurView>
                 ) : (
                     <View style={s.filmingControls}>
@@ -338,6 +374,9 @@ export default function OnboardingCamera() {
 
                         {/* Capture button */}
                         <View style={s.captureRow}>
+                            {captureError ? (
+                                <Text style={s.captureErrorText}>{captureError}</Text>
+                            ) : null}
                             <Text style={s.captureHint}>
                                 {shotCount >= TOTAL_SHOTS ? 'All shots captured!' : 'Tap to capture shot'}
                             </Text>
@@ -357,19 +396,6 @@ export default function OnboardingCamera() {
             </SafeAreaView>
         </View>
     )
-}
-
-// ── Simulated shot (when CV Engine unavailable) ──
-
-function generateSimulatedShot(): ShotResult {
-    const elbow = 85 + Math.random() * 20  // 85-105
-    const knee = 120 + Math.random() * 30  // 120-150
-    return {
-        elbowAngle: Math.round(elbow * 10) / 10,
-        kneeAngle: Math.round(knee * 10) / 10,
-        postureScore: Math.max(0, Math.round(100 - Math.abs(elbow - 95) * 2)),
-        confidence: 0.6 + Math.random() * 0.3,
-    }
 }
 
 // ── Styles ───────────────────────────────────
@@ -463,6 +489,18 @@ const s = StyleSheet.create({
         lineHeight: 22,
         marginBottom: 24,
     },
+    engineBadge: {
+        alignSelf: 'flex-start',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 999,
+        marginBottom: 12,
+    },
+    engineBadgeText: {
+        fontSize: 11,
+        fontWeight: '700',
+        letterSpacing: 0.4,
+    },
     startBtn: {
         backgroundColor: '#FFF',
         height: 56,
@@ -475,6 +513,22 @@ const s = StyleSheet.create({
         fontWeight: '800',
         color: '#000',
         letterSpacing: 1,
+    },
+    retryEngineBtn: {
+        marginTop: 10,
+        height: 42,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.22)',
+        backgroundColor: 'rgba(5,5,5,0.35)',
+    },
+    retryEngineText: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#E8EDF6',
+        letterSpacing: 0.8,
     },
 
     // Filming controls
@@ -503,6 +557,14 @@ const s = StyleSheet.create({
         fontWeight: '600',
         color: 'rgba(255,255,255,0.5)',
         marginBottom: 16,
+    },
+    captureErrorText: {
+        fontSize: 12,
+        color: '#FFB39C',
+        fontWeight: '600',
+        textAlign: 'center',
+        marginBottom: 10,
+        lineHeight: 17,
     },
     captureBtn: {
         width: 72, height: 72,

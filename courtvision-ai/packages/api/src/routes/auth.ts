@@ -31,6 +31,33 @@ const googleLoginSchema = z.object({
     full_name: z.string().optional(),
 })
 
+const onboardingProfileSchema = z.object({
+    position: z.enum(['PG', 'SG', 'SF', 'PF', 'C']),
+    experienceLevel: z.enum(['beginner', 'intermediate', 'advanced', 'elite']),
+})
+
+const ONBOARDING_POSITIONS = [
+    { id: 'PG', label: 'Point Guard', summary: 'Playmaker and tempo controller' },
+    { id: 'SG', label: 'Shooting Guard', summary: 'Perimeter scorer and spacer' },
+    { id: 'SF', label: 'Small Forward', summary: 'Two-way wing and finisher' },
+    { id: 'PF', label: 'Power Forward', summary: 'Interior strength and rebounds' },
+    { id: 'C', label: 'Center', summary: 'Rim protector and paint anchor' },
+] as const
+
+const ONBOARDING_EXPERIENCE = [
+    { id: 'beginner', label: 'Beginner', years: '0-1 year', profileLevel: 1 },
+    { id: 'intermediate', label: 'Intermediate', years: '1-3 years', profileLevel: 3 },
+    { id: 'advanced', label: 'Advanced', years: '3-5 years', profileLevel: 6 },
+    { id: 'elite', label: 'Elite', years: '5+ years', profileLevel: 9 },
+] as const
+
+const onboardingLevelMap: Record<z.infer<typeof onboardingProfileSchema>['experienceLevel'], number> = {
+    beginner: 1,
+    intermediate: 3,
+    advanced: 6,
+    elite: 9,
+}
+
 const authRoutes: FastifyPluginAsyncZod = async (app) => {
     // Dedicated auth client: avoids mutating the shared service-role DB client session.
     const authClient = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
@@ -200,6 +227,54 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
                 refreshToken: data.session.refresh_token,
                 expiresIn: data.session.expires_in
             } : null
+        }
+    })
+
+    app.get('/onboarding/options', async () => {
+        return {
+            success: true,
+            data: {
+                positions: ONBOARDING_POSITIONS,
+                experienceLevels: ONBOARDING_EXPERIENCE,
+            }
+        }
+    })
+
+    app.put('/onboarding/profile', {
+        preValidation: [app.authenticate],
+        schema: {
+            body: onboardingProfileSchema,
+        },
+    }, async (request, reply) => {
+        const user = request.user!
+        const body = request.body as z.infer<typeof onboardingProfileSchema>
+
+        const { error: userError } = await app.supabase
+            .from('users')
+            .update({
+                position: body.position,
+            })
+            .eq('id', user.id)
+
+        if (userError) throw userError
+
+        const { error: profileError } = await app.supabase
+            .from('public_profiles')
+            .upsert({
+                user_id: user.id,
+                level: onboardingLevelMap[body.experienceLevel],
+                updated_at: new Date().toISOString(),
+            }, { onConflict: 'user_id' })
+
+        if (profileError) throw profileError
+
+        return {
+            success: true,
+            data: {
+                position: body.position,
+                experienceLevel: body.experienceLevel,
+                level: onboardingLevelMap[body.experienceLevel],
+            }
         }
     })
 

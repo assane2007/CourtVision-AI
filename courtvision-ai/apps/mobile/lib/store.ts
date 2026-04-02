@@ -41,6 +41,14 @@ export interface UserProfile {
     badges_count: number
 }
 
+type OnboardingPosition = 'PG' | 'SG' | 'SF' | 'PF' | 'C'
+type OnboardingExperienceLevel = 'beginner' | 'intermediate' | 'advanced' | 'elite'
+
+export interface OnboardingDraft {
+    position: OnboardingPosition | null
+    experienceLevel: OnboardingExperienceLevel | null
+}
+
 export interface WeekDay {
     day: string
     mental: number
@@ -143,6 +151,9 @@ interface CourtVisionState {
     badges: Badge[]
     recentActivity: ActivityEvent[]
 
+    // Onboarding
+    onboardingDraft: OnboardingDraft
+
     // Actions
     login: (token: string, refreshToken?: string) => Promise<void>
     loginWithEmail: (email: string, password: string) => Promise<void>
@@ -162,6 +173,9 @@ interface CourtVisionState {
     completeSession: (sessionData: Partial<Session>) => void
     setHydrated: () => void
     updateUser: (partial: Partial<UserProfile>) => void
+    setOnboardingDraft: (partial: Partial<OnboardingDraft>) => void
+    clearOnboardingDraft: () => void
+    syncOnboardingDraft: () => Promise<void>
 }
 
 // ─── Default Gamification Data (used only in demo mode) ──────
@@ -214,6 +228,13 @@ const DEMO_USER: UserProfile = {
     badges_count: 7,
 }
 
+const EXPERIENCE_LABELS: Record<OnboardingExperienceLevel, string> = {
+    beginner: 'Beginner',
+    intermediate: 'Intermediate',
+    advanced: 'Advanced',
+    elite: 'Elite',
+}
+
 // ─── Store ─────────────────────────────────────────────────────
 
 // M-10: subscribeWithSelector enables targeted subscriptions (e.g., only re-render when XP changes)
@@ -250,6 +271,12 @@ export const useStore = create<CourtVisionState>()(
                 badges: [],
                 recentActivity: [],
 
+                // Onboarding
+                onboardingDraft: {
+                    position: null,
+                    experienceLevel: null,
+                },
+
                 // ── Hydration ──
                 setHydrated: () => set({ hydrated: true }),
 
@@ -260,6 +287,9 @@ export const useStore = create<CourtVisionState>()(
                     if (refreshToken) await setRefreshToken(refreshToken)
                     set({ isAuthenticated: true, authLoading: false })
                     await get().initDashboard()
+                    await get().syncOnboardingDraft().catch((err) => {
+                        console.warn('[Store] syncOnboardingDraft skipped:', (err as Error)?.message ?? err)
+                    })
                 },
 
                 async loginWithEmail(email: string, password: string) {
@@ -270,11 +300,21 @@ export const useStore = create<CourtVisionState>()(
                             console.log('[CourtVision] 🎮 Demo login with:', email)
                             const demoToken = 'demo-token-' + Date.now()
                             await setAuthToken(demoToken)
+                            const draft = get().onboardingDraft
+                            const resolvedPosition = draft.position ?? 'PG'
+                            const resolvedLevel = draft.experienceLevel ? EXPERIENCE_LABELS[draft.experienceLevel] : 'Intermediate'
                             set({
                                 isAuthenticated: true,
                                 authLoading: false,
-                                user: { ...DEMO_USER, username: email.split('@')[0], full_name: email.split('@')[0] },
+                                user: {
+                                    ...DEMO_USER,
+                                    username: email.split('@')[0],
+                                    full_name: email.split('@')[0],
+                                    position: resolvedPosition,
+                                    level: resolvedLevel,
+                                },
                             })
+                            get().clearOnboardingDraft()
                             return
                         }
 
@@ -285,6 +325,9 @@ export const useStore = create<CourtVisionState>()(
                             await setRefreshToken(data.session.refresh_token)
                             set({ isAuthenticated: true, authLoading: false })
                             await get().initDashboard()
+                            await get().syncOnboardingDraft().catch((err) => {
+                                console.warn('[Store] syncOnboardingDraft skipped:', (err as Error)?.message ?? err)
+                            })
                         }
                     } catch (err) {
                         set({ authLoading: false })
@@ -300,11 +343,21 @@ export const useStore = create<CourtVisionState>()(
                             console.log('[CourtVision] 🎮 Demo sign up:', username)
                             const demoToken = 'demo-token-' + Date.now()
                             await setAuthToken(demoToken)
+                            const draft = get().onboardingDraft
+                            const resolvedPosition = draft.position ?? 'PG'
+                            const resolvedLevel = draft.experienceLevel ? EXPERIENCE_LABELS[draft.experienceLevel] : 'Beginner'
                             set({
                                 isAuthenticated: true,
                                 authLoading: false,
-                                user: { ...DEMO_USER, username, full_name: username },
+                                user: {
+                                    ...DEMO_USER,
+                                    username,
+                                    full_name: username,
+                                    position: resolvedPosition,
+                                    level: resolvedLevel,
+                                },
                             })
+                            get().clearOnboardingDraft()
                             return
                         }
 
@@ -319,6 +372,9 @@ export const useStore = create<CourtVisionState>()(
                             await setRefreshToken(data.session.refresh_token)
                             set({ isAuthenticated: true, authLoading: false })
                             await get().initDashboard()
+                            await get().syncOnboardingDraft().catch((err) => {
+                                console.warn('[Store] syncOnboardingDraft skipped:', (err as Error)?.message ?? err)
+                            })
                         } else {
                             // Email confirmation required
                             set({ authLoading: false })
@@ -567,6 +623,62 @@ export const useStore = create<CourtVisionState>()(
                 updateUser(partial: Partial<UserProfile>) {
                     set(s => ({ user: s.user ? { ...s.user, ...partial } : s.user }))
                 },
+
+                setOnboardingDraft(partial: Partial<OnboardingDraft>) {
+                    set(s => ({
+                        onboardingDraft: {
+                            ...s.onboardingDraft,
+                            ...partial,
+                        }
+                    }))
+                },
+
+                clearOnboardingDraft() {
+                    set({
+                        onboardingDraft: {
+                            position: null,
+                            experienceLevel: null,
+                        }
+                    })
+                },
+
+                async syncOnboardingDraft() {
+                    const draft = get().onboardingDraft
+                    if (!draft.position || !draft.experienceLevel) return
+
+                    const position = draft.position
+                    const experienceLevel = draft.experienceLevel
+
+                    if (isDemoMode) {
+                        set(s => ({
+                            user: s.user
+                                ? {
+                                    ...s.user,
+                                    position,
+                                    level: EXPERIENCE_LABELS[experienceLevel],
+                                }
+                                : s.user,
+                        }))
+                        get().clearOnboardingDraft()
+                        return
+                    }
+
+                    await api.put('/api/auth/onboarding/profile', {
+                        position,
+                        experienceLevel,
+                    })
+
+                    set(s => ({
+                        user: s.user
+                            ? {
+                                ...s.user,
+                                position,
+                                level: EXPERIENCE_LABELS[experienceLevel],
+                            }
+                            : s.user,
+                    }))
+                    get().clearOnboardingDraft()
+                },
             }),
             {
                 name: 'courtvision-store',
@@ -578,7 +690,8 @@ export const useStore = create<CourtVisionState>()(
                     weeklyData: s.weeklyData,
                     highlights: s.highlights,
                     badges: s.badges,
-                    recentActivity: s.recentActivity
+                    recentActivity: s.recentActivity,
+                    onboardingDraft: s.onboardingDraft,
                 }),
                 onRehydrateStorage: () => (state) => {
                     state?.setHydrated()

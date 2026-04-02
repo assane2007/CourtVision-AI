@@ -1,53 +1,54 @@
+import { useState } from 'react'
 import {
-    View, Text, TouchableOpacity, TextInput,
-    KeyboardAvoidingView, Platform, ActivityIndicator, StyleSheet,
-    Keyboard, TouchableWithoutFeedback, Dimensions
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from 'react-native'
 import { useRouter } from 'expo-router'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { useState, useEffect } from 'react'
-import Animated, {
-    FadeIn, FadeInDown, FadeOut,
-    useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming, Easing, withSpring
-} from 'react-native-reanimated'
 import { AntDesign, Feather } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
+import { LinearGradient } from 'expo-linear-gradient'
 import { useStore } from '../lib/store'
 import { toast } from '../lib/toast'
 import { colors, space } from '../constants/tokens'
 import { useAnalytics } from '../lib/analytics'
 
-const { width, height } = Dimensions.get('window')
+type Mode = 'choice' | 'email'
 
-// Addictive Glowing Input Component
-function GlowingInput({
-    label, value, onChangeText, placeholder, secureTextEntry = false, isEmail = false
+function InputField({
+    label,
+    value,
+    onChangeText,
+    placeholder,
+    secureTextEntry = false,
+    keyboardType = 'default',
 }: {
-    label: string, value: string, onChangeText: (t: string) => void, placeholder: string, secureTextEntry?: boolean, isEmail?: boolean
+    label: string
+    value: string
+    onChangeText: (value: string) => void
+    placeholder: string
+    secureTextEntry?: boolean
+    keyboardType?: 'default' | 'email-address'
 }) {
-    const [isFocused, setIsFocused] = useState(false)
-
     return (
-        <View style={{ marginBottom: 20 }}>
+        <View style={styles.inputBlock}>
             <Text style={styles.inputLabel}>{label}</Text>
             <TextInput
                 value={value}
                 onChangeText={onChangeText}
-                onFocus={() => {
-                    setIsFocused(true)
-                    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-                }}
-                onBlur={() => setIsFocused(false)}
-                style={[
-                    styles.input,
-                    isFocused && { borderColor: colors.fire, shadowColor: colors.fire, shadowRadius: 10, shadowOpacity: 0.3 }
-                ]}
                 placeholder={placeholder}
-                placeholderTextColor="#555"
+                placeholderTextColor="#7D8797"
                 secureTextEntry={secureTextEntry}
-                keyboardType={isEmail ? 'email-address' : 'default'}
+                keyboardType={keyboardType}
                 autoCapitalize="none"
                 autoCorrect={false}
+                style={styles.input}
             />
         </View>
     )
@@ -58,217 +59,191 @@ export default function Onboarding3() {
     const loginWithEmail = useStore(s => s.loginWithEmail)
     const signUpWithEmail = useStore(s => s.signUpWithEmail)
     const loginWithOAuth = useStore(s => s.loginWithOAuth)
+    const syncOnboardingDraft = useStore(s => s.syncOnboardingDraft)
     const authLoading = useStore(s => s.authLoading)
     const { trackEvent } = useAnalytics()
 
-    const [mode, setMode] = useState<'choice' | 'email'>('choice')
+    const [mode, setMode] = useState<Mode>('choice')
+    const [isLogin, setIsLogin] = useState(true)
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [username, setUsername] = useState('')
-    const [isLogin, setIsLogin] = useState(true)
     const [loading, setLoading] = useState(false)
 
-    // Background Particle Animation
-    const bgRot = useSharedValue(0)
-    useEffect(() => {
-        bgRot.value = withRepeat(
-            withTiming(360, { duration: 40000, easing: Easing.linear }),
-            -1, false
-        )
-    }, [])
-    const rBg = useAnimatedStyle(() => ({
-        transform: [{ rotate: `${bgRot.value}deg` }, { scale: 1.5 }]
-    }))
+    const isLoading = loading || authLoading
 
-    const triggerHaptic = (style: Haptics.ImpactFeedbackStyle = Haptics.ImpactFeedbackStyle.Medium) => {
-        if (Platform.OS !== 'web') Haptics.impactAsync(style)
+    const triggerLightHaptic = () => {
+        if (Platform.OS !== 'web') Haptics.selectionAsync()
     }
 
     const handleOAuth = async (provider: 'apple' | 'google') => {
-        triggerHaptic()
+        triggerLightHaptic()
         setLoading(true)
         try {
             await loginWithOAuth(provider)
             trackEvent('onboarding_completed', { method: `oauth_${provider}` })
-            router.replace('/(app)')
+            toast.success('Continue sign in', 'Finish OAuth in browser, then return to the app.')
         } catch (err: unknown) {
-            toast.error('Auth Error', err instanceof Error ? err.message : 'Error')
+            toast.error('Auth Error', err instanceof Error ? err.message : 'Unexpected error')
         } finally {
             setLoading(false)
         }
     }
 
     const handleEmailAuth = async () => {
-        triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy)
-        if (!email || !password || (!isLogin && !username)) {
-            toast.error('Missing Fields', 'Please fill out all required fields.')
+        if (!email || !password || (!isLogin && !username.trim())) {
+            toast.error('Missing fields', 'Fill all required fields to continue.')
             return
         }
 
         setLoading(true)
         try {
             if (isLogin) {
-                await loginWithEmail(email, password)
+                await loginWithEmail(email.trim(), password)
                 trackEvent('onboarding_completed', { method: 'email_login' })
             } else {
-                await signUpWithEmail(email, password, username)
+                await signUpWithEmail(email.trim(), password, username.trim())
                 trackEvent('onboarding_completed', { method: 'email_signup' })
             }
-            if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-            router.replace('/(app)')
+
+            await syncOnboardingDraft().catch(() => { })
+
+            if (Platform.OS !== 'web') {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+            }
+            router.replace('/(dashboard)')
         } catch (err: unknown) {
-            toast.error('Auth Error', err instanceof Error ? err.message : 'Error')
-            if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+            toast.error('Auth Error', err instanceof Error ? err.message : 'Unexpected error')
+            if (Platform.OS !== 'web') {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+            }
         } finally {
             setLoading(false)
         }
     }
 
-    const isLoading = loading || authLoading
-
     return (
-        <SafeAreaView style={styles.container}>
-            {/* Dynamic Ambient Background */}
-            <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                <Animated.View style={[styles.ambientGlow, rBg, { backgroundColor: 'rgba(255, 68, 0, 0.05)', top: -height * 0.2, left: -width * 0.5 }]} />
-                <Animated.View style={[styles.ambientGlow, rBg, { backgroundColor: 'rgba(160, 32, 240, 0.05)', bottom: -height * 0.2, right: -width * 0.5 }]} />
-            </View>
+        <SafeAreaView style={styles.screen}>
+            <LinearGradient
+                colors={['#09111B', '#120D1F', '#070707']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+            />
 
-            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-                <View style={styles.content}>
-
-                    {/* Header */}
+            <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                <View style={styles.container}>
                     <View style={styles.header}>
-                        <TouchableOpacity onPress={() => mode === 'email' ? setMode('choice') : router.back()}>
-                            <View style={styles.backBtn}>
-                                <Text style={styles.backBtnText}>{'<'}</Text>
-                            </View>
-                        </TouchableOpacity>
-                        <View style={styles.statusPill}>
-                            <View style={styles.statusDot} />
-                            <Text style={styles.statusText}>UPLINK SECURE</Text>
+                        <Pressable
+                            style={styles.backBtn}
+                            onPress={() => {
+                                if (mode === 'email') {
+                                    setMode('choice')
+                                    return
+                                }
+                                router.back()
+                            }}
+                        >
+                            <Feather name="arrow-left" size={18} color={colors.snow} />
+                        </Pressable>
+
+                        <View style={styles.lockBadge}>
+                            <Feather name="shield" size={14} color="#8EC5FF" />
+                            <Text style={styles.lockBadgeText}>SECURE AUTH</Text>
                         </View>
                     </View>
 
-                    {/* Title Section */}
-                    <Animated.View entering={FadeInDown.duration(600).springify()} style={styles.titleContainer}>
-                        <Text style={styles.title}>
-                            {mode === 'choice' ? 'Access Database' : isLogin ? 'Authenticate' : 'Establish Profile'}
-                        </Text>
+                    <View style={styles.hero}>
+                        <Text style={styles.kicker}>FINAL STEP</Text>
+                        <Text style={styles.title}>{mode === 'choice' ? 'Create Your Access' : isLogin ? 'Welcome Back' : 'Create Account'}</Text>
                         <Text style={styles.subtitle}>
                             {mode === 'choice'
-                                ? 'Select your secure entry method.'
-                                : 'Enter your credentials to link neural data.'}
+                                ? 'Sign in to sync your onboarding profile with CourtVision API.'
+                                : 'Once connected, your player profile is persisted to the backend.'}
                         </Text>
-                    </Animated.View>
+                    </View>
 
                     {mode === 'choice' ? (
-                        <Animated.View entering={FadeIn.delay(200).duration(500)} style={styles.formContainer}>
+                        <View style={styles.choiceWrap}>
+                            <Pressable style={[styles.optionBtn, styles.optionLight]} onPress={() => handleOAuth('apple')} disabled={isLoading}>
+                                <AntDesign name="apple" size={20} color="#060606" />
+                                <Text style={[styles.optionText, { color: '#060606' }]}>Continue with Apple</Text>
+                                <Feather name="arrow-up-right" size={16} color="#060606" />
+                            </Pressable>
 
-                            <TouchableOpacity
-                                style={[styles.actionBtn, { backgroundColor: colors.snow }]}
-                                onPress={() => handleOAuth('apple')}
-                                activeOpacity={0.8}
-                            >
-                                <AntDesign name="apple" size={24} color="#000" />
-                                <Text style={[styles.actionBtnText, { color: '#000' }]}>Continue with Apple</Text>
-                                <Feather name="arrow-right" size={20} color="#000" style={{ position: 'absolute', right: 24 }} />
-                            </TouchableOpacity>
+                            <Pressable style={styles.optionBtn} onPress={() => handleOAuth('google')} disabled={isLoading}>
+                                <AntDesign name="google" size={20} color={colors.snow} />
+                                <Text style={styles.optionText}>Continue with Google</Text>
+                                <Feather name="arrow-up-right" size={16} color={colors.snow} />
+                            </Pressable>
 
-                            <TouchableOpacity
-                                style={[styles.actionBtn, { backgroundColor: '#111', borderColor: '#333', borderWidth: 1 }]}
-                                onPress={() => handleOAuth('google')}
-                                activeOpacity={0.8}
-                            >
-                                <AntDesign name="google" size={24} color="#fff" />
-                                <Text style={[styles.actionBtnText, { color: '#fff' }]}>Continue with Google</Text>
-                                <Feather name="arrow-right" size={20} color="#fff" style={{ position: 'absolute', right: 24 }} />
-                            </TouchableOpacity>
-
-                            <View style={styles.dividerContainer}>
-                                <View style={styles.dividerLine} />
-                                <Text style={styles.dividerText}>OVERRIDE PROTOCOL</Text>
-                                <View style={styles.dividerLine} />
+                            <View style={styles.separatorRow}>
+                                <View style={styles.separatorLine} />
+                                <Text style={styles.separatorText}>OR</Text>
+                                <View style={styles.separatorLine} />
                             </View>
 
-                            <TouchableOpacity
-                                style={[styles.actionBtn, { backgroundColor: 'transparent', borderColor: colors.fire, borderWidth: 1 }]}
+                            <Pressable
+                                style={styles.optionOutline}
                                 onPress={() => {
-                                    triggerHaptic()
+                                    triggerLightHaptic()
                                     setMode('email')
                                 }}
-                                activeOpacity={0.8}
+                                disabled={isLoading}
                             >
-                                <Feather name="mail" size={24} color={colors.fire} />
-                                <Text style={[styles.actionBtnText, { color: colors.fire }]}>Manual Email Entry</Text>
-                            </TouchableOpacity>
-
-                        </Animated.View>
+                                <Feather name="mail" size={18} color={colors.fire} />
+                                <Text style={styles.optionOutlineText}>Use Email</Text>
+                            </Pressable>
+                        </View>
                     ) : (
-                        <Animated.View entering={FadeIn.duration(400)} exiting={FadeOut} style={styles.formContainer}>
-
-                            {!isLogin && (
-                                <GlowingInput
-                                    label="Callsign (Username)"
+                        <View style={styles.formWrap}>
+                            {!isLogin ? (
+                                <InputField
+                                    label="Username"
                                     value={username}
                                     onChangeText={setUsername}
-                                    placeholder="Player_One"
+                                    placeholder="player_name"
                                 />
-                            )}
+                            ) : null}
 
-                            <GlowingInput
-                                label="Network ID (Email)"
+                            <InputField
+                                label="Email"
                                 value={email}
                                 onChangeText={setEmail}
                                 placeholder="name@domain.com"
-                                isEmail
+                                keyboardType="email-address"
                             />
 
-                            <GlowingInput
-                                label="Security Cipher (Password)"
+                            <InputField
+                                label="Password"
                                 value={password}
                                 onChangeText={setPassword}
                                 placeholder="••••••••"
                                 secureTextEntry
                             />
 
-                            <TouchableOpacity
-                                style={[styles.primarySubmitBtn, isLoading && { opacity: 0.7 }]}
-                                onPress={handleEmailAuth}
-                                disabled={isLoading}
-                                activeOpacity={0.9}
-                            >
+                            <Pressable style={[styles.submitBtn, isLoading ? styles.submitBtnDisabled : null]} onPress={handleEmailAuth} disabled={isLoading}>
                                 {isLoading ? (
-                                    <ActivityIndicator color="#000" />
+                                    <ActivityIndicator color="#060606" />
                                 ) : (
                                     <>
-                                        <Text style={styles.primarySubmitText}>
-                                            {isLogin ? 'TRANSMIT' : 'CREATE PROTOCOL'}
-                                        </Text>
-                                        <Feather name="zap" size={20} color="#000" />
+                                        <Text style={styles.submitText}>{isLogin ? 'Sign In' : 'Create Account'}</Text>
+                                        <Feather name="arrow-right" size={16} color="#060606" />
                                     </>
                                 )}
-                            </TouchableOpacity>
+                            </Pressable>
 
-                            <View style={styles.switchModeContainer}>
-                                <TouchableOpacity
-                                    onPress={() => {
-                                        triggerHaptic()
-                                        setIsLogin(!isLogin)
-                                    }}
-                                    style={styles.switchPill}
-                                >
-                                    <Text style={styles.switchModePrompt}>
-                                        {isLogin ? "No account?" : "Already linked?"}
-                                    </Text>
-                                    <Text style={styles.switchModeLink}>
-                                        {isLogin ? ' REGISTER' : ' SIGN IN'}
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
-                        </Animated.View>
+                            <Pressable
+                                style={styles.switchModeBtn}
+                                onPress={() => {
+                                    triggerLightHaptic()
+                                    setIsLogin(v => !v)
+                                }}
+                            >
+                                <Text style={styles.switchModeText}>{isLogin ? 'No account yet? Create one' : 'Already have an account? Sign in'}</Text>
+                            </Pressable>
+                        </View>
                     )}
-
                 </View>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -276,200 +251,178 @@ export default function Onboarding3() {
 }
 
 const styles = StyleSheet.create({
+    flex: {
+        flex: 1,
+    },
+    screen: {
+        flex: 1,
+        backgroundColor: '#070707',
+    },
     container: {
         flex: 1,
-        backgroundColor: '#000',
-    },
-    ambientGlow: {
-        position: 'absolute',
-        width: width * 1.5,
-        height: width * 1.5,
-        borderRadius: width * 0.75,
-    },
-    content: {
-        flex: 1,
         paddingHorizontal: space[6],
-        paddingTop: space[4],
+        paddingTop: space[2],
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 12,
-        marginBottom: space[8],
     },
     backBtn: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#111',
-        justifyContent: 'center',
         alignItems: 'center',
+        justifyContent: 'center',
         borderWidth: 1,
-        borderColor: '#222',
+        borderColor: 'rgba(255,255,255,0.15)',
+        backgroundColor: 'rgba(10,17,29,0.55)',
     },
-    backBtnText: {
-        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
-        fontSize: 18,
-        color: colors.cloud,
-        fontWeight: 'bold',
-    },
-    statusPill: {
+    lockBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(0, 255, 204, 0.1)',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
+        gap: 6,
         borderWidth: 1,
-        borderColor: 'rgba(0, 255, 204, 0.3)',
+        borderColor: 'rgba(142,197,255,0.3)',
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        backgroundColor: 'rgba(142,197,255,0.12)',
     },
-    statusDot: {
-        width: 6, height: 6,
-        borderRadius: 3,
-        backgroundColor: '#00ffcc',
-        marginRight: 6,
-        shadowColor: '#00ffcc',
-        shadowRadius: 5, shadowOpacity: 1,
-    },
-    statusText: {
-        fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    lockBadgeText: {
+        fontFamily: 'JetBrainsMono_400Regular',
+        color: '#8EC5FF',
         fontSize: 10,
-        fontWeight: 'bold',
-        color: '#00ffcc',
-        letterSpacing: 1,
+        letterSpacing: 0.8,
     },
-    titleContainer: {
-        marginBottom: space[10],
+    hero: {
+        marginTop: space[6],
+        marginBottom: space[8],
+    },
+    kicker: {
+        fontFamily: 'JetBrainsMono_400Regular',
+        color: '#98A9C4',
+        fontSize: 11,
+        letterSpacing: 1.2,
+        marginBottom: 10,
     },
     title: {
-        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
-        fontSize: 40,
-        fontWeight: '900',
+        fontFamily: 'Sora_700Bold',
         color: colors.snow,
-        marginBottom: 8,
-        letterSpacing: -1,
+        fontSize: 32,
+        lineHeight: 39,
+        marginBottom: 10,
     },
     subtitle: {
-        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
-        fontSize: 16,
-        color: '#888',
-        fontWeight: '500',
+        fontFamily: 'DMSans_500Medium',
+        color: '#B3BECE',
+        fontSize: 15,
+        lineHeight: 22,
     },
-    formContainer: {
-        flex: 1,
+    choiceWrap: {
+        gap: 14,
     },
-    actionBtn: {
-        flexDirection: 'row',
-        height: 68,
-        borderRadius: 34,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    actionBtnText: {
-        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
-        fontSize: 18,
-        fontWeight: '800',
-        marginLeft: 12,
-        letterSpacing: -0.5,
-    },
-    dividerContainer: {
+    optionBtn: {
+        height: 58,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.16)',
+        backgroundColor: 'rgba(9,16,27,0.72)',
         flexDirection: 'row',
         alignItems: 'center',
-        marginVertical: space[8],
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
     },
-    dividerLine: {
+    optionLight: {
+        backgroundColor: '#F4F7FC',
+        borderColor: '#F4F7FC',
+    },
+    optionText: {
+        fontFamily: 'Sora_600SemiBold',
+        color: colors.snow,
+        fontSize: 14,
+    },
+    separatorRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginTop: 4,
+        marginBottom: 4,
+    },
+    separatorLine: {
         flex: 1,
         height: 1,
-        backgroundColor: '#222',
+        backgroundColor: 'rgba(255,255,255,0.16)',
     },
-    dividerText: {
-        fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-        color: '#666',
-        paddingHorizontal: 16,
+    separatorText: {
+        fontFamily: 'JetBrainsMono_400Regular',
         fontSize: 10,
-        fontWeight: 'bold',
-        letterSpacing: 2,
+        letterSpacing: 1,
+        color: '#AAB4C5',
     },
-    inputGlowBase: {
-        borderRadius: 16,
-        borderWidth: 2,
-        borderColor: colors.fire,
-        backgroundColor: 'transparent',
+    optionOutline: {
+        height: 54,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: 'rgba(255,107,0,0.5)',
+        backgroundColor: 'rgba(255,107,0,0.09)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        gap: 10,
+    },
+    optionOutlineText: {
+        fontFamily: 'Sora_600SemiBold',
+        color: colors.fire,
+        fontSize: 14,
+    },
+    formWrap: {
+        gap: 14,
+    },
+    inputBlock: {
+        gap: 8,
     },
     inputLabel: {
-        fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-        fontSize: 11,
-        fontWeight: 'bold',
-        color: '#888',
-        marginBottom: 8,
-        marginLeft: 4,
-        letterSpacing: 1,
+        fontFamily: 'DMSans_700Bold',
+        color: '#D3DBE8',
+        fontSize: 13,
     },
     input: {
-        backgroundColor: '#111',
-        height: 60,
-        width: '100%',
-        borderRadius: 16,
-        paddingHorizontal: 16,
-        color: colors.snow,
-        fontSize: 18,
-        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
-        fontWeight: '600',
-        borderWidth: 2,
-        borderColor: '#222',
-        zIndex: 5,
-    },
-    inputFocused: {
-        borderColor: 'transparent',
-        backgroundColor: '#0a0a0a'
-    },
-    primarySubmitBtn: {
-        backgroundColor: colors.snow,
-        height: 68,
-        borderRadius: 34,
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: space[4],
-        marginBottom: space[8],
-        shadowColor: colors.snow,
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 20,
-    },
-    primarySubmitText: {
-        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
-        color: '#000',
-        fontSize: 18,
-        fontWeight: '900',
-        letterSpacing: 1,
-        marginRight: 8,
-    },
-    switchModeContainer: {
-        alignItems: 'center',
-    },
-    switchPill: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#111',
-        paddingHorizontal: 20,
-        paddingVertical: 12,
-        borderRadius: 20,
+        height: 56,
+        borderRadius: 14,
         borderWidth: 1,
-        borderColor: '#222',
+        borderColor: 'rgba(255,255,255,0.18)',
+        backgroundColor: 'rgba(8,14,24,0.75)',
+        color: colors.snow,
+        fontFamily: 'DMSans_500Medium',
+        fontSize: 15,
+        paddingHorizontal: 14,
     },
-    switchModePrompt: {
-        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
-        fontSize: 14,
-        color: '#888',
-        fontWeight: '500',
+    submitBtn: {
+        marginTop: 8,
+        height: 56,
+        borderRadius: 16,
+        backgroundColor: '#F4F7FC',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        gap: 8,
     },
-    switchModeLink: {
-        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+    submitBtnDisabled: {
+        opacity: 0.6,
+    },
+    submitText: {
+        fontFamily: 'Sora_700Bold',
+        color: '#060606',
         fontSize: 14,
-        fontWeight: '800',
-        color: colors.fire,
-    }
+    },
+    switchModeBtn: {
+        alignItems: 'center',
+        paddingVertical: 10,
+    },
+    switchModeText: {
+        fontFamily: 'DMSans_600SemiBold',
+        color: '#ADB8CA',
+        fontSize: 13,
+    },
 })
