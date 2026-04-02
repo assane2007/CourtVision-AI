@@ -5,22 +5,35 @@ import { resolve } from 'path'
 dotenv.config({ path: resolve(__dirname, '../../.env'), override: true })
 dotenv.config({ path: resolve(__dirname, '../.env') }) // Optional fallback: packages/api/.env
 
+async function isCourtVisionApiRunning(port: number): Promise<boolean> {
+    try {
+        const res = await fetch(`http://127.0.0.1:${port}/health`, {
+            method: 'GET',
+            signal: AbortSignal.timeout(1500),
+        })
+        const health = await res.json().catch(() => null) as { service?: string } | null
+        return res.ok && health?.service === 'courtvision-api'
+    } catch {
+        return false
+    }
+}
+
 const start = async () => {
+    const { env } = await import('./config/env')
+
+    // Fast preflight: avoid initializing app/workers when this is just a duplicate local launch.
+    if (!env.isProduction && await isCourtVisionApiRunning(env.PORT)) {
+        console.log(`[Server] Port ${env.PORT} already serves CourtVision API; skipping duplicate dev instance.`)
+        return
+    }
+
     // Dynamic imports guarantee dotenv values are present before module initialization.
-    const [{ env }, { initWorker }, { buildApp }] = await Promise.all([
-        import('./config/env'),
+    const [{ initWorker }, { buildApp }] = await Promise.all([
         import('./queue/videoProcessor'),
         import('./app'),
     ])
 
-    // Init worker (graceful — no-op if Redis not available)
-    let worker: { close: () => Promise<void> }
-    try {
-        worker = await initWorker()
-    } catch {
-        console.warn('[Server] Worker init skipped (no Redis)')
-        worker = { close: async () => { } }
-    }
+    let worker: { close: () => Promise<void> } = { close: async () => { } }
 
     const server = buildApp({
         logger: {
@@ -44,7 +57,21 @@ const start = async () => {
     try {
         await server.listen({ port: env.PORT, host: '0.0.0.0' })
         server.log.info(`🏀 CourtVision API running on port ${env.PORT}`)
-    } catch (err) {
+
+        // Init worker only once the server is bound successfully.
+        try {
+            worker = await initWorker()
+        } catch {
+            server.log.warn('[Server] Worker init skipped (no Redis)')
+        }
+    } catch (err: any) {
+        // Handle duplicate local launches gracefully when the same API is already running.
+        if (err?.code === 'EADDRINUSE' && await isCourtVisionApiRunning(env.PORT)) {
+            server.log.info(`Port ${env.PORT} already serves CourtVision API; skipping duplicate dev instance.`)
+            await server.close().catch(() => { })
+            return
+        }
+
         server.log.error(err)
         process.exit(1)
     }

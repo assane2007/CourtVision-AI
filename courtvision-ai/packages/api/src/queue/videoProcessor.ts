@@ -34,6 +34,19 @@ const logger = pino({
     } : undefined
 })
 
+const isProduction = process.env.NODE_ENV === 'production'
+
+function logRedisOptional(message: string, bindings?: Record<string, unknown>) {
+    if (isProduction) {
+        if (bindings) logger.warn(bindings, message)
+        else logger.warn(message)
+        return
+    }
+
+    if (bindings) logger.info(bindings, message)
+    else logger.info(message)
+}
+
 // ── Redis connection ──────────────────────────────────────────
 let redisConnection: Redis | null = null
 let redisAvailable = false
@@ -59,14 +72,14 @@ if (process.env.REDIS_URL && process.env.REDIS_URL.trim() !== '') {
             redisAvailable = false
         })
         redisConnection.connect().catch((err) => {
-            logger.warn({ err }, '[Redis] ⚠️ Not available (dev mode)')
+            logger.warn({ err }, '[Redis] Not available (dev mode)')
             redisAvailable = false
         })
     } catch (err) {
-        logger.error({ err }, '[Redis] ⚠️ Initialization failed')
+        logger.error({ err }, '[Redis] Initialization failed')
     }
 } else {
-    logger.warn('[Redis] ⚠️ REDIS_URL is empty - Running in degraded mode without background worker')
+    logRedisOptional('[Redis] REDIS_URL is empty; background worker disabled')
 }
 
 // Supabase lazy client — C-4: fail-fast instead of placeholder credentials
@@ -104,7 +117,7 @@ export async function addToQueue(jobName: string, data: VideoProcessingJobData) 
         const job = await videoQueue.add(jobName, data)
         logger.info({ jobId: job.id, sessionId: data.sessionId }, `[Queue] Job "${jobName}" added`)
     } else {
-        logger.warn({ sessionId: data.sessionId }, `[Queue] Redis not available — job skipped`)
+        logRedisOptional('[Queue] Redis not available; job skipped', { sessionId: data.sessionId })
     }
 }
 
@@ -157,7 +170,7 @@ export const initWorker = async () => {
         })
     }
     if (!redisConnection || !redisAvailable) {
-        logger.warn('[Worker] ⚠️ Redis not available — worker not started')
+        logRedisOptional('[Worker] Redis not available; worker not started')
         return { close: async () => { } }
     }
 
