@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Square, Activity, Users, Zap, Check } from 'lucide-react-native';
+import { Feather } from '@expo/vector-icons';
 import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { colors, typography, space, shadows, radius } from '../../constants/tokens';
@@ -10,6 +10,15 @@ import { Badge } from '../../components/ui/Badge';
 import { useLiveCoach } from '../../hooks/useLiveCoach';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+function toScreenPx(value: number | undefined, max: number, fallback: number): number {
+    if (typeof value !== 'number' || Number.isNaN(value)) return fallback;
+    if (value >= 0 && value <= 1) return value * max;
+    if (value > 1 && value <= 100) return (value / 100) * max;
+    return value;
+}
 
 function BoundingBox({ x, y, width, height, playerNumber, delay = 0, speed = 20 }: any) {
     const pulse = useSharedValue(0.2);
@@ -106,10 +115,10 @@ export default function RecordScreen() {
             {live.phase === 'active' && live.detections?.map((det, i) => (
                 <BoundingBox
                     key={i}
-                    x={`${det.x}%`}
-                    y={`${det.y}%`}
-                    width={det.width ?? 70}
-                    height={det.height ?? 150}
+                    x={toScreenPx(det.x, SCREEN_W, 0)}
+                    y={toScreenPx(det.y, SCREEN_H, 0)}
+                    width={toScreenPx(det.width, SCREEN_W, 70)}
+                    height={toScreenPx(det.height, SCREEN_H, 150)}
                     playerNumber={det.player ?? i + 1}
                     delay={0}
                     speed={det.speed ?? 0}
@@ -135,15 +144,15 @@ export default function RecordScreen() {
             {/* Live Stats HUD & Alerts */}
             <Animated.View entering={FadeIn.delay(500)} style={[styles.statsHud, { top: insets.top + 70 }]}>
                 <View style={styles.statCard}>
-                    <Activity color={colors.cloud} size={14} />
+                    <Feather name="activity" color={colors.cloud} size={14} />
                     <Text style={styles.statLineText}>FPS: <Text style={{ color: colors.snow, fontFamily: 'JetBrainsMono_400Regular' }}>{live.fps || 30}</Text></Text>
                 </View>
                 <View style={styles.statCard}>
-                    <Zap color={colors.cloud} size={14} />
+                    <Feather name="zap" color={colors.cloud} size={14} />
                     <Text style={styles.statLineText}>Mental: <Text style={{ color: colors.live, fontFamily: 'JetBrainsMono_400Regular' }}>{live.mentalScore}</Text></Text>
                 </View>
                 <View style={styles.statCard}>
-                    <Users color={colors.cloud} size={14} />
+                    <Feather name="users" color={colors.cloud} size={14} />
                     <Text style={styles.statLineText}>Players Tracked: <Text style={{ color: colors.snow, fontFamily: 'JetBrainsMono_400Regular' }}>{live.detections?.length ?? 0}</Text></Text>
                 </View>
                 {live.alerts.slice(0, 1).map((alert, i) => (
@@ -170,7 +179,7 @@ export default function RecordScreen() {
                     {/* Goal 1: Make shots */}
                     <View style={[styles.playbookActiveRow, shotDone && { opacity: 0.5 }]}>
                         <View style={[styles.playbookBox, shotDone && { backgroundColor: colors.live, borderColor: colors.live }]}>
-                            {shotDone && <Check color={colors.base} size={10} strokeWidth={4} />}
+                            {shotDone && <Feather name="check" color={colors.base} size={10} />}
                         </View>
                         <Text style={[styles.playbookText, shotDone && { textDecorationLine: 'line-through' }]}>Make {SHOT_TARGET} shots</Text>
                     </View>
@@ -186,7 +195,7 @@ export default function RecordScreen() {
                     {/* Goal 2: Mental score */}
                     <View style={[styles.playbookActiveRow, mentalDone && { opacity: 0.5 }]}>
                         <View style={[styles.playbookBox, mentalDone && { backgroundColor: colors.live, borderColor: colors.live }]}>
-                            {mentalDone && <Check color={colors.base} size={10} strokeWidth={4} />}
+                            {mentalDone && <Feather name="check" color={colors.base} size={10} />}
                         </View>
                         <Text style={[styles.playbookText, mentalDone && { textDecorationLine: 'line-through' }]}>Mental score &ge; {MENTAL_TARGET}</Text>
                     </View>
@@ -194,7 +203,7 @@ export default function RecordScreen() {
                     {/* Goal 3: Play time */}
                     <View style={[styles.playbookActiveRow, timeDone && { opacity: 0.5 }]}>
                         <View style={[styles.playbookBox, timeDone && { backgroundColor: colors.live, borderColor: colors.live }]}>
-                            {timeDone && <Check color={colors.base} size={10} strokeWidth={4} />}
+                            {timeDone && <Feather name="check" color={colors.base} size={10} />}
                         </View>
                         <Text style={[styles.playbookText, timeDone && { textDecorationLine: 'line-through' }]}>Play for 10 minutes</Text>
                     </View>
@@ -216,7 +225,7 @@ export default function RecordScreen() {
                 {/* Stop Button */}
                 <Pressable onPress={handleStop} style={styles.stopButtonOuter}>
                     <View style={styles.stopButtonInner}>
-                        <Square color={colors.base} fill={colors.base} size={20} />
+                        <Feather name="square" color={colors.base} size={20} />
                     </View>
                 </Pressable>
             </View>
@@ -344,7 +353,7 @@ const styles = StyleSheet.create({
         padding: space[3],
     },
     playbookTitle: {
-        fontFamily: 'JetBrainsMono_700Bold',
+        fontFamily: 'JetBrainsMono_400Regular',
         fontSize: 10,
         color: colors.fire,
         marginBottom: space[2],

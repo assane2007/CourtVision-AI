@@ -532,7 +532,7 @@ export default function DashboardIndex() {
                 {/* ═══ HIGHLIGHTS ═══ */}
                 <SectionHeader
                     title="Recent Highlights"
-                    action={highlights.length > 0 ? 'See all' : undefined}
+                    action={highlights.length > 0 ? 'Upload more' : undefined}
                     onAction={goUpload}
                 />
 

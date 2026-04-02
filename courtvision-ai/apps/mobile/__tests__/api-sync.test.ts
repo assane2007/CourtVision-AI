@@ -1,7 +1,7 @@
 import { api } from '../lib/api'
 import { WebSocket } from 'ws'
 
-const WS_URL = process.env.EXPO_PUBLIC_WS_URL || 'ws://localhost:3000'
+const WS_URL = process.env.EXPO_PUBLIC_WS_URL || 'ws://localhost:8080/ws'
 const TEST_SESSION_ID = 'test-session-uuid-1234'
 const RUN_NETWORK_CONTRACT_TESTS = process.env.RUN_NETWORK_CONTRACT_TESTS === 'true'
 
@@ -14,7 +14,7 @@ describe('API Contract Tests — CourtVision', () => {
             // DÉSYNC REMARK: Currently client calls supabase directly.
             // This test expects the API to take over OAuth verification.
             try {
-                const res = await api.post('/auth/apple', { token: 'TEST_APPLE_TOKEN' }) as any
+                const res = await api.post('/api/auth/apple', { token: 'TEST_APPLE_TOKEN' }) as any
                 expect(res.user.id).toBeDefined()
                 expect(res.user.role).toMatch(/coach|analyst|player/)
                 expect(res.tokens.accessToken).toBeTruthy()
@@ -27,7 +27,7 @@ describe('API Contract Tests — CourtVision', () => {
 
     describeIfNetwork('SESSIONS', () => {
         it('GET /sessions → retourne Session[] avec tous les champs', async () => {
-            const sessions = await api.get('/sessions') as any[]
+            const sessions = await api.get('/api/sessions') as any[]
             expect(Array.isArray(sessions)).toBe(true)
             if (sessions.length > 0) {
                 const s = sessions[0]
@@ -40,7 +40,7 @@ describe('API Contract Tests — CourtVision', () => {
         })
 
         it('GET /sessions/:id/stats → SessionStats valide', async () => {
-            const stats = await api.get(`/sessions/${TEST_SESSION_ID}/stats`) as any
+            const stats = await api.get(`/api/sessions/${TEST_SESSION_ID}/stats`) as any
             expect(typeof stats.trackingAccuracy).toBe('number')
             expect(typeof stats.avgSpeed).toBe('number')
             expect(stats.teamA).toBeDefined()

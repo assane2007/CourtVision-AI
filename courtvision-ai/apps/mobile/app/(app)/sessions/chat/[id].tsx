@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, Dimensions, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Send, Sparkles } from 'lucide-react-native';
+import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 
 import { colors, typography, space, radius } from '../../../../constants/tokens';
@@ -116,11 +116,11 @@ export default function CoachChatScreen() {
             {/* Header */}
             <View style={[styles.header, { paddingTop: insets.top + space[2] }]}>
                 <Pressable onPress={() => router.back()} style={styles.iconButton}>
-                    <ChevronLeft color={colors.snow} size={24} />
+                        <Feather name="chevron-left" color={colors.snow} size={24} />
                 </Pressable>
                 <View style={styles.headerTitles}>
                     <View style={styles.aiBadgeRow}>
-                        <Sparkles color={colors.fire} size={14} />
+                            <Feather name="cpu" color={colors.fire} size={14} />
                         <Text style={styles.headerSubtitle}>COURTVISION AI</Text>
                     </View>
                     <Text style={styles.headerTitle}>Live Coach</Text>
@@ -187,7 +187,7 @@ export default function CoachChatScreen() {
                         onPress={handleSend}
                         disabled={!input.trim()}
                     >
-                        <Send color={input.trim() ? colors.snow : colors.cloud} size={18} />
+                        <Feather name="send" color={input.trim() ? colors.snow : colors.cloud} size={18} />
                     </Pressable>
                 </View>
             </View>
@@ -211,7 +211,11 @@ const styles = StyleSheet.create({
         zIndex: 10,
     },
     iconButton: {
-        padding: space[2],
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     headerTitles: {
         flex: 1,

@@ -24,7 +24,7 @@ import {
     StyleSheet, Alert, Platform,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useRouter, useLocalSearchParams } from 'expo-router'
+import { useRouter } from 'expo-router'
 import { Feather } from '@expo/vector-icons'
 import Animated, {
     FadeIn,
@@ -64,12 +64,8 @@ function formatTime(sec: number): string {
 
 export default function WorkoutScreen() {
     const router = useRouter()
-    const params = useLocalSearchParams<{ mode?: string }>()
     const ai = useRealtimeAI()
 
-    // Déterminer le mode depuis les params de navigation ou le state local
-    const initialMode = params.mode === 'camera' ? false : params.mode === 'demo' ? true : true
-    const [demoMode, setDemoMode] = useState(initialMode)
     const [coachingReport, setCoachingReport] = useState<CoachingReport | null>(null)
     const [isSaving, setIsSaving] = useState(false)
     const [saveSuccess, setSaveSuccess] = useState(false)
@@ -81,14 +77,12 @@ export default function WorkoutScreen() {
         // Initialiser le service IA au montage
         ai.init({
             enableHaptics: true,
-            enableDemoMode: demoMode,
-            demoProfile: 'good',
         })
 
         return () => {
             // Cleanup à la destruction
         }
-    }, [demoMode])
+    }, [])
 
     // Generate coaching report quand la session se termine
     useEffect(() => {
@@ -107,10 +101,8 @@ export default function WorkoutScreen() {
         setShowCoaching(false)
         ai.startSession({
             enableHaptics: true,
-            enableDemoMode: demoMode,
-            demoProfile: 'good',
         })
-    }, [ai, demoMode])
+    }, [ai])
 
     const handleEnd = useCallback(() => {
         impact.light()
@@ -382,7 +374,7 @@ export default function WorkoutScreen() {
                     arFrame={ai.lastARFrame}
                     feedback={ai.lastFeedback}
                     onFrameCaptured={handleFrameCaptured}
-                    isDemoMode={demoMode}
+                    isDemoMode={false}
                     captureTargetFps={10}
                 />
 
@@ -394,29 +386,6 @@ export default function WorkoutScreen() {
                             Position your phone to capture your shooting form.
                             AI analyzes every shot in real time.
                         </Text>
-
-                        {/* Demo mode toggle */}
-                        <TouchableOpacity
-                            style={[styles.demoToggle, demoMode && styles.demoToggleActive]}
-                            onPress={() => {
-                                setDemoMode(prev => !prev)
-                                // Re-init pour appliquer le changement
-                                ai.reset()
-                            }}
-                            activeOpacity={0.7}
-                        >
-                            <Feather
-                                name={demoMode ? 'zap' : 'camera'}
-                                size={16}
-                                color={demoMode ? T.color.signature.primary : T.color.text.secondary}
-                            />
-                            <Text style={[
-                                styles.demoToggleText,
-                                demoMode && { color: T.color.signature.primary }
-                            ]}>
-                                {demoMode ? 'Demo Mode (simulated AI)' : 'Camera Mode (real AI)'}
-                            </Text>
-                        </TouchableOpacity>
 
                         <TouchableOpacity style={styles.startBtn} onPress={handleStart} activeOpacity={0.8}>
                             <Feather name="play" size={22} color="#FFF" />
@@ -611,30 +580,6 @@ const styles = StyleSheet.create({
         fontSize: 17,
         fontWeight: '700',
         fontFamily: T.fonts.display.bold,
-    },
-
-    // Demo toggle
-    demoToggle: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 12,
-        backgroundColor: T.color.background.tertiary,
-        borderWidth: 1,
-        borderColor: T.color.border.base,
-        marginBottom: 16,
-    },
-    demoToggleActive: {
-        borderColor: T.color.signature.primary,
-        backgroundColor: `${T.color.signature.primary}12`,
-    },
-    demoToggleText: {
-        color: T.color.text.secondary,
-        fontSize: 13,
-        fontWeight: '600',
-        fontFamily: T.fonts.body.semibold,
     },
 
     // Loading state

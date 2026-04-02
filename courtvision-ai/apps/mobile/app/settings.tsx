@@ -3,7 +3,7 @@
  *
  * Allows the user to:
  * - View and edit profile (name, position, height)
- * - Configure AI preferences (haptics, audio, demo mode)
+ * - Configure AI preferences (haptics, audio)
  * - Manage notifications
  * - View app info and export data
  * - Sign out
@@ -74,7 +74,6 @@ interface PersistedSettings {
     playerPosition: string
     haptics: boolean
     audioFeedback: boolean
-    demoMode: boolean
     notifications: boolean
     dailyReminder: boolean
     autoSave: boolean
@@ -87,7 +86,6 @@ const DEFAULT_SETTINGS: PersistedSettings = {
     playerPosition: 'SG',
     haptics: true,
     audioFeedback: false,
-    demoMode: false,
     notifications: true,
     dailyReminder: true,
     autoSave: true,
@@ -105,7 +103,6 @@ export default function SettingsScreen() {
     const [playerPosition, setPlayerPosition] = useState(DEFAULT_SETTINGS.playerPosition)
     const [haptics, setHaptics] = useState(DEFAULT_SETTINGS.haptics)
     const [audioFeedback, setAudioFeedback] = useState(DEFAULT_SETTINGS.audioFeedback)
-    const [demoMode, setDemoMode] = useState(DEFAULT_SETTINGS.demoMode)
     const [notifications, setNotifications] = useState(DEFAULT_SETTINGS.notifications)
     const [dailyReminder, setDailyReminder] = useState(DEFAULT_SETTINGS.dailyReminder)
     const [autoSave, setAutoSave] = useState(DEFAULT_SETTINGS.autoSave)
@@ -122,7 +119,6 @@ export default function SettingsScreen() {
                 if (saved.playerPosition) setPlayerPosition(saved.playerPosition)
                 if (saved.haptics !== undefined) setHaptics(saved.haptics)
                 if (saved.audioFeedback !== undefined) setAudioFeedback(saved.audioFeedback)
-                if (saved.demoMode !== undefined) setDemoMode(saved.demoMode)
                 if (saved.notifications !== undefined) setNotifications(saved.notifications)
                 if (saved.dailyReminder !== undefined) setDailyReminder(saved.dailyReminder)
                 if (saved.autoSave !== undefined) setAutoSave(saved.autoSave)
@@ -279,11 +275,6 @@ export default function SettingsScreen() {
                     id: 'audio', icon: 'volume-2', label: 'Feedback audio', type: 'toggle',
                     value: audioFeedback,
                     onToggle: updateSetting('audioFeedback', setAudioFeedback),
-                },
-                {
-                    id: 'demo', icon: 'zap', label: 'Demo Mode', type: 'toggle',
-                    value: demoMode,
-                    onToggle: updateSetting('demoMode', setDemoMode),
                 },
                 {
                     id: 'calibrate', icon: 'crosshair', label: 'Recalibrate AI',

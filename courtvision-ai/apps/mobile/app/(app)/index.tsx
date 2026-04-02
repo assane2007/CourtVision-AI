@@ -6,7 +6,7 @@ import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, wit
 import { colors, typography, space, shadows, radius } from '../../constants/tokens';
 import { Badge } from '../../components/ui/Badge';
 import { useRouter } from 'expo-router';
-import { useStore, selectUser, selectIsDemoMode } from '../../lib/store';
+import { useStore, selectUser } from '../../lib/store';
 import { api } from '../../lib/api';
 
 interface DashboardData {
@@ -41,7 +41,6 @@ export default function DashboardScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const user = useStore(selectUser);
-    const isDemoMode = useStore(selectIsDemoMode);
     const [data, setData] = useState<DashboardData | null>(null);
 
     // Pulse animation for the "Online" dot
@@ -66,30 +65,6 @@ export default function DashboardScreen() {
     }, []);
 
     const loadDashboard = useCallback(async () => {
-        if (isDemoMode) {
-            setData({
-                lastGameAccuracy: 94.2,
-                rosterCount: 12,
-                shadowLeague: {
-                    matchupTitle: 'Morning Simulation: Matchup #842',
-                    rivalName: 'Rival Marc',
-                    simResult: 'L 2:3',
-                    winRate: '32%',
-                    releaseGap: '-0.2s',
-                    coachInsight: 'Marc has a faster vertical leap (+4cm) than your contest ability. You lose 68% of matchups in "Switch Defense".',
-                },
-                objectives: [
-                    'Hit 5 catch-and-shoot 3s (>20km/h prep)',
-                    'Keep elbow flare < 5° under fatigue',
-                    'At least 10 high-intensity sprints',
-                ],
-                recentSessions: [
-                    { id: 'demo-01', name: 'Mar 01 · vs City Lakers', details: '1h 24min  ·  Full Court', accuracy: 94.2 },
-                    { id: 'demo-02', name: 'Feb 28 · Training', details: '45min  ·  Half Court', accuracy: 88.7 },
-                ],
-            });
-            return;
-        }
         try {
             const res = await api.get<{ data: DashboardData }>('/api/dashboard');
             setData(res.data ?? res as any);
@@ -102,7 +77,7 @@ export default function DashboardScreen() {
                 recentSessions: [],
             });
         }
-    }, [isDemoMode]);
+    }, []);
 
     const displayName = user?.full_name ?? user?.email?.split('@')[0] ?? 'Player';
     const initials = displayName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);

@@ -7,8 +7,7 @@
  * Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY
  * in your .env (or app.json extra) before running the app.
  *
- * If Supabase is not configured, isDemoMode will be true and
- * the app will use mock auth instead.
+ * Demo mode is opt-in only via EXPO_PUBLIC_ENABLE_DEMO_MODE=true.
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -23,27 +22,31 @@ const SUPABASE_URL =
 const SUPABASE_ANON_KEY =
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? ''
 
-// ─── Demo mode detection ───────────────────────────────────────
-// True when Supabase credentials are missing or still placeholders
-export const isDemoMode =
-    !SUPABASE_URL ||
-    SUPABASE_URL.includes('your-project') ||
-    !SUPABASE_ANON_KEY ||
-    SUPABASE_ANON_KEY === 'your-anon-key' ||
-    SUPABASE_ANON_KEY.length < 20
+const isSupabaseConfigured =
+    !!SUPABASE_URL &&
+    !SUPABASE_URL.includes('your-project') &&
+    !!SUPABASE_ANON_KEY &&
+    SUPABASE_ANON_KEY !== 'your-anon-key' &&
+    SUPABASE_ANON_KEY.length >= 20
+
+// Demo mode must be explicitly enabled; missing env vars no longer auto-enable mock flows.
+export const isDemoMode = process.env.EXPO_PUBLIC_ENABLE_DEMO_MODE === 'true'
+
+if (!isSupabaseConfigured) {
+    console.warn(
+        '[CourtVision] ⚠️  Supabase not configured. API auth calls can fail until env vars are set.\n' +
+        'Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in apps/mobile/.env.'
+    )
+}
 
 if (isDemoMode) {
-    console.warn(
-        '[CourtVision] ⚠️  Supabase not configured — running in DEMO mode.\n' +
-        'Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in apps/mobile/.env'
-    )
+    console.warn('[CourtVision] ⚠️  EXPO_PUBLIC_ENABLE_DEMO_MODE=true: mock flows are enabled intentionally.')
 }
 
 // ─── Client ────────────────────────────────────────────────────
 
-// In demo mode, use a dummy URL that won't make real requests
-const safeUrl = SUPABASE_URL || 'https://demo.supabase.co'
-const safeKey = SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.demo'
+const safeUrl = isSupabaseConfigured ? SUPABASE_URL : 'https://demo.supabase.co'
+const safeKey = isSupabaseConfigured ? SUPABASE_ANON_KEY : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.demo'
 
 export const supabase = createClient(safeUrl, safeKey, {
     auth: {

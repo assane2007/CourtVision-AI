@@ -19,10 +19,13 @@ import { supabase } from './supabase'
 const AUTH_TOKEN_KEY = 'courtvision_auth_token'
 const REFRESH_TOKEN_KEY = 'courtvision_refresh_token'
 
-export const API_BASE_URL =
+const rawApiBaseUrl =
     Constants.expoConfig?.extra?.apiUrl
     ?? process.env.EXPO_PUBLIC_API_URL
     ?? (Platform.OS === 'android' ? 'http://10.0.2.2:8080' : 'http://localhost:8080')
+
+// Normalize to avoid accidental /api/api/* when envs already include /api.
+export const API_BASE_URL = rawApiBaseUrl.replace(/\/+$/, '').replace(/\/api\/?$/i, '')
 
 // ─── Token management (SecureStore) ──────────────────────────
 

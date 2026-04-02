@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Dimensions, Share as NativeShare } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Share, Sparkles, BarChart2 } from 'lucide-react-native';
+import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 
 import { colors, typography, space, radius } from '../../../constants/tokens';
@@ -72,6 +72,24 @@ export default function SessionAnalysisScreen() {
     };
 
     const s = session;
+    const totalShots = s?.shots?.length ?? 0;
+    const offensePace = Math.max(0, Math.min(100, Math.round((s?.topSpeed ?? 0) * 3)));
+    const offensePressure = Math.max(0, Math.min(100, Math.round((s?.sprints ?? 0) * 8)));
+    const offenseCreation = Math.max(0, Math.min(100, Math.round((s?.accels ?? 0) * 4)));
+    const defenseRecovery = Math.max(0, Math.min(100, Math.round((s?.decels ?? 0) * 4)));
+    const defenseCoverage = Math.max(0, Math.min(100, Math.round(((s?.totalDistance ?? 0) / 5) * 100)));
+    const defenseTracking = Math.max(0, Math.min(100, Math.round(s?.trackingPct ?? 0)));
+
+    const handleShareSession = async () => {
+        try {
+            await NativeShare.share({
+                title: `Session ${id}`,
+                message: `Session ${id} - Rating ${s?.globalRating ?? 0}% - Effort ${s?.effortIndex ?? 0}% - Tracking ${s?.trackingPct ?? 0}%`,
+            });
+        } catch {
+            // user cancelled
+        }
+    };
 
     return (
         <View style={styles.container}>
@@ -91,21 +109,21 @@ export default function SessionAnalysisScreen() {
                 {/* Header */}
                 <View style={styles.header}>
                     <Pressable onPress={() => router.back()} style={styles.iconButton}>
-                        <ChevronLeft color={colors.snow} size={24} />
+                        <Feather name="chevron-left" color={colors.snow} size={24} />
                     </Pressable>
                     <View style={styles.headerTitles}>
                         <Text style={styles.headerSubtitle}>SESSION DETAILS</Text>
                         <Text style={styles.headerTitle}>{s?.title ?? `Session ${id}`}</Text>
                     </View>
                     <View style={styles.headerRight}>
-                        <Pressable style={styles.iconButtonSmall}>
-                            <Share color={colors.cloud} size={20} />
+                        <Pressable style={styles.iconButtonSmall} onPress={handleShareSession}>
+                            <Feather name="share-2" color={colors.cloud} size={20} />
                         </Pressable>
                         <Pressable
                             style={[styles.iconButtonSmall, { marginLeft: space[2] }]}
                             onPress={() => router.push(`/(app)/sessions/chat/${id}`)}
                         >
-                            <Sparkles color={colors.fire} size={20} />
+                            <Feather name="cpu" color={colors.fire} size={20} />
                         </Pressable>
                     </View>
                 </View>
@@ -196,7 +214,7 @@ export default function SessionAnalysisScreen() {
                                 onPress={() => setStoryVisible(true)}
                             >
                                 <View style={styles.ctaGlowBackground} />
-                                <Sparkles color={colors.base} size={20} style={{ marginRight: space[1] }} />
+                                <Feather name="star" color={colors.base} size={20} style={{ marginRight: space[1] }} />
                                 <Text style={styles.highlightCTAText}>REEL</Text>
                             </Pressable>
 
@@ -205,7 +223,7 @@ export default function SessionAnalysisScreen() {
                                 onPress={() => setIs3DProcessing(true)}
                             >
                                 <View style={styles.spatialGlow} />
-                                <BarChart2 color={colors.live} size={20} style={{ marginRight: space[1] }} />
+                                <Feather name="bar-chart-2" color={colors.live} size={20} style={{ marginRight: space[1] }} />
                                 <Text style={styles.spatialCTAText}>3D SCENE</Text>
                             </Pressable>
                         </Animated.View>
@@ -253,6 +271,89 @@ export default function SessionAnalysisScreen() {
                         <Card style={[styles.dnaCard, { marginTop: space[2] }]}>
                             <Text style={styles.dnaTitle}>AR KINEMATIC OVERLAY</Text>
                             <GhostMode />
+                        </Card>
+                    </Animated.View>
+                )}
+
+                {activeTab === 'Offense' && (
+                    <Animated.View entering={FadeInRight.delay(100)} style={styles.visContainer}>
+                        <Card style={[styles.dnaCard, { marginTop: space[2] }]}>
+                            <Text style={styles.dnaTitle}>OFFENSE EXECUTION</Text>
+
+                            <View style={styles.metricBarBlock}>
+                                <View style={styles.metricBarHeader}>
+                                    <Text style={styles.metricBarLabel}>Shot Volume</Text>
+                                    <Text style={styles.metricBarValue}>{totalShots}</Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.metricBarBlock}>
+                                <View style={styles.metricBarHeader}>
+                                    <Text style={styles.metricBarLabel}>Pace Pressure</Text>
+                                    <Text style={styles.metricBarValue}>{offensePace}%</Text>
+                                </View>
+                                <View style={styles.progressTrack}>
+                                    <View style={[styles.progressBar, { width: `${offensePace}%` }]} />
+                                </View>
+                            </View>
+
+                            <View style={styles.metricBarBlock}>
+                                <View style={styles.metricBarHeader}>
+                                    <Text style={styles.metricBarLabel}>Sprint Threat</Text>
+                                    <Text style={styles.metricBarValue}>{offensePressure}%</Text>
+                                </View>
+                                <View style={styles.progressTrack}>
+                                    <View style={[styles.progressBar, { width: `${offensePressure}%` }]} />
+                                </View>
+                            </View>
+
+                            <View style={styles.metricBarBlock}>
+                                <View style={styles.metricBarHeader}>
+                                    <Text style={styles.metricBarLabel}>Creation Burst</Text>
+                                    <Text style={styles.metricBarValue}>{offenseCreation}%</Text>
+                                </View>
+                                <View style={styles.progressTrack}>
+                                    <View style={[styles.progressBar, { width: `${offenseCreation}%` }]} />
+                                </View>
+                            </View>
+                        </Card>
+                    </Animated.View>
+                )}
+
+                {activeTab === 'Defense' && (
+                    <Animated.View entering={FadeInRight.delay(100)} style={styles.visContainer}>
+                        <Card style={[styles.dnaCard, { marginTop: space[2] }]}>
+                            <Text style={styles.dnaTitle}>DEFENSE INTENSITY</Text>
+
+                            <View style={styles.metricBarBlock}>
+                                <View style={styles.metricBarHeader}>
+                                    <Text style={styles.metricBarLabel}>Recovery Index</Text>
+                                    <Text style={styles.metricBarValue}>{defenseRecovery}%</Text>
+                                </View>
+                                <View style={styles.progressTrack}>
+                                    <View style={[styles.progressBar, { width: `${defenseRecovery}%` }]} />
+                                </View>
+                            </View>
+
+                            <View style={styles.metricBarBlock}>
+                                <View style={styles.metricBarHeader}>
+                                    <Text style={styles.metricBarLabel}>Coverage Capacity</Text>
+                                    <Text style={styles.metricBarValue}>{defenseCoverage}%</Text>
+                                </View>
+                                <View style={styles.progressTrack}>
+                                    <View style={[styles.progressBar, { width: `${defenseCoverage}%` }]} />
+                                </View>
+                            </View>
+
+                            <View style={styles.metricBarBlock}>
+                                <View style={styles.metricBarHeader}>
+                                    <Text style={styles.metricBarLabel}>Tracking Discipline</Text>
+                                    <Text style={styles.metricBarValue}>{defenseTracking}%</Text>
+                                </View>
+                                <View style={styles.progressTrack}>
+                                    <View style={[styles.progressBar, { width: `${defenseTracking}%` }]} />
+                                </View>
+                            </View>
                         </Card>
                     </Animated.View>
                 )}
@@ -321,7 +422,11 @@ const styles = StyleSheet.create({
         paddingVertical: space[2],
     },
     iconButton: {
-        padding: space[2],
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     headerTitles: {
         flex: 1,
@@ -341,7 +446,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
     },
     iconButtonSmall: {
-        padding: space[2],
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     tabsContainer: {
         marginTop: space[4],
@@ -456,6 +565,25 @@ const styles = StyleSheet.create({
     },
     dnaMetric: {
         flex: 1,
+    },
+    metricBarBlock: {
+        marginTop: space[3],
+    },
+    metricBarHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: space[2],
+    },
+    metricBarLabel: {
+        fontFamily: 'DMSans_500Medium',
+        fontSize: 12,
+        color: colors.cloud,
+    },
+    metricBarValue: {
+        fontFamily: 'JetBrainsMono_400Regular',
+        fontSize: 12,
+        color: colors.snow,
     },
     aiInsightBox: {
         marginTop: space[5],

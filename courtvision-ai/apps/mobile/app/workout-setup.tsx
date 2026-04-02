@@ -88,7 +88,6 @@ const SETUP_STEPS: SetupStep[] = [
         icon: 'zap',
         tips: [
             '🤖 Real AI Mode — Active camera, real-time analysis',
-            '🎮 Demo Mode — Simulates shots to explore the app',
             '✏️ Manual Mode — Record make/miss manually',
         ],
     },
@@ -176,7 +175,7 @@ function ModeOption({
 export default function WorkoutSetupScreen() {
     const router = useRouter()
     const [step, setStep] = useState(0)
-    const [selectedMode, setSelectedMode] = useState<'camera' | 'demo' | 'manual'>('demo')
+    const [selectedMode, setSelectedMode] = useState<'camera' | 'manual'>('camera')
 
     const currentStep = SETUP_STEPS[step]
 
@@ -251,20 +250,12 @@ export default function WorkoutSetupScreen() {
                                 delay={100}
                             />
                             <ModeOption
-                                icon="zap"
-                                title="Demo Mode"
-                                description="Simulates shots with realistic NBA data"
-                                selected={selectedMode === 'demo'}
-                                onPress={() => setSelectedMode('demo')}
-                                delay={200}
-                            />
-                            <ModeOption
                                 icon="edit-3"
                                 title="Manual Mode"
                                 description="Record your shots manually (make/miss)"
                                 selected={selectedMode === 'manual'}
                                 onPress={() => setSelectedMode('manual')}
-                                delay={300}
+                                delay={200}
                             />
                         </View>
                     ) : (

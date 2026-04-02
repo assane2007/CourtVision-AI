@@ -564,8 +564,11 @@ export default function Profile() {
                     <Text style={s.sectionTitle}>
                         Badges ({badges?.length || 0})
                     </Text>
-                    <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                        <Text style={s.seeAllLink}>See all</Text>
+                    <TouchableOpacity
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        onPress={() => router.push('/leaderboard')}
+                    >
+                        <Text style={s.seeAllLink}>Leaderboard</Text>
                     </TouchableOpacity>
                 </Animated.View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.badgeScroll}>

@@ -30,7 +30,7 @@ export function usePreCog() {
   const fetchClips = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await api.get<{ speedMph: number; calibration: PreCogClip[]; training: PreCogClip[] }>('/precog/clips');
+      const data = await api.get<{ speedMph: number; calibration: PreCogClip[]; training: PreCogClip[] }>('/api/precog/clips');
       setClips({
         calibration: data.calibration,
         training: data.training,
@@ -49,7 +49,7 @@ export function usePreCog() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not found');
       
-      const data = await api.get<PreCogProgression>(`/precog/progression/${user.id}`);
+      const data = await api.get<PreCogProgression>(`/api/precog/progression/${user.id}`);
       setProgression(data);
       setError(null);
     } catch (err) {
@@ -64,7 +64,7 @@ export function usePreCog() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not found');
 
-      return await api.post('/precog/session', {
+      return await api.post('/api/precog/session', {
         ...results,
         userId: user.id,
       });

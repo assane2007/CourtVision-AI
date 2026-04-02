@@ -292,7 +292,7 @@ export default function HighlightPlayer() {
     const [skeletonVisible, setSkeletonVisible] = useState(true)
 
     // API-loaded clips + video
-    const [clips, setClips] = useState<HighlightClipData[]>(FALLBACK_CLIPS)
+    const [clips, setClips] = useState<HighlightClipData[]>([])
     const [videoUrl, setVideoUrl] = useState<string | null>(null)
     const [videoLoading, setVideoLoading] = useState(true)
     const videoRef = useRef<Video>(null)
@@ -333,7 +333,8 @@ export default function HighlightPlayer() {
                     setVideoUrl(res.videoUrl)
                 }
             } catch {
-                // API unavailable — keep fallback clips
+                // Keep an explicit empty state when API is unavailable.
+                setClips([])
             } finally {
                 if (!cancelled) setVideoLoading(false)
             }
@@ -349,20 +350,19 @@ export default function HighlightPlayer() {
 
     const togglePlay = useCallback(async () => {
         if (!playing) {
+            if (!videoUrl) {
+                toast.warning('No video available', 'This highlight is not ready yet.')
+                return
+            }
             setPlaying(true)
-            if (videoUrl && videoRef.current) {
+            if (videoRef.current) {
                 await videoRef.current.playAsync()
-            } else {
-                // Fallback: simulated progress for demo mode
-                progress.value = withTiming(1, { duration: 30000, easing: Easing.linear })
             }
             setTimeout(() => setControlsVisible(false), 2500)
         } else {
             setPlaying(false)
-            if (videoUrl && videoRef.current) {
+            if (videoRef.current) {
                 await videoRef.current.pauseAsync()
-            } else {
-                progress.value = progress.value
             }
         }
     }, [playing, progress, videoUrl])
