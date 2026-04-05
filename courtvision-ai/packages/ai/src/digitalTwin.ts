@@ -162,6 +162,34 @@ export interface TwinProfile {
     }
 }
 
+export type TwinDrillIntensity = 'low' | 'moderate' | 'high' | 'max'
+
+export interface TwinDrillRecommendation {
+    id: string
+    rank: number
+    title: string
+    objective: string
+    rationale: string
+    category: TwinTrait['category']
+    priority: number // 0-100
+    linkedWeakness?: string
+    zoneFocus?: ShotZone
+    sessionsPerWeek: number
+    minutesPerSession: number
+    drill: {
+        name: string
+        sets: number
+        reps: string
+        intensity: TwinDrillIntensity
+        tips: string[]
+    }
+    targetMetric: string
+}
+
+export interface TwinDrillRecommendationOptions {
+    limit?: number
+}
+
 /** Données d'une session pour construire le twin */
 export interface SessionAnalysisData {
     sessionId: string
@@ -178,6 +206,512 @@ export interface SessionAnalysisData {
 // ==========================================
 
 const MODEL_VERSION = 'v2.0'
+
+const PLAYSTYLE_SHOOTING_PROFILES: PlayStyle[] = ['sharpshooter', 'shot_creator', 'stretch_big']
+
+const PLAYSTYLE_PAINT_PROFILES: PlayStyle[] = ['slasher', 'paint_beast']
+
+const ZONE_LABELS: Record<ShotZone, string> = {
+    restricted: 'près du cercle',
+    paint: 'dans la raquette',
+    midrange: 'à mi-distance',
+    corner3: 'dans les corners à 3 points',
+    wing3: 'sur les ailes à 3 points',
+    top3: 'en tête de raquette à 3 points',
+}
+
+interface TwinDrillTemplate {
+    title: string
+    objective: string
+    category: TwinTrait['category']
+    zoneFocus?: ShotZone
+    sessionsPerWeek: number
+    minutesPerSession: number
+    drill: {
+        name: string
+        sets: number
+        reps: string
+        intensity: TwinDrillIntensity
+        tips: string[]
+    }
+    targetMetric: string
+}
+
+const CATEGORY_TEMPLATES: Record<TwinTrait['category'], TwinDrillTemplate> = {
+    shooting: {
+        title: 'Stabiliser la mécanique de tir',
+        objective: 'Revenir à une mécanique propre avant de monter en volume',
+        category: 'shooting',
+        sessionsPerWeek: 4,
+        minutesPerSession: 30,
+        drill: {
+            name: 'Form Shooting (1m)',
+            sets: 4,
+            reps: '12 tirs contrôlés',
+            intensity: 'moderate',
+            tips: ['Coude aligné à 90°', 'Release haut et relâché', 'Finish tenu 1 seconde'],
+        },
+        targetMetric: 'shot_consistency_score',
+    },
+    consistency: {
+        title: 'Gagner en régularité sous fatigue',
+        objective: 'Maintenir la même mécanique du 1er au dernier tir',
+        category: 'consistency',
+        sessionsPerWeek: 3,
+        minutesPerSession: 28,
+        drill: {
+            name: 'Catch & Shoot Circuit',
+            sets: 3,
+            reps: '10 tirs par tour (5 spots x 2)',
+            intensity: 'high',
+            tips: ['Rythme constant', 'Pieds prêts avant réception', 'Mêmes repères visuels à chaque spot'],
+        },
+        targetMetric: 'session_fg_variance',
+    },
+    mental: {
+        title: 'Renforcer le mental de match',
+        objective: 'Reprendre le contrôle sous pression',
+        category: 'mental',
+        sessionsPerWeek: 5,
+        minutesPerSession: 20,
+        drill: {
+            name: 'Breathing Reset + Pressure Free Throws',
+            sets: 3,
+            reps: '5 cycles box breathing + 10 LF clutch',
+            intensity: 'moderate',
+            tips: ['Respire avant chaque série', 'Même routine pré-tir', 'Reframe immédiat après un échec'],
+        },
+        targetMetric: 'clutch_rating',
+    },
+    physical: {
+        title: 'Augmenter la résistance à la fatigue',
+        objective: 'Tenir l’intensité en fin de séance et fin de match',
+        category: 'physical',
+        sessionsPerWeek: 3,
+        minutesPerSession: 24,
+        drill: {
+            name: 'Suicides (Navettes) + Defensive Slides',
+            sets: 4,
+            reps: '1 navette complète + 30s slides',
+            intensity: 'high',
+            tips: ['Récupération stricte 45s', 'Qualité de posture', 'Sprint à 100% sur les deux derniers sets'],
+        },
+        targetMetric: 'fatigue_resistance',
+    },
+    tactical: {
+        title: 'Lire et punir les bons espaces',
+        objective: 'Améliorer les décisions de tir en situation réelle',
+        category: 'tactical',
+        sessionsPerWeek: 3,
+        minutesPerSession: 26,
+        drill: {
+            name: 'Decision-Making Shooting Ladder',
+            sets: 4,
+            reps: '8 possessions guidées',
+            intensity: 'moderate',
+            tips: ['Scan défensif avant dribble', 'Décision en 0.5 seconde', 'Privilégie le tir à haute valeur'],
+        },
+        targetMetric: 'shot_selection_score',
+    },
+}
+
+function buildZoneTemplate(zone: ShotZone): TwinDrillTemplate {
+    const base: Record<ShotZone, Omit<TwinDrillTemplate, 'title' | 'objective' | 'category' | 'zoneFocus'>> = {
+        restricted: {
+            sessionsPerWeek: 4,
+            minutesPerSession: 30,
+            drill: {
+                name: 'Mikan + Contact Finishes',
+                sets: 4,
+                reps: '12 finitions alternées',
+                intensity: 'high',
+                tips: ['Finition main droite et gauche', 'Utilise la vitre', 'Absorbe le contact poitrine haute'],
+            },
+            targetMetric: 'restricted_pct',
+        },
+        paint: {
+            sessionsPerWeek: 4,
+            minutesPerSession: 32,
+            drill: {
+                name: 'Paint Finishing Series',
+                sets: 4,
+                reps: '8 finitions variées',
+                intensity: 'high',
+                tips: ['Lecture angle défenseur', 'Stop équilibré', 'Floater sur drop coverage'],
+            },
+            targetMetric: 'paint_pct',
+        },
+        midrange: {
+            sessionsPerWeek: 3,
+            minutesPerSession: 28,
+            drill: {
+                name: 'Mid-Range Pull-Up',
+                sets: 5,
+                reps: '6 tirs par côté',
+                intensity: 'high',
+                tips: ['Arrêt net en 1-2', 'Buste haut', 'Lecture espace avant le premier dribble'],
+            },
+            targetMetric: 'midrange_pct',
+        },
+        corner3: {
+            sessionsPerWeek: 4,
+            minutesPerSession: 30,
+            drill: {
+                name: 'Spot-Up Corner 3s',
+                sets: 5,
+                reps: '10 tirs par corner',
+                intensity: 'moderate',
+                tips: ['Pied intérieur orienté panier', 'Shot pocket prêt', 'Release en rythme sans dérive latérale'],
+            },
+            targetMetric: 'corner3_pct',
+        },
+        wing3: {
+            sessionsPerWeek: 4,
+            minutesPerSession: 30,
+            drill: {
+                name: 'Wing 3-Point Reps',
+                sets: 4,
+                reps: '8 tirs par aile',
+                intensity: 'moderate',
+                tips: ['Alignement hanches-épaules', 'Rythme identique catch/pull-up', 'Balance stable à la réception'],
+            },
+            targetMetric: 'wing3_pct',
+        },
+        top3: {
+            sessionsPerWeek: 4,
+            minutesPerSession: 30,
+            drill: {
+                name: 'Top of Key 3s',
+                sets: 4,
+                reps: '10 tirs (mix catch + step-back)',
+                intensity: 'moderate',
+                tips: ['Garde le centre de gravité bas sur step-back', 'Montée verticale', 'Regard fixé tôt sur l’arceau'],
+            },
+            targetMetric: 'top3_pct',
+        },
+    }
+
+    const zoneLabel = ZONE_LABELS[zone]
+
+    return {
+        title: `Réparer l’efficacité ${zoneLabel}`,
+        objective: `Monter la réussite ${zoneLabel} sur les prochaines sessions`,
+        category: 'shooting',
+        zoneFocus: zone,
+        ...base[zone],
+    }
+}
+
+function inferZoneFromText(text: string): ShotZone | undefined {
+    const normalized = text.toLowerCase()
+    const aliases: Record<ShotZone, string[]> = {
+        restricted: ['restricted', 'cercle', 'rim', 'layup', 'close range'],
+        paint: ['paint', 'raquette', 'peinture'],
+        midrange: ['midrange', 'mi-distance', 'mid-range'],
+        corner3: ['corner3', 'corner 3', 'coin', 'corner'],
+        wing3: ['wing3', 'wing 3', 'aile', 'ailes'],
+        top3: ['top3', 'top 3', 'tête de raquette', 'top of key', 'sommet'],
+    }
+
+    for (const [zone, zoneAliases] of Object.entries(aliases) as [ShotZone, string[]][]) {
+        if (zoneAliases.some(alias => normalized.includes(alias))) {
+            return zone
+        }
+    }
+
+    return undefined
+}
+
+function inferStyleMaintenanceTemplate(style: PlayStyle): TwinDrillTemplate {
+    if (PLAYSTYLE_SHOOTING_PROFILES.includes(style)) {
+        return {
+            title: 'Consolider ton volume extérieur',
+            objective: 'Maintenir un tir extérieur stable à haut volume',
+            category: 'shooting',
+            zoneFocus: 'top3',
+            sessionsPerWeek: 3,
+            minutesPerSession: 30,
+            drill: {
+                name: 'Catch & Shoot Circuit',
+                sets: 4,
+                reps: '10 tirs par tour',
+                intensity: 'high',
+                tips: ['Pieds prêts avant la balle', 'Décision instantanée', 'Même vitesse de release sur tous les spots'],
+            },
+            targetMetric: 'catch_shoot_pct',
+        }
+    }
+
+    if (PLAYSTYLE_PAINT_PROFILES.includes(style)) {
+        return {
+            title: 'Maintenir la pression au cercle',
+            objective: 'Conserver l’agressivité et l’efficacité dans la peinture',
+            category: 'physical',
+            zoneFocus: 'paint',
+            sessionsPerWeek: 3,
+            minutesPerSession: 28,
+            drill: {
+                name: 'Paint Finishing Series',
+                sets: 4,
+                reps: '8 finitions avec contact',
+                intensity: 'high',
+                tips: ['Finis fort main faible incluse', 'Attaque le bassin du défenseur', 'Enchaîne sans pause longue'],
+            },
+            targetMetric: 'paint_pct',
+        }
+    }
+
+    return {
+        title: 'Entretenir ton profil complet',
+        objective: 'Rester équilibré techniquement, mentalement et physiquement',
+        category: 'tactical',
+        sessionsPerWeek: 3,
+        minutesPerSession: 26,
+        drill: {
+            name: 'Decision-Making Shooting Ladder',
+            sets: 4,
+            reps: '8 possessions guidées',
+            intensity: 'moderate',
+            tips: ['Lis avant d’agir', 'Prends le tir de plus haute valeur', 'Qualité de décision avant volume'],
+        },
+        targetMetric: 'decision_quality_score',
+    }
+}
+
+function cloneTemplate(template: TwinDrillTemplate): TwinDrillTemplate {
+    return {
+        ...template,
+        drill: {
+            ...template.drill,
+            tips: [...template.drill.tips],
+        },
+    }
+}
+
+function getTemplateForWeakness(weakness: TwinTrait, zoneFocus?: ShotZone): TwinDrillTemplate {
+    if ((weakness.category === 'shooting' || weakness.category === 'consistency') && zoneFocus) {
+        const zoneTemplate = buildZoneTemplate(zoneFocus)
+        if (weakness.category === 'consistency') {
+            zoneTemplate.title = `${zoneTemplate.title} avec régularité mécanique`
+            zoneTemplate.targetMetric = 'shot_consistency_score'
+            zoneTemplate.drill.tips.unshift('Même tempo sur chaque série, même après fatigue')
+        }
+        return zoneTemplate
+    }
+
+    return cloneTemplate(CATEGORY_TEMPLATES[weakness.category])
+}
+
+function computeWeaknessPriority(profile: TwinProfile, weakness: TwinTrait, zoneFocus?: ShotZone): number {
+    let priority = 32 + weakness.severity * 10 + Math.min(weakness.evidenceCount * 2, 12)
+
+    if (weakness.trend === 'declining') priority += 10
+    if (weakness.trend === 'improving') priority -= 6
+
+    if (weakness.category === 'mental' && profile.mentalProfile.pressureResponse === 'struggles') {
+        priority += 10
+    }
+
+    if (weakness.category === 'physical' && profile.mentalProfile.fatigueResistance < 45) {
+        priority += 8
+    }
+
+    if ((weakness.category === 'shooting' || weakness.category === 'consistency') && zoneFocus) {
+        priority += 6
+    }
+
+    if (PLAYSTYLE_SHOOTING_PROFILES.includes(profile.playStyle.primary)
+        && (weakness.category === 'shooting' || weakness.category === 'consistency')) {
+        priority += 4
+    }
+
+    return clamp(Math.round(priority), 15, 98)
+}
+
+function buildWeaknessRecommendation(
+    profile: TwinProfile,
+    weakness: TwinTrait,
+    sequence: number,
+): TwinDrillRecommendation {
+    const zoneFocus = inferZoneFromText(`${weakness.label} ${weakness.description}`)
+    const template = getTemplateForWeakness(weakness, zoneFocus)
+
+    const rationaleParts = [
+        `${weakness.label} est identifié comme point faible (sévérité ${weakness.severity}/5).`,
+        `Observé sur ${weakness.evidenceCount} session(s), tendance ${weakness.trend}.`,
+    ]
+    if (weakness.drillRecommendation) {
+        rationaleParts.push(`Indice Twin: ${weakness.drillRecommendation}.`)
+    }
+
+    return {
+        id: `weakness-${weakness.id || sequence}`,
+        rank: 0,
+        title: template.title,
+        objective: template.objective,
+        rationale: rationaleParts.join(' '),
+        category: template.category,
+        priority: computeWeaknessPriority(profile, weakness, zoneFocus),
+        linkedWeakness: weakness.label,
+        zoneFocus: template.zoneFocus,
+        sessionsPerWeek: template.sessionsPerWeek,
+        minutesPerSession: template.minutesPerSession,
+        drill: template.drill,
+        targetMetric: template.targetMetric,
+    }
+}
+
+function buildZoneGapRecommendation(
+    gap: ComfortZone,
+    sequence: number,
+): TwinDrillRecommendation {
+    const template = buildZoneTemplate(gap.zone)
+    const priority = clamp(
+        Math.round(55 + Math.max(0, 35 - gap.efficiency) * 0.7 + gap.frequency * 0.35),
+        40,
+        97,
+    )
+
+    return {
+        id: `zone-gap-${gap.zone}-${sequence}`,
+        rank: 0,
+        title: template.title,
+        objective: template.objective,
+        rationale: `Volume élevé en ${ZONE_LABELS[gap.zone]} (${gap.frequency}% des tirs) mais efficacité basse (${Math.round(gap.efficiency)}%).`,
+        category: template.category,
+        priority,
+        zoneFocus: template.zoneFocus,
+        sessionsPerWeek: template.sessionsPerWeek,
+        minutesPerSession: template.minutesPerSession,
+        drill: template.drill,
+        targetMetric: template.targetMetric,
+    }
+}
+
+function buildMentalEmergencyRecommendation(profile: TwinProfile): TwinDrillRecommendation {
+    const baseTemplate = cloneTemplate(CATEGORY_TEMPLATES.mental)
+    const pressurePenalty = profile.mentalProfile.pressureResponse === 'struggles' ? 12 : 0
+    const priority = clamp(
+        Math.round(58 + (55 - profile.mentalProfile.resilience) * 0.6 + pressurePenalty),
+        42,
+        96,
+    )
+
+    return {
+        id: 'mental-stability',
+        rank: 0,
+        title: 'Stabiliser la réponse au stress en match',
+        objective: baseTemplate.objective,
+        rationale: `Profil mental: résilience ${profile.mentalProfile.resilience}/100, clutch ${profile.mentalProfile.clutchFactor}/100, pression ${profile.mentalProfile.pressureResponse}.`,
+        category: 'mental',
+        priority,
+        sessionsPerWeek: baseTemplate.sessionsPerWeek,
+        minutesPerSession: baseTemplate.minutesPerSession,
+        drill: baseTemplate.drill,
+        targetMetric: baseTemplate.targetMetric,
+    }
+}
+
+function buildFatigueRecommendation(profile: TwinProfile): TwinDrillRecommendation {
+    const baseTemplate = cloneTemplate(CATEGORY_TEMPLATES.physical)
+    const priority = clamp(
+        Math.round(56 + (50 - profile.mentalProfile.fatigueResistance) * 0.8),
+        40,
+        95,
+    )
+
+    return {
+        id: 'fatigue-resistance',
+        rank: 0,
+        title: 'Renforcer la capacité physique en fin de match',
+        objective: baseTemplate.objective,
+        rationale: `Fatigue resistance actuelle: ${profile.mentalProfile.fatigueResistance}/100, impact probable sur la précision tardive.`,
+        category: 'physical',
+        priority,
+        sessionsPerWeek: baseTemplate.sessionsPerWeek,
+        minutesPerSession: baseTemplate.minutesPerSession,
+        drill: baseTemplate.drill,
+        targetMetric: baseTemplate.targetMetric,
+    }
+}
+
+function buildMaintenanceRecommendation(profile: TwinProfile): TwinDrillRecommendation {
+    const template = inferStyleMaintenanceTemplate(profile.playStyle.primary)
+    return {
+        id: `maintenance-${profile.playStyle.primary}`,
+        rank: 0,
+        title: template.title,
+        objective: template.objective,
+        rationale: `Aucune faiblesse critique détectée. Plan de maintenance aligné au style ${profile.playStyle.primary}.`,
+        category: template.category,
+        priority: 45,
+        zoneFocus: template.zoneFocus,
+        sessionsPerWeek: template.sessionsPerWeek,
+        minutesPerSession: template.minutesPerSession,
+        drill: template.drill,
+        targetMetric: template.targetMetric,
+    }
+}
+
+export function generateTwinDrillRecommendations(
+    profile: TwinProfile,
+    options: TwinDrillRecommendationOptions = {},
+): TwinDrillRecommendation[] {
+    const requestedLimit = Number.isFinite(options.limit as number)
+        ? Math.round(options.limit as number)
+        : 5
+    const limit = clamp(requestedLimit, 1, 10)
+
+    const recommendations: TwinDrillRecommendation[] = []
+    const dedupe = new Set<string>()
+
+    const push = (recommendation: TwinDrillRecommendation) => {
+        const key = [recommendation.category, recommendation.drill.name, recommendation.zoneFocus ?? 'none'].join('|')
+        if (dedupe.has(key)) return
+        dedupe.add(key)
+        recommendations.push(recommendation)
+    }
+
+    const sortedWeaknesses = [...(profile.weaknesses ?? [])].sort((a, b) => b.severity - a.severity)
+    sortedWeaknesses.forEach((weakness, index) => {
+        push(buildWeaknessRecommendation(profile, weakness, index))
+    })
+
+    const zoneGaps = [...(profile.comfortZones ?? [])]
+        .filter(zone => zone.attempts >= 6 && zone.frequency >= 12 && zone.efficiency < 35)
+        .sort((a, b) => {
+            const scoreA = (35 - a.efficiency) + a.frequency * 0.5
+            const scoreB = (35 - b.efficiency) + b.frequency * 0.5
+            return scoreB - scoreA
+        })
+    zoneGaps.forEach((gap, index) => {
+        push(buildZoneGapRecommendation(gap, index))
+    })
+
+    if (
+        profile.mentalProfile.pressureResponse === 'struggles'
+        || profile.mentalProfile.resilience < 48
+        || profile.mentalProfile.clutchFactor < 45
+    ) {
+        push(buildMentalEmergencyRecommendation(profile))
+    }
+
+    if (profile.mentalProfile.fatigueResistance < 45) {
+        push(buildFatigueRecommendation(profile))
+    }
+
+    if (recommendations.length === 0) {
+        push(buildMaintenanceRecommendation(profile))
+    }
+
+    return recommendations
+        .sort((a, b) => b.priority - a.priority)
+        .slice(0, limit)
+        .map((rec, index) => ({
+            ...rec,
+            rank: index + 1,
+        }))
+}
 
 /** Profils NBA pour comparaison */
 const NBA_ARCHETYPES: {

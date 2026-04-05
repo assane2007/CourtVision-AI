@@ -4,6 +4,7 @@ import {
     TwinBuilder,
     TwinSimulator,
     generateTwinInsights,
+    generateTwinDrillRecommendations,
     type TwinProfile,
     type SessionAnalysisData,
 } from '@courtvision/ai'
@@ -17,6 +18,10 @@ const simulateSchema = z.object({
 
 const compareSchema = z.object({
     userId: z.string().uuid()
+})
+
+const drillRecommendationQuerySchema = z.object({
+    limit: z.coerce.number().int().min(1).max(10).default(5),
 })
 
 /**
@@ -33,6 +38,7 @@ const compareSchema = z.object({
  * - GET  /compare/:userId → Comparer avec un autre joueur
  * - GET  /evolution   → Historique d'évolution
  * - GET  /insights    → Insights IA personnalisés
+ * - GET  /drills      → Recommandations de drills dynamiques
  */
 export default async function twinRoutes(fastify: FastifyInstance) {
     fastify.addHook('preValidation', fastify.authenticate)
@@ -263,6 +269,54 @@ export default async function twinRoutes(fastify: FastifyInstance) {
             return reply.code(400).send({ error: error.message })
         }
     })
+
+    // ==========================================
+    // GET /drills — Recommandations dynamiques
+    // ==========================================
+    fastify.get('/drills', async (request, reply) => {
+        try {
+            const user = request.user!
+            const { limit } = drillRecommendationQuerySchema.parse(request.query)
+
+            const { data: twin, error } = await fastify.supabase
+                .from('digital_twins')
+                .select('model_version, twin_profile, updated_at')
+                .eq('user_id', user.id)
+                .single()
+
+            let profile = twin?.twin_profile as TwinProfile | null
+            let source: 'stored' | 'rebuilt' = 'stored'
+
+            // Si aucun twin persistant, on le reconstruit pour générer une reco exploitable.
+            if (error || !profile) {
+                const rebuilt = await buildTwinForUser(fastify, user.id, { skipInsightsGeneration: true })
+                profile = rebuilt.profile
+                source = 'rebuilt'
+            }
+
+            if (!profile) {
+                return reply.code(404).send({ error: 'Digital Twin non trouvé' })
+            }
+
+            const recommendations = generateTwinDrillRecommendations(profile, { limit })
+
+            return {
+                data: {
+                    recommendations,
+                    source,
+                    generatedAt: new Date().toISOString(),
+                    profileVersion: profile.modelVersion ?? twin?.model_version ?? null,
+                    profileUpdatedAt: profile.updatedAt ?? twin?.updated_at ?? null,
+                    sessionCount: profile.sessionCount,
+                    overallRating: profile.overallRating,
+                    playStyle: profile.playStyle.primary,
+                }
+            }
+        } catch (error: any) {
+            if (error instanceof z.ZodError) return reply.code(400).send({ error: error.errors })
+            return reply.code(400).send({ error: error.message })
+        }
+    })
 }
 
 // ==========================================
@@ -271,7 +325,8 @@ export default async function twinRoutes(fastify: FastifyInstance) {
 
 async function buildTwinForUser(
     fastify: FastifyInstance,
-    userId: string
+    userId: string,
+    options: { skipInsightsGeneration?: boolean } = {}
 ): Promise<{ twin: any; profile: TwinProfile; insights: string }> {
     // 1. Récupérer toutes les sessions analysées
     const { data: sessions } = await fastify.supabase
@@ -323,7 +378,7 @@ async function buildTwinForUser(
     // 4. Charger le profil existant si disponible
     const { data: existingTwin } = await fastify.supabase
         .from('digital_twins')
-        .select('twin_profile')
+        .select('twin_profile, ai_insights')
         .eq('user_id', userId)
         .single()
 
@@ -337,9 +392,19 @@ async function buildTwinForUser(
 
     // 6. Générer les insights IA
     let insights = ''
-    try {
-        insights = await generateTwinInsights(profile)
-    } catch {
+    if (options.skipInsightsGeneration) {
+        insights = typeof existingTwin?.ai_insights === 'string' && existingTwin.ai_insights.length > 0
+            ? existingTwin.ai_insights
+            : `Note globale : ${profile.overallRating}/100 — Style : ${profile.playStyle.primary}. Continue à jouer pour enrichir ton profil.`
+    } else {
+        try {
+            insights = await generateTwinInsights(profile)
+        } catch {
+            insights = `Note globale : ${profile.overallRating}/100 — Style : ${profile.playStyle.primary}. Continue à jouer pour enrichir ton profil.`
+        }
+    }
+
+    if (!insights) {
         insights = `Note globale : ${profile.overallRating}/100 — Style : ${profile.playStyle.primary}. Continue à jouer pour enrichir ton profil.`
     }
 

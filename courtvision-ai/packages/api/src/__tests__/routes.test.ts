@@ -231,6 +231,18 @@ describe('CourtVision API', () => {
             expect(response.statusCode).toBe(200)
         })
 
+        it('GET /api/twin/drills devrait retourner des recommandations', async () => {
+            const response = await app.inject({
+                method: 'GET',
+                url: '/api/twin/drills?limit=3',
+                headers: authHeaders,
+            })
+
+            expect(response.statusCode).toBe(200)
+            const body = JSON.parse(response.body)
+            expect(Array.isArray(body.data?.recommendations)).toBe(true)
+        })
+
         it('POST /api/sessions devrait valider le body', async () => {
             const response = await app.inject({
                 method: 'POST',

@@ -35,7 +35,7 @@ export type { Reconstruction3DResult, PlayerPosition3D, HeatmapPoint, CourtZone 
 export type { ShotResult, ShotStats, ShotZone } from './shotAnalysis'
 export type { MentalAnalysisResult, MentalPattern, MentalTimeline } from './mentalAnalysis'
 export type { LiveCoachConfig, LiveAlert, LiveAlertType, LiveFrameAnalysis, LiveCumulativeStats, LiveLandmarks } from './liveCoach'
-export type { TwinProfile, TwinAttribute, TwinAttributeCategory, TwinTrait, PlayStyleProfile, NBAComparison, MatchupSimulation, SessionAnalysisData, ComfortZone, TwinEvolutionPoint, PlayStyle } from './digitalTwin'
+export type { TwinProfile, TwinAttribute, TwinAttributeCategory, TwinTrait, PlayStyleProfile, NBAComparison, MatchupSimulation, SessionAnalysisData, ComfortZone, TwinEvolutionPoint, PlayStyle, TwinDrillRecommendation, TwinDrillRecommendationOptions, TwinDrillIntensity } from './digitalTwin'
 export type { FullAnalysisData, AIReport, TrainingDay } from './reportGenerator'
 export type { HighlightResult, HighlightClip, HighlightTemplate, CVHighlightEvent, ExportProfile } from './highlightEditor'
 export type { MusicTrack, MusicConfig, MusicMood, MusicGenre } from './musicLibrary'
