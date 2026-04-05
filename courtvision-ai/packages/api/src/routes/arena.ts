@@ -43,6 +43,7 @@ const shotSchema = z.object({
     result: z.enum(['made', 'missed']),
     zone: z.string().min(1),
     confidence: z.number().min(0).max(100).optional(),
+    clientEventId: z.string().min(8).max(120).optional(),
     timestamp: z.number().optional(),
 })
 
@@ -237,7 +238,7 @@ export default async function arenaRoutes(fastify: FastifyInstance) {
 
             const event = await arenaService.recordShot(
                 id, user.id, profile?.username || 'Player',
-                shotData.result, shotData.zone, shotData.confidence
+                shotData.result, shotData.zone, shotData.confidence, shotData.clientEventId
             )
             return { success: true, data: event }
         } catch (error: any) {
@@ -245,6 +246,7 @@ export default async function arenaRoutes(fastify: FastifyInstance) {
                 return reply.code(400).send({ error: 'Invalid shot data', details: error.errors })
             }
             if (error.message.includes('not live')) return reply.code(400).send({ error: error.message })
+            if (error.message.includes('not in this match')) return reply.code(403).send({ error: error.message })
             request.log.error({ err: error }, 'Arena shot failed')
             return reply.code(500).send({ error: error.message })
         }

@@ -546,6 +546,30 @@ Le token est obtenu via `/api/auth/login` ou `/api/auth/signup`.
 
 ---
 
+### 🧾 Reports V6 (Highlights)
+
+| Méthode | Route | Auth | Description |
+|---------|-------|------|-------------|
+| GET | `/api/reports/session/:sessionId` | ✅ | Payload JSON de rapport de session |
+| GET | `/api/reports/session/:sessionId/pdf` | ✅ | Export PDF binaire de session |
+| GET | `/api/reports/scout/:userId` | ✅ | Payload JSON Scout Report |
+| GET | `/api/reports/scout/:userId/pdf` | ✅ | Export PDF binaire Scout Report |
+| GET | `/api/reports/templates` | ✅ | Liste des templates disponibles |
+
+### 🏟️ Arena Realtime (Highlights)
+
+| Canal | Direction | Description |
+|-------|-----------|-------------|
+| `ping` / `pong` | client ↔ serveur | Keep-alive |
+| `ready` | client → serveur | Marquer un joueur prêt |
+| `shot` | client → serveur | Soumettre un tir (avec `clientEventId` optionnel) |
+| `scoreboard_sync` | client → serveur | Recharger le scoreboard |
+| `state_sync` | client → serveur | Recharger état complet (match + scoreboard + présence) |
+| `arena_presence` | serveur → clients | Liste des participants connectés |
+| `arena_event_ignored` | serveur → client | Événement ignoré (duplication) |
+
+---
+
 ### ❤️ Health Check
 
 | Méthode | Route | Auth | Description |
@@ -557,8 +581,8 @@ Le token est obtenu via `/api/auth/login` ou `/api/auth/signup`.
 {
   "status": "ok",
   "service": "courtvision-api",
-  "version": "5.3.0",
-  "codename": "Skill-Hardened",
+  "version": "6.0.0",
+  "codename": "Arena",
   "time": "2026-03-09T00:00:00.000Z",
   "checks": {
     "api": "ok",
@@ -592,7 +616,8 @@ Les headers suivants sont retournés :
 ## WebSocket
 
 Le serveur supporte les connexions WebSocket sur le préfixe `/ws` pour :
-- **Voice Coach** : coaching vocal en temps réel
-- **Live Updates** : notifications et mises à jour en direct
+- **Voice Coach** : coaching vocal en temps réel (`/ws/coach`)
+- **Session Pipeline** : analyse frame-by-frame (`/ws/sessions/:id`)
+- **Arena Multiplayer** : événements live et scoreboard (`/ws/arena/:id`)
 
-Protocole : `ws://localhost:8080/ws/voice-coach` (dev) · `wss://api.courtvision.ai/ws/voice-coach` (prod)
+Protocole : `ws://localhost:8080/ws/*` (dev) · `wss://api.courtvision.ai/ws/*` (prod)

@@ -77,6 +77,11 @@ type DrillPack = {
     isPurchased?: boolean
 }
 
+function createClientEventId(prefix: string): string {
+    const random = Math.random().toString(36).slice(2, 10)
+    return `${prefix}_${Date.now().toString(36)}_${random}`
+}
+
 export const v6Service = {
     async listArenaAvailable(limit = 10): Promise<ArenaMatch[]> {
         const response = await apiRequest<ApiEnvelope<ArenaMatch[]>>(`/arena/available?limit=${limit}`)
@@ -112,7 +117,10 @@ export const v6Service = {
     async submitArenaShot(matchId: string, payload: { result: 'made' | 'missed'; zone: string }): Promise<void> {
         await apiRequest<ApiEnvelope<unknown>>(`/arena/${matchId}/shot`, {
             method: 'POST',
-            body: JSON.stringify(payload),
+            body: JSON.stringify({
+                ...payload,
+                clientEventId: createClientEventId('arena-shot'),
+            }),
         })
     },
 

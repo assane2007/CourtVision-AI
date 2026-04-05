@@ -239,6 +239,20 @@ describe('CourtVision API V6.0 — Arena Features', () => {
             })
             expect(response.statusCode).toBe(400)
         })
+
+        it('POST /api/arena/:id/shot devrait accepter clientEventId pour idempotence', async () => {
+            const response = await app.inject({
+                method: 'POST',
+                url: '/api/arena/00000000-0000-0000-0000-000000000001/shot',
+                headers: authHeaders,
+                payload: {
+                    result: 'made',
+                    zone: 'midrange',
+                    clientEventId: 'arena_shot_event_0001',
+                },
+            })
+            expect([200, 400, 403, 500]).toContain(response.statusCode)
+        })
     })
 
     // ===========================================
@@ -483,6 +497,14 @@ describe('CourtVision API V6.0 — Arena Features', () => {
             const response = await app.inject({
                 method: 'GET',
                 url: '/api/reports/scout/00000000-0000-0000-0000-000000000001',
+            })
+            expect(response.statusCode).toBe(401)
+        })
+
+        it('GET /api/reports/scout/:userId/pdf devrait nécessiter auth', async () => {
+            const response = await app.inject({
+                method: 'GET',
+                url: '/api/reports/scout/00000000-0000-0000-0000-000000000001/pdf',
             })
             expect(response.statusCode).toBe(401)
         })

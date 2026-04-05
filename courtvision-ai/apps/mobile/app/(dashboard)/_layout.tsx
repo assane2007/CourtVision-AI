@@ -22,6 +22,12 @@ export default function DashboardLayout() {
             <Tabs.Screen name="upload" />
             <Tabs.Screen name="twin" />
             <Tabs.Screen name="profile" />
+            <Tabs.Screen
+                name="v6"
+                options={{
+                    href: null,
+                }}
+            />
         </Tabs>
     )
 }

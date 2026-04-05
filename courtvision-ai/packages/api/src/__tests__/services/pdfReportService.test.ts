@@ -304,4 +304,128 @@ describe('PDF Report Service', () => {
         expect(report.apexScore!.overall).toBeLessThanOrEqual(100)
         expect(report.apexScore!.overall).toBe(mockDbApexScore.overall)
     })
+
+    // ── Scout PDF ──────────────────────────────────────────
+
+    it('generates a binary PDF from a ScoutReport payload', () => {
+        // Arrange
+        const supabase = createMockSupabase()
+        const service = new PdfReportService(supabase)
+        const scoutReport = {
+            reportId: 'scout_report_001',
+            template: 'scout',
+            format: 'pdf',
+            generatedAt: '2026-01-01T10:00:00.000Z',
+            player: {
+                userId: 'user-fixture-001',
+                name: 'Test Player',
+                position: 'SG',
+                avatarUrl: null,
+            },
+            apexScore: {
+                overall: 82,
+                shooting: 85,
+                mental: 78,
+                consistency: 80,
+                clutch: 76,
+                improvement: 84,
+                grade: 'A-',
+                trend: 'up',
+            },
+            shotDna: {
+                purityScore: 77,
+                closestNBA: 'Klay Thompson',
+                nbaSimilarity: 74,
+                avgShotQuality: 69,
+                mechanicalDriftCount: 2,
+                optimalZone: 'wing3',
+            },
+            seasonStats: {
+                totalSessions: 18,
+                totalShots: 460,
+                avgFGPct: 49.3,
+                avgThreePct: 38.2,
+                avgMentalScore: 79,
+                bestGame: { date: '2026-01-01T10:00:00.000Z', fgPct: 62.5, mentalScore: 88 },
+                consistencyRating: 80,
+            },
+            strengths: ['Strong catch-and-shoot mechanics', 'Composed in closeout situations'],
+            weaknesses: ['Can improve left-hand finishing'],
+            nbaComparisons: [{ player: 'Klay Thompson', similarity: 74, reason: 'Rhythm shooting and movement profile' }],
+            scoutGrade: 'A-',
+            scoutNotes: ['Reliable perimeter spacing threat.'],
+            projections: {
+                ceiling: 'College-level starter potential',
+                floor: 'Reliable role player',
+                timeline: '6-12 months',
+                keyDevelopmentAreas: ['Handle pressure drives'],
+            },
+            sections: [{ title: 'Player Overview', type: 'stats', data: { totalSessions: 18 } }],
+        } as any
+
+        // Act
+        const pdf = service.generateScoutReportPdf(scoutReport)
+
+        // Assert
+        expect(Buffer.isBuffer(pdf)).toBe(true)
+        expect(pdf.subarray(0, 8).toString('utf8')).toContain('%PDF-1.4')
+    })
+
+    it('paginates Scout PDF when content is very long', () => {
+        // Arrange
+        const supabase = createMockSupabase()
+        const service = new PdfReportService(supabase)
+        const veryLongReport = {
+            reportId: 'scout_report_very_long',
+            template: 'scout',
+            format: 'pdf',
+            generatedAt: '2026-01-01T10:00:00.000Z',
+            player: {
+                userId: 'user-fixture-001',
+                name: 'Long Form Prospect',
+                position: 'PG',
+                avatarUrl: null,
+            },
+            apexScore: null,
+            shotDna: null,
+            seasonStats: {
+                totalSessions: 54,
+                totalShots: 1900,
+                avgFGPct: 44,
+                avgThreePct: 35,
+                avgMentalScore: 73,
+                bestGame: null,
+                consistencyRating: 68,
+            },
+            strengths: Array.from({ length: 40 }, (_, i) => `Strength ${i + 1} with detailed context`),
+            weaknesses: Array.from({ length: 40 }, (_, i) => `Weakness ${i + 1} with detailed context`),
+            nbaComparisons: Array.from({ length: 10 }, (_, i) => ({
+                player: `Comparison ${i + 1}`,
+                similarity: 60 + (i % 20),
+                reason: `Reason ${i + 1}`,
+            })),
+            scoutGrade: 'B+',
+            scoutNotes: Array.from({ length: 30 }, (_, i) => `Scout note ${i + 1}`),
+            projections: {
+                ceiling: 'High-impact rotation player',
+                floor: 'Reliable second-unit contributor',
+                timeline: '12-18 months',
+                keyDevelopmentAreas: ['Ball security', 'Weak-hand finishing', 'Screen navigation'],
+            },
+            sections: Array.from({ length: 20 }, (_, i) => ({
+                title: `Section ${i + 1}`,
+                type: 'text',
+                data: { value: i + 1 },
+            })),
+        } as any
+
+        // Act
+        const pdf = service.generateScoutReportPdf(veryLongReport)
+        const pdfText = pdf.toString('utf8')
+        const countMatch = pdfText.match(/\/Count\s+(\d+)/)
+
+        // Assert
+        expect(countMatch).not.toBeNull()
+        expect(Number(countMatch?.[1] || '1')).toBeGreaterThan(1)
+    })
 })

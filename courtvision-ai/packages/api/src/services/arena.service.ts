@@ -223,7 +223,8 @@ export class ArenaService {
         username: string,
         result: 'made' | 'missed',
         zone: string,
-        confidence?: number
+        confidence?: number,
+        clientEventId?: string
     ): Promise<ArenaShotEvent> {
         // Validate match is live
         const { data: matchData } = await this.supabase
@@ -236,8 +237,19 @@ export class ArenaService {
             throw new Error('Match is not live — cannot record shot')
         }
 
-        // Log the shot with extended data
-        await this.supabase.from('arena_shot_log').insert({
+        // Verify membership before writing any shot log.
+        const { data: player } = await this.supabase
+            .from('arena_players')
+            .select('score, shots_made, shots_total, streak')
+            .eq('match_id', matchId)
+            .eq('user_id', userId)
+            .single()
+
+        if (!player) {
+            throw new Error('Player not in this match')
+        }
+
+        const shotInsertPayload: Record<string, any> = {
             match_id: matchId,
             user_id: userId,
             result,
@@ -245,15 +257,54 @@ export class ArenaService {
             round: matchData.current_round,
             confidence: confidence || null,
             timestamp: new Date().toISOString(),
-        })
+        }
 
-        // Update player stats
-        const { data: player } = await this.supabase
-            .from('arena_players')
-            .select('score, shots_made, shots_total, streak')
-            .eq('match_id', matchId)
-            .eq('user_id', userId)
-            .single()
+        if (clientEventId) {
+            shotInsertPayload.client_event_id = clientEventId
+        }
+
+        let shotInsert = await this.supabase.from('arena_shot_log').insert(shotInsertPayload)
+
+        if (shotInsert.error && clientEventId && this.isMissingClientEventIdColumnError(shotInsert.error)) {
+            const { client_event_id, ...fallbackPayload } = shotInsertPayload
+            void client_event_id
+            shotInsert = await this.supabase.from('arena_shot_log').insert(fallbackPayload)
+        }
+
+        if (shotInsert.error && clientEventId && this.isDuplicateShotError(shotInsert.error)) {
+            const [{ data: existingShot }, { data: latestPlayer }] = await Promise.all([
+                this.supabase
+                    .from('arena_shot_log')
+                    .select('result, zone, timestamp')
+                    .eq('match_id', matchId)
+                    .eq('user_id', userId)
+                    .eq('client_event_id', clientEventId)
+                    .single(),
+                this.supabase
+                    .from('arena_players')
+                    .select('score, streak')
+                    .eq('match_id', matchId)
+                    .eq('user_id', userId)
+                    .single(),
+            ])
+
+            const duplicateEvent: ArenaShotEvent = {
+                userId,
+                username,
+                result: existingShot?.result || result,
+                zone: existingShot?.zone || zone,
+                timestamp: this.parseEventTimestamp(existingShot?.timestamp),
+                newScore: latestPlayer?.score || player.score || 0,
+                streak: latestPlayer?.streak || player.streak || 0,
+            }
+
+            logger.warn({ matchId, userId, clientEventId }, '[Arena] Duplicate shot ignored')
+            return duplicateEvent
+        }
+
+        if (shotInsert.error) {
+            throw new Error(`Failed to log arena shot: ${shotInsert.error.message}`)
+        }
 
         const newShotsMade = (player?.shots_made || 0) + (result === 'made' ? 1 : 0)
         const newShotsTotal = (player?.shots_total || 0) + 1
@@ -749,6 +800,33 @@ export class ArenaService {
 
     private generateInviteCode(): string {
         return crypto.randomBytes(4).toString('hex').toUpperCase()
+    }
+
+    private isDuplicateShotError(error: any): boolean {
+        const message = String(error?.message || '').toLowerCase()
+        const code = String(error?.code || '')
+        return code === '23505'
+            || message.includes('duplicate key')
+            || message.includes('unique')
+    }
+
+    private isMissingClientEventIdColumnError(error: any): boolean {
+        const message = String(error?.message || '').toLowerCase()
+        return message.includes('client_event_id')
+            && (message.includes('column') || message.includes('schema cache'))
+    }
+
+    private parseEventTimestamp(value: unknown): number {
+        if (typeof value === 'number' && Number.isFinite(value)) {
+            return value
+        }
+        if (typeof value === 'string' && value.length > 0) {
+            const parsed = Date.parse(value)
+            if (!Number.isNaN(parsed)) {
+                return parsed
+            }
+        }
+        return Date.now()
     }
 
     private hashPassword(password: string): string {

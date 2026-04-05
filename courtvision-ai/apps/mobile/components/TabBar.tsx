@@ -170,6 +170,11 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
                     const isFocused = state.index === index
                     const { options } = descriptors[route.key]
 
+                    const tabHref = (options as { href?: string | null }).href
+                    if (tabHref === null) {
+                        return null
+                    }
+
                     const onPress = () => {
                         const event = navigation.emit({
                             type: 'tabPress',

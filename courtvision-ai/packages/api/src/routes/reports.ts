@@ -107,6 +107,37 @@ export default async function reportRoutes(fastify: FastifyInstance) {
     })
 
     /**
+     * GET /reports/scout/:userId/pdf
+     * Generate a binary Scout Report PDF for direct download.
+     */
+    fastify.get('/scout/:userId/pdf', async (request, reply) => {
+        try {
+            const { userId } = userIdSchema.parse(request.params)
+            const config = scoutConfigSchema.parse(request.query)
+
+            const scoutReport = await scoutService.generateScoutReport(userId, {
+                ...(config || {}),
+                format: 'pdf',
+            })
+
+            const pdfBuffer = pdfService.generateScoutReportPdf(scoutReport)
+            reply.header('Content-Type', 'application/pdf')
+            reply.header('Content-Disposition', `attachment; filename="courtvision_scout_${userId}.pdf"`)
+            reply.header('Content-Length', String(pdfBuffer.length))
+            return reply.send(pdfBuffer)
+        } catch (error: any) {
+            if (error instanceof z.ZodError) {
+                return reply.code(400).send({ error: 'Invalid parameters', details: error.errors })
+            }
+            if (error.message === 'Player not found') {
+                return reply.code(404).send({ error: 'Player not found' })
+            }
+            request.log.error({ err: error }, 'Failed to generate scout PDF report')
+            return reply.code(500).send({ error: 'Failed to generate scout PDF report' })
+        }
+    })
+
+    /**
      * GET /reports/scout/:userId
      * Generate a full Scout Report (V6.0)
      */

@@ -526,7 +526,7 @@ export default function DashboardIndex() {
                 <Animated.View entering={FadeInDown.delay(280).duration(400)} style={ds.quickActionRowBottom}>
                     <QuickAction icon="calendar" label="PROGRAM" color={T.color.semantic.success} onPress={() => router.push('/program')} />
                     <QuickAction icon="bar-chart-2" label="ANALYTICS 👑" color="#8B5CF6" onPress={goAnalytics} />
-                    <QuickAction icon="award" label="LEADERBOARD" color="#FFD700" onPress={() => router.push('/leaderboard')} />
+                    <QuickAction icon="layers" label="V6 CENTER" color="#FFD700" onPress={() => router.push('/(dashboard)/v6' as any)} />
                 </Animated.View>
 
                 {/* ═══ HIGHLIGHTS ═══ */}
