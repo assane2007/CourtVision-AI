@@ -187,6 +187,26 @@ describe('Dashboard Routes', () => {
             expect(response.statusCode).toBe(200)
             const body = JSON.parse(response.body)
             expect(body.success).toBe(true)
+            expect(body.data.dataQuality).toBeDefined()
+            expect(['live', 'mixed', 'demo']).toContain(body.data.dataQuality.mode)
+        })
+    })
+
+    describe('GET /api/dashboard/coach-brief', () => {
+        it('should return actionable priorities for next game', async () => {
+            const response = await app.inject({
+                method: 'GET',
+                url: '/api/dashboard/coach-brief',
+                headers: { authorization: 'Bearer test-token' },
+            })
+
+            expect(response.statusCode).toBe(200)
+            const body = JSON.parse(response.body)
+            expect(body.success).toBe(true)
+            expect(typeof body.data.summary).toBe('string')
+            expect(Array.isArray(body.data.priorities)).toBe(true)
+            expect(body.data.priorities.length).toBeGreaterThan(0)
+            expect(body.data.dataQuality).toBeDefined()
         })
     })
 

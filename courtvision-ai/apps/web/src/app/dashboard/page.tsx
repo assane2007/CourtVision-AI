@@ -17,6 +17,25 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/authContext'
 import { dashboardService } from '@/services/dashboardService'
 
+type DataMode = 'live' | 'mixed' | 'demo'
+
+interface DataQuality {
+    mode: DataMode
+    confidenceScore: number
+    note: string
+    sources: string[]
+    generatedAt: string
+}
+
+interface CoachPriority {
+    id: string
+    title: string
+    why: string
+    action: string
+    durationMin: number
+    priority: 'high' | 'medium'
+}
+
 interface DashboardState {
     stats: { name: string; value: string; change: string; icon: any; color: string }[]
     username: string
@@ -34,6 +53,13 @@ interface DashboardState {
         analysis: string
         nextMilestone: string
         progress: string
+    } | null
+    dataQuality: DataQuality | null
+    coachBrief: {
+        period?: string
+        generatedAt: string
+        summary: string
+        priorities: CoachPriority[]
     } | null
 }
 
@@ -57,9 +83,10 @@ export default function DashboardPage() {
         try {
             setError(null)
 
-            const [response, recentSessions] = await Promise.all([
+            const [response, recentSessions, coachBrief] = await Promise.all([
                 dashboardService.getDashboardData(),
                 dashboardService.getRecentSessions(1).catch(() => []),
+                dashboardService.getCoachBrief().catch(() => null),
             ])
 
             const apex = response.apexScore
@@ -98,7 +125,9 @@ export default function DashboardPage() {
                         : 'Complete your first session to unlock AI coaching insights.',
                     nextMilestone: 'ELITE SHOOTER',
                     progress: `${apex?.improvement ?? 0}%`
-                }
+                },
+                dataQuality: response.dataQuality ?? null,
+                coachBrief: coachBrief,
             })
         } catch (err: any) {
             console.error('Dashboard load error:', err)
@@ -168,6 +197,25 @@ export default function DashboardPage() {
         )
     }
 
+    const dataModeStyles: Record<DataMode, { wrapper: string; title: string }> = {
+        live: {
+            wrapper: 'bg-emerald-500/10 border-emerald-500/20',
+            title: 'Data Reliability: LIVE',
+        },
+        mixed: {
+            wrapper: 'bg-yellow-500/10 border-yellow-500/20',
+            title: 'Data Reliability: MIXED',
+        },
+        demo: {
+            wrapper: 'bg-red-500/10 border-red-500/20',
+            title: 'Data Reliability: DEMO',
+        },
+    }
+
+    const currentDataMode = data.dataQuality?.mode ?? 'mixed'
+    const modeStyle = dataModeStyles[currentDataMode]
+    const confidencePct = Math.round((data.dataQuality?.confidenceScore ?? 0.7) * 100)
+
     return (
         <>
             <div className="space-y-10">
@@ -188,6 +236,23 @@ export default function DashboardPage() {
                     </button>
                 </motion.div>
             )}
+
+            <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`${modeStyle.wrapper} border rounded-2xl px-6 py-4 flex items-center gap-4`}
+            >
+                <AlertTriangle className="shrink-0" size={20} />
+                <div className="min-w-0">
+                    <p className="text-sm font-mono uppercase tracking-wider">{modeStyle.title} // confidence {confidencePct}%</p>
+                    <p className="text-xs text-text-tertiary mt-1">{data.dataQuality?.note ?? 'Reliability metadata unavailable.'}</p>
+                    {data.dataQuality?.sources?.length ? (
+                        <p className="text-[10px] text-text-tertiary mt-1 font-mono uppercase tracking-wide">
+                            Sources: {data.dataQuality.sources.join(', ')}
+                        </p>
+                    ) : null}
+                </div>
+            </motion.div>
 
             {/* Greeting */}
             <motion.div
@@ -231,6 +296,39 @@ export default function DashboardPage() {
                     </motion.div>
                 ))}
             </div>
+
+            <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-surface border border-white/5 rounded-3xl p-6 sm:p-8"
+            >
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+                    <h3 className="text-xl font-display font-black italic uppercase tracking-tight">
+                        Tonight <span className="text-fire">Coach Brief</span>
+                    </h3>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-text-tertiary">
+                        {(data.coachBrief?.period || 'Current Week').toUpperCase()}
+                    </span>
+                </div>
+
+                <p className="text-sm text-text-secondary border-l-2 border-fire/30 pl-4">
+                    {data.coachBrief?.summary || 'Complete at least one session to unlock actionable pre-game priorities.'}
+                </p>
+
+                <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    {(data.coachBrief?.priorities || []).slice(0, 3).map((priority) => (
+                        <div key={priority.id} className="rounded-2xl border border-white/5 bg-void/40 p-4">
+                            <div className="flex items-center justify-between gap-3 mb-2">
+                                <p className="text-xs font-mono uppercase tracking-widest text-fire">{priority.priority}</p>
+                                <p className="text-[10px] font-mono uppercase tracking-wider text-text-tertiary">{priority.durationMin} min</p>
+                            </div>
+                            <h4 className="text-sm font-semibold text-white mb-2">{priority.title}</h4>
+                            <p className="text-xs text-text-tertiary mb-3">{priority.why}</p>
+                            <p className="text-xs text-text-secondary">{priority.action}</p>
+                        </div>
+                    ))}
+                </div>
+            </motion.div>
 
             {/* Middle Section: Last Session & Neural Load */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

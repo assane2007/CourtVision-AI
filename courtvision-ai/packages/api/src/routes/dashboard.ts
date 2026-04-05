@@ -15,8 +15,118 @@ import { V5Orchestrator } from '../services/v5Orchestrator'
 import { ArenaService } from '../services/arena.service'
 import { HorseService } from '../services/horse.service'
 import { WearableService } from '../services/wearable.service'
+import { env } from '../config/env'
+
+type DataMode = 'live' | 'mixed' | 'demo'
+
+interface DataQualityMeta {
+    mode: DataMode
+    confidenceScore: number
+    note: string
+    sources: string[]
+    generatedAt: string
+}
+
+interface CoachPriority {
+    id: string
+    title: string
+    why: string
+    action: string
+    durationMin: number
+    priority: 'high' | 'medium'
+}
 
 export default async function dashboardRoutes(app: FastifyInstance) {
+    const dataMode = env.DATA_MODE as DataMode
+
+    const buildDataQuality = (sources: string[]): DataQualityMeta => {
+        const confidenceByMode: Record<DataMode, number> = {
+            live: 0.95,
+            mixed: 0.7,
+            demo: 0.35,
+        }
+
+        const noteByMode: Record<DataMode, string> = {
+            live: 'All exposed metrics come from live, user-linked data sources.',
+            mixed: 'Some metrics are inferred or simulated while live integrations are still rolling out.',
+            demo: 'Metrics are demo-only and should not be used for real coaching decisions.',
+        }
+
+        return {
+            mode: dataMode,
+            confidenceScore: confidenceByMode[dataMode],
+            note: noteByMode[dataMode],
+            sources,
+            generatedAt: new Date().toISOString(),
+        }
+    }
+
+    const buildCoachPriorities = (input: {
+        avgFGPct: number
+        avgMentalScore: number
+        sessionCount: number
+        streakDays: number
+        bestZoneImproved: string | null
+    }): CoachPriority[] => {
+        const priorities: CoachPriority[] = []
+
+        if (input.avgFGPct < 48) {
+            priorities.push({
+                id: 'shooting-efficiency',
+                title: 'Raise shooting efficiency before next game',
+                why: `Team FG trend is ${input.avgFGPct.toFixed(1)}%, below the target zone (50%+).`,
+                action: 'Run 5-spot catch-and-shoot with closeout pressure. Track makes/10 per spot.',
+                durationMin: 18,
+                priority: 'high',
+            })
+        }
+
+        if (input.avgMentalScore < 65) {
+            priorities.push({
+                id: 'decision-speed',
+                title: 'Stabilize late-possession decisions',
+                why: `Average mental score sits at ${input.avgMentalScore.toFixed(0)}/100.`,
+                action: 'Add a 12-minute decision-fatigue block (4v4, 8-second shot clock, no dead balls).',
+                durationMin: 12,
+                priority: 'high',
+            })
+        }
+
+        if (input.sessionCount < 3) {
+            priorities.push({
+                id: 'volume',
+                title: 'Increase weekly reps volume',
+                why: `Only ${input.sessionCount} completed sessions this week; adaptation is too slow.`,
+                action: 'Schedule one short technical micro-session (40 min) focused on game-speed reps.',
+                durationMin: 40,
+                priority: 'medium',
+            })
+        }
+
+        if (input.bestZoneImproved) {
+            priorities.push({
+                id: 'hot-zone-repeatability',
+                title: 'Lock in your current hot zone',
+                why: `${input.bestZoneImproved} is your best trending area right now.`,
+                action: 'Open practice with 3 scripted actions ending in this zone before introducing counters.',
+                durationMin: 10,
+                priority: 'medium',
+            })
+        }
+
+        if (priorities.length === 0) {
+            priorities.push({
+                id: 'maintain-momentum',
+                title: 'Maintain current momentum',
+                why: `Performance signals are stable with a ${input.streakDays}-day streak.`,
+                action: 'Keep current training intensity and review opponent-specific tendencies on film.',
+                durationMin: 15,
+                priority: 'medium',
+            })
+        }
+
+        return priorities.slice(0, 3)
+    }
 
     // ── Legacy V4 Dashboard ────────────────────────────────────
     app.get('/', {
@@ -158,11 +268,59 @@ export default async function dashboardRoutes(app: FastifyInstance) {
             const digest = await V5Orchestrator.generateWeeklyDigest(userId)
             return reply.send({
                 success: true,
-                data: digest,
+                data: {
+                    ...digest,
+                    dataQuality: buildDataQuality(['sessions', 'analyses', 'advanced_analytics']),
+                },
             })
         } catch (error: any) {
             request.log.error({ err: error }, '[Dashboard] Error generating weekly digest')
             return reply.status(500).send({ error: 'Failed to generate weekly digest' })
+        }
+    })
+
+    // ── Coach Brief (Tonight Priorities) ─────────────────────
+    app.get('/coach-brief', {
+        preHandler: [app.authenticate],
+    }, async (request, reply) => {
+        const userId = request.user?.id
+        if (!userId) return reply.status(401).send({ error: 'Unauthorized' })
+
+        try {
+            const [digest, dashboard] = await Promise.all([
+                V5Orchestrator.generateWeeklyDigest(userId),
+                V5Orchestrator.buildDashboard(userId),
+            ])
+
+            const avgFGPct = Number(digest.avgFGPct || dashboard.apexScore?.shooting || 0)
+            const avgMentalScore = Number(digest.avgMentalScore || dashboard.apexScore?.mental || 0)
+            const sessionCount = Number(digest.sessions || dashboard.streaks?.sessionThisWeek || 0)
+            const streakDays = Number(dashboard.streaks?.currentStreak || 0)
+            const bestZoneImproved = digest.improvement?.bestZoneImproved || null
+
+            const priorities = buildCoachPriorities({
+                avgFGPct,
+                avgMentalScore,
+                sessionCount,
+                streakDays,
+                bestZoneImproved,
+            })
+
+            const summary = `Before next game: protect decisions under fatigue and lift shot quality from ${avgFGPct.toFixed(1)}% toward 50%+.`
+
+            return reply.send({
+                success: true,
+                data: {
+                    period: digest.period,
+                    generatedAt: new Date().toISOString(),
+                    summary,
+                    priorities,
+                    dataQuality: buildDataQuality(['sessions', 'analyses', 'advanced_analytics', 'v5_orchestrator']),
+                },
+            })
+        } catch (error: any) {
+            request.log.error({ err: error }, '[Dashboard] Error generating coach brief')
+            return reply.status(500).send({ error: 'Failed to generate coach brief' })
         }
     })
 
@@ -250,6 +408,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
                     arena,
                     horse,
                     wearable,
+                    dataQuality: buildDataQuality(['sessions', 'analyses', 'public_profiles', 'arena', 'horse', 'wearable']),
                 },
                 version: 'v6-arena',
                 generatedAt: new Date().toISOString(),

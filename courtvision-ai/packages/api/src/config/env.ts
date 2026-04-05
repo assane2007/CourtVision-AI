@@ -43,6 +43,7 @@ export const env = cleanEnv(process.env, {
     // ── AI / LLM (optional) ──
     GEMINI_API_KEY: str({ default: '', desc: 'Google Gemini API key (primary LLM)' }),
     GEMINI_MODEL: str({ default: 'gemini-2.0-flash', desc: 'Gemini model identifier' }),
+    DATA_MODE: str({ choices: ['live', 'mixed', 'demo'], default: 'mixed', desc: 'Data reliability mode surfaced to clients' }),
     CLOUDFLARE_ACCOUNT_ID: str({ default: '', desc: 'Cloudflare account ID (LLM fallback)' }),
     CLOUDFLARE_API_TOKEN: str({ default: '', desc: 'Cloudflare API token (preferred)' }),
     CLOUDFLARE_AI_TOKEN: str({ default: '', desc: 'Cloudflare AI token (legacy alias)' }),

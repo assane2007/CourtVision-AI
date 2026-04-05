@@ -11,6 +11,31 @@ export interface ApexScore {
     trend: 'rising' | 'stable' | 'declining';
 }
 
+export interface DataQualityMeta {
+    mode: 'live' | 'mixed' | 'demo';
+    confidenceScore: number;
+    note: string;
+    sources: string[];
+    generatedAt: string;
+}
+
+export interface CoachPriority {
+    id: string;
+    title: string;
+    why: string;
+    action: string;
+    durationMin: number;
+    priority: 'high' | 'medium';
+}
+
+export interface CoachBrief {
+    period?: string;
+    generatedAt: string;
+    summary: string;
+    priorities: CoachPriority[];
+    dataQuality?: DataQualityMeta;
+}
+
 export interface DashboardData {
     apexScore: ApexScore;
     streaks: {
@@ -19,6 +44,7 @@ export interface DashboardData {
         sessionThisWeek: number;
         shotsThisWeek: number;
     };
+    dataQuality?: DataQualityMeta;
 }
 
 export interface WeeklyDigest {
@@ -29,6 +55,7 @@ export interface WeeklyDigest {
     avgMentalScore?: number;
     highlights?: string[];
     nextWeekFocus?: string[];
+    dataQuality?: DataQualityMeta;
 }
 
 export interface SessionSummary {
@@ -57,6 +84,11 @@ export const dashboardService = {
 
     async getWeeklyDigest(): Promise<WeeklyDigest> {
         const response = await apiRequest('/dashboard/digest');
+        return response.data;
+    },
+
+    async getCoachBrief(): Promise<CoachBrief> {
+        const response = await apiRequest('/dashboard/coach-brief');
         return response.data;
     },
 
