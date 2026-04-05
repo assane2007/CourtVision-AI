@@ -4,7 +4,6 @@
         "outDir": "./dist",
         "rootDir": "./src",
         "declaration": true,
-        "moduleResolution": "node",
         "resolveJsonModule": true,
         "noUnusedLocals": false,
         "noUnusedParameters": false

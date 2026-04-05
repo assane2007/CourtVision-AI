@@ -300,9 +300,17 @@ export class AROverlayEngine {
         this.lastFeedback = { message, emoji, color, position, duration: durationMs }
 
         if (this.feedbackTimeout) clearTimeout(this.feedbackTimeout)
-        this.feedbackTimeout = setTimeout(() => {
+        const timeout = setTimeout(() => {
             this.lastFeedback = null
+            this.feedbackTimeout = null
         }, durationMs)
+
+        // Do not keep the Node.js event loop alive for UI-only feedback timers.
+        if (typeof (timeout as { unref?: () => void }).unref === 'function') {
+            timeout.unref()
+        }
+
+        this.feedbackTimeout = timeout
     }
 
     /**
