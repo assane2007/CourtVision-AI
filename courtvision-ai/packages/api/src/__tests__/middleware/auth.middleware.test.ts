@@ -1,5 +1,6 @@
 import { buildApp } from '../../app'
 import type { FastifyInstance } from 'fastify'
+import { createClient } from '@supabase/supabase-js'
 
 /**
  * Auth Middleware — Security Tests
@@ -29,6 +30,10 @@ jest.mock('../../queue/videoProcessor', () => ({
 
 // ── Supabase mock with spyable getUser ──────────────────────
 const mockGetUser = jest.fn()
+
+jest.mock('@supabase/supabase-js', () => ({
+    createClient: jest.fn(),
+}))
 
 jest.mock('../../plugins/supabase', () => {
     const fp = require('fastify-plugin')
@@ -68,6 +73,12 @@ describe('Middleware authenticate', () => {
     let app: FastifyInstance
 
     beforeAll(async () => {
+        ;(createClient as jest.Mock).mockReturnValue({
+            auth: {
+                getUser: mockGetUser,
+            },
+        })
+
         app = buildApp({ logger: false })
         await app.ready()
     })

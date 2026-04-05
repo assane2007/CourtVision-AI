@@ -1,5 +1,6 @@
 import { buildApp } from '../../app'
 import type { FastifyInstance } from 'fastify'
+import { createClient } from '@supabase/supabase-js'
 
 /**
  * Auth Routes — Comprehensive Tests
@@ -25,6 +26,10 @@ const mockSignInWithIdToken = jest.fn()
 const mockRefreshSession = jest.fn()
 const mockAdminSignOut = jest.fn()
 const mockFrom = jest.fn()
+
+jest.mock('@supabase/supabase-js', () => ({
+    createClient: jest.fn(),
+}))
 
 jest.mock('../../plugins/supabase', () => {
     const fp = require('fastify-plugin')
@@ -81,6 +86,16 @@ describe('Auth Routes', () => {
     let app: FastifyInstance
 
     beforeAll(async () => {
+        ;(createClient as jest.Mock).mockReturnValue({
+            auth: {
+                signUp: mockSignUp,
+                signInWithPassword: mockSignIn,
+                signInWithIdToken: mockSignInWithIdToken,
+                refreshSession: mockRefreshSession,
+                getUser: jest.fn(),
+            },
+        })
+
         app = buildApp({ logger: false })
         await app.ready()
     })
