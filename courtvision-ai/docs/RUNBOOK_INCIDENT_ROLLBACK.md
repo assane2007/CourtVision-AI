@@ -75,3 +75,14 @@ Principe: rollback forward-safe. Eviter DROP irreversible sans sauvegarde.
 2. DB owner: Supabase owner
 3. Mobile/Web owners: app leads
 4. Canal communication: #incident-courtvision
+
+## 8. Scripts operationnels (V6)
+
+1. Appliquer les migrations Supabase (inclut la migration idempotency Arena):
+   - powershell -File scripts/release/apply-v6-arena-idempotency.ps1 -DbUrl "postgresql://..."
+2. Smoke test distant staging + production:
+   - powershell -File scripts/release/smoke-v6-remote.ps1
+3. Smoke test distant avec token bearer:
+   - $env:COURTVISION_SMOKE_BEARER="<jwt>"; powershell -File scripts/release/smoke-v6-remote.ps1
+4. Surveillance health pendant 60 minutes:
+   - powershell -File scripts/release/watch-health.ps1
