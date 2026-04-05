@@ -51,6 +51,38 @@ type TwinViewData = {
     attributes: TwinViewAttribute[]
 }
 
+type TwinDrillApiItem = {
+    id?: string
+    rank?: number
+    title?: string
+    objective?: string
+    rationale?: string
+    priority?: number
+    zoneFocus?: string
+    sessionsPerWeek?: number
+    minutesPerSession?: number
+    targetMetric?: string
+    drill?: {
+        name?: string
+        intensity?: string
+    }
+}
+
+type TwinDrillViewItem = {
+    id: string
+    rank: number
+    title: string
+    objective: string
+    rationale: string
+    priority: number
+    zoneFocus: string | null
+    sessionsPerWeek: number
+    minutesPerSession: number
+    targetMetric: string
+    drillName: string
+    intensity: string
+}
+
 function formatTwinId(userId: string | undefined): string {
     if (!userId) {
         return 'UNAVAILABLE'
@@ -75,6 +107,19 @@ function getAttributeVisual(label: string): { icon: LucideIcon; color: string } 
     }
 
     return { icon: Cpu, color: 'text-fire' }
+}
+
+function formatIntensity(intensity: string): string {
+    const value = intensity.toLowerCase()
+    if (value === 'max') return 'MAX'
+    if (value === 'high') return 'HIGH'
+    if (value === 'moderate') return 'MODERATE'
+    return 'LOW'
+}
+
+function formatZoneLabel(zoneFocus: string | null): string {
+    if (!zoneFocus) return 'general'
+    return zoneFocus.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').toLowerCase()
 }
 
 function mapTwinData(payload: TwinApiPayload | undefined): TwinViewData {
@@ -132,8 +177,33 @@ async function rebuildTwinData(): Promise<TwinViewData> {
     return mapTwinData(response.data)
 }
 
+async function fetchTwinDrillRecommendations(): Promise<TwinDrillViewItem[]> {
+    const response = await apiRequest<{ data?: { recommendations?: TwinDrillApiItem[] } }>('/twin/drills?limit=5')
+    const items = Array.isArray(response.data?.recommendations)
+        ? response.data?.recommendations
+        : []
+
+    return items
+        .map((item, index) => ({
+            id: String(item.id ?? `drill-${index + 1}`),
+            rank: Number(item.rank ?? index + 1),
+            title: String(item.title ?? 'Recommendation'),
+            objective: String(item.objective ?? 'Improve performance from your Twin profile'),
+            rationale: String(item.rationale ?? ''),
+            priority: Math.max(0, Math.min(100, Number(item.priority ?? 0))),
+            zoneFocus: item.zoneFocus ? String(item.zoneFocus) : null,
+            sessionsPerWeek: Math.max(1, Number(item.sessionsPerWeek ?? 3)),
+            minutesPerSession: Math.max(10, Number(item.minutesPerSession ?? 20)),
+            targetMetric: String(item.targetMetric ?? 'performance'),
+            drillName: String(item.drill?.name ?? 'Custom drill'),
+            intensity: formatIntensity(String(item.drill?.intensity ?? 'moderate')),
+        }))
+        .sort((a, b) => a.rank - b.rank)
+}
+
 export default function TwinPage() {
     const [twinData, setTwinData] = useState<TwinViewData | null>(null)
+    const [drillRecommendations, setDrillRecommendations] = useState<TwinDrillViewItem[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [isRecalibrating, setIsRecalibrating] = useState(false)
@@ -147,12 +217,16 @@ export default function TwinPage() {
         try {
             const data = await fetchTwinData()
             setTwinData(data)
+
+            const recommendations = await fetchTwinDrillRecommendations().catch(() => [])
+            setDrillRecommendations(recommendations)
         } catch (loadError: unknown) {
             const message = loadError instanceof Error
                 ? loadError.message
                 : 'Failed to load digital twin data.'
             setError(message)
             setTwinData(null)
+            setDrillRecommendations([])
         } finally {
             setLoading(false)
         }
@@ -191,6 +265,10 @@ export default function TwinPage() {
         try {
             const rebuiltData = await rebuildTwinData()
             setTwinData(rebuiltData)
+
+            const recommendations = await fetchTwinDrillRecommendations().catch(() => [])
+            setDrillRecommendations(recommendations)
+
             setRecalibrationProgress(100)
             setSystemMessage('Recalibration complete. Twin rebuilt from latest sessions.')
         } catch (rebuildError: unknown) {
@@ -348,6 +426,35 @@ export default function TwinPage() {
                             <p className="mt-2 text-sm text-text-secondary">Analyze more sessions to unlock detailed twin attributes.</p>
                         </div>
                     )}
+
+                    <div className="rounded-3xl border border-fire/20 bg-fire/5 p-5">
+                        <div className="mb-3 flex items-center justify-between">
+                            <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-fire">Twin Drill Protocol</p>
+                            <p className="text-[10px] font-mono uppercase tracking-wider text-text-tertiary">Top {Math.max(1, drillRecommendations.length)}</p>
+                        </div>
+
+                        {drillRecommendations.length === 0 && (
+                            <p className="text-sm text-text-secondary">No dynamic drill recommendation available yet. Rebuild your Twin after a few sessions.</p>
+                        )}
+
+                        {drillRecommendations.slice(0, 3).map((recommendation) => (
+                            <div key={recommendation.id} className="mb-3 rounded-2xl border border-white/10 bg-void/40 p-4 last:mb-0">
+                                <div className="mb-1 flex items-center justify-between">
+                                    <p className="text-xs font-display font-black uppercase italic text-white">#{recommendation.rank} {recommendation.title}</p>
+                                    <span className="rounded-full border border-fire/40 bg-fire/10 px-2 py-1 text-[10px] font-mono uppercase tracking-widest text-fire">
+                                        {recommendation.priority}
+                                    </span>
+                                </div>
+                                <p className="mb-2 text-xs text-text-secondary">{recommendation.objective}</p>
+                                <p className="text-[10px] font-mono uppercase tracking-widest text-text-tertiary">
+                                    {recommendation.drillName} · {recommendation.sessionsPerWeek}x/week · {recommendation.minutesPerSession}min · {recommendation.intensity}
+                                </p>
+                                <p className="mt-1 text-[10px] font-mono uppercase tracking-widest text-ice">
+                                    focus: {formatZoneLabel(recommendation.zoneFocus)} · metric: {recommendation.targetMetric}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
 
                     <button
                         onClick={handleUpgrade}

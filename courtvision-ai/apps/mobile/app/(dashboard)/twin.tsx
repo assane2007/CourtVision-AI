@@ -24,6 +24,7 @@ import {
     type ComfortZone,
     type TwinEvolutionPoint,
     type MatchupSimulation,
+    type TwinDrillRecommendation,
 } from '../../hooks/useDigitalTwin'
 import { useViralShare, type SharePlatform, type TwinCardData } from '../../hooks/useViralShare'
 import { getSimulationPlayers } from '../../lib/nbaApi'
@@ -247,7 +248,7 @@ export default function DigitalTwin() {
                     </Text>
                     <View style={{
                         marginTop: T.spacing[2], flexDirection: 'row', alignItems: 'center',
-                        backgroundColor: `\${T.color.semantic.info}20`, borderRadius: T.borderRadius.full,
+                        backgroundColor: `${T.color.semantic.info}20`, borderRadius: T.borderRadius.full,
                         paddingHorizontal: T.spacing[3], paddingVertical: T.spacing[1],
                     }}>
                         <Feather name="star" size={12} color={T.color.semantic.info} style={{ marginRight: T.spacing[1] }} />
@@ -291,7 +292,13 @@ export default function DigitalTwin() {
                 </Animated.View>
 
                 {/* ======= Tab Content ======= */}
-                {twin.activeTab === 'overview' && <OverviewTab profile={p} insights={twin.insights} />}
+                {twin.activeTab === 'overview' && (
+                    <OverviewTab
+                        profile={p}
+                        insights={twin.insights}
+                        drillRecommendations={twin.drillRecommendations}
+                    />
+                )}
                 {twin.activeTab === 'attributes' && <AttributesTab categories={p.attributeCategories} />}
                 {twin.activeTab === 'matchup' && (
                     <MatchupTab
@@ -353,7 +360,11 @@ export default function DigitalTwin() {
 // ==========================================
 // Tab: Overview (Player DNA)
 // ==========================================
-function OverviewTab({ profile, insights }: { profile: any; insights: string | null }) {
+function OverviewTab({ profile, insights, drillRecommendations }: {
+    profile: any
+    insights: string | null
+    drillRecommendations: TwinDrillRecommendation[]
+}) {
     return (
         <View style={{ paddingHorizontal: T.spacing[5] }}>
             {/* Category Summary Cards */}
@@ -482,6 +493,72 @@ function OverviewTab({ profile, insights }: { profile: any; insights: string | n
                     )}
                 </Animated.View>
             </View>
+
+            {/* Dynamic Drill Recommendations */}
+            {drillRecommendations.length > 0 && (
+                <Animated.View entering={FadeInDown.duration(400)} style={{
+                    borderRadius: T.borderRadius.xl, padding: T.spacing[4], marginBottom: T.spacing[4],
+                    ...glass.accent,
+                    borderLeftWidth: 3, borderLeftColor: T.color.signature.primary,
+                }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: T.spacing[3] }}>
+                        <Feather name="zap" size={16} color={T.color.signature.primary} style={{ marginRight: T.spacing[2] }} />
+                        <Text style={{ ...type.sectionTitle, color: T.color.signature.primary, fontSize: 18 }}>
+                            Dynamic Drill Plan
+                        </Text>
+                    </View>
+
+                    {drillRecommendations.slice(0, 3).map((rec, index) => (
+                        <View
+                            key={rec.id}
+                            style={{
+                                borderRadius: T.borderRadius.lg,
+                                padding: T.spacing[3],
+                                marginBottom: index < Math.min(3, drillRecommendations.length) - 1 ? T.spacing[2] : 0,
+                                ...(glass.regular ?? T.glass.thin),
+                            }}
+                        >
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text style={{ ...type.cardTitle, color: T.color.text.primary, flex: 1, marginRight: T.spacing[2] }}>
+                                    #{rec.rank} {rec.title}
+                                </Text>
+                                <View style={{
+                                    borderRadius: T.borderRadius.md,
+                                    paddingHorizontal: T.spacing[2],
+                                    paddingVertical: T.spacing[1],
+                                    backgroundColor: `${T.color.signature.primary}20`,
+                                    borderWidth: 1,
+                                    borderColor: `${T.color.signature.primary}35`,
+                                }}>
+                                    <Text style={{ ...type.overline, color: T.color.signature.primary, fontSize: 10 }}>
+                                        {rec.priority}
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <Text style={{ ...type.caption, color: T.color.text.secondary, marginTop: T.spacing[1] }}>
+                                {rec.objective}
+                            </Text>
+
+                            <Text style={{ ...type.overline, color: T.color.text.tertiary, marginTop: T.spacing[2], fontSize: 10 }}>
+                                {rec.drill.name} · {rec.sessionsPerWeek}x/week · {rec.minutesPerSession} min · {rec.drill.intensity.toUpperCase()}
+                            </Text>
+
+                            {(rec.zoneFocus || rec.linkedWeakness) && (
+                                <Text style={{ ...type.overline, color: T.color.semantic.info, marginTop: T.spacing[1], fontSize: 10 }}>
+                                    Focus: {rec.zoneFocus ?? 'general'}{rec.linkedWeakness ? ` · Weakness: ${rec.linkedWeakness}` : ''}
+                                </Text>
+                            )}
+
+                            {rec.drill.tips.length > 0 && (
+                                <Text style={{ ...type.caption, color: T.color.text.secondary, marginTop: T.spacing[1] }}>
+                                    Tip: {rec.drill.tips[0]}
+                                </Text>
+                            )}
+                        </View>
+                    ))}
+                </Animated.View>
+            )}
 
             {/* Comfort Zones */}
             {profile.comfortZones.length > 0 && (
@@ -749,8 +826,8 @@ function MatchupTab({ profile, simulation, simulating, onSimulateNBA, onClear }:
                                 <Text style={{ ...type.body, color: T.color.text.secondary }}>{km.area}</Text>
                                 <View style={{
                                     borderRadius: T.borderRadius.md, paddingHorizontal: T.spacing[3], paddingVertical: T.spacing[1],
-                                    backgroundColor: km.edge === 'player' ? `\${T.color.semantic.success}20`
-                                        : km.edge === 'opponent' ? `\${T.color.semantic.error}20` : `\${T.color.semantic.warning}20`,
+                                    backgroundColor: km.edge === 'player' ? `${T.color.semantic.success}20`
+                                        : km.edge === 'opponent' ? `${T.color.semantic.error}20` : `${T.color.semantic.warning}20`,
                                 }}>
                                     <Text style={{
                                         ...type.overline, fontSize: 10,

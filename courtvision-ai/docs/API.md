@@ -216,12 +216,53 @@ Le token est obtenu via `/api/auth/login` ou `/api/auth/signup`.
 | GET | `/api/twin/me` | ✅ | Mon twin numérique |
 | POST | `/api/twin/simulate` | ✅ | Simuler un scénario |
 | GET | `/api/twin/compare/:userId` | ✅ | Comparer avec un joueur |
+| GET | `/api/twin/drills?limit=5` | ✅ | Recommandations de drills dynamiques basées Twin |
 
 #### POST /api/twin/simulate
 ```json
 {
   "situationId": "pick-and-roll",
   "intensity": 80
+}
+```
+
+#### GET /api/twin/drills?limit=5
+
+**Réponse :**
+```json
+{
+  "data": {
+    "recommendations": [
+      {
+        "id": "weakness-trait_1",
+        "rank": 1,
+        "title": "Réparer l’efficacité dans les corners à 3 points",
+        "objective": "Monter la réussite dans les corners à 3 points sur les prochaines sessions",
+        "rationale": "Difficulté en corner3 est identifié comme point faible (sévérité 5/5). Observé sur 8 session(s), tendance declining.",
+        "category": "shooting",
+        "priority": 93,
+        "linkedWeakness": "Difficulté en corner3",
+        "zoneFocus": "corner3",
+        "sessionsPerWeek": 4,
+        "minutesPerSession": 30,
+        "drill": {
+          "name": "Spot-Up Corner 3s",
+          "sets": 5,
+          "reps": "10 tirs par corner",
+          "intensity": "moderate",
+          "tips": ["Pied intérieur orienté panier", "Shot pocket prêt", "Release en rythme sans dérive latérale"]
+        },
+        "targetMetric": "corner3_pct"
+      }
+    ],
+    "source": "stored",
+    "generatedAt": "2026-04-05T09:20:00.000Z",
+    "profileVersion": "v2.0",
+    "profileUpdatedAt": "2026-04-05T09:18:00.000Z",
+    "sessionCount": 14,
+    "overallRating": 78,
+    "playStyle": "sharpshooter"
+  }
 }
 ```
 
@@ -386,6 +427,105 @@ Le token est obtenu via `/api/auth/login` ou `/api/auth/signup`.
 |---------|-------|------|-------------|
 | GET | `/api/investor/metrics` | ✅ | Métriques business |
 | GET | `/api/investor/kpi` | ✅ | KPIs dashboard |
+
+---
+
+### 🏟️ Arena (V6)
+
+| Méthode | Route | Auth | Description |
+|---------|-------|------|-------------|
+| POST | `/api/arena/create` | ✅ | Créer un match Arena |
+| GET | `/api/arena/available` | ✅ | Lister les matchs ouverts |
+| POST | `/api/arena/:id/join` | ✅ | Rejoindre un match |
+| POST | `/api/arena/:id/join-invite` | ✅ | Rejoindre via code d'invitation |
+| POST | `/api/arena/:id/ready` | ✅ | Signaler prêt |
+| POST | `/api/arena/:id/shot` | ✅ | Enregistrer un tir |
+| GET | `/api/arena/:id/scoreboard` | ✅ | Scoreboard temps réel |
+| GET | `/api/arena/:id/stats` | ✅ | Statistiques détaillées |
+| POST | `/api/arena/:id/end` | ✅ | Terminer le match (host) |
+| POST | `/api/arena/:id/cancel` | ✅ | Annuler le match (host) |
+| POST | `/api/arena/:id/kick/:playerId` | ✅ | Expulser un joueur (host) |
+| GET | `/api/arena/:id/invite-link` | ✅ | Générer un lien d'invitation |
+| GET | `/api/arena/history` | ✅ | Historique des matchs |
+| GET | `/api/arena/leaderboard` | ✅ | Classement Arena global |
+| GET | `/api/arena/my-stats` | ✅ | Statistiques personnelles |
+
+---
+
+### 🐴 Horse IA (V6)
+
+| Méthode | Route | Auth | Description |
+|---------|-------|------|-------------|
+| POST | `/api/horse/start` | ✅ | Démarrer une partie HORSE |
+| GET | `/api/horse/active` | ✅ | Partie active de l'utilisateur |
+| GET | `/api/horse/:id` | ✅ | État de la partie |
+| POST | `/api/horse/:id/challenge` | ✅ | Générer un défi IA |
+| POST | `/api/horse/:id/attempt` | ✅ | Soumettre une tentative |
+| POST | `/api/horse/:id/skip` | ✅ | Passer (prend une lettre) |
+| GET | `/api/horse/:id/result` | ✅ | Résultat final |
+| GET | `/api/horse/:id/replay` | ✅ | Replay complet |
+| GET | `/api/horse/history` | ✅ | Historique des parties |
+| GET | `/api/horse/challenges` | ✅ | Bibliothèque de défis |
+| GET | `/api/horse/leaderboard` | ✅ | Classement HORSE |
+| GET | `/api/horse/my-stats` | ✅ | Statistiques personnelles |
+
+---
+
+### ⌚ Wearable (V6)
+
+| Méthode | Route | Auth | Description |
+|---------|-------|------|-------------|
+| POST | `/api/wearable/connect` | ✅ | Connecter un device |
+| DELETE | `/api/wearable/disconnect` | ✅ | Déconnecter un device |
+| GET | `/api/wearable/devices` | ✅ | Lister les devices connectés |
+| POST | `/api/wearable/sync` | ✅ | Synchroniser les données |
+| GET | `/api/wearable/latest` | ✅ | Dernières mesures |
+| GET | `/api/wearable/hrv/trend` | ✅ | Tendance HRV |
+| GET | `/api/wearable/hrv/analysis` | ✅ | Analyse HRV approfondie |
+| GET | `/api/wearable/readiness` | ✅ | Score de readiness |
+| GET | `/api/wearable/training-load` | ✅ | Charge d'entraînement |
+| GET | `/api/wearable/training-load/history` | ✅ | Historique de charge |
+| GET | `/api/wearable/dashboard` | ✅ | Dashboard complet |
+| GET | `/api/wearable/export` | ✅ | Export des données |
+| GET | `/api/wearable/alerts` | ✅ | Alertes fatigue/surcharge |
+
+---
+
+### 🛒 Marketplace (V6)
+
+| Méthode | Route | Auth | Description |
+|---------|-------|------|-------------|
+| GET | `/api/marketplace/drills` | ✅ | Catalogue de drills |
+| GET | `/api/marketplace/drills/:id` | ✅ | Détail d'un drill pack |
+| GET | `/api/marketplace/featured` | ✅ | Drills en vedette |
+| GET | `/api/marketplace/trending` | ✅ | Tendances |
+| GET | `/api/marketplace/categories` | ✅ | Catégories |
+| POST | `/api/marketplace/drills/:id/purchase` | ✅ | Acheter un drill pack |
+| GET | `/api/marketplace/my-purchases` | ✅ | Mes achats |
+| POST | `/api/marketplace/publish` | ✅ | Publier un drill pack |
+| PUT | `/api/marketplace/drills/:id` | ✅ | Modifier un drill pack |
+| GET | `/api/marketplace/my-published` | ✅ | Mes publications |
+| GET | `/api/marketplace/earnings` | ✅ | Revenus créateur |
+| POST | `/api/marketplace/drills/:id/review` | ✅ | Laisser un avis |
+| GET | `/api/marketplace/drills/:id/reviews` | ✅ | Avis d'un drill |
+| GET | `/api/marketplace/creators/:id` | ✅ | Profil créateur |
+| GET | `/api/marketplace/stats` | ✅ | Statistiques marketplace |
+| POST | `/api/marketplace/drills/:id/wishlist` | ✅ | Ajouter/retirer wishlist |
+| GET | `/api/marketplace/wishlist` | ✅ | Ma wishlist |
+| POST | `/api/marketplace/drills/:id/reviews/:reviewId/helpful` | ✅ | Voter utile |
+
+---
+
+### 🏀 NBA Data (V6)
+
+| Méthode | Route | Auth | Description |
+|---------|-------|------|-------------|
+| GET | `/api/nba/players/search` | ❌ | Recherche de joueurs NBA |
+| GET | `/api/nba/players/:id` | ❌ | Détail joueur NBA |
+| GET | `/api/nba/teams` | ❌ | Liste des équipes NBA |
+| GET | `/api/nba/inspirations` | ❌ | Inspirations de challenge |
+| GET | `/api/nba/fg-pct` | ❌ | Pourcentages FG |
+| GET | `/api/nba/health` | ❌ | Statut provider NBA |
 
 ---
 

@@ -110,7 +110,7 @@ npm run test:ai
 | `/api/auth` | Authentification | signup, login, logout, refresh, me |
 | `/api/sessions` | Sessions vidéo | upload, list, detail, delete, status SSE |
 | `/api/analyses` | Analyses IA | rapport, heatmap, highlights, programme |
-| `/api/twin` | Digital Twin | profil, simulation, comparaison |
+| `/api/twin` | Digital Twin | profil, simulation, comparaison, drills dynamiques |
 | `/api/shot-dna` | Shot DNA™ | empreinte, évolution, comparaison NBA |
 | `/api/predict` | Prédictions | performance, zones, momentum |
 | `/api/training` | Plans entraînement | génération, progression, adaptation |
