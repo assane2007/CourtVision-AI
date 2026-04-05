@@ -97,6 +97,8 @@ import NeuralHUD from '@/components/NeuralHUD'
 import PageTransition from '@/components/PageTransition'
 import { AuthProvider } from '@/lib/auth/authContext'
 
+const showMockHud = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_ENABLE_MOCK_UI === 'true'
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
         <html lang="en" className={`scroll-smooth ${sora.variable} ${dmSans.variable}`}>
@@ -108,7 +110,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </head>
             <body className="font-body antialiased bg-void text-text-primary selection:bg-fire selection:text-white overflow-x-hidden">
                 <AuthProvider>
-                    <NeuralHUD />
+                    {showMockHud ? <NeuralHUD /> : null}
                     <PageTransition>
                         {children}
                     </PageTransition>

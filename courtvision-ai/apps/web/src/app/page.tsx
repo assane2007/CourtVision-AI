@@ -161,6 +161,8 @@ import dynamic from 'next/dynamic'
 const NeuralCourt = dynamic(() => import('@/components/NeuralCourt'), { ssr: false })
 import SimulationTerminal from '@/components/SimulationTerminal'
 
+const showMockTerminal = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_ENABLE_MOCK_UI === 'true'
+
 // ==========================================
 // HERO
 // ==========================================
@@ -250,14 +252,16 @@ function Hero() {
                 </motion.div>
 
                 {/* Simulation Terminal - Hidden on small, visible on LG */}
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9, rotateY: 20 }}
-                    animate={{ opacity: 1, scale: 1, rotateY: -10 }}
-                    transition={{ duration: 1.5, ease: "easeOut", delay: 0.5 }}
-                    className="hidden lg:block perspective-1000"
-                >
-                    <SimulationTerminal />
-                </motion.div>
+                {showMockTerminal ? (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9, rotateY: 20 }}
+                        animate={{ opacity: 1, scale: 1, rotateY: -10 }}
+                        transition={{ duration: 1.5, ease: "easeOut", delay: 0.5 }}
+                        className="hidden lg:block perspective-1000"
+                    >
+                        <SimulationTerminal />
+                    </motion.div>
+                ) : null}
             </div>
 
             {/* Scroll indicator */}

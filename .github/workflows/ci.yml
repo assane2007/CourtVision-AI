@@ -27,10 +27,10 @@ jobs:
           cache-dependency-path: courtvision-ai/package-lock.json
       - run: npm ci
       - run: npm run build:shared
-      - run: npm run lint || true
+      - run: npm run lint
       - run: npx tsc --noEmit -p packages/shared/tsconfig.json
-      - run: npx tsc --noEmit -p packages/ai/tsconfig.json || true
-      - run: npx tsc --noEmit -p packages/api/tsconfig.json || true
+      - run: npx tsc --noEmit -p packages/ai/tsconfig.json
+      - run: npx tsc --noEmit -p packages/api/tsconfig.json
 
   test-packages:
     name: Test Packages (Shared + AI + API)

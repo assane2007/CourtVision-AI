@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { tiktokService } from '../services/tiktokService'
+import { env } from '../config/env'
 
 export default async function tiktokRoutes(app: FastifyInstance) {
     // Protect all TikTok routes — user-specific write operations
@@ -17,6 +18,14 @@ export default async function tiktokRoutes(app: FastifyInstance) {
             })
         }
     }, async (request, reply) => {
+        if (!env.TIKTOK_LINK_SIMULATION_ENABLED || env.isProduction) {
+            return reply.code(503).send({
+                success: false,
+                error: 'TIKTOK_LINK_UNAVAILABLE',
+                message: 'TikTok account linking is temporarily unavailable until OAuth is live.'
+            })
+        }
+
         const { id: userId } = request.user as { id: string }
 
         // Simulating OAuth logic

@@ -103,7 +103,7 @@ resource "cloudflare_rate_limit" "api" {
     }
   }
   action {
-    mode    = "simulate" # "simulate" in staging, switch to "ban" in prod
+    mode    = var.api_rate_limit_enforcement ? "ban" : "simulate"
     timeout = 60
     response {
       content_type = "application/json"

@@ -8,7 +8,7 @@
  * Skill: production-code-audit → C-5 (env validation)
  */
 
-import { cleanEnv, str, port, url, num } from 'envalid'
+import { cleanEnv, str, port, url, num, bool } from 'envalid'
 
 export const env = cleanEnv(process.env, {
     // ── Server ──
@@ -30,6 +30,9 @@ export const env = cleanEnv(process.env, {
 
     // -- RevenueCat --
     REVENUECAT_WEBHOOK_SECRET: str({ default: '', desc: 'RevenueCat webhook auth secret' }),
+
+    // -- TikTok --
+    TIKTOK_LINK_SIMULATION_ENABLED: bool({ default: false, desc: 'Enable simulated TikTok OAuth linking endpoint (non-production only)' }),
 
     // ── Redis (optional — graceful degradation) ──
     REDIS_URL: str({ default: '', desc: 'Redis connection URL for BullMQ' }),

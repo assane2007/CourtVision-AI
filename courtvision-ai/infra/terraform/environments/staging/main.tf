@@ -34,6 +34,7 @@ module "cloudflare" {
   cloudflare_api_token  = var.cloudflare_api_token
   domain_name           = "courtvision.ai"
   railway_api_domain    = module.railway.api_railway_domain
+  api_rate_limit_enforcement = false
 }
 
 module "monitoring" {

@@ -25,3 +25,9 @@ variable "railway_api_domain" {
   description = "Railway API domain (e.g. api-xxx.up.railway.app)"
   type        = string
 }
+
+variable "api_rate_limit_enforcement" {
+  description = "When true, Cloudflare API rate-limit blocks traffic (ban mode). When false, simulate mode only."
+  type        = bool
+  default     = false
+}
