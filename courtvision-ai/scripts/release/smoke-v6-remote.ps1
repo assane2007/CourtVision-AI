@@ -1,4 +1,6 @@
 param(
+    [ValidateSet('both', 'staging', 'production')]
+    [string]$Scope = 'both',
     [string]$StagingBaseUrl = "https://api-staging.courtvision.ai",
     [string]$ProductionBaseUrl = "https://api.courtvision.ai",
     [string]$BearerToken = $env:COURTVISION_SMOKE_BEARER
@@ -69,8 +71,18 @@ function Test-Environment {
     Invoke-SmokeCheck -Method 'POST' -Url "$BaseUrl/api/arena/create" -Body '{}' -ExpectedStatusCodes $authExpected
 }
 
-Test-Environment -Name 'staging' -BaseUrl $StagingBaseUrl
-Test-Environment -Name 'production' -BaseUrl $ProductionBaseUrl
+switch ($Scope) {
+    'staging' {
+        Test-Environment -Name 'staging' -BaseUrl $StagingBaseUrl
+    }
+    'production' {
+        Test-Environment -Name 'production' -BaseUrl $ProductionBaseUrl
+    }
+    default {
+        Test-Environment -Name 'staging' -BaseUrl $StagingBaseUrl
+        Test-Environment -Name 'production' -BaseUrl $ProductionBaseUrl
+    }
+}
 
 Write-Host ""
 if ($failures.Count -gt 0) {

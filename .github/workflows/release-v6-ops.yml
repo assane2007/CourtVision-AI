@@ -1,0 +1,97 @@
+# ops(release): Manual V6 operations pipeline (migration + smoke + health watch)
+name: V6 Release Ops
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: Target environment secrets (staging or production)
+        required: true
+        type: choice
+        default: staging
+        options:
+          - staging
+          - production
+      scope:
+        description: Endpoint scope to validate
+        required: true
+        type: choice
+        default: staging
+        options:
+          - staging
+          - production
+          - both
+      apply_migration:
+        description: Apply Supabase migration (requires SUPABASE_DB_URL secret)
+        required: true
+        type: boolean
+        default: true
+      run_smoke_tests:
+        description: Run remote smoke checks
+        required: true
+        type: boolean
+        default: true
+      run_health_watch:
+        description: Run health watch loop
+        required: true
+        type: boolean
+        default: false
+      health_duration_minutes:
+        description: Health watch duration in minutes
+        required: false
+        default: "60"
+      confirm_production:
+        description: Required for production target (type deploy-production)
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  release-ops:
+    name: Release Ops
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target_environment }}
+    defaults:
+      run:
+        working-directory: courtvision-ai
+        shell: pwsh
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Guard production confirmation
+        run: |
+          if ("${{ inputs.target_environment }}" -eq "production" -and "${{ inputs.confirm_production }}" -ne "deploy-production") {
+            throw "Production run requires confirm_production=deploy-production"
+          }
+
+      - name: Apply Supabase migration
+        if: ${{ inputs.apply_migration }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:SUPABASE_DB_URL)) {
+            throw "Missing environment secret SUPABASE_DB_URL"
+          }
+
+          ./scripts/release/apply-v6-arena-idempotency.ps1
+
+      - name: Run remote smoke checks
+        if: ${{ inputs.run_smoke_tests }}
+        env:
+          COURTVISION_SMOKE_BEARER: ${{ secrets.COURTVISION_SMOKE_BEARER }}
+        run: |
+          ./scripts/release/smoke-v6-remote.ps1 -Scope "${{ inputs.scope }}"
+
+      - name: Run health watch
+        if: ${{ inputs.run_health_watch }}
+        run: |
+          ./scripts/release/watch-health.ps1 -Scope "${{ inputs.scope }}" -DurationMinutes ${{ inputs.health_duration_minutes }} -IntervalSeconds 30

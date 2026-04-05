@@ -81,8 +81,23 @@ Principe: rollback forward-safe. Eviter DROP irreversible sans sauvegarde.
 1. Appliquer les migrations Supabase (inclut la migration idempotency Arena):
    - powershell -File scripts/release/apply-v6-arena-idempotency.ps1 -DbUrl "postgresql://..."
 2. Smoke test distant staging + production:
-   - powershell -File scripts/release/smoke-v6-remote.ps1
+   - powershell -File scripts/release/smoke-v6-remote.ps1 -Scope both
 3. Smoke test distant avec token bearer:
-   - $env:COURTVISION_SMOKE_BEARER="<jwt>"; powershell -File scripts/release/smoke-v6-remote.ps1
+   - $env:COURTVISION_SMOKE_BEARER="<jwt>"; powershell -File scripts/release/smoke-v6-remote.ps1 -Scope staging
 4. Surveillance health pendant 60 minutes:
-   - powershell -File scripts/release/watch-health.ps1
+   - powershell -File scripts/release/watch-health.ps1 -Scope production
+
+## 9. Workflow GitHub Actions (manuel)
+
+1. Workflow: .github/workflows/release-v6-ops.yml
+2. Trigger: workflow_dispatch
+3. Secrets requis par environnement GitHub (staging/production):
+   - SUPABASE_DB_URL
+   - COURTVISION_SMOKE_BEARER (optionnel)
+4. Garde-fou production:
+   - target_environment=production impose confirm_production=deploy-production
+5. Parametres utiles:
+   - scope: staging | production | both
+   - apply_migration: true/false
+   - run_smoke_tests: true/false
+   - run_health_watch: true/false

@@ -1,4 +1,6 @@
 param(
+    [ValidateSet('both', 'staging', 'production')]
+    [string]$Scope = 'both',
     [string]$StagingHealthUrl = "https://api-staging.courtvision.ai/health",
     [string]$ProductionHealthUrl = "https://api.courtvision.ai/health",
     [int]$DurationMinutes = 60,
@@ -34,11 +36,15 @@ function Test-Health {
 }
 
 while ((Get-Date) -lt $deadline) {
-    $s = Test-Health -Name 'staging' -Url $StagingHealthUrl
-    $p = Test-Health -Name 'production' -Url $ProductionHealthUrl
+    if ($Scope -eq 'both' -or $Scope -eq 'staging') {
+        $s = Test-Health -Name 'staging' -Url $StagingHealthUrl
+        if (-not $s) { $failCount++ }
+    }
 
-    if (-not $s) { $failCount++ }
-    if (-not $p) { $failCount++ }
+    if ($Scope -eq 'both' -or $Scope -eq 'production') {
+        $p = Test-Health -Name 'production' -Url $ProductionHealthUrl
+        if (-not $p) { $failCount++ }
+    }
 
     Start-Sleep -Seconds $IntervalSeconds
 }
