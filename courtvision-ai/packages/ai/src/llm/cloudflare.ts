@@ -2,12 +2,13 @@
  * Integration for Cloudflare Workers AI via REST API.
  * 
  * Provides an ultra-cost-effective LLM fallback.
- * Uses `@cf/meta/llama-3-8b-instruct` for text generation
+ * Uses `@cf/meta/llama-3.1-8b-instruct` (configurable) for text generation
  * Uses `@cf/baai/bge-small-en-v1.5` for RAG embeddings
  */
 
-const CF_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID || ''
-const CF_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN || ''
+const CF_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID || process.env.CF_ACCOUNT_ID || ''
+const CF_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN || process.env.CLOUDFLARE_AI_TOKEN || process.env.CF_API_TOKEN || ''
+export const CLOUDFLARE_TEXT_MODEL = process.env.CLOUDFLARE_TEXT_MODEL || '@cf/meta/llama-3.1-8b-instruct'
 const CF_API_BASE = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/ai/run`
 
 export async function generateReportCloudflare(data: {
@@ -16,7 +17,7 @@ export async function generateReportCloudflare(data: {
     payload?: object
 }): Promise<string> {
     if (!CF_ACCOUNT_ID || !CF_API_TOKEN) {
-        throw new Error('Cloudflare AI credentials not configured (CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_API_TOKEN)')
+        throw new Error('Cloudflare AI credentials not configured (CLOUDFLARE_ACCOUNT_ID + CLOUDFLARE_API_TOKEN/CLOUDFLARE_AI_TOKEN)')
     }
 
     const messages = []
@@ -35,9 +36,9 @@ export async function generateReportCloudflare(data: {
         messages.push({ role: 'user', content: 'Hello' })
     }
 
-    console.log(`[Cloudflare AI] Calling @cf/meta/llama-3-8b-instruct...`)
+    console.log(`[Cloudflare AI] Calling ${CLOUDFLARE_TEXT_MODEL}...`)
 
-    const response = await fetch(`${CF_API_BASE}/@cf/meta/llama-3-8b-instruct`, {
+    const response = await fetch(`${CF_API_BASE}/${CLOUDFLARE_TEXT_MODEL}`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${CF_API_TOKEN}`,

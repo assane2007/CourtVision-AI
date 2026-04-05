@@ -65,8 +65,8 @@ variable "cloudflare_ai_token" {
 }
 
 # ── AI ───────────────────────────────────────────────────────
-variable "groq_api_key" {
-  description = "Groq API key"
+variable "gemini_api_key" {
+  description = "Gemini API key"
   type        = string
   sensitive   = true
 }

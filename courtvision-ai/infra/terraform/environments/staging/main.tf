@@ -20,7 +20,7 @@ module "railway" {
   jwt_secret                = var.jwt_secret
   cloudflare_account_id     = var.cloudflare_account_id
   cloudflare_ai_token       = var.cloudflare_ai_token
-  groq_api_key              = var.groq_api_key
+  gemini_api_key            = var.gemini_api_key
   sentry_dsn                = module.monitoring.api_dsn
   cv_engine_secret          = var.cv_engine_secret
   allowed_origins           = "https://staging.courtvision.ai,http://localhost:3000"

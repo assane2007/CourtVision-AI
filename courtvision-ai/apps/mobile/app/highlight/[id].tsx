@@ -488,7 +488,7 @@ export default function HighlightPlayer() {
                             <View style={hs.controlsRow}>
                                 <View style={hs.reelInfo}>
                                     <Text style={hs.reelInfoTitle}>Highlight Reel #{id}</Text>
-                                    <Text style={hs.reelInfoSub}>{clips.length} key plays · AI Groq · 1080p{selectedTrack ? ` · 🎵 ${selectedTrack.title}` : ''}</Text>
+                                    <Text style={hs.reelInfoSub}>{clips.length} key plays · AI Coach · 1080p{selectedTrack ? ` · 🎵 ${selectedTrack.title}` : ''}</Text>
                                 </View>
 
                                 <View style={hs.actionRow}>

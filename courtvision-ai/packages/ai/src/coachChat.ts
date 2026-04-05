@@ -1,4 +1,4 @@
-import { generateReport } from './llm'
+import { generateReportWithMetadata } from './llm'
 
 /**
  * AI Coach Chat — Conversation IA Naturelle
@@ -203,10 +203,11 @@ export class CoachChatEngine {
         const systemPrompt = this.buildSystemPrompt(context, playerContext)
         const userPrompt = this.buildUserPrompt(userMessage, playerContext, conversationHistory)
 
-        const response = await generateReport({
+        const llmResult = await generateReportWithMetadata({
             systemPrompt,
             userPrompt,
         })
+        const response = llmResult.text
 
         // Parse suggested actions from the response
         const suggestedActions = this.extractSuggestedActions(response, context, playerContext)
@@ -217,7 +218,7 @@ export class CoachChatEngine {
             attachments,
             suggestedActions,
             tokensUsed: Math.ceil(response.length / 4),  // rough estimate
-            model: 'groq-llama-3.3',
+            model: llmResult.model,
         }
     }
 

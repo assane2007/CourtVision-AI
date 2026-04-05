@@ -693,7 +693,7 @@ const faqs = [
     },
     {
         q: 'Is the analysis really done in 2 minutes?',
-        a: 'Yes! Our 7-stage AI pipeline processes a full 45-minute game in under 2 minutes using Groq inference and our optimized cloud architecture.',
+        a: 'Yes! Our 7-stage AI pipeline processes a full 45-minute game in under 2 minutes using our optimized multi-model cloud inference stack.',
     },
     {
         q: 'Are my videos stored securely?',

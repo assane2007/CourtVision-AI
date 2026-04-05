@@ -31,7 +31,7 @@ resource "railway_variable" "api_vars" {
     STRIPE_WEBHOOK_SECRET     = var.stripe_webhook_secret
     CLOUDFLARE_ACCOUNT_ID     = var.cloudflare_account_id
     CLOUDFLARE_AI_TOKEN       = var.cloudflare_ai_token
-    GROQ_API_KEY              = var.groq_api_key
+    GEMINI_API_KEY            = var.gemini_api_key
     SENTRY_DSN                = var.sentry_dsn
     ENABLE_SPATIAL_3D         = "false"
     ENABLE_TIKTOK             = var.environment == "production" ? "false" : "false"

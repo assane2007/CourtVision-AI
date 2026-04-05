@@ -24,7 +24,7 @@ cloudflare_api_token  = "your-cloudflare-api-token"
 cloudflare_ai_token   = "your-cloudflare-ai-token"
 
 # AI
-groq_api_key = "gsk_..."
+gemini_api_key = "AIzaSy_..."
 
 # CV Engine
 cv_engine_secret = "your-cv-engine-internal-secret"

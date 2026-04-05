@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify'
+import { randomUUID } from 'crypto'
 import { z } from 'zod'
 import {
     CoachChatEngine,
@@ -63,6 +64,234 @@ const preGameSchema = z.object({
 const conversationIdSchema = z.object({ id: z.string().uuid() })
 const conversationsQuerySchema = z.object({ limit: z.coerce.number().int().min(1).max(50).default(20) })
 
+type CoachConversationRow = {
+    id: string
+    user_id: string
+    title: string | null
+    context: ConversationContext
+    session_id: string | null
+    messages: CoachChatMessage[]
+    message_count: number
+    last_message_at: string
+    created_at: string
+}
+
+type CreateCoachConversationInput = Omit<CoachConversationRow, 'id'>
+
+const coachConversationFallbackStore = new Map<string, CoachConversationRow>()
+let coachFallbackWarned = false
+
+function isCoachSchemaFallbackError(error: any): boolean {
+    if (!error) return false
+
+    const code = String(error.code || '')
+    const message = `${error.message || ''} ${error.details || ''} ${error.hint || ''}`.toLowerCase()
+
+    if (!message.includes('coach_conversations')) return false
+
+    if (code === 'PGRST205') return true
+    if (code === '42703') return true
+
+    return (
+        message.includes('schema cache')
+        || message.includes('could not find the table')
+        || message.includes('column')
+    )
+}
+
+function isNoRowsError(error: any): boolean {
+    if (!error) return false
+    if (String(error.code || '') === 'PGRST116') return true
+
+    const details = String(error.details || '').toLowerCase()
+    const message = String(error.message || '').toLowerCase()
+    return details.includes('0 rows') || message.includes('0 rows')
+}
+
+function logCoachFallbackOnce(fastify: FastifyInstance, error: any): void {
+    if (coachFallbackWarned) return
+    coachFallbackWarned = true
+
+    fastify.log.warn(
+        { code: error?.code, message: error?.message },
+        '[CoachChat] Falling back to in-memory conversations because coach DB schema is unavailable.'
+    )
+}
+
+function normalizeCoachConversation(row: any): CoachConversationRow {
+    return {
+        id: row.id,
+        user_id: row.user_id,
+        title: row.title ?? null,
+        context: (row.context || 'general') as ConversationContext,
+        session_id: row.session_id ?? null,
+        messages: Array.isArray(row.messages) ? row.messages : [],
+        message_count: Number.isFinite(row.message_count) ? row.message_count : 0,
+        last_message_at: row.last_message_at || new Date().toISOString(),
+        created_at: row.created_at || new Date().toISOString(),
+    }
+}
+
+function listMemoryConversations(userId: string, limit: number): CoachConversationRow[] {
+    return Array.from(coachConversationFallbackStore.values())
+        .filter((conv) => conv.user_id === userId)
+        .sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime())
+        .slice(0, limit)
+}
+
+function getMemoryConversation(userId: string, conversationId: string): CoachConversationRow | null {
+    const conv = coachConversationFallbackStore.get(conversationId)
+    if (!conv || conv.user_id !== userId) return null
+    return conv
+}
+
+function createMemoryConversation(input: CreateCoachConversationInput): CoachConversationRow {
+    const id = randomUUID()
+    const row: CoachConversationRow = { id, ...input }
+    coachConversationFallbackStore.set(id, row)
+    return row
+}
+
+function updateMemoryConversation(
+    userId: string,
+    conversationId: string,
+    patch: Partial<Pick<CoachConversationRow, 'messages' | 'message_count' | 'last_message_at'>>,
+): void {
+    const existing = getMemoryConversation(userId, conversationId)
+    if (!existing) return
+
+    coachConversationFallbackStore.set(conversationId, {
+        ...existing,
+        ...patch,
+    })
+}
+
+function deleteMemoryConversation(userId: string, conversationId: string): void {
+    const existing = getMemoryConversation(userId, conversationId)
+    if (!existing) return
+    coachConversationFallbackStore.delete(conversationId)
+}
+
+async function getCoachConversation(
+    fastify: FastifyInstance,
+    userId: string,
+    conversationId: string,
+): Promise<CoachConversationRow | null> {
+    const { data, error } = await fastify.supabase
+        .from('coach_conversations')
+        .select('id, user_id, title, context, session_id, messages, message_count, last_message_at, created_at')
+        .eq('id', conversationId)
+        .eq('user_id', userId)
+        .single()
+
+    if (error) {
+        if (isNoRowsError(error)) return null
+        if (isCoachSchemaFallbackError(error)) {
+            logCoachFallbackOnce(fastify, error)
+            return getMemoryConversation(userId, conversationId)
+        }
+        throw error
+    }
+
+    return data ? normalizeCoachConversation(data) : null
+}
+
+async function listCoachConversations(
+    fastify: FastifyInstance,
+    userId: string,
+    limit: number,
+): Promise<CoachConversationRow[]> {
+    const { data, error } = await fastify.supabase
+        .from('coach_conversations')
+        .select('id, user_id, title, context, session_id, messages, message_count, last_message_at, created_at')
+        .eq('user_id', userId)
+        .order('last_message_at', { ascending: false })
+        .limit(limit)
+
+    if (error) {
+        if (isCoachSchemaFallbackError(error)) {
+            logCoachFallbackOnce(fastify, error)
+            return listMemoryConversations(userId, limit)
+        }
+        throw error
+    }
+
+    return (data || []).map(normalizeCoachConversation)
+}
+
+async function createCoachConversation(
+    fastify: FastifyInstance,
+    input: CreateCoachConversationInput,
+): Promise<string> {
+    const { data, error } = await fastify.supabase
+        .from('coach_conversations')
+        .insert({
+            user_id: input.user_id,
+            title: input.title,
+            context: input.context,
+            session_id: input.session_id,
+            messages: input.messages,
+            message_count: input.message_count,
+            last_message_at: input.last_message_at,
+            created_at: input.created_at,
+        })
+        .select('id')
+        .single()
+
+    if (error) {
+        if (isCoachSchemaFallbackError(error)) {
+            logCoachFallbackOnce(fastify, error)
+            return createMemoryConversation(input).id
+        }
+        throw error
+    }
+
+    return data.id
+}
+
+async function updateCoachConversation(
+    fastify: FastifyInstance,
+    userId: string,
+    conversationId: string,
+    patch: Partial<Pick<CoachConversationRow, 'messages' | 'message_count' | 'last_message_at'>>,
+): Promise<void> {
+    const { error } = await fastify.supabase
+        .from('coach_conversations')
+        .update(patch)
+        .eq('id', conversationId)
+        .eq('user_id', userId)
+
+    if (error) {
+        if (isCoachSchemaFallbackError(error)) {
+            logCoachFallbackOnce(fastify, error)
+            updateMemoryConversation(userId, conversationId, patch)
+            return
+        }
+        throw error
+    }
+}
+
+async function removeCoachConversation(
+    fastify: FastifyInstance,
+    userId: string,
+    conversationId: string,
+): Promise<void> {
+    const { error } = await fastify.supabase
+        .from('coach_conversations')
+        .delete()
+        .eq('id', conversationId)
+        .eq('user_id', userId)
+
+    if (error) {
+        if (isCoachSchemaFallbackError(error)) {
+            logCoachFallbackOnce(fastify, error)
+            deleteMemoryConversation(userId, conversationId)
+            return
+        }
+        throw error
+    }
+}
+
 export default async function coachChatRoutes(fastify: FastifyInstance) {
     fastify.addHook('preValidation', fastify.authenticate)
 
@@ -74,15 +303,8 @@ export default async function coachChatRoutes(fastify: FastifyInstance) {
             const user = request.user!
             const body = messageSchema.parse(request.body)
 
-            // Vérifier que la conversation appartient au joueur
-            const { data: conv, error: convError } = await fastify.supabase
-                .from('coach_conversations')
-                .select('id, context, messages')
-                .eq('id', body.conversationId)
-                .eq('user_id', user.id)
-                .single()
-
-            if (convError || !conv) {
+            const conv = await getCoachConversation(fastify, user.id, body.conversationId)
+            if (!conv) {
                 return reply.code(404).send({ error: 'Conversation not found' })
             }
 
@@ -125,11 +347,11 @@ export default async function coachChatRoutes(fastify: FastifyInstance) {
             history.push(assistantMessage)
 
             // Sauvegarder la conversation mise à jour
-            await fastify.supabase.from('coach_conversations').update({
+            await updateCoachConversation(fastify, user.id, body.conversationId, {
                 messages: history,
                 last_message_at: new Date().toISOString(),
                 message_count: history.filter(m => m.role !== 'system').length,
-            }).eq('id', body.conversationId)
+            })
 
             // Award XP pour engagement
             if (history.length <= 6) {
@@ -159,14 +381,7 @@ export default async function coachChatRoutes(fastify: FastifyInstance) {
             const user = request.user!
             const { limit } = conversationsQuerySchema.parse(request.query)
 
-            const { data, error } = await fastify.supabase
-                .from('coach_conversations')
-                .select('id, title, context, message_count, last_message_at, created_at')
-                .eq('user_id', user.id)
-                .order('last_message_at', { ascending: false })
-                .limit(limit)
-
-            if (error) throw error
+            const data = await listCoachConversations(fastify, user.id, limit)
 
             return { data: data || [] }
         } catch (error: any) {
@@ -182,14 +397,9 @@ export default async function coachChatRoutes(fastify: FastifyInstance) {
             const user = request.user!
             const { id } = conversationIdSchema.parse(request.params)
 
-            const { data, error } = await fastify.supabase
-                .from('coach_conversations')
-                .select('*')
-                .eq('id', id)
-                .eq('user_id', user.id)
-                .single()
+            const data = await getCoachConversation(fastify, user.id, id)
 
-            if (error || !data) {
+            if (!data) {
                 return reply.code(404).send({ error: 'Conversation not found' })
             }
 
@@ -246,26 +456,20 @@ export default async function coachChatRoutes(fastify: FastifyInstance) {
 
             const title = body.title || generateTitle(body.context, body.initialMessage)
 
-            const { data: conv, error } = await fastify.supabase
-                .from('coach_conversations')
-                .insert({
-                    user_id: user.id,
-                    title,
-                    context: body.context,
-                    session_id: body.sessionId,
-                    messages,
-                    message_count: messages.filter(m => m.role !== 'system').length,
-                    last_message_at: new Date().toISOString(),
-                    created_at: new Date().toISOString(),
-                })
-                .select('id')
-                .single()
-
-            if (error) throw error
+            const conversationId = await createCoachConversation(fastify, {
+                user_id: user.id,
+                title,
+                context: body.context as ConversationContext,
+                session_id: body.sessionId ?? null,
+                messages,
+                message_count: messages.filter(m => m.role !== 'system').length,
+                last_message_at: new Date().toISOString(),
+                created_at: new Date().toISOString(),
+            })
 
             return {
                 data: {
-                    conversationId: conv?.id,
+                    conversationId,
                     title,
                     response: response ? {
                         message: response.message,
@@ -288,13 +492,7 @@ export default async function coachChatRoutes(fastify: FastifyInstance) {
             const user = request.user!
             const { id } = conversationIdSchema.parse(request.params)
 
-            const { error } = await fastify.supabase
-                .from('coach_conversations')
-                .delete()
-                .eq('id', id)
-                .eq('user_id', user.id)
-
-            if (error) throw error
+            await removeCoachConversation(fastify, user.id, id)
             return { success: true }
         } catch (error: any) {
             return reply.code(400).send({ error: error.message })
@@ -421,7 +619,7 @@ export default async function coachChatRoutes(fastify: FastifyInstance) {
             )
 
             // Auto-create a film room conversation
-            await fastify.supabase.from('coach_conversations').insert({
+            await createCoachConversation(fastify, {
                 user_id: user.id,
                 title: `Film Room: Session ${body.sessionId.slice(0, 8)}`,
                 context: 'film_room',
@@ -468,10 +666,11 @@ export default async function coachChatRoutes(fastify: FastifyInstance) {
             )
 
             // Sauvegarder comme conversation
-            await fastify.supabase.from('coach_conversations').insert({
+            await createCoachConversation(fastify, {
                 user_id: user.id,
                 title: body.opponentName ? `Pre-Game: vs ${body.opponentName}` : 'Pre-Game Prep',
                 context: 'pre_game',
+                session_id: null,
                 messages: [
                     { role: 'user', content: prompt },
                     { role: 'assistant', content: response.message, attachments: response.attachments },

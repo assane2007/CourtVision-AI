@@ -105,7 +105,7 @@ export default async function analysisRoutes(fastify: FastifyInstance) {
 
     /**
      * GET /:sessionId/program — Programme d'entraînement 7 jours basé sur les faiblesses détectées
-     * Nouvelle fonctionnalité V2 : plan structuré généré par l'IA Groq
+      * Nouvelle fonctionnalité V2 : plan structuré généré par l'IA cloud
      */
     fastify.get('/:sessionId/program', async (request, reply) => {
         try {
@@ -138,7 +138,7 @@ export default async function analysisRoutes(fastify: FastifyInstance) {
 
 /**
  * Génère un programme d'entraînement de 7 jours basé sur les faiblesses détectées
- * En production : ce programme est généré par le LLM Groq avec un prompt spécialisé
+ * En production : ce programme est généré par le pipeline LLM avec un prompt spécialisé
  */
 function generateTrainingProgram(analysis: {
     mental_score?: number

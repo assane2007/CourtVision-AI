@@ -255,7 +255,7 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
 
     // Health check — deep check with DB + Redis connectivity (M-9)
     app.get('/health', async (request) => {
-        const checks: Record<string, 'ok' | 'error'> = { api: 'ok' }
+        const checks: Record<string, 'ok' | 'error' | 'skipped'> = { api: 'ok' }
 
         // Supabase connectivity
         try {
@@ -263,13 +263,25 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
             checks.database = error ? 'error' : 'ok'
         } catch { checks.database = 'error' }
 
-        // CV Engine (Python worker) connectivity
-        try {
-            const res = await fetch(`${env.CV_ENGINE_URL}/health`, { method: 'GET', signal: AbortSignal.timeout(2000) })
-            checks.cvEngine = res.ok ? 'ok' : 'error'
-        } catch { checks.cvEngine = 'error' }
+        // CV Engine (Python worker) connectivity.
+        // In development, the CV service is optional and should not degrade API health.
+        if (env.isProduction) {
+            try {
+                const res = await fetch(`${env.CV_ENGINE_URL}/health`, { method: 'GET', signal: AbortSignal.timeout(2000) })
+                checks.cvEngine = res.ok ? 'ok' : 'error'
+            } catch {
+                checks.cvEngine = 'error'
+            }
+        } else {
+            try {
+                const res = await fetch(`${env.CV_ENGINE_URL}/health`, { method: 'GET', signal: AbortSignal.timeout(2000) })
+                checks.cvEngine = res.ok ? 'ok' : 'skipped'
+            } catch {
+                checks.cvEngine = 'skipped'
+            }
+        }
 
-        const allOk = Object.values(checks).every(v => v === 'ok')
+        const allOk = Object.values(checks).every(v => v !== 'error')
 
         return {
             status: allOk ? 'ok' : 'degraded',

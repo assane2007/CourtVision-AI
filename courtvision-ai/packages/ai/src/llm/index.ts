@@ -1,43 +1,77 @@
-import { generateReportGroq } from './groq'
+import { generateReportGemini } from './gemini'
 import { generateReportLocal } from './ollama'
-import { generateReportCloudflare, generateEmbeddingCloudflare } from './cloudflare'
+import { generateReportCloudflare, generateEmbeddingCloudflare, CLOUDFLARE_TEXT_MODEL } from './cloudflare'
+
+export type LlmProvider = 'gemini' | 'cloudflare' | 'ollama' | 'fallback'
+
+export interface LlmReportResult {
+    text: string
+    provider: LlmProvider
+    model: string
+}
 
 /**
  * Génère un rapport de coaching via LLM.
- * Stratégie : Cloudflare (Gratuit) -> Groq (Premium) → Ollama (Local).
+ * Stratégie : Gemini (cloud principal) -> Cloudflare (fallback cloud) -> Ollama (local).
  * Garantit une réponse dans tous les cas.
  *
  * @param data - Objet contenant systemPrompt, userPrompt, et payload.
  */
+export async function generateReportWithMetadata(data: {
+    systemPrompt?: string
+    userPrompt?: string
+    payload?: object
+    responseFormat?: 'json' | 'text'
+}): Promise<LlmReportResult> {
+    const geminiModel = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
+    const freeOnlyRaw = (process.env.LLM_FREE_ONLY || process.env.FREE_ONLY_MODE || '').trim().toLowerCase()
+    const freeOnly = freeOnlyRaw === '1' || freeOnlyRaw === 'true' || freeOnlyRaw === 'yes'
+    const hasGeminiKey = !!(process.env.GEMINI_API_KEY || '').trim()
+
+    if (!freeOnly && hasGeminiKey) {
+        try {
+            const text = await generateReportGemini(data)
+            return { text, provider: 'gemini', model: geminiModel }
+        } catch (geminiErr: unknown) {
+            const geminiMessage = geminiErr instanceof Error ? geminiErr.message : String(geminiErr)
+            console.warn(`[CourtVision AI] Gemini failed (${geminiMessage}), falling back to Cloudflare`)
+        }
+    } else if (freeOnly) {
+        console.info('[CourtVision AI] LLM_FREE_ONLY enabled, skipping Gemini')
+    }
+
+    try {
+        const text = await generateReportCloudflare(data)
+        return { text, provider: 'cloudflare', model: CLOUDFLARE_TEXT_MODEL }
+    } catch (cfErr: unknown) {
+        const cfMessage = cfErr instanceof Error ? cfErr.message : String(cfErr)
+        console.warn(`[CourtVision AI] Cloudflare failed (${cfMessage}), falling back to Ollama local`)
+
+        try {
+            const text = await generateReportLocal(data)
+            return { text, provider: 'ollama', model: process.env.OLLAMA_MODEL || 'llama3.2' }
+        } catch (fallbackErr: unknown) {
+            const fbMessage = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr)
+            console.error(`[CourtVision AI] Ollama fallback also failed: ${fbMessage}`)
+
+            // Dernier recours : rapport générique basé sur les données brutes
+            return {
+                text: generateFallbackReport(data.payload),
+                provider: 'fallback',
+                model: 'deterministic-fallback-v1',
+            }
+        }
+    }
+}
+
 export async function generateReport(data: {
     systemPrompt?: string
     userPrompt?: string
     payload?: object
     responseFormat?: 'json' | 'text'
 }): Promise<string> {
-    try {
-        return await generateReportCloudflare(data)
-    } catch (cfErr: unknown) {
-        const cfMessage = cfErr instanceof Error ? cfErr.message : String(cfErr)
-        console.warn(`[CourtVision AI] Cloudflare failed (${cfMessage}), falling back to Groq`)
-
-        try {
-            return await generateReportGroq(data)
-        } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : String(err)
-            console.warn(`[CourtVision AI] Groq failed (${message}), falling back to Ollama local`)
-
-            try {
-                return await generateReportLocal(data)
-            } catch (fallbackErr: unknown) {
-                const fbMessage = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr)
-                console.error(`[CourtVision AI] Ollama fallback also failed: ${fbMessage}`)
-
-                // Dernier recours : rapport générique basé sur les données brutes
-                return generateFallbackReport(data.payload)
-            }
-        }
-    }
+    const result = await generateReportWithMetadata(data)
+    return result.text
 }
 
 /**

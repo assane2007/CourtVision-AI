@@ -22,14 +22,22 @@ COPY --from=builder /install /usr/local
 
 WORKDIR /app
 
-# Pre-download YOLOv8s model at build time (MUST succeed, no || true)
-RUN python -c "\
-from ultralytics import YOLO; \
-import os; \
-m = YOLO('yolov8s.pt'); \
-assert os.path.exists('yolov8s.pt') or os.path.exists(os.path.expanduser('~/.cache/ultralytics')), \
-    'YOLOv8s model download failed'; \
-print('YOLOv8s model downloaded successfully')"
+# Pre-download YOLOv8s only when ultralytics is installed.
+RUN python - <<'PY'
+import importlib.util
+import os
+
+if importlib.util.find_spec("ultralytics") is None:
+    print("Ultralytics not installed, skipping YOLOv8s predownload")
+else:
+    from ultralytics import YOLO
+
+    YOLO("yolov8s.pt")
+    assert os.path.exists("yolov8s.pt") or os.path.exists(
+        os.path.expanduser("~/.cache/ultralytics")
+    ), "YOLOv8s model download failed"
+    print("YOLOv8s model downloaded successfully")
+PY
 
 # Pre-download MediaPipe BlazePose model at build time
 RUN python -c "\

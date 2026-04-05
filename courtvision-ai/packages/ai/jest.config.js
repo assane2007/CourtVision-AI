@@ -9,7 +9,4 @@ module.exports = {
             tsconfig: './tsconfig.test.json',
         }],
     },
-    moduleNameMapper: {
-        '^groq-sdk$': '<rootDir>/__mocks__/groq-sdk.ts',
-    },
 }

@@ -32,7 +32,7 @@ cd CourtVision-AI/courtvision-ai
 
 # 2. Copy environment variables
 cp .env.example .env
-# Fill in your Supabase, Stripe, and Groq keys
+# Fill in your Supabase, Stripe, and Gemini keys
 
 # 3. Install dependencies
 npm install

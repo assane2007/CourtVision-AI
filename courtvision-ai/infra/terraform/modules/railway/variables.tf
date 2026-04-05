@@ -65,8 +65,8 @@ variable "cloudflare_ai_token" {
   sensitive   = true
 }
 
-variable "groq_api_key" {
-  description = "Groq API key (LLM fallback)"
+variable "gemini_api_key" {
+  description = "Gemini API key (primary cloud LLM)"
   type        = string
   sensitive   = true
 }

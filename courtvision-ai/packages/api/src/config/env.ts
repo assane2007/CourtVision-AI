@@ -38,9 +38,13 @@ export const env = cleanEnv(process.env, {
     ALLOWED_ORIGINS: str({ default: 'https://courtvision.ai', desc: 'Comma-separated allowed origins' }),
 
     // ── AI / LLM (optional) ──
-    GROQ_API_KEY: str({ default: '', desc: 'Groq API key for LLM inference' }),
-    CF_ACCOUNT_ID: str({ default: '', desc: 'Cloudflare account ID' }),
-    CF_API_TOKEN: str({ default: '', desc: 'Cloudflare API token' }),
+    GEMINI_API_KEY: str({ default: '', desc: 'Google Gemini API key (primary LLM)' }),
+    GEMINI_MODEL: str({ default: 'gemini-2.0-flash', desc: 'Gemini model identifier' }),
+    CLOUDFLARE_ACCOUNT_ID: str({ default: '', desc: 'Cloudflare account ID (LLM fallback)' }),
+    CLOUDFLARE_API_TOKEN: str({ default: '', desc: 'Cloudflare API token (preferred)' }),
+    CLOUDFLARE_AI_TOKEN: str({ default: '', desc: 'Cloudflare AI token (legacy alias)' }),
+    CF_ACCOUNT_ID: str({ default: '', desc: 'Cloudflare account ID (legacy alias)' }),
+    CF_API_TOKEN: str({ default: '', desc: 'Cloudflare API token (legacy alias)' }),
 
     // ── Worker ──
     WORKER_CONCURRENCY: num({ default: 2, desc: 'BullMQ worker concurrency' }),

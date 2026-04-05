@@ -9,7 +9,7 @@ pydantic==2.10.4
 python-multipart==0.0.18
 
 # ML models
-# ultralytics==8.3.57  # GPU/YOLO (commented for CPU-only build)
+# ultralytics==8.3.57  # Optional for YOLO pipeline (can be enabled for full detection)
 mediapipe==0.10.21
 
 # CPU inference (ONNX Runtime replaces PyTorch for lightweight deployment)

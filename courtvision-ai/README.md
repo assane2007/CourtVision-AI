@@ -71,7 +71,7 @@ npm install --legacy-peer-deps
 
 # Variables d'environnement
 cp .env.example .env
-# Remplir SUPABASE_URL, SUPABASE_ANON_KEY, GROQ_API_KEY, REDIS_URL, etc.
+# Remplir SUPABASE_URL, SUPABASE_ANON_KEY, GEMINI_API_KEY, REDIS_URL, etc.
 
 # Lancer l'infra
 docker compose up -d
