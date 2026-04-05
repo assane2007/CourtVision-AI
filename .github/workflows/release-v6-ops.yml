@@ -21,6 +21,14 @@ on:
           - staging
           - production
           - both
+      staging_base_url:
+        description: Base URL for staging checks
+        required: false
+        default: "https://api-staging.courtvision.ai"
+      production_base_url:
+        description: Base URL for production checks
+        required: false
+        default: "https://api.courtvision.ai"
       apply_migration:
         description: Apply Supabase migration (requires SUPABASE_DB_URL secret)
         required: true
@@ -89,9 +97,9 @@ jobs:
         env:
           COURTVISION_SMOKE_BEARER: ${{ secrets.COURTVISION_SMOKE_BEARER }}
         run: |
-          ./scripts/release/smoke-v6-remote.ps1 -Scope "${{ inputs.scope }}"
+          ./scripts/release/smoke-v6-remote.ps1 -Scope "${{ inputs.scope }}" -StagingBaseUrl "${{ inputs.staging_base_url }}" -ProductionBaseUrl "${{ inputs.production_base_url }}"
 
       - name: Run health watch
         if: ${{ inputs.run_health_watch }}
         run: |
-          ./scripts/release/watch-health.ps1 -Scope "${{ inputs.scope }}" -DurationMinutes ${{ inputs.health_duration_minutes }} -IntervalSeconds 30
+          ./scripts/release/watch-health.ps1 -Scope "${{ inputs.scope }}" -StagingBaseUrl "${{ inputs.staging_base_url }}" -ProductionBaseUrl "${{ inputs.production_base_url }}" -DurationMinutes ${{ inputs.health_duration_minutes }} -IntervalSeconds 30

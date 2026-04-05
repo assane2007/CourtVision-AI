@@ -1,6 +1,8 @@
 param(
     [ValidateSet('both', 'staging', 'production')]
     [string]$Scope = 'both',
+    [string]$StagingBaseUrl = "",
+    [string]$ProductionBaseUrl = "",
     [string]$StagingHealthUrl = "https://api-staging.courtvision.ai/health",
     [string]$ProductionHealthUrl = "https://api.courtvision.ai/health",
     [int]$DurationMinutes = 60,
@@ -8,6 +10,14 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+if (-not [string]::IsNullOrWhiteSpace($StagingBaseUrl)) {
+    $StagingHealthUrl = "$($StagingBaseUrl.TrimEnd('/'))/health"
+}
+
+if (-not [string]::IsNullOrWhiteSpace($ProductionBaseUrl)) {
+    $ProductionHealthUrl = "$($ProductionBaseUrl.TrimEnd('/'))/health"
+}
 
 $deadline = (Get-Date).AddMinutes($DurationMinutes)
 $failCount = 0

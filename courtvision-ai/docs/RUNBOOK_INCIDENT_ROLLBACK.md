@@ -98,6 +98,7 @@ Principe: rollback forward-safe. Eviter DROP irreversible sans sauvegarde.
    - target_environment=production impose confirm_production=deploy-production
 5. Parametres utiles:
    - scope: staging | production | both
+   - staging_base_url / production_base_url: permet d'utiliser une URL Railway directe si le DNS custom n'est pas encore resolu
    - apply_migration: true/false
    - run_smoke_tests: true/false
    - run_health_watch: true/false
