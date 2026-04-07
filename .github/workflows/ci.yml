@@ -54,7 +54,7 @@ jobs:
       - run: npm test --workspace=@courtvision/shared -- --coverage --passWithNoTests
       - run: npm test --workspace=@courtvision/ai -- --coverage --passWithNoTests
       - run: npm test --workspace=@courtvision/api -- --coverage --passWithNoTests
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v6
         if: always()
         with:
           token: ${{ secrets['CODECOV_TOKEN'] }}
@@ -78,7 +78,7 @@ jobs:
       - run: npm ci
       - run: npm run build:shared
       - run: npm test --workspace=@courtvision/mobile -- --coverage --passWithNoTests
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v6
         if: always()
         with:
           token: ${{ secrets['CODECOV_TOKEN'] }}
