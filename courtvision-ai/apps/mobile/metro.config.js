@@ -10,6 +10,11 @@ const rootModules = path.resolve(workspaceRoot, 'node_modules');
 
 const config = getDefaultConfig(projectRoot);
 
+// Include TensorFlow Lite model binaries in Metro assets.
+if (!config.resolver.assetExts.includes('tflite')) {
+    config.resolver.assetExts.push('tflite');
+}
+
 // 1. Surveiller tous les fichiers du mono-repo (packages/* aussi)
 config.watchFolders = [...(config.watchFolders ?? []), workspaceRoot];
 

@@ -35,8 +35,16 @@ import { LANDMARKS } from './tracking'
 export interface PoseEstimationConfig {
     /** Modèle à utiliser */
     model: 'blazepose_full' | 'blazepose_lite' | 'movenet_thunder' | 'movenet_lightning'
+    /** Runtime d'inférence */
+    runtime: 'auto' | 'tflite' | 'mock'
     /** Backend d'accélération hardware */
     delegate: 'gpu' | 'coreml' | 'nnapi' | 'cpu'
+    /** Chemin/identifiant du modèle TFLite */
+    modelPath?: string
+    /** Nombre de threads d'inférence */
+    numThreads: number
+    /** Autoriser un fallback synthétique si le runtime n'est pas disponible */
+    allowSyntheticFallback: boolean
     /** Score minimum de confiance pour un landmark */
     minConfidence: number
     /** Activer le smoothing temporel (réduit le jitter) */
@@ -86,6 +94,9 @@ export interface PoseEstimationState {
     isInitialized: boolean
     isProcessing: boolean
     currentModel: string
+    runtime: 'uninitialized' | 'tflite' | 'mock'
+    modelLoaded: boolean
+    lastRuntimeError?: string
     averageInferenceMs: number
     framesProcessed: number
     delegate: string
@@ -149,11 +160,189 @@ export const BLAZEPOSE_LANDMARK_NAMES = [
 /** Configuration par défaut optimisée pour le mobile */
 export const DEFAULT_POSE_CONFIG: PoseEstimationConfig = {
     model: 'blazepose_full',
+    runtime: 'auto',
     delegate: 'gpu',
+    modelPath: typeof process !== 'undefined' ? process.env.CV_POSE_TFLITE_MODEL_PATH : undefined,
+    numThreads: 2,
+    allowSyntheticFallback: typeof process === 'undefined' || process.env.NODE_ENV !== 'production',
     minConfidence: 0.5,
     enableSmoothing: true,
     maxPersons: 1,
     inputResolution: { width: 256, height: 256 },
+}
+
+interface RuntimeLandmark {
+    x: number
+    y: number
+    z: number
+    visibility: number
+}
+
+interface PoseRuntimeAdapter {
+    initialize(config: PoseEstimationConfig): Promise<void>
+    infer(frameData: Uint8Array | ArrayBuffer, inputResolution: { width: number; height: number }): Promise<RuntimeLandmark[] | null>
+    dispose(): Promise<void>
+}
+
+class TFLitePoseRuntimeAdapter implements PoseRuntimeAdapter {
+    private model: any = null
+
+    async initialize(config: PoseEstimationConfig): Promise<void> {
+        const tflite = this.loadModule()
+        const loadModel = tflite?.loadTensorFlowModel ?? tflite?.default?.loadTensorFlowModel
+
+        if (typeof loadModel !== 'function') {
+            throw new Error('react-native-fast-tflite runtime is unavailable')
+        }
+
+        if (!config.modelPath) {
+            throw new Error('No TFLite model path configured for pose estimation')
+        }
+
+        const preferredDelegate = this.mapDelegate(config.delegate)
+        const threads = Math.max(1, config.numThreads)
+
+        try {
+            this.model = await loadModel(config.modelPath, preferredDelegate, threads)
+        } catch (error) {
+            if (preferredDelegate === 'default') {
+                throw error
+            }
+            this.model = await loadModel(config.modelPath, 'default', threads)
+        }
+    }
+
+    async infer(
+        frameData: Uint8Array | ArrayBuffer,
+        inputResolution: { width: number; height: number }
+    ): Promise<RuntimeLandmark[] | null> {
+        if (!this.model) return null
+
+        const inputTensor = this.toInputTensor(frameData, inputResolution.width, inputResolution.height)
+
+        let output: any
+        if (typeof this.model.run === 'function') {
+            output = await this.model.run(inputTensor)
+        } else if (typeof this.model.runSync === 'function') {
+            output = this.model.runSync(inputTensor)
+        } else {
+            throw new Error('TFLite model does not expose run or runSync')
+        }
+
+        return this.decodeLandmarks(output)
+    }
+
+    async dispose(): Promise<void> {
+        try {
+            if (this.model?.close) {
+                await this.model.close()
+            }
+        } finally {
+            this.model = null
+        }
+    }
+
+    private loadModule(): any {
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            return require('react-native-fast-tflite')
+        } catch {
+            return null
+        }
+    }
+
+    private mapDelegate(delegate: PoseEstimationConfig['delegate']): string {
+        switch (delegate) {
+            case 'coreml': return 'core-ml'
+            case 'gpu': return 'gpu'
+            case 'nnapi': return 'nnapi'
+            case 'cpu':
+            default:
+                return 'default'
+        }
+    }
+
+    private toInputTensor(frameData: Uint8Array | ArrayBuffer, width: number, height: number): Float32Array {
+        const source = frameData instanceof Uint8Array ? frameData : new Uint8Array(frameData)
+        const expected = width * height * 3
+        const tensor = new Float32Array(expected)
+
+        if (source.length === 0) return tensor
+
+        for (let i = 0; i < expected; i++) {
+            const srcIndex = Math.min(source.length - 1, Math.floor((i * source.length) / expected))
+            tensor[i] = source[srcIndex] / 255
+        }
+
+        return tensor
+    }
+
+    private decodeLandmarks(output: any): RuntimeLandmark[] | null {
+        const values: number[] = []
+        this.collectNumericValues(output, values)
+
+        if (values.length < 33 * 3) {
+            return null
+        }
+
+        const stride = values.length >= 33 * 5
+            ? 5
+            : values.length >= 33 * 4
+                ? 4
+                : 3
+
+        const landmarks: RuntimeLandmark[] = []
+        for (let i = 0; i < 33; i++) {
+            const base = i * stride
+            if (base + 2 >= values.length) return null
+
+            const x = values[base]
+            const y = values[base + 1]
+            const z = values[base + 2] ?? 0
+            const visibility = stride >= 4 ? values[base + 3] : 1
+
+            landmarks.push({
+                x: Math.min(1, Math.max(0, x)),
+                y: Math.min(1, Math.max(0, y)),
+                z,
+                visibility: Math.min(1, Math.max(0, visibility)),
+            })
+        }
+
+        return landmarks
+    }
+
+    private collectNumericValues(source: any, out: number[]): void {
+        if (source == null) return
+
+        if (typeof source === 'number') {
+            if (Number.isFinite(source)) out.push(source)
+            return
+        }
+
+        if (ArrayBuffer.isView(source)) {
+            const view = source as unknown as { length?: number; byteLength?: number; [index: number]: number }
+            const length = typeof view.length === 'number' ? view.length : (view.byteLength ?? 0)
+            for (let i = 0; i < length; i++) {
+                const value = view[i]
+                if (Number.isFinite(value)) out.push(value)
+            }
+            return
+        }
+
+        if (Array.isArray(source)) {
+            for (const item of source) {
+                this.collectNumericValues(item, out)
+            }
+            return
+        }
+
+        if (typeof source === 'object') {
+            for (const value of Object.values(source)) {
+                this.collectNumericValues(value, out)
+            }
+        }
+    }
 }
 
 /** Seuils biomécaniques basés sur la recherche */
@@ -256,6 +445,8 @@ export class PoseEstimationEngine {
     private state: PoseEstimationState
     private smoother: OneEuroFilter
     private inferenceHistory: number[] = []
+    private runtimeAdapter: PoseRuntimeAdapter | null = null
+    private inferenceQueue: Promise<void> = Promise.resolve()
 
     constructor(config: Partial<PoseEstimationConfig> = {}) {
         this.config = { ...DEFAULT_POSE_CONFIG, ...config }
@@ -263,6 +454,9 @@ export class PoseEstimationEngine {
             isInitialized: false,
             isProcessing: false,
             currentModel: this.config.model,
+            runtime: 'uninitialized',
+            modelLoaded: false,
+            lastRuntimeError: undefined,
             averageInferenceMs: 0,
             framesProcessed: 0,
             delegate: this.config.delegate,
@@ -275,16 +469,33 @@ export class PoseEstimationEngine {
      * En production, cela charge le modèle TFLite dans la mémoire GPU.
      */
     async initialize(): Promise<void> {
-        // NOTE: En production, ici on chargerait le modèle TFLite :
-        // - iOS: via CoreML delegate (accès Neural Engine)
-        // - Android: via GPU delegate (OpenGL ES / OpenCL)
-        //
-        // Exemple pseudo-code :
-        // const model = await TFLite.loadModel({
-        //   modelPath: `models/${this.config.model}.tflite`,
-        //   delegate: this.config.delegate,
-        //   numThreads: 4,
-        // })
+        this.state.lastRuntimeError = undefined
+
+        const shouldUseTflite = this.config.runtime === 'tflite' || this.config.runtime === 'auto'
+
+        if (shouldUseTflite) {
+            this.runtimeAdapter = new TFLitePoseRuntimeAdapter()
+            try {
+                await this.runtimeAdapter.initialize(this.config)
+                this.state.runtime = 'tflite'
+                this.state.modelLoaded = true
+                this.state.isInitialized = true
+                return
+            } catch (error) {
+                this.runtimeAdapter = null
+                this.state.modelLoaded = false
+                this.state.lastRuntimeError = error instanceof Error ? error.message : String(error)
+
+                if (!this.config.allowSyntheticFallback) {
+                    throw new Error(`TFLite pose runtime initialization failed: ${this.state.lastRuntimeError}`)
+                }
+
+                console.warn('[PoseEstimation] TFLite runtime unavailable, fallback to synthetic landmarks:', this.state.lastRuntimeError)
+            }
+        }
+
+        this.state.runtime = 'mock'
+        this.state.modelLoaded = false
         this.state.isInitialized = true
     }
 
@@ -587,13 +798,31 @@ export class PoseEstimationEngine {
     private async runInference(
         frameData: Uint8Array | ArrayBuffer
     ): Promise<Array<{ x: number; y: number; z: number; visibility: number }> | null> {
-        // Production hook: replace this block with the real TFLite runtime call:
-        //
-        // const tensor = this.preprocessFrame(frameData)
-        // const output = await this.model.run(tensor)
-        // return this.decodeOutput(output)
-        //
-        // Pour le développement, on simule un délai d'inférence réaliste
+        if (this.state.runtime === 'tflite' && this.runtimeAdapter) {
+            try {
+                return await this.enqueueInference(() => this.runtimeAdapter!.infer(frameData, this.config.inputResolution))
+            } catch (error) {
+                this.state.lastRuntimeError = error instanceof Error ? error.message : String(error)
+                if (!this.config.allowSyntheticFallback) {
+                    throw error
+                }
+                this.state.runtime = 'mock'
+                console.warn('[PoseEstimation] TFLite inference failed, switching to synthetic fallback:', this.state.lastRuntimeError)
+            }
+        }
+
+        return this.runSyntheticInference(frameData)
+    }
+
+    private enqueueInference<T>(task: () => Promise<T>): Promise<T> {
+        const next = this.inferenceQueue.then(task, task)
+        this.inferenceQueue = next.then(() => undefined, () => undefined)
+        return next
+    }
+
+    private async runSyntheticInference(
+        frameData: Uint8Array | ArrayBuffer
+    ): Promise<Array<{ x: number; y: number; z: number; visibility: number }> | null> {
         await new Promise(resolve => setTimeout(resolve, 2))
 
         // Simulate realistic BlazePose 33-landmark output for dev/testing
@@ -794,8 +1023,15 @@ export class PoseEstimationEngine {
 
     /** Libère les ressources (modèle TFLite) */
     async dispose(): Promise<void> {
-        // En production : this.model.dispose()
+        if (this.runtimeAdapter) {
+            await this.runtimeAdapter.dispose()
+            this.runtimeAdapter = null
+        }
+
+        this.inferenceQueue = Promise.resolve()
         this.state.isInitialized = false
+        this.state.runtime = 'uninitialized'
+        this.state.modelLoaded = false
         this.smoother.reset()
     }
 }

@@ -5,12 +5,22 @@
     "build": {
         "development": {
             "developmentClient": true,
-            "distribution": "internal"
+            "distribution": "internal",
+            "env": {
+                "EXPO_PUBLIC_TFLITE_POSE_MODEL": "assets/models/pose_landmark_lite.tflite"
+            }
         },
         "preview": {
-            "distribution": "internal"
+            "distribution": "internal",
+            "env": {
+                "EXPO_PUBLIC_TFLITE_POSE_MODEL": "assets/models/pose_landmark_lite.tflite"
+            }
         },
-        "production": {}
+        "production": {
+            "env": {
+                "EXPO_PUBLIC_TFLITE_POSE_MODEL": "assets/models/pose_landmark_lite.tflite"
+            }
+        }
     },
     "submit": {
         "production": {}

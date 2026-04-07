@@ -604,6 +604,75 @@ export class MarketplaceService {
     }
 
     /**
+     * Follow a creator in marketplace context.
+     */
+    async followCreator(userId: string, creatorUserId: string): Promise<{ isFollowing: boolean; followers: number }> {
+        if (userId === creatorUserId) {
+            throw new Error('Cannot follow yourself')
+        }
+
+        await this.ensureCreatorExists(creatorUserId)
+
+        const { error } = await this.supabase
+            .from('user_follows')
+            .insert({ follower_id: userId, following_id: creatorUserId })
+
+        if (error && error.code !== '23505') {
+            throw new Error(`Failed to follow creator: ${error.message}`)
+        }
+
+        const followState = await this.getCreatorFollowState(userId, creatorUserId)
+        logger.info({ userId, creatorUserId }, '[Marketplace] Creator followed')
+        return followState
+    }
+
+    /**
+     * Unfollow a creator in marketplace context.
+     */
+    async unfollowCreator(userId: string, creatorUserId: string): Promise<{ isFollowing: boolean; followers: number }> {
+        await this.ensureCreatorExists(creatorUserId)
+
+        const { error } = await this.supabase
+            .from('user_follows')
+            .delete()
+            .eq('follower_id', userId)
+            .eq('following_id', creatorUserId)
+
+        if (error) {
+            throw new Error(`Failed to unfollow creator: ${error.message}`)
+        }
+
+        const followState = await this.getCreatorFollowState(userId, creatorUserId)
+        logger.info({ userId, creatorUserId }, '[Marketplace] Creator unfollowed')
+        return followState
+    }
+
+    /**
+     * Get follow status for the authenticated user and follower count for a creator.
+     */
+    async getCreatorFollowState(userId: string, creatorUserId: string): Promise<{ isFollowing: boolean; followers: number }> {
+        await this.ensureCreatorExists(creatorUserId)
+
+        const [{ data: existingFollow }, { count: followersCount }] = await Promise.all([
+            this.supabase
+                .from('user_follows')
+                .select('follower_id')
+                .eq('follower_id', userId)
+                .eq('following_id', creatorUserId)
+                .maybeSingle(),
+            this.supabase
+                .from('user_follows')
+                .select('*', { count: 'exact', head: true })
+                .eq('following_id', creatorUserId),
+        ])
+
+        return {
+            isFollowing: !!existingFollow,
+            followers: followersCount || 0,
+        }
+    }
+
+    /**
      * Get marketplace stats
      */
     async getStats(): Promise<MarketplaceStats> {
@@ -738,6 +807,22 @@ export class MarketplaceService {
         }))
 
         return counts
+    }
+
+    private async ensureCreatorExists(creatorUserId: string): Promise<void> {
+        const { data, error } = await this.supabase
+            .from('creator_profiles')
+            .select('id')
+            .eq('user_id', creatorUserId)
+            .maybeSingle()
+
+        if (error) {
+            throw new Error(`Failed to resolve creator: ${error.message}`)
+        }
+
+        if (!data) {
+            throw new Error('Creator not found')
+        }
     }
 
     private mapPack(data: any, isPurchased = false): DrillPack {

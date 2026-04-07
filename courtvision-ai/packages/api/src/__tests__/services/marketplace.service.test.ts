@@ -80,4 +80,102 @@ describe('MarketplaceService', () => {
 
         expect(profile).toBeNull()
     })
+
+    it('follows a creator and returns follow state', async () => {
+        let userFollowCalls = 0
+
+        const supabase = {
+            from: jest.fn((table: string) => {
+                if (table === 'creator_profiles') {
+                    return {
+                        select: jest.fn().mockReturnThis(),
+                        eq: jest.fn().mockReturnThis(),
+                        maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'creator-1' }, error: null }),
+                    }
+                }
+
+                if (table === 'user_follows') {
+                    userFollowCalls += 1
+
+                    if (userFollowCalls === 1) {
+                        return {
+                            insert: jest.fn().mockResolvedValue({ error: null }),
+                        }
+                    }
+
+                    if (userFollowCalls === 2) {
+                        return {
+                            select: jest.fn().mockReturnThis(),
+                            eq: jest.fn().mockReturnThis(),
+                            maybeSingle: jest.fn().mockResolvedValue({ data: { follower_id: 'viewer-1' }, error: null }),
+                        }
+                    }
+
+                    return {
+                        select: jest.fn().mockReturnThis(),
+                        eq: jest.fn().mockResolvedValue({ count: 17, error: null }),
+                    }
+                }
+
+                throw new Error(`Unexpected table: ${table}`)
+            }),
+        }
+
+        const service = new MarketplaceService(supabase as any)
+        const state = await service.followCreator('viewer-1', 'creator-user-1')
+
+        expect(state.isFollowing).toBe(true)
+        expect(state.followers).toBe(17)
+    })
+
+    it('unfollows a creator and returns follow state', async () => {
+        let userFollowCalls = 0
+
+        const supabase = {
+            from: jest.fn((table: string) => {
+                if (table === 'creator_profiles') {
+                    return {
+                        select: jest.fn().mockReturnThis(),
+                        eq: jest.fn().mockReturnThis(),
+                        maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'creator-1' }, error: null }),
+                    }
+                }
+
+                if (table === 'user_follows') {
+                    userFollowCalls += 1
+
+                    if (userFollowCalls === 1) {
+                        const query: any = {
+                            delete: jest.fn().mockReturnThis(),
+                            eq: jest.fn(),
+                        }
+                        query.eq.mockReturnValueOnce(query)
+                        query.eq.mockReturnValueOnce(Promise.resolve({ error: null }))
+                        return query
+                    }
+
+                    if (userFollowCalls === 2) {
+                        return {
+                            select: jest.fn().mockReturnThis(),
+                            eq: jest.fn().mockReturnThis(),
+                            maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+                        }
+                    }
+
+                    return {
+                        select: jest.fn().mockReturnThis(),
+                        eq: jest.fn().mockResolvedValue({ count: 16, error: null }),
+                    }
+                }
+
+                throw new Error(`Unexpected table: ${table}`)
+            }),
+        }
+
+        const service = new MarketplaceService(supabase as any)
+        const state = await service.unfollowCreator('viewer-1', 'creator-user-1')
+
+        expect(state.isFollowing).toBe(false)
+        expect(state.followers).toBe(16)
+    })
 })

@@ -1368,11 +1368,62 @@ export class TwinBuilder {
             }
         }
 
+        const shotInference = this.detectDominantHandFromShots()
+        if (shotInference === 'right') rightSignals += 2
+        if (shotInference === 'left') leftSignals += 2
+
         if (rightSignals === 0 && leftSignals === 0) {
-            return this.previousProfile?.poseSignature.dominantHand ?? 'right'
+            return this.previousProfile?.poseSignature.dominantHand ?? this.inferNeutralDominantHand()
         }
 
-        return rightSignals >= leftSignals ? 'right' : 'left'
+        const previous = this.previousProfile?.poseSignature.dominantHand
+        const totalSignals = rightSignals + leftSignals
+        const confidenceGap = Math.abs(rightSignals - leftSignals) / Math.max(1, totalSignals)
+
+        if (previous && confidenceGap < 0.08) {
+            return previous
+        }
+
+        return rightSignals > leftSignals ? 'right' : 'left'
+    }
+
+    private detectDominantHandFromShots(): 'right' | 'left' | null {
+        let leftSideShots = 0
+        let rightSideShots = 0
+
+        for (const session of this.sessions) {
+            for (const shot of session.shots) {
+                const x = shot.courtPosition?.x
+                if (typeof x !== 'number') continue
+
+                if (x < 7.2) leftSideShots += 1
+                else if (x > 7.8) rightSideShots += 1
+            }
+        }
+
+        const totalSignals = leftSideShots + rightSideShots
+        if (totalSignals < 6) return null
+
+        if (leftSideShots > rightSideShots * 1.2) return 'right'
+        if (rightSideShots > leftSideShots * 1.2) return 'left'
+        return null
+    }
+
+    private inferNeutralDominantHand(): 'right' | 'left' {
+        const seedSource = [
+            MODEL_VERSION,
+            this.previousProfile?.updatedAt ?? '',
+            ...this.sessions.map((session) => `${session.sessionId}:${session.date}:${session.type}`),
+        ].join('|')
+
+        let hash = 2166136261
+        for (let i = 0; i < seedSource.length; i++) {
+            hash ^= seedSource.charCodeAt(i)
+            hash = Math.imul(hash, 16777619)
+        }
+
+        const bucket = Math.abs(hash >>> 0) % 100
+        return bucket < 85 ? 'right' : 'left'
     }
 
     private createEmptyProfile(): TwinProfile {
@@ -1389,7 +1440,7 @@ export class TwinBuilder {
             comfortZones: [],
             evolution: [],
             preferredZones: {},
-            poseSignature: { avgElbowAngle: 0, avgReleaseHeight: 0, avgArcAngle: 45, avgMaxVertical: 0, avgShoulderPosture: 50, dominantHand: 'right' },
+            poseSignature: { avgElbowAngle: 0, avgReleaseHeight: 0, avgArcAngle: 45, avgMaxVertical: 0, avgShoulderPosture: 50, dominantHand: this.inferNeutralDominantHand() },
             mentalProfile: { resilience: 50, clutchFactor: 50, consistency: 50, pressureResponse: 'neutral', fatigueResistance: 50 },
         }
     }

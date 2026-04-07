@@ -7,12 +7,18 @@ on:
       - 'courtvision-ai/apps/mobile/**'
       - 'courtvision-ai/packages/shared/**'
       - 'courtvision-ai/packages/ai/**'
+      - 'courtvision-ai/package-lock.json'
+      - 'courtvision-ai/package.json'
+      - 'courtvision-ai/scripts/check-mobile-release.js'
   push:
     branches: [main]
     paths:
       - 'courtvision-ai/apps/mobile/**'
       - 'courtvision-ai/packages/shared/**'
       - 'courtvision-ai/packages/ai/**'
+      - 'courtvision-ai/package-lock.json'
+      - 'courtvision-ai/package.json'
+      - 'courtvision-ai/scripts/check-mobile-release.js'
 
 jobs:
   build:
@@ -32,6 +38,10 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+        working-directory: courtvision-ai
+
+      - name: Validate mobile release configuration
+        run: npm run check:mobile:release
         working-directory: courtvision-ai
 
       - name: Setup Expo

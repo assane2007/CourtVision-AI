@@ -20,6 +20,9 @@ import { MarketplaceService } from '../services/marketplace.service'
  * - POST /drills/:id/review   → Laisser un avis
  * - GET  /drills/:id/reviews  → Avis d'un drill
  * - GET  /creators/:id        → Profil créateur
+ * - GET  /creators/:id/follow → Etat d'abonnement au créateur
+ * - POST /creators/:id/follow → S'abonner au créateur
+ * - DELETE /creators/:id/follow → Se désabonner du créateur
  * - GET  /stats               → Stats marketplace
  */
 
@@ -69,6 +72,10 @@ const reviewSchema = z.object({
 })
 
 const packIdSchema = z.object({
+    id: z.string().uuid(),
+})
+
+const creatorIdSchema = z.object({
     id: z.string().uuid(),
 })
 
@@ -289,12 +296,64 @@ export default async function marketplaceRoutes(fastify: FastifyInstance) {
     // ==========================================
     fastify.get('/creators/:id', async (request, reply) => {
         try {
-            const { id } = z.object({ id: z.string().uuid() }).parse(request.params)
+            const { id } = creatorIdSchema.parse(request.params)
             const profile = await marketplaceService.getCreatorProfile(id)
             if (!profile) return reply.code(404).send({ error: 'Creator not found' })
             return { success: true, data: profile }
         } catch (error: any) {
             request.log.error({ err: error }, 'Marketplace creator profile failed')
+            return reply.code(500).send({ error: error.message })
+        }
+    })
+
+    // ==========================================
+    // GET /creators/:id/follow — Etat follow
+    // ==========================================
+    fastify.get('/creators/:id/follow', async (request, reply) => {
+        try {
+            const user = request.user!
+            const { id } = creatorIdSchema.parse(request.params)
+
+            const state = await marketplaceService.getCreatorFollowState(user.id, id)
+            return { success: true, data: state }
+        } catch (error: any) {
+            if (error.message.includes('not found')) return reply.code(404).send({ error: error.message })
+            request.log.error({ err: error }, 'Marketplace creator follow state failed')
+            return reply.code(500).send({ error: error.message })
+        }
+    })
+
+    // ==========================================
+    // POST /creators/:id/follow — Follow créateur
+    // ==========================================
+    fastify.post('/creators/:id/follow', async (request, reply) => {
+        try {
+            const user = request.user!
+            const { id } = creatorIdSchema.parse(request.params)
+
+            const state = await marketplaceService.followCreator(user.id, id)
+            return { success: true, data: state }
+        } catch (error: any) {
+            if (error.message.includes('Cannot follow yourself')) return reply.code(400).send({ error: error.message })
+            if (error.message.includes('not found')) return reply.code(404).send({ error: error.message })
+            request.log.error({ err: error }, 'Marketplace creator follow failed')
+            return reply.code(500).send({ error: error.message })
+        }
+    })
+
+    // ==========================================
+    // DELETE /creators/:id/follow — Unfollow créateur
+    // ==========================================
+    fastify.delete('/creators/:id/follow', async (request, reply) => {
+        try {
+            const user = request.user!
+            const { id } = creatorIdSchema.parse(request.params)
+
+            const state = await marketplaceService.unfollowCreator(user.id, id)
+            return { success: true, data: state }
+        } catch (error: any) {
+            if (error.message.includes('not found')) return reply.code(404).send({ error: error.message })
+            request.log.error({ err: error }, 'Marketplace creator unfollow failed')
             return reply.code(500).send({ error: error.message })
         }
     })

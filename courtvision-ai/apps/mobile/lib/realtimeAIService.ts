@@ -31,6 +31,9 @@
 import { DemoSimulator } from './demoSimulator'
 import { LiveCoachService } from './liveCoachService'
 import { analyzeFrame, analyzeFrameFromUri, isCVEngineAvailable, type CVFrameResult } from './cvEngineService'
+import { TFLitePoseRuntime } from './tflitePoseRuntime'
+
+const DEFAULT_TFLITE_POSE_MODEL_SOURCE = 'assets/models/pose_landmark_lite.tflite'
 
 /** Landmark 3D (BlazePose / MoveNet) */
 export interface Landmark {
@@ -204,6 +207,12 @@ export interface RealtimeAIConfig {
     maxShotsInMemory: number
     /** Activer le mode démo (simulation réaliste sans caméra) */
     enableDemoMode: boolean
+    /** Activer l'inférence locale via TFLite sur mobile */
+    enableLocalTFLitePose: boolean
+    /** Source du modèle TFLite (asset id ou chemin runtime) */
+    tflitePoseModelSource?: string | number
+    /** Delegate TFLite préféré */
+    tfliteDelegate?: 'gpu' | 'core-ml' | 'nnapi' | 'cpu'
     /** Profil de joueur pour le mode démo */
     demoProfile: 'elite' | 'good' | 'average' | 'developing'
     /** Callback pour les événements de tir */
@@ -286,6 +295,7 @@ const DEFAULT_REALTIME_CONFIG: RealtimeAIConfig = {
     enableAudio: false,
     maxShotsInMemory: 200,
     enableDemoMode: false,
+    enableLocalTFLitePose: true,
     demoProfile: 'good',
 }
 
@@ -308,6 +318,9 @@ export class RealtimeAIService {
     private liveCoach: LiveCoachService | null = null
     private serverSessionStarted = false
     private cvEngineAvailable = false
+    private poseRuntime: TFLitePoseRuntime | null = null
+    private poseRuntimeReady = false
+    private frameQueue: Promise<void> = Promise.resolve()
 
     // Shot detection state for CV Engine mode
     private recentElbowAngles: number[] = []
@@ -360,6 +373,23 @@ export class RealtimeAIService {
         //
         // Real mode: check CV Engine availability
         if (!this.config.enableDemoMode) {
+            if (this.config.enableLocalTFLitePose) {
+                const envModelSource = (typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_TFLITE_POSE_MODEL : undefined)?.trim()
+                const configuredModelSource = this.config.tflitePoseModelSource ?? (envModelSource || DEFAULT_TFLITE_POSE_MODEL_SOURCE)
+                const modelSource = this.resolveTfliteModelSource(configuredModelSource)
+                this.poseRuntime = new TFLitePoseRuntime({
+                    modelSource,
+                    delegate: this.config.tfliteDelegate,
+                })
+                this.poseRuntimeReady = await this.poseRuntime.initialize()
+
+                if (this.poseRuntimeReady) {
+                    console.log('[RealtimeAI] Local TFLite pose runtime initialized')
+                } else {
+                    console.log('[RealtimeAI] Local TFLite pose runtime unavailable — using CV Engine/API fallback')
+                }
+            }
+
             this.cvEngineAvailable = await isCVEngineAvailable()
             if (this.cvEngineAvailable) {
                 console.log('[RealtimeAI] CV Engine available — real pose estimation active')
@@ -392,6 +422,8 @@ export class RealtimeAIService {
         this.totalProcessingTime = 0
         this.fpsHistory = []
         this.lastFrameTime = 0
+        this.recentElbowAngles = []
+        this.shotPhase = 'idle'
 
         // Initialize server-side processing for real mode
         if (!this.config.enableDemoMode) {
@@ -422,6 +454,24 @@ export class RealtimeAIService {
         return this.sessionId
     }
 
+    private resolveTfliteModelSource(source: string | number): string | number {
+        if (typeof source !== 'string') {
+            return source
+        }
+
+        if (source === DEFAULT_TFLITE_POSE_MODEL_SOURCE) {
+            try {
+                // Resolve bundled model path to an Expo asset id in native builds.
+                // eslint-disable-next-line @typescript-eslint/no-var-requires
+                return require('../assets/models/pose_landmark_lite.tflite')
+            } catch {
+                return source
+            }
+        }
+
+        return source
+    }
+
     /**
      * Traite une frame capturée par la caméra.
      *
@@ -448,6 +498,15 @@ export class RealtimeAIService {
         if (!this.sessionActive) {
             throw new Error('No active session. Call startSession() first.')
         }
+
+        const pendingQueue = this.frameQueue
+        let releaseQueue: () => void = () => { }
+        this.frameQueue = new Promise<void>((resolve) => {
+            releaseQueue = () => resolve()
+        })
+        await pendingQueue
+
+        try {
 
         const startTime = performance.now()
         this.frameCount++
@@ -501,8 +560,149 @@ export class RealtimeAIService {
         const arFrame: AROverlayFrame | null = null
         let instantFeedback: ARFeedback | null = null
 
+        // ── Try local TFLite pose runtime first (on-device) ──
+        if (this.poseRuntimeReady && this.poseRuntime) {
+            try {
+                const localResult = await this.poseRuntime.infer(frameData)
+                if (localResult && localResult.landmarks.length >= 33) {
+                    const landmarksPx = localResult.landmarks.map((lm) => ({
+                        x: lm.x * frameWidth,
+                        y: lm.y * frameHeight,
+                        z: lm.z,
+                        visibility: lm.visibility,
+                    }))
+
+                    const confidence = localResult.landmarks.reduce((sum, lm) => sum + lm.visibility, 0) / localResult.landmarks.length
+
+                    pose = {
+                        landmarks: landmarksPx,
+                        normalizedLandmarks: localResult.landmarks.map((lm, i) => ({
+                            x: lm.x,
+                            y: lm.y,
+                            z: lm.z,
+                            visibility: lm.visibility,
+                            name: `landmark_${i}`,
+                        })),
+                        confidence,
+                        boundingBox: { x: 0, y: 0, width: frameWidth, height: frameHeight },
+                        inferenceTimeMs: localResult.inferenceMs,
+                        frameIndex,
+                        timestamp,
+                    }
+
+                    const angle = (a: { x: number; y: number } | undefined, b: { x: number; y: number } | undefined, c: { x: number; y: number } | undefined): number => {
+                        if (!a || !b || !c) return 0
+                        const radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x)
+                        let deg = Math.abs(radians * (180 / Math.PI))
+                        if (deg > 180) deg = 360 - deg
+                        return deg
+                    }
+
+                    const rightShoulder = localResult.landmarks[12]
+                    const leftShoulder = localResult.landmarks[11]
+                    const rightElbow = localResult.landmarks[14]
+                    const leftElbow = localResult.landmarks[13]
+                    const rightWrist = localResult.landmarks[16]
+                    const leftWrist = localResult.landmarks[15]
+                    const rightHip = localResult.landmarks[24]
+                    const leftHip = localResult.landmarks[23]
+                    const rightKnee = localResult.landmarks[26]
+                    const leftKnee = localResult.landmarks[25]
+                    const rightAnkle = localResult.landmarks[28]
+                    const leftAnkle = localResult.landmarks[27]
+
+                    const elbowAngle = angle(rightShoulder, rightElbow, rightWrist)
+                    const kneeAngle = angle(rightHip, rightKnee, rightAnkle)
+                    const leftKneeAngle = angle(leftHip, leftKnee, leftAnkle)
+
+                    bodyAngles = {
+                        rightElbowAngle: elbowAngle,
+                        leftElbowAngle: angle(leftShoulder, leftElbow, leftWrist),
+                        rightShoulderAngle: angle(rightElbow, rightShoulder, rightHip),
+                        rightKneeAngle: kneeAngle,
+                        leftKneeAngle,
+                        trunkAngle: 0,
+                        rightHipAngle: angle(rightShoulder, rightHip, rightKnee),
+                    }
+
+                    const wristAboveShoulder = !!rightWrist && !!rightShoulder && rightWrist.y < rightShoulder.y
+                    const lAnkleY = leftAnkle?.y ?? 1
+                    const rAnkleY = rightAnkle?.y ?? 1
+                    const noseY = localResult.landmarks[0]?.y ?? 0
+                    const playerHeightPx = Math.max(1, Math.abs(Math.max(lAnkleY, rAnkleY) - noseY) * frameHeight)
+
+                    biomechanics = {
+                        elbowAngle,
+                        releaseHeightRatio: wristAboveShoulder ? 1.1 : 0.95,
+                        playerHeightPx,
+                        ballPosition: {
+                            x: ((leftWrist?.x ?? 0.5) + (rightWrist?.x ?? 0.5)) / 2,
+                            y: Math.min(leftWrist?.y ?? 0.5, rightWrist?.y ?? 0.5),
+                        },
+                        hasGoodBase: Math.abs((leftAnkle?.x ?? 0.5) - (rightAnkle?.x ?? 0.5)) > 0.08,
+                        kneeFlexion: (kneeAngle + leftKneeAngle) / 2,
+                        isAligned: elbowAngle >= 80 && elbowAngle <= 110,
+                        postureQuality: Math.max(0, 100 - Math.abs(elbowAngle - 95) * 2),
+                    }
+
+                    // Shot detection via elbow angle change
+                    this.recentElbowAngles.push(elbowAngle)
+                    if (this.recentElbowAngles.length > 20) this.recentElbowAngles.shift()
+
+                    if (this.recentElbowAngles.length >= 3) {
+                        const prev = this.recentElbowAngles[this.recentElbowAngles.length - 2]
+                        const delta = elbowAngle - prev
+
+                        if (this.shotPhase === 'idle' && delta < -8) {
+                            this.shotPhase = 'cocking'
+                        } else if (this.shotPhase === 'cocking' && delta > 12 && elbowAngle > 85) {
+                            this.shotPhase = 'releasing'
+                        } else if (this.shotPhase === 'releasing') {
+                            this.shotPhase = 'idle'
+
+                            detectedShot = {
+                                shotId: `tflite_${Date.now()}`,
+                                completedPhase: 'resolved',
+                                phaseTimestamps: {
+                                    gatherStart: timestamp - 1.5,
+                                    releasePoint: timestamp - 0.6,
+                                    followThroughStart: timestamp - 0.3,
+                                    ballFlightStart: timestamp - 0.1,
+                                    resolved: timestamp,
+                                },
+                                releaseBiomechanics: biomechanics,
+                                setPointElbowAngle: elbowAngle,
+                                releaseTime: 0.6,
+                                hasFollowThrough: wristAboveShoulder,
+                                followThroughDuration: wristAboveShoulder ? 0.4 : 0.1,
+                                outcome: null,
+                                detectionConfidence: confidence,
+                                angleTimeline: [bodyAngles],
+                                wristTrajectory: [],
+                            } as DetectedShot
+
+                            const isGoodElbow = elbowAngle >= 88 && elbowAngle <= 100
+                            instantFeedback = {
+                                type: isGoodElbow ? 'success' : 'warning',
+                                message: isGoodElbow
+                                    ? `Great release! Elbow ${Math.round(elbowAngle)}°`
+                                    : `Elbow ${Math.round(elbowAngle)}° — aim for 90-100°`,
+                                detail: `Knee: ${Math.round(kneeAngle)}° | Follow-through: ${wristAboveShoulder ? 'Yes' : 'No'}`,
+                                icon: isGoodElbow ? '🎯' : '📐',
+                                duration: 3000,
+                                position: 'top',
+                                vibrate: !isGoodElbow,
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('[RealtimeAI] Local TFLite frame error:', (err as Error)?.message)
+            }
+        }
+
         // ── Try CV Engine first (real pose estimation) ──
-        if (this.cvEngineAvailable && typeof frameData === 'string') {
+        if (!pose && this.cvEngineAvailable && typeof frameData === 'string') {
             try {
                 const cvResult: CVFrameResult = frameData.startsWith('file://')
                     ? await analyzeFrameFromUri(frameData)
@@ -676,6 +876,9 @@ export class RealtimeAIService {
             instantFeedback,
             processingTimeMs: Math.round(processingTimeMs * 100) / 100,
             currentFps,
+        }
+        } finally {
+            releaseQueue()
         }
     }
 
@@ -924,6 +1127,12 @@ export class RealtimeAIService {
         if (this.sessionActive) {
             this.endSession()
         }
+        if (this.poseRuntime) {
+            await this.poseRuntime.dispose()
+            this.poseRuntime = null
+        }
+        this.poseRuntimeReady = false
+        this.frameQueue = Promise.resolve()
         // En production : await this.poseEngine.dispose()
         this.isInitialized = false
         RealtimeAIService.instance = null

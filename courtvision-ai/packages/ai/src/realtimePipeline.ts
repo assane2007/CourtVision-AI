@@ -46,6 +46,10 @@ import { BallTrackerEngine } from './ballTracker'
 import type { AROverlayFrame, AROverlayConfig} from './arOverlay';
 import { AROverlayEngine, ARFeedback } from './arOverlay'
 import type { ShotResult, ShotZone } from './shotAnalysis'
+import type { CourtZone } from './reconstruction3d'
+import { getCourtZone } from './reconstruction3d'
+import type { CalibrationPoints } from './preprocessing'
+import { applyHomography, computeHomography } from './preprocessing'
 import type { ShotDNASignature } from './shotDNA';
 import { ShotDNAEngine } from './shotDNA'
 
@@ -55,12 +59,22 @@ import { ShotDNAEngine } from './shotDNA'
 
 export type PipelineMode = 'full' | 'lite' | 'recording'
 
+export interface PipelineCourtCalibrationConfig {
+    /** Points de calibration caméra (pixels) */
+    points?: CalibrationPoints
+    /** Homographie déjà calculée (caméra → terrain) */
+    homographyMatrix?: number[][]
+    /** Dimensions terrain cible (mètres) */
+    courtDimensions?: { width: number; height: number }
+}
+
 export interface RealtimePipelineConfig {
     mode: PipelineMode
     pose: Partial<PoseEstimationConfig>
     shotDetector: Partial<ShotDetectorConfig>
     ballTracker: Partial<BallTrackerConfig>
     arOverlay: Partial<AROverlayConfig>
+    courtCalibration?: PipelineCourtCalibrationConfig
     /** Intervalle minimum entre deux frames traitées (ms) */
     minFrameIntervalMs: number
     /** Activer le feedback haptique */
@@ -156,6 +170,10 @@ export class RealtimePipelineEngine {
     private wristTrajectory: Array<{ x: number; y: number; timestamp: number }> = []
     private pendingShot: DetectedShot | null = null
     private isRunning: boolean = false
+    private homographyMatrix: number[][] | null = null
+    private courtDimensions: { width: number; height: number } = { width: 15, height: 28 }
+    private lastFrameDimensions: { width: number; height: number } = { width: 1, height: 1 }
+    private lastCourtPosition: { x: number; y: number } | null = null
 
     // Event listeners
     private eventListeners: Array<(event: PipelineEvent) => void> = []
@@ -167,6 +185,7 @@ export class RealtimePipelineEngine {
             shotDetector: {},
             ballTracker: {},
             arOverlay: {},
+            courtCalibration: undefined,
             minFrameIntervalMs: 33,  // ~30fps max
             enableHaptic: true,
             enableAudioFeedback: false,
@@ -177,6 +196,7 @@ export class RealtimePipelineEngine {
         this.shotDetector = new ShotDetectorEngine(this.config.shotDetector)
         this.ballTracker = new BallTrackerEngine(this.config.ballTracker)
         this.arOverlay = new AROverlayEngine(this.config.arOverlay)
+        this.applyCourtCalibration(this.config.courtCalibration)
 
         this.sessionStats = this.createEmptyStats()
 
@@ -214,6 +234,10 @@ export class RealtimePipelineEngine {
         ballDetection?: BallPosition,
     ): Promise<PipelineFrameResult> {
         const startTime = performance.now()
+        this.lastFrameDimensions = {
+            width: Math.max(1, frameWidth),
+            height: Math.max(1, frameHeight),
+        }
 
         // Rate limiting
         const elapsed = timestamp - this.lastFrameTimestamp
@@ -274,11 +298,12 @@ export class RealtimePipelineEngine {
                 feedback = this.generateShotFeedback(detectedShot)
 
                 // Convertir en ShotResult compatible
-                const estimatedZone = this.estimateZone()
+                const estimatedCourtPosition = this.estimateCourtPosition()
+                const estimatedZone = this.estimateZone(estimatedCourtPosition)
                 shotResult = detectedShotToShotResult(
                     detectedShot,
                     estimatedZone,
-                    this.estimateCourtPosition(estimatedZone),
+                    estimatedCourtPosition,
                 ) as ShotResult
 
                 // Ajouter la comparison NBA
@@ -389,9 +414,14 @@ export class RealtimePipelineEngine {
         this.sessionStats = this.createEmptyStats()
         this.wristTrajectory = []
         this.pendingShot = null
+        this.lastCourtPosition = null
         this.shotDetector.reset()
         this.ballTracker.reset()
         this.poseEngine.resetSmoothing()
+    }
+
+    setCourtCalibration(calibration?: PipelineCourtCalibrationConfig): void {
+        this.applyCourtCalibration(calibration)
     }
 
     // ==========================================
@@ -526,68 +556,98 @@ export class RealtimePipelineEngine {
         return 'Continue comme ça !'
     }
 
-    private estimateZone(): ShotZone {
-        // Estimate court zone from the last known pose position
-        // Uses normalized hip midpoint (x, y) as the player's floor position
-        const lastPose = this.lastPoseResult
-        if (lastPose && lastPose.landmarks.length > 24) {
-            // BlazePose: landmarks 23=left_hip, 24=right_hip
-            const lHip = lastPose.landmarks[23]
-            const rHip = lastPose.landmarks[24]
-            if (lHip && rHip) {
-                const x = (lHip.x + rHip.x) / 2  // 0-1 normalized court width
-                const y = (lHip.y + rHip.y) / 2  // 0-1 normalized (top=basket)
-
-                // Court zone estimation based on normalized camera view
-                // Assumes camera is behind the baseline looking at the court
-                const distFromBasket = y  // higher y = farther from basket
-
-                if (distFromBasket < 0.15) return 'restricted'
-                if (distFromBasket < 0.30) return 'paint'
-                if (distFromBasket < 0.50) {
-                    return (x < 0.25 || x > 0.75) ? 'corner3' : 'midrange'
-                }
-                if (x < 0.30 || x > 0.70) return 'wing3'
-                return 'top3'
-            }
-        }
-        // Fallback when no pose data is available
-        return 'midrange'
+    private estimateZone(position?: { x: number; y: number }): ShotZone {
+        const courtPosition = position ?? this.estimateCourtPosition()
+        const detailedZone = getCourtZone(courtPosition.x, courtPosition.y)
+        return this.mapCourtZoneToShotZone(detailedZone)
     }
 
-    private estimateCourtPosition(zone: ShotZone): { x: number; y: number } {
+    private estimateCourtPosition(): { x: number; y: number } {
         const lastPose = this.lastPoseResult
         if (lastPose && lastPose.landmarks.length > 24) {
             const lHip = lastPose.landmarks[23]
             const rHip = lastPose.landmarks[24]
 
             if (lHip && rHip) {
-                const xNorm = Math.min(1, Math.max(0, (lHip.x + rHip.x) / 2))
-                const yNorm = Math.min(1, Math.max(0, (lHip.y + rHip.y) / 2))
+                const pixelX = (lHip.x + rHip.x) / 2
+                const pixelY = (lHip.y + rHip.y) / 2
 
-                // Normalize camera-space hips to a half-court metric projection.
+                const rawCourtPosition = this.homographyMatrix
+                    ? applyHomography(this.homographyMatrix, pixelX, pixelY)
+                    : {
+                        x: (pixelX / this.lastFrameDimensions.width) * this.courtDimensions.width,
+                        y: (pixelY / this.lastFrameDimensions.height) * this.courtDimensions.height,
+                    }
+
+                const clamped = this.clampCourtPosition(rawCourtPosition)
+                this.lastCourtPosition = clamped
                 return {
-                    x: Math.round(xNorm * 15 * 100) / 100,
-                    y: Math.round(yNorm * 14 * 100) / 100,
+                    x: Math.round(clamped.x * 100) / 100,
+                    y: Math.round(clamped.y * 100) / 100,
                 }
             }
         }
 
-        switch (zone) {
-            case 'restricted':
-                return { x: 7.5, y: 1.5 }
-            case 'paint':
-                return { x: 7.5, y: 3.5 }
-            case 'corner3':
-                return { x: 1.2, y: 7.2 }
-            case 'wing3':
-                return { x: 3.0, y: 8.8 }
-            case 'top3':
-                return { x: 7.5, y: 9.8 }
-            case 'midrange':
-            default:
-                return { x: 7.5, y: 6.2 }
+        if (this.lastCourtPosition) {
+            return this.lastCourtPosition
         }
+
+        return {
+            x: this.courtDimensions.width / 2,
+            y: this.courtDimensions.height / 2,
+        }
+    }
+
+    private mapCourtZoneToShotZone(zone: CourtZone): ShotZone {
+        switch (zone) {
+            case 'restricted_area':
+                return 'restricted'
+            case 'paint':
+                return 'paint'
+            case 'midrange_left':
+            case 'midrange_right':
+            case 'midrange_top':
+                return 'midrange'
+            case 'corner3_left':
+            case 'corner3_right':
+                return 'corner3'
+            case 'wing3_left':
+            case 'wing3_right':
+                return 'wing3'
+            case 'backcourt':
+                return 'top3'
+            case 'top3':
+            default:
+                return 'top3'
+        }
+    }
+
+    private clampCourtPosition(position: { x: number; y: number }): { x: number; y: number } {
+        return {
+            x: Math.max(0, Math.min(this.courtDimensions.width, position.x)),
+            y: Math.max(0, Math.min(this.courtDimensions.height, position.y)),
+        }
+    }
+
+    private applyCourtCalibration(calibration?: PipelineCourtCalibrationConfig): void {
+        if (calibration?.courtDimensions) {
+            this.courtDimensions = {
+                width: Math.max(1, calibration.courtDimensions.width),
+                height: Math.max(1, calibration.courtDimensions.height),
+            }
+        }
+
+        if (calibration?.homographyMatrix) {
+            this.homographyMatrix = calibration.homographyMatrix
+            return
+        }
+
+        if (calibration?.points) {
+            this.homographyMatrix = computeHomography(calibration.points)
+            return
+        }
+
+        this.homographyMatrix = null
     }
 
     private updateStatsWithOutcome(outcome: 'made' | 'missed' | 'blocked'): void {

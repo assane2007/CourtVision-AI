@@ -16,6 +16,12 @@ Elite Athlete Tracking and AR Training. This application transforms standard sma
 3.  **Start**: `npx expo start`
 4.  **Connect**: Point the app to your local/prod API URL in `lib/api/client.ts`.
 
+## 🤖 TFLite Release Setup
+
+1.  **Bundled model**: `assets/models/pose_landmark_lite.tflite` must be present in the mobile app bundle.
+2.  **Runtime source**: `EXPO_PUBLIC_TFLITE_POSE_MODEL=assets/models/pose_landmark_lite.tflite`.
+3.  **EAS profiles**: `development`, `preview`, and `production` already set this env var in `eas.json`.
+
 ## 📦 Store Submission
 - **Framework**: Expo / React Native
 - **Primary Aesthetic**: Dark Arena (OLED optimized)
