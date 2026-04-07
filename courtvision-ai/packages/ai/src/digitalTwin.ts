@@ -1319,14 +1319,60 @@ export class TwinBuilder {
 
     private computePoseSignature(agg: ReturnType<TwinBuilder['aggregateStats']>): TwinProfile['poseSignature'] {
         const ss = agg.shotStats
+        const dominantHand = this.detectDominantHand()
+
         return {
             avgElbowAngle: ss ? Math.round(ss.averageElbowAngle) : 0,
             avgReleaseHeight: ss ? Math.round(ss.averageReleaseHeight * 100) / 100 : 0,
             avgArcAngle: ss ? Math.round(ss.averageArcAngle) : 45,
             avgMaxVertical: ss ? Math.round(ss.averageMaxVertical) : 0,
             avgShoulderPosture: agg.bodyLanguageScores.length > 0 ? Math.round(avg(agg.bodyLanguageScores)) : 50,
-            dominantHand: 'right', // TODO: détecter à partir des landmarks
+            dominantHand,
         }
+    }
+
+    private detectDominantHand(): 'right' | 'left' {
+        let rightSignals = 0
+        let leftSignals = 0
+        const MIN_VISIBILITY = 0.45
+        const MIN_LIFT_DELTA = 0.03
+
+        for (const session of this.sessions) {
+            if (!session.tracking || session.tracking.length === 0) continue
+
+            for (const frame of session.tracking) {
+                const player = frame.players.find((p) => p.id === frame.mainUserId) ?? frame.players[0]
+                const landmarks = player?.landmarks
+
+                if (!landmarks || landmarks.length < 17) continue
+
+                const leftShoulder = landmarks[11]
+                const rightShoulder = landmarks[12]
+                const leftWrist = landmarks[15]
+                const rightWrist = landmarks[16]
+
+                if (!leftShoulder || !rightShoulder || !leftWrist || !rightWrist) continue
+                if (
+                    leftShoulder.visibility < MIN_VISIBILITY ||
+                    rightShoulder.visibility < MIN_VISIBILITY ||
+                    leftWrist.visibility < MIN_VISIBILITY ||
+                    rightWrist.visibility < MIN_VISIBILITY
+                ) continue
+
+                const leftLift = leftShoulder.y - leftWrist.y
+                const rightLift = rightShoulder.y - rightWrist.y
+                const delta = rightLift - leftLift
+
+                if (delta > MIN_LIFT_DELTA) rightSignals += 1
+                else if (delta < -MIN_LIFT_DELTA) leftSignals += 1
+            }
+        }
+
+        if (rightSignals === 0 && leftSignals === 0) {
+            return this.previousProfile?.poseSignature.dominantHand ?? 'right'
+        }
+
+        return rightSignals >= leftSignals ? 'right' : 'left'
     }
 
     private createEmptyProfile(): TwinProfile {

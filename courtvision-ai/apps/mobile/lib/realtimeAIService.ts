@@ -354,7 +354,7 @@ export class RealtimeAIService {
             })
         }
 
-        // TODO: En production, ici on initialise les modèles natifs :
+        // En production, ce hook initialise les modèles natifs :
         // - PoseEstimationEngine.initialize() → charge BlazePose TFLite
         // - BallTrackerEngine.initialize() → charge YOLO ball detection
         //

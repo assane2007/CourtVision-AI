@@ -52,8 +52,8 @@ export class TikTokService {
                     success: false,
                     error: 'TIKTOK_NOT_CONFIGURED',
                     tiktok_available: false,
-                    reason: 'pending_approval',
-                    message: 'TikTok sharing requires Business API approval. Feature coming soon.'
+                    reason: 'configuration_missing',
+                    message: 'TikTok sharing is disabled in this environment. Configure TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET to enable publishing.'
                 }
             }
 

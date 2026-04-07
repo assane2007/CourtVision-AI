@@ -580,6 +580,11 @@ export class MarketplaceService {
             ? packs.reduce((sum: number, p: any) => sum + p.rating, 0) / packs.length
             : 0
 
+        const { count: followersCount } = await this.supabase
+            .from('user_follows')
+            .select('*', { count: 'exact', head: true })
+            .eq('following_id', data.user_id)
+
         return {
             id: data.id,
             userId: data.user_id,
@@ -591,7 +596,7 @@ export class MarketplaceService {
             totalSales: data.total_sales,
             publishedPacks: packs?.length || 0,
             avgRating: Math.round(avgRating * 10) / 10,
-            followers: 0, // TODO: implement creator follow system
+            followers: followersCount || 0,
             specialties: data.specialties || [],
             credentials: data.credentials || [],
             createdAt: data.created_at,
@@ -622,6 +627,10 @@ export class MarketplaceService {
             .order('total_sales', { ascending: false })
             .limit(5)
 
+        const followerCounts = await this.getFollowerCountsByUserIds(
+            (topCreatorData || []).map((creator: any) => creator.user_id),
+        )
+
         const topCreators: CreatorProfile[] = (topCreatorData || []).map((c: any) => ({
             id: c.id,
             userId: c.user_id,
@@ -633,7 +642,7 @@ export class MarketplaceService {
             totalSales: c.total_sales,
             publishedPacks: 0,
             avgRating: 0,
-            followers: 0,
+            followers: followerCounts[c.user_id] || 0,
             specialties: c.specialties || [],
             credentials: c.credentials || [],
             createdAt: c.created_at,
@@ -713,6 +722,22 @@ export class MarketplaceService {
             .from('drill_reviews')
             .update({ helpful_count: (review.helpful_count || 0) + 1 })
             .eq('id', reviewId)
+    }
+
+    private async getFollowerCountsByUserIds(userIds: string[]): Promise<Record<string, number>> {
+        const uniqueUserIds = Array.from(new Set(userIds.filter(Boolean)))
+        const counts: Record<string, number> = {}
+
+        await Promise.all(uniqueUserIds.map(async (userId) => {
+            const { count } = await this.supabase
+                .from('user_follows')
+                .select('*', { count: 'exact', head: true })
+                .eq('following_id', userId)
+
+            counts[userId] = count || 0
+        }))
+
+        return counts
     }
 
     private mapPack(data: any, isPurchased = false): DrillPack {

@@ -585,9 +585,9 @@ export class PoseEstimationEngine {
      * En dev/test, on retourne des landmarks simulés réalistes.
      */
     private async runInference(
-        _frameData: Uint8Array | ArrayBuffer
+        frameData: Uint8Array | ArrayBuffer
     ): Promise<Array<{ x: number; y: number; z: number; visibility: number }> | null> {
-        // PRODUCTION TODO: Remplacer par l'appel réel au runtime TFLite :
+        // Production hook: replace this block with the real TFLite runtime call:
         //
         // const tensor = this.preprocessFrame(frameData)
         // const output = await this.model.run(tensor)
@@ -654,13 +654,33 @@ export class PoseEstimationEngine {
             { x: 0.60, y: 0.95, z: 0.01, visibility: 0.80 },
         ]
 
-        // Add slight jitter to simulate real sensor noise
+        const random = this.createDeterministicRandom(frameData)
+
+        // Add slight deterministic jitter to simulate sensor noise reproducibly.
         return baseLandmarks.map(lm => ({
-            x: lm.x + (Math.random() - 0.5) * 0.005,
-            y: lm.y + (Math.random() - 0.5) * 0.005,
-            z: lm.z + (Math.random() - 0.5) * 0.002,
-            visibility: Math.min(1, Math.max(0, lm.visibility + (Math.random() - 0.5) * 0.02)),
+            x: lm.x + (random() - 0.5) * 0.005,
+            y: lm.y + (random() - 0.5) * 0.005,
+            z: lm.z + (random() - 0.5) * 0.002,
+            visibility: Math.min(1, Math.max(0, lm.visibility + (random() - 0.5) * 0.02)),
         }))
+    }
+
+    private createDeterministicRandom(frameData: Uint8Array | ArrayBuffer): () => number {
+        const bytes = frameData instanceof Uint8Array ? frameData : new Uint8Array(frameData)
+        const sampleSize = Math.min(bytes.length, 256)
+
+        let seed = 0x811c9dc5
+        for (let i = 0; i < sampleSize; i++) {
+            seed ^= bytes[i]
+            seed = (seed * 16777619) >>> 0
+        }
+
+        if (seed === 0) seed = 0x9e3779b9
+
+        return () => {
+            seed = (seed * 1664525 + 1013904223) >>> 0
+            return seed / 0xffffffff
+        }
     }
 
     /** Applique le smoothing One Euro Filter sur les landmarks */

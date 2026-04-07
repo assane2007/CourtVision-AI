@@ -274,10 +274,11 @@ export class RealtimePipelineEngine {
                 feedback = this.generateShotFeedback(detectedShot)
 
                 // Convertir en ShotResult compatible
+                const estimatedZone = this.estimateZone()
                 shotResult = detectedShotToShotResult(
                     detectedShot,
-                    this.estimateZone(), // Zone estimée
-                    { x: 7.5, y: 5 },   // Position par défaut (TODO: calibration terrain)
+                    estimatedZone,
+                    this.estimateCourtPosition(estimatedZone),
                 ) as ShotResult
 
                 // Ajouter la comparison NBA
@@ -552,6 +553,41 @@ export class RealtimePipelineEngine {
         }
         // Fallback when no pose data is available
         return 'midrange'
+    }
+
+    private estimateCourtPosition(zone: ShotZone): { x: number; y: number } {
+        const lastPose = this.lastPoseResult
+        if (lastPose && lastPose.landmarks.length > 24) {
+            const lHip = lastPose.landmarks[23]
+            const rHip = lastPose.landmarks[24]
+
+            if (lHip && rHip) {
+                const xNorm = Math.min(1, Math.max(0, (lHip.x + rHip.x) / 2))
+                const yNorm = Math.min(1, Math.max(0, (lHip.y + rHip.y) / 2))
+
+                // Normalize camera-space hips to a half-court metric projection.
+                return {
+                    x: Math.round(xNorm * 15 * 100) / 100,
+                    y: Math.round(yNorm * 14 * 100) / 100,
+                }
+            }
+        }
+
+        switch (zone) {
+            case 'restricted':
+                return { x: 7.5, y: 1.5 }
+            case 'paint':
+                return { x: 7.5, y: 3.5 }
+            case 'corner3':
+                return { x: 1.2, y: 7.2 }
+            case 'wing3':
+                return { x: 3.0, y: 8.8 }
+            case 'top3':
+                return { x: 7.5, y: 9.8 }
+            case 'midrange':
+            default:
+                return { x: 7.5, y: 6.2 }
+        }
     }
 
     private updateStatsWithOutcome(outcome: 'made' | 'missed' | 'blocked'): void {

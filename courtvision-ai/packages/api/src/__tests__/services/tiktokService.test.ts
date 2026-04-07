@@ -1,4 +1,5 @@
 import { TikTokService } from '../../services/tiktokService'
+import { createClient } from '@supabase/supabase-js'
 
 /**
  * TikTok Service — Tests
@@ -24,12 +25,15 @@ jest.mock('@supabase/supabase-js', () => ({
 // Mock fluent-ffmpeg to avoid real FFmpeg dependency in tests
 jest.mock('fluent-ffmpeg', () => jest.fn())
 
+const mockedCreateClient = createClient as unknown as jest.Mock
+
 describe('TikTok Service', () => {
 
     const originalEnv = process.env
 
     beforeEach(() => {
         process.env = { ...originalEnv }
+        mockedCreateClient.mockClear()
         // Set required Supabase env vars for constructor
         process.env.SUPABASE_URL = 'https://test.supabase.co'
         process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-key'
@@ -65,6 +69,46 @@ describe('TikTok Service', () => {
             await expect(
                 service.publishHighlight('user-123', 'https://cdn.test.com/video.mp4', 'Test')
             ).resolves.not.toThrow()
+        })
+
+        it('returns TIKTOK_NOT_CONFIGURED when account is linked but API keys are missing', async () => {
+            mockedCreateClient.mockImplementationOnce(() => ({
+                from: jest.fn((table: string) => {
+                    if (table === 'user_integrations') {
+                        return {
+                            select: jest.fn().mockReturnThis(),
+                            eq: jest.fn().mockReturnThis(),
+                            single: jest.fn().mockResolvedValue({
+                                data: {
+                                    provider: 'tiktok',
+                                    access_token: 'linked-token',
+                                },
+                                error: null,
+                            }),
+                        }
+                    }
+
+                    return {
+                        insert: jest.fn().mockResolvedValue({ data: null, error: null }),
+                        select: jest.fn().mockReturnThis(),
+                        eq: jest.fn().mockReturnThis(),
+                        single: jest.fn().mockResolvedValue({ data: null, error: null }),
+                    }
+                }),
+            }))
+
+            const service = new TikTokService()
+
+            const result = await service.publishHighlight(
+                'user-linked',
+                'https://cdn.test.com/video.mp4',
+                'Linked account test',
+            )
+
+            expect(result.success).toBe(false)
+            expect(result.error).toBe('TIKTOK_NOT_CONFIGURED')
+            expect((result as any).reason).toBe('configuration_missing')
+            expect((result as any).message).toContain('disabled in this environment')
         })
     })
 

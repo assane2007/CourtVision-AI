@@ -33,4 +33,4 @@ jobs:
         run: railway up --service api
         working-directory: courtvision-ai
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_TOKEN: ${{ secrets['RAILWAY_TOKEN'] }}

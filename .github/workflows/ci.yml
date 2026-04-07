@@ -28,9 +28,12 @@ jobs:
       - run: npm ci
       - run: npm run build:shared
       - run: npm run lint
+      - run: npm run check:placeholders
       - run: npx tsc --noEmit -p packages/shared/tsconfig.json
       - run: npx tsc --noEmit -p packages/ai/tsconfig.json
       - run: npx tsc --noEmit -p packages/api/tsconfig.json
+      - run: npx tsc --noEmit -p apps/web/tsconfig.json
+      - run: npx tsc --noEmit -p apps/mobile/tsconfig.json
 
   test-packages:
     name: Test Packages (Shared + AI + API)
@@ -54,7 +57,7 @@ jobs:
       - uses: codecov/codecov-action@v4
         if: always()
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ secrets['CODECOV_TOKEN'] }}
           flags: packages
         continue-on-error: true
 
@@ -78,7 +81,7 @@ jobs:
       - uses: codecov/codecov-action@v4
         if: always()
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ secrets['CODECOV_TOKEN'] }}
           flags: mobile
         continue-on-error: true
 
@@ -146,6 +149,6 @@ jobs:
       - run: npm run build:shared
       - run: npm run build:web
         env:
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_API_URL: ${{ vars['NEXT_PUBLIC_API_URL'] || secrets['NEXT_PUBLIC_API_URL'] }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars['NEXT_PUBLIC_SUPABASE_URL'] || secrets['NEXT_PUBLIC_SUPABASE_URL'] }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars['NEXT_PUBLIC_SUPABASE_ANON_KEY'] || secrets['NEXT_PUBLIC_SUPABASE_ANON_KEY'] }}

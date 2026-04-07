@@ -11,7 +11,7 @@
 
 import {
     View, Text, ScrollView, TouchableOpacity,
-    Alert, TextInput, Modal, Pressable, Switch, Share, Platform,
+    Alert, TextInput, Modal, Pressable, Switch, Share, Platform, Linking,
     StyleSheet,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -48,6 +48,9 @@ const RARITY_COLORS: Record<string, string> = {
     epic: T.color.gamification.purple,
     legendary: T.color.signature.primary,
 }
+
+const PRIVACY_URL = 'https://courtvision.ai/privacy'
+const SUPPORT_EMAIL_URL = 'mailto:support@courtvision.ai'
 
 // ==========================================
 // Animated Stat Tile V5 — Memoized + StyleSheet
@@ -454,6 +457,32 @@ export default function Profile() {
     const closeEdit = useCallback(() => setEditVisible(false), [])
     const closeBadge = useCallback(() => setShowBadgeDetail(null), [])
 
+    const openExternal = useCallback(async (url: string, fallbackTitle: string, fallbackMessage: string) => {
+        try {
+            const canOpen = await Linking.canOpenURL(url)
+            if (!canOpen) {
+                toast.error(fallbackTitle, fallbackMessage)
+                return
+            }
+            await Linking.openURL(url)
+        } catch {
+            toast.error(fallbackTitle, fallbackMessage)
+        }
+    }, [])
+
+    const handleAvatarPress = useCallback(() => {
+        HapticFeedback.selection()
+        openEdit()
+    }, [openEdit])
+
+    const handlePrivacyPress = useCallback(() => {
+        openExternal(PRIVACY_URL, 'Privacy', 'Unable to open privacy policy.')
+    }, [openExternal])
+
+    const handleSupportPress = useCallback(() => {
+        openExternal(SUPPORT_EMAIL_URL, 'Support', 'Contact us at support@courtvision.ai')
+    }, [openExternal])
+
     return (
         <SafeAreaView style={s.screen}>
             <ScrollView
@@ -491,7 +520,7 @@ export default function Profile() {
                         <PlayerAvatar
                             name={displayName}
                             xp={xp}
-                            onPress={() => toast.info('Profile photo', 'Coming soon')}
+                            onPress={handleAvatarPress}
                         />
                         <View style={s.playerCardInfo}>
                             {userLoading ? (
@@ -664,12 +693,12 @@ export default function Profile() {
                     <MenuItem
                         icon="shield" color={T.color.gamification.purple}
                         label="Privacy" sub="Data & permissions"
-                        onPress={() => toast.info('Privacy', 'Coming soon')}
+                        onPress={handlePrivacyPress}
                     />
                     <MenuItem
                         icon="help-circle" color={T.color.semantic.warning}
                         label="Help & Support" sub="FAQ, contact us"
-                        onPress={() => toast.info('Support', 'Coming soon')}
+                        onPress={handleSupportPress}
                     />
                     <MenuItem
                         icon="info" color={T.color.text.secondary}
