@@ -15,6 +15,7 @@
  */
 
 import { apiFetch, API_BASE_URL, getAuthToken } from './api'
+import { Platform } from 'react-native'
 import type {
     LiveSessionConfig,
     LiveStartResponse,
@@ -128,9 +129,24 @@ export class LiveCoachService {
         const wsProtocol = API_BASE_URL.startsWith('https') ? 'wss://' : 'ws://'
         const domain = API_BASE_URL.replace(/^https?:\/\//, '').replace(/\/api\/?$/, '')
         // Route as defined in our sync audit fix: /ws/sessions/:id
-        const wsUrl = `${wsProtocol}${domain}/ws/sessions/${this.sessionId}${token ? `?token=${encodeURIComponent(token)}` : ''}`
+        const wsUrl = `${wsProtocol}${domain}/ws/sessions/${this.sessionId}`
 
-        this.ws = new WebSocket(wsUrl)
+        if (token && Platform.OS !== 'web') {
+            const WebSocketWithHeaders = WebSocket as unknown as {
+                new (
+                    url: string,
+                    protocols?: string | string[],
+                    options?: { headers?: Record<string, string> }
+                ): WebSocket
+            }
+            this.ws = new WebSocketWithHeaders(wsUrl, undefined, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            })
+        } else {
+            this.ws = new WebSocket(wsUrl)
+        }
 
         this.ws.onopen = () => {
             this.isConnected = true

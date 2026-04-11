@@ -3,6 +3,7 @@ const FALLBACK_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.demo'
 
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim()
 const SUPABASE_ANON_KEY = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim()
+const isTestEnv = process.env.NODE_ENV === 'test'
 
 let warned = false
 
@@ -28,6 +29,12 @@ function warnOnce(): void {
 export function getSupabaseEnv(): { url: string; anonKey: string; configured: boolean } {
     const configured = isSupabaseConfigured()
     if (!configured) {
+        if (!isTestEnv) {
+            throw new Error(
+                '[CourtVision][web] Supabase env vars are required. ' +
+                'Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.'
+            )
+        }
         warnOnce()
     }
     return {

@@ -31,11 +31,19 @@ const isSupabaseConfigured =
 
 // Demo mode must be explicitly enabled; missing env vars no longer auto-enable mock flows.
 export const isDemoMode = process.env.EXPO_PUBLIC_ENABLE_DEMO_MODE === 'true'
+const isTestEnv = process.env.NODE_ENV === 'test'
+const allowFallbackClient = isDemoMode || isTestEnv
 
-if (!isSupabaseConfigured) {
-    console.warn(
-        '[CourtVision] ⚠️  Supabase not configured. API auth calls can fail until env vars are set.\n' +
+if (!isSupabaseConfigured && !allowFallbackClient) {
+    throw new Error(
+        '[CourtVision][mobile] Supabase is required outside demo/test mode. ' +
         'Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in apps/mobile/.env.'
+    )
+}
+
+if (!isSupabaseConfigured && allowFallbackClient) {
+    console.warn(
+        '[CourtVision] ⚠️  Supabase not configured. Using fallback client for demo/test mode only.'
     )
 }
 

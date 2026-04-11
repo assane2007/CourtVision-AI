@@ -37,6 +37,7 @@ module.exports = {
         '^@supabase/supabase-js$': '<rootDir>/__mocks__/supabase.ts',
     },
     testEnvironment: 'node',
+    maxWorkers: 1,
     clearMocks: true,
     collectCoverageFrom: [
         'lib/**/*.ts',

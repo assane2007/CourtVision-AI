@@ -58,6 +58,13 @@ const onboardingLevelMap: Record<z.infer<typeof onboardingProfileSchema>['experi
     elite: 9,
 }
 
+const authRateLimit = {
+    signup: { max: 5, timeWindow: '1 minute' },
+    login: { max: 10, timeWindow: '1 minute' },
+    socialLogin: { max: 10, timeWindow: '1 minute' },
+    refresh: { max: 30, timeWindow: '1 minute' },
+} as const
+
 const authRoutes: FastifyPluginAsyncZod = async (app) => {
     // Dedicated auth client: avoids mutating the shared service-role DB client session.
     const authClient = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
@@ -68,6 +75,9 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
     })
 
     app.post('/signup', {
+        config: {
+            rateLimit: authRateLimit.signup,
+        },
         schema: {
             body: signupSchema
         }
@@ -111,6 +121,9 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
     })
 
     app.post('/login', {
+        config: {
+            rateLimit: authRateLimit.login,
+        },
         schema: {
             body: loginSchema
         }
@@ -133,6 +146,9 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
     })
 
     app.post('/apple', {
+        config: {
+            rateLimit: authRateLimit.socialLogin,
+        },
         schema: { body: appleLoginSchema }
     }, async (request, reply) => {
         const { id_token, nonce, full_name } = request.body as z.infer<typeof appleLoginSchema>
@@ -148,8 +164,7 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
             app.log.error(error, 'Apple Sign-In failed')
             return reply.code(401).send({
                 success: false,
-                error: 'Apple authentication failed',
-                details: error.message
+                error: 'Apple authentication failed'
             })
         }
 
@@ -182,6 +197,9 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
     })
 
     app.post('/google', {
+        config: {
+            rateLimit: authRateLimit.socialLogin,
+        },
         schema: { body: googleLoginSchema }
     }, async (request, reply) => {
         const { id_token, full_name } = request.body as z.infer<typeof googleLoginSchema>
@@ -196,8 +214,7 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
             app.log.error(error, 'Google Sign-In failed')
             return reply.code(401).send({
                 success: false,
-                error: 'Google authentication failed',
-                details: error.message
+                error: 'Google authentication failed'
             })
         }
 
@@ -287,6 +304,9 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
     })
 
     app.post('/refresh', {
+        config: {
+            rateLimit: authRateLimit.refresh,
+        },
         schema: {
             body: refreshSchema
         }

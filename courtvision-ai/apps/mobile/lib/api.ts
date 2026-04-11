@@ -162,6 +162,33 @@ async function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms))
 }
 
+function normalizeHeaders(input?: HeadersInit): Record<string, string> {
+    if (!input) return {}
+
+    const normalized: Record<string, string> = {}
+
+    if (input instanceof Headers) {
+        input.forEach((value, key) => {
+            normalized[key] = value
+        })
+        return normalized
+    }
+
+    if (Array.isArray(input)) {
+        for (const [key, value] of input) {
+            normalized[key] = value
+        }
+        return normalized
+    }
+
+    return { ...input }
+}
+
+function hasHeader(headers: Record<string, string>, name: string): boolean {
+    const target = name.toLowerCase()
+    return Object.keys(headers).some((key) => key.toLowerCase() === target)
+}
+
 export async function apiFetch<T = unknown>(
     path: string,
     options: RequestInit & { timeoutMs?: number; _isRetry?: boolean } = {}
@@ -172,11 +199,18 @@ export async function apiFetch<T = unknown>(
     const isGet = (fetchOptions.method || 'GET').toUpperCase() === 'GET'
     const cacheKey = `@api_cache:${path}`
 
-    const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        ...(fetchOptions.headers as Record<string, string> ?? {}),
-    }
+    const headers = normalizeHeaders(fetchOptions.headers as HeadersInit | undefined)
     if (token) headers['Authorization'] = `Bearer ${token}`
+
+    const hasBody = fetchOptions.body !== undefined && fetchOptions.body !== null
+    const isFormDataBody =
+        typeof FormData !== 'undefined' &&
+        typeof fetchOptions.body === 'object' &&
+        fetchOptions.body instanceof FormData
+
+    if (hasBody && !isFormDataBody && !hasHeader(headers, 'Content-Type')) {
+        headers['Content-Type'] = 'application/json'
+    }
 
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs)

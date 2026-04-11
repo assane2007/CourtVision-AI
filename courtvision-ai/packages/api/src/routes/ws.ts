@@ -16,6 +16,14 @@ const arenaShotSchema = z.object({
     clientEventId: arenaClientEventIdSchema.optional(),
 })
 
+const framePayloadSchema = z.object({
+    frameData: z.string().min(1),
+    frameIndex: z.number().int().min(0).max(1_000_000).optional(),
+    timestamp: z.number().positive().optional(),
+    width: z.number().int().min(1).max(8192).optional(),
+    height: z.number().int().min(1).max(8192).optional(),
+})
+
 const ARENA_EVENT_ID_TTL_MS = 15_000
 
 function sendWs(socket: any, payload: unknown) {
@@ -34,6 +42,13 @@ function toClientEventId(value: unknown): string | undefined {
     }
     const normalized = value.trim()
     return normalized.length > 0 ? normalized : undefined
+}
+
+function toArenaErrorMessage(error: unknown): string {
+    if (error instanceof z.ZodError) {
+        return 'Invalid arena event payload'
+    }
+    return 'Arena event processing failed'
 }
 
 export default async function wsRoutes(fastify: FastifyInstance) {
@@ -180,14 +195,16 @@ export default async function wsRoutes(fastify: FastifyInstance) {
                 const data = JSON.parse(message.toString())
 
                 if (data.type === 'frame') {
+                    const framePayload = framePayloadSchema.parse(data.payload || {})
+
                     // Process frame through the real AI motor
                     // Arguments: (frameData, frameIndex, timestamp, frameWidth, frameHeight)
                     const result = await (pipeline as any).processFrame(
-                        data.payload.frameData,
-                        data.payload.frameIndex || 0,
-                        data.payload.timestamp || Date.now() / 1000,
-                        data.payload.width || 640,
-                        data.payload.height || 480
+                        framePayload.frameData,
+                        framePayload.frameIndex || 0,
+                        framePayload.timestamp || Date.now() / 1000,
+                        framePayload.width || 640,
+                        framePayload.height || 480
                     )
 
                     // Send sync response for UI rendering
@@ -206,14 +223,19 @@ export default async function wsRoutes(fastify: FastifyInstance) {
                     })
                 }
             } catch (err) {
-                console.error(`[WS] Error on session ${sessionId}:`, err)
+                fastify.log.error({ err, sessionId }, '[WS] Session message processing failed')
+                sendWs(socket, {
+                    type: 'frame_error',
+                    sessionId,
+                    message: err instanceof z.ZodError ? 'Invalid frame payload' : 'Frame processing failed',
+                })
             }
         })
 
         socket.on('close', () => {
             pipeline.stop()
             pipelines.delete(sessionId)
-            console.info(`[WS] Session ${sessionId} cleaned up.`)
+            fastify.log.info({ sessionId }, '[WS] Session cleaned up')
         })
 
         // Initial handshake payload
@@ -256,10 +278,11 @@ export default async function wsRoutes(fastify: FastifyInstance) {
                     timestamp: Date.now(),
                 })
             } catch (error: any) {
+                fastify.log.warn({ err: error, matchId, reason }, '[WS] Arena state sync failed')
                 sendWs(socket, {
                     type: 'arena_error',
                     matchId,
-                    message: error.message || 'Unable to sync arena state',
+                    message: 'Unable to sync arena state',
                 })
             }
         }
@@ -281,10 +304,11 @@ export default async function wsRoutes(fastify: FastifyInstance) {
                     timestamp: Date.now(),
                 })
             } catch (error: any) {
+                fastify.log.warn({ err: error, matchId }, '[WS] Arena scoreboard sync failed')
                 sendWs(socket, {
                     type: 'arena_error',
                     matchId,
-                    message: error.message || 'Unable to load scoreboard',
+                    message: 'Unable to load scoreboard',
                 })
             }
         }
@@ -428,10 +452,11 @@ export default async function wsRoutes(fastify: FastifyInstance) {
                     message: 'Unsupported arena event type',
                 })
             } catch (error: any) {
+                fastify.log.warn({ err: error, matchId, userId }, '[WS] Arena event processing failed')
                 sendWs(socket, {
                     type: 'arena_error',
                     matchId,
-                    message: error?.message || 'Arena event processing failed',
+                    message: toArenaErrorMessage(error),
                 })
             }
         })
