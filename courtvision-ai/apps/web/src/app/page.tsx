@@ -69,6 +69,23 @@ function Navbar() {
         return () => window.removeEventListener('scroll', onScroll)
     }, [])
 
+    useEffect(() => {
+        if (!open) return
+
+        const originalOverflow = document.body.style.overflow
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setOpen(false)
+        }
+
+        document.body.style.overflow = 'hidden'
+        window.addEventListener('keydown', onKeyDown)
+
+        return () => {
+            document.body.style.overflow = originalOverflow
+            window.removeEventListener('keydown', onKeyDown)
+        }
+    }, [open])
+
     const closeMenu = useCallback(() => setOpen(false), [])
 
     const navLinks = [
@@ -217,16 +234,26 @@ function Hero() {
 
                     {/* CTA buttons */}
                     <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-6 items-start mb-12">
-                        <Link
-                            href="/dashboard"
-                            className="group relative overflow-hidden bg-fire text-white px-10 py-5 rounded-full font-black text-sm tracking-[0.2em] transition-all hover:scale-105 shadow-[0_0_40px_rgba(255,77,0,0.4)] flex items-center gap-3 uppercase"
-                        >
-                            <span className="relative z-10 flex items-center justify-center gap-2">
-                                INITIALIZE TWIN
-                                <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
-                            </span>
-                            <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer" />
-                        </Link>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <Link
+                                href="/dashboard"
+                                className="group relative overflow-hidden bg-fire text-white px-10 py-5 rounded-full font-black text-sm tracking-[0.2em] transition-all hover:scale-105 shadow-[0_0_40px_rgba(255,77,0,0.4)] flex items-center gap-3 uppercase"
+                            >
+                                <span className="relative z-10 flex items-center justify-center gap-2">
+                                    INITIALIZE TWIN
+                                    <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
+                                </span>
+                                <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer" />
+                            </Link>
+
+                            <a
+                                href="#how-it-works"
+                                className="inline-flex items-center justify-center gap-2 border border-white/15 hover:border-fire/40 bg-white/[0.02] text-white px-8 py-5 rounded-full font-black text-sm tracking-[0.2em] uppercase transition-all hover:bg-fire/10"
+                            >
+                                SEE FLOW
+                                <ChevronRight size={16} />
+                            </a>
+                        </div>
 
                         <div className="flex items-center gap-3">
                             <div className="h-14 w-40 bg-surface border border-white/10 rounded-xl flex items-center justify-center cursor-not-allowed grayscale opacity-50 relative overflow-hidden group">
@@ -942,6 +969,50 @@ function Footer() {
     )
 }
 
+function MobileStickyCta() {
+    const [hidden, setHidden] = useState(false)
+    const [ready, setReady] = useState(false)
+
+    useEffect(() => {
+        const onScroll = () => {
+            setReady(window.scrollY > 420)
+        }
+
+        onScroll()
+        window.addEventListener('scroll', onScroll, { passive: true })
+        return () => window.removeEventListener('scroll', onScroll)
+    }, [])
+
+    if (hidden || !ready) return null
+
+    return (
+        <motion.div
+            initial={{ y: 90, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 90, opacity: 0 }}
+            className="md:hidden fixed bottom-4 left-4 right-4 z-40"
+        >
+            <div className="rounded-2xl border border-fire/30 bg-void/90 backdrop-blur-xl shadow-[0_0_30px_rgba(255,77,0,0.25)] p-2 flex items-center gap-2">
+                <Link
+                    href="/dashboard"
+                    className="flex-1 inline-flex items-center justify-center gap-2 bg-fire hover:bg-[#ff5500] text-white rounded-xl px-4 py-3 font-black text-[11px] tracking-[0.18em] uppercase"
+                >
+                    START NOW
+                    <ArrowRight size={14} />
+                </Link>
+                <button
+                    type="button"
+                    onClick={() => setHidden(true)}
+                    aria-label="Close sticky call to action"
+                    className="w-10 h-10 rounded-xl border border-white/10 text-text-secondary hover:text-white hover:border-white/30 transition-colors"
+                >
+                    <X size={16} className="mx-auto" />
+                </button>
+            </div>
+        </motion.div>
+    )
+}
+
 // ==========================================
 // HOME
 // ==========================================
@@ -959,6 +1030,7 @@ export default function Home() {
             <TrustBar />
             <Waitlist />
             <Footer />
+            <MobileStickyCta />
         </main>
     )
 }

@@ -248,3 +248,27 @@ body {
     pointer-events: none;
     z-index: 0;
 }
+
+/* ==========================================
+   REDUCED MOTION (a11y)
+   ========================================== */
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    .animate-marquee,
+    .animate-pulse,
+    .animate-pulse-glow,
+    .animate-float,
+    .animate-shimmer {
+        animation: none !important;
+    }
+
+    .reveal,
+    .reveal-stagger>* {
+        transition: none !important;
+        transform: none !important;
+        opacity: 1 !important;
+    }
+}

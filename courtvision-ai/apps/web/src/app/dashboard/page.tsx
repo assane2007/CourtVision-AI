@@ -216,6 +216,30 @@ export default function DashboardPage() {
     const modeStyle = dataModeStyles[currentDataMode]
     const confidencePct = Math.round((data.dataQuality?.confidenceScore ?? 0.7) * 100)
 
+    const quickActions = [
+        {
+            title: 'Analyze Session',
+            caption: 'Upload video or inspect your latest timeline.',
+            href: '/dashboard/sessions',
+            icon: Zap,
+            accent: 'fire',
+        },
+        {
+            title: 'Run Shadow Match',
+            caption: 'Launch competitive simulation scenarios.',
+            href: '/dashboard/league',
+            icon: Target,
+            accent: 'ice',
+        },
+        {
+            title: 'Open Digital Twin',
+            caption: 'Review biomechanical progression and deltas.',
+            href: '/dashboard/twin',
+            icon: Cpu,
+            accent: 'fire',
+        },
+    ]
+
     return (
         <>
             <div className="space-y-10">
@@ -270,6 +294,37 @@ export default function DashboardPage() {
                         {new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
                     </span>
                 </div>
+            </motion.div>
+
+            <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="grid grid-cols-1 lg:grid-cols-3 gap-4"
+            >
+                {quickActions.map((action) => (
+                    <button
+                        key={action.title}
+                        onClick={() => router.push(action.href)}
+                        className="group relative overflow-hidden rounded-3xl border border-white/10 bg-surface/80 p-5 text-left transition-all hover:-translate-y-1 hover:border-fire/35"
+                    >
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-r from-fire/10 via-transparent to-ice/10" />
+                        <div className="relative">
+                            <div className={`w-11 h-11 rounded-2xl border flex items-center justify-center mb-4 ${action.accent === 'ice' ? 'border-ice/30 text-ice bg-ice/10' : 'border-fire/30 text-fire bg-fire/10'}`}>
+                                <action.icon size={20} />
+                            </div>
+                            <p className="text-sm font-display font-black uppercase tracking-wide text-white">
+                                {action.title}
+                            </p>
+                            <p className="mt-2 text-xs text-text-secondary leading-relaxed">
+                                {action.caption}
+                            </p>
+                            <div className="mt-4 inline-flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em] text-text-tertiary group-hover:text-fire transition-colors">
+                                Execute
+                                <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                            </div>
+                        </div>
+                    </button>
+                ))}
             </motion.div>
 
             {/* Stats Grid */}

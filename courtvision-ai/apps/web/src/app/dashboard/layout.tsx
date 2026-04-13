@@ -1,13 +1,12 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     LayoutDashboard,
     Video,
     Trophy,
     User,
-    Settings,
     LogOut,
     Menu,
     X,
@@ -15,6 +14,7 @@ import {
     Bell,
     Cpu,
     Swords,
+    ArrowUpRight,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -37,19 +37,81 @@ type DashboardNotification = {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+    const [isMobileViewport, setIsMobileViewport] = useState(false)
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
     const [notifications, setNotifications] = useState<DashboardNotification[]>([
         { id: 'sync', title: 'Neural sync completed successfully', time: '2m ago', read: false },
         { id: 'coach', title: 'AI Coach generated a new playbook tip', time: '14m ago', read: false },
         { id: 'milestone', title: 'Milestone unlocked: 100 analyzed shots', time: '1h ago', read: true },
     ])
+    const notificationsRef = useRef<HTMLDivElement | null>(null)
     const pathname = usePathname()
-    const { user, signOut, loading } = useAuth()
+    const { user, signOut } = useAuth()
 
     const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Player'
     const initials = displayName.charAt(0).toUpperCase()
     const unreadCount = notifications.filter((notification) => !notification.read).length
+
+    const routeLabel = useMemo(() => {
+        const match = navItems.find((item) => item.href === pathname)
+        return match?.name ?? 'Dashboard'
+    }, [pathname])
+
+    useEffect(() => {
+        const media = window.matchMedia('(max-width: 1023px)')
+
+        const applyViewport = () => {
+            const isMobile = media.matches
+            setIsMobileViewport(isMobile)
+            setIsSidebarOpen(!isMobile)
+        }
+
+        applyViewport()
+        media.addEventListener('change', applyViewport)
+        return () => media.removeEventListener('change', applyViewport)
+    }, [])
+
+    useEffect(() => {
+        if (isMobileViewport) {
+            setIsSidebarOpen(false)
+        }
+        setIsNotificationsOpen(false)
+    }, [pathname, isMobileViewport])
+
+    useEffect(() => {
+        if (!isMobileViewport) return
+
+        const originalOverflow = document.body.style.overflow
+        document.body.style.overflow = isSidebarOpen ? 'hidden' : ''
+
+        return () => {
+            document.body.style.overflow = originalOverflow
+        }
+    }, [isSidebarOpen, isMobileViewport])
+
+    useEffect(() => {
+        if (!isNotificationsOpen) return
+
+        const onPointerDown = (event: MouseEvent) => {
+            if (!notificationsRef.current) return
+            if (!notificationsRef.current.contains(event.target as Node)) {
+                setIsNotificationsOpen(false)
+            }
+        }
+
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setIsNotificationsOpen(false)
+        }
+
+        window.addEventListener('mousedown', onPointerDown)
+        window.addEventListener('keydown', onKeyDown)
+
+        return () => {
+            window.removeEventListener('mousedown', onPointerDown)
+            window.removeEventListener('keydown', onKeyDown)
+        }
+    }, [isNotificationsOpen])
 
     const toggleNotificationsPanel = () => {
         if (!isNotificationsOpen && unreadCount > 0) {
@@ -60,12 +122,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     return (
         <div className="min-h-screen bg-void text-text-primary flex overflow-hidden">
+            <AnimatePresence>
+                {isMobileViewport && isSidebarOpen && (
+                    <motion.button
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setIsSidebarOpen(false)}
+                        aria-label="Close navigation panel"
+                        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[1px]"
+                    />
+                )}
+            </AnimatePresence>
+
             {/* Sidebar */}
             <AnimatePresence mode="wait">
                 {isSidebarOpen && (
                     <motion.aside
                         initial={{ x: -280 }}
                         animate={{ x: 0 }}
+                        exit={{ x: -280 }}
                         className="fixed inset-y-0 left-0 z-50 w-72 max-w-[80vw] bg-surface backdrop-blur-2xl border-r border-white/5 flex flex-col"
                     >
                         <div className="p-8 flex items-center justify-between">
@@ -111,7 +187,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 )}
             </AnimatePresence>
 
-            <main className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'lg:pl-72' : 'pl-0'}`}>
+            <main className={`flex-1 flex flex-col transition-all duration-300 ${!isMobileViewport && isSidebarOpen ? 'lg:pl-72' : 'pl-0'}`}>
                 {/* Header */}
                 <header className="h-20 bg-void/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-40">
                     <div className="flex items-center gap-6">
@@ -120,7 +196,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 <Menu size={24} />
                             </button>
                         )}
-                        <div className="relative group hidden sm:block">
+
+                        <div className="hidden md:block">
+                            <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-text-tertiary">Control Deck</p>
+                            <p className="text-sm font-semibold text-white">{routeLabel}</p>
+                        </div>
+
+                        <div className="relative group hidden xl:block">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-fire transition-colors" size={18} />
                             <input
                                 type="text"
@@ -131,15 +213,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
 
                     <div className="flex items-center gap-6">
+                        <Link
+                            href="/dashboard/v6"
+                            className="hidden md:inline-flex items-center gap-2 rounded-full border border-fire/30 bg-fire/10 px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.2em] text-fire hover:bg-fire/20 transition-colors"
+                        >
+                            Enter Arena
+                            <ArrowUpRight size={12} />
+                        </Link>
+
                         <div className="flex items-center gap-2 bg-fire/10 border border-fire/20 rounded-full px-3 py-1.5">
                             <Cpu size={14} className="text-fire animate-pulse" />
                             <span className="text-[10px] font-mono text-fire uppercase tracking-widest">Neural Link: ACTIVE</span>
                         </div>
 
-                        <div className="relative">
+                        <div className="relative" ref={notificationsRef}>
                             <button
                                 onClick={toggleNotificationsPanel}
                                 className="relative p-2 text-text-secondary hover:text-fire transition-colors"
+                                aria-expanded={isNotificationsOpen}
+                                aria-label="Toggle notifications panel"
                             >
                                 <Bell size={20} />
                                 {unreadCount > 0 && (
@@ -167,6 +259,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                                 </p>
                                             </div>
                                         ))}
+
+                                        {notifications.length === 0 && (
+                                            <div className="px-4 py-6 text-center text-xs font-mono uppercase tracking-widest text-text-tertiary">
+                                                No notifications
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
