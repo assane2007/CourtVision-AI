@@ -22,6 +22,9 @@ const SUPABASE_URL =
 const SUPABASE_ANON_KEY =
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? ''
 
+const LOCAL_FALLBACK_SUPABASE_URL = 'http://127.0.0.1:54321'
+const LOCAL_FALLBACK_SUPABASE_ANON_KEY = 'local-fallback-anon-key-not-for-production'
+
 const isSupabaseConfigured =
     !!SUPABASE_URL &&
     !SUPABASE_URL.includes('your-project') &&
@@ -53,8 +56,8 @@ if (isDemoMode) {
 
 // ─── Client ────────────────────────────────────────────────────
 
-const safeUrl = isSupabaseConfigured ? SUPABASE_URL : 'https://demo.supabase.co'
-const safeKey = isSupabaseConfigured ? SUPABASE_ANON_KEY : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.demo'
+const safeUrl = isSupabaseConfigured ? SUPABASE_URL : LOCAL_FALLBACK_SUPABASE_URL
+const safeKey = isSupabaseConfigured ? SUPABASE_ANON_KEY : LOCAL_FALLBACK_SUPABASE_ANON_KEY
 
 export const supabase = createClient(safeUrl, safeKey, {
     auth: {

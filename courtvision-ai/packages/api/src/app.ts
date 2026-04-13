@@ -137,12 +137,15 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
         const isProduction = process.env.NODE_ENV === 'production'
         // Some upstream SDKs (e.g. Supabase Auth) expose HTTP status on `error.status`.
         const statusCode = error.statusCode || error.status || 500
+        const sanitizedUrl = request.url.includes('?')
+            ? `${request.url.split('?')[0]}?[redacted]`
+            : request.url
 
         // Log structured error with full context
         request.log.error({
             err: error,
             requestId: request.id,
-            url: request.url,
+            url: sanitizedUrl,
             method: request.method,
             userId: request.user?.id,
         }, `API Error: ${error.message}`)
@@ -150,7 +153,7 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
         // Capture to Sentry
         if (statusCode >= 500) {
             Sentry.captureException(error, {
-                extra: { url: request.url, method: request.method, userId: request.user?.id }
+                extra: { url: sanitizedUrl, method: request.method, userId: request.user?.id }
             });
         }
 

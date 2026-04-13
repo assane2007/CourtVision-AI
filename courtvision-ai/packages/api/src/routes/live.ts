@@ -72,9 +72,27 @@ class LiveSessionStore {
         this.logger = logger || { info: () => {}, warn: () => {}, error: () => {} }
     }
 
+    private async closeRedisClient(client: Redis | null): Promise<void> {
+        if (!client) return
+        try { await client.quit() } catch { /* ignore */ }
+        try { client.disconnect(false) } catch { /* ignore */ }
+    }
+
     async connectRedis(): Promise<void> {
+        // If a previous client instance exists (e.g. across repeated test app boots),
+        // always dispose it before creating a new one to avoid leaked reconnect timers.
+        await this.closeRedisClient(this.redis)
+        this.redis = null
+        this.redisAvailable = false
+
+        // In test runs without Redis configured, stay strictly memory-only.
+        if (process.env.NODE_ENV === 'test' && !(process.env.REDIS_URL || '').trim()) {
+            return
+        }
+
+        let client: Redis | null = null
         try {
-            this.redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+            client = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
                 maxRetriesPerRequest: 3,
                 retryStrategy(times) {
                     if (times > 3) return null
@@ -82,14 +100,19 @@ class LiveSessionStore {
                 },
                 lazyConnect: true,
             })
-            this.redis.on('connect', () => { this.redisAvailable = true })
-            this.redis.on('error', () => { this.redisAvailable = false })
-            await this.redis.connect()
+            this.redis = client
+
+            client.on('connect', () => { this.redisAvailable = true })
+            client.on('error', () => { this.redisAvailable = false })
+
+            await client.connect()
             this.redisAvailable = true
             this.logger.info('LiveStore: Redis connected')
         } catch {
             this.logger.warn('LiveStore: Redis unavailable — memory-only mode')
             this.redisAvailable = false
+            await this.closeRedisClient(client)
+            if (this.redis === client) this.redis = null
         }
     }
 
@@ -160,9 +183,9 @@ class LiveSessionStore {
     }
 
     async disconnect(): Promise<void> {
-        if (this.redis) {
-            try { await this.redis.quit() } catch { /* ignore */ }
-        }
+        await this.closeRedisClient(this.redis)
+        this.redis = null
+        this.redisAvailable = false
     }
 }
 

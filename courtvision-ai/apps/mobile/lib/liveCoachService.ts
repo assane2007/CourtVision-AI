@@ -144,6 +144,10 @@ export class LiveCoachService {
                     Authorization: `Bearer ${token}`,
                 },
             })
+        } else if (token && Platform.OS === 'web') {
+            // Browser WebSocket does not allow custom headers.
+            // Send auth token through subprotocol negotiation.
+            this.ws = new WebSocket(wsUrl, ['bearer', token])
         } else {
             this.ws = new WebSocket(wsUrl)
         }

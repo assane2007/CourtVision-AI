@@ -1,5 +1,5 @@
-const FALLBACK_SUPABASE_URL = 'https://demo.supabase.co'
-const FALLBACK_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.demo'
+const FALLBACK_SUPABASE_URL = 'http://127.0.0.1:54321'
+const FALLBACK_SUPABASE_ANON_KEY = 'local-fallback-anon-key-not-for-production'
 
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim()
 const SUPABASE_ANON_KEY = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim()

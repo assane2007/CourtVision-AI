@@ -1,40 +1,50 @@
 import type { FastifyPluginAsync } from 'fastify'
+import { z } from 'zod'
+
+const waitlistBodySchema = z.object({
+    email: z.string().email(),
+    source: z.string().optional(),
+})
+
+const waitlistResponseSchema = z.object({
+    success: z.boolean(),
+    message: z.string(),
+})
 
 const waitlistRoutes: FastifyPluginAsync = async (app) => {
+    const isValidEmail = (value: string): boolean => {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+    }
+
     /**
      * POST /api/waitlist
      * Inscription à la waitlist (public, pas d'auth requise)
      */
-    app.post<{
-        Body: { email: string; source?: string }
-    }>('/waitlist', {
+    app.post('/waitlist', {
         schema: {
-            body: {
-                type: 'object',
-                required: ['email'],
-                properties: {
-                    email: { type: 'string', format: 'email' },
-                    source: { type: 'string' },
-                },
-            },
+            body: waitlistBodySchema,
             response: {
-                200: {
-                    type: 'object',
-                    properties: {
-                        success: { type: 'boolean' },
-                        message: { type: 'string' },
-                    },
-                },
+                200: waitlistResponseSchema,
+                400: waitlistResponseSchema,
+                500: waitlistResponseSchema,
             },
         },
     }, async (request, reply) => {
-        const { email, source } = request.body
+        const { email, source } = request.body as z.infer<typeof waitlistBodySchema>
+        const normalizedEmail = String(email || '').trim().toLowerCase()
+
+        if (!isValidEmail(normalizedEmail)) {
+            return reply.status(400).send({
+                success: false,
+                message: 'Adresse email invalide.',
+            })
+        }
 
         try {
             const { error } = await app.supabase
                 .from('waitlist')
                 .insert({
-                    email: email.toLowerCase().trim(),
+                    email: normalizedEmail,
                     source: source || 'landing',
                 })
 

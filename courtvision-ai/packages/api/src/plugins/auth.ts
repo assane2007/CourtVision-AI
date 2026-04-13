@@ -26,18 +26,45 @@ export const authPlugin = fp(async (fastify, opts) => {
         },
     })
 
+    const getBearerToken = (request: FastifyRequest): string | null => {
+        const authHeader = request.headers.authorization
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            return authHeader.slice(7)
+        }
+
+        const wsProtocolsHeader = request.headers['sec-websocket-protocol']
+        if (typeof wsProtocolsHeader === 'string' && wsProtocolsHeader.length > 0) {
+            const protocols = wsProtocolsHeader
+                .split(',')
+                .map((value) => value.trim())
+                .filter(Boolean)
+
+            // Browser websockets cannot set custom Authorization headers.
+            // We support a token handshake via protocols: ['bearer', '<jwt>'].
+            if (protocols[0]?.toLowerCase() === 'bearer' && protocols[1]) {
+                return protocols[1]
+            }
+
+            const bearerProtocol = protocols.find((value) => value.toLowerCase().startsWith('bearer.'))
+            if (bearerProtocol) {
+                return bearerProtocol.slice('bearer.'.length)
+            }
+        }
+
+        return null
+    }
+
     fastify.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
         try {
-            const authHeader = request.headers.authorization
-            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            const token = getBearerToken(request)
+            if (!token) {
                 return reply.code(401).send({
                     success: false,
                     error: 'Unauthorized',
-                    message: 'Missing or malformed Authorization header. Expected: Bearer <token>'
+                    message: 'Missing authentication token'
                 })
             }
 
-            const token = authHeader.slice(7) // More reliable than .replace()
             if (!token || token.length < 10) {
                 return reply.code(401).send({
                     success: false,
