@@ -153,6 +153,8 @@ interface CourtVisionState {
 
     // Onboarding
     onboardingDraft: OnboardingDraft
+    onboardingSyncPending: boolean
+    onboardingLastError: string | null
 
     // Actions
     login: (token: string, refreshToken?: string) => Promise<void>
@@ -175,7 +177,7 @@ interface CourtVisionState {
     updateUser: (partial: Partial<UserProfile>) => void
     setOnboardingDraft: (partial: Partial<OnboardingDraft>) => void
     clearOnboardingDraft: () => void
-    syncOnboardingDraft: () => Promise<void>
+    syncOnboardingDraft: () => Promise<boolean>
 }
 
 // ─── Default Gamification Data (used only in demo mode) ──────
@@ -276,6 +278,8 @@ export const useStore = create<CourtVisionState>()(
                     position: null,
                     experienceLevel: null,
                 },
+                onboardingSyncPending: false,
+                onboardingLastError: null,
 
                 // ── Hydration ──
                 setHydrated: () => set({ hydrated: true }),
@@ -422,6 +426,12 @@ export const useStore = create<CourtVisionState>()(
                         xpEvents: [],
                         badges: [],
                         recentActivity: [],
+                        onboardingDraft: {
+                            position: null,
+                            experienceLevel: null,
+                        },
+                        onboardingSyncPending: false,
+                        onboardingLastError: null,
                     })
                 },
 
@@ -629,7 +639,12 @@ export const useStore = create<CourtVisionState>()(
                         onboardingDraft: {
                             ...s.onboardingDraft,
                             ...partial,
-                        }
+                        },
+                        onboardingSyncPending: Boolean(
+                            (partial.position ?? s.onboardingDraft.position)
+                            && (partial.experienceLevel ?? s.onboardingDraft.experienceLevel)
+                        ),
+                        onboardingLastError: null,
                     }))
                 },
 
@@ -638,13 +653,15 @@ export const useStore = create<CourtVisionState>()(
                         onboardingDraft: {
                             position: null,
                             experienceLevel: null,
-                        }
+                        },
+                        onboardingSyncPending: false,
+                        onboardingLastError: null,
                     })
                 },
 
                 async syncOnboardingDraft() {
                     const draft = get().onboardingDraft
-                    if (!draft.position || !draft.experienceLevel) return
+                    if (!draft.position || !draft.experienceLevel) return false
 
                     const position = draft.position
                     const experienceLevel = draft.experienceLevel
@@ -660,26 +677,37 @@ export const useStore = create<CourtVisionState>()(
                                 : s.user,
                         }))
                         get().clearOnboardingDraft()
-                        return
+                        return true
                     }
 
-                    await api.put('/api/auth/onboarding/profile', {
-                        position,
-                        experienceLevel,
-                    }, {
-                        timeoutMs: 45_000,
-                    })
+                    try {
+                        await api.put('/api/auth/onboarding/profile', {
+                            position,
+                            experienceLevel,
+                        }, {
+                            timeoutMs: 45_000,
+                        })
 
-                    set(s => ({
-                        user: s.user
-                            ? {
-                                ...s.user,
-                                position,
-                                level: EXPERIENCE_LABELS[experienceLevel],
-                            }
-                            : s.user,
-                    }))
-                    get().clearOnboardingDraft()
+                        set(s => ({
+                            user: s.user
+                                ? {
+                                    ...s.user,
+                                    position,
+                                    level: EXPERIENCE_LABELS[experienceLevel],
+                                }
+                                : s.user,
+                            onboardingLastError: null,
+                        }))
+                        get().clearOnboardingDraft()
+                        return true
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Unable to sync onboarding profile'
+                        set({
+                            onboardingSyncPending: true,
+                            onboardingLastError: message,
+                        })
+                        throw error
+                    }
                 },
             }),
             {
@@ -694,6 +722,8 @@ export const useStore = create<CourtVisionState>()(
                     badges: s.badges,
                     recentActivity: s.recentActivity,
                     onboardingDraft: s.onboardingDraft,
+                    onboardingSyncPending: s.onboardingSyncPending,
+                    onboardingLastError: s.onboardingLastError,
                 }),
                 onRehydrateStorage: () => (state) => {
                     state?.setHydrated()

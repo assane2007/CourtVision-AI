@@ -65,6 +65,8 @@ function AuthGuard() {
 
     const hydrated = useStore(selectHydrated);
     const login = useStore(s => s.login);
+    const onboardingSyncPending = useStore(s => s.onboardingSyncPending);
+    const syncOnboardingDraft = useStore(s => s.syncOnboardingDraft);
 
     const { registerForPushNotifications } = usePushNotifications();
 
@@ -127,6 +129,27 @@ function AuthGuard() {
 
         return () => { cancelled = true };
     }, [hydrated, segments]);
+
+    useEffect(() => {
+        if (!hydrated || !onboardingSyncPending) return;
+
+        let disposed = false;
+        const trySync = async () => {
+            const token = await getAuthToken();
+            if (disposed || !token) return;
+            await syncOnboardingDraft().catch(() => { });
+        };
+
+        void trySync();
+        const timer = setInterval(() => {
+            void trySync();
+        }, 30_000);
+
+        return () => {
+            disposed = true;
+            clearInterval(timer);
+        };
+    }, [hydrated, onboardingSyncPending, syncOnboardingDraft]);
 
     return null;
 }

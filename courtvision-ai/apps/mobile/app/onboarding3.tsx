@@ -106,7 +106,14 @@ export default function Onboarding3() {
                 trackEvent('onboarding_completed', { method: 'email_signup' })
             }
 
-            await syncOnboardingDraft().catch(() => { })
+            await syncOnboardingDraft().catch((err) => {
+                const message = err instanceof Error ? err.message : 'Network unavailable'
+                console.warn('[Onboarding3] profile sync queued:', message)
+                toast.info(
+                    'Profile queued',
+                    'Your onboarding choices are saved locally and will sync automatically.'
+                )
+            })
 
             if (Platform.OS !== 'web') {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)

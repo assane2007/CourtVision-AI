@@ -42,7 +42,8 @@
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules",
     "validate": "python scripts/validate_skills.py",
     "build:index": "python scripts/build_index.py",
-    "stats": "python scripts/validate_skills.py"
+    "stats": "python scripts/validate_skills.py",
+    "health:mobile": "powershell -ExecutionPolicy Bypass -File scripts/release/check-mobile-runtime.ps1"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^7.0.0",
