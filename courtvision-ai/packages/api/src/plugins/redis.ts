@@ -7,12 +7,15 @@ export interface RedisPluginOptions extends RedisOptions {}
 
 export const redisPlugin = fp<RedisPluginOptions>(async (fastify, opts) => {
     const isTest = process.env.NODE_ENV === 'test'
+    const shouldUseInMemoryRedis = !env.REDIS_URL && (isTest || !env.isProduction)
 
-    // In tests without REDIS_URL, use an in-memory shim to avoid network sockets
-    // and reconnect timers that can keep Jest alive.
-    if (isTest && !env.REDIS_URL) {
+    // When REDIS_URL is not configured in test/dev, use an in-memory shim to avoid
+    // reconnect loops and noisy connection errors while preserving cache semantics.
+    if (shouldUseInMemoryRedis) {
         const kvStore = new Map<string, string>()
         const hashStore = new Map<string, Map<string, string>>()
+
+        fastify.log.warn('REDIS_URL is missing. Using in-memory Redis shim for local runtime.')
 
         const mockRedis = {
             on: () => mockRedis,
@@ -94,7 +97,7 @@ export const redisPlugin = fp<RedisPluginOptions>(async (fastify, opts) => {
         return
     }
 
-    // Graceful degradation: default to localhost:6379 if REDIS_URL not set
+    // Graceful degradation in production: fallback to localhost if REDIS_URL is missing
     const redisUrl = env.REDIS_URL || 'redis://localhost:6379'
     
     const redis = new Redis(redisUrl, {

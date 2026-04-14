@@ -26,10 +26,65 @@ import * as Haptics from 'expo-haptics'
 import { BlurView } from 'expo-blur'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { colors, space } from '../constants/tokens'
-import { isCVEngineAvailable, analyzeFrame } from '../lib/cvEngineService'
+import { isCVEngineAvailable, analyzeFrame, type CVFrameResult } from '../lib/cvEngineService'
+import { useStore, type OnboardingCalibrationDraft } from '../lib/store'
 
 const { width: SW, height: SH } = Dimensions.get('window')
 const TOTAL_SHOTS = 3
+const FILMING_READY_DELAY_MS = 3000
+const CAPTURE_ANALYSIS_ATTEMPTS = 3
+const CAPTURE_ANALYSIS_RETRY_DELAY_MS = 350
+const MIN_AVG_VISIBILITY = 0.35
+const MIN_VISIBLE_LANDMARKS = 8
+const MIN_VALID_ELBOW_ANGLE = 45
+const MAX_VALID_ELBOW_ANGLE = 155
+
+function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function toShotResult(cvResult: CVFrameResult): ShotResult | null {
+    if (!cvResult.success || cvResult.elbow_angle == null) return null
+
+    const elbow = cvResult.elbow_angle
+    if (elbow < MIN_VALID_ELBOW_ANGLE || elbow > MAX_VALID_ELBOW_ANGLE) {
+        return null
+    }
+
+    const landmarks = cvResult.landmarks_3d ?? []
+    if (landmarks.length > 0) {
+        const avgVisibility = landmarks.reduce((sum, landmark) => sum + landmark.visibility, 0) / landmarks.length
+        const visibleCount = landmarks.filter(landmark => landmark.visibility >= MIN_AVG_VISIBILITY).length
+
+        if (avgVisibility < MIN_AVG_VISIBILITY || visibleCount < MIN_VISIBLE_LANDMARKS) {
+            return null
+        }
+    }
+
+    const knee = cvResult.knee_angle ?? 135
+    const confidence = landmarks.length > 0
+        ? landmarks.reduce((sum, landmark) => sum + landmark.visibility, 0) / landmarks.length
+        : 0.7
+
+    return {
+        elbowAngle: elbow,
+        kneeAngle: knee,
+        postureScore: Math.max(0, Math.round(100 - Math.abs(elbow - 95) * 2)),
+        confidence,
+    }
+}
+
+function getPoseGuidanceMessage(streak: number): string {
+    if (streak <= 1) {
+        return 'Pose not locked yet. Step back a little and keep your full body in frame.'
+    }
+
+    if (streak === 2) {
+        return 'Still calibrating pose. Keep shoulders, hips, knees and ankles visible, then retry.'
+    }
+
+    return 'Pose still unstable. Move phone farther away, improve lighting, then retry.'
+}
 
 interface ShotResult {
     elbowAngle: number
@@ -84,6 +139,9 @@ export default function OnboardingCamera() {
     const router = useRouter()
     const [permission, requestPermission] = useCameraPermissions()
     const cameraRef = useRef<CameraView>(null)
+    const isAuthenticated = useStore(s => s.isAuthenticated)
+    const setOnboardingCalibrationDraft = useStore(s => s.setOnboardingCalibrationDraft)
+    const syncOnboardingCalibrationDraft = useStore(s => s.syncOnboardingCalibrationDraft)
 
     const [phase, setPhase] = useState<'intro' | 'filming' | 'analyzing' | 'results'>('intro')
     const [shotCount, setShotCount] = useState(0)
@@ -91,6 +149,9 @@ export default function OnboardingCamera() {
     const [cvAvailable, setCvAvailable] = useState(false)
     const [capturing, setCapturing] = useState(false)
     const [captureError, setCaptureError] = useState<string | null>(null)
+    const [filmingReady, setFilmingReady] = useState(false)
+    const [readyCountdown, setReadyCountdown] = useState(0)
+    const [invalidPoseStreak, setInvalidPoseStreak] = useState(0)
 
     // Animations
     const ringProgress = useSharedValue(0)
@@ -120,6 +181,30 @@ export default function OnboardingCamera() {
         }
     }, [phase])
 
+    useEffect(() => {
+        if (phase !== 'filming') {
+            setFilmingReady(false)
+            setReadyCountdown(0)
+            return
+        }
+
+        const readyAt = Date.now() + FILMING_READY_DELAY_MS
+        const tick = () => {
+            const remainingMs = Math.max(0, readyAt - Date.now())
+            const remainingSeconds = Math.ceil(remainingMs / 1000)
+            setReadyCountdown(remainingSeconds)
+
+            if (remainingMs <= 0) {
+                setFilmingReady(true)
+                setReadyCountdown(0)
+            }
+        }
+
+        tick()
+        const interval = setInterval(tick, 200)
+        return () => clearInterval(interval)
+    }, [phase])
+
     const ringStyle = useAnimatedStyle(() => ({
         transform: [{ rotate: `${interpolate(ringProgress.value, [0, 1], [0, 360])}deg` }],
     }))
@@ -135,6 +220,7 @@ export default function OnboardingCamera() {
         }
         if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
         setCaptureError(null)
+        setInvalidPoseStreak(0)
         setPhase('filming')
     }, [cvAvailable])
 
@@ -150,7 +236,7 @@ export default function OnboardingCamera() {
     }, [])
 
     const captureShot = useCallback(async () => {
-        if (capturing || shotCount >= TOTAL_SHOTS) return
+        if (capturing || shotCount >= TOTAL_SHOTS || !filmingReady) return
         setCapturing(true)
         setCaptureError(null)
 
@@ -165,26 +251,33 @@ export default function OnboardingCamera() {
                 throw new Error('Camera not ready')
             }
 
-            const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.7 })
-            if (!photo?.base64) {
-                throw new Error('Unable to capture frame')
+            let result: ShotResult | null = null
+            for (let attempt = 0; attempt < CAPTURE_ANALYSIS_ATTEMPTS; attempt++) {
+                const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.7 })
+                if (!photo?.base64) {
+                    throw new Error('Unable to capture frame')
+                }
+
+                const cvResult = await analyzeFrame(photo.base64)
+                result = toShotResult(cvResult)
+                if (result) {
+                    break
+                }
+
+                if (attempt < CAPTURE_ANALYSIS_ATTEMPTS - 1) {
+                    await sleep(CAPTURE_ANALYSIS_RETRY_DELAY_MS)
+                }
             }
 
-            const cvResult = await analyzeFrame(photo.base64)
-            if (!cvResult.success || cvResult.elbow_angle == null) {
-                throw new Error('No valid pose detected. Keep full body in frame and retry.')
+            if (!result) {
+                const streak = invalidPoseStreak + 1
+                setInvalidPoseStreak(streak)
+                const poseError = new Error(getPoseGuidanceMessage(streak))
+                poseError.name = 'PoseValidationError'
+                throw poseError
             }
 
-            const elbow = cvResult.elbow_angle
-            const knee = cvResult.knee_angle ?? 135
-            const result: ShotResult = {
-                elbowAngle: elbow,
-                kneeAngle: knee,
-                postureScore: Math.max(0, Math.round(100 - Math.abs(elbow - 95) * 2)),
-                confidence: cvResult.landmarks_3d
-                    ? cvResult.landmarks_3d.reduce((s, l) => s + l.visibility, 0) / cvResult.landmarks_3d.length
-                    : 0.7,
-            }
+            setInvalidPoseStreak(0)
 
             const newShots = [...shots, result]
             setShots(newShots)
@@ -203,16 +296,46 @@ export default function OnboardingCamera() {
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Capture failed. Please retry.'
             setCaptureError(message)
-            if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+            if (Platform.OS !== 'web') {
+                const isPoseValidationError = err instanceof Error && err.name === 'PoseValidationError'
+                Haptics.notificationAsync(
+                    isPoseValidationError
+                        ? Haptics.NotificationFeedbackType.Warning
+                        : Haptics.NotificationFeedbackType.Error
+                )
+            }
         } finally {
             setCapturing(false)
         }
-    }, [capturing, shotCount, shots, cvAvailable])
+    }, [capturing, shotCount, shots, cvAvailable, filmingReady, invalidPoseStreak])
 
     const handleContinue = useCallback(() => {
+        if (shots.length > 0) {
+            const draft: OnboardingCalibrationDraft = {
+                shots: shots.map(shot => ({
+                    elbowAngle: Math.round(shot.elbowAngle * 10) / 10,
+                    kneeAngle: Math.round(shot.kneeAngle * 10) / 10,
+                    postureScore: shot.postureScore,
+                    confidence: Math.round(shot.confidence * 1000) / 1000,
+                })),
+                averageElbowAngle: Math.round((shots.reduce((sum, shot) => sum + shot.elbowAngle, 0) / shots.length) * 10) / 10,
+                averageKneeAngle: Math.round((shots.reduce((sum, shot) => sum + shot.kneeAngle, 0) / shots.length) * 10) / 10,
+                averagePostureScore: Math.round(shots.reduce((sum, shot) => sum + shot.postureScore, 0) / shots.length),
+                averageConfidence: Math.round((shots.reduce((sum, shot) => sum + shot.confidence, 0) / shots.length) * 1000) / 1000,
+                capturedAt: new Date().toISOString(),
+                source: 'onboarding-camera-v2',
+            }
+
+            setOnboardingCalibrationDraft(draft)
+
+            if (isAuthenticated) {
+                void syncOnboardingCalibrationDraft().catch(() => { })
+            }
+        }
+
         if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
         router.push('/onboarding3')
-    }, [router])
+    }, [router, shots, isAuthenticated, setOnboardingCalibrationDraft, syncOnboardingCalibrationDraft])
 
     // ── RESULTS SCREEN ───────────────────────
 
@@ -378,13 +501,20 @@ export default function OnboardingCamera() {
                                 <Text style={s.captureErrorText}>{captureError}</Text>
                             ) : null}
                             <Text style={s.captureHint}>
-                                {shotCount >= TOTAL_SHOTS ? 'All shots captured!' : 'Tap to capture shot'}
+                                {shotCount >= TOTAL_SHOTS
+                                    ? 'All shots captured!'
+                                    : filmingReady
+                                        ? 'Tap when your full body is visible'
+                                        : `Get in position... ${readyCountdown}s`}
                             </Text>
+                            {!filmingReady ? (
+                                <Text style={s.captureWarmupText}>Step back until head, hips, knees and ankles are visible.</Text>
+                            ) : null}
                             <Animated.View style={pulseStyle}>
                                 <TouchableOpacity
-                                    style={[s.captureBtn, capturing && s.captureBtnDisabled]}
+                                    style={[s.captureBtn, (capturing || !filmingReady) && s.captureBtnDisabled]}
                                     onPress={captureShot}
-                                    disabled={capturing || shotCount >= TOTAL_SHOTS}
+                                    disabled={capturing || shotCount >= TOTAL_SHOTS || !filmingReady}
                                     activeOpacity={0.7}
                                 >
                                     <View style={s.captureBtnInner} />
@@ -557,6 +687,13 @@ const s = StyleSheet.create({
         fontWeight: '600',
         color: 'rgba(255,255,255,0.5)',
         marginBottom: 16,
+    },
+    captureWarmupText: {
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.66)',
+        fontWeight: '500',
+        textAlign: 'center',
+        marginBottom: 12,
     },
     captureErrorText: {
         fontSize: 12,

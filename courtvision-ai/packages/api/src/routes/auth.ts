@@ -36,6 +36,35 @@ const onboardingProfileSchema = z.object({
     experienceLevel: z.enum(['beginner', 'intermediate', 'advanced', 'elite']),
 })
 
+const onboardingCalibrationShotSchema = z.object({
+    elbowAngle: z.number().finite(),
+    kneeAngle: z.number().finite(),
+    postureScore: z.number().min(0).max(100),
+    confidence: z.number().min(0).max(1),
+})
+
+const onboardingCalibrationSchema = z.object({
+    shots: z.array(onboardingCalibrationShotSchema).min(1).max(10),
+    averageElbowAngle: z.number().finite(),
+    averageKneeAngle: z.number().finite(),
+    averagePostureScore: z.number().min(0).max(100),
+    averageConfidence: z.number().min(0).max(1),
+    capturedAt: z.string().min(10),
+    source: z.string().min(3),
+})
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isMissingRelationError(error: { code?: string; message?: string } | null | undefined, relationName: string): boolean {
+    if (!error) return false
+    if (error.code === '42P01') return true
+
+    const message = (error.message ?? '').toLowerCase()
+    return message.includes(relationName.toLowerCase()) && message.includes('does not exist')
+}
+
 const ONBOARDING_POSITIONS = [
     { id: 'PG', label: 'Point Guard', summary: 'Playmaker and tempo controller' },
     { id: 'SG', label: 'Shooting Guard', summary: 'Perimeter scorer and spacer' },
@@ -292,6 +321,117 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
                 experienceLevel: body.experienceLevel,
                 level: onboardingLevelMap[body.experienceLevel],
             }
+        }
+    })
+
+    app.put('/onboarding/calibration', {
+        preValidation: [app.authenticate],
+        schema: {
+            body: onboardingCalibrationSchema,
+        },
+    }, async (request, reply) => {
+        const user = request.user!
+        const body = request.body as z.infer<typeof onboardingCalibrationSchema>
+
+        const calibration = {
+            source: body.source,
+            capturedAt: body.capturedAt,
+            shotCount: body.shots.length,
+            averages: {
+                elbowAngle: body.averageElbowAngle,
+                kneeAngle: body.averageKneeAngle,
+                postureScore: body.averagePostureScore,
+                confidence: body.averageConfidence,
+            },
+            shots: body.shots,
+        }
+
+        const { data: existingTwin, error: existingTwinError } = await app.supabase
+            .from('digital_twins')
+            .select('mental_profile, pose_signature, twin_profile')
+            .eq('user_id', user.id)
+            .maybeSingle()
+
+        if (existingTwinError && !isMissingRelationError(existingTwinError, 'digital_twins')) {
+            throw existingTwinError
+        }
+
+        if (isMissingRelationError(existingTwinError, 'digital_twins')) {
+            app.log.warn(existingTwinError, 'digital_twins table unavailable, skipping onboarding calibration persistence')
+            return {
+                success: true,
+                data: {
+                    stored: false,
+                    reason: 'digital_twins_unavailable',
+                },
+            }
+        }
+
+        const existingMentalProfile = isPlainObject(existingTwin?.mental_profile)
+            ? existingTwin.mental_profile
+            : {}
+        const existingPoseSignature = isPlainObject(existingTwin?.pose_signature)
+            ? existingTwin.pose_signature
+            : {}
+        const existingTwinProfile = isPlainObject(existingTwin?.twin_profile)
+            ? existingTwin.twin_profile
+            : {}
+
+        const nextMentalProfile = {
+            ...existingMentalProfile,
+            onboardingCalibration: {
+                postureScore: body.averagePostureScore,
+                confidence: body.averageConfidence,
+                capturedAt: body.capturedAt,
+                source: body.source,
+            },
+        }
+
+        const nextPoseSignature = {
+            ...existingPoseSignature,
+            onboardingCalibration: calibration,
+        }
+
+        const nextTwinProfile = {
+            ...existingTwinProfile,
+            onboarding: {
+                ...(isPlainObject(existingTwinProfile.onboarding) ? existingTwinProfile.onboarding : {}),
+                calibration,
+            },
+        }
+
+        const { error: upsertError } = await app.supabase
+            .from('digital_twins')
+            .upsert({
+                user_id: user.id,
+                mental_profile: nextMentalProfile,
+                pose_signature: nextPoseSignature,
+                twin_profile: nextTwinProfile,
+                updated_at: new Date().toISOString(),
+            }, { onConflict: 'user_id' })
+
+        if (upsertError) {
+            if (isMissingRelationError(upsertError, 'digital_twins')) {
+                app.log.warn(upsertError, 'digital_twins table unavailable during upsert, skipping onboarding calibration persistence')
+                return {
+                    success: true,
+                    data: {
+                        stored: false,
+                        reason: 'digital_twins_unavailable',
+                    },
+                }
+            }
+
+            throw upsertError
+        }
+
+        return {
+            success: true,
+            data: {
+                stored: true,
+                shotCount: body.shots.length,
+                capturedAt: body.capturedAt,
+            },
         }
     })
 

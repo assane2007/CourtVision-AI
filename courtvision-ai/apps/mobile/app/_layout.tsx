@@ -67,6 +67,8 @@ function AuthGuard() {
     const login = useStore(s => s.login);
     const onboardingSyncPending = useStore(s => s.onboardingSyncPending);
     const syncOnboardingDraft = useStore(s => s.syncOnboardingDraft);
+    const onboardingCalibrationSyncPending = useStore(s => s.onboardingCalibrationSyncPending);
+    const syncOnboardingCalibrationDraft = useStore(s => s.syncOnboardingCalibrationDraft);
 
     const { registerForPushNotifications } = usePushNotifications();
 
@@ -131,13 +133,14 @@ function AuthGuard() {
     }, [hydrated, segments]);
 
     useEffect(() => {
-        if (!hydrated || !onboardingSyncPending) return;
+        if (!hydrated || (!onboardingSyncPending && !onboardingCalibrationSyncPending)) return;
 
         let disposed = false;
         const trySync = async () => {
             const token = await getAuthToken();
             if (disposed || !token) return;
             await syncOnboardingDraft().catch(() => { });
+            await syncOnboardingCalibrationDraft().catch(() => { });
         };
 
         void trySync();
@@ -149,7 +152,7 @@ function AuthGuard() {
             disposed = true;
             clearInterval(timer);
         };
-    }, [hydrated, onboardingSyncPending, syncOnboardingDraft]);
+    }, [hydrated, onboardingSyncPending, syncOnboardingDraft, onboardingCalibrationSyncPending, syncOnboardingCalibrationDraft]);
 
     return null;
 }

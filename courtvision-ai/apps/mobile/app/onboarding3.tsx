@@ -60,6 +60,7 @@ export default function Onboarding3() {
     const signUpWithEmail = useStore(s => s.signUpWithEmail)
     const loginWithOAuth = useStore(s => s.loginWithOAuth)
     const syncOnboardingDraft = useStore(s => s.syncOnboardingDraft)
+    const syncOnboardingCalibrationDraft = useStore(s => s.syncOnboardingCalibrationDraft)
     const authLoading = useStore(s => s.authLoading)
     const { trackEvent } = useAnalytics()
 
@@ -112,6 +113,15 @@ export default function Onboarding3() {
                 toast.info(
                     'Profile queued',
                     'Your onboarding choices are saved locally and will sync automatically.'
+                )
+            })
+
+            await syncOnboardingCalibrationDraft().catch((err) => {
+                const message = err instanceof Error ? err.message : 'Network unavailable'
+                console.warn('[Onboarding3] calibration sync queued:', message)
+                toast.info(
+                    'Calibration queued',
+                    'Your camera calibration is saved locally and will sync automatically.'
                 )
             })
 

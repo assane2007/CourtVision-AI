@@ -49,6 +49,23 @@ export interface OnboardingDraft {
     experienceLevel: OnboardingExperienceLevel | null
 }
 
+export interface OnboardingCalibrationShot {
+    elbowAngle: number
+    kneeAngle: number
+    postureScore: number
+    confidence: number
+}
+
+export interface OnboardingCalibrationDraft {
+    shots: OnboardingCalibrationShot[]
+    averageElbowAngle: number
+    averageKneeAngle: number
+    averagePostureScore: number
+    averageConfidence: number
+    capturedAt: string
+    source: 'onboarding-camera-v2'
+}
+
 export interface WeekDay {
     day: string
     mental: number
@@ -155,6 +172,9 @@ interface CourtVisionState {
     onboardingDraft: OnboardingDraft
     onboardingSyncPending: boolean
     onboardingLastError: string | null
+    onboardingCalibrationDraft: OnboardingCalibrationDraft | null
+    onboardingCalibrationSyncPending: boolean
+    onboardingCalibrationLastError: string | null
 
     // Actions
     login: (token: string, refreshToken?: string) => Promise<void>
@@ -178,6 +198,9 @@ interface CourtVisionState {
     setOnboardingDraft: (partial: Partial<OnboardingDraft>) => void
     clearOnboardingDraft: () => void
     syncOnboardingDraft: () => Promise<boolean>
+    setOnboardingCalibrationDraft: (draft: OnboardingCalibrationDraft) => void
+    clearOnboardingCalibrationDraft: () => void
+    syncOnboardingCalibrationDraft: () => Promise<boolean>
 }
 
 // ─── Default Gamification Data (used only in demo mode) ──────
@@ -280,6 +303,9 @@ export const useStore = create<CourtVisionState>()(
                 },
                 onboardingSyncPending: false,
                 onboardingLastError: null,
+                onboardingCalibrationDraft: null,
+                onboardingCalibrationSyncPending: false,
+                onboardingCalibrationLastError: null,
 
                 // ── Hydration ──
                 setHydrated: () => set({ hydrated: true }),
@@ -293,6 +319,9 @@ export const useStore = create<CourtVisionState>()(
                     await get().initDashboard()
                     await get().syncOnboardingDraft().catch((err) => {
                         console.warn('[Store] syncOnboardingDraft skipped:', (err as Error)?.message ?? err)
+                    })
+                    await get().syncOnboardingCalibrationDraft().catch((err) => {
+                        console.warn('[Store] syncOnboardingCalibrationDraft skipped:', (err as Error)?.message ?? err)
                     })
                 },
 
@@ -319,6 +348,7 @@ export const useStore = create<CourtVisionState>()(
                                 },
                             })
                             get().clearOnboardingDraft()
+                            get().clearOnboardingCalibrationDraft()
                             return
                         }
 
@@ -331,6 +361,9 @@ export const useStore = create<CourtVisionState>()(
                             await get().initDashboard()
                             await get().syncOnboardingDraft().catch((err) => {
                                 console.warn('[Store] syncOnboardingDraft skipped:', (err as Error)?.message ?? err)
+                            })
+                            await get().syncOnboardingCalibrationDraft().catch((err) => {
+                                console.warn('[Store] syncOnboardingCalibrationDraft skipped:', (err as Error)?.message ?? err)
                             })
                         }
                     } catch (err) {
@@ -362,6 +395,7 @@ export const useStore = create<CourtVisionState>()(
                                 },
                             })
                             get().clearOnboardingDraft()
+                            get().clearOnboardingCalibrationDraft()
                             return
                         }
 
@@ -378,6 +412,9 @@ export const useStore = create<CourtVisionState>()(
                             await get().initDashboard()
                             await get().syncOnboardingDraft().catch((err) => {
                                 console.warn('[Store] syncOnboardingDraft skipped:', (err as Error)?.message ?? err)
+                            })
+                            await get().syncOnboardingCalibrationDraft().catch((err) => {
+                                console.warn('[Store] syncOnboardingCalibrationDraft skipped:', (err as Error)?.message ?? err)
                             })
                         } else {
                             // Email confirmation required
@@ -402,6 +439,8 @@ export const useStore = create<CourtVisionState>()(
                                 authLoading: false,
                                 user: { ...DEMO_USER, username: `${provider}_user`, full_name: `${provider} User` },
                             })
+                            get().clearOnboardingDraft()
+                            get().clearOnboardingCalibrationDraft()
                             return
                         }
 
@@ -432,6 +471,9 @@ export const useStore = create<CourtVisionState>()(
                         },
                         onboardingSyncPending: false,
                         onboardingLastError: null,
+                        onboardingCalibrationDraft: null,
+                        onboardingCalibrationSyncPending: false,
+                        onboardingCalibrationLastError: null,
                     })
                 },
 
@@ -659,6 +701,22 @@ export const useStore = create<CourtVisionState>()(
                     })
                 },
 
+                setOnboardingCalibrationDraft(draft: OnboardingCalibrationDraft) {
+                    set({
+                        onboardingCalibrationDraft: draft,
+                        onboardingCalibrationSyncPending: draft.shots.length > 0,
+                        onboardingCalibrationLastError: null,
+                    })
+                },
+
+                clearOnboardingCalibrationDraft() {
+                    set({
+                        onboardingCalibrationDraft: null,
+                        onboardingCalibrationSyncPending: false,
+                        onboardingCalibrationLastError: null,
+                    })
+                },
+
                 async syncOnboardingDraft() {
                     const draft = get().onboardingDraft
                     if (!draft.position || !draft.experienceLevel) return false
@@ -709,6 +767,33 @@ export const useStore = create<CourtVisionState>()(
                         throw error
                     }
                 },
+
+                async syncOnboardingCalibrationDraft() {
+                    const draft = get().onboardingCalibrationDraft
+                    if (!draft || draft.shots.length === 0) return false
+
+                    if (isDemoMode) {
+                        get().clearOnboardingCalibrationDraft()
+                        return true
+                    }
+
+                    try {
+                        await api.put('/api/auth/onboarding/calibration', draft, {
+                            timeoutMs: 45_000,
+                        })
+
+                        set({ onboardingCalibrationLastError: null })
+                        get().clearOnboardingCalibrationDraft()
+                        return true
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Unable to sync onboarding calibration'
+                        set({
+                            onboardingCalibrationSyncPending: true,
+                            onboardingCalibrationLastError: message,
+                        })
+                        throw error
+                    }
+                },
             }),
             {
                 name: 'courtvision-store',
@@ -724,6 +809,9 @@ export const useStore = create<CourtVisionState>()(
                     onboardingDraft: s.onboardingDraft,
                     onboardingSyncPending: s.onboardingSyncPending,
                     onboardingLastError: s.onboardingLastError,
+                    onboardingCalibrationDraft: s.onboardingCalibrationDraft,
+                    onboardingCalibrationSyncPending: s.onboardingCalibrationSyncPending,
+                    onboardingCalibrationLastError: s.onboardingCalibrationLastError,
                 }),
                 onRehydrateStorage: () => (state) => {
                     state?.setHydrated()
