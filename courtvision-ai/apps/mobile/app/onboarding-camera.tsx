@@ -34,10 +34,14 @@ const TOTAL_SHOTS = 3
 const FILMING_READY_DELAY_MS = 3000
 const CAPTURE_ANALYSIS_ATTEMPTS = 3
 const CAPTURE_ANALYSIS_RETRY_DELAY_MS = 350
+const DETECTION_CHECK_ATTEMPTS = 2
 const MIN_AVG_VISIBILITY = 0.35
 const MIN_VISIBLE_LANDMARKS = 8
 const MIN_VALID_ELBOW_ANGLE = 45
 const MAX_VALID_ELBOW_ANGLE = 155
+
+type CameraFacing = 'front' | 'back'
+type PoseDetectionState = 'idle' | 'checking' | 'detected' | 'not-detected'
 
 function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms))
@@ -152,6 +156,10 @@ export default function OnboardingCamera() {
     const [filmingReady, setFilmingReady] = useState(false)
     const [readyCountdown, setReadyCountdown] = useState(0)
     const [invalidPoseStreak, setInvalidPoseStreak] = useState(0)
+    const [cameraFacing, setCameraFacing] = useState<CameraFacing>('front')
+    const [poseDetectionState, setPoseDetectionState] = useState<PoseDetectionState>('idle')
+    const [poseDetectionHint, setPoseDetectionHint] = useState('Tap check to verify your full body is detected before shooting.')
+    const [lastDetectionConfidence, setLastDetectionConfidence] = useState<number | null>(null)
 
     // Animations
     const ringProgress = useSharedValue(0)
@@ -221,8 +229,18 @@ export default function OnboardingCamera() {
         if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
         setCaptureError(null)
         setInvalidPoseStreak(0)
+        setPoseDetectionState('idle')
+        setPoseDetectionHint('Tap check to verify your full body is detected before shooting.')
+        setLastDetectionConfidence(null)
         setPhase('filming')
     }, [cvAvailable])
+
+    const toggleCameraFacing = useCallback(() => {
+        setCameraFacing(current => current === 'front' ? 'back' : 'front')
+        if (Platform.OS !== 'web') {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+        }
+    }, [])
 
     const retryCvConnection = useCallback(async () => {
         const available = await isCVEngineAvailable(true)
@@ -239,6 +257,8 @@ export default function OnboardingCamera() {
         if (capturing || shotCount >= TOTAL_SHOTS || !filmingReady) return
         setCapturing(true)
         setCaptureError(null)
+        setPoseDetectionState('checking')
+        setPoseDetectionHint('Checking body detection while capturing...')
 
         if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
 
@@ -278,6 +298,9 @@ export default function OnboardingCamera() {
             }
 
             setInvalidPoseStreak(0)
+            setPoseDetectionState('detected')
+            setLastDetectionConfidence(result.confidence)
+            setPoseDetectionHint(`Body detected (${Math.round(result.confidence * 100)}% confidence).`)
 
             const newShots = [...shots, result]
             setShots(newShots)
@@ -296,6 +319,9 @@ export default function OnboardingCamera() {
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Capture failed. Please retry.'
             setCaptureError(message)
+            setPoseDetectionState('not-detected')
+            setLastDetectionConfidence(null)
+            setPoseDetectionHint(message)
             if (Platform.OS !== 'web') {
                 const isPoseValidationError = err instanceof Error && err.name === 'PoseValidationError'
                 Haptics.notificationAsync(
@@ -308,6 +334,68 @@ export default function OnboardingCamera() {
             setCapturing(false)
         }
     }, [capturing, shotCount, shots, cvAvailable, filmingReady, invalidPoseStreak])
+
+    const checkPoseDetection = useCallback(async () => {
+        if (capturing || !filmingReady) return
+
+        setCapturing(true)
+        setCaptureError(null)
+        setPoseDetectionState('checking')
+        setPoseDetectionHint('Checking full body visibility...')
+
+        try {
+            if (!cvAvailable) {
+                throw new Error('CV engine unavailable')
+            }
+
+            if (!cameraRef.current) {
+                throw new Error('Camera not ready')
+            }
+
+            let result: ShotResult | null = null
+
+            for (let attempt = 0; attempt < DETECTION_CHECK_ATTEMPTS; attempt++) {
+                const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.65 })
+                if (!photo?.base64) {
+                    throw new Error('Unable to capture frame')
+                }
+
+                const cvResult = await analyzeFrame(photo.base64)
+                result = toShotResult(cvResult)
+                if (result) {
+                    break
+                }
+
+                if (attempt < DETECTION_CHECK_ATTEMPTS - 1) {
+                    await sleep(CAPTURE_ANALYSIS_RETRY_DELAY_MS)
+                }
+            }
+
+            if (!result) {
+                const streak = invalidPoseStreak + 1
+                setInvalidPoseStreak(streak)
+                setPoseDetectionState('not-detected')
+                setLastDetectionConfidence(null)
+                setPoseDetectionHint(getPoseGuidanceMessage(streak))
+                if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+                return
+            }
+
+            setInvalidPoseStreak(0)
+            setPoseDetectionState('detected')
+            setLastDetectionConfidence(result.confidence)
+            setPoseDetectionHint(`Body detected (${Math.round(result.confidence * 100)}% confidence). Ready to capture.`)
+            if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Body detection check failed.'
+            setPoseDetectionState('not-detected')
+            setLastDetectionConfidence(null)
+            setPoseDetectionHint(message)
+            if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+        } finally {
+            setCapturing(false)
+        }
+    }, [capturing, cvAvailable, filmingReady, invalidPoseStreak])
 
     const handleContinue = useCallback(() => {
         if (shots.length > 0) {
@@ -336,6 +424,22 @@ export default function OnboardingCamera() {
         if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
         router.push('/onboarding3')
     }, [router, shots, isAuthenticated, setOnboardingCalibrationDraft, syncOnboardingCalibrationDraft])
+
+    const poseStatusAccent = poseDetectionState === 'detected'
+        ? '#00D97E'
+        : poseDetectionState === 'checking'
+            ? '#FFC400'
+            : poseDetectionState === 'not-detected'
+                ? '#FF6B00'
+                : 'rgba(255,255,255,0.45)'
+
+    const poseStatusTitle = poseDetectionState === 'detected'
+        ? 'Body detected'
+        : poseDetectionState === 'checking'
+            ? 'Checking body...'
+            : poseDetectionState === 'not-detected'
+                ? 'Body not detected'
+                : 'Detection not checked yet'
 
     // ── RESULTS SCREEN ───────────────────────
 
@@ -420,7 +524,7 @@ export default function OnboardingCamera() {
         <View style={s.container}>
             {/* Camera feed */}
             {permission?.granted ? (
-                <CameraView ref={cameraRef} style={StyleSheet.absoluteFillObject} facing="front" />
+                <CameraView ref={cameraRef} style={StyleSheet.absoluteFillObject} facing={cameraFacing} />
             ) : (
                 <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#111' }]} />
             )}
@@ -435,8 +539,16 @@ export default function OnboardingCamera() {
                         <Feather name="arrow-left" size={22} color="#FFF" />
                     </TouchableOpacity>
                     <Text style={s.hudTitle}>CALIBRATION</Text>
-                    <View style={s.shotCounter}>
-                        <Text style={s.shotCounterText}>{shotCount}/{TOTAL_SHOTS}</Text>
+                    <View style={s.topRightControls}>
+                        <View style={s.shotCounter}>
+                            <Text style={s.shotCounterText}>{shotCount}/{TOTAL_SHOTS}</Text>
+                        </View>
+                        {permission?.granted ? (
+                            <TouchableOpacity style={s.flipCameraBtn} onPress={toggleCameraFacing} activeOpacity={0.8}>
+                                <Feather name="refresh-cw" size={14} color="#FFF" />
+                                <Text style={s.flipCameraText}>{cameraFacing === 'front' ? 'Front' : 'Back'}</Text>
+                            </TouchableOpacity>
+                        ) : null}
                     </View>
                 </View>
 
@@ -495,6 +607,25 @@ export default function OnboardingCamera() {
                             </Animated.View>
                         )}
 
+                        <View style={[s.poseCheckCard, { borderColor: `${poseStatusAccent}80` }]}>
+                            <View style={s.poseCheckHeader}>
+                                <View style={[s.poseCheckDot, { backgroundColor: poseStatusAccent }]} />
+                                <Text style={s.poseCheckTitle}>{poseStatusTitle}</Text>
+                            </View>
+                            <Text style={s.poseCheckHint}>{poseDetectionHint}</Text>
+                            {lastDetectionConfidence != null ? (
+                                <Text style={[s.poseCheckConfidence, { color: poseStatusAccent }]}>Confidence {Math.round(lastDetectionConfidence * 100)}%</Text>
+                            ) : null}
+                            <TouchableOpacity
+                                style={[s.poseCheckBtn, (capturing || !filmingReady || !cvAvailable) && s.poseCheckBtnDisabled]}
+                                onPress={checkPoseDetection}
+                                disabled={capturing || !filmingReady || !cvAvailable}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={s.poseCheckBtnText}>{poseDetectionState === 'checking' ? 'CHECKING...' : 'CHECK BODY DETECTION'}</Text>
+                            </TouchableOpacity>
+                        </View>
+
                         {/* Capture button */}
                         <View style={s.captureRow}>
                             {captureError ? (
@@ -549,6 +680,11 @@ const s = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 12,
     },
+    topRightControls: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
     backBtn: {
         width: 40, height: 40,
         alignItems: 'center', justifyContent: 'center',
@@ -571,6 +707,23 @@ const s = StyleSheet.create({
         fontSize: 14,
         fontWeight: '800',
         color: colors.fire,
+    },
+    flipCameraBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+        height: 34,
+        paddingHorizontal: 9,
+        borderRadius: 17,
+        backgroundColor: 'rgba(255,255,255,0.13)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.25)',
+    },
+    flipCameraText: {
+        color: '#FFF',
+        fontSize: 11,
+        fontWeight: '700',
     },
     progressDots: {
         flexDirection: 'row',
@@ -664,6 +817,7 @@ const s = StyleSheet.create({
     // Filming controls
     filmingControls: {
         alignItems: 'center',
+        width: '100%',
     },
     lastShotFeedback: {
         backgroundColor: 'rgba(0,0,0,0.6)',
@@ -679,8 +833,62 @@ const s = StyleSheet.create({
         fontWeight: '600',
         color: colors.fire,
     },
+    poseCheckCard: {
+        width: '100%',
+        backgroundColor: 'rgba(0,0,0,0.56)',
+        borderWidth: 1,
+        borderRadius: 14,
+        padding: 12,
+        marginBottom: 14,
+    },
+    poseCheckHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 6,
+    },
+    poseCheckDot: {
+        width: 9,
+        height: 9,
+        borderRadius: 4.5,
+    },
+    poseCheckTitle: {
+        color: '#FFF',
+        fontSize: 13,
+        fontWeight: '700',
+    },
+    poseCheckHint: {
+        color: 'rgba(255,255,255,0.72)',
+        fontSize: 12,
+        lineHeight: 17,
+        marginBottom: 6,
+    },
+    poseCheckConfidence: {
+        fontSize: 11,
+        fontWeight: '700',
+        marginBottom: 10,
+    },
+    poseCheckBtn: {
+        height: 38,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.3)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.12)',
+    },
+    poseCheckBtnDisabled: {
+        opacity: 0.45,
+    },
+    poseCheckBtnText: {
+        color: '#FFF',
+        fontSize: 11,
+        fontWeight: '800',
+        letterSpacing: 0.7,
+    },
     captureRow: {
         alignItems: 'center',
+        width: '100%',
     },
     captureHint: {
         fontSize: 13,
