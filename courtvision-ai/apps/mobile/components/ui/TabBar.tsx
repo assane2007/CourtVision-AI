@@ -1,15 +1,25 @@
 import React from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, Text } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { CommonActions } from '@react-navigation/native';
 import { Home, Video, BarChart2, User, Camera } from 'lucide-react-native';
 import { colors, shadows } from '../../constants/tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+const TAB_VISUALS: Record<string, { label: string; icon: typeof Home }> = {
+    index: { label: 'Home', icon: Home },
+    record: { label: 'Film', icon: Camera },
+    sessions: { label: 'Sessions', icon: BarChart2 },
+    players: { label: 'Profile', icon: User },
+}
+
 export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     const insets = useSafeAreaInsets();
+    const bottomInset = Math.max(insets.bottom, 12)
 
     return (
-        <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+        <View style={[styles.outer, { paddingBottom: bottomInset }]}> 
+            <View style={styles.container}>
             {state.routes.map((route, index) => {
                 const { options } = descriptors[route.key];
                 const isFocused = state.index === index;
@@ -26,9 +36,17 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                     });
 
                     if (!isFocused && !event.defaultPrevented) {
-                        navigation.navigate(route.name);
+                        navigation.dispatch({
+                            ...CommonActions.navigate({
+                                name: route.name,
+                                params: route.params,
+                            }),
+                            target: state.key,
+                        });
                     }
                 };
+
+                const visual = TAB_VISUALS[route.name] ?? TAB_VISUALS.index
 
                 // The center "Record" button is styled as a large floating action button.
                 if (route.name === 'record') {
@@ -44,15 +62,12 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                             <View style={styles.recordButton}>
                                 <Camera color={colors.snow} size={24} />
                             </View>
+                            <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>{visual.label}</Text>
                         </Pressable>
                     );
                 }
 
-                // Standard tabs mapping based on name
-                let IconComponent = Home;
-                if (route.name === 'index') IconComponent = Home;
-                if (route.name === 'sessions') IconComponent = BarChart2;
-                if (route.name === 'players') IconComponent = User;
+                const IconComponent = visual.icon
 
                 const color = isFocused ? colors.fire : colors.fog;
 
@@ -65,40 +80,68 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                         onPress={onPress}
                         style={styles.tabButton}
                     >
-                        <IconComponent color={color} size={24} />
+                        <View style={[styles.tabChip, isFocused && styles.tabChipActive]}>
+                            <IconComponent color={color} size={20} />
+                            <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>{visual.label}</Text>
+                        </View>
                         <View style={[styles.dot, { backgroundColor: isFocused ? colors.fire : 'transparent' }]} />
                     </Pressable>
                 );
             })}
+            </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
+    outer: {
+        position: 'absolute',
+        left: 16,
+        right: 16,
+        bottom: 0,
+        zIndex: 20,
+    },
     container: {
         flexDirection: 'row',
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: colors.void,
+        backgroundColor: 'rgba(10,10,10,0.92)',
+        borderRadius: 26,
         borderTopWidth: 1,
         borderTopColor: colors.line,
-        paddingTop: 12,
+        borderWidth: 1,
+        borderColor: colors.line,
+        paddingTop: 10,
+        paddingBottom: 8,
+        paddingHorizontal: 8,
         justifyContent: 'space-around',
         alignItems: 'center',
-        zIndex: 20,
+        ...shadows.cardShadow,
     },
     tabButton: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 4,
+    },
+    tabChip: {
+        minWidth: 64,
+        height: 40,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: colors.line,
+        backgroundColor: 'rgba(255,255,255,0.02)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 2,
+        paddingHorizontal: 10,
+    },
+    tabChipActive: {
+        borderColor: colors.lineStrong,
+        backgroundColor: colors.fireTrace,
     },
     dot: {
-        width: 4,
-        height: 4,
-        borderRadius: 2,
+        width: 18,
+        height: 2,
+        borderRadius: 999,
+        marginTop: 4,
     },
     recordButtonContainer: {
         flex: 1,
@@ -113,6 +156,17 @@ const styles = StyleSheet.create({
         ...shadows.orangeGlow,
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: -32, // pop out of the tab bar
+        marginTop: -26, // pop out of the tab bar
+        borderWidth: 2,
+        borderColor: 'rgba(255,255,255,0.26)',
+    },
+    tabLabel: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: colors.fog,
+        letterSpacing: 0.2,
+    },
+    tabLabelActive: {
+        color: colors.snow,
     },
 });

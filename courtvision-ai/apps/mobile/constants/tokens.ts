@@ -2,35 +2,35 @@
 
 export const colors = {
     // Fonds
-    void: '#050505',  // fond absolu — le noir arena
-    base: '#0A0A0A',  // fond écran
-    surface: '#141414',  // cards de premier niveau
-    surface2: '#1C1C1C',  // cards imbriquées, inputs
-    surface3: '#242424',  // éléments actifs/hover
+    void: '#09111D',
+    base: '#101A2B',
+    surface: '#162338',
+    surface2: '#1B2A41',
+    surface3: '#233550',
 
     // Accent basketball
-    fire: '#FF5C00',  // orange brûlé — accent primaire
-    fireDim: '#CC4900',  // orange pressé
-    fireGlow: 'rgba(255,92,0,0.18)',  // glow ambient
-    fireTrace: 'rgba(255,92,0,0.08)',  // fond très subtle
+    fire: '#F97316',
+    fireDim: '#C2410C',
+    fireGlow: 'rgba(249,115,22,0.22)',
+    fireTrace: 'rgba(249,115,22,0.12)',
 
     // Texte
-    snow: '#F5F5F5',  // texte principal
-    cloud: 'rgba(245,245,245,0.6)',  // texte secondaire
-    fog: 'rgba(245,245,245,0.28)', // texte muted
-    ghost: 'rgba(245,245,245,0.10)', // texte décoratif
+    snow: '#F7FAFF',
+    cloud: 'rgba(247,250,255,0.70)',
+    fog: 'rgba(247,250,255,0.38)',
+    ghost: 'rgba(247,250,255,0.15)',
 
     // Bordures
-    line: 'rgba(255,255,255,0.07)',  // séparateurs
-    lineStrong: 'rgba(255,92,0,0.25)',    // bordures orange
+    line: 'rgba(255,255,255,0.11)',
+    lineStrong: 'rgba(249,115,22,0.34)',
 
     // Statuts
-    live: '#22C55E',   // vert live/succès
-    liveDim: 'rgba(34,197,94,0.15)',
-    caution: '#F59E0B',   // warning
-    cautionDim: 'rgba(245,158,11,0.12)',
-    danger: '#EF4444',   // erreur
-    dangerDim: 'rgba(239,68,68,0.12)',
+    live: '#16C784',
+    liveDim: 'rgba(22,199,132,0.17)',
+    caution: '#FBBF24',
+    cautionDim: 'rgba(251,191,36,0.16)',
+    danger: '#FF4D6D',
+    dangerDim: 'rgba(255,77,109,0.16)',
 } as const;
 
 export const typography = {
@@ -67,10 +67,10 @@ export const radius = {
 
 export const shadows = {
     orangeGlow: {
-        shadowColor: '#FF5C00',
+        shadowColor: '#F97316',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.45,
-        shadowRadius: 16,
+        shadowOpacity: 0.50,
+        shadowRadius: 18,
         elevation: 12,
     },
     cardShadow: {

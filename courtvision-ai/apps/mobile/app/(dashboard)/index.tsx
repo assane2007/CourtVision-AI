@@ -53,7 +53,7 @@ import { StatCard } from '../../components/dashboard/StatCard'
 import {
     GlassCard, CVText, CVSection, CVStatRow, CVBadge,
     CVActionCard, CVEmptyState, CVProgressBar, CVButton,
-    CVAnalyticsChart, CourtHeatmap,
+    CVAnalyticsChart, CourtHeatmap, AppBackground,
 } from '../../components/ui'
 import { T, typePresets } from '../../lib/theme'
 import { InteractiveTerrainVisualizer } from '../../components/dashboard/InteractiveTerrainVisualizer'
@@ -392,6 +392,7 @@ export default function DashboardIndex() {
 
     return (
         <SafeAreaView style={ds.screen}>
+            <AppBackground variant="dashboard" />
             {/* Subtle ambient glow */}
             <View style={ds.ambientGlow} />
 

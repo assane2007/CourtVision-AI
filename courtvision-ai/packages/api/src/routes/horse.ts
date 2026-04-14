@@ -221,7 +221,8 @@ export default async function horseRoutes(fastify: FastifyInstance) {
         try {
             const user = request.user!
             const { page, limit } = paginationSchema.parse(request.query)
-            const games = await horseService.getHistory(user.id, limit)
+            const offset = (Math.max(1, page) - 1) * limit
+            const games = await horseService.getHistory(user.id, limit, offset)
             return { success: true, data: games, page, limit }
         } catch (error: any) {
             request.log.error({ err: error }, 'HORSE history failed')
@@ -247,7 +248,8 @@ export default async function horseRoutes(fastify: FastifyInstance) {
     fastify.get('/leaderboard', async (request, reply) => {
         try {
             const { page, limit } = paginationSchema.parse(request.query)
-            const leaderboard = await horseService.getLeaderboard(limit)
+            const offset = (Math.max(1, page) - 1) * limit
+            const leaderboard = await horseService.getLeaderboard(limit, offset)
             return { success: true, data: leaderboard, page, limit }
         } catch (error: any) {
             return reply.code(500).send({ error: error.message })

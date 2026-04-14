@@ -17,6 +17,7 @@ import Animated, { FadeInDown, FadeInRight, withSpring, useSharedValue, useAnima
 import type { LeaderboardEntry, ChallengeItem, ActivityItem, SearchResult } from '../../hooks/useCommunity';
 import { useCommunity } from '../../hooks/useCommunity'
 import { PrimaryButton } from '../../components/PrimaryButton'
+import { AppBackground } from '../../components/ui'
 import { T, typePresets } from '../../lib/theme'
 
 const type = typePresets
@@ -148,6 +149,7 @@ export default function Community() {
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: T.color.background.primary }}>
+            <AppBackground variant="dashboard" />
             {/* Header */}
             <View style={{ paddingHorizontal: T.spacing[4], paddingTop: T.spacing[2], paddingBottom: T.spacing[1] }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>

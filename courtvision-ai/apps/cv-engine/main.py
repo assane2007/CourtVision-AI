@@ -99,6 +99,13 @@ executor = ThreadPoolExecutor(max_workers=int(os.getenv("CV_WORKERS", "2")))
 # In-memory job store (production: swap for Redis)
 jobs: Dict[str, dict] = {}
 
+# API hardening limits
+CV_MAX_VIDEO_BYTES = int(os.getenv("CV_MAX_VIDEO_BYTES", str(500 * 1024 * 1024)))
+CV_MAX_IMAGE_BYTES = int(os.getenv("CV_MAX_IMAGE_BYTES", str(8 * 1024 * 1024)))
+CV_UPLOAD_CHUNK_SIZE = int(os.getenv("CV_UPLOAD_CHUNK_SIZE", str(1024 * 1024)))
+CV_JOB_TTL_SEC = int(os.getenv("CV_JOB_TTL_SEC", "3600"))
+CV_JOB_MAX_ENTRIES = int(os.getenv("CV_JOB_MAX_ENTRIES", "200"))
+
 # Model readiness state (set after startup warm-up)
 _models_ready = False
 _models_loaded: Dict[str, bool] = {"yolo": False, "mediapipe": False}
@@ -152,6 +159,73 @@ FALLBACK_NBA_INSPIRATIONS: Dict[str, List[str]] = {
     "floater": ["Tony Parker", "Trae Young", "Derrick Rose"],
     "logo_shot": ["Stephen Curry", "Damian Lillard", "Trae Young"],
 }
+
+
+def _now_ts() -> float:
+    return time.time()
+
+
+def _prune_jobs() -> None:
+    now = _now_ts()
+
+    # Remove stale terminal jobs first.
+    for jid, meta in list(jobs.items()):
+        status = str(meta.get("status", ""))
+        updated_at = float(meta.get("updated_at", meta.get("created_at", now)))
+        if status in ("completed", "failed") and now - updated_at > CV_JOB_TTL_SEC:
+            jobs.pop(jid, None)
+
+    if len(jobs) <= CV_JOB_MAX_ENTRIES:
+        return
+
+    # Keep active processing jobs; evict oldest finished jobs to cap memory.
+    sortable = sorted(
+        jobs.items(),
+        key=lambda item: float(item[1].get("created_at", now)),
+    )
+    for jid, meta in sortable:
+        if len(jobs) <= CV_JOB_MAX_ENTRIES:
+            break
+        if meta.get("status") == "processing":
+            continue
+        jobs.pop(jid, None)
+
+
+def _create_job(job_id: str) -> None:
+    ts = _now_ts()
+    jobs[job_id] = {
+        "status": "processing",
+        "progress": 0,
+        "result": None,
+        "error": None,
+        "created_at": ts,
+        "updated_at": ts,
+    }
+    _prune_jobs()
+
+
+def _touch_job(job_id: str) -> None:
+    job = jobs.get(job_id)
+    if job is not None:
+        job["updated_at"] = _now_ts()
+
+
+def _set_job_progress(job_id: str, progress: int) -> None:
+    job = jobs.get(job_id)
+    if job is None:
+        return
+    job["progress"] = max(0, min(100, int(progress)))
+    _touch_job(job_id)
+
+
+def _set_job_status(job_id: str, status: str, error: Optional[str] = None) -> None:
+    job = jobs.get(job_id)
+    if job is None:
+        return
+    job["status"] = status
+    if error is not None:
+        job["error"] = error
+    _touch_job(job_id)
 
 
 def _nba_cache_get(key: str) -> Optional[Any]:
@@ -1130,7 +1204,7 @@ def _run_pipeline(
     duration = total_frames / fps
 
     logger.info("[%s] Video: %d frames, %.1f fps, %dx%d, %.1f s", job_id, total_frames, fps, w, h, duration)
-    jobs[job_id]["progress"] = 5
+    _set_job_progress(job_id, 5)
 
     # ── Audio ──────────────────────────────────────────────────
     audio_spikes: List[float] = []
@@ -1138,7 +1212,7 @@ def _run_pipeline(
         energy = _extract_audio_energy(video_path)
         audio_spikes = _detect_audio_spikes(energy)
         logger.info("[%s] Audio: %d spikes detected", job_id, len(audio_spikes))
-    jobs[job_id]["progress"] = 15
+    _set_job_progress(job_id, 15)
 
     # ── Detector ───────────────────────────────────────────────
     detector = HighlightDetector(fps, w, h)
@@ -1214,7 +1288,7 @@ def _run_pipeline(
 
             fi += 1
             if fi % 100 == 0:
-                jobs[job_id]["progress"] = min(90, 15 + int(75 * fi / min(total_frames, max_fi)))
+                _set_job_progress(job_id, min(90, 15 + int(75 * fi / min(total_frames, max_fi))))
     finally:
         cap.release()
         if pose_ctx:
@@ -1222,7 +1296,7 @@ def _run_pipeline(
 
     highlights = detector.get_highlights(min_score=25.0, limit=20)
     elapsed = time.time() - t0
-    jobs[job_id]["progress"] = 100
+    _set_job_progress(job_id, 100)
 
     parts = []
     if YOLO_AVAILABLE:
@@ -1254,6 +1328,11 @@ def _run_pipeline(
 
 @app.get("/health")
 def health():
+    _prune_jobs()
+    processing = sum(1 for j in jobs.values() if j.get("status") == "processing")
+    completed = sum(1 for j in jobs.values() if j.get("status") == "completed")
+    failed = sum(1 for j in jobs.values() if j.get("status") == "failed")
+
     return {
         "status": "ok" if _models_ready else "warming-up",
         "service": "cv-engine",
@@ -1265,6 +1344,19 @@ def health():
             "mediapipe": MEDIAPIPE_AVAILABLE,
             "gpu": GPU_AVAILABLE,
             "device": DEVICE,
+        },
+        "limits": {
+            "max_video_bytes": CV_MAX_VIDEO_BYTES,
+            "max_image_bytes": CV_MAX_IMAGE_BYTES,
+            "upload_chunk_size": CV_UPLOAD_CHUNK_SIZE,
+            "job_ttl_sec": CV_JOB_TTL_SEC,
+            "job_max_entries": CV_JOB_MAX_ENTRIES,
+        },
+        "jobs": {
+            "total": len(jobs),
+            "processing": processing,
+            "completed": completed,
+            "failed": failed,
         },
     }
 
@@ -1391,37 +1483,69 @@ async def detect_highlights(
     enable_audio: bool = Query(default=True),
 ):
     """Upload video → async highlight detection. Poll /job/{id}/status."""
-    ext = os.path.splitext(video_file.filename or "")[1].lower()
-    if ext not in (".mp4", ".mov", ".avi", ".mkv", ".webm"):
+    _prune_jobs()
+
+    allowed_exts = {".mp4", ".mov", ".avi", ".mkv", ".webm"}
+    content_type_to_ext = {
+        "video/mp4": ".mp4",
+        "video/quicktime": ".mov",
+        "video/x-msvideo": ".avi",
+        "video/x-matroska": ".mkv",
+        "video/webm": ".webm",
+    }
+
+    filename = video_file.filename or ""
+    ext = os.path.splitext(filename)[1].lower()
+    if not ext:
+        ext = content_type_to_ext.get((video_file.content_type or "").lower(), "")
+
+    if ext not in allowed_exts:
         raise HTTPException(400, "Unsupported format. Use mp4/mov/avi/mkv/webm")
 
-    content = await video_file.read()
-    if len(content) < 1_000:
+    job_id = str(uuid.uuid4())
+    tmp_path: Optional[str] = None
+    total_bytes = 0
+
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+            tmp_path = tmp.name
+            while True:
+                chunk = await video_file.read(CV_UPLOAD_CHUNK_SIZE)
+                if not chunk:
+                    break
+                total_bytes += len(chunk)
+                if total_bytes > CV_MAX_VIDEO_BYTES:
+                    raise HTTPException(413, f"Video file too large (max {CV_MAX_VIDEO_BYTES} bytes)")
+                tmp.write(chunk)
+    finally:
+        await video_file.close()
+
+    if total_bytes < 1_000:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
         raise HTTPException(400, "Video file too small")
 
-    job_id = str(uuid.uuid4())
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
-    tmp.write(content)
-    tmp_path = tmp.name
-    tmp.close()
+    if not tmp_path:
+        raise HTTPException(500, "Failed to persist uploaded video")
 
-    jobs[job_id] = {"status": "processing", "progress": 0, "result": None, "error": None}
+    _create_job(job_id)
 
     async def _bg():
         loop = asyncio.get_event_loop()
         try:
             result = await loop.run_in_executor(executor, _run_pipeline, tmp_path, job_id, frame_skip, enable_audio)
-            jobs[job_id]["status"] = "completed"
-            jobs[job_id]["result"] = result.model_dump()
+            if job_id in jobs:
+                jobs[job_id]["result"] = result.model_dump()
+            _set_job_status(job_id, "completed")
         except Exception as exc:
             logger.error("[%s] Pipeline failed: %s", job_id, exc, exc_info=True)
-            jobs[job_id]["status"] = "failed"
-            jobs[job_id]["error"] = str(exc)
+            _set_job_status(job_id, "failed", str(exc))
         finally:
             try:
                 os.unlink(tmp_path)
             except OSError:
                 pass
+            _prune_jobs()
 
     background_tasks.add_task(_bg)
     return {"job_id": job_id, "status": "processing"}
@@ -1429,19 +1553,30 @@ async def detect_highlights(
 
 @app.get("/job/{job_id}/status")
 def job_status(job_id: str):
+    _prune_jobs()
     if job_id not in jobs:
         raise HTTPException(404, "Job not found")
     j = jobs[job_id]
-    return {"job_id": job_id, "status": j["status"], "progress": j["progress"], "error": j["error"]}
+    _touch_job(job_id)
+    return {
+        "job_id": job_id,
+        "status": j["status"],
+        "progress": j["progress"],
+        "error": j["error"],
+        "created_at": j.get("created_at"),
+        "updated_at": j.get("updated_at"),
+    }
 
 
 @app.get("/job/{job_id}/result")
 def job_result(job_id: str):
+    _prune_jobs()
     if job_id not in jobs:
         raise HTTPException(404, "Job not found")
     j = jobs[job_id]
     if j["status"] != "completed":
         raise HTTPException(409, f"Job not ready: {j['status']}")
+    _touch_job(job_id)
     return j["result"]
 
 
@@ -1455,15 +1590,23 @@ async def analyze_video_legacy(
     if not job_id:
         job_id = str(uuid.uuid4())
 
-    content = await video_file.read()
-    if len(content) < 1_000:
-        raise HTTPException(400, "Video file too small")
-
     tmp_path: Optional[str] = None
+    total_bytes = 0
+
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
-            tmp.write(content)
+            while True:
+                chunk = await video_file.read(CV_UPLOAD_CHUNK_SIZE)
+                if not chunk:
+                    break
+                total_bytes += len(chunk)
+                if total_bytes > CV_MAX_VIDEO_BYTES:
+                    raise HTTPException(413, f"Video file too large (max {CV_MAX_VIDEO_BYTES} bytes)")
+                tmp.write(chunk)
             tmp_path = tmp.name
+
+        if total_bytes < 1_000:
+            raise HTTPException(400, "Video file too small")
 
         cap = cv2.VideoCapture(tmp_path)
         if not cap.isOpened():
@@ -1531,6 +1674,7 @@ async def analyze_video_legacy(
         logger.error("Legacy analyze failed: %s", exc, exc_info=True)
         raise HTTPException(500, "Video processing failed")
     finally:
+        await video_file.close()
         if tmp_path and os.path.exists(tmp_path):
             os.unlink(tmp_path)
 
@@ -1539,6 +1683,11 @@ async def analyze_video_legacy(
 async def analyze_frame(frame_file: UploadFile = File(...)):
     """Single frame: pose + YOLO detection."""
     content = await frame_file.read()
+    await frame_file.close()
+    if len(content) > CV_MAX_IMAGE_BYTES:
+        raise HTTPException(413, f"Image payload too large (max {CV_MAX_IMAGE_BYTES} bytes)")
+    if len(content) < 128:
+        raise HTTPException(400, "Image payload too small")
     return _analyze_frame_bytes(content)
 
 
@@ -1595,10 +1744,17 @@ async def analyze_frame_base64(payload: FrameBase64Request):
     if not raw:
         raise HTTPException(400, "Missing frame_base64")
 
+    max_base64_len = int(CV_MAX_IMAGE_BYTES * 1.5) + 8
+    if len(raw) > max_base64_len:
+        raise HTTPException(413, f"Base64 payload too large (max {CV_MAX_IMAGE_BYTES} decoded bytes)")
+
     try:
         content = base64.b64decode(raw, validate=True)
     except Exception:
         raise HTTPException(400, "Invalid base64 image data")
+
+    if len(content) > CV_MAX_IMAGE_BYTES:
+        raise HTTPException(413, f"Image payload too large (max {CV_MAX_IMAGE_BYTES} bytes)")
 
     if len(content) < 128:
         raise HTTPException(400, "Image payload too small")

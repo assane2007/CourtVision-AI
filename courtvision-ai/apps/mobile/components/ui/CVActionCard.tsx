@@ -75,7 +75,7 @@ export function CVActionCard({
                   {title}
                 </CVText>
                 {badge && (
-                  <View style={[styles.badge, { backgroundColor: `${T.color.signature.primary}18`, borderColor: `${T.color.signature.primary}30` }]}>
+                  <View style={[styles.badge, { backgroundColor: `${T.color.brand.primary}22`, borderColor: `${T.color.brand.primary}45` }]}>
                     <CVText preset="overline" color="amber" style={{ fontSize: 9 }}>
                       {badge}
                     </CVText>

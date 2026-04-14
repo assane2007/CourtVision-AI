@@ -45,7 +45,7 @@ export interface CVButtonProps {
 const SIZES: Record<CVButtonSize, {
   height: number; px: number; fontSize: number; iconSize: number; radius: number
 }> = {
-  sm: { height: 40, px: 14, fontSize: T.fontSize.sm, iconSize: 14, radius: T.radius.md },
+  sm: { height: 44, px: 14, fontSize: T.fontSize.sm, iconSize: 14, radius: T.radius.md },
   md: { height: 52, px: 20, fontSize: T.fontSize.base, iconSize: 16, radius: T.radius.lg },
   lg: { height: 60, px: 28, fontSize: T.fontSize.lg, iconSize: 18, radius: T.radius.xl },
 }
@@ -72,16 +72,16 @@ function getVariantStyle(variant: CVButtonVariant, disabled: boolean) {
       }
     case 'secondary':
       return {
-        bg: `${T.color.brand.primary}15`,
+        bg: `${T.color.brand.primary}18`,
         text: T.color.brand.primary,
-        border: `${T.color.brand.primary}40`,
+        border: `${T.color.brand.primary}55`,
         shadow: {} as ViewStyle,
       }
     case 'ghost':
       return {
-        bg: 'transparent',
+        bg: 'rgba(255,255,255,0.03)',
         text: T.color.text.secondary,
-        border: T.color.border.base,
+        border: T.color.border.strong,
         shadow: {} as ViewStyle,
       }
     case 'danger':
@@ -131,7 +131,7 @@ export function CVButton({
     <TouchableOpacity
       onPress={isDisabled ? undefined : handlePress}
       disabled={isDisabled}
-      activeOpacity={0.8}
+      activeOpacity={0.9}
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       accessibilityLabel={label}
@@ -166,7 +166,7 @@ export function CVButton({
               {
                 color: vs.text,
                 fontSize: cfg.fontSize,
-                fontWeight: '700',
+                fontFamily: T.fonts.body.bold,
                 letterSpacing: 0.2,
               },
               labelStyle,

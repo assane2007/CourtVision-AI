@@ -36,6 +36,39 @@ const logger = pino({
 
 const isProduction = process.env.NODE_ENV === 'production'
 
+function parsePositiveIntEnv(name: string, fallback: number): number {
+    const raw = process.env[name]
+    if (!raw) return fallback
+    const parsed = Number.parseInt(raw, 10)
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+}
+
+const CV_ENGINE_REQUEST_TIMEOUT_MS = parsePositiveIntEnv('CV_ENGINE_REQUEST_TIMEOUT_MS', 45_000)
+const CV_ENGINE_STATUS_TIMEOUT_MS = parsePositiveIntEnv('CV_ENGINE_STATUS_TIMEOUT_MS', 7_000)
+const CV_ENGINE_RESULT_TIMEOUT_MS = parsePositiveIntEnv('CV_ENGINE_RESULT_TIMEOUT_MS', 20_000)
+const CV_ENGINE_POLL_INTERVAL_MS = parsePositiveIntEnv('CV_ENGINE_POLL_INTERVAL_MS', 3_000)
+const CV_ENGINE_POLL_MAX_MS = parsePositiveIntEnv('CV_ENGINE_POLL_MAX_MS', 300_000)
+
+function delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function safeResponseText(response: Response): Promise<string> {
+    try {
+        return (await response.text()).trim()
+    } catch {
+        return ''
+    }
+}
+
+async function safeResponseJson<T>(response: Response): Promise<T | null> {
+    try {
+        return await response.json() as T
+    } catch {
+        return null
+    }
+}
+
 function logRedisOptional(message: string, bindings?: Record<string, unknown>) {
     if (isProduction) {
         if (bindings) logger.warn(bindings, message)
@@ -361,33 +394,65 @@ export const initWorker = async () => {
                 const cvResp = await fetch(`${cvEngineUrl}/detect/highlights?frame_skip=2&enable_audio=true`, {
                     method: 'POST',
                     body: formData,
+                    signal: AbortSignal.timeout(CV_ENGINE_REQUEST_TIMEOUT_MS),
                 })
 
                 if (cvResp.ok) {
-                    const { job_id: cvJobId } = await cvResp.json() as { job_id: string }
+                    const startPayload = await safeResponseJson<{ job_id?: string }>(cvResp)
+                    const cvJobId = startPayload?.job_id
+                    if (!cvJobId) {
+                        logger.warn('[Worker] CV engine response missing job_id')
+                        throw new Error('CV engine response missing job_id')
+                    }
                     logger.info({ cvJobId }, '[Worker] CV engine highlight detection started')
 
-                    // Poll for completion (max 5 minutes)
-                    const deadline = Date.now() + 300_000
+                    // Poll for completion (configurable timeout)
+                    const deadline = Date.now() + CV_ENGINE_POLL_MAX_MS
                     while (Date.now() < deadline) {
-                        await new Promise((r) => setTimeout(r, 3000))
-                        const statusResp = await fetch(`${cvEngineUrl}/job/${cvJobId}/status`)
-                        if (!statusResp.ok) break
-                        const status = await statusResp.json() as { status: string; progress: number }
+                        await delay(CV_ENGINE_POLL_INTERVAL_MS)
+
+                        const statusResp = await fetch(`${cvEngineUrl}/job/${cvJobId}/status`, {
+                            method: 'GET',
+                            signal: AbortSignal.timeout(CV_ENGINE_STATUS_TIMEOUT_MS),
+                        })
+
+                        if (!statusResp.ok) {
+                            const body = await safeResponseText(statusResp)
+                            logger.warn({ cvJobId, statusCode: statusResp.status, body }, '[Worker] CV status poll failed')
+                            break
+                        }
+
+                        const status = await safeResponseJson<{ status?: string; progress?: number; error?: string }>(statusResp)
+                        if (!status?.status) {
+                            logger.warn({ cvJobId }, '[Worker] CV status poll returned invalid payload')
+                            break
+                        }
+
                         if (status.status === 'completed') {
-                            const resultResp = await fetch(`${cvEngineUrl}/job/${cvJobId}/result`)
+                            const resultResp = await fetch(`${cvEngineUrl}/job/${cvJobId}/result`, {
+                                method: 'GET',
+                                signal: AbortSignal.timeout(CV_ENGINE_RESULT_TIMEOUT_MS),
+                            })
+
                             if (resultResp.ok) {
-                                const result = await resultResp.json() as { events: CVHighlightEvent[] }
-                                cvEvents = result.events || []
+                                const result = await safeResponseJson<{ events?: CVHighlightEvent[] }>(resultResp)
+                                cvEvents = result?.events || []
                                 logger.info({ count: cvEvents.length }, '[Worker] CV engine highlights received')
+                            } else {
+                                const body = await safeResponseText(resultResp)
+                                logger.warn({ cvJobId, statusCode: resultResp.status, body }, '[Worker] CV result fetch failed')
                             }
                             break
                         }
+
                         if (status.status === 'failed') {
-                            logger.warn('[Worker] CV engine highlight detection failed')
+                            logger.warn({ cvJobId, error: status.error }, '[Worker] CV engine highlight detection failed')
                             break
                         }
                     }
+                } else {
+                    const body = await safeResponseText(cvResp)
+                    logger.warn({ statusCode: cvResp.status, body }, '[Worker] CV engine detect/highlights request rejected')
                 }
             } catch (cvErr) {
                 logger.warn({ err: cvErr }, '[Worker] CV engine highlight detection unavailable')

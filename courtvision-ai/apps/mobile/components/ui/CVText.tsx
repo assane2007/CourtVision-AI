@@ -22,7 +22,7 @@ export type TextPreset = keyof typeof T.type
 export type TextColorAlias =
   | 'primary' | 'secondary' | 'tertiary' | 'inverse'
   | 'brand' | 'success' | 'error' | 'warning' | 'info'
-  | 'purple' | 'gold' | 'white'
+  | 'purple' | 'gold' | 'white' | 'amber' | 'cyan'
 
 const COLOR_MAP: Record<TextColorAlias, string> = {
   primary: T.color.text.primary,
@@ -37,6 +37,8 @@ const COLOR_MAP: Record<TextColorAlias, string> = {
   purple: T.color.semantic.purple,
   gold: T.color.semantic.gold,
   white: '#FFFFFF',
+  amber: T.color.brand.primary,
+  cyan: T.color.semantic.info,
 }
 
 // ─── Props ───────────────────────────────────────────────────

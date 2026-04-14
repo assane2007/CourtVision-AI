@@ -29,6 +29,7 @@ import {
 import { useViralShare, type SharePlatform, type TwinCardData } from '../../hooks/useViralShare'
 import { getSimulationPlayers } from '../../lib/nbaApi'
 import { ShareButton, ShareModal } from '../../components/dashboard/ShareCard'
+import { AppBackground } from '../../components/ui'
 import { T, typePresets } from '../../lib/theme'
 import { PrimaryButton } from '../../components/PrimaryButton'
 
@@ -94,6 +95,7 @@ export default function DigitalTwin() {
     if (twin.loading) {
         return (
             <SafeAreaView style={{ flex: 1, backgroundColor: T.color.background.primary, justifyContent: 'center', alignItems: 'center' }}>
+                <AppBackground variant="calm" />
                 <View style={{
                     width: 88, height: 88, borderRadius: 44,
                     ...glass.accent, justifyContent: 'center', alignItems: 'center',
@@ -115,6 +117,7 @@ export default function DigitalTwin() {
     if (twin.error || !twin.profile) {
         return (
             <SafeAreaView style={{ flex: 1, backgroundColor: T.color.background.primary, justifyContent: 'center', alignItems: 'center', padding: T.spacing[8] }}>
+                <AppBackground variant="calm" />
                 <Animated.View entering={FadeInDown.duration(600)} style={{
                     width: 120, height: 120, borderRadius: 60,
                     ...glass.accent, justifyContent: 'center', alignItems: 'center',
@@ -151,6 +154,7 @@ export default function DigitalTwin() {
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: T.color.background.primary }}>
+            <AppBackground variant="calm" />
             <ScrollView contentContainerStyle={{ paddingBottom: 50 }} showsVerticalScrollIndicator={false}>
 
                 {/* ======= Header ======= */}

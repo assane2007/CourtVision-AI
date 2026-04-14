@@ -10,7 +10,6 @@ import { supabase, isDemoMode } from '../lib/supabase';
 import { useStore, selectHydrated } from '../lib/store';
 import { ToastContainer } from '../components/Toast';
 import { usePushNotifications } from '../hooks/usePushNotifications';
-import { colors } from '../constants/tokens';
 
 import * as Sentry from '@sentry/react-native';
 
@@ -189,7 +188,7 @@ function RootLayout() {
     }, [fontsLoaded, fontError]);
 
     if (!fontsLoaded && !fontError) {
-        return <View style={{ flex: 1, backgroundColor: colors.void }} />;
+        return <View style={{ flex: 1, backgroundColor: T.color.bg.primary }} />;
     }
 
     return (
@@ -197,12 +196,12 @@ function RootLayout() {
         <SafeAreaProvider>
             <AnalyticsProvider>
                 <RevenueCatProvider>
-                    <StatusBar barStyle="light-content" backgroundColor={colors.void} />
+                    <StatusBar barStyle="light-content" backgroundColor={T.color.bg.primary} />
                     <AuthGuard />
                     <Stack
                         screenOptions={{
                             headerShown: false,
-                            contentStyle: { backgroundColor: colors.void },
+                            contentStyle: { backgroundColor: T.color.bg.primary },
                             animation: 'fade', // Simple cross-fade transitions by default
                         }}
                     >

@@ -29,6 +29,7 @@ import { XPLevelBar } from '../../components/gamification/XPBadge'
 import { SkeletonLoader } from '../../components/SkeletonLoader'
 import { toast } from '../../lib/toast'
 import { apiFetch } from '../../lib/api'
+import { AppBackground } from '../../components/ui'
 import { T, typePresets } from '../../lib/theme'
 import { HapticFeedback } from '../../lib/haptics'
 
@@ -485,6 +486,7 @@ export default function Profile() {
 
     return (
         <SafeAreaView style={s.screen}>
+            <AppBackground variant="dashboard" />
             <ScrollView
                 contentContainerStyle={s.scrollContent}
                 showsVerticalScrollIndicator={false}

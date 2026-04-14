@@ -68,3 +68,7 @@ export type { HUDFeedbackType } from './CVHUDFeedback'
 // ── Screen Structure ──
 export { CVScreenHeader } from './CVScreenHeader'
 export type { CVScreenHeaderProps } from './CVScreenHeader'
+
+// ── App Surfaces ──
+export { AppBackground } from './AppBackground'
+export type { AppBackgroundVariant } from './AppBackground'

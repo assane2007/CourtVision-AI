@@ -6,7 +6,6 @@
  */
 
 import { Tabs } from 'expo-router'
-import { Platform } from 'react-native'
 import CustomTabBar from '../../components/TabBar'
 
 export default function DashboardLayout() {
@@ -24,6 +23,30 @@ export default function DashboardLayout() {
             <Tabs.Screen name="profile" />
             <Tabs.Screen
                 name="v6"
+                options={{
+                    href: null,
+                }}
+            />
+            <Tabs.Screen
+                name="v6-arena"
+                options={{
+                    href: null,
+                }}
+            />
+            <Tabs.Screen
+                name="v6-horse"
+                options={{
+                    href: null,
+                }}
+            />
+            <Tabs.Screen
+                name="v6-marketplace"
+                options={{
+                    href: null,
+                }}
+            />
+            <Tabs.Screen
+                name="v6-reports"
                 options={{
                     href: null,
                 }}

@@ -47,7 +47,7 @@ export interface PrimaryButtonProps {
 // ─── Size config ─────────────────────────────────────────────
 
 const SIZE_CONFIG = {
-    sm: { height: 40, paddingH: 14, fontSize: T.fontSize.sm, iconSize: 14, radius: T.radius.sm },
+    sm: { height: 44, paddingH: 14, fontSize: T.fontSize.sm, iconSize: 14, radius: T.radius.sm },
     md: { height: 52, paddingH: 20, fontSize: T.fontSize.base, iconSize: 16, radius: T.radius.lg },
     lg: { height: 60, paddingH: 28, fontSize: T.fontSize.lg, iconSize: 18, radius: T.radius.xl },
 } as const
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     label: {
-        fontWeight: '700',
+        fontFamily: T.fonts.body.bold,
         letterSpacing: 0.2,
     },
 })

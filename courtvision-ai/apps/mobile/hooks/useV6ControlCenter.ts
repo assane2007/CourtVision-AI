@@ -80,6 +80,12 @@ export type V6DrillPack = {
     isPurchased?: boolean
 }
 
+type V6ControlCenterOptions = {
+    arena?: boolean
+    horse?: boolean
+    marketplace?: boolean
+}
+
 function toErrorMessage(error: unknown, fallback: string): string {
     if (error instanceof Error) {
         return error.message || fallback
@@ -92,7 +98,11 @@ function createClientEventId(prefix: string): string {
     return `${prefix}_${Date.now().toString(36)}_${random}`
 }
 
-export function useV6ControlCenter() {
+export function useV6ControlCenter(options: V6ControlCenterOptions = {}) {
+    const enableArena = options.arena ?? true
+    const enableHorse = options.horse ?? true
+    const enableMarketplace = options.marketplace ?? true
+
     const [arenaMatches, setArenaMatches] = useState<V6ArenaMatch[]>([])
     const [arenaLoading, setArenaLoading] = useState(false)
     const [arenaActionLoading, setArenaActionLoading] = useState(false)
@@ -409,12 +419,24 @@ export function useV6ControlCenter() {
     }, [downloadPdf])
 
     const refreshAll = useCallback(async (search = '') => {
-        await Promise.all([
-            loadArenaMatches(),
-            loadHorseState(),
-            loadMarketplace(search),
-        ])
-    }, [loadArenaMatches, loadHorseState, loadMarketplace])
+        const jobs: Promise<unknown>[] = []
+
+        if (enableArena) {
+            jobs.push(loadArenaMatches())
+        }
+
+        if (enableHorse) {
+            jobs.push(loadHorseState())
+        }
+
+        if (enableMarketplace) {
+            jobs.push(loadMarketplace(search))
+        }
+
+        if (jobs.length > 0) {
+            await Promise.all(jobs)
+        }
+    }, [enableArena, enableHorse, enableMarketplace, loadArenaMatches, loadHorseState, loadMarketplace])
 
     useEffect(() => {
         void refreshAll()

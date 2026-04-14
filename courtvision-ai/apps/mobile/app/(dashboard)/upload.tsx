@@ -34,6 +34,7 @@ import { toast } from '../../lib/toast'
 import { api, API_BASE_URL, getAuthToken } from '../../lib/api'
 import { ScoreRing } from '../../components/workout/ScoreRing'
 import { PrimaryButton } from '../../components/PrimaryButton'
+import { AppBackground } from '../../components/ui'
 import { T, typePresets } from '../../lib/theme'
 
 // ─── Pipeline Config ────────────────────────────────────────
@@ -445,6 +446,7 @@ export default function UploadAnalyze() {
 
     return (
         <SafeAreaView style={us.safeArea}>
+            <AppBackground variant="focus" />
             <View style={us.ambientGlow} />
 
             <View style={us.container}>

@@ -614,13 +614,13 @@ export class HorseService {
     /**
      * Get game history
      */
-    async getHistory(userId: string, limit = 20): Promise<HorseGame[]> {
+    async getHistory(userId: string, limit = 20, offset = 0): Promise<HorseGame[]> {
         const { data, error } = await this.supabase
             .from('horse_games')
             .select('*')
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
-            .limit(limit)
+            .range(offset, offset + limit - 1)
 
         if (error) throw error
         return (data || []).map(this.mapGame)
@@ -629,7 +629,7 @@ export class HorseService {
     /**
      * Get HORSE leaderboard
      */
-    async getLeaderboard(limit = 50): Promise<HorseLeaderboardEntry[]> {
+    async getLeaderboard(limit = 50, offset = 0): Promise<HorseLeaderboardEntry[]> {
         const { data, error } = await this.supabase
             .from('horse_leaderboard')
             .select(`
@@ -637,12 +637,12 @@ export class HorseService {
                 users!inner ( username, avatar_url )
             `)
             .order('games_won', { ascending: false })
-            .limit(limit)
+            .range(offset, offset + limit - 1)
 
         if (error) throw error
 
         return (data || []).map((entry: any, index: number) => ({
-            rank: index + 1,
+            rank: offset + index + 1,
             userId: entry.user_id,
             username: entry.users.username,
             avatarUrl: entry.users.avatar_url,

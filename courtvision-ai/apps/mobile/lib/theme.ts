@@ -1,42 +1,42 @@
 /**
- * CourtVision AI — Design System V4 "APEX"
+ * CourtVision AI — Design System V5 "AURORA COURT"
  * =============================================================
- * Identity: Futuristic, Elite, High-Performance
- * Core Color: Amber Blaze (#FF6B00)
+ * Identity: Elite, Energetic, Immersive
+ * Core Color: Plasma Orange (#F97316)
  * =============================================================
  */
 
 import * as Haptics from 'expo-haptics'
 
 const palette = {
-    // 🌑 Deep Space Core
-    black: '#05080C',   // Ultra deep
-    surface: '#0A1018',   // L1 Surface
-    elevated: '#101824',   // L2 Elevation
-    overlay: '#161F2E',   // L3 Modal
+    // 🌌 Deep court atmosphere (avoid pure black for better OLED ergonomics)
+    black: '#09111D',
+    surface: '#101A2B',
+    elevated: '#162338',
+    overlay: '#1E2D47',
 
-    // 🔥 Amber Blaze (Spalding Signature)
-    amber: '#FF6B00',
-    amberLight: '#FF8A33',
-    amberDark: '#D95B00',
-    amberGlow: 'rgba(255, 107, 0, 0.45)',
+    // 🔥 Plasma Orange signature
+    amber: '#F97316',
+    amberLight: '#FB923C',
+    amberDark: '#C2410C',
+    amberGlow: 'rgba(249, 115, 22, 0.46)',
 
-    // 🌊 Electric Ocean (Functional / Data)
-    blue: '#0A84FF',
-    blueLight: '#4DA6FF',
-    blueGlow: 'rgba(10, 132, 255, 0.35)',
+    // 🌊 Aurora Cyan for data + live accents
+    blue: '#2A7BFF',
+    blueLight: '#5EA1FF',
+    blueGlow: 'rgba(42, 123, 255, 0.34)',
 
     // 🥗 Semantic Growth
-    green: '#00D97E',
-    red: '#FF3659',
-    yellow: '#FFC400',
+    green: '#16C784',
+    red: '#FF4D6D',
+    yellow: '#FBBF24',
     violet: '#A78BFA',
-    gold: '#FFD700',
+    gold: '#FACC15',
 
     // ⚪ Neutrals
-    white: '#F8FAFC',   // Crisp white
-    slate: '#94A3B8',   // Secondary
-    steel: '#475569',   // Muted
+    white: '#F7FAFF',
+    slate: '#A8B4C7',
+    steel: '#617089',
     ink: '#05080C',
 } as const
 
@@ -70,38 +70,44 @@ const baseTheme = {
             inverse: palette.ink,
         },
         border: {
-            soft: 'rgba(255,255,255,0.06)',
-            base: 'rgba(255,255,255,0.10)',
-            strong: 'rgba(255,255,255,0.18)',
-            accent: 'rgba(255,107,0,0.30)',
+            soft: 'rgba(255,255,255,0.08)',
+            base: 'rgba(255,255,255,0.14)',
+            strong: 'rgba(255,255,255,0.24)',
+            accent: 'rgba(249,115,22,0.35)',
         }
+    },
+
+    gradients: {
+        app: [palette.black, palette.surface, '#11243D'],
+        accent: [palette.amberDark, palette.amber, palette.amberLight],
+        live: ['#0F1E33', '#16314F', '#0E4A64'],
     },
 
     // ─── Glassmorphism V4 ─────────────────────────────────────
     glass: {
         thin: {
-            backgroundColor: 'rgba(255,255,255,0.02)',
-            borderColor: 'rgba(255,255,255,0.04)',
-            borderWidth: 1,
-        },
-        base: {
             backgroundColor: 'rgba(255,255,255,0.04)',
             borderColor: 'rgba(255,255,255,0.08)',
             borderWidth: 1,
         },
+        base: {
+            backgroundColor: 'rgba(255,255,255,0.06)',
+            borderColor: 'rgba(255,255,255,0.13)',
+            borderWidth: 1,
+        },
         frosted: {
-            backgroundColor: 'rgba(15,25,35,0.75)',
-            borderColor: 'rgba(255,255,255,0.10)',
+            backgroundColor: 'rgba(18,30,48,0.78)',
+            borderColor: 'rgba(255,255,255,0.15)',
             borderWidth: 1,
         },
         vivid: {
-            backgroundColor: 'rgba(255,107,0,0.08)',
-            borderColor: 'rgba(255,107,0,0.22)',
+            backgroundColor: 'rgba(249,115,22,0.15)',
+            borderColor: 'rgba(249,115,22,0.34)',
             borderWidth: 1.5,
         },
         deep: {
-            backgroundColor: 'rgba(5,8,12,0.85)',
-            borderColor: 'rgba(255,255,255,0.06)',
+            backgroundColor: 'rgba(9,17,29,0.90)',
+            borderColor: 'rgba(255,255,255,0.10)',
             borderWidth: 1,
         }
     },
@@ -189,21 +195,21 @@ const baseTheme = {
     // ─── High Fidelity Glows ───
     glow: {
         soft: (c: string = palette.amber) => ({
-            shadowColor: c, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 5
+            shadowColor: c, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.24, shadowRadius: 12, elevation: 6
         }),
         hero: (c: string = palette.amber) => ({
-            shadowColor: c, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 25, elevation: 15
+            shadowColor: c, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.50, shadowRadius: 28, elevation: 16
         }),
         organic: (c: string = palette.black) => ({
-            shadowColor: c, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 10
+            shadowColor: c, shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.56, shadowRadius: 22, elevation: 11
         })
     },
 
     // ─── Animations ───
     spring: {
-        snappy: { damping: 14, stiffness: 220 },
-        gentle: { damping: 20, stiffness: 120 },
-        bouncy: { damping: 8, stiffness: 150 },
+        snappy: { damping: 15, stiffness: 240 },
+        gentle: { damping: 22, stiffness: 128 },
+        bouncy: { damping: 9, stiffness: 164 },
     },
 
     stagger: {
