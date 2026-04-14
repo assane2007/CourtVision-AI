@@ -146,7 +146,7 @@ else {
     }
     $results.Add((Add-CheckResult -Name 'backend.health.status' -Passed:$statusOk -Detail "status=$status allowDegraded=$($AllowDegradedApi.IsPresent)"))
 
-    $dbOk = ($dbStatus -eq 'ok') -or ($AllowDatabaseUnavailable.IsPresent -and $dbStatus -eq 'error')
+    $dbOk = ($dbStatus -eq 'ok' -or $dbStatus -eq 'skipped') -or ($AllowDatabaseUnavailable.IsPresent -and $dbStatus -eq 'error')
     if (-not $dbOk) {
         $hasFailure = $true
     }

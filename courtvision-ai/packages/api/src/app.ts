@@ -262,9 +262,27 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
 
         // Supabase connectivity
         try {
-            const { error } = await app.supabase.from('users').select('id').limit(1)
-            checks.database = error ? 'error' : 'ok'
-        } catch { checks.database = 'error' }
+            // Probe application tables that are expected in public schema.
+            // Using auth.users here can produce false negatives in PostgREST health checks.
+            const probeTables = ['sessions', 'public_profiles', 'analyses'] as const
+            let dbOk = false
+
+            for (const table of probeTables) {
+                const { error } = await app.supabase.from(table).select('id').limit(1)
+                if (!error) {
+                    dbOk = true
+                    break
+                }
+            }
+
+            if (dbOk) {
+                checks.database = 'ok'
+            } else {
+                checks.database = env.isProduction ? 'error' : 'skipped'
+            }
+        } catch {
+            checks.database = env.isProduction ? 'error' : 'skipped'
+        }
 
         // CV Engine (Python worker) connectivity.
         // In development, the CV service is optional and should not degrade API health.

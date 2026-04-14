@@ -67,3 +67,4 @@ override.tf.json
 *.tar.gz
 *.mp4
 *.mov
+courtvision-ai/apps/cv-engine/*.pt
