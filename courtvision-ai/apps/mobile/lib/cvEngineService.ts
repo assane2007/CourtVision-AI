@@ -81,21 +81,48 @@ export interface CVFrameResult {
 let _engineAvailable: boolean | null = null
 let _lastHealthCheck = 0
 const HEALTH_CHECK_INTERVAL_MS = 30_000
+const HEALTH_CHECK_FAILURE_RETRY_MS = 5_000
+
+function createTimeoutSignal(timeoutMs: number): { signal: AbortSignal; cleanup: () => void } {
+    const timeoutFactory = (AbortSignal as any)?.timeout as ((ms: number) => AbortSignal) | undefined
+
+    if (typeof timeoutFactory === 'function') {
+        return {
+            signal: timeoutFactory(timeoutMs),
+            cleanup: () => { },
+        }
+    }
+
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
+
+    return {
+        signal: controller.signal,
+        cleanup: () => clearTimeout(timer),
+    }
+}
 
 export async function isCVEngineAvailable(forceRefresh = false): Promise<boolean> {
     const now = Date.now()
-    if (!forceRefresh && _engineAvailable !== null && now - _lastHealthCheck < HEALTH_CHECK_INTERVAL_MS) {
+    const currentInterval = _engineAvailable ? HEALTH_CHECK_INTERVAL_MS : HEALTH_CHECK_FAILURE_RETRY_MS
+    if (!forceRefresh && _engineAvailable !== null && now - _lastHealthCheck < currentInterval) {
         return _engineAvailable
     }
+
+    const { signal, cleanup } = createTimeoutSignal(3000)
+
     try {
         const res = await fetch(`${CV_ENGINE_URL}/health`, {
             method: 'GET',
-            signal: AbortSignal.timeout(3000),
+            signal,
         })
         _engineAvailable = res.ok
     } catch {
         _engineAvailable = false
+    } finally {
+        cleanup()
     }
+
     _lastHealthCheck = now
     return _engineAvailable
 }
@@ -109,22 +136,46 @@ export async function isCVEngineAvailable(forceRefresh = false): Promise<boolean
  * @returns CVFrameResult with real landmarks, angles, detections
  */
 export async function analyzeFrame(frameBase64: string): Promise<CVFrameResult> {
-    // Convert base64 to a Blob for multipart upload
-    const binaryString = atob(frameBase64)
-    const bytes = new Uint8Array(binaryString.length)
-    for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i)
+    const normalizedBase64 = frameBase64.includes(',')
+        ? frameBase64.slice(frameBase64.indexOf(',') + 1)
+        : frameBase64
+
+    const { signal, cleanup } = createTimeoutSignal(10000)
+    let response: Response
+
+    try {
+        response = await fetch(`${CV_ENGINE_URL}/analyze/frame-base64`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ frame_base64: normalizedBase64 }),
+            signal,
+        })
+    } finally {
+        cleanup()
     }
-    const blob = new Blob([bytes], { type: 'image/jpeg' })
 
-    const formData = new FormData()
-    formData.append('frame_file', blob, 'frame.jpg')
+    // Backward compatibility with older CV engines that only expose /analyze/frame.
+    if (response.status === 404 || response.status === 405) {
+        const formData = new FormData()
+        formData.append('frame_file', {
+            uri: `data:image/jpeg;base64,${normalizedBase64}`,
+            name: 'frame.jpg',
+            type: 'image/jpeg',
+        } as any)
 
-    const response = await fetch(`${CV_ENGINE_URL}/analyze/frame`, {
-        method: 'POST',
-        body: formData,
-        signal: AbortSignal.timeout(10000),
-    })
+        const fallback = createTimeoutSignal(10000)
+        try {
+            response = await fetch(`${CV_ENGINE_URL}/analyze/frame`, {
+                method: 'POST',
+                body: formData,
+                signal: fallback.signal,
+            })
+        } finally {
+            fallback.cleanup()
+        }
+    }
 
     if (!response.ok) {
         throw new Error(`CV Engine error: ${response.status}`)
@@ -148,11 +199,18 @@ export async function analyzeFrameFromUri(fileUri: string): Promise<CVFrameResul
         type: 'image/jpeg',
     } as any)
 
-    const response = await fetch(`${CV_ENGINE_URL}/analyze/frame`, {
-        method: 'POST',
-        body: formData,
-        signal: AbortSignal.timeout(10000),
-    })
+    const { signal, cleanup } = createTimeoutSignal(10000)
+    let response: Response
+
+    try {
+        response = await fetch(`${CV_ENGINE_URL}/analyze/frame`, {
+            method: 'POST',
+            body: formData,
+            signal,
+        })
+    } finally {
+        cleanup()
+    }
 
     if (!response.ok) {
         throw new Error(`CV Engine error: ${response.status}`)

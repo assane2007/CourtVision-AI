@@ -300,10 +300,19 @@ export async function apiFetch<T = unknown>(
 
 // ─── Shorthand helpers ─────────────────────────────────────────
 
+type ApiRequestOptions = {
+    timeoutMs?: number
+}
+
 export const api = {
-    get: <T>(path: string) => apiFetch<T>(path, { method: 'GET' }),
-    post: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'POST', body: JSON.stringify(body) }),
-    patch: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
-    put: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
-    delete: <T>(path: string) => apiFetch<T>(path, { method: 'DELETE' }),
+    get: <T>(path: string, options: ApiRequestOptions = {}) =>
+        apiFetch<T>(path, { method: 'GET', ...options }),
+    post: <T>(path: string, body: unknown, options: ApiRequestOptions = {}) =>
+        apiFetch<T>(path, { method: 'POST', body: JSON.stringify(body), ...options }),
+    patch: <T>(path: string, body: unknown, options: ApiRequestOptions = {}) =>
+        apiFetch<T>(path, { method: 'PATCH', body: JSON.stringify(body), ...options }),
+    put: <T>(path: string, body: unknown, options: ApiRequestOptions = {}) =>
+        apiFetch<T>(path, { method: 'PUT', body: JSON.stringify(body), ...options }),
+    delete: <T>(path: string, options: ApiRequestOptions = {}) =>
+        apiFetch<T>(path, { method: 'DELETE', ...options }),
 }

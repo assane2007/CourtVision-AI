@@ -72,6 +72,14 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
     )) {
         return { type: 'empty' };
     }
+    // On web: react-native-fast-tflite is native-only (TurboModule), so
+    // route imports to an empty module and let app-level fallback logic run.
+    if (platform === 'web' && (
+        moduleName === 'react-native-fast-tflite' ||
+        moduleName.startsWith('react-native-fast-tflite/')
+    )) {
+        return { type: 'empty' };
+    }
     // Force react/react-dom to local node_modules (React 19)
     // This prevents the monorepo root React 18 from being bundled
     if (reactForceMap[moduleName]) {

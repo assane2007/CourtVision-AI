@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router'
 import { Feather } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { LinearGradient } from 'expo-linear-gradient'
-import { api } from '../lib/api'
+import { ApiError, NetworkError, api } from '../lib/api'
 import { useStore } from '../lib/store'
 import { toast } from '../lib/toast'
 import { colors, space } from '../constants/tokens'
@@ -45,6 +45,23 @@ interface OnboardingOptionsResponse {
     experienceLevels?: ExperienceOption[]
 }
 
+const RETRYABLE_STATUS_CODES = new Set([408, 429, 500, 502, 503, 504])
+
+const FALLBACK_POSITIONS: PositionOption[] = [
+    { id: 'PG', label: 'Point Guard', summary: 'Primary ball-handler, tempo control and playmaking.' },
+    { id: 'SG', label: 'Shooting Guard', summary: 'Perimeter scoring threat and off-ball movement.' },
+    { id: 'SF', label: 'Small Forward', summary: 'Versatile wing impact on both offense and defense.' },
+    { id: 'PF', label: 'Power Forward', summary: 'Physical interior presence with rebounding focus.' },
+    { id: 'C', label: 'Center', summary: 'Paint anchor for rim protection and interior finishing.' },
+]
+
+const FALLBACK_EXPERIENCE_LEVELS: ExperienceOption[] = [
+    { id: 'beginner', label: 'Beginner', years: '0-1 years', profileLevel: 10 },
+    { id: 'intermediate', label: 'Intermediate', years: '2-4 years', profileLevel: 30 },
+    { id: 'advanced', label: 'Advanced', years: '5-8 years', profileLevel: 55 },
+    { id: 'elite', label: 'Elite', years: '9+ years', profileLevel: 80 },
+]
+
 const POSITION_ACCENT: Record<PositionId, string> = {
     PG: '#0EA5E9',
     SG: '#F97316',
@@ -69,21 +86,52 @@ export default function Onboarding2() {
         setLoading(true)
         setError(null)
         try {
-            const res = await api.get<OnboardingOptionsResponse>('/api/auth/onboarding/options')
+            let res: OnboardingOptionsResponse | null = null
+
+            for (let attempt = 0; attempt < 3; attempt++) {
+                try {
+                    res = await api.get<OnboardingOptionsResponse>('/api/auth/onboarding/options', {
+                        timeoutMs: 45_000,
+                    })
+                    break
+                } catch (requestError) {
+                    const isRetryableHttpError = requestError instanceof ApiError
+                        && RETRYABLE_STATUS_CODES.has(requestError.statusCode)
+                    const isRetryableNetworkError = requestError instanceof NetworkError
+                    const isRetryable = isRetryableHttpError || isRetryableNetworkError
+
+                    const isLastAttempt = attempt === 2
+                    if (!isRetryable || isLastAttempt) {
+                        throw requestError
+                    }
+
+                    await new Promise(resolve => setTimeout(resolve, 900 * (attempt + 1)))
+                }
+            }
+
+            if (!res) {
+                throw new Error('Onboarding options unavailable from API')
+            }
+
             const payload = res.data ?? res
             const remotePositions = payload.positions ?? []
             const remoteExperience = payload.experienceLevels ?? []
 
             if (remotePositions.length === 0 || remoteExperience.length === 0) {
-                throw new Error('Onboarding options unavailable from API')
+                setPositions(FALLBACK_POSITIONS)
+                setExperienceLevels(FALLBACK_EXPERIENCE_LEVELS)
+                toast.error('Onboarding API', 'Remote options unavailable, fallback options loaded.')
+                return
             }
 
             setPositions(remotePositions)
             setExperienceLevels(remoteExperience)
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Failed to load onboarding data'
-            setError(message)
-            toast.error('Onboarding API', message)
+            setPositions(FALLBACK_POSITIONS)
+            setExperienceLevels(FALLBACK_EXPERIENCE_LEVELS)
+            setError(null)
+            toast.error('Onboarding API', `${message}. Fallback options loaded.`)
         } finally {
             setLoading(false)
         }

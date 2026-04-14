@@ -666,6 +666,8 @@ export const useStore = create<CourtVisionState>()(
                     await api.put('/api/auth/onboarding/profile', {
                         position,
                         experienceLevel,
+                    }, {
+                        timeoutMs: 45_000,
                     })
 
                     set(s => ({

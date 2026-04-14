@@ -23,6 +23,7 @@ Endpoints:
 from __future__ import annotations
 
 import asyncio
+import base64
 import cv2
 import logging
 import numpy as np
@@ -649,6 +650,10 @@ class SingleFrameResult(BaseModel):
     ball: Optional[BBox] = None
     inference_ms: float
     success: bool
+
+
+class FrameBase64Request(BaseModel):
+    frame_base64: str
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -1533,8 +1538,12 @@ async def analyze_video_legacy(
 @app.post("/analyze/frame", response_model=SingleFrameResult)
 async def analyze_frame(frame_file: UploadFile = File(...)):
     """Single frame: pose + YOLO detection."""
-    t0 = time.time()
     content = await frame_file.read()
+    return _analyze_frame_bytes(content)
+
+
+def _analyze_frame_bytes(content: bytes) -> SingleFrameResult:
+    t0 = time.time()
     nparr = np.frombuffer(content, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     if img is None:
@@ -1574,6 +1583,27 @@ async def analyze_frame(frame_file: UploadFile = File(...)):
             inference_ms=round((time.time() - t0) * 1000, 1),
             success=True,
         )
+
+
+@app.post("/analyze/frame-base64", response_model=SingleFrameResult)
+async def analyze_frame_base64(payload: FrameBase64Request):
+    """Single frame analysis for JSON base64 payloads (mobile fallback path)."""
+    raw = payload.frame_base64.strip()
+    if "," in raw:
+        raw = raw.split(",", 1)[1]
+
+    if not raw:
+        raise HTTPException(400, "Missing frame_base64")
+
+    try:
+        content = base64.b64decode(raw, validate=True)
+    except Exception:
+        raise HTTPException(400, "Invalid base64 image data")
+
+    if len(content) < 128:
+        raise HTTPException(400, "Image payload too small")
+
+    return _analyze_frame_bytes(content)
 
 
 # ═══════════════════════════════════════════════════════════════

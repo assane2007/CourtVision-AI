@@ -318,6 +318,7 @@ export class RealtimeAIService {
     private liveCoach: LiveCoachService | null = null
     private serverSessionStarted = false
     private cvEngineAvailable = false
+    private lastCvEngineRetryAt = 0
     private poseRuntime: TFLitePoseRuntime | null = null
     private poseRuntimeReady = false
     private frameQueue: Promise<void> = Promise.resolve()
@@ -702,6 +703,21 @@ export class RealtimeAIService {
         }
 
         // ── Try CV Engine first (real pose estimation) ──
+        if (!pose && !this.cvEngineAvailable && typeof frameData === 'string') {
+            const nowMs = Date.now()
+            if (nowMs - this.lastCvEngineRetryAt >= 5000) {
+                this.lastCvEngineRetryAt = nowMs
+                try {
+                    this.cvEngineAvailable = await isCVEngineAvailable(true)
+                    if (this.cvEngineAvailable) {
+                        console.log('[RealtimeAI] CV Engine reconnected')
+                    }
+                } catch {
+                    this.cvEngineAvailable = false
+                }
+            }
+        }
+
         if (!pose && this.cvEngineAvailable && typeof frameData === 'string') {
             try {
                 const cvResult: CVFrameResult = frameData.startsWith('file://')
@@ -823,6 +839,8 @@ export class RealtimeAIService {
                     }
                 }
             } catch (err) {
+                this.cvEngineAvailable = false
+                this.lastCvEngineRetryAt = Date.now()
                 console.warn('[RealtimeAI] CV Engine frame error:', (err as Error)?.message)
                 // Fall through to LiveCoach API path
             }

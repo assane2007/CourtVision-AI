@@ -3,15 +3,14 @@ import { View, Dimensions, TouchableOpacity, Platform } from 'react-native'
 import { T } from '../../lib/theme'
 import { GlassCard, CVText } from '../ui'
 import { Feather } from '@expo/vector-icons'
-import type { RootState, ThreeEvent } from '@react-three/fiber/native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SessionStorageService } from '../../lib/sessionStorage'
 
-// @react-three/fiber is not compatible with web (uses react-reconciler pinned to React 18)
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const Canvas = Platform.OS !== 'web' ? require('@react-three/fiber/native').Canvas : View;
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const useFrame = Platform.OS !== 'web' ? require('@react-three/fiber/native').useFrame : () => {};
+// Disabled in local dev/Expo Go because @react-three/fiber/native currently
+// crashes with React 19 (ReactCurrentOwner undefined).
+const Canvas: any = View
+const useFrame: (callback: (state: any) => void) => void = () => { }
+const hasNativeThree = false
 
 const { width: SCREEN_W } = Dimensions.get('window')
 const COURT_W = SCREEN_W - T.spacing[8]
@@ -61,7 +60,7 @@ function ZoneMarker({ zone, isSelected, onSelect }: any) {
     const meshRef = useRef<any>(null)
     const heatColor = zone.heat > 0.7 ? T.color.semantic.success : zone.heat > 0.4 ? T.color.semantic.warning : T.color.semantic.error
 
-    useFrame((state: RootState) => {
+    useFrame((state: any) => {
         if (meshRef.current) {
             if (isSelected) {
                 meshRef.current.position.y = Math.sin(state.clock.elapsedTime * 4) * 0.2 + 0.4
@@ -79,7 +78,7 @@ function ZoneMarker({ zone, isSelected, onSelect }: any) {
         <mesh
             ref={meshRef}
             position={[zone.x, 0.2, zone.z]}
-            onClick={(e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); onSelect(zone) }}
+            onClick={(e: any) => { e?.stopPropagation?.(); onSelect(zone) }}
         >
             {isSelected ? <boxGeometry args={[0.8, 0.8, 0.8]} /> : <sphereGeometry args={[0.4, 16, 16]} />}
             <meshStandardMaterial
@@ -95,7 +94,7 @@ function ZoneMarker({ zone, isSelected, onSelect }: any) {
 function Scene({ selectedZone, onSelectZone, perspective, zones }: any) {
     const groupRef = useRef<any>(null)
 
-    useFrame((state: RootState) => {
+    useFrame((state: any) => {
         if (groupRef.current) {
             if (perspective === '3D') {
                 groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.2) * 0.1
@@ -160,20 +159,47 @@ export function InteractiveTerrainVisualizer() {
             </View>
 
             <View style={{ height: COURT_H + 40, width: '100%', backgroundColor: '#0a0a0f' }}>
-                <Suspense fallback={
-                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                        <CVText preset="caption" color="secondary">Initializing Neural Engine...</CVText>
+                {hasNativeThree ? (
+                    <Suspense fallback={
+                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                            <CVText preset="caption" color="secondary">Initializing Neural Engine...</CVText>
+                        </View>
+                    }>
+                        <Canvas camera={{ position: [0, 5, 5], fov: 60 }}>
+                            <Scene
+                                selectedZone={selectedZone}
+                                onSelectZone={setSelectedZone}
+                                perspective={perspective}
+                                zones={zones}
+                            />
+                        </Canvas>
+                    </Suspense>
+                ) : (
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: T.spacing[4] }}>
+                        <CVText preset="caption" color="secondary" align="center">
+                            3D visualizer unavailable in Expo Go. Tap a zone below to inspect stats.
+                        </CVText>
+                        <View style={{ width: '100%', marginTop: T.spacing[3], flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}>
+                            {zones.map((zone) => (
+                                <TouchableOpacity
+                                    key={zone.id}
+                                    onPress={() => setSelectedZone(zone)}
+                                    style={{
+                                        margin: 4,
+                                        borderRadius: T.radius.full,
+                                        borderWidth: 1,
+                                        borderColor: selectedZone?.id === zone.id ? T.color.brand.primary : T.color.border.base,
+                                        backgroundColor: selectedZone?.id === zone.id ? `${T.color.brand.primary}20` : T.color.background.secondary,
+                                        paddingHorizontal: 10,
+                                        paddingVertical: 6,
+                                    }}
+                                >
+                                    <CVText preset="overline" color="secondary">{zone.label}</CVText>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
                     </View>
-                }>
-                    <Canvas camera={{ position: [0, 5, 5], fov: 60 }}>
-                        <Scene
-                            selectedZone={selectedZone}
-                            onSelectZone={setSelectedZone}
-                            perspective={perspective}
-                            zones={zones}
-                        />
-                    </Canvas>
-                </Suspense>
+                )}
             </View>
 
             <View style={{ paddingHorizontal: T.spacing[4], paddingTop: T.spacing[2], height: 80 }}>
