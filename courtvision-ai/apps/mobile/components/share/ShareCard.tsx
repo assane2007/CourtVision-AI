@@ -13,21 +13,35 @@
 import React, { forwardRef } from 'react'
 import { View, Text, StyleSheet, Dimensions } from 'react-native'
 import Svg, { Rect, Circle, Line, Path, Text as SvgText } from 'react-native-svg'
+import { T } from '../../lib/theme'
 import type { SessionRealtimeStats } from '../../lib/realtimeAIService'
 
 const { width: SCREEN_W } = Dimensions.get('window')
 const CARD_W = SCREEN_W
 const CARD_H = Math.round(CARD_W * (16 / 9))
 
+const SHARE_COLORS = {
+    bg: T.color.text.inverse,
+    panel: T.color.bg.primary,
+    text: T.color.text.primary,
+    textMuted: T.color.text.secondary,
+    textSubtle: T.color.text.tertiary,
+    brand: T.color.brand.primary,
+    brandLight: T.color.brand.secondary,
+    success: T.color.semantic.success,
+    warning: T.color.semantic.warning,
+    error: T.color.semantic.error,
+} as const
+
 // ── Helpers ──────────────────────────────────
 
 function getGrade(score: number): { grade: string; color: string } {
-    if (score >= 90) return { grade: 'A+', color: '#00D97E' }
-    if (score >= 80) return { grade: 'A', color: '#00D97E' }
-    if (score >= 70) return { grade: 'B+', color: '#FF6B00' }
-    if (score >= 60) return { grade: 'B', color: '#FFC400' }
-    if (score >= 50) return { grade: 'C', color: '#FFC400' }
-    return { grade: 'D', color: '#FF3659' }
+    if (score >= 90) return { grade: 'A+', color: SHARE_COLORS.success }
+    if (score >= 80) return { grade: 'A', color: SHARE_COLORS.success }
+    if (score >= 70) return { grade: 'B+', color: SHARE_COLORS.brand }
+    if (score >= 60) return { grade: 'B', color: SHARE_COLORS.warning }
+    if (score >= 50) return { grade: 'C', color: SHARE_COLORS.warning }
+    return { grade: 'D', color: SHARE_COLORS.error }
 }
 
 const ZONE_POSITIONS: Record<string, { cx: number; cy: number }> = {
@@ -45,10 +59,10 @@ const ZONE_POSITIONS: Record<string, { cx: number; cy: number }> = {
 }
 
 function getZoneColor(pct: number): string {
-    if (pct >= 60) return '#00D97E'
-    if (pct >= 40) return '#FF6B00'
-    if (pct >= 20) return '#FFC400'
-    return '#FF3659'
+    if (pct >= 60) return SHARE_COLORS.success
+    if (pct >= 40) return SHARE_COLORS.brand
+    if (pct >= 20) return SHARE_COLORS.warning
+    return SHARE_COLORS.error
 }
 
 // ── Court Mini SVG ───────────────────────────
@@ -64,29 +78,29 @@ function MiniCourt({ zoneStats, width, height }: {
     return (
         <Svg width={cw} height={ch} viewBox={`0 0 ${cw} ${ch}`}>
             {/* Court background */}
-            <Rect x={0} y={0} width={cw} height={ch} rx={8} fill="#0A1018" />
+            <Rect x={0} y={0} width={cw} height={ch} rx={T.radius.sm} fill={SHARE_COLORS.panel} />
 
             {/* Court outline */}
             <Rect x={cw * 0.05} y={ch * 0.15} width={cw * 0.9} height={ch * 0.8}
-                rx={4} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={1.5} />
+                rx={T.radius.sm - 2} fill="none" stroke={T.color.border.base} strokeWidth={1.5} />
 
             {/* Paint */}
             <Rect x={cw * 0.3} y={ch * 0.6} width={cw * 0.4} height={ch * 0.35}
-                fill="rgba(255,107,0,0.06)" stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
+                fill={`${SHARE_COLORS.brand}10`} stroke={T.color.border.soft} strokeWidth={1} />
 
             {/* 3-point arc */}
             <Path
                 d={`M ${cw * 0.1} ${ch * 0.95} Q ${cw * 0.1} ${ch * 0.2} ${cw * 0.5} ${ch * 0.18} Q ${cw * 0.9} ${ch * 0.2} ${cw * 0.9} ${ch * 0.95}`}
-                fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={1} strokeDasharray="4,4"
+                fill="none" stroke={T.color.border.soft} strokeWidth={1} strokeDasharray="4,4"
             />
 
             {/* Free throw circle */}
             <Circle cx={cw * 0.5} cy={ch * 0.6} r={cw * 0.12}
-                fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
+                fill="none" stroke={T.color.border.soft} strokeWidth={1} />
 
             {/* Rim */}
             <Circle cx={cw * 0.5} cy={ch * 0.92} r={5}
-                fill="#FF6B00" stroke="#FF8A33" strokeWidth={1.5} />
+                fill={SHARE_COLORS.brand} stroke={SHARE_COLORS.brandLight} strokeWidth={1.5} />
 
             {/* Zone dots with FG% */}
             {zoneStats && Object.entries(zoneStats).map(([zone, data]) => {
@@ -106,7 +120,7 @@ function MiniCourt({ zoneStats, width, height }: {
                         />
                         <SvgText
                             x={pos.cx * cw} y={pos.cy * ch + 3}
-                            fill="#fff" fontSize={9} fontWeight="bold"
+                            fill={SHARE_COLORS.text} fontSize={9} fontWeight="bold"
                             textAnchor="middle"
                         >
                             {`${Math.round(data.pct)}%`}
@@ -126,7 +140,7 @@ function StatPill({ label, value, unit, accent }: {
     return (
         <View style={[s.statPill, accent && s.statPillAccent]}>
             <Text style={s.statPillLabel}>{label}</Text>
-            <Text style={[s.statPillValue, accent && { color: '#FF6B00' }]}>
+            <Text style={[s.statPillValue, accent && { color: SHARE_COLORS.brand }]}>
                 {value}{unit ? <Text style={s.statPillUnit}>{unit}</Text> : null}
             </Text>
         </View>
@@ -135,13 +149,13 @@ function StatPill({ label, value, unit, accent }: {
 
 // ── Main ShareCard ───────────────────────────
 
-interface ShareCardProps {
+interface SessionShareCardProps {
     stats: SessionRealtimeStats
     zoneStats?: Record<string, { pct: number; attempts: number }>
     playerName?: string
 }
 
-export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
+export const SessionShareCard = forwardRef<View, SessionShareCardProps>(function SessionShareCard(
     { stats, zoneStats, playerName },
     ref,
 ) {
@@ -152,8 +166,8 @@ export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
         stats.followThroughPct * 0.15,
     )
     const { grade, color } = getGrade(overallScore)
-    const fgColor = stats.shootingPct >= 50 ? '#00D97E'
-        : stats.shootingPct >= 35 ? '#FFC400' : '#FF3659'
+    const fgColor = stats.shootingPct >= 50 ? SHARE_COLORS.success
+        : stats.shootingPct >= 35 ? SHARE_COLORS.warning : SHARE_COLORS.error
 
     const courtW = CARD_W - 48
     const courtH = Math.round(courtW * 0.75)
@@ -187,7 +201,7 @@ export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
             {/* Shooting headline */}
             <View style={s.shootingRow}>
                 <View style={s.shootingStat}>
-                    <Text style={[s.shootingBig, { color: '#00D97E' }]}>{stats.madeShots}</Text>
+                    <Text style={[s.shootingBig, { color: SHARE_COLORS.success }]}>{stats.madeShots}</Text>
                     <Text style={s.shootingLabel}>MADE</Text>
                 </View>
                 <View style={s.shootingCenter}>
@@ -195,7 +209,7 @@ export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
                     <Text style={s.shootingLabel}>FG%</Text>
                 </View>
                 <View style={s.shootingStat}>
-                    <Text style={[s.shootingBig, { color: '#FF3659' }]}>{stats.missedShots}</Text>
+                    <Text style={[s.shootingBig, { color: SHARE_COLORS.error }]}>{stats.missedShots}</Text>
                     <Text style={s.shootingLabel}>MISSED</Text>
                 </View>
             </View>
@@ -232,6 +246,9 @@ export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
     )
 })
 
+// Backward-compatible export to avoid breaking existing imports.
+export const ShareCard = SessionShareCard
+
 // ── Styles ───────────────────────────────────
 
 const s = StyleSheet.create({
@@ -242,7 +259,7 @@ const s = StyleSheet.create({
     },
     bgBase: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: '#05080C',
+        backgroundColor: SHARE_COLORS.bg,
     },
     bgGlow: {
         ...StyleSheet.absoluteFillObject,
@@ -250,7 +267,7 @@ const s = StyleSheet.create({
         borderWidth: 0,
         // Radial-like glow achieved via top amber tint
         borderTopWidth: CARD_H * 0.15,
-        borderTopColor: 'rgba(255,107,0,0.04)',
+        borderTopColor: `${SHARE_COLORS.brand}0A`,
     },
 
     // Brand bar
@@ -266,17 +283,17 @@ const s = StyleSheet.create({
         fontSize: 14,
         fontWeight: '800',
         letterSpacing: 4,
-        color: '#F8FAFC',
+        color: SHARE_COLORS.text,
     },
     brandAI: {
         fontSize: 12,
         fontWeight: '800',
-        color: '#FF6B00',
+        color: SHARE_COLORS.brand,
         letterSpacing: 2,
-        backgroundColor: 'rgba(255,107,0,0.15)',
+        backgroundColor: `${SHARE_COLORS.brand}26`,
         paddingHorizontal: 6,
         paddingVertical: 2,
-        borderRadius: 4,
+        borderRadius: T.radius.sm - 2,
         overflow: 'hidden',
     },
 
@@ -309,21 +326,21 @@ const s = StyleSheet.create({
     heroScore: {
         fontSize: 56,
         fontWeight: '900',
-        color: '#F8FAFC',
+        color: SHARE_COLORS.text,
         letterSpacing: -2,
         lineHeight: 58,
     },
     heroLabel: {
         fontSize: 11,
         fontWeight: '700',
-        color: '#94A3B8',
+        color: SHARE_COLORS.textMuted,
         letterSpacing: 2,
         marginTop: 2,
     },
     heroPlayer: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#FF6B00',
+        color: SHARE_COLORS.brand,
         marginTop: 4,
     },
 
@@ -353,7 +370,7 @@ const s = StyleSheet.create({
     shootingLabel: {
         fontSize: 10,
         fontWeight: '700',
-        color: '#94A3B8',
+        color: SHARE_COLORS.textMuted,
         letterSpacing: 1.5,
         marginTop: 2,
     },
@@ -375,7 +392,7 @@ const s = StyleSheet.create({
     },
     statPill: {
         backgroundColor: 'rgba(255,255,255,0.04)',
-        borderRadius: 10,
+        borderRadius: T.radius.md,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.06)',
         paddingHorizontal: 14,
@@ -384,25 +401,25 @@ const s = StyleSheet.create({
         minWidth: 76,
     },
     statPillAccent: {
-        borderColor: 'rgba(255,107,0,0.25)',
-        backgroundColor: 'rgba(255,107,0,0.06)',
+        borderColor: `${SHARE_COLORS.brand}40`,
+        backgroundColor: `${SHARE_COLORS.brand}10`,
     },
     statPillLabel: {
         fontSize: 9,
         fontWeight: '700',
-        color: '#94A3B8',
+        color: SHARE_COLORS.textMuted,
         letterSpacing: 1,
         marginBottom: 2,
     },
     statPillValue: {
         fontSize: 20,
         fontWeight: '800',
-        color: '#F8FAFC',
+        color: SHARE_COLORS.text,
     },
     statPillUnit: {
         fontSize: 12,
         fontWeight: '600',
-        color: '#94A3B8',
+        color: SHARE_COLORS.textMuted,
     },
 
     // Meta
@@ -416,11 +433,11 @@ const s = StyleSheet.create({
     metaText: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#94A3B8',
+        color: SHARE_COLORS.textMuted,
     },
     metaDot: {
         fontSize: 14,
-        color: '#475569',
+        color: SHARE_COLORS.textSubtle,
     },
 
     // Footer
@@ -432,20 +449,20 @@ const s = StyleSheet.create({
     footerLine: {
         width: 40,
         height: 2,
-        backgroundColor: 'rgba(255,107,0,0.3)',
+        backgroundColor: `${SHARE_COLORS.brand}4D`,
         borderRadius: 1,
         marginBottom: 12,
     },
     footerText: {
         fontSize: 13,
         fontWeight: '700',
-        color: '#FF6B00',
+        color: SHARE_COLORS.brand,
         letterSpacing: 1,
     },
     footerHash: {
         fontSize: 11,
         fontWeight: '600',
-        color: '#475569',
+        color: SHARE_COLORS.textSubtle,
         marginTop: 4,
     },
 })

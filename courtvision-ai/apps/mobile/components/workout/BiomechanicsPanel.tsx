@@ -13,20 +13,15 @@
  * Design V4 : glass cards, amber accent, Sora display font.
  */
 
-import React, { useMemo } from 'react'
+import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import Animated, {
     FadeIn,
     FadeInDown,
-    useSharedValue,
-    useAnimatedStyle,
-    withTiming,
 } from 'react-native-reanimated'
 import { Feather } from '@expo/vector-icons'
 import { ScoreRing } from './ScoreRing'
-import { T, typePresets, glass } from '../../lib/theme'
-
-const type = typePresets
+import { T } from '../../lib/theme'
 
 // ==========================================
 // Types
@@ -234,7 +229,7 @@ export function BiomechanicsPanel({
                     icon="activity"
                     label="Phase"
                     value={shotPhase === 'idle' ? '—' : shotPhase.replace('_', ' ')}
-                    color={shotPhase === 'idle' ? T.color.text.tertiary : T.color.signature.primary}
+                    color={shotPhase === 'idle' ? T.color.text.tertiary : T.color.brand.primary}
                     delay={150}
                 />
             </View>
@@ -268,7 +263,7 @@ export function BiomechanicsPanel({
 const styles = StyleSheet.create({
     container: {
         ...(T.glass.base as any),
-        borderRadius: T.borderRadius.lg,
+        borderRadius: T.radius.lg,
         padding: 16,
     },
 
@@ -286,7 +281,7 @@ const styles = StyleSheet.create({
         fontFamily: T.fonts.display.bold,
     },
     fpsChip: {
-        backgroundColor: T.color.background.tertiary,
+        backgroundColor: T.color.bg.tertiary,
         paddingHorizontal: 8,
         paddingVertical: 3,
         borderRadius: 8,
@@ -314,7 +309,7 @@ const styles = StyleSheet.create({
         borderWidth: 3,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: T.color.background.tertiary,
+        backgroundColor: T.color.bg.tertiary,
         marginBottom: 4,
     },
     scoreValue: {
@@ -338,7 +333,7 @@ const styles = StyleSheet.create({
         flex: 1,
         minWidth: '45%' as any,
         ...(T.glass.thin as any),
-        borderRadius: T.borderRadius.md,
+        borderRadius: T.radius.md,
         padding: 10,
     },
     metricHeader: {
@@ -402,8 +397,8 @@ const styles = StyleSheet.create({
 
     // Compact mode
     compactContainer: {
-        ...(glass.deep as any),
-        borderRadius: T.borderRadius.md,
+        ...(T.glass.deep as any),
+        borderRadius: T.radius.md,
         paddingHorizontal: 12,
         paddingVertical: 8,
     },

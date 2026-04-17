@@ -83,9 +83,9 @@ function MiniStat({ icon, label, value, color = T.color.text.secondary }: {
 function PerformanceBadge({ value }: { value: number }) {
     let label = 'WORK IN PROGRESS'
     let color: string = T.color.semantic.info
-    if (value >= 90) { label = 'ELITE'; color = T.color.gamification.gold }
+    if (value >= 90) { label = 'ELITE'; color = T.color.semantic.gold }
     else if (value >= 80) { label = 'GREAT'; color = T.color.semantic.success }
-    else if (value >= 70) { label = 'GOOD'; color = T.color.signature.primary }
+    else if (value >= 70) { label = 'GOOD'; color = T.color.brand.primary }
     return (
         <View style={[styles.badge, { backgroundColor: `${color}14`, borderColor: `${color}28` }]}>
             <Text style={[styles.badgeText, { color }]}>{label}</Text>
@@ -133,7 +133,7 @@ export const SessionCard = memo(function SessionCard({ session, onPress, delay =
                         <View style={styles.compactStats}>
                             {session.shooting_fg_pct != null && (
                                 <Text style={styles.compactStat}>
-                                    <Text style={{ color: T.color.signature.primary, fontWeight: '800' }}>
+                                    <Text style={{ color: T.color.brand.primary, fontWeight: '800' }}>
                                         {Math.round(session.shooting_fg_pct)}%
                                     </Text>
                                     {' FG'}
@@ -183,7 +183,7 @@ export const SessionCard = memo(function SessionCard({ session, onPress, delay =
                             icon="crosshair"
                             label="FG%"
                             value={`${Math.round(session.shooting_fg_pct)}%`}
-                            color={T.color.signature.primary}
+                            color={T.color.brand.primary}
                         />
                     )}
                     {session.shots_made != null && session.shots_attempted != null && (
@@ -213,7 +213,7 @@ export const SessionCard = memo(function SessionCard({ session, onPress, delay =
                             icon="play-circle"
                             label="clips"
                             value={`${session.highlight_count}`}
-                            color={T.color.gamification.purple}
+                            color={T.color.semantic.purple}
                         />
                     )}
                 </View>
@@ -221,7 +221,7 @@ export const SessionCard = memo(function SessionCard({ session, onPress, delay =
                 {/* Footer arrow */}
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>View full report</Text>
-                    <Feather name="arrow-right" size={14} color={T.color.signature.primary} />
+                    <Feather name="arrow-right" size={14} color={T.color.brand.primary} />
                 </View>
             </TouchableOpacity>
         </Animated.View>
@@ -233,7 +233,7 @@ export const SessionCard = memo(function SessionCard({ session, onPress, delay =
 const styles = StyleSheet.create({
     container: {
         ...T.glass.thin,
-        borderRadius: T.borderRadius.lg,
+        borderRadius: T.radius.lg,
         padding: 16,
         gap: 12,
     },
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
     badge: {
         paddingHorizontal: 10,
         paddingVertical: 4,
-        borderRadius: T.borderRadius.full,
+        borderRadius: T.radius.full,
         borderWidth: 1,
     },
     badgeText: {
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     footerText: {
-        color: T.color.signature.primary,
+        color: T.color.brand.primary,
         fontSize: T.fontSize.sm,
         fontWeight: '600',
     },
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     // Compact variant
     compactContainer: {
         ...T.glass.thin,
-        borderRadius: T.borderRadius.md,
+        borderRadius: T.radius.md,
         padding: 14,
         flexDirection: 'row',
         alignItems: 'center',

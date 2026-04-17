@@ -8,7 +8,7 @@ import Animated, {
     withDelay,
     Easing
 } from 'react-native-reanimated';
-import { colors, typography } from '../../constants/tokens';
+import { T } from '../../lib/theme';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -55,7 +55,7 @@ export function StatRing({ percentage, label, valueText, size = 80, delay = 0 }:
                         cx={size / 2}
                         cy={size / 2}
                         r={radius}
-                        stroke={colors.ghost}
+                        stroke={T.color.border.soft}
                         strokeWidth={strokeWidth}
                         fill="none"
                     />
@@ -64,7 +64,7 @@ export function StatRing({ percentage, label, valueText, size = 80, delay = 0 }:
                         cx={size / 2}
                         cy={size / 2}
                         r={radius}
-                        stroke={colors.fire}
+                        stroke={T.color.brand.primary}
                         strokeWidth={strokeWidth}
                         fill="none"
                         strokeDasharray={circumference}
@@ -98,13 +98,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     valueText: {
-        ...typography.h3, // Used for numbers here based on size (in S7 it's 24px)
-        color: colors.snow,
+        ...T.type.h3,
+        color: T.color.text.primary,
     },
     labelText: {
         fontFamily: 'DMSans_400Regular',
         fontSize: 10,
-        color: colors.fog,
+        color: T.color.text.tertiary,
         textAlign: 'center',
         marginTop: 2,
     }

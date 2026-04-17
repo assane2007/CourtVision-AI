@@ -196,7 +196,7 @@ export function SmartCamera({
             <View style={[styles.container, compact && styles.compact, fullscreen && styles.fullscreen]}>
                 <View style={styles.permissionBox}>
                     <View style={styles.permissionIconCircle}>
-                        <Feather name="camera" size={32} color={T.color.signature.primary} />
+                        <Feather name="camera" size={32} color={T.color.brand.primary} />
                     </View>
                     <Text style={styles.permissionTitle}>Caméra requise</Text>
                     <Text style={styles.permissionText}>
@@ -298,13 +298,13 @@ const styles = StyleSheet.create({
     container: {
         width: '100%',
         height: 280,
-        borderRadius: T.borderRadius.lg,
+        borderRadius: T.radius.lg,
         overflow: 'hidden',
-        backgroundColor: T.color.background.primary,
+        backgroundColor: T.color.bg.primary,
     },
     compact: {
         height: 140,
-        borderRadius: T.borderRadius.md,
+        borderRadius: T.radius.md,
     },
     fullscreen: {
         height: '100%' as any,
@@ -409,13 +409,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         padding: 24,
-        backgroundColor: T.color.background.tertiary,
+        backgroundColor: T.color.bg.tertiary,
     },
     permissionIconCircle: {
         width: 64,
         height: 64,
         borderRadius: 32,
-        backgroundColor: T.color.signature.muted,
+        backgroundColor: T.color.brand.muted,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 16,
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
         fontFamily: T.fonts.body.regular,
     },
     permissionBtn: {
-        backgroundColor: T.color.signature.primary,
+        backgroundColor: T.color.brand.primary,
         paddingHorizontal: 24,
         paddingVertical: 12,
         borderRadius: 12,

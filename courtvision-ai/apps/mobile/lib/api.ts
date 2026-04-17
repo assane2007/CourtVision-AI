@@ -143,9 +143,41 @@ async function attemptTokenRefresh(): Promise<string | null> {
             body: JSON.stringify({ refresh_token: refreshToken }),
         })
         if (!response.ok) return null
-        const data = await response.json() as { access_token?: string; token?: string }
-        const newToken = data.access_token ?? data.token ?? null
-        if (newToken) await setAuthToken(newToken)
+        const payload = await response.json() as {
+            access_token?: string
+            token?: string
+            refresh_token?: string
+            data?: {
+                access_token?: string
+                token?: string
+                refresh_token?: string
+                session?: {
+                    access_token?: string
+                    refresh_token?: string
+                }
+            }
+        }
+
+        const newToken =
+            payload.access_token
+            ?? payload.token
+            ?? payload.data?.access_token
+            ?? payload.data?.token
+            ?? payload.data?.session?.access_token
+            ?? null
+
+        const nextRefreshToken =
+            payload.refresh_token
+            ?? payload.data?.refresh_token
+            ?? payload.data?.session?.refresh_token
+            ?? null
+
+        if (newToken) {
+            await setAuthToken(newToken)
+            if (nextRefreshToken) {
+                await setRefreshToken(nextRefreshToken)
+            }
+        }
         return newToken
     } catch {
         return null

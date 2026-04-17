@@ -39,9 +39,14 @@ type TabVisual = {
 }
 
 const TAB_VISUALS: Record<string, TabVisual> = {
-    index: { icon: 'zap', label: 'Court', accessibilityLabel: 'Court dashboard' },
+    index: { icon: 'zap', label: 'Home', accessibilityLabel: 'Home dashboard' },
     community: { icon: 'users', label: 'Squad', accessibilityLabel: 'Community' },
     upload: { icon: 'plus', label: 'Film', accessibilityLabel: 'Record session' },
+    record: { icon: 'video', label: 'Film', accessibilityLabel: 'Record session' },
+    sessions: { icon: 'bar-chart-2', label: 'Sessions', accessibilityLabel: 'Sessions' },
+    players: { icon: 'user', label: 'Profile', accessibilityLabel: 'Profile' },
+    coach: { icon: 'message-circle', label: 'Coach', accessibilityLabel: 'Coach' },
+    precog: { icon: 'activity', label: 'Precog', accessibilityLabel: 'Precog' },
     twin: { icon: 'cpu', label: 'Twin', accessibilityLabel: 'Digital twin' },
     profile: { icon: 'user', label: 'Profile', accessibilityLabel: 'Profile' },
 }
@@ -93,7 +98,7 @@ function TabItem({
         label: routeName,
         accessibilityLabel: routeName,
     }
-    const isFAB = routeName === 'upload'
+    const isFAB = routeName === 'upload' || routeName === 'record'
 
     const scale = useSharedValue(1)
     const iconScale = useSharedValue(1)

@@ -1,7 +1,7 @@
 import React from 'react';
 import type { ViewStyle, ViewProps, StyleProp } from 'react-native';
 import { View } from 'react-native';
-import { colors, radius, space, shadows } from '../../constants/tokens';
+import { T } from '../../lib/theme';
 
 export interface CardProps extends ViewProps {
     children: React.ReactNode;
@@ -12,33 +12,33 @@ export interface CardProps extends ViewProps {
 
 export function Card({ children, style, variant = 'base', statusType, ...props }: CardProps) {
     let containerStyle: ViewStyle = {
-        backgroundColor: colors.surface,
-        borderRadius: radius.lg,
-        padding: space[4],
+        backgroundColor: T.color.bg.secondary,
+        borderRadius: T.radius.lg,
+        padding: T.spacing[4],
     };
 
     if (variant === 'base') {
         containerStyle = {
             ...containerStyle,
             borderWidth: 1,
-            borderColor: colors.line,
+            borderColor: T.color.border.base,
         };
     } else if (variant === 'status') {
         containerStyle = {
             ...containerStyle,
-            borderRadius: 14,
+            borderRadius: T.radius.md,
             borderWidth: 0,
             borderLeftWidth: 3,
         };
 
         if (statusType === 'critical') {
-            containerStyle.borderLeftColor = colors.danger;
+            containerStyle.borderLeftColor = T.color.semantic.error;
         } else if (statusType === 'required') {
-            containerStyle.borderLeftColor = colors.caution;
+            containerStyle.borderLeftColor = T.color.semantic.warning;
         } else if (statusType === 'monitoring') {
-            containerStyle.borderLeftColor = '#888888';
+            containerStyle.borderLeftColor = T.color.text.tertiary;
         } else {
-            containerStyle.borderLeftColor = colors.live;
+            containerStyle.borderLeftColor = T.color.semantic.success;
         }
     }
 

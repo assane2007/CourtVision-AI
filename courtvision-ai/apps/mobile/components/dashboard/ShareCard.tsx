@@ -1,5 +1,5 @@
 /**
- * ShareCard — Exportable Twin Card, share modal, share button.
+ * TwinShareCard suite — exportable twin card, share modal, share button.
  * V5 PERFECTION: StyleSheet.create, memo'd sub-components, fixed emojis,
  * proper theme imports, no inline objects. Touch targets >= 44 px.
  */
@@ -61,7 +61,7 @@ interface TwinCardProps {
     compact?: boolean
 }
 
-export const TwinCard = memo(function TwinCard({ data, compact }: TwinCardProps) {
+export const TwinShareCard = memo(function TwinShareCard({ data, compact }: TwinCardProps) {
     const shimmer = useSharedValue(0)
 
     useEffect(() => {
@@ -248,7 +248,7 @@ export const ShareModal = memo(function ShareModal({
 
                     {cardData && shareType === 'twin_card' && (
                         <View style={sc.modalPreview}>
-                            <TwinCard data={cardData} compact />
+                            <TwinShareCard data={cardData} compact />
                         </View>
                     )}
 
@@ -287,6 +287,9 @@ export const ShareModal = memo(function ShareModal({
         </Modal>
     )
 })
+
+// Backward-compatible export to avoid breaking existing imports.
+export const TwinCard = TwinShareCard
 
 // ==========================================
 // Share Button (inline toolbar)

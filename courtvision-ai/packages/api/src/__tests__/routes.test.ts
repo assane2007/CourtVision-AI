@@ -454,23 +454,23 @@ describe('CourtVision API', () => {
     describe('Live Routes (Coach Live)', () => {
         const authHeaders = { authorization: 'Bearer test-token' }
 
-        it('POST /api/sessions/:id/live sans auth devrait retourner 401 ou 404', async () => {
+        it('POST /api/sessions/:id/live sans auth devrait retourner 401', async () => {
             const response = await app.inject({
                 method: 'POST',
                 url: '/api/sessions/123e4567-e89b-12d3-a456-426614174000/live',
             })
 
-            expect([401, 404]).toContain(response.statusCode)
+            expect(response.statusCode).toBe(401)
         })
 
-        it('POST /api/sessions/:id/live/frame sans auth devrait retourner 401 ou 404', async () => {
+        it('POST /api/sessions/:id/live/frame sans auth devrait retourner 401', async () => {
             const response = await app.inject({
                 method: 'POST',
                 url: '/api/sessions/123e4567-e89b-12d3-a456-426614174000/live/frame',
                 payload: { timestamp: 120, quarter: 2 },
             })
 
-            expect([401, 404]).toContain(response.statusCode)
+            expect(response.statusCode).toBe(401)
         })
 
         it('POST /api/sessions/:id/live/frame sans session active devrait retourner 404', async () => {
@@ -515,8 +515,6 @@ describe('CourtVision API', () => {
                 headers: authHeaders,
                 payload: { alertSensitivity: 'medium' },
             })
-            // Live routes may not be registered yet — accept 200 or 404
-            if (startRes.statusCode === 404) return
             expect(startRes.statusCode).toBe(200)
             const startBody = JSON.parse(startRes.body)
             expect(startBody.status).toBe('live')

@@ -121,7 +121,7 @@ npm run test:ai
 | `/api/analytics` | Analytics avancées | SQS, clutch rating, xShots |
 | `/api/community` | Communauté | leaderboard, défis, amis |
 | `/api/billing` | Billing Stripe | plans, checkout, portail, webhook |
-| `/api/live` | Coach Live | activation, envoi de frames |
+| `/api/sessions` | Coach Live | activation live, envoi de frames |
 | `/api/share` | Partage | Twin Cards, highlights partageables |
 | `/api/tiktok` | TikTok Export | génération clips viraux |
 | `/api/highlights` | Highlights | édition, rendu, musique |

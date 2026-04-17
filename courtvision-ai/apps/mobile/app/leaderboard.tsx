@@ -57,14 +57,85 @@ interface Achievement {
 type Period = 'weekly' | 'monthly' | 'alltime'
 type Metric = 'score' | 'fgPct' | 'consistency' | 'sessions'
 
+interface CommunityLeaderboardEntry {
+    rank: number
+    user_id: string
+    username?: string
+    full_name?: string
+    level?: number
+    score?: number
+    trend?: 'up' | 'down' | 'stable' | string
+    is_me?: boolean
+}
+
+interface CommunityBadge {
+    id: string
+    name: string
+    description: string
+    rarity?: 'common' | 'rare' | 'epic' | 'legendary'
+    earned_at?: string
+}
+
+function mapMetric(metric: Metric): 'overall' | 'shooting' | 'mental' | 'xp' {
+    switch (metric) {
+        case 'fgPct':
+            return 'shooting'
+        case 'consistency':
+            return 'mental'
+        case 'sessions':
+            return 'xp'
+        case 'score':
+        default:
+            return 'overall'
+    }
+}
+
+function limitForPeriod(period: Period): number {
+    switch (period) {
+        case 'weekly':
+            return 20
+        case 'monthly':
+            return 35
+        case 'alltime':
+        default:
+            return 50
+    }
+}
+
 // ==========================================
 // API-backed data fetching
 // ==========================================
 
 async function fetchLeaderboard(metric: Metric, period: Period): Promise<LeaderboardEntry[]> {
     try {
-        const res = await api.get<{ data: LeaderboardEntry[] }>(`/api/leaderboard?metric=${metric}&period=${period}`)
-        return res.data ?? res as any
+        const backendMetric = mapMetric(metric)
+        const limit = limitForPeriod(period)
+        const res = await api.get<{ entries?: CommunityLeaderboardEntry[] }>(
+            `/api/community/leaderboard?metric=${backendMetric}&scope=global&limit=${limit}`
+        )
+
+        const entries = Array.isArray(res.entries) ? res.entries : []
+        return entries.map((entry) => {
+            const name = (entry.full_name || entry.username || 'Player').trim()
+            const initials = name
+                .split(' ')
+                .filter(Boolean)
+                .map((part) => part[0])
+                .join('')
+                .slice(0, 2)
+                .toUpperCase() || 'P'
+
+            return {
+                rank: entry.rank,
+                userId: entry.user_id,
+                displayName: name,
+                avatarInitials: initials,
+                level: entry.level ?? 1,
+                value: Math.round((entry.score ?? 0) * 10) / 10,
+                delta: entry.trend === 'up' ? 1 : entry.trend === 'down' ? -1 : 0,
+                isCurrentUser: Boolean(entry.is_me),
+            }
+        })
     } catch (err) {
         console.warn('[Leaderboard] API fetch failed, returning empty:', err)
         return []
@@ -73,8 +144,17 @@ async function fetchLeaderboard(metric: Metric, period: Period): Promise<Leaderb
 
 async function fetchAchievements(): Promise<Achievement[]> {
     try {
-        const res = await api.get<{ data: Achievement[] }>('/api/achievements/recent')
-        return res.data ?? res as any
+        const res = await api.get<{ data?: CommunityBadge[] }>('/api/community/badges/me')
+        const badges = Array.isArray(res.data) ? res.data : []
+
+        return badges.slice(0, 6).map((badge) => ({
+            id: badge.id,
+            title: badge.name,
+            description: badge.description,
+            icon: 'award',
+            earnedAt: badge.earned_at ?? new Date().toISOString(),
+            rarity: badge.rarity ?? 'common',
+        }))
     } catch (err) {
         console.warn('[Leaderboard] Achievements fetch failed:', err)
         return []

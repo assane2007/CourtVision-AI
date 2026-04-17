@@ -1,11 +1,10 @@
 import { Tabs } from 'expo-router';
-import { TabBar } from '../../components/ui/TabBar';
-import { colors } from '../../constants/tokens';
+import CustomTabBar from '../../components/TabBar';
 
 export default function AppLayout() {
     return (
         <Tabs
-            tabBar={(props) => <TabBar {...props} />}
+            tabBar={(props) => <CustomTabBar {...props} />}
             screenOptions={{
                 headerShown: false,
             }}

@@ -1,7 +1,7 @@
 import React from 'react';
 import type { ViewStyle } from 'react-native';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, radius, space, typography } from '../../constants/tokens';
+import { T } from '../../lib/theme';
 
 interface BadgeProps {
     label: string;
@@ -10,21 +10,21 @@ interface BadgeProps {
 }
 
 export function Badge({ label, variant = 'neutral', style }: BadgeProps) {
-    let backgroundColor: string = colors.surface2;
-    let textColor: string = colors.cloud;
+    let backgroundColor: string = T.color.bg.tertiary;
+    let textColor: string = T.color.text.secondary;
 
     switch (variant) {
         case 'live':
-            backgroundColor = colors.liveDim;
-            textColor = colors.live;
+            backgroundColor = `${T.color.semantic.success}26`;
+            textColor = T.color.semantic.success;
             break;
         case 'caution':
-            backgroundColor = colors.cautionDim;
-            textColor = colors.caution;
+            backgroundColor = `${T.color.semantic.warning}26`;
+            textColor = T.color.semantic.warning;
             break;
         case 'danger':
-            backgroundColor = colors.dangerDim;
-            textColor = colors.danger;
+            backgroundColor = `${T.color.semantic.error}26`;
+            textColor = T.color.semantic.error;
             break;
     }
 
@@ -45,14 +45,16 @@ export function Badge({ label, variant = 'neutral', style }: BadgeProps) {
 
 const styles = StyleSheet.create({
     container: {
-        paddingHorizontal: space[2],
-        paddingVertical: space[0.5],
-        borderRadius: radius.pill,
+        paddingHorizontal: T.spacing[2],
+        paddingVertical: 2,
+        borderRadius: T.radius.full,
         alignSelf: 'flex-start',
         borderWidth: 1,
         borderColor: 'transparent', // Can be overridden
     },
     text: {
-        ...typography.label,
+        fontFamily: T.fonts.mono.regular,
+        fontSize: 10,
+        letterSpacing: 1,
     },
 });

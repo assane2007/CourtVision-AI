@@ -1,6 +1,6 @@
 import React, { Component, type ReactNode, type JSX } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { colors, typography, space } from '../constants/tokens';
+import { T } from '../lib/theme';
 
 interface Props {
     children: ReactNode;
@@ -48,33 +48,33 @@ export class ErrorBoundary extends Component<Props, State> {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: colors.void,
+        backgroundColor: T.color.bg.primary,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: space[6],
+        padding: T.spacing[6],
     },
     title: {
-        fontFamily: typography.h2.fontFamily,
-        fontSize: 24,
-        color: colors.snow,
-        marginBottom: space[3],
+        fontFamily: T.type.h2.fontFamily,
+        fontSize: T.type.h2.fontSize,
+        color: T.color.text.primary,
+        marginBottom: T.spacing[3],
     },
     message: {
-        fontFamily: typography.body.fontFamily,
+        fontFamily: T.type.body.fontFamily,
         fontSize: 14,
-        color: colors.cloud,
+        color: T.color.text.secondary,
         textAlign: 'center',
-        marginBottom: space[6],
+        marginBottom: T.spacing[6],
     },
     button: {
-        backgroundColor: colors.fire,
-        paddingHorizontal: space[6],
-        paddingVertical: space[3],
-        borderRadius: 12,
+        backgroundColor: T.color.brand.primary,
+        paddingHorizontal: T.spacing[6],
+        paddingVertical: T.spacing[3],
+        borderRadius: T.radius.md,
     },
     buttonText: {
-        fontFamily: typography.h2.fontFamily,
+        fontFamily: T.type.h3.fontFamily,
         fontSize: 16,
-        color: colors.snow,
+        color: T.color.text.primary,
     },
 });

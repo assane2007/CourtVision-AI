@@ -10,7 +10,7 @@ import Animated, {
     Easing,
     withDelay
 } from 'react-native-reanimated';
-import { colors } from '../../constants/tokens';
+import { T } from '../../lib/theme';
 
 const AnimatedRect = Animated.createAnimatedComponent(Rect);
 const AnimatedLine = Animated.createAnimatedComponent(Line);
@@ -87,59 +87,59 @@ export function CourtMinimap({ animate = false, style, width = '100%', height = 
                 {/* Rectangle principal terrain */}
                 <AnimatedRect
                     x="2" y="2" width="276" height="146" rx="4"
-                    fill="none" stroke={colors.fire} strokeWidth="1.5"
+                    fill="none" stroke={T.color.brand.primary} strokeWidth="1.5"
                     strokeDasharray={1000} animatedProps={animatedLongProps}
                 />
                 {/* Ligne centrale */}
                 <AnimatedLine
                     x1="140" y1="2" x2="140" y2="148"
-                    stroke={colors.fire} strokeWidth="1"
+                    stroke={T.color.brand.primary} strokeWidth="1"
                     strokeDasharray={150} animatedProps={animatedShortProps}
                 />
                 {/* Cercle central */}
                 <AnimatedCircle
                     cx="140" cy="75" r="30"
-                    fill="none" stroke={colors.fire} strokeWidth="1"
+                    fill="none" stroke={T.color.brand.primary} strokeWidth="1"
                     strokeDasharray={200} animatedProps={animatedShortProps}
                 />
 
                 {/* Raquette gauche */}
                 <AnimatedRect
                     x="2" y="40" width="70" height="70"
-                    fill="none" stroke={colors.fire} strokeWidth="1.2"
+                    fill="none" stroke={T.color.brand.primary} strokeWidth="1.2"
                     strokeDasharray={500} animatedProps={animatedShortProps}
                 />
                 {/* Cercle de lancer franc gauche */}
                 <AnimatedCircle
                     cx="72" cy="75" r="35"
-                    fill="none" stroke={colors.fire} strokeWidth="1"
+                    fill="none" stroke={T.color.brand.primary} strokeWidth="1"
                     strokeDasharray="4 4"
                     animatedProps={animatedShortProps}
                 />
                 {/* Arc à 3pts gauche (simplifié) */}
                 <AnimatedPath
                     d="M 2 20 Q 130 150 2 130"
-                    fill="none" stroke={colors.fire} strokeWidth="1"
+                    fill="none" stroke={T.color.brand.primary} strokeWidth="1"
                     strokeDasharray={500} animatedProps={animatedShortProps}
                 />
 
                 {/* Raquette droite */}
                 <AnimatedRect
                     x="208" y="40" width="70" height="70"
-                    fill="none" stroke={colors.fire} strokeWidth="1.2"
+                    fill="none" stroke={T.color.brand.primary} strokeWidth="1.2"
                     strokeDasharray={500} animatedProps={animatedShortProps}
                 />
                 {/* Cercle de lancer franc droite */}
                 <AnimatedCircle
                     cx="208" cy="75" r="35"
-                    fill="none" stroke={colors.fire} strokeWidth="1"
+                    fill="none" stroke={T.color.brand.primary} strokeWidth="1"
                     strokeDasharray="4 4"
                     animatedProps={animatedShortProps}
                 />
                 {/* Arc à 3pts droite (simplifié) */}
                 <AnimatedPath
                     d="M 278 20 Q 150 150 278 130"
-                    fill="none" stroke={colors.fire} strokeWidth="1"
+                    fill="none" stroke={T.color.brand.primary} strokeWidth="1"
                     strokeDasharray={500} animatedProps={animatedShortProps}
                 />
 
@@ -148,7 +148,7 @@ export function CourtMinimap({ animate = false, style, width = '100%', height = 
                     {shots.map((shot) => {
                         const cx = (shot.x / 100) * courtWidth;
                         const cy = (shot.y / 100) * courtHeight;
-                        const fill = shot.outcome === 'made' ? colors.live : colors.danger;
+                        const fill = shot.outcome === 'made' ? T.color.semantic.success : T.color.semantic.error;
 
                         return (
                             <Circle

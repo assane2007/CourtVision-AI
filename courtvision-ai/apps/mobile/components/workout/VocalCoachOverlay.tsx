@@ -1,12 +1,22 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
     View, Text, TouchableOpacity, StyleSheet,
-    ActivityIndicator, Animated, Easing
+    ActivityIndicator, Platform
 } from 'react-native'
+import Animated, {
+    Easing,
+    cancelAnimation,
+    useAnimatedStyle,
+    useSharedValue,
+    withRepeat,
+    withSequence,
+    withTiming,
+} from 'react-native-reanimated'
 import { Feather } from '@expo/vector-icons'
 import { Audio } from 'expo-av'
 import { T, impact } from '../../lib/theme'
 import { useStore } from '../../lib/store'
+import { API_BASE_URL, getAuthToken } from '../../lib/api'
 
 interface VocalCoachOverlayProps {
     sessionId: string
@@ -26,19 +36,22 @@ export const VocalCoachOverlay: React.FC<VocalCoachOverlayProps> = ({
 
     const ws = useRef<WebSocket | null>(null)
     const recording = useRef<Audio.Recording | null>(null)
-    const pulseAnim = useRef(new Animated.Value(1)).current
+    const pulseAnim = useSharedValue(1)
+    const pulseStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: pulseAnim.value }],
+    }))
 
     // ---- WebSocket ----
     useEffect(() => {
         if (active && user) {
-            connectWS()
+            void connectWS()
 
             // Listen to biomechanical faults from the AI service (Nuclear Integration)
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const RealtimeAIService = require('../../lib/realtimeAIService').RealtimeAIService
             const ai = RealtimeAIService.getInstance()
 
-            const cleanup = ai.config.onPipelineEvent = (event: any) => {
+            ai.config.onPipelineEvent = (event: any) => {
                 if (event.type === 'biomechanic_fault') {
                     const message = event.fault === 'low_elbow' ? 'Coude trop bas !' :
                         event.fault === 'stiff_knees' ? 'Fléchis les genoux !' :
@@ -52,13 +65,33 @@ export const VocalCoachOverlay: React.FC<VocalCoachOverlayProps> = ({
         return () => {
             if (ws.current) ws.current.close()
         }
-    }, [active, user])
+    }, [active, onCoachMessage, user])
 
-    const connectWS = () => {
-        const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
-        const wsUrl = apiUrl.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
-        const url = `${wsUrl}/ws/coach`
-        ws.current = new WebSocket(url)
+    const connectWS = async () => {
+        const token = await getAuthToken()
+        const wsProtocol = API_BASE_URL.startsWith('https') ? 'wss://' : 'ws://'
+        const domain = API_BASE_URL.replace(/^https?:\/\//, '').replace(/\/api\/?$/, '')
+        const url = `${wsProtocol}${domain}/ws/coach`
+
+        if (token && Platform.OS !== 'web') {
+            const WebSocketWithHeaders = WebSocket as unknown as {
+                new (
+                    url: string,
+                    protocols?: string | string[],
+                    options?: { headers?: Record<string, string> }
+                ): WebSocket
+            }
+            ws.current = new WebSocketWithHeaders(url, undefined, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            })
+        } else if (token && Platform.OS === 'web') {
+            // Browser WebSocket does not allow custom headers.
+            ws.current = new WebSocket(url, ['bearer', token])
+        } else {
+            ws.current = new WebSocket(url)
+        }
 
         ws.current.onopen = () => {
             setIsConnected(true)
@@ -134,27 +167,25 @@ export const VocalCoachOverlay: React.FC<VocalCoachOverlayProps> = ({
 
     // ---- UI Animations ----
     const startPulse = () => {
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(pulseAnim, {
-                    toValue: 1.2,
+        pulseAnim.value = withRepeat(
+            withSequence(
+                withTiming(1.2, {
                     duration: 800,
                     easing: Easing.inOut(Easing.ease),
-                    useNativeDriver: true
                 }),
-                Animated.timing(pulseAnim, {
-                    toValue: 1,
+                withTiming(1, {
                     duration: 800,
                     easing: Easing.inOut(Easing.ease),
-                    useNativeDriver: true
                 })
-            ])
-        ).start()
+            ),
+            -1,
+            false,
+        )
     }
 
     const stopPulse = () => {
-        pulseAnim.stopAnimation()
-        pulseAnim.setValue(1)
+        cancelAnimation(pulseAnim)
+        pulseAnim.value = 1
     }
 
     if (!active) return null
@@ -171,7 +202,7 @@ export const VocalCoachOverlay: React.FC<VocalCoachOverlayProps> = ({
                 >
                     <Animated.View style={[
                         styles.pulseCircle,
-                        { transform: [{ scale: pulseAnim }] },
+                        pulseStyle,
                         isListening && styles.pulseActive
                     ]} />
                     <View style={[styles.micIcon, isListening && styles.micActive]}>
@@ -197,7 +228,7 @@ export const VocalCoachOverlay: React.FC<VocalCoachOverlayProps> = ({
 
             {!isConnected && (
                 <View style={styles.connecting}>
-                    <ActivityIndicator size="small" color={T.color.signature.primary} />
+                    <ActivityIndicator size="small" color={T.color.brand.primary} />
                     <Text style={styles.connectingText}>Connecting AI...</Text>
                 </View>
             )}
@@ -240,13 +271,13 @@ const styles = StyleSheet.create({
         width: 48,
         height: 48,
         borderRadius: 24,
-        backgroundColor: T.color.background.tertiary,
+        backgroundColor: T.color.bg.tertiary,
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 2
     },
     micActive: {
-        backgroundColor: T.color.signature.primary
+        backgroundColor: T.color.brand.primary
     },
     pulseCircle: {
         position: 'absolute',

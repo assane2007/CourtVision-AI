@@ -13,7 +13,7 @@ import Animated, {
     useAnimatedStyle,
     withDelay
 } from 'react-native-reanimated';
-import { colors, typography, space, radius } from '../../constants/tokens';
+import { T } from '../../lib/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -139,7 +139,7 @@ export function GhostMode() {
         return (
             <AnimatedLine
                 animatedProps={props}
-                stroke={isPerfect ? colors.live : colors.danger}
+                stroke={isPerfect ? T.color.semantic.success : T.color.semantic.error}
                 strokeWidth={isPerfect ? 2 : 2.5}
                 strokeLinecap="round"
                 strokeDasharray={isPerfect ? "4 4" : undefined}
@@ -153,8 +153,8 @@ export function GhostMode() {
             <AnimatedCircle
                 animatedProps={props}
                 r={isPerfect ? 3 : 4}
-                fill={colors.base}
-                stroke={isPerfect ? colors.live : colors.danger}
+                fill={T.color.bg.secondary}
+                stroke={isPerfect ? T.color.semantic.success : T.color.semantic.error}
                 strokeWidth={1.5}
             />
         );
@@ -189,7 +189,7 @@ export function GhostMode() {
                 animatedProps={props}
                 r="12"
                 fill="none"
-                stroke={colors.fire}
+                stroke={T.color.brand.primary}
                 strokeWidth="1"
                 strokeDasharray="2 2"
             />
@@ -199,11 +199,11 @@ export function GhostMode() {
         <View style={styles.container}>
             <View style={styles.headerRow}>
                 <View style={styles.legendItem}>
-                    <View style={[styles.legendColor, { backgroundColor: colors.danger }]} />
+                    <View style={[styles.legendColor, { backgroundColor: T.color.semantic.error }]} />
                     <Text style={styles.legendText}>Current Form</Text>
                 </View>
                 <View style={styles.legendItem}>
-                    <View style={[styles.legendColor, { backgroundColor: 'transparent', borderStyle: 'dashed', borderWidth: 1, borderColor: colors.live }]} />
+                    <View style={[styles.legendColor, { backgroundColor: 'transparent', borderStyle: 'dashed', borderWidth: 1, borderColor: T.color.semantic.success }]} />
                     <Text style={styles.legendText}>Ghost (Perfect)</Text>
                 </View>
             </View>
@@ -212,17 +212,17 @@ export function GhostMode() {
                 {/* Background Grid */}
                 <Svg width="100%" height="100%" style={styles.svgBackground}>
                     {/* Horizon line */}
-                    <Line x1="0" y1="95%" x2="100%" y2="95%" stroke={colors.line} strokeWidth="1" strokeDasharray="2 4" />
+                    <Line x1="0" y1="95%" x2="100%" y2="95%" stroke={T.color.border.base} strokeWidth="1" strokeDasharray="2 4" />
                     {/* Grid lines */}
-                    <Line x1="50%" y1="0" x2="50%" y2="100%" stroke={colors.surface3} strokeWidth="1" strokeDasharray="2 8" />
-                    <Line x1="0" y1="50%" x2="100%" y2="50%" stroke={colors.surface3} strokeWidth="1" strokeDasharray="2 8" />
+                    <Line x1="50%" y1="0" x2="50%" y2="100%" stroke={T.color.bg.overlay} strokeWidth="1" strokeDasharray="2 8" />
+                    <Line x1="0" y1="50%" x2="100%" y2="50%" stroke={T.color.bg.overlay} strokeWidth="1" strokeDasharray="2 8" />
                 </Svg>
 
                 <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
                     <Defs>
                         <RadialGradient id="glow" cx="50%" cy="50%" r="50%">
-                            <Stop offset="0%" stopColor={colors.live} stopOpacity="0.2" />
-                            <Stop offset="100%" stopColor={colors.live} stopOpacity="0" />
+                            <Stop offset="0%" stopColor={T.color.semantic.success} stopOpacity="0.2" />
+                            <Stop offset="100%" stopColor={T.color.semantic.success} stopOpacity="0" />
                         </RadialGradient>
                     </Defs>
 
@@ -261,7 +261,7 @@ export function GhostMode() {
                 </View>
                 <View style={[styles.deviationRow, { borderBottomWidth: 0 }]}>
                     <Text style={styles.deviationLabel}>Knee Flexion</Text>
-                    <Text style={[styles.deviationValue, { color: colors.caution }]}>-8° STIFF</Text>
+                    <Text style={[styles.deviationValue, { color: T.color.semantic.warning }]}>-8° STIFF</Text>
                 </View>
             </View>
         </View >
@@ -276,13 +276,13 @@ const styles = StyleSheet.create({
     headerRow: {
         flexDirection: 'row',
         justifyContent: 'center',
-        gap: space[5],
-        marginBottom: space[4],
+        gap: T.spacing[5],
+        marginBottom: T.spacing[4],
     },
     legendItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: space[2],
+        gap: T.spacing[2],
     },
     legendColor: {
         width: 12,
@@ -290,15 +290,17 @@ const styles = StyleSheet.create({
         borderRadius: 2,
     },
     legendText: {
-        ...typography.label,
-        color: colors.cloud,
+        fontFamily: T.fonts.mono.regular,
+        fontSize: 10,
+        letterSpacing: 1,
+        color: T.color.text.secondary,
     },
     canvasContainer: {
         height: 280,
-        backgroundColor: colors.surface2,
-        borderRadius: radius.md,
+        backgroundColor: T.color.bg.tertiary,
+        borderRadius: T.radius.md,
         borderWidth: 1,
-        borderColor: colors.lineStrong,
+        borderColor: T.color.border.accent,
         overflow: 'hidden',
         position: 'relative',
     },
@@ -308,35 +310,35 @@ const styles = StyleSheet.create({
         left: 0,
     },
     analysisBox: {
-        marginTop: space[4],
-        backgroundColor: colors.surface,
-        borderRadius: radius.md,
-        padding: space[4],
+        marginTop: T.spacing[4],
+        backgroundColor: T.color.bg.secondary,
+        borderRadius: T.radius.md,
+        padding: T.spacing[4],
         borderWidth: 1,
-        borderColor: colors.surface3,
+        borderColor: T.color.bg.overlay,
     },
     analysisTitle: {
         fontFamily: 'JetBrainsMono_700Bold',
         fontSize: 12,
-        color: colors.fire,
+        color: T.color.brand.primary,
         letterSpacing: 1,
-        marginBottom: space[3],
+        marginBottom: T.spacing[3],
         textTransform: 'uppercase',
     },
     deviationRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingVertical: space[2],
+        paddingVertical: T.spacing[2],
         borderBottomWidth: 1,
-        borderBottomColor: colors.surface3,
+        borderBottomColor: T.color.bg.overlay,
     },
     deviationLabel: {
-        ...typography.body,
-        color: colors.snow,
+        ...T.type.body,
+        color: T.color.text.primary,
     },
     deviationValue: {
         fontFamily: 'JetBrainsMono_400Regular',
         fontSize: 13,
-        color: colors.danger,
+        color: T.color.semantic.error,
     }
 });

@@ -16,10 +16,11 @@ import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg'
 import Animated, {
     useSharedValue,
     useAnimatedProps,
+    useAnimatedReaction,
     withTiming,
     withDelay,
     Easing,
-    interpolate,
+    runOnJS,
     useAnimatedStyle,
 } from 'react-native-reanimated'
 import { T } from '../../lib/theme'
@@ -45,7 +46,7 @@ export interface ScoreRingProps {
 /** Couleur dynamique : rouge → amber brand → vert */
 function scoreColor(v: number) {
     if (v >= 85) return T.color.semantic.success       // Elite
-    if (v >= 70) return T.color.signature.primary      // Great — AMBER brand
+    if (v >= 70) return T.color.brand.primary          // Great — AMBER brand
     if (v >= 50) return T.color.semantic.warning       // Solid
     return T.color.semantic.error                       // Needs work
 }
@@ -77,6 +78,7 @@ export function ScoreRing({
     // Animation stroke-dashoffset
     const strokeOffset = useSharedValue(circumference) // commence à 0% rempli
     const centralOpacity = useSharedValue(0)
+    const animatedDisplay = useSharedValue(0)
 
     useEffect(() => {
         strokeOffset.value = withDelay(
@@ -90,6 +92,14 @@ export function ScoreRing({
             delay + 300,
             withTiming(1, { duration: 400 })
         )
+        animatedDisplay.value = 0
+        animatedDisplay.value = withDelay(
+            delay + 100,
+            withTiming(clampedValue, {
+                duration: 800,
+                easing: Easing.out(Easing.cubic),
+            })
+        )
     }, [clampedValue, delay, targetOffset, circumference])
 
     const animatedProps = useAnimatedProps(() => ({
@@ -100,23 +110,17 @@ export function ScoreRing({
         opacity: centralOpacity.value,
     }))
 
-    // Count-up sur le chiffre central
+    // Count-up sur le chiffre central sans requestAnimationFrame JS
     const [display, setDisplay] = useState(0)
-    useEffect(() => {
-        const startMs = performance.now() + delay + 100
-        let raf: ReturnType<typeof requestAnimationFrame>
-
-        const tick = (now: number) => {
-            const elapsed = now - startMs
-            if (elapsed < 0) { raf = requestAnimationFrame(tick); return }
-            const t = Math.min(elapsed / 800, 1)
-            const eased = 1 - Math.pow(1 - t, 3)
-            setDisplay(Math.round(eased * clampedValue))
-            if (t < 1) raf = requestAnimationFrame(tick)
-        }
-        raf = requestAnimationFrame(tick)
-        return () => cancelAnimationFrame(raf)
-    }, [clampedValue, delay])
+    useAnimatedReaction(
+        () => animatedDisplay.value,
+        (current, previous) => {
+            if (current !== previous) {
+                runOnJS(setDisplay)(Math.round(current))
+            }
+        },
+        []
+    )
 
     // Gradient unique pour chaque ring
     const [gradientId] = useState(() => `ringGrad_${++gradientIdCounter}`)
@@ -127,7 +131,7 @@ export function ScoreRing({
                 <Defs>
                     <LinearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
                         <Stop offset="0%" stopColor={color} stopOpacity="1" />
-                        <Stop offset="100%" stopColor={color === T.color.signature.primary ? '#FFB347' : color} stopOpacity="0.85" />
+                        <Stop offset="100%" stopColor={color === T.color.brand.primary ? T.color.brand.secondary : color} stopOpacity="0.85" />
                     </LinearGradient>
                 </Defs>
 

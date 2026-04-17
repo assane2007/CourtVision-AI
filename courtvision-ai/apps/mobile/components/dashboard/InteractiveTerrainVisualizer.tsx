@@ -153,7 +153,7 @@ export function InteractiveTerrainVisualizer() {
         <GlassCard padding={0} style={{ overflow: 'hidden', paddingBottom: T.spacing[4], marginBottom: T.spacing[5] }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: T.spacing[4], borderBottomWidth: 1, borderBottomColor: T.color.border.base }}>
                 <CVText preset="cardTitle" color="primary">Digital Twin (Live 3D)</CVText>
-                <TouchableOpacity onPress={togglePerspective} style={{ padding: 6, backgroundColor: T.color.background.secondary, borderRadius: T.radius.full }}>
+                <TouchableOpacity onPress={togglePerspective} style={{ padding: 6, backgroundColor: T.color.bg.secondary, borderRadius: T.radius.full }}>
                     <Feather name={perspective === '3D' ? "layers" : "map"} size={16} color={T.color.text.secondary} />
                 </TouchableOpacity>
             </View>
@@ -189,7 +189,7 @@ export function InteractiveTerrainVisualizer() {
                                         borderRadius: T.radius.full,
                                         borderWidth: 1,
                                         borderColor: selectedZone?.id === zone.id ? T.color.brand.primary : T.color.border.base,
-                                        backgroundColor: selectedZone?.id === zone.id ? `${T.color.brand.primary}20` : T.color.background.secondary,
+                                        backgroundColor: selectedZone?.id === zone.id ? `${T.color.brand.primary}20` : T.color.bg.secondary,
                                         paddingHorizontal: 10,
                                         paddingVertical: 6,
                                     }}

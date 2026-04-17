@@ -5,9 +5,8 @@ import Animated, {
     useAnimatedStyle,
     useSharedValue,
     withSpring,
-    interpolateColor,
 } from 'react-native-reanimated';
-import { colors, radius, shadows, space, SPRING_SNAPPY, typography } from '../../constants/tokens';
+import { T } from '../../lib/theme';
 
 interface ButtonProps extends PressableProps {
     title: string;
@@ -33,7 +32,7 @@ export function Button({
 
     const animatedStyles = useAnimatedStyle(() => {
         return {
-            transform: [{ scale: withSpring(pressed.value ? 0.96 : 1, SPRING_SNAPPY) }],
+            transform: [{ scale: withSpring(pressed.value ? 0.96 : 1, T.spring.snappy) }],
             opacity: pressed.value ? 0.85 : 1,
         };
     });
@@ -42,27 +41,29 @@ export function Button({
 
     const defaultContainerStyle: ViewStyle = {
         height: 56,
-        borderRadius: radius.pill,
+        borderRadius: T.radius.full,
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'row',
-        paddingHorizontal: space[6],
+        paddingHorizontal: T.spacing[6],
         width: fullWidth ? '100%' : 'auto',
         ...(isPrimary
             ? {
-                backgroundColor: colors.fire,
-                ...shadows.orangeGlow,
+                backgroundColor: T.color.brand.primary,
+                ...T.glow.soft(T.color.brand.primary),
             }
             : {
                 backgroundColor: 'transparent',
                 borderWidth: 1,
-                borderColor: colors.lineStrong,
+                borderColor: T.color.border.accent,
             }),
     };
 
     const defaultTextStyle: TextStyle = {
-        ...typography.cta,
-        color: isPrimary ? colors.snow : colors.fire,
+        fontFamily: T.fonts.body.bold,
+        fontSize: T.fontSize.base,
+        letterSpacing: 0.3,
+        color: isPrimary ? T.color.text.primary : T.color.brand.primary,
         textTransform: 'uppercase',
     };
 
@@ -80,7 +81,7 @@ export function Button({
             accessibilityRole="button"
             {...props}
         >
-            {leftIcon && <Animated.View style={{ marginRight: space[2] }}>{leftIcon}</Animated.View>}
+            {leftIcon && <Animated.View style={{ marginRight: T.spacing[2] }}>{leftIcon}</Animated.View>}
             <Text style={[defaultTextStyle, textStyle]}>{title}</Text>
         </AnimatedPressable>
     );

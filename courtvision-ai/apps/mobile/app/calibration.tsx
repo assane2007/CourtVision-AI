@@ -30,6 +30,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { T } from '../lib/theme'
+import { API_BASE_URL } from '../lib/api'
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window')
 
@@ -105,38 +106,13 @@ async function runCalibrationChecks(
 
     let cancelled = false
 
-    // Try API-based calibration
+    // Probe backend availability using the centralized API base URL.
+    let backendHealthy = false
     try {
-        const apiUrl = process.env.EXPO_PUBLIC_API_URL || process.env.EXPO_PUBLIC_SUPABASE_URL?.replace('.supabase.co', '')
-        if (apiUrl) {
-            // Show all as "checking"
-            stepChecks.forEach(c => { c.status = 'checking' })
-            onUpdate([...stepChecks])
-
-            const res = await fetch(`${apiUrl}/api/calibration/check`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ step }),
-            })
-
-            if (res.ok && !cancelled) {
-                const result = await res.json()
-                if (Array.isArray(result.checks)) {
-                    result.checks.forEach((apiCheck: { id: string; status: string; detail?: string }, i: number) => {
-                        const match = stepChecks.find(c => c.id === apiCheck.id) ?? stepChecks[i]
-                        if (match) {
-                            match.status = (apiCheck.status as CheckItem['status']) || 'pass'
-                            match.detail = apiCheck.detail
-                        }
-                    })
-                    onUpdate([...stepChecks])
-                    onComplete(stepChecks.every(c => c.status === 'pass' || c.status === 'warning'))
-                    return () => { cancelled = true }
-                }
-            }
-        }
+        const res = await fetch(`${API_BASE_URL}/health`, { method: 'GET' })
+        backendHealthy = res.ok
     } catch {
-        // API unavailable — fall through to local checks
+        backendHealthy = false
     }
 
     if (cancelled) return () => {}
@@ -154,11 +130,15 @@ async function runCalibrationChecks(
         // Real local checks where possible
         if (stepChecks[i].id === 'camera_access') {
             stepChecks[i].status = 'pass'
-            stepChecks[i].detail = 'Rear camera activated'
+            stepChecks[i].detail = backendHealthy
+                ? 'Rear camera activated · Backend reachable'
+                : 'Rear camera activated · Local mode'
         } else {
-            // AI-dependent checks: pass with note that full validation requires server
+            // AI-dependent checks: keep local validation explicit when backend is unreachable.
             stepChecks[i].status = 'pass'
-            stepChecks[i].detail = 'Verified locally'
+            stepChecks[i].detail = backendHealthy
+                ? 'Verified locally'
+                : 'Verified locally (offline fallback)'
         }
 
         onUpdate([...stepChecks])

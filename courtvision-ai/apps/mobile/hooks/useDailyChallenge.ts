@@ -58,6 +58,26 @@ export const DIFFICULTY_LABELS: Record<string, string> = {
     legendary: '✨ Legendary',
 }
 
+function normalizeChallengeMetric(metric: string): DailyChallenge['metric'] {
+    switch (metric) {
+        case 'shooting':
+        case 'shooting_pct':
+            return 'shooting_pct'
+        case 'mental':
+        case 'mental_score':
+            return 'mental_score'
+        case 'sessions':
+            return 'sessions'
+        case 'streak':
+        case 'streak_days':
+            return 'streak'
+        case 'shots':
+        case 'shots_made':
+        default:
+            return 'shots_made'
+    }
+}
+
 // ── Défis locaux (fallback sans serveur) ─────────────────────────
 
 async function computeTodayProgress(metric: DailyChallenge['metric']): Promise<number> {
@@ -216,8 +236,37 @@ export function useDailyChallenge(): DailyChallengeState {
         setLoading(true)
         setError(null)
         try {
-            const data = await apiFetch<DailyChallenge>('/api/community/challenges/daily')
-            setChallenge(data)
+            const response = await apiFetch<{ data?: Array<Record<string, unknown>> }>('/api/community/challenges')
+            const first = Array.isArray(response.data) ? response.data[0] : null
+
+            if (!first) throw new Error('No active community challenge')
+
+            const metric = normalizeChallengeMetric(String(first.metric ?? 'shots_made'))
+            const target = Number(first.target ?? first.target_value ?? 1)
+            const current = Number(first.my_value ?? first.current ?? 0)
+            const difficultyRaw = String(first.difficulty ?? 'medium')
+            const difficulty: DailyChallenge['difficulty'] =
+                difficultyRaw === 'easy' || difficultyRaw === 'medium' || difficultyRaw === 'hard' || difficultyRaw === 'legendary'
+                    ? difficultyRaw
+                    : 'medium'
+
+            const challengeFromApi: DailyChallenge = {
+                id: String(first.id ?? `challenge-${Date.now()}`),
+                title: String(first.title ?? 'Daily Challenge'),
+                description: String(first.description ?? 'Complete today\'s objective'),
+                metric,
+                target: Number.isFinite(target) && target > 0 ? target : 1,
+                current: Number.isFinite(current) && current >= 0 ? current : 0,
+                xp_reward: Number(first.xp_reward ?? first.xp ?? 50) || 50,
+                bonus_xp: Number(first.bonus_xp ?? 0) || undefined,
+                emoji: String(first.emoji ?? '🎯'),
+                difficulty,
+                expires_at: String(first.end_at ?? first.expires_at ?? getExpiresAt()),
+                completed: (Number.isFinite(current) ? current : 0) >= (Number.isFinite(target) && target > 0 ? target : 1),
+                claimed: Boolean(first.claimed ?? false),
+            }
+
+            setChallenge(challengeFromApi)
         } catch {
             // Fallback local — compute current from today's sessions
             const local = getLocalDailyChallenge()
@@ -234,7 +283,13 @@ export function useDailyChallenge(): DailyChallengeState {
         if (!challenge || !challenge.completed || challenge.claimed) return
 
         try {
-            await apiFetch(`/api/community/challenges/${challenge.id}/claim`, { method: 'POST' })
+            await apiFetch(`/api/community/challenges/${challenge.id}/submit`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    value: Math.max(challenge.current, challenge.target),
+                    metric: challenge.metric,
+                }),
+            })
         } catch {
             // Si offline, on accorde quand même localement
         }

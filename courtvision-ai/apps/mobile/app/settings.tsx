@@ -147,26 +147,21 @@ export default function SettingsScreen() {
     const handleExportData = useCallback(async () => {
         Alert.alert(
             'Export My Data',
-            'Choose export format',
+            'Export your wearable data as JSON',
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
-                    text: 'CSV',
+                    text: 'Export JSON',
                     onPress: async () => {
                         try {
-                            const res = await api.get<{ url: string }>('/api/export?format=csv')
-                            Alert.alert('CSV Export', `File ready: ${res.url ?? 'Download started'}`)
-                        } catch {
-                            Alert.alert('Error', 'CSV export failed. Check your connection.')
-                        }
-                    },
-                },
-                {
-                    text: 'JSON',
-                    onPress: async () => {
-                        try {
-                            const res = await api.get<{ url: string }>('/api/export?format=json')
-                            Alert.alert('JSON Export', `File ready: ${res.url ?? 'Download started'}`)
+                            const res = await api.get<{ success?: boolean; data?: { exported?: number } }>('/api/wearable/export')
+                            const exportedCount = typeof res.data?.exported === 'number' ? res.data.exported : null
+                            Alert.alert(
+                                'Export complete',
+                                exportedCount !== null
+                                    ? `${exportedCount} records exported as JSON.`
+                                    : 'Wearable data export completed.'
+                            )
                         } catch {
                             Alert.alert('Error', 'JSON export failed. Check your connection.')
                         }
@@ -205,7 +200,7 @@ export default function SettingsScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            await api.post('/api/account/delete', {})
+                            await api.post('/api/auth/delete-account', {})
                             await supabase.auth.signOut()
                             logout()
                             router.replace('/')

@@ -225,7 +225,7 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     app.register(twinRoutes, { prefix: '/api/twin' })
     app.register(billingRoutes, { prefix: '/api/billing' })
     app.register(communityRoutes, { prefix: '/api/community' })
-    app.register(liveRoutes, { prefix: '/api/live' })
+    app.register(liveRoutes, { prefix: '/api/sessions' })
     app.register(waitlistRoutes, { prefix: '/api' })
     app.register(shareRoutes, { prefix: '/api/share' })
     app.register(shotDnaRoutes, { prefix: '/api/shot-dna' })

@@ -10,7 +10,7 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, ActivityIndicator, Pla
 import ViewShot from 'react-native-view-shot'
 import * as Sharing from 'expo-sharing'
 import { Feather } from '@expo/vector-icons'
-import { ShareCard } from './ShareCard'
+import { SessionShareCard } from './ShareCard'
 import type { SessionRealtimeStats } from '../../lib/realtimeAIService'
 
 interface ShareCardModalProps {
@@ -78,7 +78,7 @@ export function ShareCardModal({
                             options={{ format: 'png', quality: 1, result: 'tmpfile' }}
                             style={s.viewShot}
                         >
-                            <ShareCard
+                            <SessionShareCard
                                 stats={stats}
                                 zoneStats={zoneStats}
                                 playerName={playerName}

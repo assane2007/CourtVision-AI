@@ -490,7 +490,8 @@ export const useStore = create<CourtVisionState>()(
                     }
                     set({ userLoading: true, userError: null })
                     try {
-                        const profile = await api.get<UserProfile>('/api/auth/me')
+                        const profileResponse = await api.get<{ data?: UserProfile } | UserProfile>('/api/auth/me')
+                        const profile = (profileResponse as { data?: UserProfile }).data ?? (profileResponse as UserProfile)
                         set({ user: profile, userLoading: false })
                     } catch (err) {
                         const msg = (err as Error).message ?? 'Erreur de chargement du profil'
@@ -530,7 +531,8 @@ export const useStore = create<CourtVisionState>()(
                     if (isDemoMode) return
                     // Silently refresh without loading state (for background refresh)
                     try {
-                        const profile = await api.get<UserProfile>('/api/auth/me')
+                        const profileResponse = await api.get<{ data?: UserProfile } | UserProfile>('/api/auth/me')
+                        const profile = (profileResponse as { data?: UserProfile }).data ?? (profileResponse as UserProfile)
                         set({ user: profile })
                     } catch {
                         // Silent — keep existing data

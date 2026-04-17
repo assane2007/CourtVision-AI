@@ -37,9 +37,9 @@ export interface CVInputProps extends Omit<TextInputProps, 'style'> {
 const SIZE_CONFIG: Record<CVInputSize, {
   height: number; fontSize: number; iconSize: number; radius: number; px: number
 }> = {
-  sm: { height: 40, fontSize: T.fontSize.sm, iconSize: 14, radius: T.borderRadius.md, px: 12 },
-  md: { height: 48, fontSize: T.fontSize.base, iconSize: 16, radius: T.borderRadius.lg, px: 14 },
-  lg: { height: 56, fontSize: T.fontSize.md, iconSize: 18, radius: T.borderRadius.xl, px: 16 },
+  sm: { height: 40, fontSize: T.fontSize.sm, iconSize: 14, radius: T.radius.md, px: 12 },
+  md: { height: 48, fontSize: T.fontSize.base, iconSize: 16, radius: T.radius.lg, px: 14 },
+  lg: { height: 56, fontSize: T.fontSize.md, iconSize: 18, radius: T.radius.xl, px: 16 },
 }
 
 // ─── Component ───────────────────────────────────────────────
@@ -63,16 +63,16 @@ export function CVInput({
   const borderColor = hasError
     ? T.color.semantic.error
     : focused
-      ? T.color.signature.primary
+      ? T.color.brand.primary
       : variant === 'ghost'
         ? 'transparent'
         : T.color.border.base
 
   const bgColor = variant === 'filled'
-    ? T.color.background.secondary
+    ? T.color.bg.secondary
     : variant === 'ghost'
       ? 'transparent'
-      : T.color.background.tertiary
+      : T.color.bg.tertiary
 
   return (
     <View style={[{ width: fullWidth ? '100%' : undefined }, style]}>
@@ -100,13 +100,13 @@ export function CVInput({
         alignItems: 'center',
         paddingHorizontal: cfg.px,
         gap: 10,
-        ...(focused && !hasError ? T.glow(T.color.signature.primary, 0.12) : {}),
+        ...(focused && !hasError ? T.glow.soft(T.color.brand.primary) : {}),
       }}>
         {icon && (
           <Feather
             name={icon}
             size={cfg.iconSize}
-            color={focused ? T.color.signature.primary : T.color.text.tertiary}
+            color={focused ? T.color.brand.primary : T.color.text.tertiary}
           />
         )}
         <TextInput
@@ -118,7 +118,7 @@ export function CVInput({
             height: '100%',
           }, inputStyle] as any}
           placeholderTextColor={T.color.text.tertiary}
-          selectionColor={T.color.signature.primary}
+          selectionColor={T.color.brand.primary}
           onFocus={(e) => {
             setFocused(true)
             textInputProps.onFocus?.(e)

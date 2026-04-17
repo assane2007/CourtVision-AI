@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Text, Modal, Pressable, Dimensions, Alert, Share } from 'react-native';
+import { View, StyleSheet, Text, Modal, Pressable, Alert, Share } from 'react-native';
 import { Video, ResizeMode, InterruptionModeAndroid, InterruptionModeIOS, Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -13,13 +13,10 @@ import Animated, {
     withSpring,
     Easing,
     interpolate,
-    Extrapolation,
     runOnJS
 } from 'react-native-reanimated';
-import { X, Share2, Download, Hexagon } from 'lucide-react-native';
-import { colors, typography, space, radius } from '../../constants/tokens';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+import { Feather } from '@expo/vector-icons';
+import { T } from '../../lib/theme';
 
 interface StoryViewerProps {
     visible: boolean;
@@ -196,9 +193,9 @@ export function StoryViewer({ visible, onClose, videoUri }: StoryViewerProps) {
                     onLoad={() => setVideoLoaded(true)}
                 />
                 ) : (
-                <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.base }]}>
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: T.color.bg.secondary }]}>
                     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ color: colors.fog, fontSize: 14, fontFamily: 'DMSans_400Regular' }}>
+                        <Text style={{ color: T.color.text.tertiary, fontSize: 14, fontFamily: 'DMSans_400Regular' }}>
                             No highlight reel available yet
                         </Text>
                     </View>
@@ -217,11 +214,11 @@ export function StoryViewer({ visible, onClose, videoUri }: StoryViewerProps) {
 
                     <View style={styles.header}>
                         <View style={styles.aiBadgeRow}>
-                            <Hexagon color={colors.live} size={16} fill="rgba(80, 227, 194, 0.2)" />
+                            <Feather name="hexagon" color={T.color.semantic.success} size={16} />
                             <Text style={styles.aiText}>AI GENERATED HIGHLIGHT</Text>
                         </View>
                         <Pressable onPress={onClose} style={styles.closeBtn}>
-                            <X color={colors.snow} size={24} />
+                            <Feather name="x" color={T.color.text.primary} size={24} />
                         </Pressable>
                     </View>
                 </View>
@@ -234,7 +231,7 @@ export function StoryViewer({ visible, onClose, videoUri }: StoryViewerProps) {
                     </View>
                     <View style={styles.hudMetric}>
                         <Text style={styles.hudLabel}>SWISH ACCURACY</Text>
-                        <Text style={[styles.hudValue, { color: colors.live }]}>PERFECT</Text>
+                        <Text style={[styles.hudValue, { color: T.color.semantic.success }]}>PERFECT</Text>
                     </View>
                     <View style={styles.hudMetric}>
                         <Text style={styles.hudLabel}>RELEASE TIME</Text>
@@ -265,14 +262,14 @@ export function StoryViewer({ visible, onClose, videoUri }: StoryViewerProps) {
                             onPress={() => { void handleDownloadReel(); }}
                             disabled={isActionBusy}
                         >
-                            <Download color={colors.snow} size={24} />
+                            <Feather name="download" color={T.color.text.primary} size={24} />
                         </Pressable>
                         <Pressable
                             style={[styles.actionBtn, styles.actionBtnPrimary]}
                             onPress={() => { void handleShareReel(); }}
                             disabled={isActionBusy}
                         >
-                            <Share2 color={colors.base} size={20} />
+                            <Feather name="share-2" color={T.color.bg.secondary} size={20} />
                             <Text style={styles.actionBtnText}>Share Reel</Text>
                         </Pressable>
                     </View>
@@ -292,7 +289,7 @@ export function StoryViewer({ visible, onClose, videoUri }: StoryViewerProps) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: colors.void,
+        backgroundColor: T.color.bg.primary,
     },
     vignetteTop: {
         position: 'absolute',
@@ -314,8 +311,8 @@ const styles = StyleSheet.create({
     topContainer: {
         position: 'absolute',
         top: 45,
-        left: space[4],
-        right: space[4],
+        left: T.spacing[4],
+        right: T.spacing[4],
         zIndex: 10,
     },
     progressTrack: {
@@ -323,11 +320,11 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.2)',
         borderRadius: 2,
         overflow: 'hidden',
-        marginBottom: space[4],
+        marginBottom: T.spacing[4],
     },
     progressFill: {
         height: '100%',
-        backgroundColor: colors.snow,
+        backgroundColor: T.color.text.primary,
     },
     header: {
         flexDirection: 'row',
@@ -338,48 +335,48 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: 'rgba(80, 227, 194, 0.15)',
-        paddingHorizontal: space[3],
-        paddingVertical: space[2],
-        borderRadius: radius.sm,
+        paddingHorizontal: T.spacing[3],
+        paddingVertical: T.spacing[2],
+        borderRadius: T.radius.sm,
         borderWidth: 1,
         borderColor: 'rgba(80, 227, 194, 0.3)',
-        gap: space[2],
+        gap: T.spacing[2],
     },
     aiText: {
         fontFamily: 'JetBrainsMono_700Bold',
         fontSize: 10,
-        color: colors.live,
+        color: T.color.semantic.success,
         letterSpacing: 1,
     },
     closeBtn: {
-        padding: space[2],
+        padding: T.spacing[2],
         backgroundColor: 'rgba(0,0,0,0.4)',
         borderRadius: 20,
     },
     hudOverlay: {
         position: 'absolute',
-        left: space[4],
+        left: T.spacing[4],
         top: '25%',
-        gap: space[4],
+        gap: T.spacing[4],
     },
     hudMetric: {
         backgroundColor: 'rgba(10,10,10,0.6)',
-        padding: space[3],
-        borderRadius: radius.md,
+        padding: T.spacing[3],
+        borderRadius: T.radius.md,
         borderLeftWidth: 2,
-        borderLeftColor: colors.fire,
+        borderLeftColor: T.color.brand.primary,
         width: 140,
     },
     hudLabel: {
         fontFamily: 'JetBrainsMono_400Regular',
         fontSize: 10,
-        color: colors.cloud,
+        color: T.color.text.secondary,
         marginBottom: 2,
     },
     hudValue: {
         fontFamily: 'BarlowCondensed_700Bold',
         fontSize: 24,
-        color: colors.snow,
+        color: T.color.text.primary,
     },
     centerBadge: {
         position: 'absolute',
@@ -403,26 +400,26 @@ const styles = StyleSheet.create({
     },
     badgeInner: {
         borderWidth: 2,
-        borderColor: colors.snow,
-        paddingHorizontal: space[5],
-        paddingVertical: space[2],
+        borderColor: T.color.text.primary,
+        paddingHorizontal: T.spacing[5],
+        paddingVertical: T.spacing[2],
         transform: [{ skewX: '-10deg' }],
         backgroundColor: 'rgba(255,255,255,0.1)',
     },
     badgeText: {
         fontFamily: 'BarlowCondensed_700Bold',
         fontSize: 32,
-        color: colors.snow,
+        color: T.color.text.primary,
         letterSpacing: 2,
-        textShadowColor: colors.fire,
+        textShadowColor: T.color.brand.primary,
         textShadowOffset: { width: 0, height: 0 },
         textShadowRadius: 10,
     },
     bottomContainer: {
         position: 'absolute',
         bottom: 40,
-        left: space[4],
-        right: space[4],
+        left: T.spacing[4],
+        right: T.spacing[4],
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-end',
@@ -433,18 +430,18 @@ const styles = StyleSheet.create({
     playerName: {
         fontFamily: 'BarlowCondensed_700Bold',
         fontSize: 28,
-        color: colors.snow,
+        color: T.color.text.primary,
         marginBottom: 4,
     },
     sessionDate: {
         fontFamily: 'JetBrainsMono_400Regular',
         fontSize: 12,
-        color: colors.cloud,
+        color: T.color.text.secondary,
     },
     actionButtons: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: space[3],
+        gap: T.spacing[3],
     },
     actionBtn: {
         width: 48,
@@ -456,18 +453,18 @@ const styles = StyleSheet.create({
     },
     actionBtnPrimary: {
         width: 'auto',
-        paddingHorizontal: space[5],
-        backgroundColor: colors.snow,
+        paddingHorizontal: T.spacing[5],
+        backgroundColor: T.color.text.primary,
         flexDirection: 'row',
-        gap: space[2],
+        gap: T.spacing[2],
     },
     actionBtnText: {
         fontFamily: 'DMSans_700Bold',
         fontSize: 15,
-        color: colors.base,
+        color: T.color.bg.secondary,
     },
     loaderContainer: {
-        backgroundColor: colors.base,
+        backgroundColor: T.color.bg.secondary,
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 100,
@@ -475,7 +472,7 @@ const styles = StyleSheet.create({
     loaderText: {
         fontFamily: 'JetBrainsMono_400Regular',
         fontSize: 14,
-        color: colors.fire,
+        color: T.color.brand.primary,
         letterSpacing: 2,
     }
 });

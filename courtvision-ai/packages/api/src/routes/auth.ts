@@ -20,6 +20,24 @@ const refreshSchema = z.object({
     refresh_token: z.string()
 })
 
+const profileUpdateSchema = z.object({
+    full_name: z.string().min(1).max(80).optional(),
+    username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_]+$/).optional(),
+    position: z.enum(['PG', 'SG', 'SF', 'PF', 'C']).optional(),
+    level: z.string().min(1).max(40).optional(),
+    bio: z.string().max(200).optional(),
+    location: z.string().max(100).optional(),
+    team: z.string().max(100).optional(),
+    is_public: z.boolean().optional(),
+}).refine((payload) => Object.keys(payload).length > 0, {
+    message: 'At least one field is required',
+})
+
+const pushTokenSchema = z.object({
+    token: z.string().min(10).max(512),
+    platform: z.enum(['ios', 'android', 'web']),
+})
+
 const appleLoginSchema = z.object({
     id_token: z.string().min(1, 'Apple ID token is required'),
     nonce: z.string().optional(),
@@ -432,6 +450,163 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
                 shotCount: body.shots.length,
                 capturedAt: body.capturedAt,
             },
+        }
+    })
+
+    app.patch('/profile', {
+        preValidation: [app.authenticate],
+        schema: {
+            body: profileUpdateSchema,
+        },
+    }, async (request, reply) => {
+        const user = request.user!
+        const body = request.body as z.infer<typeof profileUpdateSchema>
+
+        const userPatch: Record<string, unknown> = {}
+        if (body.full_name !== undefined) userPatch.full_name = body.full_name
+        if (body.username !== undefined) userPatch.username = body.username
+        if (body.position !== undefined) userPatch.position = body.position
+        if (body.level !== undefined) userPatch.level = body.level
+
+        if (Object.keys(userPatch).length > 0) {
+            const { error: userError } = await app.supabase
+                .from('users')
+                .update(userPatch)
+                .eq('id', user.id)
+
+            if (userError) {
+                if (userError.code === '23505') {
+                    return reply.code(409).send({
+                        success: false,
+                        error: 'Username already taken',
+                    })
+                }
+                throw userError
+            }
+        }
+
+        const publicProfilePatch: Record<string, unknown> = {}
+        if (body.bio !== undefined) publicProfilePatch.bio = body.bio
+        if (body.location !== undefined) publicProfilePatch.location = body.location
+        if (body.team !== undefined) publicProfilePatch.team = body.team
+        if (body.is_public !== undefined) publicProfilePatch.is_public = body.is_public
+
+        if (Object.keys(publicProfilePatch).length > 0) {
+            const { error: profileError } = await app.supabase
+                .from('public_profiles')
+                .upsert({
+                    user_id: user.id,
+                    ...publicProfilePatch,
+                    updated_at: new Date().toISOString(),
+                }, { onConflict: 'user_id' })
+
+            if (profileError && !isMissingRelationError(profileError, 'public_profiles')) {
+                throw profileError
+            }
+        }
+
+        const { data: updatedUser, error: updatedUserError } = await app.supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .single()
+
+        if (updatedUserError) throw updatedUserError
+
+        let updatedPublicProfile: Record<string, unknown> | null = null
+        const { data: profileData, error: profileReadError } = await app.supabase
+            .from('public_profiles')
+            .select('bio, location, team, is_public')
+            .eq('user_id', user.id)
+            .maybeSingle()
+
+        if (profileReadError && !isMissingRelationError(profileReadError, 'public_profiles')) {
+            throw profileReadError
+        }
+
+        if (!profileReadError) {
+            updatedPublicProfile = profileData as Record<string, unknown> | null
+        }
+
+        return {
+            success: true,
+            data: {
+                ...updatedUser,
+                ...(updatedPublicProfile || {}),
+            },
+        }
+    })
+
+    app.post('/push-token', {
+        preValidation: [app.authenticate],
+        schema: {
+            body: pushTokenSchema,
+        },
+    }, async (request) => {
+        const user = request.user!
+        const { token, platform } = request.body as z.infer<typeof pushTokenSchema>
+        const now = new Date().toISOString()
+
+        const candidates = [
+            { table: 'user_push_tokens', row: { user_id: user.id, token, platform, updated_at: now } },
+            { table: 'push_tokens', row: { user_id: user.id, token, platform, updated_at: now } },
+            { table: 'expo_push_tokens', row: { user_id: user.id, token, platform, updated_at: now } },
+        ] as const
+
+        let stored = false
+        let tableUsed: string | null = null
+
+        for (const candidate of candidates) {
+            const { error } = await app.supabase
+                .from(candidate.table)
+                .upsert(candidate.row as Record<string, unknown>, { onConflict: 'user_id,token' })
+
+            if (!error) {
+                stored = true
+                tableUsed = candidate.table
+                break
+            }
+
+            if (!isMissingRelationError(error, candidate.table)) {
+                app.log.warn({ err: error, table: candidate.table }, '[Auth] push token storage failed')
+            }
+        }
+
+        return {
+            success: true,
+            stored,
+            table: tableUsed,
+        }
+    })
+
+    app.post('/delete-account', { preValidation: [app.authenticate] }, async (request) => {
+        const user = request.user!
+
+        const cleanupTargets = [
+            { table: 'user_push_tokens', column: 'user_id' },
+            { table: 'push_tokens', column: 'user_id' },
+            { table: 'expo_push_tokens', column: 'user_id' },
+            { table: 'public_profiles', column: 'user_id' },
+            { table: 'users', column: 'id' },
+        ] as const
+
+        for (const target of cleanupTargets) {
+            const { error } = await app.supabase
+                .from(target.table)
+                .delete()
+                .eq(target.column, user.id)
+
+            if (error && !isMissingRelationError(error, target.table)) {
+                app.log.warn({ err: error, table: target.table }, '[Auth] account cleanup step failed')
+            }
+        }
+
+        const { error: deleteAuthError } = await app.supabase.auth.admin.deleteUser(user.id)
+        if (deleteAuthError) throw deleteAuthError
+
+        return {
+            success: true,
+            message: 'Account deleted',
         }
     })
 

@@ -8,7 +8,7 @@
  * - Higher XP rewards with milestone bonuses
  *
  * Architecture:
- *  1. Try API → /api/community/quests/weekly
+ *  1. Try API → /api/quests/active
  *  2. Fallback → local quest pool rotated by ISO week number
  *  3. Progress computed from SessionStorageService (offline-first)
  *  4. State persisted via AsyncStorage (survives app restart within the week)
@@ -76,6 +76,41 @@ export const TIER_LABELS: Record<string, string> = {
     silver: 'Silver',
     gold: 'Gold',
     diamond: '💎 Diamond',
+}
+
+function normalizeQuestMetric(metric: string): QuestStep['metric'] {
+    switch (metric) {
+        case 'shots_made':
+            return 'shots_made'
+        case 'shooting':
+        case 'shooting_pct':
+            return 'shooting_pct'
+        case 'mental':
+        case 'mental_score':
+            return 'mental_score'
+        case 'total_shots':
+            return 'total_shots'
+        case 'streak':
+        case 'streak_days':
+            return 'streak_days'
+        case 'sessions':
+        default:
+            return 'sessions'
+    }
+}
+
+function tierFromDifficulty(difficulty: string): WeeklyQuest['tier'] {
+    switch (difficulty) {
+        case 'easy':
+            return 'bronze'
+        case 'hard':
+            return 'gold'
+        case 'legendary':
+            return 'diamond'
+        case 'medium':
+        default:
+            return 'silver'
+    }
 }
 
 // ── Quest Pool ──────────────────────────────────────────────────
@@ -270,11 +305,44 @@ export function useWeeklyQuests(): WeeklyQuestState {
     const refresh = useCallback(async () => {
         setLoading(true)
         try {
-            const data = await apiFetch<WeeklyQuest>('/api/community/quests/weekly')
-            const updated = { ...data, steps: await computeWeeklyProgress(data.steps) }
-            updated.completed = updated.steps.every(s => s.completed)
-            setQuest(updated)
-            await saveToStorage(updated)
+            const response = await apiFetch<{ data?: Array<Record<string, unknown>> }>('/api/quests/active')
+            const activeQuest = Array.isArray(response.data) ? response.data[0] : null
+
+            if (!activeQuest) {
+                throw new Error('No active quest from API')
+            }
+
+            const target = Number(activeQuest.target ?? 1)
+            const current = Number(activeQuest.progress ?? 0)
+            const metric = normalizeQuestMetric(String(activeQuest.metric ?? 'sessions'))
+
+            const serverQuest: WeeklyQuest = {
+                id: String(activeQuest.id ?? `quest-${Date.now()}`),
+                title: String(activeQuest.title ?? 'Weekly Quest'),
+                subtitle: String(activeQuest.description ?? 'Complete your weekly objective'),
+                emoji: String(activeQuest.emoji ?? '🏆'),
+                tier: tierFromDifficulty(String(activeQuest.difficulty ?? 'medium')),
+                xp_reward: Number(activeQuest.xp_reward ?? 0) || 0,
+                bonus_xp: 0,
+                week_number: currentWeek,
+                year: currentYear,
+                completed: current >= target,
+                claimed: false,
+                steps: [
+                    {
+                        id: `${String(activeQuest.id ?? 'server')}-step-1`,
+                        title: String(activeQuest.title ?? 'Quest Step'),
+                        description: String(activeQuest.description ?? 'Complete the objective'),
+                        metric,
+                        target: Number.isFinite(target) && target > 0 ? target : 1,
+                        current: Number.isFinite(current) && current >= 0 ? current : 0,
+                        completed: (Number.isFinite(current) ? current : 0) >= (Number.isFinite(target) && target > 0 ? target : 1),
+                    },
+                ],
+            }
+
+            setQuest(serverQuest)
+            await saveToStorage(serverQuest)
         } catch {
             // Fallback: local quest pool
             const saved = await loadFromStorage()
@@ -306,7 +374,18 @@ export function useWeeklyQuests(): WeeklyQuestState {
         if (!quest || !quest.completed || quest.claimed) return
 
         try {
-            await apiFetch(`/api/community/quests/${quest.id}/claim`, { method: 'POST' })
+            const primaryStep = quest.steps.find(step => !step.completed) ?? quest.steps[0]
+            if (primaryStep && /^[0-9a-fA-F-]{36}$/.test(quest.id)) {
+                const remaining = Math.max(primaryStep.target - primaryStep.current, 0)
+                await apiFetch('/api/quests/progress', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        questId: quest.id,
+                        metric: primaryStep.metric,
+                        value: remaining > 0 ? remaining : primaryStep.target,
+                    }),
+                })
+            }
         } catch { /* offline — grant locally */ }
 
         const totalXP = quest.xp_reward + quest.bonus_xp

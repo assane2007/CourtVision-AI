@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import { colors, radius, SPRING_SNAPPY } from '../../constants/tokens';
+import { T } from '../../lib/theme';
 
 interface ProgressBarProps {
     currentStep: number;
@@ -25,7 +25,7 @@ function ProgressDot({ isActive, isCompleted }: { isActive: boolean; isCompleted
     const width = useSharedValue(isActive ? 20 : 6);
 
     useEffect(() => {
-        width.value = withSpring(isActive ? 20 : 6, SPRING_SNAPPY);
+        width.value = withSpring(isActive ? 20 : 6, T.spring.snappy);
     }, [isActive]);
 
     const animatedStyle = useAnimatedStyle(() => {
@@ -34,7 +34,7 @@ function ProgressDot({ isActive, isCompleted }: { isActive: boolean; isCompleted
         };
     });
 
-    const backgroundColor = isActive || isCompleted ? colors.fire : colors.ghost;
+    const backgroundColor = isActive || isCompleted ? T.color.brand.primary : T.color.border.soft;
 
     return (
         <Animated.View
@@ -53,10 +53,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 6,
-        paddingVertical: 16,
+        paddingVertical: T.spacing[4],
     },
     dot: {
         height: 6,
-        borderRadius: radius.pill,
+        borderRadius: T.radius.full,
     },
 });

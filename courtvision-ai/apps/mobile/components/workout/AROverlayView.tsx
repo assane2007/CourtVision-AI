@@ -15,8 +15,8 @@
  * - Positionnement absolu sur la preview caméra
  */
 
-import React, { useEffect, useMemo } from 'react'
-import { View, Text, StyleSheet, Dimensions } from 'react-native'
+import React, { useEffect } from 'react'
+import { View, Text, StyleSheet } from 'react-native'
 import Svg, { Circle, Line, Polyline, G, Text as SvgText } from 'react-native-svg'
 import Animated, {
     FadeIn,
@@ -25,8 +25,6 @@ import Animated, {
     useSharedValue,
     useAnimatedStyle,
     withTiming,
-    withSpring,
-    withSequence,
     Easing,
 } from 'react-native-reanimated'
 import { T } from '../../lib/theme'
@@ -222,7 +220,7 @@ function ShotPhaseIndicator({ phase }: { phase: string }) {
     const phaseConfig = {
         idle: { color: T.color.text.tertiary, label: 'Standby' },
         gathering: { color: T.color.semantic.warning, label: 'Gather' },
-        releasing: { color: T.color.signature.primary, label: 'Release!' },
+        releasing: { color: T.color.brand.primary, label: 'Release!' },
         following_through: { color: T.color.semantic.success, label: 'Follow-Through' },
         ball_flight: { color: T.color.semantic.info, label: 'Ball Flight' },
     }[phase] ?? { color: T.color.text.tertiary, label: phase }

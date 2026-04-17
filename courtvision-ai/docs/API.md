@@ -182,10 +182,10 @@ Le token est obtenu via `/api/auth/login` ou `/api/auth/signup`.
 
 | Méthode | Route | Auth | Description |
 |---------|-------|------|-------------|
-| POST | `/api/live/:id/start` | ✅ | Activer le mode live |
-| POST | `/api/live/:id/frame` | ✅ | Envoyer une frame |
+| POST | `/api/sessions/:id/live` | ✅ | Activer le mode live |
+| POST | `/api/sessions/:id/live/frame` | ✅ | Envoyer une frame |
 
-#### POST /api/live/:id/frame
+#### POST /api/sessions/:id/live/frame
 ```json
 {
   "timestamp": 120,
