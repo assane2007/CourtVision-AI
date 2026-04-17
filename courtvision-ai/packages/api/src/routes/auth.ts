@@ -106,10 +106,10 @@ const onboardingLevelMap: Record<z.infer<typeof onboardingProfileSchema>['experi
 }
 
 const authRateLimit = {
-    signup: { max: 5, timeWindow: '1 minute' },
+    signup: { max: 10, timeWindow: '1 minute' },
     login: { max: 10, timeWindow: '1 minute' },
     socialLogin: { max: 10, timeWindow: '1 minute' },
-    refresh: { max: 30, timeWindow: '1 minute' },
+    refresh: { max: 10, timeWindow: '1 minute' },
 } as const
 
 const authRoutes: FastifyPluginAsyncZod = async (app) => {

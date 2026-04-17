@@ -26,20 +26,15 @@ const VIDEO_BUCKET = env.SUPABASE_VIDEO_BUCKET
 const ALLOWED_VIDEO_MIME_TYPES = new Set([
     'video/mp4',
     'video/quicktime',
-    'video/webm',
-    'video/x-matroska',
+    'video/mov',
 ])
 
 function inferVideoExtension(filename: string | undefined, mimetype: string | undefined): string {
     const lower = (filename || '').toLowerCase()
     if (lower.endsWith('.mov')) return 'mov'
-    if (lower.endsWith('.webm')) return 'webm'
-    if (lower.endsWith('.mkv')) return 'mkv'
     if (lower.endsWith('.mp4')) return 'mp4'
 
-    if (mimetype === 'video/quicktime') return 'mov'
-    if (mimetype === 'video/webm') return 'webm'
-    if (mimetype === 'video/x-matroska') return 'mkv'
+    if (mimetype === 'video/quicktime' || mimetype === 'video/mov') return 'mov'
     return 'mp4'
 }
 
@@ -121,76 +116,81 @@ const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
     })
 
     app.post('/upload-file', async (request, reply) => {
-        const user = request.user!
+        try {
+            const user = request.user!
 
-        const multipartFile = await (request as any).file()
-        if (!multipartFile) {
-            return reply.code(400).send({ error: 'No video file provided' })
-        }
+            const multipartFile = await (request as any).file()
+            if (!multipartFile) {
+                return reply.code(400).send({ error: 'No video file provided' })
+            }
 
-        const rawType = (multipartFile.fields?.type as any)?.value
-        const parsedType = uploadFileTypeSchema.safeParse({ type: rawType ?? 'training' })
-        if (!parsedType.success) {
-            return reply.code(400).send({ error: 'Invalid session type' })
-        }
+            const rawType = (multipartFile.fields?.type as any)?.value
+            const parsedType = uploadFileTypeSchema.safeParse({ type: rawType ?? 'training' })
+            if (!parsedType.success) {
+                return reply.code(400).send({ error: 'Invalid session type' })
+            }
 
-        if (!ALLOWED_VIDEO_MIME_TYPES.has(multipartFile.mimetype)) {
-            return reply.code(415).send({ error: `Unsupported video format: ${multipartFile.mimetype}` })
-        }
+            if (!ALLOWED_VIDEO_MIME_TYPES.has(multipartFile.mimetype)) {
+                return reply.code(415).send({ error: 'Unsupported video format. Only mp4/mov is allowed.' })
+            }
 
-        const videoBuffer = await multipartFile.toBuffer()
-        if (!videoBuffer.length) {
-            return reply.code(400).send({ error: 'Uploaded file is empty' })
-        }
+            const videoBuffer = await multipartFile.toBuffer()
+            if (!videoBuffer.length) {
+                return reply.code(400).send({ error: 'Uploaded file is empty' })
+            }
 
-        if (videoBuffer.length > MAX_UPLOAD_BYTES) {
-            return reply.code(413).send({ error: 'Video file exceeds upload limit' })
-        }
+            if (videoBuffer.length > MAX_UPLOAD_BYTES) {
+                return reply.code(413).send({ error: 'Video file exceeds upload limit' })
+            }
 
-        const extension = inferVideoExtension(multipartFile.filename, multipartFile.mimetype)
-        const objectPath = `${user.id}/${Date.now()}-${randomUUID()}.${extension}`
+            const extension = inferVideoExtension(multipartFile.filename, multipartFile.mimetype)
+            const objectPath = `${user.id}/${Date.now()}-${randomUUID()}.${extension}`
 
-        const { error: uploadError } = await app.supabase.storage
-            .from(VIDEO_BUCKET)
-            .upload(objectPath, videoBuffer, {
-                contentType: multipartFile.mimetype,
-                upsert: false,
-                cacheControl: '3600',
+            const { error: uploadError } = await app.supabase.storage
+                .from(VIDEO_BUCKET)
+                .upload(objectPath, videoBuffer, {
+                    contentType: multipartFile.mimetype,
+                    upsert: false,
+                    cacheControl: '3600',
+                })
+
+            if (uploadError) {
+                request.log.error({ err: uploadError, bucket: VIDEO_BUCKET, objectPath }, 'Storage upload failed')
+                return reply.code(500).send({ error: 'Failed to upload video file' })
+            }
+
+            const { data: publicUrlData } = app.supabase.storage
+                .from(VIDEO_BUCKET)
+                .getPublicUrl(objectPath)
+
+            const videoUrl = publicUrlData?.publicUrl
+            if (!videoUrl) {
+                return reply.code(500).send({ error: 'Failed to resolve uploaded video URL' })
+            }
+
+            const { data, queue } = await createProcessingSession(user.id, {
+                type: parsedType.data.type,
+                video_url: videoUrl,
             })
 
-        if (uploadError) {
-            request.log.error({ err: uploadError, bucket: VIDEO_BUCKET, objectPath }, 'Storage upload failed')
-            return reply.code(500).send({ error: 'Failed to upload video file' })
-        }
-
-        const { data: publicUrlData } = app.supabase.storage
-            .from(VIDEO_BUCKET)
-            .getPublicUrl(objectPath)
-
-        const videoUrl = publicUrlData?.publicUrl
-        if (!videoUrl) {
-            return reply.code(500).send({ error: 'Failed to resolve uploaded video URL' })
-        }
-
-        const { data, queue } = await createProcessingSession(user.id, {
-            type: parsedType.data.type,
-            video_url: videoUrl,
-        })
-
-        return {
-            success: true,
-            data: {
-                id: data.id,
-                type: data.type,
-                video_url: data.video_url,
-                status: data.status,
-                created_at: data.created_at,
-            },
-            upload: {
-                bucket: VIDEO_BUCKET,
-                path: objectPath,
-            },
-            queue: queueResponse(queue),
+            return {
+                success: true,
+                data: {
+                    id: data.id,
+                    type: data.type,
+                    video_url: data.video_url,
+                    status: data.status,
+                    created_at: data.created_at,
+                },
+                upload: {
+                    bucket: VIDEO_BUCKET,
+                    path: objectPath,
+                },
+                queue: queueResponse(queue),
+            }
+        } catch (error: any) {
+            request.log.error({ err: error }, 'Upload-file route failed')
+            return reply.code(500).send({ error: 'Failed to process uploaded video' })
         }
     })
 

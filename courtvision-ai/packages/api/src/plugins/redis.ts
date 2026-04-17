@@ -22,6 +22,9 @@ export const redisPlugin = fp<RedisPluginOptions>(async (fastify, opts) => {
             async get(key: string) {
                 return kvStore.get(key) ?? null
             },
+            async ping() {
+                return 'PONG'
+            },
             async setex(key: string, _seconds: number, value: string) {
                 kvStore.set(key, value)
                 return 'OK'

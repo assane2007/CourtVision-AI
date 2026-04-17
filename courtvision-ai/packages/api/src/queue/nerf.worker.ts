@@ -13,7 +13,18 @@ const redisConnection = hasRedis ? {
     maxRetriesPerRequest: null,
 } : null;
 
-export const spatialQueue = redisConnection ? new Queue('SpatialReconstructionQueue', { connection: redisConnection as any }) : null;
+export const spatialQueue = redisConnection ? new Queue('SpatialReconstructionQueue', {
+    connection: redisConnection as any,
+    defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+            type: 'exponential',
+            delay: 2000,
+        },
+        removeOnComplete: { count: 100 },
+        removeOnFail: { count: 300 },
+    },
+}) : null;
 
 export interface SpatialJobData {
     videoId: string;

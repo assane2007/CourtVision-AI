@@ -86,6 +86,36 @@ npm run dev:web    # Next.js     → http://localhost:3000
 
 ---
 
+## 🌐 Mobile iPhone avec URLs stables (Cloudflare Named Tunnels)
+
+Utilise ce flux pour eviter les URL quick tunnel qui changent a chaque session.
+
+1. Cree 2 tunnels nommes dans Cloudflare Zero Trust:
+	- un pour l'API locale http://127.0.0.1:8080
+	- un pour le CV engine local http://127.0.0.1:8000
+2. Attribue des hostnames stables (ex: api-mobile-dev.votredomaine.com et cv-mobile-dev.votredomaine.com).
+3. Copie scripts/release/named-tunnels.env.example vers scripts/release/.named-tunnels.env puis remplis les tokens et URLs publiques.
+4. Lance les tunnels + mise a jour auto du fichier mobile .env:
+
+```bash
+npm run tunnel:named:start
+```
+
+5. Verifie la sante runtime mobile:
+
+```bash
+npm run health:mobile
+```
+
+6. Verifie ou arrete les tunnels:
+
+```bash
+npm run tunnel:named:status
+npm run tunnel:named:stop
+```
+
+---
+
 ## 🧪 Tests
 
 ```bash

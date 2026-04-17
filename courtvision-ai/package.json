@@ -44,6 +44,9 @@
     "build:index": "python scripts/build_index.py",
     "stats": "python scripts/validate_skills.py",
     "health:mobile": "powershell -ExecutionPolicy Bypass -File scripts/release/check-mobile-runtime.ps1",
+    "tunnel:named:start": "powershell -ExecutionPolicy Bypass -File scripts/release/start-named-tunnels.ps1 -UpdateMobileEnv",
+    "tunnel:named:status": "powershell -ExecutionPolicy Bypass -File scripts/release/status-named-tunnels.ps1",
+    "tunnel:named:stop": "powershell -ExecutionPolicy Bypass -File scripts/release/stop-named-tunnels.ps1",
     "health:backend-cv": "powershell -ExecutionPolicy Bypass -File scripts/release/check-backend-cv-runtime.ps1",
     "health:backend-cv:dev": "powershell -ExecutionPolicy Bypass -File scripts/release/check-backend-cv-runtime.ps1 -AllowDegradedApi -AllowDatabaseUnavailable -AllowWarmingCv -AllowNbaUnavailable"
   },

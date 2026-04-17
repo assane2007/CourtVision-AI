@@ -68,3 +68,7 @@ override.tf.json
 *.mp4
 *.mov
 courtvision-ai/apps/cv-engine/*.pt
+
+# Named tunnel runtime state
+courtvision-ai/scripts/release/.named-tunnels.env
+courtvision-ai/scripts/release/.runtime/

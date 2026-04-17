@@ -11,6 +11,12 @@ const programSchema = z.object({
     goals: z.array(z.string()).optional()
 })
 
+const analysesRateLimit = {
+    max: 5,
+    timeWindow: '1 minute',
+    keyGenerator: (request: any) => request.user?.id || request.ip,
+} as const
+
 /**
  * Helper: Verify that a session belongs to the authenticated user.
  * Returns the session_id if valid, or sends a 404/403 and returns null.
@@ -39,7 +45,11 @@ export default async function analysisRoutes(fastify: FastifyInstance) {
 
     fastify.addHook('preValidation', fastify.authenticate)
 
-    fastify.get('/:sessionId', async (request, reply) => {
+    fastify.get('/:sessionId', {
+        config: {
+            rateLimit: analysesRateLimit as any,
+        },
+    }, async (request, reply) => {
         try {
             const { sessionId } = sessionIdParamsSchema.parse(request.params)
             const user = request.user!
@@ -55,7 +65,11 @@ export default async function analysisRoutes(fastify: FastifyInstance) {
         }
     })
 
-    fastify.get('/:sessionId/heatmap', async (request, reply) => {
+    fastify.get('/:sessionId/heatmap', {
+        config: {
+            rateLimit: analysesRateLimit as any,
+        },
+    }, async (request, reply) => {
         try {
             const { sessionId } = sessionIdParamsSchema.parse(request.params)
             const user = request.user!
@@ -71,7 +85,11 @@ export default async function analysisRoutes(fastify: FastifyInstance) {
         }
     })
 
-    fastify.get('/:sessionId/report', async (request, reply) => {
+    fastify.get('/:sessionId/report', {
+        config: {
+            rateLimit: analysesRateLimit as any,
+        },
+    }, async (request, reply) => {
         try {
             const { sessionId } = sessionIdParamsSchema.parse(request.params)
             const user = request.user!
@@ -87,7 +105,11 @@ export default async function analysisRoutes(fastify: FastifyInstance) {
         }
     })
 
-    fastify.get('/:sessionId/highlights', async (request, reply) => {
+    fastify.get('/:sessionId/highlights', {
+        config: {
+            rateLimit: analysesRateLimit as any,
+        },
+    }, async (request, reply) => {
         try {
             const { sessionId } = sessionIdParamsSchema.parse(request.params)
             const user = request.user!
@@ -107,7 +129,11 @@ export default async function analysisRoutes(fastify: FastifyInstance) {
      * GET /:sessionId/program — Programme d'entraînement 7 jours basé sur les faiblesses détectées
       * Nouvelle fonctionnalité V2 : plan structuré généré par l'IA cloud
      */
-    fastify.get('/:sessionId/program', async (request, reply) => {
+    fastify.get('/:sessionId/program', {
+        config: {
+            rateLimit: analysesRateLimit as any,
+        },
+    }, async (request, reply) => {
         try {
             const { sessionId } = sessionIdParamsSchema.parse(request.params)
             const user = request.user!

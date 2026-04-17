@@ -73,7 +73,38 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
         tracesSampleRate: env.isProduction ? 0.2 : 1.0,
     })
 
-    const app = fastify({ ...opts, logger: true, bodyLimit: 600 * 1024 * 1024, trustProxy: true }).withTypeProvider<ZodTypeProvider>()
+    const allowedOrigins = env.ALLOWED_ORIGINS
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter((origin) => origin.length > 0)
+
+    if (env.isProduction && allowedOrigins.length === 0) {
+        throw new Error('ALLOWED_ORIGINS must define at least one origin in production')
+    }
+
+    const app = fastify({
+        ...opts,
+        logger: {
+            level: env.isProduction ? 'info' : 'debug',
+            redact: {
+                paths: [
+                    'req.headers.authorization',
+                    'req.headers.cookie',
+                    'req.headers["stripe-signature"]',
+                    'headers.authorization',
+                    'headers.cookie',
+                    'body.password',
+                    'body.cardNumber',
+                    'body.refresh_token',
+                    'body.id_token',
+                    'body.token',
+                ],
+                censor: '[REDACTED]',
+            },
+        },
+        bodyLimit: 600 * 1024 * 1024,
+        trustProxy: true,
+    }).withTypeProvider<ZodTypeProvider>()
 
     // Zod Compilers
     app.setValidatorCompiler(validatorCompiler)
@@ -94,7 +125,7 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     // CORS — tighter in production (M-7: trim whitespace)
     app.register(cors, {
         origin: env.isProduction
-            ? env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+            ? allowedOrigins
             : true,
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -300,6 +331,18 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
             } catch {
                 checks.cvEngine = 'skipped'
             }
+        }
+
+        // Redis connectivity
+        try {
+            if (app.redis && typeof app.redis.ping === 'function') {
+                const pong = await app.redis.ping()
+                checks.redis = pong === 'PONG' ? 'ok' : 'error'
+            } else {
+                checks.redis = env.isProduction ? 'error' : 'skipped'
+            }
+        } catch {
+            checks.redis = env.isProduction ? 'error' : 'skipped'
         }
 
         const allOk = Object.values(checks).every(v => v !== 'error')

@@ -14,7 +14,18 @@ const redisConnection = hasRedis ? {
     maxRetriesPerRequest: null,
 } : null;
 
-export const shadowQueue = redisConnection ? new Queue('ShadowLeagueQueue', { connection: redisConnection as any }) : null;
+export const shadowQueue = redisConnection ? new Queue('ShadowLeagueQueue', {
+    connection: redisConnection as any,
+    defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+            type: 'exponential',
+            delay: 2000,
+        },
+        removeOnComplete: { count: 200 },
+        removeOnFail: { count: 500 },
+    },
+}) : null;
 
 export interface ShadowLeagueJobData {
     playerA: DigitalTwin;

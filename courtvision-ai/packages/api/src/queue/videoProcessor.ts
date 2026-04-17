@@ -43,11 +43,12 @@ function parsePositiveIntEnv(name: string, fallback: number): number {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
 }
 
-const CV_ENGINE_REQUEST_TIMEOUT_MS = parsePositiveIntEnv('CV_ENGINE_REQUEST_TIMEOUT_MS', 45_000)
-const CV_ENGINE_STATUS_TIMEOUT_MS = parsePositiveIntEnv('CV_ENGINE_STATUS_TIMEOUT_MS', 7_000)
-const CV_ENGINE_RESULT_TIMEOUT_MS = parsePositiveIntEnv('CV_ENGINE_RESULT_TIMEOUT_MS', 20_000)
+const CV_ENGINE_REQUEST_TIMEOUT_MS = parsePositiveIntEnv('CV_ENGINE_REQUEST_TIMEOUT_MS', 30_000)
+const CV_ENGINE_STATUS_TIMEOUT_MS = parsePositiveIntEnv('CV_ENGINE_STATUS_TIMEOUT_MS', 30_000)
+const CV_ENGINE_RESULT_TIMEOUT_MS = parsePositiveIntEnv('CV_ENGINE_RESULT_TIMEOUT_MS', 30_000)
 const CV_ENGINE_POLL_INTERVAL_MS = parsePositiveIntEnv('CV_ENGINE_POLL_INTERVAL_MS', 3_000)
 const CV_ENGINE_POLL_MAX_MS = parsePositiveIntEnv('CV_ENGINE_POLL_MAX_MS', 300_000)
+const VIDEO_JOB_TIMEOUT_MS = parsePositiveIntEnv('VIDEO_JOB_TIMEOUT_MS', 30 * 60 * 1000)
 
 function delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))
@@ -139,6 +140,7 @@ export const videoQueue = redisConnection
                 type: 'exponential',
                 delay: 2000
             },
+            timeout: VIDEO_JOB_TIMEOUT_MS,
             removeOnComplete: { count: 100 },
             removeOnFail: { count: 500 }
         }
