@@ -14,7 +14,7 @@ const programSchema = z.object({
 const analysesRateLimit = {
     max: 5,
     timeWindow: '1 minute',
-    keyGenerator: (request: any) => request.user?.id || request.ip,
+    keyGenerator: (request: any) => request.user?.id || 'unauthenticated',
 } as const
 
 /**

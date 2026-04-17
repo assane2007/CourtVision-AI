@@ -1,9 +1,11 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
+import { useEffect } from 'react'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Feather } from '@expo/vector-icons'
 import { colors, space } from '../../constants/tokens'
+import { selectHydrated, useStore } from '../../lib/store'
 
 const FEATURE_POINTS = [
     'Live biomechanical feedback',
@@ -13,6 +15,15 @@ const FEATURE_POINTS = [
 
 export default function AuthEntryScreen() {
     const router = useRouter()
+    const hydrated = useStore(selectHydrated)
+    const onboardingFirstLaunchSeen = useStore(s => s.onboardingFirstLaunchSeen)
+
+    useEffect(() => {
+        if (!hydrated) return
+        if (!onboardingFirstLaunchSeen) {
+            router.replace('./first-launch')
+        }
+    }, [hydrated, onboardingFirstLaunchSeen, router])
 
     return (
         <SafeAreaView style={styles.screen}>

@@ -24,8 +24,8 @@ import { Feather } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import Animated, {
     useSharedValue, useAnimatedStyle,
-    withTiming, withRepeat, withSequence, withDelay, withSpring,
-    FadeIn, FadeInDown, FadeInUp, Easing,
+    withTiming, withRepeat, withSequence,
+    FadeInDown, FadeInUp, Easing,
 } from 'react-native-reanimated'
 import * as ImagePicker from 'expo-image-picker'
 import * as FileSystem from 'expo-file-system/legacy'
@@ -35,11 +35,12 @@ import { api, API_BASE_URL, getAuthToken } from '../../lib/api'
 import { ScoreRing } from '../../components/workout/ScoreRing'
 import { PrimaryButton } from '../../components/PrimaryButton'
 import { AppBackground } from '../../components/ui'
+import { AnalysisProgress, type AnalysisPipelineStep, type AnalysisTransportMode } from '../../components/upload/AnalysisProgress'
 import { T, typePresets } from '../../lib/theme'
 
 // ─── Pipeline Config ────────────────────────────────────────
 
-const PIPELINE_STEPS = [
+const PIPELINE_STEPS: readonly AnalysisPipelineStep[] = [
     { label: 'Video preprocessing',   icon: '📹', xp: 5 },
     { label: 'Player tracking',       icon: '🏃', xp: 8 },
     { label: '3D reconstruction',     icon: '🧊', xp: 10 },
@@ -133,50 +134,6 @@ const TipCard = memo(function TipCard({ icon, title, subtitle, delay: d }: {
     )
 })
 
-// ─── Pipeline Step Row ──────────────────────────────────────
-
-const StepRow = memo(function StepRow({ step, index, progress, completed }: {
-    step: typeof PIPELINE_STEPS[number]; index: number; progress: number; completed: boolean
-}) {
-    const threshold = ((index + 1) / PIPELINE_STEPS.length) * 100
-    const isDone = progress >= threshold
-    const isCurrent = !completed &&
-        progress >= (index / PIPELINE_STEPS.length) * 100 &&
-        progress < threshold
-
-    const dotColor = isDone
-        ? T.color.semantic.success
-        : isCurrent
-            ? T.color.brand.primary
-            : T.color.bg.tertiary
-
-    return (
-        <Animated.View
-            entering={FadeInDown.delay(index * 60).duration(300)}
-            style={us.stepRow}
-        >
-            <View style={[us.stepDot, { backgroundColor: dotColor }]}>
-                {isDone && <Feather name="check" size={12} color="#fff" />}
-                {isCurrent && <View style={us.stepDotActive} />}
-            </View>
-
-            <View style={us.stepFlex}>
-                <Text style={[
-                    us.stepLabel,
-                    (isDone || isCurrent) && us.stepLabelActive,
-                    isCurrent && us.stepLabelCurrent,
-                ]}>
-                    {step.icon}  {step.label}
-                </Text>
-            </View>
-
-            <Text style={[us.stepXP, isDone && us.stepXPDone]}>
-                +{step.xp} XP
-            </Text>
-        </Animated.View>
-    )
-})
-
 // ═════════════════════════════════════════════════════════════
 // MAIN UPLOAD SCREEN
 // ═════════════════════════════════════════════════════════════
@@ -184,26 +141,45 @@ const StepRow = memo(function StepRow({ step, index, progress, completed }: {
 export default function UploadAnalyze() {
     const router = useRouter()
     const addXP = useStore(s => s.addXP)
+    const ESTIMATED_ANALYSIS_MS = 90_000
+    const ANALYSIS_TIMEOUT_MS = ESTIMATED_ANALYSIS_MS * 2
 
     const [flowState, setFlowState] = useState<FlowState>('select')
     const [progress, setProgress] = useState(0)
     const [funFactIdx, setFunFactIdx] = useState(0)
     const [resultScore, setResultScore] = useState(0)
     const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
+    const [transportMode, setTransportMode] = useState<AnalysisTransportMode>('connecting')
 
-    const progressBar = useSharedValue(0)
     const statusIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+    const optimisticProgressRef = useRef<ReturnType<typeof setInterval> | null>(null)
+    const sseAbortRef = useRef<AbortController | null>(null)
+    const trackingDoneRef = useRef(false)
+    const lastRewardedStepRef = useRef(-1)
 
-    const progressStyle = useAnimatedStyle(() => ({
-        width: `${progressBar.value}%`,
-    }))
+    const clearSessionTracking = useCallback(() => {
+        if (statusIntervalRef.current) {
+            clearInterval(statusIntervalRef.current)
+            statusIntervalRef.current = null
+        }
+
+        if (optimisticProgressRef.current) {
+            clearInterval(optimisticProgressRef.current)
+            optimisticProgressRef.current = null
+        }
+
+        if (sseAbortRef.current) {
+            sseAbortRef.current.abort()
+            sseAbortRef.current = null
+        }
+    }, [])
 
     // Cleanup polling on unmount
     useEffect(() => {
         return () => {
-            if (statusIntervalRef.current) clearInterval(statusIntervalRef.current)
+            clearSessionTracking()
         }
-    }, [])
+    }, [clearSessionTracking])
 
     // Rotate fun facts during processing
     useEffect(() => {
@@ -214,84 +190,221 @@ export default function UploadAnalyze() {
         return () => clearInterval(timer)
     }, [flowState])
 
-    // ── API Polling ──────────────────────────────────────────
+    // ── Session tracking (SSE-first, polling fallback) ───────
 
-    const startPollingSession = useCallback((sessionId: string) => {
+    const advanceProgress = useCallback((target: number) => {
+        const safeTarget = Math.max(0, Math.min(target, 100))
+        setProgress((previous) => {
+            if (safeTarget <= previous) return previous
+
+            const next = safeTarget
+            if (next < 100) {
+                const reachedStep = Math.min(
+                    Math.floor((next / 100) * PIPELINE_STEPS.length),
+                    PIPELINE_STEPS.length - 1,
+                )
+                if (reachedStep > lastRewardedStepRef.current) {
+                    for (let stepIndex = lastRewardedStepRef.current + 1; stepIndex <= reachedStep; stepIndex += 1) {
+                        const step = PIPELINE_STEPS[stepIndex]
+                        if (step) {
+                            toast.xp(`+${step.xp} XP`, step.label, 1800)
+                        }
+                    }
+                    lastRewardedStepRef.current = reachedStep
+                }
+            }
+
+            return next
+        })
+    }, [])
+
+    const resetAfterTrackingFailure = useCallback((title: string, message: string) => {
+        if (trackingDoneRef.current) return
+        trackingDoneRef.current = true
+        clearSessionTracking()
+        toast.error(title, message)
+        setFlowState('select')
+        setProgress(0)
+        setCurrentSessionId(null)
+        setTransportMode('connecting')
+    }, [clearSessionTracking])
+
+    const finalizeSessionSuccess = useCallback(async (sessionId: string) => {
+        if (trackingDoneRef.current) return
+        trackingDoneRef.current = true
+        clearSessionTracking()
+        setProgress(100)
+
+        try {
+            const analysisRes = await api.get<{ data?: AnalysisSummary } & Record<string, unknown>>(`/api/analyses/${sessionId}`)
+            const analysis = unwrapResponse<AnalysisSummary>(analysisRes.data)
+            const attempts = analysis.shot_attempts ?? 0
+            const made = analysis.shot_made ?? 0
+            const fgPct = attempts > 0 ? (made / attempts) * 100 : 0
+            const mental = analysis.mental_score ?? 0
+            const overall = Math.round((fgPct + mental) / 2)
+            addXP(TOTAL_XP, 'Full game analysis')
+            toast.success('Analysis complete!', `+${TOTAL_XP} XP earned`, 3500)
+            setResultScore(Number.isFinite(overall) ? overall : 0)
+        } catch {
+            setResultScore(0)
+        }
+
+        setTimeout(() => {
+            setFlowState('result')
+            setTransportMode('connecting')
+        }, 800)
+    }, [addXP, clearSessionTracking])
+
+    const applySessionStatus = useCallback((sessionId: string, status: string) => {
+        const normalizedStatus = status.toLowerCase()
+
+        if (normalizedStatus === 'complete') {
+            void finalizeSessionSuccess(sessionId)
+            return
+        }
+
+        if (normalizedStatus === 'failed') {
+            resetAfterTrackingFailure('Analysis failed', 'Please try another clip')
+            return
+        }
+
+        if (normalizedStatus === 'processing') {
+            advanceProgress(28)
+            return
+        }
+
+        if (normalizedStatus === 'analyzing') {
+            advanceProgress(62)
+            return
+        }
+
+        if (normalizedStatus === 'queued') {
+            advanceProgress(15)
+        }
+    }, [advanceProgress, finalizeSessionSuccess, resetAfterTrackingFailure])
+
+    const startPollingFallback = useCallback((sessionId: string, startedAt: number) => {
+        if (trackingDoneRef.current) return
         if (statusIntervalRef.current) clearInterval(statusIntervalRef.current)
 
-        const startedAt = Date.now()
-        let lastStep = -1
-        let currentProgress = 0
-        const ESTIMATED_MS = 90_000
-
+        setTransportMode('polling')
         statusIntervalRef.current = setInterval(async () => {
+            if (trackingDoneRef.current) return
+
             try {
-                const res = await api.get<{ data?: { status: string }; status?: string }>(`/api/sessions/${sessionId}`)
-                const status = unwrapResponse<{ status: string }>(res.data).status
-
-                if (status === 'complete') {
-                    if (statusIntervalRef.current) clearInterval(statusIntervalRef.current)
-                    setProgress(100)
-                    progressBar.value = withTiming(100, { duration: 400 })
-
-                    try {
-                        const analysisRes = await api.get<{ data?: AnalysisSummary } & Record<string, unknown>>(`/api/analyses/${sessionId}`)
-                        const analysis = unwrapResponse<AnalysisSummary>(analysisRes.data)
-                        const attempts = analysis.shot_attempts ?? 0
-                        const made = analysis.shot_made ?? 0
-                        const fgPct = attempts > 0 ? (made / attempts) * 100 : 0
-                        const mental = analysis.mental_score ?? 0
-                        const overall = Math.round((fgPct + mental) / 2)
-                        addXP(TOTAL_XP, 'Full game analysis')
-                        toast.success('Analysis complete!', `+${TOTAL_XP} XP earned`, 3500)
-                        setResultScore(Number.isFinite(overall) ? overall : 0)
-                    } catch {
-                        setResultScore(0)
-                    }
-                    setTimeout(() => setFlowState('result'), 800)
-                    return
-                }
-
-                if (status === 'failed') {
-                    if (statusIntervalRef.current) clearInterval(statusIntervalRef.current)
-                    toast.error('Analysis failed', 'Please try another clip')
-                    setFlowState('select')
-                    setProgress(0)
-                    progressBar.value = 0
-                    setCurrentSessionId(null)
-                    return
-                }
-
-                const elapsed = Date.now() - startedAt
-                const estimated = Math.min(95, Math.round((elapsed / ESTIMATED_MS) * 95))
-                if (estimated > currentProgress) {
-                    currentProgress = estimated
-                    setProgress(currentProgress)
-                    progressBar.value = withTiming(currentProgress, { duration: 400 })
-                    const step = Math.min(
-                        Math.floor((currentProgress / 100) * PIPELINE_STEPS.length),
-                        PIPELINE_STEPS.length - 1,
-                    )
-                    if (step !== lastStep && PIPELINE_STEPS[step]) {
-                        lastStep = step
-                        const s = PIPELINE_STEPS[step]
-                        toast.xp(`+${s.xp} XP`, s.label, 1800)
-                    }
+                const sessionRes = await api.get<{ data?: { status?: string }; status?: string } & Record<string, unknown>>(`/api/sessions/${sessionId}`)
+                const status = sessionRes.data?.status ?? sessionRes.status
+                if (typeof status === 'string') {
+                    applySessionStatus(sessionId, status)
                 }
             } catch {
-                // polling error — retry
+                // fallback polling retries silently
             }
 
-            if (Date.now() - startedAt > ESTIMATED_MS * 2) {
-                if (statusIntervalRef.current) clearInterval(statusIntervalRef.current)
-                toast.error('Analysis timeout', 'Server took too long to respond')
-                setFlowState('select')
-                setProgress(0)
-                progressBar.value = 0
-                setCurrentSessionId(null)
+            if (Date.now() - startedAt > ANALYSIS_TIMEOUT_MS) {
+                resetAfterTrackingFailure('Analysis timeout', 'Server took too long to respond')
             }
         }, 2000)
-    }, [addXP, progressBar])
+    }, [ANALYSIS_TIMEOUT_MS, applySessionStatus, resetAfterTrackingFailure])
+
+    const startSessionTracking = useCallback(async (sessionId: string) => {
+        clearSessionTracking()
+        trackingDoneRef.current = false
+        lastRewardedStepRef.current = -1
+        setTransportMode('connecting')
+
+        const startedAt = Date.now()
+        optimisticProgressRef.current = setInterval(() => {
+            if (trackingDoneRef.current) return
+            const elapsed = Date.now() - startedAt
+            const estimated = Math.min(95, Math.round((elapsed / ESTIMATED_ANALYSIS_MS) * 95))
+            advanceProgress(estimated)
+
+            if (elapsed > ANALYSIS_TIMEOUT_MS) {
+                resetAfterTrackingFailure('Analysis timeout', 'Server took too long to respond')
+            }
+        }, 1500)
+
+        try {
+            const token = await getAuthToken()
+            if (!token) {
+                startPollingFallback(sessionId, startedAt)
+                return
+            }
+
+            const controller = new AbortController()
+            sseAbortRef.current = controller
+            const response = await fetch(`${API_BASE_URL}/api/sessions/${sessionId}/status`, {
+                method: 'GET',
+                headers: {
+                    Accept: 'text/event-stream',
+                    Authorization: `Bearer ${token}`,
+                },
+                signal: controller.signal,
+            })
+
+            if (!response.ok || !response.body || typeof response.body.getReader !== 'function') {
+                startPollingFallback(sessionId, startedAt)
+                return
+            }
+
+            setTransportMode('sse')
+
+            const reader = response.body.getReader()
+            const decoder = new TextDecoder('utf-8')
+            let buffer = ''
+
+            while (!trackingDoneRef.current) {
+                const { value, done } = await reader.read()
+                if (done) break
+
+                buffer += decoder.decode(value, { stream: true })
+                let boundaryIndex = buffer.indexOf('\n\n')
+
+                while (boundaryIndex !== -1) {
+                    const eventBlock = buffer.slice(0, boundaryIndex)
+                    buffer = buffer.slice(boundaryIndex + 2)
+
+                    const payload = eventBlock
+                        .split('\n')
+                        .filter(line => line.startsWith('data:'))
+                        .map(line => line.slice(5).trim())
+                        .join('')
+
+                    if (payload) {
+                        try {
+                            const parsed = JSON.parse(payload) as { status?: string }
+                            if (typeof parsed.status === 'string') {
+                                applySessionStatus(sessionId, parsed.status)
+                            }
+                        } catch {
+                            // ignore malformed stream chunks
+                        }
+                    }
+
+                    boundaryIndex = buffer.indexOf('\n\n')
+                }
+            }
+
+            if (!trackingDoneRef.current) {
+                startPollingFallback(sessionId, startedAt)
+            }
+        } catch (error) {
+            if (error instanceof Error && error.name === 'AbortError') {
+                return
+            }
+            startPollingFallback(sessionId, startedAt)
+        }
+    }, [
+        ANALYSIS_TIMEOUT_MS,
+        ESTIMATED_ANALYSIS_MS,
+        advanceProgress,
+        applySessionStatus,
+        clearSessionTracking,
+        resetAfterTrackingFailure,
+        startPollingFallback,
+    ])
 
     // ── Upload handler ───────────────────────────────────────
 
@@ -353,9 +466,12 @@ export default function UploadAnalyze() {
             const lowerUri = videoUri.toLowerCase()
             const mimeType = lowerUri.endsWith('.mov') ? 'video/quicktime' : 'video/mp4'
 
+            clearSessionTracking()
+            trackingDoneRef.current = false
+            lastRewardedStepRef.current = -1
             setFlowState('processing')
             setProgress(0)
-            progressBar.value = 0
+            setTransportMode('connecting')
             setCurrentSessionId(null)
             toast.info('Video selected', 'Uploading to cloud...')
 
@@ -410,15 +526,16 @@ export default function UploadAnalyze() {
             }
 
             setCurrentSessionId(sessionId)
-            startPollingSession(sessionId)
+            void startSessionTracking(sessionId)
         } catch (err) {
+            clearSessionTracking()
             toast.error('Upload failed', err instanceof Error ? err.message : 'Please try again')
             setFlowState('select')
             setProgress(0)
-            progressBar.value = 0
+            setTransportMode('connecting')
             setCurrentSessionId(null)
         }
-    }, [progressBar, startPollingSession])
+    }, [clearSessionTracking, startSessionTracking])
 
     const handleGallery = useCallback(() => handleUpload('gallery'), [handleUpload])
     const handleCamera = useCallback(() => handleUpload('camera'), [handleUpload])
@@ -428,11 +545,13 @@ export default function UploadAnalyze() {
     }, [currentSessionId, router])
 
     const handleReset = useCallback(() => {
+        clearSessionTracking()
+        trackingDoneRef.current = false
         setFlowState('select')
         setProgress(0)
-        progressBar.value = 0
+        setTransportMode('connecting')
         setCurrentSessionId(null)
-    }, [progressBar])
+    }, [clearSessionTracking])
 
     function getScoreMessage(score: number): { text: string; color: string } {
         if (score > 85) return { text: 'Legendary. NBA-tier accuracy. 🏆', color: T.color.semantic.success }
@@ -442,7 +561,7 @@ export default function UploadAnalyze() {
         return { text: 'Tough day. Champions keep shooting.', color: T.color.semantic.warning }
     }
 
-    const processingStep = Math.min(Math.floor((progress / 100) * PIPELINE_STEPS.length) + 1, 7)
+    const processingStep = Math.min(Math.floor((progress / 100) * PIPELINE_STEPS.length) + 1, PIPELINE_STEPS.length)
 
     return (
         <SafeAreaView style={us.safeArea}>
@@ -508,25 +627,12 @@ export default function UploadAnalyze() {
 
                 {/* ═══ PROCESSING ═══ */}
                 {flowState === 'processing' && (
-                    <View style={us.processingContainer}>
-                        <View style={us.progressTrack}>
-                            <Animated.View style={[us.progressFill, progressStyle]} />
-                        </View>
-
-                        <Text style={us.progressPct}>
-                            {Math.round(progress)}%
-                        </Text>
-
-                        <Animated.Text key={funFactIdx} entering={FadeIn.duration(400)} style={us.funFact}>
-                            {FUN_FACTS[funFactIdx]}
-                        </Animated.Text>
-
-                        <View style={us.stepsCard}>
-                            {PIPELINE_STEPS.map((step, i) => (
-                                <StepRow key={step.label} step={step} index={i} progress={progress} completed={progress >= 100} />
-                            ))}
-                        </View>
-                    </View>
+                    <AnalysisProgress
+                        progress={progress}
+                        funFact={FUN_FACTS[funFactIdx]}
+                        steps={PIPELINE_STEPS}
+                        transportMode={transportMode}
+                    />
                 )}
 
                 {/* ═══ RESULT ═══ */}

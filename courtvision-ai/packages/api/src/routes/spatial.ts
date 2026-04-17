@@ -22,6 +22,14 @@ const spatialRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
                     jobId: z.string(),
                     message: z.string()
                 }),
+                400: z.object({
+                    success: z.boolean(),
+                    message: z.string()
+                }),
+                500: z.object({
+                    success: z.boolean(),
+                    message: z.string()
+                }),
                 503: z.object({
                     success: z.boolean(),
                     message: z.string()
@@ -49,7 +57,6 @@ const spatialRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
                     type: 'exponential',
                     delay: 2000,
                 },
-                timeout: 30 * 60 * 1000,
                 removeOnComplete: true,
                 removeOnFail: 10
             })
@@ -89,7 +96,17 @@ const spatialRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
                     state: z.string(),
                     progress: z.number().nullable()
                 }),
+                400: z.object({
+                    success: z.boolean(),
+                    state: z.string(),
+                    progress: z.number().nullable()
+                }),
                 404: z.object({
+                    success: z.boolean(),
+                    state: z.string(),
+                    progress: z.number().nullable()
+                }),
+                500: z.object({
                     success: z.boolean(),
                     state: z.string(),
                     progress: z.number().nullable()

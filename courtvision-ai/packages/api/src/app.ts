@@ -288,7 +288,7 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
     app.register(nbaRoutes, { prefix: '/api/nba' })
 
     // Health check — deep check with DB + Redis connectivity (M-9)
-    app.get('/health', async (request) => {
+    app.get('/health', async (request, reply) => {
         const checks: Record<string, 'ok' | 'error' | 'skipped'> = { api: 'ok' }
 
         // Supabase connectivity
@@ -346,6 +346,10 @@ export const buildApp = (opts: FastifyServerOptions = {}): FastifyInstance => {
         }
 
         const allOk = Object.values(checks).every(v => v !== 'error')
+
+        if (!allOk) {
+            reply.code(503)
+        }
 
         return {
             status: allOk ? 'ok' : 'degraded',

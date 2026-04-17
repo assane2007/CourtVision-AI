@@ -169,6 +169,7 @@ interface CourtVisionState {
     recentActivity: ActivityEvent[]
 
     // Onboarding
+    onboardingFirstLaunchSeen: boolean
     onboardingDraft: OnboardingDraft
     onboardingSyncPending: boolean
     onboardingLastError: string | null
@@ -194,6 +195,7 @@ interface CourtVisionState {
     evaluateBadges: () => void
     completeSession: (sessionData: Partial<Session>) => void
     setHydrated: () => void
+    markOnboardingFirstLaunchSeen: () => void
     updateUser: (partial: Partial<UserProfile>) => void
     setOnboardingDraft: (partial: Partial<OnboardingDraft>) => void
     clearOnboardingDraft: () => void
@@ -297,6 +299,7 @@ export const useStore = create<CourtVisionState>()(
                 recentActivity: [],
 
                 // Onboarding
+                onboardingFirstLaunchSeen: false,
                 onboardingDraft: {
                     position: null,
                     experienceLevel: null,
@@ -309,6 +312,12 @@ export const useStore = create<CourtVisionState>()(
 
                 // ── Hydration ──
                 setHydrated: () => set({ hydrated: true }),
+
+                markOnboardingFirstLaunchSeen() {
+                    if (!get().onboardingFirstLaunchSeen) {
+                        set({ onboardingFirstLaunchSeen: true })
+                    }
+                },
 
                 // ── Auth actions ──
                 async login(token, refreshToken) {
@@ -808,6 +817,7 @@ export const useStore = create<CourtVisionState>()(
                     highlights: s.highlights,
                     badges: s.badges,
                     recentActivity: s.recentActivity,
+                    onboardingFirstLaunchSeen: s.onboardingFirstLaunchSeen,
                     onboardingDraft: s.onboardingDraft,
                     onboardingSyncPending: s.onboardingSyncPending,
                     onboardingLastError: s.onboardingLastError,
@@ -833,6 +843,7 @@ export const selectXPLevel = (s: CourtVisionState) => s.user?.xp_level ?? 1
 export const selectXPEvents = (s: CourtVisionState) => s.xpEvents
 export const selectIsAuthenticated = (s: CourtVisionState) => s.isAuthenticated
 export const selectHydrated = (s: CourtVisionState) => s.hydrated
+export const selectOnboardingFirstLaunchSeen = (s: CourtVisionState) => s.onboardingFirstLaunchSeen
 export const selectIsDemoMode = () => isDemoMode
 
 // ─── M-12: Shallow equality hooks (prevent unnecessary re-renders) ──

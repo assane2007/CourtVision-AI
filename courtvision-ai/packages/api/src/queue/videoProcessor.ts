@@ -26,6 +26,7 @@ import {
 import pino from 'pino'
 import { tiktokService } from '../services/tiktokService'
 import { viralMusicService } from '../services/viralMusicService'
+import { recomputeUserStreak } from '../services/streak.service'
 
 const logger = pino({
     level: process.env.LOG_LEVEL || 'info',
@@ -48,7 +49,6 @@ const CV_ENGINE_STATUS_TIMEOUT_MS = parsePositiveIntEnv('CV_ENGINE_STATUS_TIMEOU
 const CV_ENGINE_RESULT_TIMEOUT_MS = parsePositiveIntEnv('CV_ENGINE_RESULT_TIMEOUT_MS', 30_000)
 const CV_ENGINE_POLL_INTERVAL_MS = parsePositiveIntEnv('CV_ENGINE_POLL_INTERVAL_MS', 3_000)
 const CV_ENGINE_POLL_MAX_MS = parsePositiveIntEnv('CV_ENGINE_POLL_MAX_MS', 300_000)
-const VIDEO_JOB_TIMEOUT_MS = parsePositiveIntEnv('VIDEO_JOB_TIMEOUT_MS', 30 * 60 * 1000)
 
 function delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))
@@ -140,7 +140,6 @@ export const videoQueue = redisConnection
                 type: 'exponential',
                 delay: 2000
             },
-            timeout: VIDEO_JOB_TIMEOUT_MS,
             removeOnComplete: { count: 100 },
             removeOnFail: { count: 500 }
         }
@@ -206,6 +205,7 @@ export interface VideoProcessingJobData {
     sessionId: string
     videoUrl: string
     userId: string
+    priority?: 'high' | 'normal' | 'low'
     calibration?: {
         topLeft: { x: number; y: number }
         topRight: { x: number; y: number }
@@ -221,7 +221,10 @@ async function downloadVideo(videoUrl: string): Promise<string> {
     const ext = path.extname(new URL(videoUrl).pathname) || '.mp4'
     const localPath = path.join(tmpDir, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`)
 
-    const response = await fetch(videoUrl)
+    const response = await fetch(videoUrl, {
+        method: 'GET',
+        signal: AbortSignal.timeout(CV_ENGINE_REQUEST_TIMEOUT_MS),
+    })
     if (!response.ok) throw new Error(`HTTP ${response.status} from ${videoUrl}`)
 
     const buffer = Buffer.from(await response.arrayBuffer())
@@ -256,7 +259,7 @@ export const initWorker = async () => {
     }
 
     const worker = new Worker('video-processing', async (job: Job<VideoProcessingJobData>) => {
-        const { sessionId, videoUrl, userId, calibration } = job.data
+        const { sessionId, videoUrl, userId, calibration, priority } = job.data
         let localVideoPath: string | null = null
 
         logger.info({ jobId: job.id, session_id: sessionId, attempt: job.attemptsMade + 1 }, '[Worker] Starting processing')
@@ -393,7 +396,8 @@ export const initWorker = async () => {
                 const videoBuffer = fs.readFileSync(localVideoPath!)
                 formData.append('video_file', new Blob([videoBuffer]), 'video.mp4')
 
-                const cvResp = await fetch(`${cvEngineUrl}/detect/highlights?frame_skip=2&enable_audio=true`, {
+                const cvPriority = priority || 'normal'
+                const cvResp = await fetch(`${cvEngineUrl}/detect/highlights?frame_skip=2&enable_audio=true&priority=${encodeURIComponent(cvPriority)}`, {
                     method: 'POST',
                     body: formData,
                     signal: AbortSignal.timeout(CV_ENGINE_REQUEST_TIMEOUT_MS),
@@ -530,6 +534,14 @@ export const initWorker = async () => {
             }
 
             await getSupabase().from('sessions').update({ status: 'complete' }).eq('id', sessionId)
+
+            try {
+                const streak = await recomputeUserStreak(getSupabase(), userId)
+                logger.info({ userId, streak }, '[Worker] User streak recalculated after completed session')
+            } catch (streakError) {
+                logger.warn({ err: streakError, userId }, '[Worker] Failed to recompute user streak')
+            }
+
             await emitSessionComplete(userId, sessionId, {
                 shotsAttempted: shotsRes.length,
                 shotsMade: shotsRes.filter((s: ShotResult) => s.outcome === 'made').length,

@@ -29,7 +29,7 @@ import { useRouter } from 'expo-router'
 import { useEffect, useCallback, useState, memo } from 'react'
 import Animated, {
     FadeInDown, FadeInRight,
-    useSharedValue, useAnimatedStyle, withTiming, withSpring,
+    useSharedValue, useAnimatedStyle, withTiming, withSpring, withRepeat, withSequence,
 } from 'react-native-reanimated'
 import Svg, { Circle } from 'react-native-svg'
 import {
@@ -307,8 +307,43 @@ export default function DashboardIndex() {
     const loadWeeklyData = useStore(s => s.loadWeeklyData)
     const loadHighlights = useStore(s => s.loadHighlights)
     const refreshProfile = useStore(s => s.refreshProfile)
+    const streakFlameScale = useSharedValue(1)
+    const streakFlameRotate = useSharedValue(0)
+
+    const streakFlameStyle = useAnimatedStyle(() => ({
+        transform: [
+            { scale: streakFlameScale.value },
+            { rotate: `${streakFlameRotate.value}deg` },
+        ],
+    }))
 
     useEffect(() => { loadWeeklyData(); loadHighlights() }, [loadWeeklyData, loadHighlights])
+
+    useEffect(() => {
+        if (streak > 3) {
+            streakFlameScale.value = withRepeat(
+                withSequence(
+                    withTiming(1.14, { duration: 360 }),
+                    withTiming(1, { duration: 360 }),
+                ),
+                -1,
+                false,
+            )
+            streakFlameRotate.value = withRepeat(
+                withSequence(
+                    withTiming(-6, { duration: 220 }),
+                    withTiming(6, { duration: 220 }),
+                    withTiming(0, { duration: 220 }),
+                ),
+                -1,
+                false,
+            )
+            return
+        }
+
+        streakFlameScale.value = withTiming(1, { duration: 180 })
+        streakFlameRotate.value = withTiming(0, { duration: 180 })
+    }, [streak, streakFlameRotate, streakFlameScale])
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true)
@@ -422,7 +457,7 @@ export default function DashboardIndex() {
                                 entering={FadeInRight.delay(200).duration(400)}
                                 style={[ds.streakPill, T.glass.frosted]}
                             >
-                                <Text style={ds.streakEmoji}>🔥</Text>
+                                <Animated.Text style={[ds.streakEmoji, streak > 3 ? streakFlameStyle : null]}>🔥</Animated.Text>
                                 <Text style={ds.streakValue}>{streak}</Text>
                             </Animated.View>
                         )}

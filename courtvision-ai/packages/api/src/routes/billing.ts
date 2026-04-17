@@ -22,6 +22,10 @@ const checkoutSchema = z.object({
     planName: z.enum(['player', 'coach', 'academy'])
 })
 
+const stripeWebhookHeadersSchema = z.object({
+    'stripe-signature': z.string().min(1),
+})
+
 export default async function billingRoutes(fastify: FastifyInstance) {
     // ── Raw body parser for Stripe webhook signature verification ──
     // Scoped to this plugin only — doesn't affect other routes.
@@ -39,7 +43,12 @@ export default async function billingRoutes(fastify: FastifyInstance) {
         }
     )
 
-    fastify.post('/create-checkout', { preValidation: [fastify.authenticate] }, async (request, reply) => {
+    fastify.post('/create-checkout', {
+        preValidation: [fastify.authenticate],
+        schema: {
+            body: checkoutSchema,
+        },
+    }, async (request, reply) => {
         try {
             const body = checkoutSchema.parse(request.body)
             const user = request.user!
@@ -104,7 +113,12 @@ export default async function billingRoutes(fastify: FastifyInstance) {
 
     // Permet à Stripe d'appeler notre API (pas d'auth ici car appelé par Stripe)
     // Utilise fastify.post avec le content type raw pour la signature webhook
-    fastify.post('/webhook', { config: { rawBody: true } }, async (request, reply) => {
+    fastify.post('/webhook', {
+        config: { rawBody: true },
+        schema: {
+            headers: stripeWebhookHeadersSchema,
+        },
+    }, async (request, reply) => {
         try {
             // Raw body is stored by our custom content type parser above
             const rawRequest = request as any
@@ -304,13 +318,17 @@ export default async function billingRoutes(fastify: FastifyInstance) {
     })
 
     fastify.get('/plans', async (request, reply) => {
-        // Liste publique des plans
-        return {
-            data: [
-                { name: 'player', price_eur: 9 },
-                { name: 'coach', price_eur: 29 },
-                { name: 'academy', price_eur: 99 }
-            ]
+        try {
+            return {
+                data: [
+                    { name: 'player', price_eur: 9 },
+                    { name: 'coach', price_eur: 29 },
+                    { name: 'academy', price_eur: 99 }
+                ]
+            }
+        } catch (error: any) {
+            request.log.error({ err: error }, 'Failed to fetch billing plans')
+            return reply.code(500).send({ error: 'Failed to fetch billing plans' })
         }
     })
 }

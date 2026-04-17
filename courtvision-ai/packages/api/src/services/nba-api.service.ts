@@ -77,7 +77,17 @@ export interface NBAFieldGoalStat {
 
 const NBA_ENGINE_BASE = (process.env.NBA_ENGINE_URL || process.env.CV_ENGINE_URL || 'http://localhost:8000').replace(/\/$/, '')
 const CACHE_TTL_MS = 60 * 60 * 1000 // 1 hour
-const REQUEST_TIMEOUT_MS = 8000
+
+function parsePositiveIntEnv(raw: string | undefined, fallback: number): number {
+    if (!raw) return fallback
+    const parsed = Number.parseInt(raw, 10)
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+}
+
+const REQUEST_TIMEOUT_MS = parsePositiveIntEnv(
+    process.env.NBA_ENGINE_TIMEOUT_MS || process.env.CV_ENGINE_REQUEST_TIMEOUT_MS,
+    30_000,
+)
 
 // ── In-memory Cache ───────────────────────────────────────────
 

@@ -25,6 +25,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import cv2
+import json
 import logging
 import numpy as np
 import os
@@ -39,8 +40,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
-from fastapi import BackgroundTasks, FastAPI, File, HTTPException, Query, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 # ── Optional imports with graceful fallback ────────────────────
@@ -95,6 +96,13 @@ app = FastAPI(
 
 # Thread pool for CPU-bound work
 executor = ThreadPoolExecutor(max_workers=int(os.getenv("CV_WORKERS", "2")))
+
+# Background job workers for video highlight processing
+CV_PIPELINE_WORKERS = max(1, int(os.getenv("CV_PIPELINE_WORKERS", "2")))
+CV_MEDIAPIPE_WORKERS = max(1, int(os.getenv("CV_MEDIAPIPE_WORKERS", "2")))
+_pipeline_queue: asyncio.PriorityQueue = asyncio.PriorityQueue()
+_pipeline_tasks: List[asyncio.Task] = []
+_mediapipe_slots = asyncio.Semaphore(CV_MEDIAPIPE_WORKERS)
 
 # In-memory job store (production: swap for Redis)
 jobs: Dict[str, dict] = {}
@@ -191,16 +199,36 @@ def _prune_jobs() -> None:
         jobs.pop(jid, None)
 
 
-def _create_job(job_id: str) -> None:
+def _append_job_event(job_id: str, message: str, stage: str, progress: int) -> None:
+    job = jobs.get(job_id)
+    if job is None:
+        return
+
+    events = job.setdefault("events", [])
+    events.append(
+        {
+            "timestamp": time.time(),
+            "stage": stage,
+            "progress": progress,
+            "message": message,
+        }
+    )
+
+
+def _create_job(job_id: str, priority: str = "normal") -> None:
     ts = _now_ts()
     jobs[job_id] = {
-        "status": "processing",
+        "status": "queued",
         "progress": 0,
+        "stage": "queued",
         "result": None,
         "error": None,
+        "priority": priority,
+        "events": [],
         "created_at": ts,
         "updated_at": ts,
     }
+    _append_job_event(job_id, "Job queued for processing.", "queued", 0)
     _prune_jobs()
 
 
@@ -210,22 +238,103 @@ def _touch_job(job_id: str) -> None:
         job["updated_at"] = _now_ts()
 
 
-def _set_job_progress(job_id: str, progress: int) -> None:
+def _set_job_progress(job_id: str, progress: int, stage: Optional[str] = None, message: Optional[str] = None) -> None:
     job = jobs.get(job_id)
     if job is None:
         return
-    job["progress"] = max(0, min(100, int(progress)))
+    safe_progress = max(0, min(100, int(progress)))
+    job["progress"] = safe_progress
+    if stage:
+        job["stage"] = stage
+    if message:
+        _append_job_event(job_id, message, job.get("stage", "processing"), safe_progress)
     _touch_job(job_id)
 
 
-def _set_job_status(job_id: str, status: str, error: Optional[str] = None) -> None:
+def _set_job_status(job_id: str, status: str, error: Optional[str] = None, stage: Optional[str] = None, message: Optional[str] = None) -> None:
     job = jobs.get(job_id)
     if job is None:
         return
     job["status"] = status
+    if stage:
+        job["stage"] = stage
     if error is not None:
         job["error"] = error
+    if message:
+        _append_job_event(job_id, message, job.get("stage", status), job.get("progress", 0))
     _touch_job(job_id)
+
+
+def _priority_value(priority: str) -> int:
+    if priority == "high":
+        return 0
+    if priority == "low":
+        return 2
+    return 1
+
+
+def _job_queue_position(job_id: str) -> int:
+    try:
+        queue_snapshot = list(_pipeline_queue._queue)
+    except Exception:
+        return 0
+
+    for idx, item in enumerate(queue_snapshot, start=1):
+        payload = item[2] if len(item) >= 3 else None
+        if isinstance(payload, dict) and payload.get("job_id") == job_id:
+            return idx
+    return 0
+
+
+async def _pipeline_worker_loop(worker_idx: int) -> None:
+    logger.info("Pipeline worker %d started", worker_idx)
+    while True:
+        _, _, payload = await _pipeline_queue.get()
+        job_id = payload["job_id"]
+        tmp_path = payload["tmp_path"]
+        frame_skip = payload["frame_skip"]
+        enable_audio = payload["enable_audio"]
+
+        _set_job_status(
+            job_id,
+            "processing",
+            stage="processing",
+            message="Video queued processing started.",
+        )
+
+        try:
+            loop = asyncio.get_event_loop()
+            if MEDIAPIPE_AVAILABLE:
+                async with _mediapipe_slots:
+                    result = await loop.run_in_executor(executor, _run_pipeline, tmp_path, job_id, frame_skip, enable_audio)
+            else:
+                result = await loop.run_in_executor(executor, _run_pipeline, tmp_path, job_id, frame_skip, enable_audio)
+
+            if job_id in jobs:
+                jobs[job_id]["result"] = result.model_dump()
+
+            _set_job_status(
+                job_id,
+                "completed",
+                stage="completed",
+                message="Highlight analysis completed.",
+            )
+        except Exception as exc:
+            logger.error("[%s] Pipeline failed: %s", job_id, exc, exc_info=True)
+            _set_job_status(
+                job_id,
+                "failed",
+                error=str(exc),
+                stage="failed",
+                message="Highlight analysis failed.",
+            )
+        finally:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            _pipeline_queue.task_done()
+            _prune_jobs()
 
 
 def _nba_cache_get(key: str) -> Optional[Any]:
@@ -608,6 +717,27 @@ async def startup_warmup():
 
     _models_ready = any(_models_loaded.values())
     logger.info("Models ready: %s | YOLO=%s, MediaPipe=%s", _models_ready, _models_loaded["yolo"], _models_loaded["mediapipe"])
+
+    # Start background priority workers for video processing.
+    global _pipeline_tasks
+    if not _pipeline_tasks:
+        _pipeline_tasks = [
+            asyncio.create_task(_pipeline_worker_loop(i + 1))
+            for i in range(CV_PIPELINE_WORKERS)
+        ]
+
+
+@app.on_event("shutdown")
+async def shutdown_workers():
+    for task in _pipeline_tasks:
+        task.cancel()
+    for task in _pipeline_tasks:
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+    _pipeline_tasks.clear()
+    executor.shutdown(wait=False)
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -1204,7 +1334,7 @@ def _run_pipeline(
     duration = total_frames / fps
 
     logger.info("[%s] Video: %d frames, %.1f fps, %dx%d, %.1f s", job_id, total_frames, fps, w, h, duration)
-    _set_job_progress(job_id, 5)
+    _set_job_progress(job_id, 5, stage="video_loaded", message="Video loaded. Starting preprocessing.")
 
     # ── Audio ──────────────────────────────────────────────────
     audio_spikes: List[float] = []
@@ -1212,7 +1342,7 @@ def _run_pipeline(
         energy = _extract_audio_energy(video_path)
         audio_spikes = _detect_audio_spikes(energy)
         logger.info("[%s] Audio: %d spikes detected", job_id, len(audio_spikes))
-    _set_job_progress(job_id, 15)
+    _set_job_progress(job_id, 15, stage="audio_analysis", message="Audio spike detection completed.")
 
     # ── Detector ───────────────────────────────────────────────
     detector = HighlightDetector(fps, w, h)
@@ -1288,7 +1418,12 @@ def _run_pipeline(
 
             fi += 1
             if fi % 100 == 0:
-                _set_job_progress(job_id, min(90, 15 + int(75 * fi / min(total_frames, max_fi))))
+                _set_job_progress(
+                    job_id,
+                    min(90, 15 + int(75 * fi / min(total_frames, max_fi))),
+                    stage="frame_analysis",
+                    message="Frame analysis in progress.",
+                )
     finally:
         cap.release()
         if pose_ctx:
@@ -1296,7 +1431,7 @@ def _run_pipeline(
 
     highlights = detector.get_highlights(min_score=25.0, limit=20)
     elapsed = time.time() - t0
-    _set_job_progress(job_id, 100)
+    _set_job_progress(job_id, 100, stage="post_processing", message="Highlight scoring and packaging completed.")
 
     parts = []
     if YOLO_AVAILABLE:
@@ -1477,30 +1612,34 @@ def nba_fg_percentages(
 
 @app.post("/detect/highlights")
 async def detect_highlights(
-    background_tasks: BackgroundTasks,
     video_file: UploadFile = File(...),
     frame_skip: int = Query(default=2, ge=1, le=10),
     enable_audio: bool = Query(default=True),
+    priority: str = Query(default="normal", pattern="^(high|normal|low)$"),
 ):
     """Upload video → async highlight detection. Poll /job/{id}/status."""
     _prune_jobs()
 
-    allowed_exts = {".mp4", ".mov", ".avi", ".mkv", ".webm"}
+    allowed_exts = {".mp4", ".mov"}
+    allowed_mime_types = {"video/mp4", "video/quicktime", "video/mov"}
     content_type_to_ext = {
         "video/mp4": ".mp4",
         "video/quicktime": ".mov",
-        "video/x-msvideo": ".avi",
-        "video/x-matroska": ".mkv",
-        "video/webm": ".webm",
+        "video/mov": ".mov",
     }
 
     filename = video_file.filename or ""
     ext = os.path.splitext(filename)[1].lower()
+    mime_type = (video_file.content_type or "").lower().strip()
+
+    if mime_type not in allowed_mime_types:
+        raise HTTPException(415, "Unsupported media type. Only video/mp4 and video/quicktime are allowed")
+
     if not ext:
-        ext = content_type_to_ext.get((video_file.content_type or "").lower(), "")
+        ext = content_type_to_ext.get(mime_type, "")
 
     if ext not in allowed_exts:
-        raise HTTPException(400, "Unsupported format. Use mp4/mov/avi/mkv/webm")
+        raise HTTPException(400, "Unsupported format. Use mp4/mov")
 
     job_id = str(uuid.uuid4())
     tmp_path: Optional[str] = None
@@ -1528,27 +1667,34 @@ async def detect_highlights(
     if not tmp_path:
         raise HTTPException(500, "Failed to persist uploaded video")
 
-    _create_job(job_id)
+    _create_job(job_id, priority=priority)
 
-    async def _bg():
-        loop = asyncio.get_event_loop()
-        try:
-            result = await loop.run_in_executor(executor, _run_pipeline, tmp_path, job_id, frame_skip, enable_audio)
-            if job_id in jobs:
-                jobs[job_id]["result"] = result.model_dump()
-            _set_job_status(job_id, "completed")
-        except Exception as exc:
-            logger.error("[%s] Pipeline failed: %s", job_id, exc, exc_info=True)
-            _set_job_status(job_id, "failed", str(exc))
-        finally:
-            try:
-                os.unlink(tmp_path)
-            except OSError:
-                pass
-            _prune_jobs()
+    await _pipeline_queue.put(
+        (
+            _priority_value(priority),
+            time.time(),
+            {
+                "job_id": job_id,
+                "tmp_path": tmp_path,
+                "frame_skip": frame_skip,
+                "enable_audio": enable_audio,
+            },
+        )
+    )
 
-    background_tasks.add_task(_bg)
-    return {"job_id": job_id, "status": "processing"}
+    _set_job_progress(
+        job_id,
+        0,
+        stage="queued",
+        message=f"Job queued with priority={priority}.",
+    )
+
+    return {
+        "job_id": job_id,
+        "status": "queued",
+        "priority": priority,
+        "queue_position": _job_queue_position(job_id),
+    }
 
 
 @app.get("/job/{job_id}/status")
@@ -1561,11 +1707,51 @@ def job_status(job_id: str):
     return {
         "job_id": job_id,
         "status": j["status"],
+        "stage": j.get("stage", j["status"]),
         "progress": j["progress"],
+        "priority": j.get("priority", "normal"),
+        "queue_position": _job_queue_position(job_id) if j["status"] == "queued" else 0,
         "error": j["error"],
         "created_at": j.get("created_at"),
         "updated_at": j.get("updated_at"),
     }
+
+
+@app.get("/job/{job_id}/events")
+async def job_events(job_id: str):
+    _prune_jobs()
+    if job_id not in jobs:
+        raise HTTPException(404, "Job not found")
+
+    async def event_stream():
+        last_index = 0
+        while True:
+            _prune_jobs()
+            job = jobs.get(job_id)
+            if job is None:
+                yield "data: {\"status\":\"expired\",\"message\":\"Job expired\"}\n\n"
+                break
+
+            events = job.get("events", [])
+            while last_index < len(events):
+                event_payload = events[last_index]
+                yield f"data: {json.dumps(event_payload)}\\n\\n"
+                last_index += 1
+
+            if job.get("status") in ("completed", "failed"):
+                terminal_payload = {
+                    "timestamp": time.time(),
+                    "stage": job.get("stage", job.get("status")),
+                    "progress": job.get("progress", 0),
+                    "status": job.get("status"),
+                    "message": "Job finished",
+                }
+                yield f"data: {json.dumps(terminal_payload)}\\n\\n"
+                break
+
+            await asyncio.sleep(1)
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 @app.get("/job/{job_id}/result")

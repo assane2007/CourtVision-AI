@@ -15,6 +15,9 @@ CREATE TABLE public.users (
   weight_kg INTEGER,
   plan TEXT DEFAULT 'free' CHECK (plan IN ('free','player','coach','academy')),
   stripe_customer_id TEXT,
+  streak INTEGER DEFAULT 0,
+  longest_streak INTEGER DEFAULT 0,
+  last_session_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

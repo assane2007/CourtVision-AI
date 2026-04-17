@@ -10,7 +10,17 @@ const sessionTypeSchema = z.enum(['match', 'training', 'shootaround'])
 
 const uploadSchema = z.object({
     type: sessionTypeSchema,
-    video_url: z.string().url()
+    video_url: z
+        .string()
+        .url()
+        .refine((value) => {
+            try {
+                const pathname = new URL(value).pathname.toLowerCase()
+                return pathname.endsWith('.mp4') || pathname.endsWith('.mov')
+            } catch {
+                return false
+            }
+        }, 'video_url must point to an mp4 or mov file')
 })
 
 const uploadFileTypeSchema = z.object({
@@ -46,6 +56,44 @@ function queueResponse(queue: QueueDispatchResult) {
     }
 }
 
+async function resolveQueuePriority(app: FastifyInstance, userId: string): Promise<'high' | 'normal'> {
+    const paidPlans = new Set(['player', 'coach', 'academy'])
+
+    try {
+        const { data: userData, error: userError } = await app.supabase
+            .from('users')
+            .select('plan')
+            .eq('id', userId)
+            .maybeSingle()
+
+        if (!userError) {
+            const plan = String((userData as any)?.plan || '').toLowerCase()
+            if (paidPlans.has(plan)) {
+                return 'high'
+            }
+        }
+
+        const { data: subData, error: subError } = await app.supabase
+            .from('subscriptions')
+            .select('plan, status')
+            .eq('user_id', userId)
+            .in('status', ['active', 'trialing'])
+            .order('updated_at', { ascending: false })
+            .limit(1)
+
+        if (!subError && Array.isArray(subData) && subData.length > 0) {
+            const plan = String((subData[0] as any).plan || '').toLowerCase()
+            if (!plan || paidPlans.has(plan)) {
+                return 'high'
+            }
+        }
+    } catch (error) {
+        app.log.warn({ err: error, userId }, 'Failed to resolve queue priority; defaulting to normal')
+    }
+
+    return 'normal'
+}
+
 const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
     app.addHook('preValidation', app.authenticate)
     const pdfReportService = new PdfReportService(app.supabase)
@@ -63,10 +111,13 @@ const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
 
         if (error) throw error
 
+        const priority = await resolveQueuePriority(app, userId)
+
         const queue = await addToQueue('process-video', {
             sessionId: data.id,
             videoUrl: data.video_url,
             userId,
+            priority,
         })
 
         if (!queue.accepted) {
@@ -74,12 +125,13 @@ const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
                 {
                     sessionId: data.id,
                     reason: queue.reason,
+                    priority,
                 },
                 'Session created but processing job was not enqueued',
             )
         }
 
-        return { data, queue }
+        return { data, queue, priority }
     }
 
     app.post('/', {
@@ -90,11 +142,14 @@ const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
         const user = request.user!
         const body = request.body as z.infer<typeof uploadSchema>
 
-        const { data, queue } = await createProcessingSession(user.id, body)
+        const { data, queue, priority } = await createProcessingSession(user.id, body)
         return {
             success: true,
             data,
-            queue: queueResponse(queue),
+            queue: {
+                ...queueResponse(queue),
+                priority,
+            },
         }
     })
 
@@ -107,11 +162,14 @@ const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
         const user = request.user!
         const body = request.body as z.infer<typeof uploadSchema>
 
-        const { data, queue } = await createProcessingSession(user.id, body)
+        const { data, queue, priority } = await createProcessingSession(user.id, body)
         return {
             success: true,
             data,
-            queue: queueResponse(queue),
+            queue: {
+                ...queueResponse(queue),
+                priority,
+            },
         }
     })
 
@@ -168,7 +226,7 @@ const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
                 return reply.code(500).send({ error: 'Failed to resolve uploaded video URL' })
             }
 
-            const { data, queue } = await createProcessingSession(user.id, {
+            const { data, queue, priority } = await createProcessingSession(user.id, {
                 type: parsedType.data.type,
                 video_url: videoUrl,
             })
@@ -186,7 +244,10 @@ const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
                     bucket: VIDEO_BUCKET,
                     path: objectPath,
                 },
-                queue: queueResponse(queue),
+                queue: {
+                    ...queueResponse(queue),
+                    priority,
+                },
             }
         } catch (error: any) {
             request.log.error({ err: error }, 'Upload-file route failed')

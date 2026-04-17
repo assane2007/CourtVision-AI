@@ -112,6 +112,11 @@ const authRateLimit = {
     refresh: { max: 10, timeWindow: '1 minute' },
 } as const
 
+const authDefaultRouteRateLimit = {
+    max: 10,
+    timeWindow: '1 minute',
+} as const
+
 const authRoutes: FastifyPluginAsyncZod = async (app) => {
     // Dedicated auth client: avoids mutating the shared service-role DB client session.
     const authClient = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
@@ -294,7 +299,11 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
         }
     })
 
-    app.get('/onboarding/options', async () => {
+    app.get('/onboarding/options', {
+        config: {
+            rateLimit: authDefaultRouteRateLimit,
+        },
+    }, async () => {
         return {
             success: true,
             data: {
@@ -305,6 +314,9 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
     })
 
     app.put('/onboarding/profile', {
+        config: {
+            rateLimit: authDefaultRouteRateLimit,
+        },
         preValidation: [app.authenticate],
         schema: {
             body: onboardingProfileSchema,
@@ -343,6 +355,9 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
     })
 
     app.put('/onboarding/calibration', {
+        config: {
+            rateLimit: authDefaultRouteRateLimit,
+        },
         preValidation: [app.authenticate],
         schema: {
             body: onboardingCalibrationSchema,
@@ -454,6 +469,9 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
     })
 
     app.patch('/profile', {
+        config: {
+            rateLimit: authDefaultRouteRateLimit,
+        },
         preValidation: [app.authenticate],
         schema: {
             body: profileUpdateSchema,
@@ -538,6 +556,9 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
     })
 
     app.post('/push-token', {
+        config: {
+            rateLimit: authDefaultRouteRateLimit,
+        },
         preValidation: [app.authenticate],
         schema: {
             body: pushTokenSchema,
@@ -579,7 +600,12 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
         }
     })
 
-    app.post('/delete-account', { preValidation: [app.authenticate] }, async (request) => {
+    app.post('/delete-account', {
+        config: {
+            rateLimit: authDefaultRouteRateLimit,
+        },
+        preValidation: [app.authenticate],
+    }, async (request) => {
         const user = request.user!
 
         const cleanupTargets = [
@@ -610,7 +636,12 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
         }
     })
 
-    app.delete('/logout', { preValidation: [app.authenticate] }, async (request, reply) => {
+    app.delete('/logout', {
+        config: {
+            rateLimit: authDefaultRouteRateLimit,
+        },
+        preValidation: [app.authenticate],
+    }, async (request, reply) => {
         const authHeader = request.headers.authorization!
         const token = authHeader.replace('Bearer ', '')
         const { error } = await app.supabase.auth.admin.signOut(token)
@@ -632,11 +663,21 @@ const authRoutes: FastifyPluginAsyncZod = async (app) => {
         return { success: true, data }
     });
 
-    app.get('/me', { preValidation: [app.authenticate] }, async (request, reply) => {
+    app.get('/me', {
+        config: {
+            rateLimit: authDefaultRouteRateLimit,
+        },
+        preValidation: [app.authenticate],
+    }, async (request, reply) => {
         const user = request.user!
         const { data, error } = await app.supabase.from('users').select('*').eq('id', user.id).single()
         if (error) throw error
-        return { success: true, data }
+        const normalizedData = {
+            ...data,
+            streak: typeof (data as any)?.streak === 'number' ? (data as any).streak : 0,
+            longest_streak: typeof (data as any)?.longest_streak === 'number' ? (data as any).longest_streak : 0,
+        }
+        return { success: true, data: normalizedData }
     })
 }
 
