@@ -36,11 +36,11 @@ export interface CVAlertProps {
 const ALERT_CONFIG: Record<CVAlertType, {
   bg: string; border: string; color: string; defaultIcon: keyof typeof Feather.glyphMap
 }> = {
-  success: { bg: 'rgba(0,198,122,0.08)', border: 'rgba(0,198,122,0.20)', color: T.color.semantic.success,   defaultIcon: 'check-circle' },
-  warning: { bg: 'rgba(255,186,0,0.08)', border: 'rgba(255,186,0,0.20)', color: T.color.semantic.warning,   defaultIcon: 'alert-triangle' },
-  error:   { bg: 'rgba(255,58,94,0.08)', border: 'rgba(255,58,94,0.20)', color: T.color.semantic.error,     defaultIcon: 'alert-circle' },
-  info:    { bg: 'rgba(10,132,255,0.08)',border: 'rgba(10,132,255,0.20)',color: T.color.semantic.info,       defaultIcon: 'info' },
-  amber:   { bg: 'rgba(255,107,0,0.08)', border: 'rgba(255,107,0,0.20)', color: T.color.signature.primary,  defaultIcon: 'zap' },
+  success: { bg: 'rgba(34,197,94,0.10)', border: 'rgba(34,197,94,0.24)', color: T.color.semantic.success, defaultIcon: 'check-circle' },
+  warning: { bg: 'rgba(255,193,69,0.10)', border: 'rgba(255,193,69,0.24)', color: T.color.semantic.warning, defaultIcon: 'alert-triangle' },
+  error:   { bg: 'rgba(255,90,101,0.10)', border: 'rgba(255,90,101,0.24)', color: T.color.semantic.error, defaultIcon: 'alert-circle' },
+  info:    { bg: T.color.ai.muted, border: T.color.border.ai, color: T.color.ai.primary, defaultIcon: 'info' },
+  amber:   { bg: T.color.brand.muted, border: T.color.border.accent, color: T.color.brand.primary, defaultIcon: 'zap' },
 }
 
 // ─── Component ───────────────────────────────────────────────
@@ -104,8 +104,8 @@ export function CVAlert({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    borderRadius: T.borderRadius.lg,
-    borderWidth: 1,
+    borderRadius: T.radius.lg,
+    borderWidth: 0.5,
     padding: T.spacing[3],
     gap: T.spacing[3],
     alignItems: 'flex-start',

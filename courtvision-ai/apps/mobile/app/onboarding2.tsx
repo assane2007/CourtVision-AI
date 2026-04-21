@@ -63,11 +63,11 @@ const FALLBACK_EXPERIENCE_LEVELS: ExperienceOption[] = [
 ]
 
 const POSITION_ACCENT: Record<PositionId, string> = {
-    PG: '#0EA5E9',
-    SG: '#F97316',
-    SF: '#10B981',
-    PF: '#D946EF',
-    C: '#FACC15',
+    PG: '#44D6FF',
+    SG: '#60DFFF',
+    SF: '#2AC7F2',
+    PF: '#78E5FF',
+    C: '#90EEFF',
 }
 
 export default function Onboarding2() {
@@ -175,7 +175,7 @@ export default function Onboarding2() {
     return (
         <SafeAreaView style={styles.screen}>
             <LinearGradient
-                colors={['#07111F', '#120B1D', '#090909']}
+                colors={['#04070D', '#080D16', '#0A0A0A']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={StyleSheet.absoluteFill}
@@ -192,7 +192,7 @@ export default function Onboarding2() {
                         router.back()
                     }}
                 >
-                    <Feather name="arrow-left" size={20} color={colors.snow} />
+                    <Feather name="arrow-left" size={20} color={colors.cloud} />
                 </Pressable>
 
                 <View style={styles.progressWrap}>
@@ -213,7 +213,7 @@ export default function Onboarding2() {
 
             {loading ? (
                 <View style={styles.centerState}>
-                    <ActivityIndicator color={colors.snow} />
+                    <ActivityIndicator color={colors.ice} />
                     <Text style={styles.stateText}>Loading onboarding data from API...</Text>
                 </View>
             ) : error ? (
@@ -241,7 +241,7 @@ export default function Onboarding2() {
                                     <Text style={styles.cardTitle}>{position.label}</Text>
                                     <Text style={styles.cardSubtitle}>{position.summary}</Text>
                                 </View>
-                                <Feather name={active ? 'check-circle' : 'circle'} size={20} color={active ? colors.snow : '#5D6675'} />
+                                <Feather name={active ? 'check-circle' : 'circle'} size={20} color={active ? colors.ice : '#5D6675'} />
                             </Pressable>
                         )
                     })}
@@ -261,7 +261,7 @@ export default function Onboarding2() {
                                     <Text style={styles.cardTitle}>{level.label}</Text>
                                     <Text style={styles.cardSubtitle}>{level.years}</Text>
                                 </View>
-                                <Feather name={active ? 'check-circle' : 'circle'} size={20} color={active ? colors.snow : '#5D6675'} />
+                                <Feather name={active ? 'check-circle' : 'circle'} size={20} color={active ? colors.ice : '#5D6675'} />
                             </Pressable>
                         )
                     })}
@@ -275,7 +275,7 @@ export default function Onboarding2() {
                     disabled={loading || !!error}
                 >
                     <Text style={styles.primaryBtnText}>{step === 'position' ? 'Continue' : 'Start Camera Calibration'}</Text>
-                    <Feather name="arrow-right" size={18} color="#070707" />
+                    <Feather name="arrow-right" size={18} color="#FFFFFF" />
                 </Pressable>
             </View>
         </SafeAreaView>
@@ -300,9 +300,9 @@ const styles = StyleSheet.create({
         borderRadius: 22,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.12)',
-        backgroundColor: 'rgba(14,20,34,0.5)',
+        borderWidth: 0.5,
+        borderColor: 'rgba(255,255,255,0.10)',
+        backgroundColor: 'rgba(10,16,28,0.56)',
     },
     progressWrap: {
         flexDirection: 'row',
@@ -315,20 +315,20 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.15)',
     },
     progressActive: {
-        backgroundColor: colors.snow,
+        backgroundColor: colors.ice,
     },
     heroCard: {
         marginTop: space[5],
         marginHorizontal: space[6],
         padding: space[6],
         borderRadius: 24,
-        backgroundColor: 'rgba(8,14,28,0.82)',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.14)',
+        backgroundColor: 'rgba(8,14,28,0.9)',
+        borderWidth: 0.5,
+        borderColor: 'rgba(255,255,255,0.10)',
     },
     kicker: {
         fontFamily: 'JetBrainsMono_400Regular',
-        color: '#96A7C2',
+        color: '#8FA9C4',
         fontSize: 11,
         letterSpacing: 1.3,
         marginBottom: 8,
@@ -355,16 +355,16 @@ const styles = StyleSheet.create({
     card: {
         borderRadius: 18,
         padding: 16,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.12)',
-        backgroundColor: 'rgba(12,18,29,0.7)',
+        borderWidth: 0.5,
+        borderColor: 'rgba(255,255,255,0.10)',
+        backgroundColor: 'rgba(8,13,22,0.88)',
         flexDirection: 'row',
         alignItems: 'center',
         gap: 14,
     },
     cardActive: {
-        borderColor: 'rgba(255,255,255,0.65)',
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(68,214,255,0.55)',
+        backgroundColor: 'rgba(68,214,255,0.12)',
     },
     badge: {
         minWidth: 44,
@@ -372,12 +372,12 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: 'rgba(68,214,255,0.14)',
     },
     badgeText: {
         fontFamily: 'JetBrainsMono_400Regular',
         fontSize: 12,
-        color: colors.snow,
+        color: colors.ice,
     },
     cardTextWrap: {
         flex: 1,
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
     primaryBtn: {
         height: 60,
         borderRadius: 18,
-        backgroundColor: '#F3F5FA',
+        backgroundColor: colors.fire,
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'row',
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
     },
     primaryBtnText: {
         fontFamily: 'Sora_700Bold',
-        color: '#070707',
+        color: '#FFFFFF',
         fontSize: 15,
     },
     centerState: {
@@ -431,11 +431,11 @@ const styles = StyleSheet.create({
     retryBtn: {
         marginTop: 6,
         borderRadius: 12,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.25)',
+        borderWidth: 0.5,
+        borderColor: 'rgba(255,255,255,0.20)',
         paddingHorizontal: 16,
         paddingVertical: 10,
-        backgroundColor: 'rgba(8,14,28,0.8)',
+        backgroundColor: 'rgba(8,14,28,0.88)',
     },
     retryText: {
         fontFamily: 'Sora_600SemiBold',

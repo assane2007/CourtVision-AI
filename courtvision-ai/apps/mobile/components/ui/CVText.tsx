@@ -21,7 +21,7 @@ import { T } from '../../lib/theme'
 export type TextPreset = keyof typeof T.type
 export type TextColorAlias =
   | 'primary' | 'secondary' | 'tertiary' | 'inverse'
-  | 'brand' | 'success' | 'error' | 'warning' | 'info'
+  | 'brand' | 'ai' | 'success' | 'error' | 'warning' | 'info'
   | 'purple' | 'gold' | 'white' | 'amber' | 'cyan'
 
 const COLOR_MAP: Record<TextColorAlias, string> = {
@@ -30,6 +30,7 @@ const COLOR_MAP: Record<TextColorAlias, string> = {
   tertiary: T.color.text.tertiary,
   inverse: T.color.text.inverse,
   brand: T.color.brand.primary,
+  ai: T.color.ai.primary,
   success: T.color.semantic.success,
   error: T.color.semantic.error,
   warning: T.color.semantic.warning,

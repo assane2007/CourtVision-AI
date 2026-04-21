@@ -10,7 +10,7 @@
  */
 
 import React, { useState } from 'react'
-import type { ViewStyle, TextInputProps } from 'react-native';
+import type { TextStyle, ViewStyle, TextInputProps } from 'react-native';
 import { View, TextInput, Text } from 'react-native'
 import { Feather } from '@expo/vector-icons'
 import { T } from '../../lib/theme'
@@ -29,7 +29,7 @@ export interface CVInputProps extends Omit<TextInputProps, 'style'> {
   hint?: string
   fullWidth?: boolean
   style?: ViewStyle
-  inputStyle?: ViewStyle
+  inputStyle?: TextStyle
 }
 
 // ─── Size Config ──────────────────────────────────────────────
@@ -63,7 +63,7 @@ export function CVInput({
   const borderColor = hasError
     ? T.color.semantic.error
     : focused
-      ? T.color.brand.primary
+      ? T.color.border.accent
       : variant === 'ghost'
         ? 'transparent'
         : T.color.border.base
@@ -81,7 +81,7 @@ export function CVInput({
         <Text style={{
           color: hasError ? T.color.semantic.error : T.color.text.secondary,
           fontSize: T.fontSize.sm,
-          fontWeight: '600',
+          fontFamily: T.fonts.body.semibold,
           letterSpacing: 0.2,
           marginBottom: 6,
         }}>
@@ -94,19 +94,18 @@ export function CVInput({
         height: cfg.height,
         borderRadius: cfg.radius,
         backgroundColor: bgColor,
-        borderWidth: variant === 'ghost' ? 0 : 1,
+        borderWidth: variant === 'ghost' ? 0 : 0.5,
         borderColor,
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: cfg.px,
         gap: 10,
-        ...(focused && !hasError ? T.glow.soft(T.color.brand.primary) : {}),
       }}>
         {icon && (
           <Feather
             name={icon}
             size={cfg.iconSize}
-            color={focused ? T.color.brand.primary : T.color.text.tertiary}
+            color={focused ? T.color.ai.primary : T.color.text.tertiary}
           />
         )}
         <TextInput
@@ -114,7 +113,7 @@ export function CVInput({
             flex: 1,
             color: T.color.text.primary,
             fontSize: cfg.fontSize,
-            fontWeight: '400',
+            fontFamily: T.fonts.body.regular,
             height: '100%',
           }, inputStyle] as any}
           placeholderTextColor={T.color.text.tertiary}

@@ -1,6 +1,6 @@
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
-import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { T, typePresets } from '../../lib/theme'
 
 const type = typePresets
@@ -24,10 +24,10 @@ export function CVHUDStat({
 }: CVHUDStatProps) {
     return (
         <Animated.View
-            entering={FadeInDown.delay(delay).duration(400).springify().damping(15)}
+            entering={FadeInDown.delay(delay).duration(320).springify().damping(18).stiffness(200)}
             style={styles.container}
         >
-            <Text style={styles.label}>{label.toUpperCase()}</Text>
+            <Text style={styles.label}>{label}</Text>
             <View style={styles.content}>
                 <Text style={[styles.value, { color }, large && styles.largeValue]}>{value}</Text>
                 {subValue ? (
@@ -42,18 +42,16 @@ const styles = StyleSheet.create({
     container: {
         paddingHorizontal: T.spacing[3],
         paddingVertical: T.spacing[2],
-        borderRadius: T.borderRadius.lg,
-        backgroundColor: 'rgba(15, 23, 42, 0.65)',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderRadius: T.radius.lg,
+        backgroundColor: T.color.bg.tertiary,
+        borderWidth: 0.5,
+        borderColor: T.color.border.base,
         minWidth: 80,
         alignItems: 'center',
     },
     label: {
-        ...type.overline,
+        ...type.systemLabel,
         color: T.color.text.tertiary,
-        fontSize: 8,
-        letterSpacing: 1,
         marginBottom: 2,
     },
     content: {
@@ -64,15 +62,14 @@ const styles = StyleSheet.create({
     value: {
         ...type.cardTitle,
         fontSize: 20,
-        fontWeight: '700' as any,
+        fontFamily: T.fonts.mono.regular,
     },
     largeValue: {
         fontSize: 28,
         lineHeight: 32,
     },
     subValue: {
-        ...type.overline,
+        ...type.dataMicro,
         color: T.color.text.secondary,
-        fontSize: 10,
     }
 })

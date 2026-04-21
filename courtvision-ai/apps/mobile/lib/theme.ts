@@ -1,43 +1,43 @@
 /**
- * CourtVision AI — Design System V5 "AURORA COURT"
+ * CourtVision AI — Design System V6 "NEURAL ARENA"
  * =============================================================
- * Identity: Elite, Energetic, Immersive
- * Core Color: Plasma Orange (#F97316)
+ * Identity: tactical HUD precision x luxury sport
+ * Core accents:
+ * - Primary CTA / hero metric: Plasma Orange (#FF4D00)
+ * - AI / data intelligence: Ice Cyan (#00F0FF)
  * =============================================================
  */
 
 import * as Haptics from 'expo-haptics'
 
 const palette = {
-    // 🌌 Deep court atmosphere (avoid pure black for better OLED ergonomics)
-    black: '#09111D',
-    surface: '#101A2B',
-    elevated: '#162338',
-    overlay: '#1E2D47',
+    // Neural Arena depth layers
+    black: '#000000',
+    surface: '#0A0A0A',
+    elevated: '#111111',
+    overlay: 'rgba(17,17,17,0.94)',
 
-    // 🔥 Plasma Orange signature
-    amber: '#F97316',
-    amberLight: '#FB923C',
-    amberDark: '#C2410C',
-    amberGlow: 'rgba(249, 115, 22, 0.46)',
+    // Accent hierarchy
+    plasma: '#FF4D00',
+    plasmaSoft: 'rgba(255,77,0,0.16)',
+    plasmaFocus: 'rgba(255,77,0,0.40)',
+    plasmaGlow: 'rgba(255,77,0,0.25)',
+    ice: '#00F0FF',
+    iceSoft: 'rgba(0,240,255,0.16)',
+    iceGlow: 'rgba(0,240,255,0.26)',
 
-    // 🌊 Aurora Cyan for data + live accents
-    blue: '#2A7BFF',
-    blueLight: '#5EA1FF',
-    blueGlow: 'rgba(42, 123, 255, 0.34)',
+    // Semantic signals
+    green: '#22C55E',
+    red: '#FF5A65',
+    yellow: '#FFC145',
+    violet: '#8B7CFF',
+    gold: '#FFD166',
 
-    // 🥗 Semantic Growth
-    green: '#16C784',
-    red: '#FF4D6D',
-    yellow: '#FBBF24',
-    violet: '#A78BFA',
-    gold: '#FACC15',
-
-    // ⚪ Neutrals
-    white: '#F7FAFF',
-    slate: '#A8B4C7',
-    steel: '#617089',
-    ink: '#05080C',
+    // Text neutrals
+    white: '#F5F7FA',
+    slate: 'rgba(255,255,255,0.72)',
+    steel: 'rgba(255,255,255,0.52)',
+    ink: '#000000',
 } as const
 
 const baseTheme = {
@@ -49,17 +49,22 @@ const baseTheme = {
             overlay: palette.overlay,
         },
         brand: {
-            primary: palette.amber,
-            secondary: palette.amberLight,
-            dark: palette.amberDark,
-            glow: palette.amberGlow,
-            muted: 'rgba(255,107,0,0.12)',
+            primary: palette.plasma,
+            secondary: palette.ice,
+            dark: '#D93F00',
+            glow: palette.plasmaGlow,
+            muted: palette.plasmaSoft,
+        },
+        ai: {
+            primary: palette.ice,
+            glow: palette.iceGlow,
+            muted: palette.iceSoft,
         },
         semantic: {
             success: palette.green,
             error: palette.red,
             warning: palette.yellow,
-            info: palette.blue,
+            info: palette.ice,
             purple: palette.violet,
             gold: palette.gold,
         },
@@ -70,50 +75,58 @@ const baseTheme = {
             inverse: palette.ink,
         },
         border: {
-            soft: 'rgba(255,255,255,0.08)',
-            base: 'rgba(255,255,255,0.14)',
-            strong: 'rgba(255,255,255,0.24)',
-            accent: 'rgba(249,115,22,0.35)',
+            hairline: 'rgba(255,255,255,0.04)',
+            soft: 'rgba(255,255,255,0.06)',
+            base: 'rgba(255,255,255,0.06)',
+            strong: 'rgba(255,255,255,0.12)',
+            accent: palette.plasmaFocus,
+            ai: 'rgba(0,240,255,0.30)',
         }
     },
 
     gradients: {
-        app: [palette.black, palette.surface, '#11243D'],
-        accent: [palette.amberDark, palette.amber, palette.amberLight],
-        live: ['#0F1E33', '#16314F', '#0E4A64'],
+        app: [palette.black, palette.black, palette.surface],
+        accent: ['#7A2500', palette.plasma, '#FF6A33'],
+        live: [palette.black, '#051416', '#082327'],
     },
 
-    // ─── Glassmorphism V4 ─────────────────────────────────────
+    // Layered card system: void/surface/elevated
     glass: {
         thin: {
-            backgroundColor: 'rgba(255,255,255,0.04)',
-            borderColor: 'rgba(255,255,255,0.08)',
-            borderWidth: 1,
+            backgroundColor: 'rgba(255,255,255,0.015)',
+            borderColor: 'rgba(255,255,255,0.06)',
+            borderWidth: 0.5,
         },
         base: {
-            backgroundColor: 'rgba(255,255,255,0.06)',
-            borderColor: 'rgba(255,255,255,0.13)',
-            borderWidth: 1,
+            backgroundColor: palette.surface,
+            borderColor: 'rgba(255,255,255,0.06)',
+            borderWidth: 0.5,
         },
         frosted: {
-            backgroundColor: 'rgba(18,30,48,0.78)',
-            borderColor: 'rgba(255,255,255,0.15)',
-            borderWidth: 1,
+            backgroundColor: palette.elevated,
+            borderColor: 'rgba(255,255,255,0.06)',
+            borderWidth: 0.5,
         },
         vivid: {
-            backgroundColor: 'rgba(249,115,22,0.15)',
-            borderColor: 'rgba(249,115,22,0.34)',
-            borderWidth: 1.5,
+            backgroundColor: palette.iceSoft,
+            borderColor: 'rgba(0,240,255,0.30)',
+            borderWidth: 0.5,
         },
         deep: {
-            backgroundColor: 'rgba(9,17,29,0.90)',
-            borderColor: 'rgba(255,255,255,0.10)',
-            borderWidth: 1,
+            backgroundColor: palette.black,
+            borderColor: 'rgba(255,255,255,0.06)',
+            borderWidth: 0.5,
+        },
+        cta: {
+            backgroundColor: palette.plasma,
+            borderColor: palette.plasmaFocus,
+            borderWidth: 0.5,
         }
     },
 
     gamification: {
         purple: palette.violet,
+        gold: palette.gold,
     },
 
     // ─── Typography ──────────────────────────────────────────
@@ -137,49 +150,55 @@ const baseTheme = {
     },
 
     fontSize: {
-        xs: 11, sm: 13, base: 15, md: 17, lg: 20, xl: 24, '2xl': 32, '3xl': 48, hero: 72
+        xs: 10, sm: 14, base: 14, md: 16, lg: 18, xl: 24, '2xl': 32, '3xl': 48, hero: 72
     },
 
     type: {
         hero: {
-            fontSize: 72, fontFamily: 'Sora_800ExtraBold', letterSpacing: -3, lineHeight: 76
+            fontSize: 72, fontFamily: 'Sora_700Bold', letterSpacing: -1.4, lineHeight: 76
         },
         h1: {
-            fontSize: 36, fontFamily: 'Sora_800ExtraBold', letterSpacing: -1, lineHeight: 40
+            fontSize: 36, fontFamily: 'Sora_700Bold', letterSpacing: -0.72, lineHeight: 40
         },
         h2: {
-            fontSize: 24, fontFamily: 'Sora_700Bold', letterSpacing: -0.5, lineHeight: 28
+            fontSize: 24, fontFamily: 'Sora_700Bold', letterSpacing: -0.48, lineHeight: 30
         },
         h3: {
-            fontSize: 18, fontFamily: 'Sora_700Bold', letterSpacing: -0.3, lineHeight: 22
+            fontSize: 18, fontFamily: 'Sora_600SemiBold', letterSpacing: -0.36, lineHeight: 24
         },
         body: {
-            fontSize: 15, fontFamily: 'DMSans_400Regular', lineHeight: 22
+            fontSize: 14, fontFamily: 'DMSans_400Regular', lineHeight: 20
         },
         bodyBold: {
-            fontSize: 15, fontFamily: 'DMSans_700Bold', lineHeight: 22
+            fontSize: 14, fontFamily: 'DMSans_700Bold', lineHeight: 20
         },
         caption: {
-            fontSize: 13, fontFamily: 'DMSans_400Regular', color: '#94A3B8'
+            fontSize: 12, fontFamily: 'DMSans_400Regular', color: palette.slate
         },
         overline: {
-            fontSize: 11, fontFamily: 'Sora_700Bold', letterSpacing: 1.5, textTransform: 'uppercase' as const
+            fontSize: 12, fontFamily: 'DMSans_500Medium', letterSpacing: 0.6
         },
         statLarge: {
-            fontSize: 48, fontFamily: 'Sora_800ExtraBold', letterSpacing: -1.5
+            fontSize: 48, fontFamily: 'Sora_700Bold', letterSpacing: -0.96
         },
         screenTitle: {
-            fontSize: 32, fontFamily: 'Sora_800ExtraBold', letterSpacing: -1, lineHeight: 36
+            fontSize: 32, fontFamily: 'Sora_700Bold', letterSpacing: -0.64, lineHeight: 36
         },
         sectionTitle: {
-            fontSize: 18, fontFamily: 'Sora_700Bold', letterSpacing: -0.3, textTransform: 'uppercase' as const
+            fontSize: 14, fontFamily: 'DMSans_500Medium', letterSpacing: 0.6
         },
         cardTitle: {
-            fontSize: 17, fontFamily: 'Sora_600SemiBold', letterSpacing: -0.2
+            fontSize: 16, fontFamily: 'DMSans_600SemiBold', letterSpacing: -0.2
         },
         mediumStat: {
-            fontSize: 28, fontFamily: 'Sora_800ExtraBold', letterSpacing: -1
-        }
+            fontSize: 28, fontFamily: 'JetBrainsMono_400Regular', letterSpacing: -0.6
+        },
+        dataMicro: {
+            fontSize: 10, fontFamily: 'JetBrainsMono_400Regular', letterSpacing: 0.2
+        },
+        systemLabel: {
+            fontSize: 10, fontFamily: 'JetBrainsMono_400Regular', letterSpacing: 1.1, textTransform: 'uppercase' as const
+        },
     },
 
     // ─── Spacing ───
@@ -189,27 +208,37 @@ const baseTheme = {
 
     // ─── Radius ───
     radius: {
-        sm: 6, md: 10, lg: 16, xl: 24, '2xl': 32, full: 9999
+        sm: 8, md: 12, lg: 16, xl: 22, '2xl': 32, full: 9999
     },
 
-    // ─── High Fidelity Glows ───
+    // Selective glow: primary CTA only
     glow: {
-        soft: (c: string = palette.amber) => ({
-            shadowColor: c, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.24, shadowRadius: 12, elevation: 6
+        soft: (_c: string = palette.plasma) => ({
         }),
-        hero: (c: string = palette.amber) => ({
-            shadowColor: c, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.50, shadowRadius: 28, elevation: 16
+        hero: (c: string = palette.plasma) => ({
+            shadowColor: c,
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0.25,
+            shadowRadius: 20,
+            elevation: 8,
         }),
-        organic: (c: string = palette.black) => ({
-            shadowColor: c, shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.56, shadowRadius: 22, elevation: 11
+        cta: (c: string = palette.plasma) => ({
+            shadowColor: c,
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0.25,
+            shadowRadius: 20,
+            elevation: 8,
+        }),
+        organic: (_c: string = palette.black) => ({
         })
     },
 
     // ─── Animations ───
     spring: {
-        snappy: { damping: 15, stiffness: 240 },
-        gentle: { damping: 22, stiffness: 128 },
-        bouncy: { damping: 9, stiffness: 164 },
+        snappy: { mass: 1, damping: 18, stiffness: 200 },
+        gentle: { mass: 1, damping: 18, stiffness: 200 },
+        bouncy: { mass: 1, damping: 18, stiffness: 200 },
+        interaction: { mass: 1, damping: 18, stiffness: 200 },
     },
 
     stagger: {
@@ -223,7 +252,7 @@ const baseTheme = {
     // ─── Helpers ───
     ratingColor: (v: number) => {
         if (v >= 85) return palette.green
-        if (v >= 70) return palette.amber
+        if (v >= 70) return palette.ice
         if (v >= 50) return palette.yellow
         return palette.red
     }

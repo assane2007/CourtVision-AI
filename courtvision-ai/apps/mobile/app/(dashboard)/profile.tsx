@@ -20,7 +20,7 @@ import React, { useEffect, useCallback, useState, memo } from 'react'
 import { useRouter } from 'expo-router'
 import Animated, {
     FadeInDown, FadeInRight, ZoomIn,
-    useSharedValue, useAnimatedStyle, withRepeat, withTiming,
+    useSharedValue, useAnimatedStyle, withTiming,
     withSequence, Easing,
 } from 'react-native-reanimated'
 import Svg, { Circle } from 'react-native-svg'
@@ -45,9 +45,9 @@ const LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Pro', 'Elite'] as const
 
 const RARITY_COLORS: Record<string, string> = {
     common: T.color.text.secondary,
-    rare: T.color.semantic.info,
+    rare: T.color.ai.primary,
     epic: T.color.gamification.purple,
-    legendary: T.color.signature.primary,
+    legendary: T.color.brand.primary,
 }
 
 const PRIVACY_URL = 'https://courtvision.ai/privacy'
@@ -99,11 +99,9 @@ const PlayerAvatar = memo(function PlayerAvatar({ name, xp, onPress }: {
 
     const pulse = useSharedValue(1)
     useEffect(() => {
-        pulse.value = withRepeat(
-            withSequence(
-                withTiming(1.04, { duration: 2000, easing: Easing.inOut(Easing.sin) }),
-                withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.sin) }),
-            ), -1,
+        pulse.value = withSequence(
+            withTiming(1.03, { duration: 140, easing: Easing.inOut(Easing.sin) }),
+            withTiming(1, { duration: 180, easing: Easing.inOut(Easing.sin) }),
         )
     }, [pulse])
 
@@ -427,7 +425,7 @@ export default function Profile() {
 
     const SEASON_STATS = [
         { label: 'Sessions', value: String(sessionCount), sub: 'analyzed', color: T.color.semantic.info },
-        { label: 'Mental', value: String(mentalAvg), sub: '/ 100', color: T.color.signature.primary },
+        { label: 'Mental', value: String(mentalAvg), sub: '/ 100', color: T.color.ai.primary },
         { label: 'FG%', value: `${shootingFgPct}%`, sub: 'season', color: T.color.semantic.success },
         { label: 'Overall', value: String(overallRating), sub: 'Digital Twin', color: T.color.semantic.warning },
     ]
@@ -515,7 +513,6 @@ export default function Profile() {
                     style={[
                         s.playerCard,
                         T.glass.base,
-                        T.glow.soft(T.color.brand.primary),
                     ]}
                 >
                     <View style={s.playerCardRow}>
@@ -553,7 +550,7 @@ export default function Profile() {
                             )}
                         </View>
                         {/* Overall badge */}
-                        <View style={[s.overallBadge, T.glass.vivid, T.glow.soft(T.color.brand.primary)]}>
+                        <View style={[s.overallBadge, T.glass.vivid]}>
                             <Text style={s.overallValue}>{overallRating}</Text>
                             <Text style={s.overallLabel}>OVR</Text>
                         </View>
@@ -574,7 +571,7 @@ export default function Profile() {
                             onPress={openEdit}
                             accessibilityRole="button"
                         >
-                            <Feather name="edit-2" size={13} color={T.color.signature.primary} />
+                            <Feather name="edit-2" size={13} color={T.color.ai.primary} />
                             <Text style={s.editButtonText}>Edit</Text>
                         </TouchableOpacity>
                     </View>
@@ -675,7 +672,7 @@ export default function Profile() {
                             <Switch
                                 value={notifEnabled}
                                 onValueChange={setNotifEnabled}
-                                trackColor={{ false: T.color.text.tertiary, true: T.color.signature.primary }}
+                                trackColor={{ false: T.color.text.tertiary, true: T.color.ai.primary }}
                                 thumbColor="#fff"
                             />
                         }
@@ -712,7 +709,7 @@ export default function Profile() {
                 {/* ═══ LOGOUT ═══ */}
                 <Animated.View entering={FadeInDown.delay(800).duration(400)}>
                     <TouchableOpacity
-                        style={[s.logoutButton, T.glass.base, T.glow.soft(T.color.semantic.error)]}
+                        style={[s.logoutButton, T.glass.base]}
                         onPress={handleLogout}
                         activeOpacity={0.75}
                     >
@@ -741,7 +738,7 @@ const s = StyleSheet.create({
     // Screen
     screen: {
         flex: 1,
-        backgroundColor: T.color.background.primary,
+        backgroundColor: T.color.bg.primary,
     },
     scrollContent: {
         padding: T.spacing[5],
@@ -777,7 +774,7 @@ const s = StyleSheet.create({
         borderRadius: T.borderRadius['2xl'],
         padding: T.spacing[5],
         borderColor: T.color.border.base,
-        borderWidth: 1,
+        borderWidth: 0.5,
         marginBottom: T.spacing[5],
     },
     playerCardRow: {
@@ -798,7 +795,7 @@ const s = StyleSheet.create({
     },
     playerPosition: {
         ...typePresets.cardTitle,
-        color: T.color.signature.primary,
+        color: T.color.ai.primary,
         marginTop: 3,
         fontSize: 13,
     },
@@ -832,7 +829,7 @@ const s = StyleSheet.create({
     },
     streakText: {
         ...typePresets.overline,
-        color: T.color.signature.primary,
+        color: T.color.semantic.warning,
         fontSize: 10,
     },
     overallBadge: {
@@ -845,12 +842,12 @@ const s = StyleSheet.create({
     },
     overallValue: {
         ...typePresets.statLarge,
-        color: T.color.signature.primary,
+        color: T.color.brand.primary,
         fontSize: 28,
     },
     overallLabel: {
         ...typePresets.overline,
-        color: T.color.signature.primary,
+        color: T.color.brand.primary,
         fontSize: 9,
     },
 
@@ -859,7 +856,7 @@ const s = StyleSheet.create({
         width: AVATAR_SIZE,
         height: AVATAR_SIZE,
         borderRadius: AVATAR_SIZE / 2,
-        backgroundColor: T.color.signature.muted,
+        backgroundColor: T.color.bg.tertiary,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -875,11 +872,11 @@ const s = StyleSheet.create({
         width: 24,
         height: 24,
         borderRadius: 12,
-        backgroundColor: T.color.signature.primary,
+        backgroundColor: T.color.ai.primary,
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 2,
-        borderColor: T.color.background.primary,
+        borderColor: T.color.bg.primary,
     },
 
     // XP Bar
@@ -893,7 +890,7 @@ const s = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingTop: T.spacing[3],
-        borderTopWidth: 1,
+        borderTopWidth: 0.5,
         borderTopColor: T.color.border.soft,
     },
     coachBadgeRow: {
@@ -931,7 +928,7 @@ const s = StyleSheet.create({
     },
     editButtonText: {
         ...typePresets.cardTitle,
-        color: T.color.signature.primary,
+        color: T.color.ai.primary,
         fontSize: 13,
     },
 
@@ -970,7 +967,7 @@ const s = StyleSheet.create({
         ...typePresets.sectionTitle,
         color: T.color.text.primary,
         marginBottom: T.spacing[3],
-        fontSize: 18,
+        fontSize: 16,
     },
     sectionHeaderRow: {
         flexDirection: 'row',
@@ -980,7 +977,7 @@ const s = StyleSheet.create({
     },
     seeAllLink: {
         ...typePresets.cardTitle,
-        color: T.color.signature.primary,
+        color: T.color.ai.primary,
         fontSize: 13,
     },
 
@@ -1022,7 +1019,7 @@ const s = StyleSheet.create({
         alignItems: 'center',
         borderRadius: T.borderRadius.lg,
         padding: T.spacing[3],
-        borderLeftWidth: 3,
+        borderLeftWidth: 2,
     },
     activityIcon: {
         width: 36,
@@ -1143,7 +1140,7 @@ const s = StyleSheet.create({
         borderRadius: T.borderRadius.md,
         paddingHorizontal: T.spacing[4],
         paddingVertical: T.spacing[3],
-        borderWidth: 1,
+        borderWidth: 0.5,
         borderColor: T.color.border.base,
         marginBottom: T.spacing[4],
         minHeight: 44,
@@ -1164,7 +1161,7 @@ const s = StyleSheet.create({
         marginRight: T.spacing[2],
     },
     chipActive: {
-        backgroundColor: T.color.signature.primary,
+        backgroundColor: T.color.brand.primary,
     },
     chipActiveSuccess: {
         backgroundColor: T.color.semantic.success,
@@ -1174,7 +1171,7 @@ const s = StyleSheet.create({
         fontSize: 13,
     },
     saveButton: {
-        backgroundColor: T.color.signature.primary,
+        backgroundColor: T.color.brand.primary,
         borderRadius: T.borderRadius.lg,
         paddingVertical: T.spacing[4],
         alignItems: 'center',
@@ -1226,12 +1223,12 @@ const s = StyleSheet.create({
     },
     badgeModalXP: {
         ...typePresets.cardTitle,
-        color: T.color.signature.primary,
+        color: T.color.ai.primary,
         marginTop: T.spacing[3],
     },
     badgeModalClose: {
         marginTop: T.spacing[5],
-        backgroundColor: T.color.signature.primary,
+        backgroundColor: T.color.brand.primary,
         borderRadius: T.borderRadius.lg,
         paddingHorizontal: T.spacing[6],
         paddingVertical: T.spacing[3],

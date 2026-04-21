@@ -1,55 +1,57 @@
 // /d:/CourtVision-AI/courtvision-ai/apps/mobile/constants/tokens.ts
 
 export const colors = {
-    // Fonds
-    void: '#09111D',
-    base: '#101A2B',
-    surface: '#162338',
-    surface2: '#1B2A41',
-    surface3: '#233550',
+    // Layers
+    void: '#000000',
+    base: '#0A0A0A',
+    surface: '#111111',
+    surface2: '#121212',
+    surface3: '#161616',
 
-    // Accent basketball
-    fire: '#F97316',
-    fireDim: '#C2410C',
-    fireGlow: 'rgba(249,115,22,0.22)',
-    fireTrace: 'rgba(249,115,22,0.12)',
+    // Accent hierarchy
+    fire: '#FF4D00',
+    fireDim: '#D93F00',
+    fireGlow: 'rgba(255,77,0,0.25)',
+    fireTrace: 'rgba(255,77,0,0.14)',
+    ice: '#00F0FF',
+    iceDim: 'rgba(0,240,255,0.18)',
 
-    // Texte
-    snow: '#F7FAFF',
-    cloud: 'rgba(247,250,255,0.70)',
-    fog: 'rgba(247,250,255,0.38)',
-    ghost: 'rgba(247,250,255,0.15)',
+    // Text
+    snow: '#F5F7FA',
+    cloud: 'rgba(255,255,255,0.72)',
+    fog: 'rgba(255,255,255,0.52)',
+    ghost: 'rgba(255,255,255,0.15)',
 
-    // Bordures
-    line: 'rgba(255,255,255,0.11)',
-    lineStrong: 'rgba(249,115,22,0.34)',
+    // Borders
+    line: 'rgba(255,255,255,0.06)',
+    lineStrong: 'rgba(255,77,0,0.40)',
 
-    // Statuts
-    live: '#16C784',
-    liveDim: 'rgba(22,199,132,0.17)',
-    caution: '#FBBF24',
-    cautionDim: 'rgba(251,191,36,0.16)',
-    danger: '#FF4D6D',
-    dangerDim: 'rgba(255,77,109,0.16)',
+    // States
+    live: '#00F0FF',
+    liveDim: 'rgba(0,240,255,0.16)',
+    caution: '#FFC145',
+    cautionDim: 'rgba(255,193,69,0.16)',
+    danger: '#FF5A65',
+    dangerDim: 'rgba(255,90,101,0.16)',
 } as const;
 
 export const typography = {
-    // Titres — Barlow Condensed 800 Italic
-    hero: { fontFamily: 'BarlowCondensed_800ExtraBold_Italic', fontSize: 56, lineHeight: 52, letterSpacing: -1 },
-    h1: { fontFamily: 'BarlowCondensed_800ExtraBold_Italic', fontSize: 40, lineHeight: 38, letterSpacing: -0.5 },
-    h2: { fontFamily: 'BarlowCondensed_800ExtraBold_Italic', fontSize: 28, lineHeight: 28 },
-    h3: { fontFamily: 'BarlowCondensed_800ExtraBold_Italic', fontSize: 22, lineHeight: 22 },
+    // Display / hero
+    hero: { fontFamily: 'Sora_700Bold', fontSize: 56, lineHeight: 58, letterSpacing: -1.12 },
+    h1: { fontFamily: 'Sora_700Bold', fontSize: 40, lineHeight: 42, letterSpacing: -0.8 },
+    h2: { fontFamily: 'Sora_700Bold', fontSize: 28, lineHeight: 32, letterSpacing: -0.56 },
+    h3: { fontFamily: 'Sora_600SemiBold', fontSize: 22, lineHeight: 26, letterSpacing: -0.44 },
 
-    // Chiffres/Scores — JetBrains Mono
+    // Data metrics
     stat: { fontFamily: 'JetBrainsMono_400Regular', fontSize: 36, letterSpacing: -1 },
     statSm: { fontFamily: 'JetBrainsMono_400Regular', fontSize: 20 },
-    label: { fontFamily: 'JetBrainsMono_400Regular', fontSize: 10, letterSpacing: 1.5 },
+    label: { fontFamily: 'JetBrainsMono_400Regular', fontSize: 10, letterSpacing: 0.3 },
 
-    // Body — DM Sans
+    // UI labels and controls
     bodyLg: { fontFamily: 'DMSans_500Medium', fontSize: 16, lineHeight: 24 },
-    body: { fontFamily: 'DMSans_400Regular', fontSize: 14, lineHeight: 21 },
-    bodySm: { fontFamily: 'DMSans_400Regular', fontSize: 12, lineHeight: 18 },
-    cta: { fontFamily: 'DMSans_700Bold', fontSize: 15, letterSpacing: 0.3 },
+    body: { fontFamily: 'DMSans_400Regular', fontSize: 14, lineHeight: 20 },
+    bodySm: { fontFamily: 'DMSans_400Regular', fontSize: 14, lineHeight: 18 },
+    cta: { fontFamily: 'DMSans_700Bold', fontSize: 14, letterSpacing: 0.2 },
 } as const;
 
 export const space = {
@@ -67,18 +69,18 @@ export const radius = {
 
 export const shadows = {
     orangeGlow: {
-        shadowColor: '#F97316',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.50,
-        shadowRadius: 18,
-        elevation: 12,
+        shadowColor: '#FF4D00',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.25,
+        shadowRadius: 20,
+        elevation: 8,
     },
     cardShadow: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.6,
-        shadowRadius: 8,
-        elevation: 5,
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+        elevation: 2,
     },
 };
 
@@ -92,6 +94,6 @@ export const DURATION = {
 };
 
 // Springs
-export const SPRING_SNAPPY = { damping: 18, stiffness: 300 };
-export const SPRING_FLUID = { damping: 22, stiffness: 180 };
-export const SPRING_BOUNCY = { damping: 12, stiffness: 250 };
+export const SPRING_SNAPPY = { mass: 1, damping: 18, stiffness: 200 };
+export const SPRING_FLUID = { mass: 1, damping: 18, stiffness: 200 };
+export const SPRING_BOUNCY = { mass: 1, damping: 18, stiffness: 200 };

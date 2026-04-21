@@ -27,10 +27,10 @@ export interface CVDividerProps {
 // ─── Colors ──────────────────────────────────────────────────
 
 const COLORS: Record<CVDividerVariant, string> = {
-  subtle:  T.color.border.soft,
+  subtle:  T.color.border.hairline,
   default: T.color.border.base,
   strong:  T.color.border.strong,
-  accent:  T.color.border.base,
+  accent:  T.color.border.accent,
 }
 
 // ─── Component ───────────────────────────────────────────────
@@ -44,7 +44,7 @@ export function CVDivider({
     <View
       style={[
         {
-          height: 1,
+          height: 0.5,
           backgroundColor: COLORS[variant],
           marginVertical: spacing,
           width: '100%',

@@ -142,7 +142,7 @@ export default function Onboarding3() {
     return (
         <SafeAreaView style={styles.screen}>
             <LinearGradient
-                colors={['#09111B', '#120D1F', '#070707']}
+                colors={['#04070D', '#080D16', '#0A0A0A']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={StyleSheet.absoluteFill}
@@ -161,11 +161,11 @@ export default function Onboarding3() {
                                 router.back()
                             }}
                         >
-                            <Feather name="arrow-left" size={18} color={colors.snow} />
+                            <Feather name="arrow-left" size={18} color={colors.cloud} />
                         </Pressable>
 
                         <View style={styles.lockBadge}>
-                            <Feather name="shield" size={14} color="#8EC5FF" />
+                            <Feather name="shield" size={14} color={colors.ice} />
                             <Text style={styles.lockBadgeText}>SECURE AUTH</Text>
                         </View>
                     </View>
@@ -183,9 +183,9 @@ export default function Onboarding3() {
                     {mode === 'choice' ? (
                         <View style={styles.choiceWrap}>
                             <Pressable style={[styles.optionBtn, styles.optionLight]} onPress={() => handleOAuth('apple')} disabled={isLoading}>
-                                <AntDesign name="apple" size={20} color="#060606" />
-                                <Text style={[styles.optionText, { color: '#060606' }]}>Continue with Apple</Text>
-                                <Feather name="arrow-up-right" size={16} color="#060606" />
+                                <AntDesign name="apple" size={20} color={colors.snow} />
+                                <Text style={[styles.optionText, { color: colors.snow }]}>Continue with Apple</Text>
+                                <Feather name="arrow-up-right" size={16} color={colors.snow} />
                             </Pressable>
 
                             <Pressable style={styles.optionBtn} onPress={() => handleOAuth('google')} disabled={isLoading}>
@@ -241,11 +241,11 @@ export default function Onboarding3() {
 
                             <Pressable style={[styles.submitBtn, isLoading ? styles.submitBtnDisabled : null]} onPress={handleEmailAuth} disabled={isLoading}>
                                 {isLoading ? (
-                                    <ActivityIndicator color="#060606" />
+                                    <ActivityIndicator color="#FFFFFF" />
                                 ) : (
                                     <>
                                         <Text style={styles.submitText}>{isLogin ? 'Sign In' : 'Create Account'}</Text>
-                                        <Feather name="arrow-right" size={16} color="#060606" />
+                                        <Feather name="arrow-right" size={16} color="#FFFFFF" />
                                     </>
                                 )}
                             </Pressable>
@@ -291,24 +291,24 @@ const styles = StyleSheet.create({
         borderRadius: 22,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.15)',
+        borderWidth: 0.5,
+        borderColor: 'rgba(255,255,255,0.12)',
         backgroundColor: 'rgba(10,17,29,0.55)',
     },
     lockBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        borderWidth: 1,
-        borderColor: 'rgba(142,197,255,0.3)',
+        borderWidth: 0.5,
+        borderColor: 'rgba(0,240,255,0.35)',
         borderRadius: 999,
         paddingHorizontal: 10,
         paddingVertical: 6,
-        backgroundColor: 'rgba(142,197,255,0.12)',
+        backgroundColor: 'rgba(0,240,255,0.12)',
     },
     lockBadgeText: {
         fontFamily: 'JetBrainsMono_400Regular',
-        color: '#8EC5FF',
+        color: colors.ice,
         fontSize: 10,
         letterSpacing: 0.8,
     },
@@ -342,17 +342,17 @@ const styles = StyleSheet.create({
     optionBtn: {
         height: 58,
         borderRadius: 16,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.16)',
-        backgroundColor: 'rgba(9,16,27,0.72)',
+        borderWidth: 0.5,
+        borderColor: 'rgba(255,255,255,0.14)',
+        backgroundColor: 'rgba(9,16,27,0.82)',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 16,
     },
     optionLight: {
-        backgroundColor: '#F4F7FC',
-        borderColor: '#F4F7FC',
+        backgroundColor: 'rgba(14,22,36,0.9)',
+        borderColor: 'rgba(255,255,255,0.24)',
     },
     optionText: {
         fontFamily: 'Sora_600SemiBold',
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
     separatorLine: {
         flex: 1,
         height: 1,
-        backgroundColor: 'rgba(255,255,255,0.16)',
+        backgroundColor: 'rgba(255,255,255,0.12)',
     },
     separatorText: {
         fontFamily: 'JetBrainsMono_400Regular',
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
     optionOutline: {
         height: 54,
         borderRadius: 14,
-        borderWidth: 1,
+        borderWidth: 0.5,
         borderColor: 'rgba(255,107,0,0.5)',
         backgroundColor: 'rgba(255,107,0,0.09)',
         alignItems: 'center',
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
     input: {
         height: 56,
         borderRadius: 14,
-        borderWidth: 1,
+        borderWidth: 0.5,
         borderColor: 'rgba(255,255,255,0.18)',
         backgroundColor: 'rgba(8,14,24,0.75)',
         color: colors.snow,
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
         marginTop: 8,
         height: 56,
         borderRadius: 16,
-        backgroundColor: '#F4F7FC',
+        backgroundColor: colors.fire,
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'row',
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
     },
     submitText: {
         fontFamily: 'Sora_700Bold',
-        color: '#060606',
+        color: '#FFFFFF',
         fontSize: 14,
     },
     switchModeBtn: {
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     },
     switchModeText: {
         fontFamily: 'DMSans_600SemiBold',
-        color: '#ADB8CA',
+        color: '#9FB1C7',
         fontSize: 13,
     },
 })

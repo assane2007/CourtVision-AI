@@ -78,7 +78,7 @@ export function CVProgressBar({
   useEffect(() => {
     width.value = withDelay(delay, withTiming(pct, {
       duration: 800,
-      easing: Easing.out(Easing.cubic),
+      easing: Easing.linear,
     }))
   }, [pct, delay])
 
@@ -105,6 +105,8 @@ export function CVProgressBar({
         height,
         borderRadius: height / 2,
         backgroundColor: 'rgba(255,255,255,0.06)',
+        borderWidth: 0.5,
+        borderColor: T.color.border.hairline,
         overflow: 'hidden',
       }}>
         {/* Fill */}
@@ -112,7 +114,6 @@ export function CVProgressBar({
           height: '100%',
           borderRadius: height / 2,
           backgroundColor: fillColor,
-          ...T.glow.soft(fillColor),
         }, fillStyle]} />
       </View>
     </View>

@@ -17,8 +17,7 @@ import {
 } from 'react-native'
 import Animated, {
     useSharedValue, useAnimatedStyle, withSpring,
-    withTiming, withSequence, FadeIn,
-    withRepeat,
+    FadeIn,
 } from 'react-native-reanimated'
 import { BlurView } from 'expo-blur'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -54,29 +53,12 @@ const TAB_VISUALS: Record<string, TabVisual> = {
 // ─── Animated tab item ───────────────────────────────────────
 
 function BadgeBubble({ count }: { count: number }) {
-    const pulse = useSharedValue(1)
-
-    useEffect(() => {
-        pulse.value = withRepeat(
-            withSequence(
-                withTiming(1.16, { duration: 650 }),
-                withTiming(1, { duration: 650 }),
-            ),
-            -1,
-            true
-        )
-    }, [])
-
-    const badgeStyle = useAnimatedStyle(() => ({
-        transform: [{ scale: pulse.value }],
-    }))
-
     const text = count > 9 ? '9+' : String(count)
 
     return (
-        <Animated.View style={[styles.badgeBubble, badgeStyle]}>
+        <View style={styles.badgeBubble}>
             <Text style={styles.badgeText}>{text}</Text>
-        </Animated.View>
+        </View>
     )
 }
 
@@ -104,10 +86,7 @@ function TabItem({
     const iconScale = useSharedValue(1)
 
     useEffect(() => {
-        iconScale.value = withSpring(isFocused ? 1.15 : 1, {
-            damping: 12,
-            stiffness: 200,
-        })
+        iconScale.value = withSpring(isFocused ? 1.1 : 1, T.spring.interaction)
     }, [isFocused])
 
     const scaleStyle = useAnimatedStyle(() => ({
@@ -118,13 +97,13 @@ function TabItem({
         transform: [{ scale: iconScale.value }],
     }))
 
-    const iconColor = isFocused ? T.color.text.primary : T.color.text.tertiary
+    const iconColor = isFocused ? T.color.ai.primary : T.color.text.tertiary
 
     const handlePressIn = () => {
-        scale.value = withSpring(0.94, { damping: 15, stiffness: 300 })
+        scale.value = withSpring(0.94, T.spring.interaction)
     }
     const handlePressOut = () => {
-        scale.value = withSpring(1, { damping: 12, stiffness: 220 })
+        scale.value = withSpring(1, T.spring.interaction)
     }
 
     if (isFAB) {
@@ -261,10 +240,9 @@ const styles = StyleSheet.create({
         height: 86,
         borderRadius: 30,
         overflow: 'hidden',
-        borderWidth: 1.2,
+        borderWidth: 0.5,
         borderColor: T.color.border.base,
-        backgroundColor: 'rgba(12,20,33,0.84)',
-        ...T.glow.soft(T.color.brand.primary),
+        backgroundColor: T.color.bg.secondary,
     },
     container: {
         flexDirection: 'row',
@@ -283,18 +261,17 @@ const styles = StyleSheet.create({
         minWidth: 66,
         height: 42,
         borderRadius: 21,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
-        backgroundColor: 'rgba(255,255,255,0.02)',
+        borderWidth: 0.5,
+        borderColor: T.color.border.base,
+        backgroundColor: T.color.bg.tertiary,
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: 10,
         gap: 1,
     },
     tabChipActive: {
-        borderColor: `${T.color.brand.primary}75`,
-        backgroundColor: `${T.color.brand.primary}28`,
-        ...T.glow.soft(T.color.brand.primary),
+        borderColor: T.color.border.ai,
+        backgroundColor: T.color.ai.muted,
     },
     tabLabel: {
         marginTop: 1,
@@ -310,9 +287,8 @@ const styles = StyleSheet.create({
         width: 22,
         height: 3,
         borderRadius: 999,
-        backgroundColor: T.color.brand.primary,
+        backgroundColor: T.color.ai.primary,
         marginTop: 6,
-        ...T.glow.soft(T.color.brand.primary),
     },
     badgeBubble: {
         position: 'absolute',
@@ -342,7 +318,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginTop: -18,
         backgroundColor: `${T.color.brand.primary}24`,
-        borderWidth: 1,
+        borderWidth: 0.5,
         borderColor: `${T.color.brand.primary}80`,
     },
     fabOuterActive: {
@@ -356,10 +332,10 @@ const styles = StyleSheet.create({
         backgroundColor: T.color.brand.primary,
         justifyContent: 'center',
         alignItems: 'center',
-        ...T.glow.soft(T.color.brand.primary),
+        ...T.glow.cta(T.color.brand.primary),
     },
     fabButtonActive: {
-        ...T.glow.hero(T.color.brand.primary),
+        ...T.glow.cta(T.color.brand.primary),
     },
     fabLabel: {
         marginTop: 2,

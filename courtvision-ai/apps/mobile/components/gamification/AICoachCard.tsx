@@ -13,19 +13,19 @@ import { T } from '../../lib/theme'
 import { useAICoach, type CoachInsight, type InsightType } from '../../hooks/useAICoach'
 
 const TYPE_ACCENT: Record<InsightType, string> = {
-    trend_up: T.color.semantic.success,
-    trend_down: '#FF6B6B',
-    prediction: T.color.semantic.purple,
-    pattern: T.color.semantic.gold,
-    record: T.color.semantic.gold,
-    plan: T.color.semantic.info,
-    milestone: T.color.semantic.purple,
-    significance: '#00E5FF',
-    correlation: '#7C4DFF',
-    causal: '#FF9100',
-    hot_hand: '#FF5252',
-    fatigue: '#FFD740',
-    projection: T.color.semantic.info,
+    trend_up: T.color.ai.primary,
+    trend_down: T.color.ai.primary,
+    prediction: T.color.ai.primary,
+    pattern: T.color.ai.primary,
+    record: T.color.ai.primary,
+    plan: T.color.ai.primary,
+    milestone: T.color.ai.primary,
+    significance: T.color.ai.primary,
+    correlation: T.color.ai.primary,
+    causal: T.color.ai.primary,
+    hot_hand: T.color.ai.primary,
+    fatigue: T.color.ai.primary,
+    projection: T.color.ai.primary,
 }
 
 const TYPE_LABEL: Record<InsightType, string> = {
@@ -80,9 +80,9 @@ export const AICoachCard = memo(function AICoachCard() {
                 {/* ── Header ─────────────────────────── */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <View style={[styles.aiBadge, { backgroundColor: `${T.color.semantic.purple}15`, borderColor: `${T.color.semantic.purple}30` }]}>
+                        <View style={[styles.aiBadge, { backgroundColor: T.color.ai.muted, borderColor: T.color.border.ai }]}>
                             <Text style={{ fontSize: 14 }}>🧠</Text>
-                            <Text style={[styles.aiBadgeText, { color: T.color.semantic.purple }]}>AI Coach</Text>
+                            <Text style={[styles.aiBadgeText, { color: T.color.ai.primary }]}>AI Coach</Text>
                         </View>
                         <View style={[styles.typeBadge, { backgroundColor: `${accent}12`, borderColor: `${accent}25` }]}>
                             <Text style={[styles.typeText, { color: accent }]}>{TYPE_LABEL[insight.type]}</Text>
@@ -145,10 +145,10 @@ const InsightContent = memo(function InsightContent({ insight, accent }: { insig
 
 const styles = StyleSheet.create({
     card: {
-        ...T.glass.vivid as object,
+        ...T.glass.base as object,
         borderRadius: T.radius.xl,
         padding: 18,
-        borderWidth: 1,
+        borderWidth: 0.5,
     },
     aiBadge: {
         flexDirection: 'row',
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderRadius: 8,
-        borderWidth: 1,
+        borderWidth: 0.5,
     },
     aiBadgeText: {
         fontSize: 12,
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 7,
         paddingVertical: 2,
         borderRadius: 6,
-        borderWidth: 1,
+        borderWidth: 0.5,
     },
     typeText: {
         fontSize: 9,
@@ -213,7 +213,9 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: `${T.color.text.tertiary}10`,
+        backgroundColor: T.color.bg.tertiary,
+        borderWidth: 0.5,
+        borderColor: T.color.border.base,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -229,8 +231,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         paddingVertical: 2,
         borderRadius: 6,
-        borderWidth: 1,
-        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderWidth: 0.5,
+        backgroundColor: T.color.bg.tertiary,
     },
     pValueText: {
         fontSize: 10,

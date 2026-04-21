@@ -20,7 +20,7 @@ import { T } from '../../lib/theme'
 
 export type CVIconColor =
   | 'primary' | 'secondary' | 'tertiary'
-  | 'amber' | 'success' | 'error' | 'warning' | 'info'
+  | 'amber' | 'cyan' | 'success' | 'error' | 'warning' | 'info'
   | 'purple' | 'gold' | 'white'
 
 export interface CVIconProps {
@@ -40,24 +40,26 @@ const COLOR_MAP: Record<string, string> = {
   primary:   T.color.text.primary,
   secondary: T.color.text.secondary,
   tertiary:  T.color.text.tertiary,
-  amber:     T.color.signature.primary,
+  amber:     T.color.brand.primary,
+  cyan:      T.color.ai.primary,
   success:   T.color.semantic.success,
   error:     T.color.semantic.error,
   warning:   T.color.semantic.warning,
-  info:      T.color.semantic.info,
+  info:      T.color.ai.primary,
   purple:    T.color.gamification.purple,
   gold:      T.color.gamification.gold,
   white:     '#FFFFFF',
 }
 
 const BG_MAP: Record<string, string> = {
-  amber:   'rgba(255,107,0,0.10)',
-  success: 'rgba(0,198,122,0.10)',
-  error:   'rgba(255,58,94,0.10)',
-  warning: 'rgba(255,186,0,0.10)',
-  info:    'rgba(10,132,255,0.10)',
+  amber:   T.color.brand.muted,
+  cyan:    T.color.ai.muted,
+  success: 'rgba(34,197,94,0.10)',
+  error:   'rgba(255,90,101,0.10)',
+  warning: 'rgba(255,193,69,0.10)',
+  info:    T.color.ai.muted,
   purple:  'rgba(167,139,250,0.10)',
-  gold:    'rgba(255,215,0,0.10)',
+  gold:    'rgba(255,209,102,0.10)',
 }
 
 // ─── Component ───────────────────────────────────────────────

@@ -9,17 +9,17 @@ const VARIANT_MAP: Record<AppBackgroundVariant, readonly [string, string, string
     dashboard: [
         T.color.bg.primary,
         T.color.bg.secondary,
-        '#122842',
+        T.color.bg.tertiary,
     ],
     focus: [
         T.color.bg.primary,
-        '#12213A',
-        '#0E2842',
+        T.color.bg.primary,
+        T.color.bg.secondary,
     ],
     calm: [
         T.color.bg.primary,
-        '#182032',
-        '#1D293F',
+        T.color.bg.secondary,
+        T.color.bg.tertiary,
     ],
 }
 
@@ -34,40 +34,30 @@ export function AppBackground({
         <View pointerEvents="none" style={StyleSheet.absoluteFill}>
             <LinearGradient
                 colors={gradient}
-                start={{ x: 0.05, y: 0 }}
+                start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={StyleSheet.absoluteFill}
             />
-            <View style={styles.glowTop} />
-            <View style={styles.glowBottom} />
+            <View style={styles.dataSweep} />
             <View style={styles.gridVeil} />
         </View>
     )
 }
 
 const styles = StyleSheet.create({
-    glowTop: {
+    dataSweep: {
         position: 'absolute',
-        top: -100,
-        left: -50,
-        width: 260,
-        height: 260,
-        borderRadius: 130,
-        backgroundColor: 'rgba(249,115,22,0.20)',
-    },
-    glowBottom: {
-        position: 'absolute',
+        top: -120,
         right: -80,
-        bottom: -120,
         width: 300,
-        height: 300,
+        height: 260,
         borderRadius: 150,
-        backgroundColor: 'rgba(45,212,191,0.14)',
+        backgroundColor: 'rgba(0,240,255,0.08)',
     },
     gridVeil: {
         ...StyleSheet.absoluteFillObject,
         backgroundColor: 'rgba(255,255,255,0.01)',
-        borderTopWidth: 1,
-        borderTopColor: 'rgba(255,255,255,0.03)',
+        borderTopWidth: 0.5,
+        borderTopColor: T.color.border.hairline,
     },
 })

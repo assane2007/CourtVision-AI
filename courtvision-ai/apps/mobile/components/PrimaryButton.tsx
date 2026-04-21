@@ -59,8 +59,8 @@ function bgColor(variant: ButtonVariant, state: ButtonState) {
     if (state === 'success') return T.color.semantic.success
     switch (variant) {
         case 'primary': return T.color.brand.primary
-        case 'secondary': return T.color.brand.muted
-        case 'ghost': return 'transparent'
+        case 'secondary': return T.color.ai.muted
+        case 'ghost': return T.color.bg.tertiary
         case 'danger': return T.color.semantic.error
     }
 }
@@ -70,7 +70,7 @@ function textColor(variant: ButtonVariant, state: ButtonState) {
     if (state === 'success') return T.color.text.primary
     switch (variant) {
         case 'primary': return T.color.text.inverse
-        case 'secondary': return T.color.brand.primary
+        case 'secondary': return T.color.ai.primary
         case 'ghost': return T.color.text.secondary
         case 'danger': return T.color.text.inverse
     }
@@ -78,11 +78,11 @@ function textColor(variant: ButtonVariant, state: ButtonState) {
 
 function borderStyle(variant: ButtonVariant, state: ButtonState) {
     if (variant === 'secondary') return {
-        borderWidth: 1,
-        borderColor: state === 'disabled' ? T.color.text.tertiary : `${T.color.brand.primary}40`,
+        borderWidth: 0.5,
+        borderColor: state === 'disabled' ? T.color.text.tertiary : T.color.border.ai,
     }
     if (variant === 'ghost') return {
-        borderWidth: 1,
+        borderWidth: 0.5,
         borderColor: T.color.border.base,
     }
     return {}
@@ -111,12 +111,12 @@ export function PrimaryButton({
 
     const handlePressIn = () => {
         HapticFeedback.light()
-        scale.value = withSpring(0.95, { damping: 15, stiffness: 400 })
+        scale.value = withSpring(0.95, T.spring.interaction)
         bg.value = withTiming(1, { duration: 80 })
     }
 
     const handlePressOut = () => {
-        scale.value = withSpring(1, { damping: 14, stiffness: 320 })
+        scale.value = withSpring(1, T.spring.interaction)
         bg.value = withTiming(0, { duration: 150 })
     }
 
@@ -150,7 +150,7 @@ export function PrimaryButton({
     const currentText = textColor(variant, internalState)
     const currentBorder = borderStyle(variant, internalState)
 
-    const glowShadow = variant === 'primary' ? T.glow.hero(T.color.brand.primary) : {}
+    const glowShadow = variant === 'primary' ? T.glow.cta(T.color.brand.primary) : {}
 
     return (
         <Animated.View style={[

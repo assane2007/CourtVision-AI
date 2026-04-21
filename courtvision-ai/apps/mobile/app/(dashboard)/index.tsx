@@ -29,7 +29,7 @@ import { useRouter } from 'expo-router'
 import { useEffect, useCallback, useState, memo } from 'react'
 import Animated, {
     FadeInDown, FadeInRight,
-    useSharedValue, useAnimatedStyle, withTiming, withSpring, withRepeat, withSequence,
+    useSharedValue, useAnimatedStyle, withTiming, withSpring, withSequence,
 } from 'react-native-reanimated'
 import Svg, { Circle } from 'react-native-svg'
 import {
@@ -94,7 +94,7 @@ const AvatarXPRing = memo(function AvatarXPRing({ name, xp }: { name: string; xp
                     cx={RING_SIZE / 2}
                     cy={RING_SIZE / 2}
                     r={RING_R}
-                    stroke={`${T.color.brand.primary}15`}
+                    stroke={`${T.color.ai.primary}20`}
                     strokeWidth={RING_STROKE}
                     fill="transparent"
                 />
@@ -102,7 +102,7 @@ const AvatarXPRing = memo(function AvatarXPRing({ name, xp }: { name: string; xp
                     cx={RING_SIZE / 2}
                     cy={RING_SIZE / 2}
                     r={RING_R}
-                    stroke={T.color.brand.primary}
+                    stroke={T.color.ai.primary}
                     strokeWidth={RING_STROKE}
                     fill="transparent"
                     strokeDasharray={`${RING_CIRCUM}`}
@@ -135,12 +135,15 @@ const HeroStatCard = memo(function HeroStatCard({ value, label, delta }: {
             <GlassCard variant="accent" style={ds.heroCard}>
                 <View style={ds.heroHeader}>
                     <CVText preset="overline" color="secondary">{label}</CVText>
-                    <CVBadge label={delta} variant="success" size="sm" />
+                    <CVBadge label={delta} variant="info" size="sm" />
                 </View>
                 <View style={ds.heroValueRow}>
                     <Text style={ds.heroValue}>{value}</Text>
                     <Text style={ds.heroUnit}>%</Text>
                 </View>
+                <CVText preset="dataMicro" color="secondary" style={ds.heroMicro}>
+                    session model: v6.2 | confidence 96.4
+                </CVText>
                 <CVProgressBar value={progress} color="brand" height={6} />
             </GlassCard>
         </Animated.View>
@@ -174,7 +177,7 @@ const HighlightCard = memo(function HighlightCard({ clip, onPress }: {
                     {clip.label}
                 </CVText>
                 {clip.pts != null && (
-                    <CVText preset="overline" color="brand">{clip.pts} pts</CVText>
+                    <CVText preset="overline" color="ai">{clip.pts} pts</CVText>
                 )}
             </TouchableOpacity>
         </Animated.View>
@@ -191,7 +194,7 @@ const SectionHeader = memo(function SectionHeader({ title, action, onAction }: {
             <CVText preset="h2">{title}</CVText>
             {action && onAction && (
                 <TouchableOpacity onPress={onAction} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <CVText preset="overline" color="brand">{action} →</CVText>
+                    <CVText preset="overline" color="ai">{action} →</CVText>
                 </TouchableOpacity>
             )}
         </View>
@@ -261,9 +264,7 @@ const DataLabBanner = memo(function DataLabBanner({ onPress }: { onPress: () => 
     const { summary, loading } = useAdvancedAnalytics()
     if (loading || !summary || summary.dataQuality === 'insufficient') return null
 
-    const qualityColor = summary.dataQuality === 'excellent' ? T.color.semantic.success
-        : summary.dataQuality === 'good' ? T.color.brand.primary
-            : T.color.semantic.warning
+    const qualityColor = T.color.ai.primary
 
     return (
         <Animated.View entering={FadeInDown.delay(250).duration(400)}>
@@ -321,22 +322,14 @@ export default function DashboardIndex() {
 
     useEffect(() => {
         if (streak > 3) {
-            streakFlameScale.value = withRepeat(
-                withSequence(
-                    withTiming(1.14, { duration: 360 }),
-                    withTiming(1, { duration: 360 }),
-                ),
-                -1,
-                false,
+            streakFlameScale.value = withSequence(
+                withTiming(1.08, { duration: 120 }),
+                withTiming(1, { duration: 160 }),
             )
-            streakFlameRotate.value = withRepeat(
-                withSequence(
-                    withTiming(-6, { duration: 220 }),
-                    withTiming(6, { duration: 220 }),
-                    withTiming(0, { duration: 220 }),
-                ),
-                -1,
-                false,
+            streakFlameRotate.value = withSequence(
+                withTiming(-4, { duration: 80 }),
+                withTiming(4, { duration: 80 }),
+                withTiming(0, { duration: 120 }),
             )
             return
         }
@@ -428,8 +421,6 @@ export default function DashboardIndex() {
     return (
         <SafeAreaView style={ds.screen}>
             <AppBackground variant="dashboard" />
-            {/* Subtle ambient glow */}
-            <View style={ds.ambientGlow} />
 
             <ScrollView
                 contentContainerStyle={ds.scrollContent}
@@ -447,7 +438,7 @@ export default function DashboardIndex() {
                 <Animated.View entering={FadeInDown.duration(500)} style={ds.heroHeader2}>
                     <View style={ds.heroHeaderLeft}>
                         <CVText preset="overline" color="tertiary" style={ds.greetingText}>
-                            {greeting.toUpperCase()}
+                            {greeting}
                         </CVText>
                         <CVText preset="h1" color="primary">{firstName}</CVText>
                     </View>
@@ -488,7 +479,7 @@ export default function DashboardIndex() {
                         <HeroStatCard
                             value={headlineStat}
                             label={shootingFgPct > 0 ? 'SHOOTING' : 'MENTAL'}
-                            delta="▲ +4.2% vs last week"
+                            delta="+4.2 vs last week"
                         />
                     </View>
                 ) : (
@@ -501,7 +492,7 @@ export default function DashboardIndex() {
                 {hasSession && (
                     <Animated.View entering={FadeInDown.delay(160).duration(400)} style={ds.miniCardRow}>
                         <View style={ds.miniCardFlex}>
-                            <StatCard label="FG%" value={shootingFgPct > 0 ? Math.round(shootingFgPct) : 0} unit="%" variant="accent" size="sm" />
+                            <StatCard label="FG%" value={shootingFgPct > 0 ? Math.round(shootingFgPct) : 0} unit="%" variant="default" size="sm" />
                         </View>
                         <View style={ds.miniCardFlex}>
                             <StatCard label="XP" value={xp} variant="default" size="sm" />
@@ -554,15 +545,15 @@ export default function DashboardIndex() {
 
                 {/* ═══ QUICK ACTIONS ═══ */}
                 <Animated.View entering={FadeInDown.delay(240).duration(400)} style={ds.quickActionRow}>
-                    <QuickAction icon="cpu" label="PRE-COG 👑" color={T.color.brand.primary} onPress={() => goProFeature('/(app)/precog')} />
-                    <QuickAction icon="zap" label="WORKOUT AI" color="#FFBA00" onPress={() => router.push('/workout-setup')} />
-                    <QuickAction icon="message-circle" label="COACH CHAT 👑" color={T.color.semantic.error} onPress={() => goProFeature('/(app)/coach')} />
+                    <QuickAction icon="cpu" label="Pre-Cog" color={T.color.ai.primary} onPress={() => goProFeature('/(app)/precog')} />
+                    <QuickAction icon="zap" label="Workout AI" color={T.color.ai.primary} onPress={() => router.push('/workout-setup')} />
+                    <QuickAction icon="message-circle" label="Coach Chat" color={T.color.ai.primary} onPress={() => goProFeature('/(app)/coach')} />
                 </Animated.View>
 
                 <Animated.View entering={FadeInDown.delay(280).duration(400)} style={ds.quickActionRowBottom}>
-                    <QuickAction icon="calendar" label="PROGRAM" color={T.color.semantic.success} onPress={() => router.push('/program')} />
-                    <QuickAction icon="bar-chart-2" label="ANALYTICS 👑" color="#8B5CF6" onPress={goAnalytics} />
-                    <QuickAction icon="layers" label="V6 CENTER" color="#FFD700" onPress={() => router.push('/(dashboard)/v6' as any)} />
+                    <QuickAction icon="calendar" label="Program" color={T.color.text.secondary} onPress={() => router.push('/program')} />
+                    <QuickAction icon="bar-chart-2" label="Analytics" color={T.color.ai.primary} onPress={goAnalytics} />
+                    <QuickAction icon="layers" label="V6 Center" color={T.color.text.secondary} onPress={() => router.push('/(dashboard)/v6' as any)} />
                 </Animated.View>
 
                 {/* ═══ HIGHLIGHTS ═══ */}
@@ -621,15 +612,6 @@ const ds = StyleSheet.create({
         paddingTop: T.spacing[4],
         paddingBottom: Platform.OS === 'ios' ? 120 : 100,
     },
-    ambientGlow: {
-        position: 'absolute',
-        top: -120,
-        left: '15%',
-        width: 280,
-        height: 280,
-        borderRadius: 140,
-        backgroundColor: 'rgba(255,107,0,0.01)',
-    },
 
     // Hero Header
     heroHeader2: {
@@ -643,7 +625,7 @@ const ds = StyleSheet.create({
         gap: 4,
     },
     greetingText: {
-        letterSpacing: 1.5,
+        letterSpacing: 0.4,
     },
     heroHeaderRight: {
         flexDirection: 'row',
@@ -657,12 +639,14 @@ const ds = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
+        borderWidth: 0.5,
+        borderColor: T.color.border.base,
     },
     streakEmoji: {
         fontSize: 16,
     },
     streakValue: {
-        color: T.color.brand.primary,
+        color: T.color.ai.primary,
         fontFamily: T.fonts.display.black,
         fontSize: 18,
         fontVariant: ['tabular-nums'],
@@ -674,7 +658,7 @@ const ds = StyleSheet.create({
         backgroundColor: T.color.bg.secondary,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 1,
+        borderWidth: 0.5,
         borderColor: T.color.border.base,
     },
 
@@ -702,7 +686,7 @@ const ds = StyleSheet.create({
         position: 'absolute',
         bottom: -4,
         right: -4,
-        backgroundColor: T.color.brand.primary,
+        backgroundColor: T.color.ai.primary,
         borderRadius: 8,
         width: 20,
         height: 20,
@@ -749,6 +733,9 @@ const ds = StyleSheet.create({
         color: T.color.text.secondary,
         marginLeft: 2,
     },
+    heroMicro: {
+        marginBottom: T.spacing[2],
+    },
 
     // Skeleton
     skeletonRow: {
@@ -779,6 +766,9 @@ const ds = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: T.spacing[3],
+        paddingBottom: T.spacing[2],
+        borderBottomWidth: 0.5,
+        borderBottomColor: T.color.border.hairline,
     },
 
     // Quick Actions
@@ -801,6 +791,9 @@ const ds = StyleSheet.create({
         alignItems: 'center',
         gap: T.spacing[2],
         minHeight: 44,
+        borderWidth: 0.5,
+        borderColor: T.color.border.base,
+        backgroundColor: T.color.bg.secondary,
     },
     quickActionIcon: {
         width: 40,
@@ -808,6 +801,8 @@ const ds = StyleSheet.create({
         borderRadius: 20,
         justifyContent: 'center',
         alignItems: 'center',
+        borderWidth: 0.5,
+        borderColor: T.color.border.hairline,
     },
 
     // Highlight Card
@@ -846,9 +841,11 @@ const ds = StyleSheet.create({
         width: 72,
         height: 72,
         borderRadius: 36,
-        backgroundColor: T.color.brand.muted,
+        backgroundColor: T.color.bg.tertiary,
         justifyContent: 'center',
         alignItems: 'center',
+        borderWidth: 0.5,
+        borderColor: T.color.border.base,
     },
     emptyEmoji: {
         fontSize: 32,
@@ -875,8 +872,9 @@ const ds = StyleSheet.create({
     dataLabBanner: {
         borderRadius: T.radius.lg,
         padding: 14,
-        borderWidth: 1,
-        borderColor: `${T.color.semantic.purple}15`,
+        borderWidth: 0.5,
+        borderColor: T.color.border.ai,
+        backgroundColor: T.color.ai.muted,
     },
     dataLabBannerRow: {
         flexDirection: 'row',
@@ -894,12 +892,10 @@ const ds = StyleSheet.create({
         flex: 1,
     },
     dataLabTitle: {
-        color: T.color.semantic.purple,
+        color: T.color.ai.primary,
         fontSize: 11,
-        fontWeight: '700',
         fontFamily: T.fonts.body.bold,
-        letterSpacing: 0.5,
-        textTransform: 'uppercase',
+        letterSpacing: 0.2,
     },
     dataLabHeadline: {
         color: T.color.text.secondary,

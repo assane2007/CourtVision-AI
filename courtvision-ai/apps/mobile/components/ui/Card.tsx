@@ -15,20 +15,22 @@ export function Card({ children, style, variant = 'base', statusType, ...props }
         backgroundColor: T.color.bg.secondary,
         borderRadius: T.radius.lg,
         padding: T.spacing[4],
+        borderWidth: 0.5,
+        borderColor: T.color.border.base,
     };
 
     if (variant === 'base') {
         containerStyle = {
             ...containerStyle,
-            borderWidth: 1,
+            borderWidth: 0.5,
             borderColor: T.color.border.base,
         };
     } else if (variant === 'status') {
         containerStyle = {
             ...containerStyle,
             borderRadius: T.radius.md,
-            borderWidth: 0,
-            borderLeftWidth: 3,
+            borderWidth: 0.5,
+            borderLeftWidth: 2,
         };
 
         if (statusType === 'critical') {

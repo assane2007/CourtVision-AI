@@ -50,12 +50,12 @@ export function Button({
         ...(isPrimary
             ? {
                 backgroundColor: T.color.brand.primary,
-                ...T.glow.soft(T.color.brand.primary),
+                ...T.glow.cta(T.color.brand.primary),
             }
             : {
-                backgroundColor: 'transparent',
-                borderWidth: 1,
-                borderColor: T.color.border.accent,
+                backgroundColor: T.color.ai.muted,
+                borderWidth: 0.5,
+                borderColor: T.color.border.ai,
             }),
     };
 
@@ -63,8 +63,7 @@ export function Button({
         fontFamily: T.fonts.body.bold,
         fontSize: T.fontSize.base,
         letterSpacing: 0.3,
-        color: isPrimary ? T.color.text.primary : T.color.brand.primary,
-        textTransform: 'uppercase',
+        color: isPrimary ? T.color.text.inverse : T.color.ai.primary,
     };
 
     return (

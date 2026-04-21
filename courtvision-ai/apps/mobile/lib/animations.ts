@@ -132,12 +132,12 @@ export function useScalePress(scale = 0.95) {
 
     const onPressIn = useCallback(() => {
         pressed.value = true
-        scaleValue.value = withSpring(scale, { damping: 15, stiffness: 400 })
+        scaleValue.value = withSpring(scale, T.spring.interaction)
     }, [scale])
 
     const onPressOut = useCallback(() => {
         pressed.value = false
-        scaleValue.value = withSpring(1, { damping: 15, stiffness: 300 })
+        scaleValue.value = withSpring(1, T.spring.interaction)
     }, [])
 
     const animatedStyle = useAnimatedStyle(() => ({
@@ -160,13 +160,10 @@ export function usePulse(amplitude = 1.05, period = 1800) {
     const scale = useSharedValue(1)
 
     useEffect(() => {
-        scale.value = withRepeat(
-            withSequence(
-                withTiming(amplitude, { duration: period / 2, easing: Easing.inOut(Easing.sin) }),
-                withTiming(1, { duration: period / 2, easing: Easing.inOut(Easing.sin) })
-            ),
-            -1,  // infini
-            false
+        // One-shot emphasis on state change; never idle-loop by default.
+        scale.value = withSequence(
+            withTiming(amplitude, { duration: period / 2, easing: Easing.inOut(Easing.sin) }),
+            withTiming(1, { duration: period / 2, easing: Easing.inOut(Easing.sin) })
         )
 
         return () => cancelAnimation(scale)
@@ -192,14 +189,7 @@ export function useGlow(active = true) {
 
     useEffect(() => {
         if (active) {
-            intensity.value = withRepeat(
-                withSequence(
-                    withTiming(0.6, { duration: 900, easing: Easing.inOut(Easing.sin) }),
-                    withTiming(0.2, { duration: 900, easing: Easing.inOut(Easing.sin) })
-                ),
-                -1,
-                false
-            )
+            intensity.value = withTiming(0.35, { duration: 220 })
         } else {
             cancelAnimation(intensity)
             intensity.value = withTiming(0, { duration: 150 })
@@ -345,10 +335,16 @@ export function useProgressBar(target: number, delay = 0) {
         if (delay > 0) {
             progress.value = withDelay(
                 delay,
-                withSpring(targetDecimal, T.spring.gentle)
+                withTiming(targetDecimal, {
+                    duration: 500,
+                    easing: Easing.linear,
+                })
             )
         } else {
-            progress.value = withSpring(targetDecimal, T.spring.gentle)
+            progress.value = withTiming(targetDecimal, {
+                duration: 500,
+                easing: Easing.linear,
+            })
         }
     }, [target])
 

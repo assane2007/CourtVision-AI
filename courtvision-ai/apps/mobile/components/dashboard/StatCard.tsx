@@ -71,7 +71,7 @@ const SIZE_CONFIG = {
 
 function variantColor(variant: StatCardVariant) {
     switch (variant) {
-        case 'accent': return T.color.brand.primary         // amber #FF6B00
+        case 'accent': return T.color.ai.primary
         case 'success': return T.color.semantic.success
         case 'danger': return T.color.semantic.error
         default: return T.color.text.primary
@@ -134,7 +134,7 @@ function AnimatedValue({ value, delay: delayMs, size, color }: {
         <Animated.Text style={[{
             color,
             fontSize: size,
-            fontWeight: '900',
+            fontFamily: T.fonts.mono.regular,
             letterSpacing: -1,
             fontVariant: ['tabular-nums'],
         }, textStyle]}>
@@ -198,7 +198,7 @@ export function StatCard({
 
             {/* Outline subtil premium (inner border) */}
             <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
-                <View style={{ flex: 1, borderWidth: 1, borderColor: T.color.border.base, borderRadius: T.radius.lg }} />
+                <View style={{ flex: 1, borderWidth: 0.5, borderColor: T.color.border.base, borderRadius: T.radius.lg }} />
             </View>
 
             {/* Label + icon */}
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     },
     label: {
         color: T.color.text.secondary,
-        fontWeight: '600',
+        fontFamily: T.fonts.body.medium,
         letterSpacing: 0.2,
         flexShrink: 1,
     },
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
         gap: 3,
     },
     unit: {
-        fontWeight: '700',
+        fontFamily: T.fonts.mono.regular,
         marginBottom: 4,
     },
     trendRow: {

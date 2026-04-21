@@ -1,6 +1,6 @@
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
-import Animated, { FadeInUp, FadeOutUp, ZoomIn } from 'react-native-reanimated'
+import Animated, { FadeInUp, FadeOutUp } from 'react-native-reanimated'
 import { Feather } from '@expo/vector-icons'
 import { T, typePresets } from '../../lib/theme'
 
@@ -19,7 +19,7 @@ export function CVHUDFeedback({ message, type = 'info', detail }: CVHUDFeedbackP
         success: { color: T.color.semantic.success, icon: 'check-circle' as const },
         warning: { color: T.color.semantic.warning, icon: 'alert-triangle' as const },
         error: { color: T.color.semantic.error, icon: 'x-circle' as const },
-        info: { color: T.color.signature.primary, icon: 'info' as const },
+        info: { color: T.color.ai.primary, icon: 'info' as const },
     }[type]
 
     return (
@@ -45,16 +45,13 @@ const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+        backgroundColor: T.color.bg.tertiary,
         padding: T.spacing[3],
-        borderRadius: T.borderRadius.lg,
-        borderLeftWidth: 4,
+        borderRadius: T.radius.lg,
+        borderLeftWidth: 2,
+        borderWidth: 0.5,
+        borderColor: T.color.border.base,
         marginHorizontal: T.spacing[4],
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 5,
     },
     iconContainer: {
         width: 36,
@@ -69,7 +66,7 @@ const styles = StyleSheet.create({
     },
     message: {
         ...type.cardTitle,
-        color: '#FFF',
+        color: T.color.text.primary,
         fontSize: 14,
     },
     detail: {

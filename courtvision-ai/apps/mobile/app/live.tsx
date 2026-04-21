@@ -22,9 +22,7 @@ import Animated, {
     useSharedValue,
     useAnimatedStyle,
     withTiming,
-    withRepeat,
     withSequence,
-    withSpring,
     Easing,
 } from 'react-native-reanimated'
 import { useLiveCoach } from '../hooks/useLiveCoach'
@@ -54,7 +52,7 @@ function formatTime(sec: number): string {
 function MiniBar({ value, color, max = 100 }: { value: number; color: string; max?: number }) {
     const width = useSharedValue(0)
     useEffect(() => {
-        width.value = withTiming((value / max) * 100, { duration: 500 })
+        width.value = withTiming((value / max) * 100, { duration: 500, easing: Easing.linear })
     }, [value])
     const barStyle = useAnimatedStyle(() => ({ width: `${width.value}%` }))
     return (
@@ -133,41 +131,31 @@ function AlertBanner({ alert }: { alert: any }) {
 function MentalRing({ score }: { score: number }) {
     const color = T.ratingColor(score)
     const pulse = useSharedValue(1)
-    const rotation = useSharedValue(0)
 
     useEffect(() => {
-        pulse.value = withRepeat(
-            withSequence(
-                withTiming(1.05, { duration: 1400, easing: Easing.inOut(Easing.sin) }),
-                withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.sin) }),
-            ), -1, true,
+        pulse.value = withSequence(
+            withTiming(1.04, { duration: 150, easing: Easing.inOut(Easing.sin) }),
+            withTiming(1, { duration: 220, easing: Easing.inOut(Easing.sin) }),
         )
-        rotation.value = withRepeat(
-            withTiming(360, { duration: 6000, easing: Easing.linear }), -1, false,
-        )
-    }, [])
+    }, [pulse, score])
 
-    const rotateStyle = useAnimatedStyle(() => ({
-        transform: [{ rotate: `${rotation.value}deg` }],
-    }))
     const pulseStyle = useAnimatedStyle(() => ({
         transform: [{ scale: pulse.value }],
     }))
 
     return (
         <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-            <Animated.View style={[{
+            <View style={{
                 position: 'absolute',
                 width: 100, height: 100, borderRadius: 50,
-                borderWidth: 1, borderColor: `${color}20`,
+                borderWidth: 0.5, borderColor: `${color}20`,
                 borderTopColor: `${color}60`,
-            }, rotateStyle]} />
+            }} />
             <Animated.View style={[{
                 width: 90, height: 90, borderRadius: 45,
                 backgroundColor: `${color}10`,
-                borderWidth: 2.5, borderColor: `${color}50`,
+                borderWidth: 1, borderColor: `${color}50`,
                 justifyContent: 'center', alignItems: 'center',
-                ...T.glow(color, 0.3),
             }, pulseStyle]}>
                 <Text style={{ ...type.mediumStat, color, fontSize: 28 }}>{score}</Text>
                 <Text style={{ ...type.overline, color: T.color.text.secondary, fontSize: 8, letterSpacing: 1 }}>MENTAL</Text>
@@ -183,24 +171,24 @@ function EndReportModal({ visible, report, onClose }: { visible: boolean; report
     if (!report) return null
     return (
         <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-            <SafeAreaView style={{ flex: 1, backgroundColor: T.color.background.primary }}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: T.color.bg.primary }}>
                 <ScrollView contentContainerStyle={{ padding: T.spacing[6] }}>
                     {/* Ambient glow */}
                     <View style={{
                         position: 'absolute', top: -80, alignSelf: 'center',
                         width: 200, height: 200, borderRadius: 100,
-                        backgroundColor: T.color.signature.glow, opacity: 0.08,
+                        backgroundColor: T.color.ai.glow, opacity: 0.1,
                     }} />
 
                     {/* Header */}
                     <Animated.View entering={ZoomIn.duration(400)} style={{ alignItems: 'center', marginBottom: T.spacing[8] }}>
                         <View style={{
                             width: 80, height: 80, borderRadius: 40,
-                            backgroundColor: T.color.signature.muted,
+                            backgroundColor: T.color.ai.muted,
                             justifyContent: 'center', alignItems: 'center',
-                            marginBottom: T.spacing[4], ...T.glow(T.color.signature.primary, 0.2),
+                            marginBottom: T.spacing[4],
                         }}>
-                            <Feather name="award" size={38} color={T.color.signature.primary} />
+                            <Feather name="award" size={38} color={T.color.ai.primary} />
                         </View>
                         <Text style={{ ...type.screenTitle, color: T.color.text.primary, textAlign: 'center' }}>
                             Session Complete
@@ -213,7 +201,7 @@ function EndReportModal({ visible, report, onClose }: { visible: boolean; report
                     {/* Main stats */}
                     <Animated.View entering={FadeInUp.duration(400).delay(100)} style={{ flexDirection: 'row', gap: T.spacing[3], marginBottom: T.spacing[5] }}>
                         <StatChip label="Mental" value={report.mentalScore ?? '--'} color={T.ratingColor(report.mentalScore ?? 0)} sub="/ 100" />
-                        <StatChip label="Shooting" value={`${report.shootingPct ?? 0}%`} color={T.color.signature.primary} sub={`${report.makes ?? 0}/${report.attempts ?? 0}`} />
+                        <StatChip label="Shooting" value={`${report.shootingPct ?? 0}%`} color={T.color.ai.primary} sub={`${report.makes ?? 0}/${report.attempts ?? 0}`} />
                         <StatChip label="Quarter" value={`Q${report.quarter ?? 1}`} color={T.color.semantic.warning} />
                     </Animated.View>
 
@@ -229,18 +217,18 @@ function EndReportModal({ visible, report, onClose }: { visible: boolean; report
                                     entering={FadeInDown.duration(300).delay(200 + i * 80)}
                                     style={{
                                         backgroundColor: 'rgba(255, 107, 0, 0.15)',
-                                        borderWidth: 1, borderColor: 'rgba(255, 107, 0, 0.3)',
+                                        borderWidth: 0.5, borderColor: 'rgba(68, 214, 255, 0.3)',
                                         borderRadius: T.borderRadius.lg, padding: T.spacing[4],
                                         marginBottom: T.spacing[2], flexDirection: 'row', alignItems: 'flex-start',
                                     }}
                                 >
                                     <View style={{
                                         width: 20, height: 20, borderRadius: 10,
-                                        backgroundColor: T.color.signature.muted,
+                                        backgroundColor: T.color.ai.muted,
                                         justifyContent: 'center', alignItems: 'center',
                                         marginRight: T.spacing[3], marginTop: 1,
                                     }}>
-                                        <Text style={{ ...type.overline, color: T.color.signature.primary, fontSize: 11 }}>
+                                        <Text style={{ ...type.overline, color: T.color.ai.primary, fontSize: 11 }}>
                                             {i + 1}
                                         </Text>
                                     </View>
@@ -254,15 +242,15 @@ function EndReportModal({ visible, report, onClose }: { visible: boolean; report
 
                     <TouchableOpacity
                         style={{
-                            backgroundColor: T.color.signature.primary,
+                            backgroundColor: T.color.brand.primary,
                             paddingVertical: T.spacing[4], borderRadius: T.borderRadius.full,
-                            alignItems: 'center', ...T.glow(T.color.signature.primary, 0.3),
+                            alignItems: 'center',
                             minHeight: 52,
                         }}
                         onPress={() => { impact.light(); onClose(); }}
                         activeOpacity={0.85}
                     >
-                        <Text style={{ ...type.cardTitle, color: T.color.background.primary }}>
+                        <Text style={{ ...type.cardTitle, color: T.color.bg.primary }}>
                             Back to Dashboard
                         </Text>
                     </TouchableOpacity>
@@ -343,7 +331,7 @@ export default function LiveCoachScreen() {
     const isIdle = live.phase === 'idle'
 
     return (
-        <View style={{ flex: 1, backgroundColor: T.color.background.primary }}>
+        <View style={{ flex: 1, backgroundColor: T.color.bg.primary }}>
             <StatusBar barStyle="light-content" />
 
             {/* XP Popup */}
@@ -358,7 +346,7 @@ export default function LiveCoachScreen() {
                 <View style={{
                     position: 'absolute', bottom: -50, left: '25%',
                     width: 200, height: 100, borderRadius: 100,
-                    backgroundColor: isActive ? `${T.color.semantic.error}08` : `${T.color.signature.primary}08`,
+                    backgroundColor: isActive ? `${T.color.brand.primary}12` : `${T.color.ai.primary}10`,
                     zIndex: 0,
                 }} />
 
@@ -370,14 +358,13 @@ export default function LiveCoachScreen() {
                             <Animated.View entering={FadeIn.duration(400)} style={{ alignItems: 'center' }}>
                                 <View style={{
                                     width: 80, height: 80, borderRadius: 40,
-                                    backgroundColor: T.color.signature.muted,
+                                    backgroundColor: T.color.ai.muted,
                                     justifyContent: 'center', alignItems: 'center',
-                                    ...T.glow(T.color.signature.primary, 0.15),
                                 }}>
-                                    <Feather name="radio" size={38} color={`${T.color.signature.primary}60`} />
+                                    <Feather name="radio" size={38} color={`${T.color.ai.primary}80`} />
                                 </View>
                                 <Text style={{
-                                    ...type.cardTitle, color: `${T.color.signature.primary}80`, marginTop: T.spacing[3],
+                                    ...type.cardTitle, color: `${T.color.ai.primary}80`, marginTop: T.spacing[3],
                                     fontSize: 13,
                                 }}>
                                     Ready to analyze
@@ -385,7 +372,7 @@ export default function LiveCoachScreen() {
                             </Animated.View>
                         ) : (
                             <View style={{ alignItems: 'center' }}>
-                                <Feather name="radio" size={38} color={T.color.signature.primary} />
+                                <Feather name="radio" size={38} color={T.color.ai.primary} />
                                 <Text style={{ ...type.caption, color: T.color.text.secondary, marginTop: T.spacing[3] }}>
                                     {live.phase === 'connecting' ? 'Connecting...' : 'Session paused'}
                                 </Text>
@@ -408,7 +395,7 @@ export default function LiveCoachScreen() {
                             onPress={handleClose}
                             style={{
                                 backgroundColor: 'rgba(0,0,0,0.5)', padding: T.spacing[3], borderRadius: T.borderRadius.full,
-                                borderWidth: 1, borderColor: T.color.border.base,
+                                borderWidth: 0.5, borderColor: T.color.border.base,
                                 width: 44, height: 44, justifyContent: 'center', alignItems: 'center',
                             }}
                             accessibilityLabel="Close Live Coach"
@@ -453,11 +440,10 @@ export default function LiveCoachScreen() {
                         {/* Start button */}
                         <TouchableOpacity
                             style={{
-                                backgroundColor: T.color.semantic.error,
+                                backgroundColor: T.color.brand.primary,
                                 paddingVertical: T.spacing[4], paddingHorizontal: T.spacing[12],
                                 borderRadius: T.borderRadius.full,
                                 flexDirection: 'row', alignItems: 'center', gap: T.spacing[3],
-                                ...T.glow(T.color.semantic.error, 0.4),
                                 minHeight: 56,
                             }}
                             onPress={() => { impact.medium(); live.start(); }}
@@ -490,9 +476,11 @@ export default function LiveCoachScreen() {
                                         ...(T.glass.thin),
                                         borderRadius: T.borderRadius.lg,
                                         padding: T.spacing[3], flexDirection: 'row', alignItems: 'center', gap: T.spacing[3],
+                                        borderWidth: 0.5,
+                                        borderColor: T.color.border.soft,
                                     }}
                                 >
-                                    <Feather name={feat.icon} size={18} color={T.color.signature.primary} />
+                                    <Feather name={feat.icon} size={18} color={T.color.ai.primary} />
                                     <Text style={{ ...type.cardTitle, color: T.color.text.secondary, fontSize: 13 }}>
                                         {feat.text}
                                     </Text>
@@ -507,11 +495,10 @@ export default function LiveCoachScreen() {
                     <Animated.View entering={FadeIn.duration(400)} style={{ alignItems: 'center', paddingVertical: T.spacing[8] }}>
                         <View style={{
                             width: 80, height: 80, borderRadius: 40,
-                            backgroundColor: T.color.signature.muted,
+                            backgroundColor: T.color.ai.muted,
                             justifyContent: 'center', alignItems: 'center',
-                            ...T.glow(T.color.signature.primary, 0.2),
                         }}>
-                            <Feather name="radio" size={38} color={T.color.signature.primary} />
+                            <Feather name="radio" size={38} color={T.color.ai.primary} />
                         </View>
                         <Text style={{ ...type.sectionTitle, color: T.color.text.primary, marginTop: T.spacing[4] }}>
                             Connecting to AI server...
@@ -534,7 +521,7 @@ export default function LiveCoachScreen() {
                                         label="Shots"
                                         value={`${live.makeCount}/${live.makeCount + live.missCount}`}
                                         subValue={`${live.shootingPct}%`}
-                                        color={T.color.signature.primary}
+                                        color={T.color.ai.primary}
                                     />
                                     <CVHUDStat
                                         label="Posture"
@@ -565,23 +552,23 @@ export default function LiveCoachScreen() {
 
                         {/* AI Confidence */}
                         <View style={{
-                            backgroundColor: 'rgba(255, 107, 0, 0.1)',
-                            borderWidth: 1, borderColor: 'rgba(255, 107, 0, 0.25)',
+                            backgroundColor: 'rgba(68, 214, 255, 0.08)',
+                            borderWidth: 0.5, borderColor: 'rgba(68, 214, 255, 0.26)',
                             borderRadius: T.borderRadius.lg, padding: T.spacing[3], marginBottom: T.spacing[3],
                             flexDirection: 'row', alignItems: 'center', gap: T.spacing[3],
                         }}>
                             <View style={{
                                 width: 32, height: 32, borderRadius: 16,
-                                backgroundColor: T.color.signature.muted,
+                                backgroundColor: T.color.ai.muted,
                                 justifyContent: 'center', alignItems: 'center',
                             }}>
-                                <Feather name="cpu" size={14} color={T.color.signature.primary} />
+                                <Feather name="cpu" size={14} color={T.color.ai.primary} />
                             </View>
                             <Text style={{ ...type.overline, color: T.color.text.secondary, fontSize: 10 }}>
                                 AI CONFIDENCE
                             </Text>
-                            <MiniBar value={live.confidence * 100} color={T.color.signature.primary} />
-                            <Text style={{ ...type.cardTitle, color: T.color.signature.primary, fontSize: 13, minWidth: 36, textAlign: 'right' }}>
+                            <MiniBar value={live.confidence * 100} color={T.color.ai.primary} />
+                            <Text style={{ ...type.cardTitle, color: T.color.ai.primary, fontSize: 13, minWidth: 36, textAlign: 'right' }}>
                                 {Math.round(live.confidence * 100)}%
                             </Text>
                         </View>
@@ -620,7 +607,7 @@ export default function LiveCoachScreen() {
                                     style={{
                                         flex: 1, paddingVertical: T.spacing[4], borderRadius: T.borderRadius.xl,
                                         backgroundColor: `${T.color.semantic.success}20`,
-                                        borderWidth: 1.5, borderColor: `${T.color.semantic.success}40`,
+                                        borderWidth: 1, borderColor: `${T.color.semantic.success}35`,
                                         alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: T.spacing[2],
                                         minHeight: 52,
                                     }}
@@ -637,7 +624,7 @@ export default function LiveCoachScreen() {
                                     style={{
                                         flex: 1, paddingVertical: T.spacing[4], borderRadius: T.borderRadius.xl,
                                         backgroundColor: `${T.color.semantic.error}20`,
-                                        borderWidth: 1.5, borderColor: `${T.color.semantic.error}40`,
+                                        borderWidth: 1, borderColor: `${T.color.semantic.error}35`,
                                         alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: T.spacing[2],
                                         minHeight: 52,
                                     }}
@@ -681,7 +668,7 @@ export default function LiveCoachScreen() {
                                     style={{
                                         flex: 1, paddingVertical: T.spacing[3], borderRadius: T.borderRadius.lg,
                                         backgroundColor: `${T.color.semantic.warning}20`,
-                                        borderWidth: 1, borderColor: `${T.color.semantic.warning}30`,
+                                        borderWidth: 0.5, borderColor: `${T.color.semantic.warning}30`,
                                         alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: T.spacing[2],
                                         minHeight: 44,
                                     }}
@@ -698,16 +685,16 @@ export default function LiveCoachScreen() {
                                     <TouchableOpacity
                                         style={{
                                             flex: 1, paddingVertical: T.spacing[3], borderRadius: T.borderRadius.lg,
-                                            backgroundColor: T.color.signature.muted,
-                                            borderWidth: 1, borderColor: `${T.color.signature.primary}30`,
+                                            backgroundColor: T.color.brand.muted,
+                                            borderWidth: 0.5, borderColor: `${T.color.brand.primary}30`,
                                             alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: T.spacing[2],
                                             minHeight: 44,
                                         }}
                                         onPress={() => { impact.light(); live.nextQuarter(); }}
                                         activeOpacity={0.8}
                                     >
-                                        <Feather name="play" size={14} color={T.color.signature.primary} />
-                                        <Text style={{ ...type.cardTitle, color: T.color.signature.primary, fontSize: 13 }}>
+                                        <Feather name="play" size={14} color={T.color.brand.primary} />
+                                        <Text style={{ ...type.cardTitle, color: T.color.brand.primary, fontSize: 13 }}>
                                             Q{live.quarter + 1}
                                         </Text>
                                     </TouchableOpacity>
@@ -717,7 +704,7 @@ export default function LiveCoachScreen() {
                                     style={{
                                         flex: 1, paddingVertical: T.spacing[3], borderRadius: T.borderRadius.lg,
                                         backgroundColor: `${T.color.semantic.error}20`,
-                                        borderWidth: 1, borderColor: `${T.color.semantic.error}30`,
+                                        borderWidth: 0.5, borderColor: `${T.color.semantic.error}30`,
                                         alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: T.spacing[2],
                                         minHeight: 44,
                                     }}
@@ -770,14 +757,13 @@ export default function LiveCoachScreen() {
                         </Text>
                         <TouchableOpacity
                             style={{
-                                backgroundColor: T.color.signature.primary, borderRadius: T.borderRadius.lg,
+                                backgroundColor: T.color.brand.primary, borderRadius: T.borderRadius.lg,
                                 paddingHorizontal: T.spacing[8], paddingVertical: T.spacing[3], marginTop: T.spacing[6],
-                                ...T.glow(T.color.signature.primary, 0.2),
                                 minHeight: 48, justifyContent: 'center',
                             }}
                             onPress={live.reset}
                         >
-                            <Text style={{ ...type.cardTitle, color: T.color.background.primary }}>
+                            <Text style={{ ...type.cardTitle, color: T.color.bg.primary }}>
                                 Retry
                             </Text>
                         </TouchableOpacity>
@@ -795,10 +781,10 @@ export default function LiveCoachScreen() {
                     <Animated.View
                         entering={SlideInDown.duration(300).damping(18)}
                         style={{
-                            backgroundColor: T.color.background.tertiary,
+                            backgroundColor: T.color.bg.tertiary,
                             borderTopLeftRadius: T.borderRadius['2xl'], borderTopRightRadius: T.borderRadius['2xl'],
                             padding: T.spacing[6], paddingBottom: Platform.OS === 'ios' ? T.spacing[10] : T.spacing[6],
-                            borderTopWidth: 1, borderTopColor: T.color.border.base,
+                            borderTopWidth: 0.5, borderTopColor: T.color.border.base,
                         }}
                     >
                         <View style={{ width: 40, height: 4, backgroundColor: T.color.text.tertiary, borderRadius: 2, alignSelf: 'center', marginBottom: T.spacing[5] }} />
@@ -815,7 +801,7 @@ export default function LiveCoachScreen() {
                                         style={{
                                             paddingHorizontal: T.spacing[6], paddingVertical: T.spacing[3],
                                             borderRadius: T.borderRadius.lg,
-                                            borderWidth: 1.5, borderColor: `${color}40`,
+                                            borderWidth: 0.5, borderColor: `${color}40`,
                                             backgroundColor: `${color}10`,
                                             minHeight: 44, justifyContent: 'center',
                                         }}

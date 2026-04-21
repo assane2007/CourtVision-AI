@@ -3,7 +3,6 @@ import { View, Text, StyleSheet } from 'react-native'
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
-    withRepeat,
     withTiming,
     withSequence
 } from 'react-native-reanimated'
@@ -17,26 +16,21 @@ interface CVHUDTimerProps {
 }
 
 export function CVHUDTimer({ seconds, active = false }: CVHUDTimerProps) {
-    const pulse = useSharedValue(1)
+    const flash = useSharedValue(0)
 
     useEffect(() => {
+        flash.value = 0
         if (active) {
-            pulse.value = withRepeat(
-                withSequence(
-                    withTiming(1.2, { duration: 500 }),
-                    withTiming(1, { duration: 500 })
-                ),
-                -1,
-                true
+            flash.value = withSequence(
+                withTiming(1, { duration: 120 }),
+                withTiming(0, { duration: 180 })
             )
-        } else {
-            pulse.value = withTiming(1)
         }
-    }, [active])
+    }, [active, seconds])
 
     const pulseStyle = useAnimatedStyle(() => ({
-        transform: [{ scale: pulse.value }],
-        backgroundColor: active ? T.color.semantic.error : 'rgba(255, 255, 255, 0.2)',
+        transform: [{ scale: 1 + flash.value * 0.14 }],
+        backgroundColor: active ? T.color.ai.primary : 'rgba(255, 255, 255, 0.2)',
     }))
 
     const formatTime = (sec: number) => {
@@ -57,12 +51,12 @@ const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(15, 23, 42, 0.8)',
+        backgroundColor: T.color.bg.secondary,
         paddingHorizontal: T.spacing[4],
         paddingVertical: T.spacing[2],
-        borderRadius: T.borderRadius.full,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.15)',
+        borderRadius: T.radius.full,
+        borderWidth: 0.5,
+        borderColor: T.color.border.base,
         gap: T.spacing[3],
     },
     indicator: {
@@ -72,8 +66,9 @@ const styles = StyleSheet.create({
     },
     timeText: {
         ...type.cardTitle,
-        color: '#FFF',
+        color: T.color.text.primary,
         fontSize: 18,
+        fontFamily: T.fonts.mono.regular,
         fontVariant: ['tabular-nums'],
     }
 })

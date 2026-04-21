@@ -17,9 +17,9 @@ import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useEffect, useState, useRef, useCallback } from 'react'
 import Animated, {
-    useSharedValue, useAnimatedStyle, withTiming, withRepeat,
+    useSharedValue, useAnimatedStyle, withTiming,
     withSequence, FadeInDown, FadeIn, ZoomIn,
-    Easing, interpolate,
+    Easing,
 } from 'react-native-reanimated'
 import { Feather } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
@@ -162,7 +162,6 @@ export default function OnboardingCamera() {
     const [lastDetectionConfidence, setLastDetectionConfidence] = useState<number | null>(null)
 
     // Animations
-    const ringProgress = useSharedValue(0)
     const pulseScale = useSharedValue(1)
 
     useEffect(() => {
@@ -179,15 +178,12 @@ export default function OnboardingCamera() {
     // Pulse animation for capture button
     useEffect(() => {
         if (phase === 'filming') {
-            pulseScale.value = withRepeat(
-                withSequence(
-                    withTiming(1.08, { duration: 800, easing: Easing.inOut(Easing.sin) }),
-                    withTiming(1.0, { duration: 800, easing: Easing.inOut(Easing.sin) }),
-                ),
-                -1, true,
+            pulseScale.value = withSequence(
+                withTiming(1.06, { duration: 180, easing: Easing.inOut(Easing.sin) }),
+                withTiming(1, { duration: 220, easing: Easing.inOut(Easing.sin) }),
             )
         }
-    }, [phase])
+    }, [phase, shotCount, pulseScale])
 
     useEffect(() => {
         if (phase !== 'filming') {
@@ -212,10 +208,6 @@ export default function OnboardingCamera() {
         const interval = setInterval(tick, 200)
         return () => clearInterval(interval)
     }, [phase])
-
-    const ringStyle = useAnimatedStyle(() => ({
-        transform: [{ rotate: `${interpolate(ringProgress.value, [0, 1], [0, 360])}deg` }],
-    }))
 
     const pulseStyle = useAnimatedStyle(() => ({
         transform: [{ scale: pulseScale.value }],
@@ -306,8 +298,6 @@ export default function OnboardingCamera() {
             setShots(newShots)
             const newCount = shotCount + 1
             setShotCount(newCount)
-
-            ringProgress.value = withTiming(newCount / TOTAL_SHOTS, { duration: 600 })
 
             if (newCount >= TOTAL_SHOTS) {
                 setPhase('analyzing')
@@ -426,11 +416,11 @@ export default function OnboardingCamera() {
     }, [router, shots, isAuthenticated, setOnboardingCalibrationDraft, syncOnboardingCalibrationDraft])
 
     const poseStatusAccent = poseDetectionState === 'detected'
-        ? '#00D97E'
+        ? colors.live
         : poseDetectionState === 'checking'
-            ? '#FFC400'
+            ? colors.caution
             : poseDetectionState === 'not-detected'
-                ? '#FF6B00'
+                ? colors.fire
                 : 'rgba(255,255,255,0.45)'
 
     const poseStatusTitle = poseDetectionState === 'detected'
@@ -447,7 +437,7 @@ export default function OnboardingCamera() {
         const avgElbow = shots.reduce((s, sh) => s + sh.elbowAngle, 0) / shots.length
         const avgPosture = Math.round(shots.reduce((s, sh) => s + sh.postureScore, 0) / shots.length)
         const grade = avgPosture >= 80 ? 'A' : avgPosture >= 65 ? 'B+' : avgPosture >= 50 ? 'B' : 'C'
-        const gradeColor = avgPosture >= 80 ? '#00D97E' : avgPosture >= 65 ? '#FF6B00' : '#FFC400'
+        const gradeColor = avgPosture >= 80 ? colors.live : avgPosture >= 65 ? colors.fire : colors.caution
 
         return (
             <SafeAreaView style={s.container}>
@@ -472,7 +462,7 @@ export default function OnboardingCamera() {
 
                     {/* Insight */}
                     <Animated.View entering={FadeInDown.delay(500).duration(400)} style={s.insightCard}>
-                        <Feather name="cpu" size={16} color={colors.fire} />
+                        <Feather name="cpu" size={16} color={colors.ice} />
                         <Text style={s.insightText}>
                             {avgElbow >= 85 && avgElbow <= 100
                                 ? 'Great mechanics! Your elbow alignment is solid. CourtVision AI will refine your consistency over time.'
@@ -505,7 +495,7 @@ export default function OnboardingCamera() {
             <View style={s.container}>
                 <View style={s.analyzingCenter}>
                     <Animated.View entering={ZoomIn.duration(400)} style={s.analyzingRing}>
-                        <Feather name="cpu" size={40} color={colors.fire} />
+                        <Feather name="cpu" size={40} color={colors.ice} />
                     </Animated.View>
                     <Animated.Text entering={FadeInDown.delay(200).duration(400)} style={s.analyzingTitle}>
                         Analyzing Your Mechanics
@@ -526,7 +516,7 @@ export default function OnboardingCamera() {
             {permission?.granted ? (
                 <CameraView ref={cameraRef} style={StyleSheet.absoluteFillObject} facing={cameraFacing} />
             ) : (
-                <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#111' }]} />
+                <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.base }]} />
             )}
 
             {/* Dark overlay */}
@@ -577,7 +567,7 @@ export default function OnboardingCamera() {
                         </Text>
 
                         <View style={[s.engineBadge, { backgroundColor: cvAvailable ? 'rgba(0,217,126,0.15)' : 'rgba(255,107,0,0.18)' }]}>
-                            <Text style={[s.engineBadgeText, { color: cvAvailable ? '#00D97E' : '#FF6B00' }]}>
+                            <Text style={[s.engineBadgeText, { color: cvAvailable ? colors.live : colors.fire }]}>
                                 {cvAvailable ? 'CV Engine Connected' : 'CV Engine Disconnected'}
                             </Text>
                         </View>
@@ -664,7 +654,7 @@ export default function OnboardingCamera() {
 const s = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#000',
+        backgroundColor: colors.void,
     },
 
     // Top bar
@@ -696,17 +686,17 @@ const s = StyleSheet.create({
         letterSpacing: 2,
     },
     shotCounter: {
-        backgroundColor: 'rgba(255,107,0,0.2)',
+        backgroundColor: 'rgba(0,240,255,0.14)',
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 16,
-        borderWidth: 1,
-        borderColor: 'rgba(255,107,0,0.4)',
+        borderWidth: 0.5,
+        borderColor: 'rgba(0,240,255,0.32)',
     },
     shotCounterText: {
         fontSize: 14,
         fontWeight: '800',
-        color: colors.fire,
+        color: colors.ice,
     },
     flipCameraBtn: {
         flexDirection: 'row',
@@ -717,7 +707,7 @@ const s = StyleSheet.create({
         paddingHorizontal: 9,
         borderRadius: 17,
         backgroundColor: 'rgba(255,255,255,0.13)',
-        borderWidth: 1,
+        borderWidth: 0.5,
         borderColor: 'rgba(255,255,255,0.25)',
     },
     flipCameraText: {
@@ -737,10 +727,10 @@ const s = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.15)',
     },
     progressDotActive: {
-        backgroundColor: 'rgba(255,107,0,0.6)',
+        backgroundColor: colors.fireTrace,
     },
     progressDotDone: {
-        backgroundColor: '#00D97E',
+        backgroundColor: colors.live,
     },
 
     // Bottom
@@ -756,7 +746,7 @@ const s = StyleSheet.create({
         borderRadius: 24,
         padding: 24,
         overflow: 'hidden',
-        borderWidth: 1,
+        borderWidth: 0.5,
         borderColor: 'rgba(255,255,255,0.1)',
     },
     introTitle: {
@@ -785,7 +775,7 @@ const s = StyleSheet.create({
         letterSpacing: 0.4,
     },
     startBtn: {
-        backgroundColor: '#FFF',
+        backgroundColor: colors.fire,
         height: 56,
         borderRadius: 28,
         justifyContent: 'center',
@@ -794,7 +784,7 @@ const s = StyleSheet.create({
     startBtnText: {
         fontSize: 16,
         fontWeight: '800',
-        color: '#000',
+        color: '#FFF',
         letterSpacing: 1,
     },
     retryEngineBtn: {
@@ -803,7 +793,7 @@ const s = StyleSheet.create({
         borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 1,
+        borderWidth: 0.5,
         borderColor: 'rgba(255,255,255,0.22)',
         backgroundColor: 'rgba(5,5,5,0.35)',
     },
@@ -825,18 +815,18 @@ const s = StyleSheet.create({
         paddingVertical: 8,
         borderRadius: 12,
         marginBottom: 20,
-        borderWidth: 1,
-        borderColor: 'rgba(255,107,0,0.3)',
+        borderWidth: 0.5,
+        borderColor: 'rgba(68,214,255,0.3)',
     },
     lastShotText: {
         fontSize: 13,
         fontWeight: '600',
-        color: colors.fire,
+        color: colors.ice,
     },
     poseCheckCard: {
         width: '100%',
         backgroundColor: 'rgba(0,0,0,0.56)',
-        borderWidth: 1,
+        borderWidth: 0.5,
         borderRadius: 14,
         padding: 12,
         marginBottom: 14,
@@ -871,7 +861,7 @@ const s = StyleSheet.create({
     poseCheckBtn: {
         height: 38,
         borderRadius: 10,
-        borderWidth: 1,
+        borderWidth: 0.5,
         borderColor: 'rgba(255,255,255,0.3)',
         justifyContent: 'center',
         alignItems: 'center',
@@ -915,7 +905,7 @@ const s = StyleSheet.create({
         width: 72, height: 72,
         borderRadius: 36,
         borderWidth: 4,
-        borderColor: '#FFF',
+        borderColor: colors.cloud,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -938,9 +928,9 @@ const s = StyleSheet.create({
     analyzingRing: {
         width: 100, height: 100,
         borderRadius: 50,
-        backgroundColor: 'rgba(255,107,0,0.1)',
-        borderWidth: 2,
-        borderColor: 'rgba(255,107,0,0.3)',
+        backgroundColor: 'rgba(0,240,255,0.1)',
+        borderWidth: 0.5,
+        borderColor: 'rgba(0,240,255,0.28)',
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 24,
@@ -1000,7 +990,7 @@ const s = StyleSheet.create({
     shotCard: {
         backgroundColor: 'rgba(255,255,255,0.04)',
         borderRadius: 14,
-        borderWidth: 1,
+        borderWidth: 0.5,
         borderColor: 'rgba(255,255,255,0.06)',
         padding: 16,
     },
@@ -1046,10 +1036,10 @@ const s = StyleSheet.create({
     // Insight card
     insightCard: {
         flexDirection: 'row',
-        backgroundColor: 'rgba(255,107,0,0.06)',
+        backgroundColor: 'rgba(0,240,255,0.08)',
         borderRadius: 12,
-        borderWidth: 1,
-        borderColor: 'rgba(255,107,0,0.2)',
+        borderWidth: 0.5,
+        borderColor: 'rgba(0,240,255,0.2)',
         padding: 14,
         gap: 10,
         marginBottom: 24,

@@ -4,7 +4,7 @@
  *
  *   State 1  SELECT  : Minimalist record CTA + tips
  *   State 2  PROCESS : Pipeline stepper + fun facts
- *   State 3  RESULT  : Hero score reveal + CTA
+                                { label: 'Highlights', value: `${3 + Math.floor(Math.random() * 4)}`, color: T.color.ai.primary },
  *
  * V5 Skills-driven:
  *   - All styles in StyleSheet.create (zero inline objects)
@@ -24,8 +24,8 @@ import { Feather } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import Animated, {
     useSharedValue, useAnimatedStyle,
-    withTiming, withRepeat, withSequence,
-    FadeInDown, FadeInUp, Easing,
+    withTiming, withSequence,
+    FadeInDown, FadeInUp,
 } from 'react-native-reanimated'
 import * as ImagePicker from 'expo-image-picker'
 import * as FileSystem from 'expo-file-system/legacy'
@@ -85,11 +85,9 @@ const PulsingRecordButton = memo(function PulsingRecordButton({ onPress }: { onP
     const pulse = useSharedValue(1)
 
     useEffect(() => {
-        pulse.value = withRepeat(
-            withSequence(
-                withTiming(1.06, { duration: 1200, easing: Easing.inOut(Easing.sin) }),
-                withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.sin) }),
-            ), -1, true,
+        pulse.value = withSequence(
+            withTiming(1.04, { duration: 160 }),
+            withTiming(1, { duration: 200 }),
         )
     }, [pulse])
 
@@ -124,7 +122,7 @@ const TipCard = memo(function TipCard({ icon, title, subtitle, delay: d }: {
             style={us.tipCard}
         >
             <View style={us.tipIcon}>
-                <Feather name={icon} size={16} color={T.color.brand.primary} />
+                <Feather name={icon} size={16} color={T.color.ai.primary} />
             </View>
             <View style={us.tipText}>
                 <Text style={us.tipTitle}>{title}</Text>
@@ -608,7 +606,7 @@ export default function UploadAnalyze() {
                             accessibilityRole="button"
                         >
                             <View style={us.cameraIcon}>
-                                <Feather name="camera" size={20} color={T.color.semantic.info} />
+                                <Feather name="camera" size={20} color={T.color.ai.primary} />
                             </View>
                             <View style={us.cameraText}>
                                 <Text style={us.cameraTitle}>Record live</Text>
@@ -706,7 +704,7 @@ const us = StyleSheet.create({
         width: 300,
         height: 300,
         borderRadius: 150,
-        backgroundColor: 'rgba(255,107,0,0.02)',
+        backgroundColor: 'rgba(68,214,255,0.03)',
     },
     container: {
         flex: 1,
@@ -740,10 +738,10 @@ const us = StyleSheet.create({
         width: 120,
         height: 120,
         borderRadius: 60,
-        backgroundColor: T.color.brand.muted,
+        backgroundColor: T.color.bg.tertiary,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 2,
+        borderWidth: 0.5,
         borderColor: `${T.color.brand.primary}30`,
     },
     recordInner: {
@@ -753,7 +751,6 @@ const us = StyleSheet.create({
         backgroundColor: T.color.brand.primary,
         justifyContent: 'center',
         alignItems: 'center',
-        ...T.glow(T.color.brand.primary, 0.35),
     },
     recordTitle: {
         ...typePresets.cardTitle,
@@ -792,7 +789,7 @@ const us = StyleSheet.create({
         width: 48,
         height: 48,
         borderRadius: 24,
-        backgroundColor: `${T.color.semantic.info}20`,
+        backgroundColor: `${T.color.ai.primary}20`,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -823,7 +820,7 @@ const us = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: T.color.brand.muted,
+        backgroundColor: T.color.ai.muted,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -856,11 +853,11 @@ const us = StyleSheet.create({
     progressFill: {
         height: '100%',
         borderRadius: 3,
-        backgroundColor: T.color.brand.primary,
+        backgroundColor: T.color.ai.primary,
     },
     progressPct: {
         ...typePresets.statLarge,
-        color: T.color.brand.primary,
+        color: T.color.ai.primary,
         textAlign: 'center',
         marginBottom: T.spacing[1],
         fontVariant: ['tabular-nums'],
@@ -914,7 +911,7 @@ const us = StyleSheet.create({
     },
     stepXP: {
         ...typePresets.overline,
-        color: T.color.brand.primary,
+        color: T.color.ai.primary,
         opacity: 0.4,
         fontSize: 10,
     },

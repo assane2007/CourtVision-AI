@@ -21,14 +21,14 @@ import { HapticFeedback } from '../../lib/haptics'
 export type GlassVariant = 'light' | 'medium' | 'accent' | 'success' | 'danger' | 'gold' | 'thin' | 'primary'
 
 const GLASS_STYLES: Record<GlassVariant, { bg: string; border: string }> = {
-  light: { bg: T.glass.base.backgroundColor, border: T.glass.base.borderColor },
-  medium: { bg: 'rgba(255,255,255,0.08)', border: 'rgba(255,255,255,0.14)' },
-  accent: { bg: T.glass.vivid.backgroundColor, border: T.glass.vivid.borderColor },
-  success: { bg: 'rgba(22,199,132,0.14)', border: 'rgba(22,199,132,0.26)' },
-  danger: { bg: 'rgba(255,77,109,0.14)', border: 'rgba(255,77,109,0.26)' },
-  gold: { bg: 'rgba(250,204,21,0.14)', border: 'rgba(250,204,21,0.26)' },
+  light: { bg: T.color.bg.secondary, border: T.color.border.base },
+  medium: { bg: T.color.bg.tertiary, border: T.color.border.base },
+  accent: { bg: T.color.brand.muted, border: T.color.border.accent },
+  success: { bg: 'rgba(34,197,94,0.10)', border: 'rgba(34,197,94,0.24)' },
+  danger: { bg: 'rgba(255,90,101,0.10)', border: 'rgba(255,90,101,0.24)' },
+  gold: { bg: 'rgba(255,209,102,0.10)', border: 'rgba(255,209,102,0.24)' },
   thin: { bg: T.glass.thin.backgroundColor, border: T.glass.thin.borderColor },
-  primary: { bg: 'rgba(42,123,255,0.14)', border: 'rgba(42,123,255,0.28)' },
+  primary: { bg: T.color.ai.muted, border: T.color.border.ai },
 }
 
 // ─── Props ───────────────────────────────────────────────────
@@ -63,14 +63,13 @@ export function GlassCard({
   const isPressable = typeof onPress === 'function'
 
   const shadowStyle = shadow === 'none' ? {}
-    : shadow === 'sm' ? T.glow.soft()
-      : shadow === 'md' ? T.glow.soft()
-        : T.glow.hero()
+    : shadow === 'lg' ? T.glow.cta()
+      : {}
 
   const baseStyle: ViewStyle = {
     backgroundColor: glass.bg,
     borderColor: glass.border,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderRadius,
     padding,
     overflow: 'hidden',

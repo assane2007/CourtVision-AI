@@ -11,7 +11,7 @@
 
 import React from 'react'
 import type { ViewStyle} from 'react-native';
-import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native'
+import { View, TouchableOpacity, StyleSheet } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons'
 import { CVText } from './CVText'
@@ -41,8 +41,8 @@ export function CVScreenHeader({
       styles.container,
       {
         paddingTop: insets.top + 8,
-        backgroundColor: transparent ? 'transparent' : 'rgba(8,12,18,0.92)',
-        borderBottomWidth: transparent ? 0 : 1,
+        backgroundColor: transparent ? 'transparent' : T.color.bg.secondary,
+        borderBottomWidth: transparent ? 0 : 0.5,
         borderBottomColor: T.color.border.soft,
       },
       style,
@@ -99,7 +99,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: T.color.bg.tertiary,
+    borderWidth: 0.5,
+    borderColor: T.color.border.base,
     justifyContent: 'center',
     alignItems: 'center',
   },

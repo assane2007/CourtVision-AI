@@ -68,20 +68,20 @@ function getVariantStyle(variant: CVButtonVariant, disabled: boolean) {
         bg: T.color.brand.primary,
         text: T.color.text.inverse,
         border: undefined,
-        shadow: T.glow.hero(T.color.brand.primary),
+        shadow: T.glow.cta(T.color.brand.primary),
       }
     case 'secondary':
       return {
-        bg: `${T.color.brand.primary}18`,
-        text: T.color.brand.primary,
-        border: `${T.color.brand.primary}55`,
+        bg: T.color.ai.muted,
+        text: T.color.ai.primary,
+        border: T.color.border.ai,
         shadow: {} as ViewStyle,
       }
     case 'ghost':
       return {
-        bg: 'rgba(255,255,255,0.03)',
+        bg: T.color.bg.tertiary,
         text: T.color.text.secondary,
-        border: T.color.border.strong,
+        border: T.color.border.base,
         shadow: {} as ViewStyle,
       }
     case 'danger':
@@ -131,7 +131,7 @@ export function CVButton({
     <TouchableOpacity
       onPress={isDisabled ? undefined : handlePress}
       disabled={isDisabled}
-      activeOpacity={0.9}
+      activeOpacity={0.92}
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       accessibilityLabel={label}
