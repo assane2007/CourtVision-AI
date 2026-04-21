@@ -1,8 +1,7 @@
 ﻿/**
  * Dashboard TabBar Layout  V3
  *
- * Uses CustomTabBar with animated indicators, FAB upload button,
- * and notification dots. Reanimated-powered.
+ * Unified 4-tab bottom navigation.
  */
 
 import { Tabs } from 'expo-router'
@@ -17,10 +16,11 @@ export default function DashboardLayout() {
             }}
         >
             <Tabs.Screen name="index" />
+            <Tabs.Screen name="sessions" />
             <Tabs.Screen name="community" />
-            <Tabs.Screen name="upload" />
-            <Tabs.Screen name="twin" />
             <Tabs.Screen name="profile" />
+            <Tabs.Screen name="upload" options={{ href: null }} />
+            <Tabs.Screen name="twin" options={{ href: null }} />
             <Tabs.Screen
                 name="v6"
                 options={{

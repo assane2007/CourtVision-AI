@@ -58,6 +58,7 @@ export type { CVAlertProps, CVAlertType } from './CVAlert'
 
 export { CVEmptyState } from './CVEmptyState'
 export type { CVEmptyStateProps } from './CVEmptyState'
+export { CVInlineError } from './CVInlineError'
 
 // ── HUD & Tracking ──
 export { CVHUDStat } from './CVHUDStat'

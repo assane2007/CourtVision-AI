@@ -45,12 +45,13 @@ export function CVStatRow({
   style,
   staggerDelay = 80,
 }: CVStatRowProps) {
+  const visibleStats = stats.slice(0, T.metrics.maxSubPerScreen)
   return (
     <View style={[{
       flexDirection: 'row',
       gap: T.spacing[3],
     }, style]}>
-      {stats.map((stat, i) => (
+      {visibleStats.map((stat, i) => (
         <Animated.View
           key={`${stat.label}-${i}`}
           entering={FadeInDown.delay(i * staggerDelay).duration(400)}
@@ -61,15 +62,15 @@ export function CVStatRow({
             padding={T.spacing[3]}
           >
             {/* Overline label */}
-            <CVText preset="overline" color="secondary" style={{ marginBottom: 4 }}>
+            <CVText preset="overline" color="secondary" style={{ marginBottom: 4, fontSize: 11, letterSpacing: 0.88, textTransform: 'uppercase' }}>
               {stat.label}
             </CVText>
             {/* Value + unit */}
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
               <CVText
                 preset="mediumStat"
-                color={stat.color ?? 'brand'}
-                style={{ fontSize: 28 }}
+                color={stat.color ?? 'ai'}
+                style={{ fontSize: T.metrics.sub, fontFamily: T.fonts.mono.regular }}
               >
                 {typeof stat.value === 'number' ? Math.round(stat.value) : stat.value}
               </CVText>

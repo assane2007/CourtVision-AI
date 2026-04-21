@@ -831,6 +831,8 @@ const s = StyleSheet.create({
         ...typePresets.overline,
         color: T.color.semantic.warning,
         fontSize: 10,
+        fontFamily: T.fonts.mono.regular,
+        letterSpacing: 0.64,
     },
     overallBadge: {
         borderRadius: T.borderRadius.xl,
@@ -842,12 +844,14 @@ const s = StyleSheet.create({
     },
     overallValue: {
         ...typePresets.statLarge,
-        color: T.color.brand.primary,
+        color: T.color.text.primary,
         fontSize: 28,
+        fontFamily: T.fonts.mono.regular,
+        letterSpacing: 0.64,
     },
     overallLabel: {
         ...typePresets.overline,
-        color: T.color.brand.primary,
+        color: T.color.text.tertiary,
         fontSize: 9,
     },
 
@@ -942,6 +946,8 @@ const s = StyleSheet.create({
     statTileValue: {
         ...typePresets.mediumStat,
         fontSize: 20,
+        fontFamily: T.fonts.mono.regular,
+        letterSpacing: 0.64,
     },
     statTileLabel: {
         ...typePresets.caption,
@@ -977,7 +983,7 @@ const s = StyleSheet.create({
     },
     seeAllLink: {
         ...typePresets.cardTitle,
-        color: T.color.ai.primary,
+        color: T.color.text.secondary,
         fontSize: 13,
     },
 
@@ -1007,6 +1013,8 @@ const s = StyleSheet.create({
         color: T.color.text.tertiary,
         fontSize: 8,
         marginTop: 2,
+        fontFamily: T.fonts.mono.regular,
+        letterSpacing: 0.64,
     },
 
     // Activity
@@ -1171,7 +1179,9 @@ const s = StyleSheet.create({
         fontSize: 13,
     },
     saveButton: {
-        backgroundColor: T.color.brand.primary,
+        backgroundColor: T.color.bg.tertiary,
+        borderWidth: 0.5,
+        borderColor: T.color.border.strong,
         borderRadius: T.borderRadius.lg,
         paddingVertical: T.spacing[4],
         alignItems: 'center',
@@ -1179,7 +1189,7 @@ const s = StyleSheet.create({
     },
     saveButtonText: {
         ...typePresets.cardTitle,
-        color: '#fff',
+        color: T.color.text.primary,
     },
 
     // Modal — Badge Detail
@@ -1228,7 +1238,9 @@ const s = StyleSheet.create({
     },
     badgeModalClose: {
         marginTop: T.spacing[5],
-        backgroundColor: T.color.brand.primary,
+        backgroundColor: T.color.bg.tertiary,
+        borderWidth: 0.5,
+        borderColor: T.color.border.strong,
         borderRadius: T.borderRadius.lg,
         paddingHorizontal: T.spacing[6],
         paddingVertical: T.spacing[3],
@@ -1237,6 +1249,6 @@ const s = StyleSheet.create({
     },
     badgeModalCloseText: {
         ...typePresets.cardTitle,
-        color: '#fff',
+        color: T.color.text.primary,
     },
 })

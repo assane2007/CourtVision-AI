@@ -16,8 +16,7 @@ import { useRouter } from 'expo-router'
 import Animated, { FadeInDown, FadeInRight, withSpring, useSharedValue, useAnimatedStyle } from 'react-native-reanimated'
 import type { LeaderboardEntry, ChallengeItem, ActivityItem, SearchResult } from '../../hooks/useCommunity';
 import { useCommunity } from '../../hooks/useCommunity'
-import { PrimaryButton } from '../../components/PrimaryButton'
-import { AppBackground } from '../../components/ui'
+import { AppBackground, CVButton } from '../../components/ui'
 import { T, typePresets } from '../../lib/theme'
 
 const type = typePresets
@@ -52,7 +51,7 @@ const ACTIVITY_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
 
 const BADGE_RARITY_COLORS: Record<string, string> = {
     common: T.color.text.secondary, rare: T.color.semantic.info,
-    epic: T.color.gamification.purple, legendary: T.color.signature.primary,
+    epic: T.color.gamification.purple, legendary: T.color.ai.primary,
 }
 
 // ─── Helpers ────────────────────────────────────────────────
@@ -221,7 +220,7 @@ export default function Community() {
                         style={{
                             flex: 1, paddingVertical: T.spacing[3], borderRadius: T.borderRadius.sm,
                             alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: T.spacing[1],
-                            backgroundColor: activeTab === tab.key ? T.color.signature.primary : 'transparent',
+                            backgroundColor: activeTab === tab.key ? T.color.brand.primary : 'transparent',
                         }}
                         accessibilityRole="tab"
                         accessibilityLabel={tab.label}
@@ -240,7 +239,7 @@ export default function Community() {
             <ScrollView
                 style={{ flex: 1 }}
                 contentContainerStyle={{ paddingHorizontal: T.spacing[4], paddingBottom: Platform.OS === 'ios' ? 120 : 100 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.color.signature.primary} />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.color.ai.primary} />}
                 showsVerticalScrollIndicator={false}
             >
                 {activeTab === 'rankings' && (
@@ -326,11 +325,11 @@ function RankingsTab({ entries, metric, scope, myRank, onChangeMetric, onChangeS
                             <TouchableOpacity key={s.key} onPress={() => onChangeScope(s.key)} style={{
                                 paddingHorizontal: T.spacing[4], paddingVertical: T.spacing[2],
                                 borderRadius: T.borderRadius.sm,
-                                backgroundColor: scope === s.key ? T.color.signature.primary : 'transparent',
+                                backgroundColor: scope === s.key ? T.color.bg.tertiary : 'transparent',
                                 ...(scope !== s.key ? (glass.regular ?? T.glass.thin) : {}),
                                 minHeight: 44, justifyContent: 'center',
                             }} accessibilityRole="button">
-                                <Text style={{ ...type.overline, color: scope === s.key ? '#fff' : T.color.text.secondary, fontSize: 11 }}>{s.label}</Text>
+                                <Text style={{ ...type.overline, color: scope === s.key ? T.color.text.primary : T.color.text.secondary, fontSize: 11 }}>{s.label}</Text>
                             </TouchableOpacity>
                         ))}
                     </View>
@@ -343,12 +342,12 @@ function RankingsTab({ entries, metric, scope, myRank, onChangeMetric, onChangeS
                                 backgroundColor: metric === m.key ? T.color.signature.muted : 'transparent',
                                 ...(metric !== m.key ? (glass.regular ?? T.glass.thin) : {}),
                                 borderWidth: metric === m.key ? 1 : 0,
-                                borderColor: `${T.color.signature.primary}30`,
+                                borderColor: `${T.color.ai.primary}30`,
                                 minHeight: 44, justifyContent: 'center',
                             }} accessibilityRole="button">
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: T.spacing[1] }}>
-                                    <Feather name={m.emoji} size={12} color={metric === m.key ? T.color.signature.primary : T.color.text.tertiary} />
-                                    <Text style={{ ...type.overline, color: metric === m.key ? T.color.signature.primary : T.color.text.secondary, fontSize: 10 }}>{m.label}</Text>
+                                    <Feather name={m.emoji} size={12} color={metric === m.key ? T.color.ai.primary : T.color.text.tertiary} />
+                                    <Text style={{ ...type.overline, color: metric === m.key ? T.color.ai.primary : T.color.text.secondary, fontSize: 10 }}>{m.label}</Text>
                                 </View>
                             </TouchableOpacity>
                         ))}
@@ -360,11 +359,11 @@ function RankingsTab({ entries, metric, scope, myRank, onChangeMetric, onChangeS
                             <Glass accent style={{ marginBottom: T.spacing[4], flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <View>
                                     <Text style={{ ...type.overline, color: T.color.text.secondary }}>YOUR RANK</Text>
-                                    <Text style={{ ...type.statLarge, color: T.color.signature.primary }}>#{myRank}</Text>
+                                    <Text style={{ ...type.statLarge, color: T.color.ai.primary }}>#{myRank}</Text>
                                 </View>
                                 <View style={{ alignItems: 'flex-end' }}>
                                     <Text style={{ ...type.caption, color: T.color.text.tertiary }}>of {entries.length} players</Text>
-                                    <Text style={{ ...type.overline, color: T.color.signature.primary, marginTop: T.spacing[1] }}>
+                                    <Text style={{ ...type.overline, color: T.color.ai.primary, marginTop: T.spacing[1] }}>
                                         {METRICS.find(m => m.key === metric)?.label}
                                     </Text>
                                 </View>
@@ -426,7 +425,7 @@ function PodiumItem({ entry, position }: { entry: LeaderboardEntry; position: 1 
             <Text style={{ ...type.overline, color: T.color.text.primary, fontSize: 11 }} numberOfLines={1}>
                 {entry.is_me ? 'You' : entry.username}
             </Text>
-            <Text style={{ ...type.mediumStat, color: T.color.signature.primary, fontSize: 14 }}>{entry.score}</Text>
+            <Text style={{ ...type.mediumStat, color: T.color.ai.primary, fontSize: 14 }}>{entry.score}</Text>
             <View style={{
                 width: 64, height: heights[position], marginTop: T.spacing[2],
                 backgroundColor: podiumColors[position], borderTopLeftRadius: T.borderRadius.sm, borderTopRightRadius: T.borderRadius.sm,
@@ -464,7 +463,7 @@ function LeaderboardRow({ entry }: { entry: LeaderboardEntry }) {
                 <Text style={{ ...type.caption, color: T.color.text.tertiary, fontSize: 10 }}>{entry.position || '-'} · Lv.{entry.level}</Text>
             </View>
             <View style={{ alignItems: 'flex-end', gap: 2 }}>
-                <Text style={{ ...type.cardTitle, color: T.color.signature.primary, fontSize: 14 }}>{entry.score}</Text>
+                <Text style={{ ...type.cardTitle, color: T.color.ai.primary, fontSize: 14 }}>{entry.score}</Text>
                 <Feather name={trendIcon} size={12} color={trendColor} />
             </View>
         </View>
@@ -497,7 +496,7 @@ function SearchResultRow({ player, onFollow, onUnfollow }: {
                 style={{
                     paddingHorizontal: T.spacing[4], paddingVertical: T.spacing[2],
                     borderRadius: T.borderRadius.sm, minHeight: 44, justifyContent: 'center',
-                    backgroundColor: player.is_following ? T.color.background.tertiary : T.color.signature.primary,
+                    backgroundColor: player.is_following ? T.color.background.tertiary : T.color.ai.primary,
                 }}
                 accessibilityRole="button"
             >
@@ -530,8 +529,8 @@ function FeedTab({ items, hasMore, onLoadMore, loading }: {
                     accessibilityRole="button"
                 >
                     {loading
-                        ? <ActivityIndicator color={T.color.signature.primary} size="small" />
-                        : <Text style={{ ...type.cardTitle, color: T.color.signature.primary, fontSize: 12 }}>Load more</Text>
+                        ? <ActivityIndicator color={T.color.ai.primary} size="small" />
+                        : <Text style={{ ...type.cardTitle, color: T.color.ai.primary, fontSize: 12 }}>Load more</Text>
                     }
                 </TouchableOpacity>
             )}
@@ -541,11 +540,9 @@ function FeedTab({ items, hasMore, onLoadMore, loading }: {
                     <Text style={{ ...type.caption, color: T.color.text.secondary, textAlign: 'center', marginTop: T.spacing[3], marginBottom: T.spacing[5] }}>
                         {'Nothing in the feed yet.\nFollow players to see their activity!'}
                     </Text>
-                    <PrimaryButton
+                    <CVButton
                         label="Find Friends"
-                        variant="primary"
                         icon="search"
-                        size="sm"
                         fullWidth={false}
                         onPress={() => {
                             /* Implementation would jump focus to player search or invite flow */
@@ -569,11 +566,11 @@ function FeedItem({ item }: { item: ActivityItem }) {
                 width: 36, height: 36, backgroundColor: T.color.background.tertiary,
                 borderRadius: T.borderRadius.md, alignItems: 'center', justifyContent: 'center',
             }}>
-                <Feather name={icon} size={16} color={T.color.signature.primary} />
+                <Feather name={icon} size={16} color={T.color.ai.primary} />
             </View>
             <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: T.spacing[2] }}>
-                    <Text style={{ ...type.cardTitle, color: T.color.signature.primary, fontSize: 12 }}>{item.username}</Text>
+                    <Text style={{ ...type.cardTitle, color: T.color.ai.primary, fontSize: 12 }}>{item.username}</Text>
                     <Text style={{ ...type.caption, color: T.color.text.tertiary, fontSize: 10 }}>{formatTimeAgo(item.created_at)}</Text>
                 </View>
                 <Text style={{ ...type.body, color: T.color.text.primary, fontSize: 13, marginTop: 2 }}>{item.title}</Text>
@@ -593,7 +590,7 @@ function ChallengesTab({ challenges }: { challenges: ChallengeItem[] }) {
     return (
         <View style={{ marginTop: T.spacing[2] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: T.spacing[2], marginBottom: T.spacing[4] }}>
-                <Feather name="target" size={16} color={T.color.signature.primary} />
+                <Feather name="target" size={16} color={T.color.ai.primary} />
                 <Text style={{ ...type.sectionTitle, color: T.color.text.primary, fontSize: 16 }}>
                     {challenges.length} active challenge{challenges.length !== 1 ? 's' : ''}
                 </Text>
@@ -611,11 +608,10 @@ function ChallengesTab({ challenges }: { challenges: ChallengeItem[] }) {
                     <Text style={{ ...type.caption, color: T.color.text.secondary, textAlign: 'center', marginTop: T.spacing[3], marginBottom: T.spacing[5] }}>
                         {'No active challenges right now.\nCheck back soon!'}
                     </Text>
-                    <PrimaryButton
+                    <CVButton
                         label="Create Challenge"
                         variant="secondary"
                         icon="plus"
-                        size="sm"
                         fullWidth={false}
                     />
                 </View>
@@ -633,7 +629,7 @@ function ChallengeCard({ challenge }: { challenge: ChallengeItem }) {
         <Glass style={{
             marginBottom: T.spacing[3],
             borderColor: isLeader ? `${T.color.semantic.success}40` : T.color.border.base,
-            borderWidth: 1,
+            borderWidth: 0.5,
         }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: T.spacing[3] }}>
                 <View style={{ flex: 1 }}>
@@ -647,7 +643,7 @@ function ChallengeCard({ challenge }: { challenge: ChallengeItem }) {
                     paddingHorizontal: T.spacing[2], paddingVertical: T.spacing[1],
                     borderRadius: T.borderRadius.sm, alignSelf: 'flex-start',
                 }}>
-                    <Text style={{ ...type.overline, color: '#FFF', fontSize: 10 }}>{timeLeft}</Text>
+                    <Text style={{ ...type.overline, color: '#FFF', fontSize: 10, fontFamily: T.fonts.mono.regular, letterSpacing: 0.64 }}>{timeLeft}</Text>
                 </View>
             </View>
 
@@ -661,11 +657,11 @@ function ChallengeCard({ challenge }: { challenge: ChallengeItem }) {
                 </View>
                 <View style={{ alignItems: 'center' }}>
                     <Text style={{ ...type.overline, color: T.color.text.tertiary, fontSize: 9 }}>Players</Text>
-                    <Text style={{ ...type.cardTitle, color: T.color.text.primary, fontSize: 12 }}>{challenge.participants_count}</Text>
+                    <Text style={{ ...type.cardTitle, color: T.color.text.primary, fontSize: 12, fontFamily: T.fonts.mono.regular, letterSpacing: 0.64 }}>{challenge.participants_count}</Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                     <Text style={{ ...type.overline, color: T.color.text.tertiary, fontSize: 9 }}>You #{challenge.my_rank || '-'}</Text>
-                    <Text style={{ ...type.cardTitle, color: T.color.signature.primary, fontSize: 12 }}>{challenge.my_value ?? '-'}</Text>
+                    <Text style={{ ...type.cardTitle, color: T.color.ai.primary, fontSize: 12, fontFamily: T.fonts.mono.regular, letterSpacing: 0.64 }}>{challenge.my_value ?? '-'}</Text>
                 </View>
             </View>
 
@@ -674,7 +670,7 @@ function ChallengeCard({ challenge }: { challenge: ChallengeItem }) {
                 <View style={{ height: 4, backgroundColor: T.color.background.tertiary, borderRadius: 2, marginBottom: T.spacing[3] }}>
                     <View style={{
                         height: 4, borderRadius: 2,
-                        backgroundColor: isLeader ? T.color.semantic.success : T.color.signature.primary,
+                        backgroundColor: isLeader ? T.color.semantic.success : T.color.brand.primary,
                         width: `${Math.max(5, (1 - (challenge.my_rank - 1) / challenge.participants_count) * 100)}%`,
                     }} />
                 </View>
@@ -687,7 +683,7 @@ function ChallengeCard({ challenge }: { challenge: ChallengeItem }) {
             )}
 
             <TouchableOpacity style={{
-                backgroundColor: isLeader ? T.color.semantic.success : T.color.signature.primary,
+                backgroundColor: isLeader ? T.color.semantic.success : T.color.brand.primary,
                 paddingVertical: T.spacing[3], borderRadius: T.borderRadius.sm,
                 alignItems: 'center', minHeight: 44, justifyContent: 'center',
             }} accessibilityRole="button">

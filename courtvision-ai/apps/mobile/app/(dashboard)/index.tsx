@@ -48,7 +48,6 @@ import { DailyChallengeCard } from '../../components/gamification/DailyChallenge
 import { WeeklyQuestCard } from '../../components/gamification/WeeklyQuestCard'
 import { AICoachCard } from '../../components/gamification/AICoachCard'
 import { StreakReminderBanner } from '../../components/gamification/StreakReminderBanner'
-import { PrimaryButton } from '../../components/PrimaryButton'
 import { StatCard } from '../../components/dashboard/StatCard'
 import {
     GlassCard, CVText, CVSection, CVStatRow, CVBadge,
@@ -244,14 +243,13 @@ const EmptyTodayCard = memo(function EmptyTodayCard({ onUpload }: { onUpload: ()
                 <CVText preset="body" color="secondary" align="center">
                     {'Film your game and let AI break down\nevery shot, every detail.'}
                 </CVText>
-                <PrimaryButton
+                <CVButton
                     label="Start Today's Session"
                     icon="video"
                     onPress={() => {
                         HapticFeedback.light();
                         onUpload();
                     }}
-                    size="md"
                 />
             </View>
         </Animated.View>
@@ -428,8 +426,8 @@ export default function DashboardIndex() {
                     <RefreshControl
                         refreshing={refreshing}
                         onRefresh={onRefresh}
-                        tintColor={T.color.brand.primary}
-                        colors={[T.color.brand.primary]}
+                        tintColor={T.color.ai.primary}
+                        colors={[T.color.ai.primary]}
                     />
                 }
                 showsVerticalScrollIndicator={false}
@@ -545,9 +543,9 @@ export default function DashboardIndex() {
 
                 {/* ═══ QUICK ACTIONS ═══ */}
                 <Animated.View entering={FadeInDown.delay(240).duration(400)} style={ds.quickActionRow}>
-                    <QuickAction icon="cpu" label="Pre-Cog" color={T.color.ai.primary} onPress={() => goProFeature('/(app)/precog')} />
+                    <QuickAction icon="cpu" label="Pre-Cog" color={T.color.text.secondary} onPress={() => goProFeature('/(app)/precog')} />
                     <QuickAction icon="zap" label="Workout AI" color={T.color.ai.primary} onPress={() => router.push('/workout-setup')} />
-                    <QuickAction icon="message-circle" label="Coach Chat" color={T.color.ai.primary} onPress={() => goProFeature('/(app)/coach')} />
+                    <QuickAction icon="message-circle" label="Coach Chat" color={T.color.text.secondary} onPress={() => goProFeature('/(app)/coach')} />
                 </Animated.View>
 
                 <Animated.View entering={FadeInDown.delay(280).duration(400)} style={ds.quickActionRowBottom}>
@@ -573,11 +571,9 @@ export default function DashboardIndex() {
                         <CVText preset="caption" color="secondary" align="center">
                             {'No highlights yet.\nAnalyze a game to generate AI clips.'}
                         </CVText>
-                        <PrimaryButton
+                        <CVButton
                             label="Upload Highlights"
-                            variant="primary"
                             icon="upload-cloud"
-                            size="sm"
                             fullWidth={false}
                             onPress={goUpload}
                         />
@@ -647,8 +643,9 @@ const ds = StyleSheet.create({
     },
     streakValue: {
         color: T.color.ai.primary,
-        fontFamily: T.fonts.display.black,
+        fontFamily: T.fonts.mono.regular,
         fontSize: 18,
+        letterSpacing: 0.64,
         fontVariant: ['tabular-nums'],
     },
     settingsButton: {
@@ -698,7 +695,8 @@ const ds = StyleSheet.create({
     avatarLevelText: {
         color: T.color.text.inverse,
         fontSize: 9,
-        fontFamily: T.fonts.display.black,
+        fontFamily: T.fonts.mono.regular,
+        letterSpacing: 0.64,
     },
 
     // XP Bar

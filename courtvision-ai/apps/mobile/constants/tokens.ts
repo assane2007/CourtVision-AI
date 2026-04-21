@@ -14,6 +14,7 @@ export const colors = {
     fireGlow: 'rgba(255,77,0,0.25)',
     fireTrace: 'rgba(255,77,0,0.14)',
     ice: '#00F0FF',
+    iceCore: '#00D4FF',
     iceDim: 'rgba(0,240,255,0.18)',
 
     // Text
@@ -21,10 +22,21 @@ export const colors = {
     cloud: 'rgba(255,255,255,0.72)',
     fog: 'rgba(255,255,255,0.52)',
     ghost: 'rgba(255,255,255,0.15)',
+    white100: 'rgba(255,255,255,1)',
+    white90: 'rgba(255,255,255,0.9)',
+    white60: 'rgba(255,255,255,0.6)',
+    white40: 'rgba(255,255,255,0.4)',
+    white30: 'rgba(255,255,255,0.3)',
+    white25: 'rgba(255,255,255,0.25)',
+    white20: 'rgba(255,255,255,0.2)',
 
     // Borders
     line: 'rgba(255,255,255,0.06)',
     lineStrong: 'rgba(255,77,0,0.40)',
+    lineInput: 'rgba(255,255,255,0.08)',
+    lineDataCard: 'rgba(255,255,255,0.07)',
+    lineHeroCard: 'rgba(255,255,255,0.10)',
+    lineGlass: 'rgba(255,255,255,0.09)',
 
     // States
     live: '#00F0FF',
@@ -33,6 +45,8 @@ export const colors = {
     cautionDim: 'rgba(255,193,69,0.16)',
     danger: '#FF5A65',
     dangerDim: 'rgba(255,90,101,0.16)',
+    signalGreen: '#22C55E',
+    fireRed: '#FF4D00',
 } as const;
 
 export const typography = {
@@ -65,6 +79,7 @@ export const space = {
 export const radius = {
     sm: 6, md: 12, lg: 18,
     xl: 24, '2xl': 32, pill: 999,
+    sharp: 4,
 };
 
 export const shadows = {
@@ -91,6 +106,9 @@ export const DURATION = {
     standard: 350,  // transitions screens
     slow: 600,  // entrances
     boot: 1400, // séquence de boot
+    shimmer: 1200,
+    successPulse: 1200,
+    loadingTimeout: 3000,
 };
 
 // Springs

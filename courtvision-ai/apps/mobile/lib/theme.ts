@@ -13,8 +13,9 @@ import * as Haptics from 'expo-haptics'
 const palette = {
     // Neural Arena depth layers
     black: '#000000',
-    surface: '#0A0A0A',
-    elevated: '#111111',
+    surface: '#080808',
+    elevated: '#0E0E0E',
+    elevated2: '#141414',
     overlay: 'rgba(17,17,17,0.94)',
 
     // Accent hierarchy
@@ -23,12 +24,13 @@ const palette = {
     plasmaFocus: 'rgba(255,77,0,0.40)',
     plasmaGlow: 'rgba(255,77,0,0.25)',
     ice: '#00F0FF',
-    iceSoft: 'rgba(0,240,255,0.16)',
+    iceCore: '#00D4FF',
+    iceSoft: 'rgba(0,212,255,0.16)',
     iceGlow: 'rgba(0,240,255,0.26)',
 
     // Semantic signals
-    green: '#22C55E',
-    red: '#FF5A65',
+    green: '#00FF87',
+    red: '#FF4D00',
     yellow: '#FFC145',
     violet: '#8B7CFF',
     gold: '#FFD166',
@@ -38,6 +40,13 @@ const palette = {
     slate: 'rgba(255,255,255,0.72)',
     steel: 'rgba(255,255,255,0.52)',
     ink: '#000000',
+    white100: 'rgba(255,255,255,1)',
+    white90: 'rgba(255,255,255,0.9)',
+    white60: 'rgba(255,255,255,0.6)',
+    white40: 'rgba(255,255,255,0.4)',
+    white30: 'rgba(255,255,255,0.3)',
+    white25: 'rgba(255,255,255,0.25)',
+    white20: 'rgba(255,255,255,0.2)',
 } as const
 
 const baseTheme = {
@@ -46,6 +55,7 @@ const baseTheme = {
             primary: palette.black,
             secondary: palette.surface,
             tertiary: palette.elevated,
+            quaternary: palette.elevated2,
             overlay: palette.overlay,
         },
         brand: {
@@ -56,7 +66,7 @@ const baseTheme = {
             muted: palette.plasmaSoft,
         },
         ai: {
-            primary: palette.ice,
+            primary: palette.iceCore,
             glow: palette.iceGlow,
             muted: palette.iceSoft,
         },
@@ -69,18 +79,27 @@ const baseTheme = {
             gold: palette.gold,
         },
         text: {
-            primary: palette.white,
-            secondary: palette.slate,
-            tertiary: palette.steel,
+            primary: palette.white100,
+            secondary: palette.white60,
+            tertiary: palette.white40,
+            quaternary: palette.white30,
+            dim: palette.white25,
+            subtle: palette.white20,
+            value: palette.white90,
             inverse: palette.ink,
         },
         border: {
             hairline: 'rgba(255,255,255,0.04)',
             soft: 'rgba(255,255,255,0.06)',
             base: 'rgba(255,255,255,0.06)',
-            strong: 'rgba(255,255,255,0.12)',
+            strong: 'rgba(255,255,255,0.14)',
             accent: palette.plasmaFocus,
             ai: 'rgba(0,240,255,0.30)',
+            white20: 'rgba(255,255,255,0.2)',
+            white10: 'rgba(255,255,255,0.10)',
+            white09: 'rgba(255,255,255,0.09)',
+            white08: 'rgba(255,255,255,0.08)',
+            white07: 'rgba(255,255,255,0.07)',
         }
     },
 
@@ -103,7 +122,7 @@ const baseTheme = {
             borderWidth: 0.5,
         },
         frosted: {
-            backgroundColor: palette.elevated,
+            backgroundColor: palette.elevated2,
             borderColor: 'rgba(255,255,255,0.06)',
             borderWidth: 0.5,
         },
@@ -137,6 +156,7 @@ const baseTheme = {
             semibold: 'Sora_600SemiBold',
             bold: 'Sora_700Bold',
             black: 'Sora_800ExtraBold',
+            thin: 'Sora_300Light',
         },
         body: {
             regular: 'DMSans_400Regular',
@@ -155,13 +175,13 @@ const baseTheme = {
 
     type: {
         hero: {
-            fontSize: 72, fontFamily: 'Sora_700Bold', letterSpacing: -1.4, lineHeight: 76
+            fontSize: 64, fontFamily: 'Sora_300Light', letterSpacing: -1.28, lineHeight: 68
         },
         h1: {
-            fontSize: 36, fontFamily: 'Sora_700Bold', letterSpacing: -0.72, lineHeight: 40
+            fontSize: 36, fontFamily: 'Sora_300Light', letterSpacing: -0.72, lineHeight: 40
         },
         h2: {
-            fontSize: 24, fontFamily: 'Sora_700Bold', letterSpacing: -0.48, lineHeight: 30
+            fontSize: 24, fontFamily: 'Sora_300Light', letterSpacing: -0.48, lineHeight: 30
         },
         h3: {
             fontSize: 18, fontFamily: 'Sora_600SemiBold', letterSpacing: -0.36, lineHeight: 24
@@ -176,10 +196,10 @@ const baseTheme = {
             fontSize: 12, fontFamily: 'DMSans_400Regular', color: palette.slate
         },
         overline: {
-            fontSize: 12, fontFamily: 'DMSans_500Medium', letterSpacing: 0.6
+            fontSize: 11, fontFamily: 'DMSans_400Regular', letterSpacing: 0.88
         },
         statLarge: {
-            fontSize: 48, fontFamily: 'Sora_700Bold', letterSpacing: -0.96
+            fontSize: 56, fontFamily: 'Sora_300Light', letterSpacing: -1.12
         },
         screenTitle: {
             fontSize: 32, fontFamily: 'Sora_700Bold', letterSpacing: -0.64, lineHeight: 36
@@ -191,10 +211,10 @@ const baseTheme = {
             fontSize: 16, fontFamily: 'DMSans_600SemiBold', letterSpacing: -0.2
         },
         mediumStat: {
-            fontSize: 28, fontFamily: 'JetBrainsMono_400Regular', letterSpacing: -0.6
+            fontSize: 28, fontFamily: 'JetBrainsMono_400Regular', letterSpacing: 0.64
         },
         dataMicro: {
-            fontSize: 10, fontFamily: 'JetBrainsMono_400Regular', letterSpacing: 0.2
+            fontSize: 10, fontFamily: 'JetBrainsMono_400Regular', letterSpacing: 0.4
         },
         systemLabel: {
             fontSize: 10, fontFamily: 'JetBrainsMono_400Regular', letterSpacing: 1.1, textTransform: 'uppercase' as const
@@ -208,7 +228,7 @@ const baseTheme = {
 
     // ─── Radius ───
     radius: {
-        sm: 8, md: 12, lg: 16, xl: 22, '2xl': 32, full: 9999
+        sm: 8, md: 12, lg: 16, xl: 22, '2xl': 32, full: 9999, sharp: 4, data: 6, support: 4
     },
 
     // Selective glow: primary CTA only
@@ -235,10 +255,10 @@ const baseTheme = {
 
     // ─── Animations ───
     spring: {
-        snappy: { mass: 1, damping: 18, stiffness: 200 },
-        gentle: { mass: 1, damping: 18, stiffness: 200 },
-        bouncy: { mass: 1, damping: 18, stiffness: 200 },
-        interaction: { mass: 1, damping: 18, stiffness: 200 },
+        snappy: { mass: 1, damping: 30, stiffness: 300 },
+        gentle: { mass: 1, damping: 30, stiffness: 300 },
+        bouncy: { mass: 1, damping: 30, stiffness: 300 },
+        interaction: { mass: 1, damping: 30, stiffness: 300 },
     },
 
     stagger: {
@@ -247,6 +267,19 @@ const baseTheme = {
 
     zIndex: {
         base: 1, modal: 100, toast: 1000
+    },
+    motion: {
+        shimmerMs: 1200,
+        successPulseMs: 1200,
+        loadingTimeoutMs: 3000,
+    },
+    metrics: {
+        heroMin: 48,
+        heroMax: 64,
+        sub: 16,
+        trendIcon: 10,
+        maxHeroPerScreen: 1,
+        maxSubPerScreen: 3,
     },
 
     // ─── Helpers ───

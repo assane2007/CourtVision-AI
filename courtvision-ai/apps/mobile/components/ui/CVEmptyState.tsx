@@ -50,18 +50,8 @@ export function CVEmptyState({
       }, style]}
     >
       {/* Icon circle */}
-      <View style={{
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: 'rgba(255,107,0,0.06)',
-        borderWidth: 1,
-        borderColor: 'rgba(255,107,0,0.12)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: T.spacing[5],
-      }}>
-        <Feather name={icon} size={32} color={T.color.signature.primary} />
+      <View style={{ marginBottom: T.spacing[4] }}>
+        <Feather name={icon} size={24} color={T.color.text.subtle} />
       </View>
 
       <CVText preset="sectionTitle" align="center" style={{ marginBottom: 8 }}>
@@ -70,7 +60,7 @@ export function CVEmptyState({
 
       {description && (
         <CVText preset="body" color="secondary" align="center" style={{ marginBottom: T.spacing[6], maxWidth: 280 }}>
-          {description}
+          {description.split(' ').slice(0, 8).join(' ')}
         </CVText>
       )}
 

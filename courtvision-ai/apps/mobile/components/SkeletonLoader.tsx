@@ -29,8 +29,8 @@ export function SkeletonLoader({ width = '100%', height = 16, borderRadius = 10,
     useEffect(() => {
         shimmer.value = withRepeat(
             withSequence(
-                withTiming(1, { duration: 1000 }),
-                withTiming(0, { duration: 1000 }),
+                withTiming(1, { duration: T.motion.shimmerMs }),
+                withTiming(0, { duration: T.motion.shimmerMs }),
             ),
             -1,
         )

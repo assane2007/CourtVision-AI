@@ -33,8 +33,7 @@ import { useStore } from '../../lib/store'
 import { toast } from '../../lib/toast'
 import { api, API_BASE_URL, getAuthToken } from '../../lib/api'
 import { ScoreRing } from '../../components/workout/ScoreRing'
-import { PrimaryButton } from '../../components/PrimaryButton'
-import { AppBackground } from '../../components/ui'
+import { AppBackground, CVButton } from '../../components/ui'
 import { AnalysisProgress, type AnalysisPipelineStep, type AnalysisTransportMode } from '../../components/upload/AnalysisProgress'
 import { T, typePresets } from '../../lib/theme'
 
@@ -668,12 +667,11 @@ export default function UploadAnalyze() {
                         </Animated.View>
 
                         <Animated.View entering={FadeInDown.delay(600).duration(400)} style={us.resultActions}>
-                            <PrimaryButton
+                            <CVButton
                                 label="View Full Report"
                                 icon="bar-chart-2"
                                 onPress={handleViewReport}
-                                size="lg"
-                                state={currentSessionId ? 'default' : 'disabled'}
+                                disabled={!currentSessionId}
                             />
                             <TouchableOpacity
                                 onPress={handleReset}

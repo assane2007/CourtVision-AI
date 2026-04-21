@@ -8,7 +8,7 @@
  *   <StatCard label="Précision" value={73} unit="%" size="lg" trend={+5} />
  */
 
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ViewStyle} from 'react-native';
 import {
     View, Text, StyleSheet,
@@ -61,8 +61,8 @@ const SIZE_CONFIG = {
     },
     lg: {
         padding: 20,
-        labelSize: T.fontSize.base,
-        valueSize: 42,           // hero-light
+        labelSize: 11,
+        valueSize: 56,
         unitSize: T.fontSize.lg,
         trendSize: T.fontSize.sm,
         gap: 8,
@@ -109,36 +109,43 @@ function SkeletonPulse({ width, height, radius = 6 }: { width: number | string; 
 function AnimatedValue({ value, delay: delayMs, size, color }: {
     value: number; delay: number; size: number; color: string
 }) {
+    const [displayValue, setDisplayValue] = useState(0)
     const progress = useSharedValue(0)
-    const animatedVal = useSharedValue(0)
 
     useEffect(() => {
         progress.value = withDelay(delayMs, withTiming(1, {
-            duration: 500,
+            duration: 400,
             easing: Easing.out(Easing.cubic),
         }))
-        animatedVal.value = withDelay(delayMs, withTiming(value, {
-            duration: 500,
-            easing: Easing.out(Easing.cubic),
-        }))
-    }, [value, delayMs, progress, animatedVal])
+
+        let frame = 0
+        const total = 24
+        const start = setTimeout(() => {
+            const tick = () => {
+                frame += 1
+                const t = frame / total
+                const eased = t >= 1 ? 1 : 1 - Math.pow(2, -10 * t)
+                setDisplayValue(Math.round(value * eased))
+                if (frame < total) requestAnimationFrame(tick)
+            }
+            requestAnimationFrame(tick)
+        }, delayMs)
+        return () => clearTimeout(start)
+    }, [value, delayMs, progress])
 
     const textStyle = useAnimatedStyle(() => ({
         opacity: interpolate(progress.value, [0, 0.15], [0, 1]),
     }))
 
-    // Pure Reanimated — no RAF, no JS thread counter
-    // useDerivedValue cannot drive Text children in RN, so we read the last value
-    // The animated opacity handles the visual transition
     return (
         <Animated.Text style={[{
             color,
             fontSize: size,
             fontFamily: T.fonts.mono.regular,
-            letterSpacing: -1,
+            letterSpacing: 0.64,
             fontVariant: ['tabular-nums'],
         }, textStyle]}>
-            {Math.round(value)}
+            {displayValue}
         </Animated.Text>
     )
 }
@@ -191,10 +198,21 @@ export function StatCard({
     }
 
     const isTrendPositive = (trend ?? 0) >= 0
+    const scanLines = useMemo(() => Array.from({ length: 8 }, (_, i) => i), [])
 
     return (
         <Animated.View style={[styles.base, glass, { padding: cfg.padding, gap: cfg.gap, overflow: 'hidden' }, cardStyle, style]}>
             <BlurView intensity={blurIntensity} tint={blurTint as any} style={StyleSheet.absoluteFillObject} />
+            <View pointerEvents="none" style={styles.gridLayer}>
+                {scanLines.map((i) => (
+                    <View key={i} style={styles.gridLine} />
+                ))}
+            </View>
+            <View pointerEvents="none" style={styles.scanLayer}>
+                {scanLines.map((i) => (
+                    <View key={`s-${i}`} style={styles.scanLine} />
+                ))}
+            </View>
 
             {/* Outline subtil premium (inner border) */}
             <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
@@ -224,7 +242,7 @@ export function StatCard({
                 <View style={styles.trendRow}>
                     <Text style={[
                         styles.trendArrow,
-                        { color: isTrendPositive ? T.color.semantic.success : T.color.semantic.warning },
+                        { color: isTrendPositive ? T.color.semantic.success : T.color.brand.primary },
                         { fontSize: cfg.trendSize },
                     ]}>
                         {isTrendPositive ? '↑' : '↓'} {Math.abs(trend)}%
@@ -245,15 +263,32 @@ const styles = StyleSheet.create({
         borderRadius: T.radius.lg,
         overflow: 'hidden',
     },
+    gridLayer: {
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: 'space-evenly',
+    },
+    gridLine: {
+        height: 0.5,
+        backgroundColor: 'rgba(255,255,255,0.06)',
+    },
+    scanLayer: {
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: 'space-between',
+    },
+    scanLine: {
+        height: 1,
+        backgroundColor: 'rgba(255,255,255,0.04)',
+    },
     labelRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
     },
     label: {
-        color: T.color.text.secondary,
+        color: T.color.text.quaternary,
         fontFamily: T.fonts.body.medium,
-        letterSpacing: 0.2,
+        letterSpacing: 0.88,
+        textTransform: 'uppercase',
         flexShrink: 1,
     },
     iconWrapper: {

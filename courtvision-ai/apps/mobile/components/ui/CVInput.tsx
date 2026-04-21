@@ -17,8 +17,8 @@ import { T } from '../../lib/theme'
 
 // ─── Types ────────────────────────────────────────────────────
 
-export type CVInputVariant = 'outline' | 'filled' | 'ghost'
-export type CVInputSize = 'sm' | 'md' | 'lg'
+export type CVInputVariant = 'default'
+export type CVInputSize = 'md'
 
 export interface CVInputProps extends Omit<TextInputProps, 'style'> {
   variant?: CVInputVariant
@@ -34,18 +34,14 @@ export interface CVInputProps extends Omit<TextInputProps, 'style'> {
 
 // ─── Size Config ──────────────────────────────────────────────
 
-const SIZE_CONFIG: Record<CVInputSize, {
-  height: number; fontSize: number; iconSize: number; radius: number; px: number
-}> = {
-  sm: { height: 40, fontSize: T.fontSize.sm, iconSize: 14, radius: T.radius.md, px: 12 },
-  md: { height: 48, fontSize: T.fontSize.base, iconSize: 16, radius: T.radius.lg, px: 14 },
-  lg: { height: 56, fontSize: T.fontSize.md, iconSize: 18, radius: T.radius.xl, px: 16 },
+const SIZE_CONFIG = {
+  height: 52, fontSize: 15, iconSize: 16, px: 14,
 }
 
 // ─── Component ───────────────────────────────────────────────
 
 export function CVInput({
-  variant = 'outline',
+  variant = 'default',
   size = 'md',
   icon,
   label,
@@ -57,32 +53,27 @@ export function CVInput({
   ...textInputProps
 }: CVInputProps) {
   const [focused, setFocused] = useState(false)
-  const cfg = SIZE_CONFIG[size]
+  const cfg = SIZE_CONFIG
 
   const hasError = !!error
   const borderColor = hasError
-    ? T.color.semantic.error
+    ? 'rgba(255,77,0,0.5)'
     : focused
-      ? T.color.border.accent
-      : variant === 'ghost'
-        ? 'transparent'
-        : T.color.border.base
+      ? 'rgba(0,212,255,0.5)'
+      : T.color.border.white08
 
-  const bgColor = variant === 'filled'
-    ? T.color.bg.secondary
-    : variant === 'ghost'
-      ? 'transparent'
-      : T.color.bg.tertiary
+  const bgColor = '#0E0E0E'
 
   return (
     <View style={[{ width: fullWidth ? '100%' : undefined }, style]}>
       {/* Label */}
       {label && (
         <Text style={{
-          color: hasError ? T.color.semantic.error : T.color.text.secondary,
-          fontSize: T.fontSize.sm,
-          fontFamily: T.fonts.body.semibold,
-          letterSpacing: 0.2,
+          color: hasError ? 'rgba(255,77,0,0.5)' : T.color.text.quaternary,
+          fontSize: 11,
+          fontFamily: T.fonts.body.medium,
+          letterSpacing: 0.88,
+          textTransform: 'uppercase',
           marginBottom: 6,
         }}>
           {label}
@@ -92,9 +83,9 @@ export function CVInput({
       {/* Input Row */}
       <View style={{
         height: cfg.height,
-        borderRadius: cfg.radius,
+        borderRadius: T.radius.sharp,
         backgroundColor: bgColor,
-        borderWidth: variant === 'ghost' ? 0 : 0.5,
+        borderWidth: 0.5,
         borderColor,
         flexDirection: 'row',
         alignItems: 'center',
@@ -105,18 +96,18 @@ export function CVInput({
           <Feather
             name={icon}
             size={cfg.iconSize}
-            color={focused ? T.color.ai.primary : T.color.text.tertiary}
+            color={focused ? T.color.ai.primary : T.color.text.dim}
           />
         )}
         <TextInput
           style={[{
             flex: 1,
-            color: T.color.text.primary,
+            color: T.color.text.value,
             fontSize: cfg.fontSize,
             fontFamily: T.fonts.body.regular,
             height: '100%',
           }, inputStyle] as any}
-          placeholderTextColor={T.color.text.tertiary}
+          placeholderTextColor={T.color.text.dim}
           selectionColor={T.color.brand.primary}
           onFocus={(e) => {
             setFocused(true)

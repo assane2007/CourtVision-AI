@@ -29,9 +29,8 @@ import {
 import { useViralShare, type SharePlatform, type TwinCardData } from '../../hooks/useViralShare'
 import { getSimulationPlayers } from '../../lib/nbaApi'
 import { ShareButton, ShareModal } from '../../components/dashboard/ShareCard'
-import { AppBackground } from '../../components/ui'
+import { AppBackground, CVButton } from '../../components/ui'
 import { T, typePresets } from '../../lib/theme'
-import { PrimaryButton } from '../../components/PrimaryButton'
 
 const type = typePresets
 const glass = T.glass
@@ -138,10 +137,9 @@ export default function DigitalTwin() {
                     {twin.error ?? 'Analyze at least one video session to create your AI avatar.'}
                 </Animated.Text>
                 <Animated.View entering={FadeInDown.delay(300).duration(500)} style={{ marginTop: T.spacing[6] }}>
-                    <PrimaryButton
+                    <CVButton
                         label={twin.rebuilding ? 'Building...' : 'Build my Twin'}
                         onPress={twin.rebuild}
-                        variant="primary"
                         icon="cpu"
                         state={twin.rebuilding ? 'loading' : 'default'}
                     />

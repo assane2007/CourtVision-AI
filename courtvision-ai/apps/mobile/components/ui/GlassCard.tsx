@@ -13,6 +13,7 @@
 import React from 'react'
 import type { ViewStyle} from 'react-native';
 import { Pressable, View } from 'react-native'
+import { BlurView } from 'expo-blur'
 import { T } from '../../lib/theme'
 import { HapticFeedback } from '../../lib/haptics'
 
@@ -27,7 +28,7 @@ const GLASS_STYLES: Record<GlassVariant, { bg: string; border: string }> = {
   success: { bg: 'rgba(34,197,94,0.10)', border: 'rgba(34,197,94,0.24)' },
   danger: { bg: 'rgba(255,90,101,0.10)', border: 'rgba(255,90,101,0.24)' },
   gold: { bg: 'rgba(255,209,102,0.10)', border: 'rgba(255,209,102,0.24)' },
-  thin: { bg: T.glass.thin.backgroundColor, border: T.glass.thin.borderColor },
+  thin: { bg: 'rgba(255,255,255,0.04)', border: T.color.border.white09 },
   primary: { bg: T.color.ai.muted, border: T.color.border.ai },
 }
 
@@ -76,6 +77,15 @@ export function GlassCard({
     ...shadowStyle,
   }
 
+  const content = (
+    <>
+      <BlurView intensity={20} tint="dark" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+      <View style={{ position: 'relative' }}>
+        {children}
+      </View>
+    </>
+  )
+
   if (isPressable) {
     return (
       <Pressable
@@ -89,14 +99,14 @@ export function GlassCard({
           style,
         ]}
       >
-        {children}
+        {content}
       </Pressable>
     )
   }
 
   return (
     <View style={[baseStyle, style]}>
-      {children}
+      {content}
     </View>
   )
 }
