@@ -718,31 +718,70 @@ export default function CameraWorkoutScreen() {
           width: { ideal: 640 },
           height: { ideal: 480 },
         },
+        audio: false,
       })
       streamRef.current = stream
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        await videoRef.current.play()
+      const video = videoRef.current
+      if (!video) {
+        stream.getTracks().forEach((t) => t.stop())
+        setCameraError('Élément vidéo introuvable.')
+        setPhase('error')
+        return
       }
+
+      video.srcObject = stream
+      video.setAttribute('playsinline', '')
+      video.muted = true
+
+      // Wait for the video to be ready before playing
+      await new Promise<void>((resolve, reject) => {
+        video.onloadedmetadata = () => resolve()
+        video.onerror = () => reject(new Error('Erreur de chargement vidéo'))
+        // Timeout in case metadata never loads
+        setTimeout(() => reject(new Error('Timeout vidéo')), 10000)
+      })
+
+      try {
+        await video.play()
+      } catch (playErr) {
+        // Some browsers need a retry or user gesture
+        console.warn('video.play() failed, retrying...', playErr)
+        await new Promise((r) => setTimeout(r, 300))
+        try {
+          await video.play()
+        } catch {
+          setCameraError('Impossible de démarrer la vidéo. Réessayez.')
+          stream.getTracks().forEach((t) => t.stop())
+          setPhase('error')
+          return
+        }
+      }
+
       setPhase('countdown')
       setCountdown(COUNTDOWN_SECONDS)
     } catch (err) {
       const msg =
         err instanceof DOMException && err.name === 'NotAllowedError'
           ? 'Caméra non autorisée. Veuillez autoriser l\'accès à la caméra dans les paramètres de votre navigateur.'
-          : 'Impossible d\'accéder à la caméra. Vérifiez que votre appareil dispose d\'une caméra.'
+          : err instanceof DOMException && err.name === 'NotFoundError'
+            ? 'Aucune caméra détectée sur cet appareil.'
+            : err instanceof DOMException && err.name === 'NotReadableError'
+              ? 'La caméra est déjà utilisée par une autre application.'
+              : 'Impossible d\'accéder à la caméra. Vérifiez que votre appareil dispose d\'une caméra.'
       setCameraError(msg)
       setPhase('error')
     }
   }, [])
 
-  // ── Start camera when model is loaded ─────────────────────────────────
+  // ── Start camera as soon as drill is loaded (don't wait for MediaPipe) ─
+  const cameraStartedRef = useRef(false)
   useEffect(() => {
-    if (isModelLoaded && !isDrillLoading) {
+    if (!isDrillLoading && !cameraStartedRef.current) {
+      cameraStartedRef.current = true
       setupCamera()
     }
-  }, [isModelLoaded, isDrillLoading, setupCamera])
+  }, [isDrillLoading, setupCamera])
 
   // ── Countdown logic ───────────────────────────────────────────────────
   useEffect(() => {
@@ -1050,11 +1089,11 @@ export default function CameraWorkoutScreen() {
     : 0
 
   // ── Loading state ─────────────────────────────────────────────────────
-  if (phase === 'loading' || isDrillLoading) {
+  if (isDrillLoading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-4">
         <Loader2 className="h-10 w-10 text-orange-500 animate-spin" />
-        <p className="text-foreground text-sm">Chargement du modèle IA...</p>
+        <p className="text-foreground text-sm">Chargement de l'exercice...</p>
         <Skeleton className="h-3 w-48" />
       </div>
     )
@@ -1155,6 +1194,14 @@ export default function CameraWorkoutScreen() {
             className="absolute inset-0 w-full h-full"
             style={{ transform: 'scaleX(-1)' }}
           />
+
+          {/* MediaPipe loading indicator */}
+          {!isModelLoaded && phase !== 'error' && (
+            <div className="absolute top-3 left-3 z-20 flex items-center gap-2 rounded-full bg-black/60 backdrop-blur-sm px-3 py-1.5">
+              <Loader2 className="h-3.5 w-3.5 text-orange-400 animate-spin" />
+              <span className="text-[11px] text-white/80">Modèle IA en cours...</span>
+            </div>
+          )}
 
           {/* ── Countdown Overlay ──────────────────────────────────── */}
           <AnimatePresence>
