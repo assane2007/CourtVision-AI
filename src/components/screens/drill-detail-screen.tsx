@@ -20,6 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useAppStore } from '@/stores/app'
 import { BottomNav } from '@/components/shared/bottom-nav'
 import { getCategoryLabel, DIFFICULTY_CONFIG } from '@/lib/constants'
+import { DrillDemoAnimation } from '@/components/drill-demo-animation'
 import { toast } from 'sonner'
 
 // ── Animation variants ──────────────────────────────────────────────
@@ -167,6 +168,8 @@ export function DrillDetailScreen() {
             <Card className="border-0 shadow-lg overflow-hidden">
               {/* Accent top bar */}
               <div className="h-1.5 bg-gradient-to-r from-orange-400 via-orange-500 to-amber-500" />
+              {/* Animated drill demo */}
+              <DrillDemoAnimation category={drill.category} className="mx-4 mt-4" />
               <CardContent className="p-6 space-y-4">
                 <div className="flex items-start gap-4">
                   <div className="flex-shrink-0 w-16 h-16 rounded-2xl bg-orange-500/10 flex items-center justify-center text-3xl">

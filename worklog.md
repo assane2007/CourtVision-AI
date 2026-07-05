@@ -107,3 +107,35 @@ Stage Summary:
 - Safe areas handled for notched devices (iPhone X+)
 - Touch optimizations: no 300ms delay, no tap highlight, standalone scroll containment
 ---
+Task ID: 4-a
+Agent: full-stack-developer
+Task: Create animated drill demo visualizations
+
+Work Log:
+- Read worklog.md and drill-detail-screen.tsx to understand project state
+- Created `/src/components/drill-demo-animation.tsx` — single 'use client' component with props `category: string` and `className?: string`
+- Implemented 9 unique SVG stick-figure animations using Framer Motion:
+  1. **pocket_ball** — Wide athletic stance, ball bounces low near hip, arms follow crossover motion left↔right, triangular direction arrows
+  2. **shifty** — Entire figure slides laterally with easeInOut, arms shift for balance, legs shuffle width oscillates
+  3. **ball_handling** — Ball follows figure-8 pattern (5 keyframes with x/y), arms follow ball position, subtle ellipse path hint
+  4. **speed_change** — Non-linear forward motion (slow→burst→decelerate), body leans forward during sprint, arm pump, leg stride alternation, speed lines appear during burst phase
+  5. **defense** — Low wide stance (shorter torso, very wide legs), hands up wide, lateral slides, dashed ellipse expands/contracts showing coverage area
+  6. **shooting** — Static figure with animated shooting arm (raises from pocket to extended follow-through), guide hand animation, ball arcs from pocket to hoop via 5-keyframe trajectory, dashed arc trail hint, Hoop sub-component (backboard + rim + net)
+  7. **footwork** — Top-down view with "VUE DU DESSUS" label, agility ladder (2 rails + 5 rungs), two oval feet stepping in opposite in/out patterns through rungs, forward direction arrow
+  8. **finishing** — Figure drives from left (x translation), jumps (y translation), arm extends to layup, ball on independent trajectory arcing to hoop, Hoop component, drive direction arrow
+  9. **conditioning** — Continuous jumping (y oscillation with easeOut), arms pump alternately up/down, legs bend on landing/extend on jump, impact ring expands on ground contact, upward arrow indicator
+  10. **default** — Gentle idle bounce for unrecognized categories
+- Shared sub-components: Basketball (circle + 4 seam lines), CourtFloor (line + hash marks), DemoBadge (rect + text), Head (stroke circle), Hoop (pole + backboard + rim + net), DirArrow (triangle), SpeedLines (3 horizontal dashes)
+- All animations use `repeat: Infinity`, `ease: "easeInOut"` or custom bezier curves, consistent orange color (#f97316), dark gradient background (from-gray-900 to-gray-950)
+- Fixed shooting ball: replaced raw SVG `<animateMotion>` with Framer Motion `motion.g` x/y keyframe transforms
+- Fixed finishing ball: moved outside figure's motion.g, uses independent x/y trajectory with correct parent offset calculation
+- Fixed footwork ellipse times: corrected from 6-element to 5-element array matching keyframe count
+- Integrated into drill-detail-screen.tsx: imported DrillDemoAnimation, placed between accent bar and CardContent with `mx-4 mt-4` classes
+- Verified: all compilations successful (no TypeScript/lint errors in new files), ESLint pass (pre-existing warnings only in unrelated files)
+
+Stage Summary:
+- Created comprehensive `/src/components/drill-demo-animation.tsx` with 9 category-specific + 1 default SVG stick-figure animations
+- Each animation is self-explanatory and visually distinct, using only SVG + Framer Motion
+- Integrated into drill-detail-screen as a full-width animated preview card between accent bar and drill info
+- Train-hub integration skipped (optional, cards too compact for meaningful preview)
+---
