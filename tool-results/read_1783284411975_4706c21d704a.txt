@@ -1,0 +1,794 @@
+     1→'use client'
+     2→
+     3→import { motion } from 'framer-motion'
+     4→import { cn } from '@/lib/utils'
+     5→
+     6→// ── Types ────────────────────────────────────────────────────────────
+     7→interface DrillDemoAnimationProps {
+     8→  category: string
+     9→  className?: string
+    10→}
+    11→
+    12→// ── Constants ────────────────────────────────────────────────────────
+    13→const C = '#f97316'  // stick figure / ball color
+    14→const SW = 2.5       // stroke width
+    15→const HR = 10        // head radius
+    16→const FY = 162       // floor Y
+    17→
+    18→// ── Shared SVG Elements ──────────────────────────────────────────────
+    19→
+    20→/** Basketball: orange circle with seam lines */
+    21→function Basketball({ cx, cy, r = 8 }: { cx: number; cy: number; r?: number }) {
+    22→  return (
+    23→    <g>
+    24→      <circle cx={cx} cy={cy} r={r} fill={C} />
+    25→      <line x1={cx} y1={cy - r} x2={cx} y2={cy + r} stroke="#7c2d12" strokeWidth={0.7} />
+    26→      <line x1={cx - r} y1={cy} x2={cx + r} y2={cy} stroke="#7c2d12" strokeWidth={0.7} />
+    27→      <path
+    28→        d={`M${cx - r * 0.7},${cy - r} Q${cx - r * 0.3},${cy} ${cx - r * 0.7},${cy + r}`}
+    29→        stroke="#7c2d12" strokeWidth={0.6} fill="none"
+    30→      />
+    31→      <path
+    32→        d={`M${cx + r * 0.7},${cy - r} Q${cx + r * 0.3},${cy} ${cx + r * 0.7},${cy + r}`}
+    33→        stroke="#7c2d12" strokeWidth={0.6} fill="none"
+    34→      />
+    35→    </g>
+    36→  )
+    37→}
+    38→
+    39→/** Court floor with hash marks */
+    40→function CourtFloor() {
+    41→  return (
+    42→    <g>
+    43→      <line x1={8} y1={FY} x2={232} y2={FY} stroke="#374151" strokeWidth={1.5} />
+    44→      {[50, 90, 120, 150, 190].map((x) => (
+    45→        <line key={x} x1={x} y1={FY} x2={x} y2={FY + 4} stroke="#2d3748" strokeWidth={0.7} />
+    46→      ))}
+    47→    </g>
+    48→  )
+    49→}
+    50→
+    51→/** DÉMO badge overlay top-left */
+    52→function DemoBadge() {
+    53→  return (
+    54→    <g>
+    55→      <rect x={8} y={6} width={38} height={16} rx={4} fill="white" fillOpacity={0.1} />
+    56→      <text
+    57→        x={27} y={17}
+    58→        fill="white" fontSize={8} fontWeight={700}
+    59→        fontFamily="system-ui, sans-serif" textAnchor="middle" opacity={0.75}
+    60→      >
+    61→        DÉMO
+    62→      </text>
+    63→    </g>
+    64→  )
+    65→}
+    66→
+    67→/** Static stick-figure head */
+    68→function Head({ cx, cy }: { cx: number; cy: number }) {
+    69→  return <circle cx={cx} cy={cy} r={HR} fill="none" stroke={C} strokeWidth={SW} />
+    70→}
+    71→
+    72→/** Hoop (backboard + rim) for shooting / finishing scenes */
+    73→function Hoop({ x, y }: { x: number; y: number }) {
+    74→  return (
+    75→    <g>
+    76→      {/* Pole */}
+    77→      <line x1={x + 4} y1={y - 18} x2={x + 4} y2={FY} stroke="#4b5563" strokeWidth={2.5} />
+    78→      {/* Backboard */}
+    79→      <rect x={x - 4} y={y - 22} width={16} height={28} rx={2} fill="none" stroke="#6b7280" strokeWidth={2} />
+    80→      {/* Rim */}
+    81→      <line x1={x - 18} y1={y + 4} x2={x + 4} y2={y + 4} stroke="#ef4444" strokeWidth={2.5} strokeLinecap="round" />
+    82→      {/* Net hint */}
+    83→      <line x1={x - 14} y1={y + 7} x2={x - 8} y2={y + 18} stroke="#9ca3af" strokeWidth={0.5} opacity={0.5} />
+    84→      <line x1={x - 6} y1={y + 7} x2={x - 2} y2={y + 18} stroke="#9ca3af" strokeWidth={0.5} opacity={0.5} />
+    85→      <line x1={x + 2} y1={y + 7} x2={x + 3} y2={y + 18} stroke="#9ca3af" strokeWidth={0.5} opacity={0.5} />
+    86→    </g>
+    87→  )
+    88→}
+    89→
+    90→/** Small triangular direction arrow */
+    91→function DirArrow({ x, y, rot = 0 }: { x: number; y: number; rot?: number }) {
+    92→  return (
+    93→    <polygon
+    94→      points="-5,-3.5 5,0 -5,3.5"
+    95→      fill={C}
+    96→      transform={`translate(${x},${y}) rotate(${rot})`}
+    97→    />
+    98→  )
+    99→}
+   100→
+   101→/** Speed lines (horizontal dashes) */
+   102→function SpeedLines({ x, y }: { x: number; y: number }) {
+   103→  return (
+   104→    <g opacity={0.4}>
+   105→      <line x1={x} y1={y - 8} x2={x - 18} y2={y - 8} stroke={C} strokeWidth={1.2} strokeLinecap="round" />
+   106→      <line x1={x + 5} y1={y} x2={x - 15} y2={y} stroke={C} strokeWidth={1.2} strokeLinecap="round" />
+   107→      <line x1={x} y1={y + 8} x2={x - 12} y2={y + 8} stroke={C} strokeWidth={1.2} strokeLinecap="round" />
+   108→    </g>
+   109→  )
+   110→}
+   111→
+   112→// ══════════════════════════════════════════════════════════════════════
+   113→// ANIMATION: pocket_ball — Low dribble, crossovers near hip
+   114→// ══════════════════════════════════════════════════════════════════════
+   115→function PocketBallAnim() {
+   116→  return (
+   117→    <g>
+   118→      {/* Stick figure — wide athletic stance */}
+   119→      <Head cx={120} cy={52} />
+   120→      <line x1={120} y1={62} x2={118} y2={105} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   121→
+   122→      {/* Left arm — follows ball */}
+   123→      <motion.line
+   124→        x1={120} y1={75} x2={98} y2={98}
+   125→        stroke={C} strokeWidth={SW} strokeLinecap="round"
+   126→        animate={{ x2: [98, 142, 98] }}
+   127→        transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+   128→      />
+   129→      {/* Right arm — follows ball */}
+   130→      <motion.line
+   131→        x1={120} y1={75} x2={142} y2={98}
+   132→        stroke={C} strokeWidth={SW} strokeLinecap="round"
+   133→        animate={{ x2: [142, 98, 142] }}
+   134→        transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+   135→      />
+   136→
+   137→      {/* Legs — wide */}
+   138→      <line x1={118} y1={105} x2={95} y2={156} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   139→      <line x1={118} y1={105} x2={143} y2={156} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   140→
+   141→      {/* Ball — bounces low with crossover */}
+   142→      <motion.g
+   143→        animate={{ x: [0, 28, -28, 0] }}
+   144→        transition={{
+   145→          duration: 1.6, repeat: Infinity, ease: 'easeInOut',
+   146→          times: [0, 0.35, 0.65, 1],
+   147→        }}
+   148→      >
+   149→        <motion.g
+   150→          animate={{ y: [4, -18, 4] }}
+   151→          transition={{ duration: 0.55, repeat: Infinity, ease: 'easeOut' }}
+   152→        >
+   153→          <Basketball cx={120} cy={136} r={8} />
+   154→        </motion.g>
+   155→      </motion.g>
+   156→
+   157→      {/* Crossover arrows */}
+   158→      <motion.g
+   159→        animate={{ opacity: [0, 0.55, 0], x: [0, -6, 0] }}
+   160→        transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+   161→      >
+   162→        <DirArrow x={72} y={132} rot={180} />
+   163→      </motion.g>
+   164→      <motion.g
+   165→        animate={{ opacity: [0, 0.55, 0], x: [0, 6, 0] }}
+   166→        transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+   167→      >
+   168→        <DirArrow x={168} y={132} rot={0} />
+   169→      </motion.g>
+   170→    </g>
+   171→  )
+   172→}
+   173→
+   174→// ══════════════════════════════════════════════════════════════════════
+   175→// ANIMATION: shifty — Lateral side-to-side shuffle
+   176→// ══════════════════════════════════════════════════════════════════════
+   177→function ShiftyAnim() {
+   178→  return (
+   179→    <g>
+   180→      {/* Entire figure slides laterally */}
+   181→      <motion.g
+   182→        animate={{ x: [-38, 38, -38] }}
+   183→        transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+   184→      >
+   185→        <Head cx={120} cy={50} />
+   186→        <line x1={120} y1={60} x2={118} y2={100} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   187→
+   188→        {/* Arms — slightly out for balance */}
+   189→        <motion.line
+   190→          x1={120} y1={72} x2={88} y2={82}
+   191→          stroke={C} strokeWidth={SW} strokeLinecap="round"
+   192→          animate={{ x2: [88, 96, 88], x1: [120, 114, 120] }}
+   193→          transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+   194→        />
+   195→        <motion.line
+   196→          x1={120} y1={72} x2={152} y2={82}
+   197→          stroke={C} strokeWidth={SW} strokeLinecap="round"
+   198→          animate={{ x2: [152, 144, 152], x1: [120, 126, 120] }}
+   199→          transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+   200→        />
+   201→
+   202→        {/* Legs — wide, shuffling */}
+   203→        <motion.line
+   204→          x1={118} y1={100} x2={95} y2={156}
+   205→          stroke={C} strokeWidth={SW} strokeLinecap="round"
+   206→          animate={{ x2: [95, 108, 95] }}
+   207→          transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+   208→        />
+   209→        <motion.line
+   210→          x1={118} y1={100} x2={141} y2={156}
+   211→          stroke={C} strokeWidth={SW} strokeLinecap="round"
+   212→          animate={{ x2: [141, 128, 141] }}
+   213→          transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+   214→        />
+   215→      </motion.g>
+   216→
+   217→      {/* Direction arrows */}
+   218→      <motion.g
+   219→        animate={{ opacity: [0, 0.6, 0] }}
+   220→        transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+   221→      >
+   222→        <DirArrow x={30} y={90} rot={180} />
+   223→      </motion.g>
+   224→      <motion.g
+   225→        animate={{ opacity: [0, 0.6, 0] }}
+   226→        transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut', delay: 1.1 }}
+   227→      >
+   228→        <DirArrow x={210} y={90} rot={0} />
+   229→      </motion.g>
+   230→    </g>
+   231→  )
+   232→}
+   233→
+   234→// ══════════════════════════════════════════════════════════════════════
+   235→// ANIMATION: ball_handling — Figure-8 dribbling, alternating hands
+   236→// ══════════════════════════════════════════════════════════════════════
+   237→function BallHandlingAnim() {
+   238→  return (
+   239→    <g>
+   240→      {/* Stick figure — standing */}
+   241→      <Head cx={120} cy={48} />
+   242→      <motion.g
+   243→        animate={{ x: [0, 0, 0] }}
+   244→      >
+   245→        <line x1={120} y1={58} x2={120} y2={100} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   246→
+   247→        {/* Arms — follow ball in figure-8 */}
+   248→        <motion.line
+   249→          x1={120} y1={70}
+   250→          stroke={C} strokeWidth={SW} strokeLinecap="round"
+   251→          animate={{
+   252→            x2: [100, 140, 100],
+   253→            y2: [88, 88, 88],
+   254→          }}
+   255→          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+   256→        />
+   257→        <motion.line
+   258→          x1={120} y1={70}
+   259→          stroke={C} strokeWidth={SW} strokeLinecap="round"
+   260→          animate={{
+   261→            x2: [140, 100, 140],
+   262→            y2: [88, 88, 88],
+   263→          }}
+   264→          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+   265→        />
+   266→
+   267→        {/* Legs — slight stance */}
+   268→        <line x1={120} y1={100} x2={105} y2={156} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   269→        <line x1={120} y1={100} x2={135} y2={156} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   270→      </motion.g>
+   271→
+   272→      {/* Ball — figure-8 motion */}
+   273→      <motion.g
+   274→        animate={{
+   275→          x: [-22, 0, 22, 0, -22],
+   276→          y: [8, -12, 8, 22, 8],
+   277→        }}
+   278→        transition={{
+   279→          duration: 2, repeat: Infinity, ease: 'easeInOut',
+   280→          times: [0, 0.25, 0.5, 0.75, 1],
+   281→        }}
+   282→      >
+   283→        <Basketball cx={120} cy={125} r={8} />
+   284→      </motion.g>
+   285→
+   286→      {/* Figure-8 path hint */}
+   287→      <ellipse cx={120} cy={125} rx={24} ry={16} fill="none" stroke={C} strokeWidth={0.5} opacity={0.2} />
+   288→    </g>
+   289→  )
+   290→}
+   291→
+   292→// ══════════════════════════════════════════════════════════════════════
+   293→// ANIMATION: speed_change — Burst forward, decelerate
+   294→// ══════════════════════════════════════════════════════════════════════
+   295→function SpeedChangeAnim() {
+   296→  return (
+   297→    <g>
+   298→      {/* Figure — non-linear forward motion */}
+   299→      <motion.g
+   300→        animate={{
+   301→          x: [-30, -30, 50, 50, -30],
+   302→        }}
+   303→        transition={{
+   304→          duration: 3, repeat: Infinity, ease: 'easeInOut',
+   305→          times: [0, 0.15, 0.45, 0.6, 1],
+   306→        }}
+   307→      >
+   308→        {/* Lean forward during burst */}
+   309→        <motion.g
+   310→          animate={{ rotate: [0, 0, -8, -8, 0] }}
+   311→          transition={{
+   312→            duration: 3, repeat: Infinity, ease: 'easeInOut',
+   313→            times: [0, 0.15, 0.45, 0.6, 1],
+   314→          }}
+   315→          style={{ originX: '120px', originY: '100px' }}
+   316→        >
+   317→          <Head cx={120} cy={48} />
+   318→          <line x1={120} y1={58} x2={118} y2={100} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   319→
+   320→          {/* Arms — pump during run */}
+   321→          <motion.line
+   322→            x1={120} y1={70} x2={96} y2={58}
+   323→            stroke={C} strokeWidth={SW} strokeLinecap="round"
+   324→            animate={{ y2: [80, 80, 55, 80, 80] }}
+   325→            transition={{
+   326→              duration: 3, repeat: Infinity, ease: 'easeInOut',
+   327→              times: [0, 0.15, 0.45, 0.6, 1],
+   328→            }}
+   329→          />
+   330→          <motion.line
+   331→            x1={120} y1={70} x2={144} y2={58}
+   332→            stroke={C} strokeWidth={SW} strokeLinecap="round"
+   333→            animate={{ y2: [80, 80, 85, 80, 80] }}
+   334→            transition={{
+   335→              duration: 3, repeat: Infinity, ease: 'easeInOut',
+   336→              times: [0, 0.15, 0.45, 0.6, 1],
+   337→            }}
+   338→          />
+   339→
+   340→          {/* Legs — running stride */}
+   341→          <motion.line
+   342→            x1={118} y1={100} x2={140} y2={156}
+   343→            stroke={C} strokeWidth={SW} strokeLinecap="round"
+   344→            animate={{ x2: [105, 105, 145, 105, 105] }}
+   345→            transition={{
+   346→              duration: 3, repeat: Infinity, ease: 'easeInOut',
+   347→              times: [0, 0.15, 0.35, 0.45, 1],
+   348→            }}
+   349→          />
+   350→          <motion.line
+   351→            x1={118} y1={100} x2={96} y2={156}
+   352→            stroke={C} strokeWidth={SW} strokeLinecap="round"
+   353→            animate={{ x2: [131, 131, 91, 131, 131] }}
+   354→            transition={{
+   355→              duration: 3, repeat: Infinity, ease: 'easeInOut',
+   356→              times: [0, 0.15, 0.35, 0.45, 1],
+   357→            }}
+   358→          />
+   359→        </motion.g>
+   360→
+   361→        {/* Speed lines — visible during burst phase */}
+   362→        <motion.g
+   363→          animate={{ opacity: [0, 0, 0.5, 0.5, 0] }}
+   364→          transition={{
+   365→            duration: 3, repeat: Infinity,
+   366→            times: [0, 0.15, 0.25, 0.5, 0.6],
+   367→          }}
+   368→        >
+   369→          <SpeedLines x={85} y={80} />
+   370→        </motion.g>
+   371→      </motion.g>
+   372→
+   373→      {/* Direction arrow */}
+   374→      <motion.g
+   375→        animate={{ opacity: [0, 0, 0.6, 0.3, 0], x: [0, 0, 8, 14, 0] }}
+   376→        transition={{
+   377→          duration: 3, repeat: Infinity, ease: 'easeInOut',
+   378→          times: [0, 0.1, 0.3, 0.5, 0.7],
+   379→        }}
+   380→      >
+   381→        <DirArrow x={60} y={78} rot={0} />
+   382→      </motion.g>
+   383→    </g>
+   384→  )
+   385→}
+   386→
+   387→// ══════════════════════════════════════════════════════════════════════
+   388→// ANIMATION: defense — Low stance, lateral slides, hands up
+   389→// ══════════════════════════════════════════════════════════════════════
+   390→function DefenseAnim() {
+   391→  return (
+   392→    <g>
+   393→      {/* Figure slides laterally in low stance */}
+   394→      <motion.g
+   395→        animate={{ x: [-32, 32, -32] }}
+   396→        transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+   397→      >
+   398→        <Head cx={120} cy={58} />
+   399→        {/* Torso — short, low stance */}
+   400→        <line x1={120} y1={68} x2={120} y2={112} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   401→
+   402→        {/* Arms — hands up wide (defensive) */}
+   403→        <line x1={120} y1={80} x2={85} y2={62} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   404→        <line x1={120} y1={80} x2={155} y2={62} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   405→
+   406→        {/* Legs — very wide, low stance */}
+   407→        <line x1={120} y1={112} x2={90} y2={156} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   408→        <line x1={120} y1={112} x2={150} y2={156} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   409→      </motion.g>
+   410→
+   411→      {/* Defensive stance indicator — dashed arc below */}
+   412→      <motion.ellipse
+   413→        cx={120} cy={170}
+   414→        rx={40} ry={3}
+   415→        fill="none" stroke={C} strokeWidth={0.8}
+   416→        strokeDasharray="3 3"
+   417→        animate={{ rx: [40, 72, 40] }}
+   418→        transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+   419→        opacity={0.25}
+   420→      />
+   421→
+   422→      {/* Arrows */}
+   423→      <motion.g
+   424→        animate={{ opacity: [0, 0.5, 0] }}
+   425→        transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+   426→      >
+   427→        <DirArrow x={30} y={100} rot={180} />
+   428→      </motion.g>
+   429→      <motion.g
+   430→        animate={{ opacity: [0, 0.5, 0] }}
+   431→        transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', delay: 1.2 }}
+   432→      >
+   433→        <DirArrow x={210} y={100} rot={0} />
+   434→      </motion.g>
+   435→    </g>
+   436→  )
+   437→}
+   438→
+   439→// ══════════════════════════════════════════════════════════════════════
+   440→// ANIMATION: shooting — Raise ball, follow through, ball arcs to hoop
+   441→// ══════════════════════════════════════════════════════════════════════
+   442→function ShootingAnim() {
+   443→  return (
+   444→    <g>
+   445→      {/* Hoop at right side */}
+   446→      <Hoop x={205} y={42} />
+   447→
+   448→      {/* Stick figure */}
+   449→      <Head cx={100} cy={50} />
+   450→      <line x1={100} y1={60} x2={100} y2={102} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   451→
+   452→      {/* Off arm (guide hand) */}
+   453→      <motion.line
+   454→        x1={100} y1={72}
+   455→        stroke={C} strokeWidth={SW} strokeLinecap="round"
+   456→        animate={{
+   457→          x2: [84, 82, 84, 84],
+   458→          y2: [82, 60, 55, 82],
+   459→        }}
+   460→        transition={{
+   461→          duration: 2.4, repeat: Infinity, ease: 'easeInOut',
+   462→          times: [0, 0.3, 0.5, 1],
+   463→        }}
+   464→      />
+   465→
+   466→      {/* Shooting arm — raises up and follows through */}
+   467→      <motion.line
+   468→        x1={100} y1={72}
+   469→        stroke={C} strokeWidth={SW} strokeLinecap="round"
+   470→        animate={{
+   471→          x2: [116, 114, 108, 116],
+   472→          y2: [82, 40, 28, 82],
+   473→        }}
+   474→        transition={{
+   475→          duration: 2.4, repeat: Infinity, ease: 'easeInOut',
+   476→          times: [0, 0.3, 0.5, 1],
+   477→        }}
+   478→      />
+   479→
+   480→      {/* Legs — wide stance, slight bend */}
+   481→      <line x1={100} y1={102} x2={80} y2={156} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   482→      <line x1={100} y1={102} x2={120} y2={156} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   483→
+   484→      {/* Ball — starts at shooting pocket, arcs to hoop */}
+   485→      <motion.g
+   486→        animate={{
+   487→          x: [0, -4, 72, 92, 92],
+   488→          y: [0, -50, -60, -42, 0],
+   489→        }}
+   490→        transition={{
+   491→          duration: 2.4, repeat: Infinity, ease: [0.4, 0, 0.6, 1],
+   492→          times: [0, 0.2, 0.5, 0.7, 1],
+   493→        }}
+   494→      >
+   495→        <circle cx={118} cy={88} r={7} fill={C} />
+   496→      </motion.g>
+   497→
+   498→      {/* Arc trail hint */}
+   499→      <motion.path
+   500→        d="M118,88 Q160,20 190,46"
+   501→        fill="none" stroke={C} strokeWidth={0.8}
+   502→        strokeDasharray="2 3"
+   503→        animate={{ opacity: [0, 0.3, 0.3, 0] }}
+   504→        transition={{ duration: 2.4, repeat: Infinity, times: [0, 0.15, 0.5, 0.75] }}
+   505→      />
+   506→    </g>
+   507→  )
+   508→}
+   509→
+   510→// ══════════════════════════════════════════════════════════════════════
+   511→// ANIMATION: footwork — Top-down ladder drill (feet stepping pattern)
+   512→// ══════════════════════════════════════════════════════════════════════
+   513→function FootworkAnim() {
+   514→  // Ladder rungs (top-down view)
+   515→  const rungYs = [80, 95, 110, 125, 140]
+   516→  const ladderX1 = 60
+   517→  const ladderX2 = 180
+   518→
+   519→  return (
+   520→    <g>
+   521→      {/* Label hint */}
+   522→      <text x={120} y={28} fill="white" fontSize={7} textAnchor="middle" opacity={0.35} fontFamily="system-ui, sans-serif">
+   523→        VUE DU DESSUS
+   524→      </text>
+   525→
+   526→      {/* Ladder */}
+   527→      <line x1={ladderX1} y1={70} x2={ladderX1} y2={148} stroke="#4b5563" strokeWidth={2} />
+   528→      <line x1={ladderX2} y1={70} x2={ladderX2} y2={148} stroke="#4b5563" strokeWidth={2} />
+   529→      {rungYs.map((y) => (
+   530→        <line key={y} x1={ladderX1} y1={y} x2={ladderX2} y2={y} stroke="#4b5563" strokeWidth={1.2} />
+   531→      ))}
+   532→
+   533→      {/* Left foot (oval) — steps: in, out, in, out pattern */}
+   534→      <motion.ellipse
+   535→        rx={7} ry={10}
+   536→        fill={C} fillOpacity={0.8} stroke={C} strokeWidth={1.5}
+   537→        animate={{
+   538→          cx: [100, 100, 140, 140, 100],
+   539→          cy: [80, 95, 110, 125, 140],
+   540→        }}
+   541→        transition={{
+   542→          duration: 2, repeat: Infinity, ease: 'easeInOut',
+   543→          times: [0, 0.25, 0.5, 0.75, 1],
+   544→        }}
+   545→      />
+   546→
+   547→      {/* Right foot (oval) — opposite pattern */}
+   548→      <motion.ellipse
+   549→        rx={7} ry={10}
+   550→        fill={C} fillOpacity={0.5} stroke={C} strokeWidth={1.5}
+   551→        animate={{
+   552→          cx: [140, 140, 100, 100, 140],
+   553→          cy: [80, 95, 110, 125, 140],
+   554→        }}
+   555→        transition={{
+   556→          duration: 2, repeat: Infinity, ease: 'easeInOut',
+   557→          times: [0, 0.25, 0.5, 0.75, 1],
+   558→        }}
+   559→      />
+   560→
+   561→      {/* Forward direction arrow */}
+   562→      <motion.g
+   563→        animate={{ opacity: [0.3, 0.7, 0.3], y: [0, 3, 0] }}
+   564→        transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+   565→      >
+   566→        <polygon points="120,155 112,165 128,165" fill={C} opacity={0.5} />
+   567→      </motion.g>
+   568→    </g>
+   569→  )
+   570→}
+   571→
+   572→// ══════════════════════════════════════════════════════════════════════
+   573→// ANIMATION: finishing — Drive, jump, layup at rim
+   574→// ══════════════════════════════════════════════════════════════════════
+   575→function FinishingAnim() {
+   576→  return (
+   577→    <g>
+   578→      {/* Hoop */}
+   579→      <Hoop x={208} y={42} />
+   580→
+   581→      {/* Figure — drives from left, jumps, lays up */}
+   582→      <motion.g
+   583→        animate={{
+   584→          x: [-40, -10, 20, 40, 55, 55],
+   585→        }}
+   586→        transition={{
+   587→          duration: 2.6, repeat: Infinity, ease: 'easeInOut',
+   588→          times: [0, 0.2, 0.35, 0.45, 0.55, 1],
+   589→        }}
+   590→      >
+   591→        {/* Jump effect */}
+   592→        <motion.g
+   593→          animate={{ y: [0, 0, 0, -28, -32, 0] }}
+   594→          transition={{
+   595→            duration: 2.6, repeat: Infinity, ease: [0.4, 0, 0.6, 1],
+   596→            times: [0, 0.2, 0.35, 0.45, 0.55, 0.75],
+   597→          }}
+   598→        >
+   599→          <Head cx={120} cy={48} />
+   600→          <line x1={120} y1={58} x2={118} y2={100} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   601→
+   602→          {/* Off arm */}
+   603→          <motion.line
+   604→            x1={120} y1={72}
+   605→            stroke={C} strokeWidth={SW} strokeLinecap="round"
+   606→            animate={{ x2: [104, 104, 96, 96], y2: [80, 82, 58, 80] }}
+   607→            transition={{
+   608→              duration: 2.6, repeat: Infinity, ease: 'easeInOut',
+   609→              times: [0, 0.2, 0.45, 1],
+   610→            }}
+   611→          />
+   612→
+   613→          {/* Shooting arm — extends to layup */}
+   614→          <motion.line
+   615→            x1={120} y1={72}
+   616→            stroke={C} strokeWidth={SW} strokeLinecap="round"
+   617→            animate={{ x2: [136, 140, 158, 136], y2: [80, 78, 44, 80] }}
+   618→            transition={{
+   619→              duration: 2.6, repeat: Infinity, ease: [0.4, 0, 0.6, 1],
+   620→              times: [0, 0.2, 0.45, 1],
+   621→            }}
+   622→          />
+   623→
+   624→          {/* Legs — running stride then tuck for jump */}
+   625→          <motion.line
+   626→            x1={118} y1={100}
+   627→            stroke={C} strokeWidth={SW} strokeLinecap="round"
+   628→            animate={{ x2: [105, 138, 130, 105], y2: [156, 156, 140, 156] }}
+   629→            transition={{
+   630→              duration: 2.6, repeat: Infinity, ease: 'easeInOut',
+   631→              times: [0, 0.15, 0.35, 0.5],
+   632→            }}
+   633→          />
+   634→          <motion.line
+   635→            x1={118} y1={100}
+   636→            stroke={C} strokeWidth={SW} strokeLinecap="round"
+   637→            animate={{ x2: [132, 98, 108, 132], y2: [156, 156, 140, 156] }}
+   638→            transition={{
+   639→              duration: 2.6, repeat: Infinity, ease: 'easeInOut',
+   640→              times: [0, 0.15, 0.35, 0.5],
+   641→            }}
+   642→          />
+   643→        </motion.g>
+   644→
+   645→        </motion.g>
+   646→
+   647→      {/* Ball — independent trajectory for layup arc */}
+   648→      <motion.g
+   649→        animate={{
+   650→          x: [-40 + 16, -10 + 20, 20 + 38, 55 + 48, 55 + 48, -40 + 16],
+   651→          y: [82, 78, 14, 14, 82, 82],
+   652→        }}
+   653→        transition={{
+   654→          duration: 2.6, repeat: Infinity, ease: [0.4, 0, 0.6, 1],
+   655→          times: [0, 0.15, 0.42, 0.58, 0.72, 1],
+   656→        }}
+   657→      >
+   658→        <circle cx={120} cy={0} r={7} fill={C} />
+   659→      </motion.g>
+   660→
+   661→      {/* Drive arrow */}
+   662→      <motion.g
+   663→        animate={{ opacity: [0, 0.5, 0], x: [0, 10, 0] }}
+   664→        transition={{ duration: 2.6, repeat: Infinity, times: [0, 0.1, 0.25] }}
+   665→      >
+   666→        <DirArrow x={50} y={78} rot={0} />
+   667→      </motion.g>
+   668→    </g>
+   669→  )
+   670→}
+   671→
+   672→// ══════════════════════════════════════════════════════════════════════
+   673→// ANIMATION: conditioning — Jumping, arms pumping
+   674→// ══════════════════════════════════════════════════════════════════════
+   675→function ConditioningAnim() {
+   676→  return (
+   677→    <g>
+   678→      <motion.g
+   679→        animate={{ y: [0, -30, 0] }}
+   680→        transition={{ duration: 0.8, repeat: Infinity, ease: 'easeOut' }}
+   681→      >
+   682→        <Head cx={120} cy={46} />
+   683→        <line x1={120} y1={56} x2={120} y2={100} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   684→
+   685→        {/* Arms — pump up and down */}
+   686→        <motion.line
+   687→          x1={120} y1={68}
+   688→          stroke={C} strokeWidth={SW} strokeLinecap="round"
+   689→          animate={{ x2: [98, 98, 102], y2: [82, 52, 82] }}
+   690→          transition={{ duration: 0.8, repeat: Infinity, ease: 'easeOut', times: [0, 0.4, 1] }}
+   691→        />
+   692→        <motion.line
+   693→          x1={120} y1={68}
+   694→          stroke={C} strokeWidth={SW} strokeLinecap="round"
+   695→          animate={{ x2: [142, 142, 138], y2: [52, 82, 52] }}
+   696→          transition={{ duration: 0.8, repeat: Infinity, ease: 'easeOut', times: [0, 0.4, 1] }}
+   697→        />
+   698→
+   699→        {/* Legs — bend on landing, extend on jump */}
+   700→        <motion.line
+   701→          x1={120} y1={100}
+   702→          stroke={C} strokeWidth={SW} strokeLinecap="round"
+   703→          animate={{ x2: [106, 102, 106], y2: [156, 148, 156] }}
+   704→          transition={{ duration: 0.8, repeat: Infinity, ease: 'easeOut', times: [0, 0.4, 1] }}
+   705→        />
+   706→        <motion.line
+   707→          x1={120} y1={100}
+   708→          stroke={C} strokeWidth={SW} strokeLinecap="round"
+   709→          animate={{ x2: [134, 138, 134], y2: [156, 148, 156] }}
+   710→          transition={{ duration: 0.8, repeat: Infinity, ease: 'easeOut', times: [0, 0.4, 1] }}
+   711→        />
+   712→      </motion.g>
+   713→
+   714→      {/* Impact rings on ground */}
+   715→      <motion.ellipse
+   716→        cx={120} cy={FY}
+   717→        rx={0} ry={0}
+   718→        fill="none" stroke={C} strokeWidth={1}
+   719→        animate={{ rx: [0, 25, 35], ry: [0, 4, 6], opacity: [0.5, 0.2, 0] }}
+   720→        transition={{ duration: 0.8, repeat: Infinity, ease: 'easeOut', times: [0.7, 0.85, 1] }}
+   721→      />
+   722→
+   723→      {/* Up arrow */}
+   724→      <motion.g
+   725→        animate={{ opacity: [0.2, 0.6, 0.2], y: [0, -4, 0] }}
+   726→        transition={{ duration: 0.8, repeat: Infinity, ease: 'easeOut' }}
+   727→      >
+   728→        <DirArrow x={155} y={60} rot={-90} />
+   729→      </motion.g>
+   730→    </g>
+   731→  )
+   732→}
+   733→
+   734→// ══════════════════════════════════════════════════════════════════════
+   735→// ANIMATION: default — Idle bounce
+   736→// ══════════════════════════════════════════════════════════════════════
+   737→function DefaultAnim() {
+   738→  return (
+   739→    <g>
+   740→      <motion.g
+   741→        animate={{ y: [0, -3, 0] }}
+   742→        transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+   743→      >
+   744→        <Head cx={120} cy={48} />
+   745→        <line x1={120} y1={58} x2={120} y2={100} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   746→        <line x1={120} y1={70} x2={96} y2={86} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   747→        <line x1={120} y1={70} x2={144} y2={86} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   748→        <line x1={120} y1={100} x2={104} y2={156} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   749→        <line x1={120} y1={100} x2={136} y2={156} stroke={C} strokeWidth={SW} strokeLinecap="round" />
+   750→      </motion.g>
+   751→      <Basketball cx={148} cy={92} r={8} />
+   752→    </g>
+   753→  )
+   754→}
+   755→
+   756→// ── Animation Router ─────────────────────────────────────────────────
+   757→function renderAnimation(category: string) {
+   758→  switch (category) {
+   759→    case 'pocket_ball':     return <PocketBallAnim />
+   760→    case 'shifty':          return <ShiftyAnim />
+   761→    case 'ball_handling':   return <BallHandlingAnim />
+   762→    case 'speed_change':    return <SpeedChangeAnim />
+   763→    case 'defense':         return <DefenseAnim />
+   764→    case 'shooting':        return <ShootingAnim />
+   765→    case 'footwork':        return <FootworkAnim />
+   766→    case 'finishing':       return <FinishingAnim />
+   767→    case 'conditioning':    return <ConditioningAnim />
+   768→    default:                return <DefaultAnim />
+   769→  }
+   770→}
+   771→
+   772→// ── Main Component ────────────────────────────────────────────────────
+   773→export function DrillDemoAnimation({ category, className }: DrillDemoAnimationProps) {
+   774→  return (
+   775→    <div
+   776→      className={cn(
+   777→        'relative w-full overflow-hidden rounded-xl',
+   778→        'bg-gradient-to-b from-gray-900 to-gray-950',
+   779→        className,
+   780→      )}
+   781→    >
+   782→      <svg
+   783→        viewBox="0 0 240 180"
+   784→        className="block w-full"
+   785→        style={{ height: 200 }}
+   786→        aria-hidden="true"
+   787→      >
+   788→        <DemoBadge />
+   789→        <CourtFloor />
+   790→        {renderAnimation(category)}
+   791→      </svg>
+   792→    </div>
+   793→  )
+   794→}
