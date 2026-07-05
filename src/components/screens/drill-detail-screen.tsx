@@ -1,0 +1,339 @@
+'use client'
+
+import { motion } from 'framer-motion'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  ArrowLeft,
+  Camera,
+  Heart,
+  Clock,
+  Target,
+  Zap,
+  ChevronRight,
+  ListOrdered,
+} from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useAppStore } from '@/stores/app'
+import { toast } from 'sonner'
+
+// ── Category label map ──────────────────────────────────────────────
+const categoryLabels: Record<string, string> = {
+  pocket_ball: 'Ballon de Poche',
+  shifty: 'Déplacements',
+  ball_handling: 'Maniement de Balle',
+  speed_change: 'Changement de Vitesse',
+  defense: 'Défense',
+  shooting: 'Tir',
+  footwork: 'Travail des Pieds',
+  finishing: 'Finition',
+  conditioning: 'Condition Physique',
+}
+
+const difficultyConfig: Record<string, { label: string; className: string }> = {
+  beginner: { label: 'Débutant', className: 'bg-emerald-500/15 text-emerald-600 border-emerald-200' },
+  intermediate: { label: 'Intermédiaire', className: 'bg-amber-500/15 text-amber-600 border-amber-200' },
+  advanced: { label: 'Avancé', className: 'bg-red-500/15 text-red-600 border-red-200' },
+}
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08, delayChildren: 0.1 },
+  },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
+}
+
+export function DrillDetailScreen() {
+  const { selectedDrillId, goBack, navigate, currentScreen } = useAppStore()
+  const queryClient = useQueryClient()
+
+  // ── Fetch drills ─────────────────────────────────────────────────
+  const { data, isLoading } = useQuery({
+    queryKey: ['drills'],
+    queryFn: () => fetch('/api/drills').then((r) => r.json()),
+  })
+
+  const drill = data?.drills?.find((d: { id: string }) => d.id === selectedDrillId)
+  const isFavorited = data?.favoriteIds?.includes(selectedDrillId ?? '')
+
+  // ── Favorite mutation ────────────────────────────────────────────
+  const favoriteMutation = useMutation({
+    mutationFn: () =>
+      fetch('/api/drills/favorite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ drillId: selectedDrillId }),
+      }).then((r) => r.json()),
+    onSuccess: (result: { favorited: boolean }) => {
+      queryClient.invalidateQueries({ queryKey: ['drills'] })
+      toast(result.favorited ? 'Ajouté aux favoris' : 'Retiré des favoris', {
+        description: result.favorited ? 'Exercice favori' : 'Exercice retiré',
+      })
+    },
+    onError: () => {
+      toast.error('Erreur', { description: 'Impossible de modifier le favori' })
+    },
+  })
+
+  // ── Loading skeleton ─────────────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b">
+          <div className="max-w-lg mx-auto flex items-center h-14 px-4">
+            <Skeleton className="h-9 w-9 rounded-lg" />
+            <Skeleton className="h-5 w-40 mx-auto" />
+            <Skeleton className="h-9 w-9 rounded-lg" />
+          </div>
+        </header>
+        <div className="max-w-lg mx-auto px-4 pt-6 space-y-6">
+          <Skeleton className="h-52 w-full rounded-2xl" />
+          <Skeleton className="h-48 w-full rounded-2xl" />
+          <Skeleton className="h-14 w-full rounded-xl" />
+        </div>
+        <BottomNavBar currentScreen={currentScreen} navigate={navigate} />
+      </div>
+    )
+  }
+
+  if (!drill) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center pb-24">
+        <div className="text-center space-y-3 px-4">
+          <div className="text-4xl">🏀</div>
+          <p className="text-muted-foreground">Exercice introuvable</p>
+          <Button variant="outline" onClick={goBack}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Retour
+          </Button>
+        </div>
+        <BottomNavBar currentScreen={currentScreen} navigate={navigate} />
+      </div>
+    )
+  }
+
+  const diff = difficultyConfig[drill.difficulty] ?? difficultyConfig.beginner
+  const categoryLabel = categoryLabels[drill.category] ?? drill.category
+  const instructions: string[] = drill.instructionsFr
+    ? drill.instructionsFr.split('\n').filter((s: string) => s.trim())
+    : []
+
+  return (
+    <div className="min-h-screen bg-background pb-24">
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="max-w-lg mx-auto"
+      >
+        {/* ── Header ─────────────────────────────────────────────── */}
+        <motion.header
+          variants={itemVariants}
+          className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b"
+        >
+          <div className="flex items-center h-14 px-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={goBack}
+              className="rounded-lg -ml-2"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+
+            <div className="flex items-center gap-2 mx-auto">
+              <span className="text-xl">{drill.icon}</span>
+              <h1 className="text-base font-semibold truncate max-w-[200px]">
+                {drill.nameFr}
+              </h1>
+            </div>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => favoriteMutation.mutate()}
+              disabled={favoriteMutation.isPending}
+              className="rounded-lg -mr-2"
+              aria-label={isFavorited ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+            >
+              <Heart
+                className={`h-5 w-5 transition-colors ${
+                  isFavorited
+                    ? 'fill-red-500 text-red-500'
+                    : 'text-muted-foreground'
+                }`}
+              />
+            </Button>
+          </div>
+        </motion.header>
+
+        <div className="px-4 pt-5 space-y-5">
+          {/* ── Drill Info Card ──────────────────────────────────── */}
+          <motion.div variants={itemVariants}>
+            <Card className="border-0 shadow-lg overflow-hidden">
+              {/* Accent top bar */}
+              <div className="h-1.5 bg-gradient-to-r from-orange-400 via-orange-500 to-amber-500" />
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center text-3xl">
+                    {drill.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-xl font-bold leading-tight mb-2">
+                      {drill.nameFr}
+                    </h2>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline" className="text-xs font-medium">
+                        {categoryLabel}
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className={`text-xs font-medium ${diff.className}`}
+                      >
+                        {diff.label}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {drill.descriptionFr}
+                </p>
+
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
+                      <Clock className="h-4 w-4 text-orange-500" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">{drill.durationSec}s</p>
+                      <p className="text-xs text-muted-foreground">Durée</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
+                      <Target className="h-4 w-4 text-orange-500" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">{drill.targetReps}</p>
+                      <p className="text-xs text-muted-foreground">Répétitions</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
+                      <Zap className="h-4 w-4 text-orange-500" />
+                    </div>
+                    <div>
+                      <p className="font-semibold capitalize">{diff.label}</p>
+                      <p className="text-xs text-muted-foreground">Niveau</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* ── Instructions Section ─────────────────────────────── */}
+          {instructions.length > 0 && (
+            <motion.div variants={itemVariants}>
+              <Card className="border-0 shadow-md">
+                <CardContent className="p-5 space-y-4">
+                  <div className="flex items-center gap-2">
+                    <ListOrdered className="h-5 w-5 text-orange-500" />
+                    <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">
+                      Instructions
+                    </h3>
+                  </div>
+
+                  <ol className="space-y-3">
+                    {instructions.map((step: string, idx: number) => (
+                      <motion.li
+                        key={idx}
+                        initial={{ opacity: 0, x: -12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 + idx * 0.06, duration: 0.3 }}
+                        className="flex gap-3"
+                      >
+                        <span className="flex-shrink-0 w-7 h-7 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center mt-0.5">
+                          {idx + 1}
+                        </span>
+                        <p className="text-sm leading-relaxed pt-1">{step}</p>
+                      </motion.li>
+                    ))}
+                  </ol>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* ── Start Button ─────────────────────────────────────── */}
+          <motion.div variants={itemVariants}>
+            <Button
+              onClick={() => navigate('camera-workout')}
+              className="w-full h-14 rounded-xl text-base font-semibold shadow-lg shadow-orange-500/25
+                         bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700
+                         transition-all duration-200 active:scale-[0.98]"
+            >
+              <Camera className="h-5 w-5 mr-2.5" />
+              Démarrer avec Caméra
+              <ChevronRight className="h-4 w-4 ml-1.5" />
+            </Button>
+          </motion.div>
+
+          {/* Spacer for bottom nav */}
+          <div className="h-2" />
+        </div>
+      </motion.div>
+
+      <BottomNavBar currentScreen={currentScreen} navigate={navigate} />
+    </div>
+  )
+}
+
+// ── Reusable Bottom Nav Bar ─────────────────────────────────────────
+import { Home, Dumbbell, BarChart3, User } from 'lucide-react'
+
+function BottomNavBar({
+  currentScreen,
+  navigate,
+}: {
+  currentScreen: string
+  navigate: (screen: 'home' | 'train-hub' | 'stats' | 'profile') => void
+}) {
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50 pb-safe">
+      <div className="max-w-lg mx-auto flex items-center justify-around h-16">
+        {[
+          { icon: Home, label: 'Accueil', screen: 'home' as const },
+          { icon: Dumbbell, label: 'Training', screen: 'train-hub' as const },
+          { icon: BarChart3, label: 'Stats', screen: 'stats' as const },
+          { icon: User, label: 'Profil', screen: 'profile' as const },
+        ].map((tab) => (
+          <button
+            key={tab.screen}
+            onClick={() => navigate(tab.screen)}
+            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors ${
+              currentScreen === tab.screen
+                ? 'text-orange-500'
+                : 'text-muted-foreground'
+            }`}
+          >
+            <tab.icon className="h-5 w-5" />
+            <span className="text-xs font-medium">{tab.label}</span>
+          </button>
+        ))}
+      </div>
+    </nav>
+  )
+}

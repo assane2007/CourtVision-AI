@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String
+  name        String
+  position    String   @default("guard") // guard, forward, center
+  level       String   @default("beginner") // beginner, intermediate, advanced, elite
+  goals       String   @default("general") // shooting, ball_handling, defense, conditioning, general
+  onboarding  Boolean  @default(false)
+  avatar      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sessions    WorkoutSession[]
+  favorites   DrillFavorite[]
+}
+
+model Drill {
+  id          String   @id @default(cuid())
+  name        String
+  nameFr      String
+  category    String   // pocket_ball, shifty, ball_handling, speed_change, defense, shooting, footwork, finishing, conditioning
+  difficulty  String   @default("beginner") // beginner, intermediate, advanced
+  description String
+  descriptionFr String
+  instructions String
+  instructionsFr String
+  durationSec Int      @default(30)
+  targetReps  Int      @default(10)
+  icon        String   @default("🎯")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  favorites   DrillFavorite[]
+  sessions    WorkoutSessionDrill[]
+}
+
+model WorkoutSession {
+  id          String   @id @default(cuid())
+  playerId    String
+  startedAt   DateTime @default(now())
+  endedAt     DateTime?
+  totalScore  Float    @default(0)
+  totalReps   Int      @default(0)
+  totalDrills Int      @default(0)
+  notes       String?
+
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  drills      WorkoutSessionDrill[]
+
+  @@index([playerId])
+  @@index([startedAt])
+}
+
+model WorkoutSessionDrill {
+  id          String   @id @default(cuid())
+  sessionId   String
+  drillId     String
+  reps        Int      @default(0)
+  score       Float    @default(0)
+  durationMs  Int      @default(0)
+  formFeedback String  @default("{}")
+  createdAt   DateTime @default(now())
+
+  session     WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  drill       Drill         @relation(fields: [drillId], references: [id])
+
+  @@index([sessionId])
+  @@index([drillId])
+}
+
+model DrillFavorite {
+  id          String   @id @default(cuid())
+  playerId    String
+  drillId     String
+  createdAt   DateTime @default(now())
+
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  drill       Drill    @relation(fields: [drillId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, drillId])
+  @@index([playerId])
+}
+
+model TrainingPlan {
+  id          String   @id @default(cuid())
+  playerId    String
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([playerId])
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  playerId    String
+  type        String   // first_workout, drills_mastered, streak, score_milestone, etc.
+  title       String
+  description String
+  icon        String
+  unlockedAt  DateTime @default(now())
+
+  @@index([playerId])
+}
