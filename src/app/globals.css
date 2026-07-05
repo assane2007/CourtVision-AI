@@ -121,3 +121,38 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* PWA safe-area utilities for iOS notch / home indicator */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Disable text selection on interactive PWA elements */
+button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Smooth scrolling for standalone PWA */
+@media all and (display-mode: standalone) {
+  html {
+    height: -webkit-fill-available;
+    overflow: hidden;
+  }
+  body {
+    height: -webkit-fill-available;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+}
+
+/* Remove 300ms delay on mobile */
+@layer base {
+  html {
+    touch-action: manipulation;
+  }
+}

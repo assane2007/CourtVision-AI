@@ -80,3 +80,30 @@ Stage Summary:
 - Zero TypeScript errors in backend code
 - All error responses follow consistent format: `{ error: "French message" }`
 ---
+Task ID: 3
+Agent: Main
+Task: Transform app into installable PWA (Progressive Web App)
+
+Work Log:
+- Generated 1024x1024 app icon using AI image generation (basketball + camera lens, orange/navy blue)
+- Created `/public/manifest.json` — name "CourtVision AI", display: standalone, portrait orientation, theme-color: #f97316, shortcuts
+- Created `/public/sw.js` — Service Worker with cache-first for static assets, network-first for pages, no caching for API calls, auto-update every hour
+- Updated `/src/app/layout.tsx` — Added `viewport` export (width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no), dual theme-color (light/dark), `appleWebApp` metadata (capable, statusBarStyle: black-translucent), apple-touch-icon, manifest link
+- Created `/src/components/pwa-install-prompt.tsx` — BeforeInstallPromptEvent handler with animated install banner (slide up, dismiss, localStorage persistence), auto-appears 3s after prompt event
+- Updated `/src/components/providers.tsx` — Added PWAInstallPrompt component
+- Updated `/src/app/globals.css` — Added pb-safe/pt-safe safe-area utilities for iOS, -webkit-tap-highlight-color: transparent, standalone display-mode CSS (height: -webkit-fill-available, overscroll-behavior-y: contain), touch-action: manipulation (removes 300ms delay)
+
+Verification:
+- curl: 200 on /, /manifest.json, /icon-512.png, /sw.js
+- HTML contains: viewport, theme-color, apple-mobile-web-app-capable, apple-touch-icon, manifest.json, mobile-web-app meta tags
+- agent-browser: page renders correctly with auth screen + PWA install prompt visible
+- Dev server: zero compilation errors
+
+Stage Summary:
+- App is now a fully installable PWA with manifest, service worker, mobile meta tags
+- Install prompt shows on supported browsers (Chrome Android, Edge, Safari Add to Home Screen)
+- iOS: apple-mobile-web-app-capable + black-translucent status bar + apple-touch-icon
+- Offline: static assets cached, API calls always hit network, pages have cache fallback
+- Safe areas handled for notched devices (iPhone X+)
+- Touch optimizations: no 300ms delay, no tap highlight, standalone scroll containment
+---

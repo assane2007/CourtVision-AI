@@ -1,0 +1,51 @@
+{
+  "name": "CourtVision AI",
+  "short_name": "CourtVision",
+  "description": "Entraînement Basketball Intelligent avec analyse de mouvement par IA",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f0f1a",
+  "theme_color": "#f97316",
+  "categories": ["sports", "health", "fitness"],
+  "lang": "fr",
+  "dir": "ltr",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Démarrer l'entraînement",
+      "short_name": "Entraînement",
+      "description": "Accéder directement au hub d'entraînement",
+      "url": "/",
+      "icons": [{ "src": "/icon-512.png", "sizes": "192x192" }]
+    }
+  ],
+  "prefer_related_applications": false
+}
