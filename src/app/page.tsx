@@ -2,61 +2,57 @@
 
 import { useSession } from 'next-auth/react'
 import { useAppStore } from '@/stores/app'
-import { useEffect } from 'react'
-import dynamic from 'next/dynamic'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 
-// Use dynamic imports for code splitting
-const AuthScreen = dynamic(
-  () => import('@/components/screens/auth-screen').then(m => m.default || m.AuthScreen),
-  { ssr: false }
-)
-const OnboardingScreen = dynamic(
-  () => import('@/components/screens/onboarding-screen').then(m => m.default || m.OnboardingScreen),
-  { ssr: false }
-)
-const HomeScreen = dynamic(
-  () => import('@/components/screens/home-screen').then(m => m.default || m.HomeScreen),
-  { ssr: false }
-)
-const TrainHubScreen = dynamic(
-  () => import('@/components/screens/train-hub-screen').then(m => m.default || m.TrainHubScreen),
-  { ssr: false }
-)
-const DrillDetailScreen = dynamic(
-  () => import('@/components/screens/drill-detail-screen').then(m => m.default || m.DrillDetailScreen),
-  { ssr: false }
-)
-const CameraWorkoutScreen = dynamic(
-  () => import('@/components/screens/camera-workout').then(m => m.default || m.CameraWorkoutScreen),
-  { ssr: false }
-)
-const StatsScreen = dynamic(
-  () => import('@/components/screens/stats-screen').then(m => m.default || m.StatsScreen),
-  { ssr: false }
-)
-const ProfileScreen = dynamic(
-  () => import('@/components/screens/profile-screen').then(m => m.default || m.ProfileScreen),
-  { ssr: false }
-)
-const AchievementsScreen = dynamic(
-  () => import('@/components/screens/achievements-screen').then(m => m.default || m.AchievementsScreen),
-  { ssr: false }
-)
+// Lazy load screens — only load when needed
+import { lazy, Suspense } from 'react'
+
+const AuthScreen = lazy(() => import('@/components/screens/auth-screen'))
+const OnboardingScreen = lazy(() => import('@/components/screens/onboarding-screen'))
+const HomeScreen = lazy(() => import('@/components/screens/home-screen'))
+const TrainHubScreen = lazy(() => import('@/components/screens/train-hub-screen'))
+const DrillDetailScreen = lazy(() => import('@/components/screens/drill-detail-screen'))
+const CameraWorkoutScreen = lazy(() => import('@/components/screens/camera-workout'))
+const StatsScreen = lazy(() => import('@/components/screens/stats-screen'))
+const ProfileScreen = lazy(() => import('@/components/screens/profile-screen'))
+const AchievementsScreen = lazy(() => import('@/components/screens/achievements-screen'))
+
+function ScreenLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="w-10 h-10 rounded-full border-4 border-orange-500 border-t-transparent animate-spin" />
+    </div>
+  )
+}
+
+function ScreenSwitch({ session, currentScreen }: { session: any; currentScreen: string }) {
+  if (currentScreen === 'auth') return <AuthScreen />
+  if (currentScreen === 'onboarding') return <OnboardingScreen />
+  if (!session) return <AuthScreen />
+  if (currentScreen === 'home') return <HomeScreen />
+  if (currentScreen === 'train-hub') return <TrainHubScreen />
+  if (currentScreen === 'drill-detail') return <DrillDetailScreen />
+  if (currentScreen === 'camera-workout') return <CameraWorkoutScreen />
+  if (currentScreen === 'stats') return <StatsScreen />
+  if (currentScreen === 'profile') return <ProfileScreen />
+  if (currentScreen === 'achievements') return <AchievementsScreen />
+  return <AuthScreen />
+}
 
 export default function Home() {
   const { data: session, status } = useSession()
   const { currentScreen, navigate } = useAppStore()
+  const [mounted, setMounted] = useState(false)
 
-  // Auto-redirect based on auth status
+  useEffect(() => { setMounted(true) }, [])
   useEffect(() => {
     if (status === 'unauthenticated' && currentScreen !== 'auth') {
       navigate('auth')
     }
   }, [status, currentScreen, navigate])
 
-  // Show loading while checking session
-  if (status === 'loading') {
+  if (!mounted || status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <motion.div
@@ -82,18 +78,9 @@ export default function Home() {
           transition={{ duration: 0.2, ease: 'easeOut' }}
           className="min-h-screen"
         >
-          {currentScreen === 'auth' && <AuthScreen />}
-          {currentScreen === 'onboarding' && <OnboardingScreen />}
-          {currentScreen === 'home' && session && <HomeScreen />}
-          {currentScreen === 'train-hub' && session && <TrainHubScreen />}
-          {currentScreen === 'drill-detail' && session && <DrillDetailScreen />}
-          {currentScreen === 'camera-workout' && session && <CameraWorkoutScreen />}
-          {currentScreen === 'stats' && session && <StatsScreen />}
-          {currentScreen === 'profile' && session && <ProfileScreen />}
-          {currentScreen === 'achievements' && session && <AchievementsScreen />}
-
-          {/* Fallback: not authenticated screens redirect to auth */}
-          {!session && currentScreen !== 'auth' && <AuthScreen />}
+          <Suspense fallback={<ScreenLoader />}>
+            <ScreenSwitch session={session} currentScreen={currentScreen} />
+          </Suspense>
         </motion.div>
       </AnimatePresence>
     </main>

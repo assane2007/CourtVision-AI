@@ -476,3 +476,4 @@ export function ProfileScreen() {
     </div>
   )
 }
+export default ProfileScreen

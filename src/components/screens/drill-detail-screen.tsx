@@ -284,4 +284,4 @@ export function DrillDetailScreen() {
       <BottomNav />
     </div>
   )
-}
+}export default DrillDetailScreen

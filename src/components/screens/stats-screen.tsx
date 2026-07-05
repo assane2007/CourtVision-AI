@@ -461,3 +461,4 @@ function StatCard({
   )
 }
 
+export default StatsScreen
