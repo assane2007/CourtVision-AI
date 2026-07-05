@@ -219,14 +219,15 @@ function createRepTracker(): RepTracker {
 function computeScore(scores: ScoreDetail[]): number {
   if (scores.length === 0) return 0
   const recent = scores.slice(-10)
+  // Movement quality is the dominant factor (50%), form is secondary (50%)
   const avg =
     recent.reduce(
       (sum, s) =>
         sum +
-        (s.posture * 0.3 +
-          s.stanceWidth * 0.2 +
-          s.armPosition * 0.25 +
-          s.movementQuality * 0.25),
+        (s.movementQuality * 0.50 +
+          s.posture * 0.15 +
+          s.stanceWidth * 0.10 +
+          s.armPosition * 0.25),
       0,
     ) / recent.length
   return Math.round(Math.min(100, Math.max(0, avg)))
@@ -246,41 +247,64 @@ function analyzeForm(
   const lHip = landmarks[23]
   const rHip = landmarks[24]
 
-  // Posture: shoulders level?
+  // ── 1. Posture: shoulders level? (0-100, baseline ~60) ──
   const shoulderDy = Math.abs(lShoulder.y - rShoulder.y)
-  const postureScore = Math.max(0, Math.min(100, 100 - shoulderDy * 500))
+  const postureScore = Math.max(0, Math.min(100, 90 - shoulderDy * 600))
 
-  // Stance width: ankle distance
+  // ── 2. Stance width: ankle distance (0-100, baseline ~30) ──
   const ankleDist = Math.abs(lAnkle.x - rAnkle.x)
-  let stanceScore = 50
-  if (ankleDist > 0.15 && ankleDist < 0.45) stanceScore = 90
-  else if (ankleDist > 0.1 && ankleDist < 0.55) stanceScore = 70
-  else if (ankleDist < 0.1) stanceScore = 30
-  else stanceScore = 40
+  let stanceScore = 30
+  if (ankleDist > 0.15 && ankleDist < 0.45) stanceScore = 85
+  else if (ankleDist > 0.1 && ankleDist < 0.55) stanceScore = 60
+  else if (ankleDist < 0.1) stanceScore = 15
+  else stanceScore = 20
 
-  // Arm position: depends on category
-  let armScore = 70
+  // ── 3. Arm position: depends on category (0-100, baseline ~30) ──
+  let armScore = 30
   const avgWristY = (lWrist.y + rWrist.y) / 2
   const avgShoulderY = (lShoulder.y + rShoulder.y) / 2
   if (category === 'shooting') {
     const wristAbove = avgShoulderY - avgWristY
-    armScore = Math.min(100, Math.max(0, 50 + wristAbove * 300))
+    armScore = Math.min(100, Math.max(0, 30 + wristAbove * 400))
   } else if (category === 'defense') {
     const wristBelow = avgWristY - avgShoulderY
-    armScore = Math.min(100, Math.max(0, 50 + wristBelow * 200))
+    armScore = Math.min(100, Math.max(0, 30 + wristBelow * 300))
   } else if (category === 'ball_handling' || category === 'pocket_ball') {
-    armScore = avgWristY > avgShoulderY ? 85 : 55
+    armScore = avgWristY > avgShoulderY ? 60 : 25
   }
 
-  // Movement quality: velocity variance
+  // ── 4. Movement quality (DOMINANT: 50% weight) (0-100, baseline 0) ──
   const velocities = tracker.velocityHistory
-  let moveScore = 70
-  if (velocities.length > 5) {
-    const mean = velocities.reduce((a, b) => a + b, 0) / velocities.length
-    const variance =
-      velocities.reduce((sum, v) => sum + (v - mean) ** 2, 0) / velocities.length
-    moveScore = Math.max(0, Math.min(100, 100 - variance * 10000))
+  let moveScore = 0
+  if (velocities.length > 3) {
+    const recent = velocities.slice(-10)
+    const avgSpeed = recent.reduce((a, b) => a + b, 0) / recent.length
+
+    // Speed scoring: 0 speed = 0 score, good speed = high score
+    // Threshold: below 0.002 = too slow, 0.003-0.008 = good, above 0.01 = erratic
+    if (avgSpeed < 0.001) {
+      moveScore = 0 // Not moving at all
+    } else if (avgSpeed < 0.002) {
+      moveScore = 15 // Barely moving
+    } else if (avgSpeed < 0.008) {
+      // Good range — score proportionally
+      moveScore = Math.min(95, 40 + (avgSpeed - 0.002) * 15000)
+    } else {
+      // Too fast/erratic — penalize
+      moveScore = Math.max(30, 95 - (avgSpeed - 0.008) * 5000)
+    }
+
+    // Consistency bonus: low variance = more controlled movement
+    if (recent.length > 5) {
+      const mean = recent.reduce((a, b) => a + b, 0) / recent.length
+      const variance =
+        recent.reduce((sum, v) => sum + (v - mean) ** 2, 0) / recent.length
+      // Variance penalty: high variance = jerky/uncontrolled
+      const variancePenalty = Math.min(30, variance * 50000)
+      moveScore = Math.max(0, moveScore - variancePenalty)
+    }
   }
+  // If no velocity data yet, score stays at 0
 
   const score: ScoreDetail = {
     posture: postureScore,
@@ -289,36 +313,41 @@ function analyzeForm(
     movementQuality: moveScore,
   }
 
-  // Feedback generation
+  // ── Feedback generation ──
   let feedback = ''
   const hipMidX = (lHip.x + rHip.x) / 2
   const shoulderMidX = (lShoulder.x + rShoulder.x) / 2
   const lean = hipMidX - shoulderMidX
 
-  if (postureScore > 85 && armScore > 80) {
-    feedback = FEEDBACK_MESSAGES.goodPosture
-  }
-  if (Math.abs(lean) > 0.04) {
-    feedback = FEEDBACK_MESSAGES.leanRight
-  }
-  if (category === 'shooting' && avgWristY > avgShoulderY + 0.05) {
-    feedback = FEEDBACK_MESSAGES.armsLow
-  }
-  if (ankleDist < 0.12 && category !== 'shooting') {
-    feedback = FEEDBACK_MESSAGES.narrowStance
-  }
-  if (ankleDist > 0.5 && category !== 'finishing') {
-    feedback = FEEDBACK_MESSAGES.wideStance
-  }
+  // Prioritize: inactivity > form issues > praise
   if (velocities.length > 3) {
-    const recentSpeed = velocities.slice(-3).reduce((a, b) => a + b, 0) / 3
+    const recentSpeed = velocities.slice(-5).reduce((a, b) => a + b, 0) / 5
     if (recentSpeed < 0.001) {
       feedback = FEEDBACK_MESSAGES.tooSlow
-    } else if (recentSpeed > 0.005) {
+    }
+  }
+  if (!feedback && Math.abs(lean) > 0.04) {
+    feedback = FEEDBACK_MESSAGES.leanRight
+  }
+  if (!feedback && category === 'shooting' && avgWristY > avgShoulderY + 0.05) {
+    feedback = FEEDBACK_MESSAGES.armsLow
+  }
+  if (!feedback && ankleDist < 0.12 && category !== 'shooting') {
+    feedback = FEEDBACK_MESSAGES.narrowStance
+  }
+  if (!feedback && ankleDist > 0.5 && category !== 'finishing') {
+    feedback = FEEDBACK_MESSAGES.wideStance
+  }
+  if (!feedback && velocities.length > 5) {
+    const recentSpeed = velocities.slice(-3).reduce((a, b) => a + b, 0) / 3
+    if (recentSpeed > 0.003 && recentSpeed < 0.008) {
       feedback = FEEDBACK_MESSAGES.goodSpeed
     }
   }
-  if (postureScore > 90 && moveScore > 80) {
+  if (!feedback && postureScore > 80 && moveScore > 70) {
+    feedback = FEEDBACK_MESSAGES.goodPosture
+  }
+  if (!feedback && postureScore > 90 && moveScore > 80) {
     feedback = FEEDBACK_MESSAGES.greatForm
   }
 
@@ -1052,12 +1081,12 @@ export default function CameraWorkoutScreen() {
         setFeedback(result.feedback)
       }
 
-      // Update score based on AI response if it returned a valid score
+      // Update score from AI response — only nudge movement quality, not inflate all dimensions
       if (typeof result.score === 'number' && result.score > 0) {
         scoresRef.current.push({
-          posture: result.score,
-          stanceWidth: result.score,
-          armPosition: result.score,
+          posture: Math.min(90, result.score * 0.8),
+          stanceWidth: 50,
+          armPosition: Math.min(90, result.score * 0.7),
           movementQuality: result.score,
         })
         setCurrentScore(computeScore(scoresRef.current))
