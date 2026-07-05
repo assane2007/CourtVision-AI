@@ -9,6 +9,7 @@ import {
   Activity,
   Trophy,
   BarChart3,
+  Dumbbell,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
