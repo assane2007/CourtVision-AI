@@ -219,15 +219,20 @@ function createRepTracker(): RepTracker {
 function computeScore(scores: ScoreDetail[]): number {
   if (scores.length === 0) return 0
   const recent = scores.slice(-10)
-  // Movement quality is the dominant factor (50%), form is secondary (50%)
+
+  // Movement is a prerequisite: if average movement is near 0, score = 0
+  const avgMovement = recent.reduce((s, d) => s + d.movementQuality, 0) / recent.length
+  if (avgMovement < 10) return 0
+
+  // Movement quality is the dominant factor (55%), form is secondary (45%)
   const avg =
     recent.reduce(
       (sum, s) =>
         sum +
-        (s.movementQuality * 0.50 +
+        (s.movementQuality * 0.55 +
           s.posture * 0.15 +
-          s.stanceWidth * 0.10 +
-          s.armPosition * 0.25),
+          s.stanceWidth * 0.08 +
+          s.armPosition * 0.22),
       0,
     ) / recent.length
   return Math.round(Math.min(100, Math.max(0, avg)))
