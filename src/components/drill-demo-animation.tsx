@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -9,623 +9,951 @@ interface Props {
   className?: string
 }
 
-// ── Palette ──────────────────────────────────────────────────────────
-const SKIN = '#f97316'    // stick figure
-const BALL = '#f97316'    // basketball
-const SEAM = '#9a3412'    // ball seam
-const FLOOR = '#374151'
-const GUIDE = '#f973163d' // faint guide
+// ── Category metadata ────────────────────────────────────────────────
+const META: Record<string, {
+  title: string
+  subtitle: string
+  focus: string[]
+  accent: string
+  accentDim: string
+}> = {
+  pocket_ball: {
+    title: 'Dribble Bas de Poche',
+    subtitle: 'Ballon bas, contrôle total',
+    focus: ['Dribble sous le genou', 'Stance large', 'Yeux levés'],
+    accent: '#f59e0b',
+    accentDim: '#f59e0b33',
+  },
+  shifty: {
+    title: 'Démarquage',
+    subtitle: 'Fakes & changements de direction',
+    focus: ['Faux mouvement', 'Explosion latérale', 'Épaules trompeuses'],
+    accent: '#06b6d4',
+    accentDim: '#06b6d433',
+  },
+  ball_handling: {
+    title: 'Maniement de Balle',
+    subtitle: 'Figure 8, 2 ballons, contrôle',
+    focus: ['Pattern en 8', 'Entre les jambes', 'Sans regarder'],
+    accent: '#22c55e',
+    accentDim: '#22c55e33',
+  },
+  speed_change: {
+    title: 'Changement de Vitesse',
+    subtitle: 'Ralentir puis exploser',
+    focus: ['50% → 100%', 'Arrêt complet', 'Redémarrage explosif'],
+    accent: '#eab308',
+    accentDim: '#eab30833',
+  },
+  defense: {
+    title: 'Posture Défensive',
+    subtitle: 'Glissades latérales, mains hautes',
+    focus: ['Stance basse', 'Mains actives', 'Pieds rapides'],
+    accent: '#ef4444',
+    accentDim: '#ef444433',
+  },
+  shooting: {
+    title: 'Tir au Panier',
+    subtitle: 'Forme BEEF, arc, follow-through',
+    focus: ['B-Équilibre', 'E-Yeux', 'E-Coude', 'F-Suivi'],
+    accent: '#a855f7',
+    accentDim: '#a855f733',
+  },
+  footwork: {
+    title: 'Placement de Pieds',
+    subtitle: 'Pivots, jab steps, échelle',
+    focus: ['Triple menace', 'Pivots', 'Pieds légers'],
+    accent: '#14b8a6',
+    accentDim: '#14b8a633',
+  },
+  finishing: {
+    title: 'Finition au Panier',
+    subtitle: 'Layups, floaters, renversés',
+    focus: ['2 pas', 'Main haute', 'Utiliser le panneau'],
+    accent: '#f97316',
+    accentDim: '#f9731633',
+  },
+  conditioning: {
+    title: 'Condition Physique',
+    subtitle: 'Sprints, navettes, burpees',
+    focus: ['Effort maximal', 'Récupération courte', 'Endurance'],
+    accent: '#ec4899',
+    accentDim: '#ec489933',
+  },
+}
+
+const DEFAULT_META = {
+  title: 'Exercice',
+  subtitle: 'Entraînement basket',
+  focus: ['Suivez les instructions'],
+  accent: '#f97316',
+  accentDim: '#f9731633',
+}
 
 // ══════════════════════════════════════════════════════════════════════
-// SHARED ELEMENTS
+// SHARED SVG HELPERS
 // ══════════════════════════════════════════════════════════════════════
 
 function Ball({ cx, cy, r = 7 }: { cx: number; cy: number; r?: number }) {
   return (
     <g>
-      <circle cx={cx} cy={cy} r={r} fill={BALL} />
-      <line x1={cx} y1={cy - r} x2={cx} y2={cy + r} stroke={SEAM} strokeWidth={0.6} />
-      <line x1={cx - r} y1={cy} x2={cx + r} y2={cy} stroke={SEAM} strokeWidth={0.6} />
-      <path d={`M${cx - r * .6},${cy - r} Q${cx - r * .2},${cy} ${cx - r * .6},${cy + r}`} stroke={SEAM} strokeWidth={0.5} fill="none" />
-      <path d={`M${cx + r * .6},${cy - r} Q${cx + r * .2},${cy} ${cx + r * .6},${cy + r}`} stroke={SEAM} strokeWidth={0.5} fill="none" />
+      <circle cx={cx} cy={cy} r={r} fill="#f97316" />
+      <line x1={cx} y1={cy - r} x2={cx} y2={cy + r} stroke="#9a3412" strokeWidth={0.6} />
+      <line x1={cx - r} y1={cy} x2={cx + r} y2={cy} stroke="#9a3412" strokeWidth={0.6} />
+      <path d={`M${cx - r * .6},${cy - r} Q${cx - r * .2},${cy} ${cx - r * .6},${cy + r}`} stroke="#9a3412" strokeWidth={0.5} fill="none" />
+      <path d={`M${cx + r * .6},${cy - r} Q${cx + r * .2},${cy} ${cx + r * .6},${cy + r}`} stroke="#9a3412" strokeWidth={0.5} fill="none" />
     </g>
   )
 }
 
-function Floor({ y = 155 }: { y?: number }) {
+function CourtFloor({ y = 175 }: { y?: number }) {
   return (
     <g>
-      <line x1={10} y1={y} x2={230} y2={y} stroke={FLOOR} strokeWidth={1} />
-      <line x1={10} y1={y + 1} x2={230} y2={y + 1} stroke={FLOOR} strokeWidth={0.3} opacity={0.4} />
+      {/* Court surface */}
+      <rect x={0} y={y} width={280} height={55} fill="#92400e" opacity={0.15} rx={0} />
+      {/* Floor line */}
+      <line x1={0} y1={y} x2={280} y2={y} stroke="#6b7280" strokeWidth={1.2} />
+      {/* Court markings */}
+      <line x1={0} y1={y + 1} x2={280} y2={y + 1} stroke="#9ca3af" strokeWidth={0.3} opacity={0.3} />
+      {/* Wood grain hints */}
+      {[10, 40, 70, 100, 130, 160, 190, 220, 250].map((x) => (
+        <line key={x} x1={x} y1={y + 2} x2={x} y2={y + 54} stroke="#92400e" strokeWidth={0.3} opacity={0.08} />
+      ))}
     </g>
   )
 }
 
-function Badge() {
+function Hoop({ x = 240, rimY = 60 }: { x?: number; rimY?: number }) {
   return (
     <g>
-      <rect x={8} y={6} width={36} height={15} rx={3} fill="white" fillOpacity={0.08} />
-      <text x={26} y={16.5} fill="white" fontSize={7.5} fontWeight={700} fontFamily="system-ui" textAnchor="middle" opacity={0.6}>
-        DÉMO
+      {/* Backboard */}
+      <rect x={x - 2} y={rimY - 22} width={8} height={30} rx={1} fill="none" stroke="#9ca3af" strokeWidth={1.5} />
+      {/* Pole */}
+      <line x1={x + 2} y1={rimY + 8} x2={x + 2} y2={175} stroke="#6b7280" strokeWidth={2.5} />
+      {/* Rim */}
+      <line x1={x - 18} y1={rimY} x2={x + 2} y2={rimY} stroke="#ef4444" strokeWidth={2.5} strokeLinecap="round" />
+      {/* Net hint */}
+      <line x1={x - 14} y1={rimY + 3} x2={x - 8} y2={rimY + 16} stroke="#9ca3af" strokeWidth={0.5} opacity={0.35} />
+      <line x1={x - 6} y1={rimY + 3} x2={x - 2} y2={rimY + 16} stroke="#9ca3af" strokeWidth={0.5} opacity={0.35} />
+    </g>
+  )
+}
+
+function Cone({ x, y, color = '#ef4444' }: { x: number; y: number; color?: string }) {
+  return (
+    <g>
+      <polygon points={`${x},${y - 14} ${x - 6},${y} ${x + 6},${y}`} fill={color} opacity={0.8} />
+      <line x1={x - 4} y1={y - 5} x2={x + 4} y2={y - 5} stroke="white" strokeWidth={0.8} opacity={0.5} />
+    </g>
+  )
+}
+
+function Player({
+  headX, headY, torsoAngle = 0, torsoLen = 38,
+  leftArm, rightArm, leftLeg, rightLeg,
+  color = '#f97316', strokeWidth = 2.5,
+}: {
+  headX: number; headY: number; torsoAngle?: number
+  torsoLen?: number
+  leftArm: { ex: number; ey: number; hx?: number; hy?: number }
+  rightArm: { ex: number; ey: number; hx?: number; hy?: number }
+  leftLeg: { kx: number; ky: number; fx: number; fy: number }
+  rightLeg: { kx: number; ky: number; fx: number; fy: number }
+  color?: string; strokeWidth?: number
+}) {
+  const hipX = headX + Math.sin((torsoAngle * Math.PI) / 180) * torsoLen
+  const hipY = headY + Math.cos((torsoAngle * Math.PI) / 180) * torsoLen * 0.9
+  const shoulderX = headX + Math.sin((torsoAngle * Math.PI) / 180) * 12
+  const shoulderY = headY + 12
+
+  return (
+    <g>
+      {/* Head */}
+      <circle cx={headX} cy={headY} r={9} fill="none" stroke={color} strokeWidth={strokeWidth} />
+      {/* Torso */}
+      <line x1={shoulderX} y1={shoulderY} x2={hipX} y2={hipY} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
+      {/* Left arm (shoulder → elbow → hand) */}
+      <line x1={shoulderX} y1={shoulderY} x2={leftArm.ex} y2={leftArm.ey} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
+      {leftArm.hx !== undefined && leftArm.hy !== undefined && (
+        <line x1={leftArm.ex} y1={leftArm.ey} x2={leftArm.hx} y2={leftArm.hy} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
+      )}
+      {/* Right arm */}
+      <line x1={shoulderX} y1={shoulderY} x2={rightArm.ex} y2={rightArm.ey} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
+      {rightArm.hx !== undefined && rightArm.hy !== undefined && (
+        <line x1={rightArm.ex} y1={rightArm.ey} x2={rightArm.hx} y2={rightArm.hy} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
+      )}
+      {/* Left leg (hip → knee → foot) */}
+      <line x1={hipX} y1={hipY} x2={leftLeg.kx} y2={leftLeg.ky} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
+      <line x1={leftLeg.kx} y1={leftLeg.ky} x2={leftLeg.fx} y2={leftLeg.fy} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
+      {/* Right leg */}
+      <line x1={hipX} y1={hipY} x2={rightLeg.kx} y2={rightLeg.ky} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
+      <line x1={rightLeg.kx} y1={rightLeg.ky} x2={rightLeg.fx} y2={rightLeg.fy} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
+    </g>
+  )
+}
+
+function FocusLabel({ text, x, y, color, delay = 0 }: { text: string; x: number; y: number; color: string; delay?: number }) {
+  return (
+    <motion.g
+      animate={{ opacity: [0, 1, 1, 0] }}
+      transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', times: [0, 0.1 + delay, 0.8, 1], delay }}
+    >
+      <rect x={x - 2} y={y - 8} width={text.length * 5.5 + 6} height={16} rx={4} fill={color} fillOpacity={0.2} />
+      <text x={x + 2} y={y + 3.5} fill="white" fontSize={7.5} fontWeight={600} fontFamily="system-ui" opacity={0.85}>
+        {text}
+      </text>
+    </motion.g>
+  )
+}
+
+function StepNumber({ num, x, y, color }: { num: number; x: number; y: number; color: string }) {
+  return (
+    <g>
+      <circle cx={x} cy={y} r={7} fill={color} />
+      <text x={x} y={y + 3} fill="white" fontSize={8} fontWeight={700} fontFamily="system-ui" textAnchor="middle">
+        {num}
       </text>
     </g>
   )
 }
 
-function Shadow({ cx, w = 28 }: { cx: number; w?: number }) {
-  return <ellipse cx={cx} cy={158} rx={w} ry={3} fill="black" opacity={0.18} />
-}
-
-function Hoop({ x = 195, rimY = 55 }: { x?: number; rimY?: number }) {
+function Arrow({ x1, y1, x2, y2, color, dashed = false }: { x1: number; y1: number; x2: number; y2: number; color: string; dashed?: boolean }) {
+  const angle = Math.atan2(y2 - y1, x2 - x1)
+  const headLen = 6
   return (
     <g>
-      <line x1={x + 3} y1={rimY - 14} x2={x + 3} y2={155} stroke="#4b5563" strokeWidth={2} />
-      <rect x={x - 3} y={rimY - 18} width={12} height={22} rx={1.5} fill="none" stroke="#6b7280" strokeWidth={1.5} />
-      <line x1={x - 15} y1={rimY + 2} x2={x + 3} y2={rimY + 2} stroke="#ef4444" strokeWidth={2} strokeLinecap="round" />
-      <line x1={x - 12} y1={rimY + 5} x2={x - 7} y2={rimY + 14} stroke="#9ca3af" strokeWidth={0.4} opacity={0.4} />
-      <line x1={x - 5} y1={rimY + 5} x2={x - 1} y2={rimY + 14} stroke="#9ca3af" strokeWidth={0.4} opacity={0.4} />
+      <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={color} strokeWidth={1.5} strokeLinecap="round"
+        strokeDasharray={dashed ? '4 3' : 'none'} />
+      <polygon
+        points={`${x2},${y2} ${x2 - headLen * Math.cos(angle - 0.4)},${y2 - headLen * Math.sin(angle - 0.4)} ${x2 - headLen * Math.cos(angle + 0.4)},${y2 - headLen * Math.sin(angle + 0.4)}`}
+        fill={color}
+      />
     </g>
   )
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// 1. POCKET BALL — Wide stance, LOW dribble, crossover between legs
+// 1. POCKET BALL — Low crouch, ball bouncing LOW between legs
 // ══════════════════════════════════════════════════════════════════════
-function PocketBallAnim() {
+function PocketBallAnim({ accent, accentDim }: { accent: string; accentDim: string }) {
   return (
     <g>
-      <Shadow cx={120} w={36} />
-      {/* Body — low athletic crouch, knees bent */}
-      <motion.g animate={{ x: [0, 0, 0] }}>
-        {/* Head */}
-        <circle cx={120} cy={62} r={9} fill="none" stroke={SKIN} strokeWidth={2.2} />
-        {/* Torso — leaning forward */}
-        <motion.line x1={120} y1={71} x2={118} y2={100} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+      {/* Cones showing boundaries */}
+      <Cone x={50} y={172} color={accent} />
+      <Cone x={200} y={172} color={accent} />
 
-        {/* Left arm — reaches down to dribble */}
-        <motion.line x1={120} y1={80}
-          x2={96} y2={110} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ x2: [96, 144, 96], y2: [110, 112, 110] }}
-          transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-        />
-
-        {/* Right arm — reaches down to dribble */}
-        <motion.line x1={120} y1={80}
-          x2={144} y2={112} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ x2: [144, 96, 144], y2: [112, 110, 112] }}
-          transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-        />
-
-        {/* Left leg — wide, knee bent */}
-        <motion.line x1={118} y1={100} x2={98} y2={124} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ x2: [98, 100, 98] }} transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }} />
-        <motion.line x1={98} y1={124} x2={88} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
-
-        {/* Right leg — wide, knee bent */}
-        <motion.line x1={118} y1={100} x2={138} y2={124} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ x2: [138, 136, 138] }} transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }} />
-        <motion.line x1={138} y1={124} x2={148} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+      {/* "ZONE BASSE" bracket */}
+      <motion.g animate={{ opacity: [0.3, 0.7, 0.3] }} transition={{ duration: 2, repeat: Infinity }}>
+        <line x1={42} y1={138} x2={42} y2={172} stroke={accent} strokeWidth={1} strokeDasharray="3 2" />
+        <line x1={42} y1={138} x2={208} y2={138} stroke={accent} strokeWidth={0.8} strokeDasharray="3 2" />
+        <line x1={208} y1={138} x2={208} y2={172} stroke={accent} strokeWidth={1} strokeDasharray="3 2" />
+        <text x={125} y={150} fill={accent} fontSize={8} fontWeight={700} fontFamily="system-ui" textAnchor="middle" opacity={0.8}>
+          ZONE DE POCHE
+        </text>
       </motion.g>
 
-      {/* Ball — bounces LOW between legs with crossover */}
+      {/* Player in LOW stance — wider, more bent */}
+      <motion.g animate={{ x: [0, 0, 0] }}>
+        {/* Head — low position */}
+        <circle cx={125} cy={80} r={9} fill="none" stroke={accent} strokeWidth={2.5} />
+        {/* Eyes looking up indicator */}
+        <motion.g animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.5, repeat: Infinity }}>
+          <text x={130} y={77} fill={accent} fontSize={8} fontFamily="system-ui" opacity={0.8}>👁️</text>
+        </motion.g>
+
+        {/* Torso — leaning forward, low */}
+        <line x1={125} y1={89} x2={123} y2={120} stroke={accent} strokeWidth={2.5} strokeLinecap="round" />
+
+        {/* Left arm reaching down to dribble left */}
+        <motion.line x1={123} y1={96} x2={100} y2={128} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ x2: [100, 150, 100], y2: [128, 130, 128] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }} />
+        <motion.circle cx={100} cy={128} r={2.5} fill={accent}
+          animate={{ cx: [100, 150, 100], cy: [128, 130, 128] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }} />
+
+        {/* Right arm */}
+        <motion.line x1={123} y1={96} x2={150} y2={130} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ x2: [150, 100, 150], y2: [130, 128, 130] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }} />
+        <motion.circle cx={150} cy={130} r={2.5} fill={accent}
+          animate={{ cx: [150, 100, 150], cy: [130, 128, 130] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }} />
+
+        {/* Left thigh — very bent */}
+        <line x1={123} y1={120} x2={98} y2={145} stroke={accent} strokeWidth={2.5} strokeLinecap="round" />
+        {/* Left shin */}
+        <line x1={98} y1={145} x2={88} y2={172} stroke={accent} strokeWidth={2.5} strokeLinecap="round" />
+        {/* Right thigh */}
+        <line x1={123} y1={120} x2={148} y2={145} stroke={accent} strokeWidth={2.5} strokeLinecap="round" />
+        {/* Right shin */}
+        <line x1={148} y1={145} x2={158} y2={172} stroke={accent} strokeWidth={2.5} strokeLinecap="round" />
+      </motion.g>
+
+      {/* Ball — bouncing LOW (stays in pocket zone) */}
       <motion.g
-        animate={{ x: [-18, 18, -18] }}
-        transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut', times: [0, 0.5, 1] }}
+        animate={{ x: [-25, 25, -25] }}
+        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
       >
         <motion.g
-          animate={{ y: [0, -22, 0] }}
-          transition={{ duration: 0.45, repeat: Infinity, ease: [0.33, 0, 0.67, 1] }}
+          animate={{ y: [0, -15, 0] }}
+          transition={{ duration: 0.5, repeat: Infinity, ease: [0.33, 0, 0.67, 1] }}
         >
-          <Ball cx={120} cy={142} />
+          <Ball cx={125} cy={155} r={7} />
         </motion.g>
       </motion.g>
 
-      {/* Crossover arrow hints */}
-      <motion.g animate={{ opacity: [0, 0.5, 0], x: [0, -8, 0] }}
-        transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut', delay: 0.3 }}>
-        <polygon points="-4,-3 4,0 -4,3" fill={SKIN} opacity={0.6} transform="translate(74,136) rotate(180)" />
+      {/* Crossover direction arrows */}
+      <motion.g animate={{ opacity: [0, 0.8, 0] }} transition={{ duration: 2, repeat: Infinity, times: [0, 0.15, 0.35] }}>
+        <Arrow x1={75} y1={155} x2={55} y2={155} color={accent} />
+        <text x={55} y={148} fill={accent} fontSize={7} fontWeight={600} fontFamily="system-ui" textAnchor="middle">GAUCHE</text>
       </motion.g>
-      <motion.g animate={{ opacity: [0, 0.5, 0], x: [0, 8, 0] }}
-        transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut', delay: 1.2 }}>
-        <polygon points="-4,-3 4,0 -4,3" fill={SKIN} opacity={0.6} transform="translate(166,136)" />
+      <motion.g animate={{ opacity: [0, 0.8, 0] }} transition={{ duration: 2, repeat: Infinity, times: [0.5, 0.65, 0.85] }}>
+        <Arrow x1={175} y1={155} x2={195} y2={155} color={accent} />
+        <text x={195} y={148} fill={accent} fontSize={7} fontWeight={600} fontFamily="system-ui" textAnchor="middle">DROITE</text>
       </motion.g>
+
+      {/* Focus labels */}
+      <FocusLabel text="Dribble SOUS le genou" x={15} y={50} color={accent} delay={0} />
+      <FocusLabel text="Crossover entre les jambes" x={100} y={32} color={accent} delay={0.3} />
+
+      {/* Step indicators */}
+      <StepNumber num={1} x={70} y={110} color={accent} />
+      <StepNumber num={2} x={180} y={110} color={accent} />
     </g>
   )
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// 2. SHIFTY — Lateral burst steps, head fake, change of direction
+// 2. SHIFTY — Head fake, lateral burst, change direction
 // ══════════════════════════════════════════════════════════════════════
-function ShiftyAnim() {
+function ShiftyAnim({ accent, accentDim }: { accent: string; accentDim: string }) {
   return (
     <g>
-      <Shadow cx={120} w={24} />
-      {/* Full body shifts laterally with head fake */}
+      {/* Direction markers on floor */}
+      <motion.g animate={{ opacity: [0.15, 0.4, 0.15] }} transition={{ duration: 2.5, repeat: Infinity }}>
+        <text x={45} y={170} fill={accent} fontSize={20} textAnchor="middle" opacity={0.3}>←</text>
+        <text x={200} y={170} fill={accent} fontSize={20} textAnchor="middle" opacity={0.3}>→</text>
+      </motion.g>
+
+      {/* Lateral path line */}
+      <line x1={30} y1={175} x2={220} y2={175} stroke={accent} strokeWidth={1} strokeDasharray="6 4" opacity={0.3} />
+
+      {/* Player — shifts laterally with head fake */}
       <motion.g
-        animate={{ x: [-35, 8, -35] }}
-        transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', times: [0, 0.45, 1] }}
+        animate={{ x: [-40, 12, -40] }}
+        transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', times: [0, 0.5, 1] }}
       >
-        {/* Head — with head fake lean */}
+        {/* Head with head fake lean */}
         <motion.g
-          animate={{ x: [0, 14, -4, 0], rotate: [0, 6, -8, 0] }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', times: [0, 0.2, 0.35, 0.5] }}
-          style={{ originX: 120, originY: 55 }}
+          animate={{ x: [0, 16, -6, 0], rotate: [0, 8, -10, 0] }}
+          transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', times: [0, 0.15, 0.3, 0.45] }}
+          style={{ originX: 140, originY: 70 }}
         >
-          <circle cx={120} cy={50} r={9} fill="none" stroke={SKIN} strokeWidth={2.2} />
+          <circle cx={140} cy={62} r={9} fill="none" stroke={accent} strokeWidth={2.5} />
+          {/* Head fake indicator */}
+          <motion.text animate={{ opacity: [0, 1, 0] }}
+            transition={{ duration: 2.8, repeat: Infinity, times: [0.1, 0.2, 0.3] }}
+            x={156} y={56} fill={accent} fontSize={7} fontWeight={700} fontFamily="system-ui">FAKE!</motion.text>
         </motion.g>
 
         {/* Torso */}
-        <motion.line x1={120} y1={59} x2={119} y2={98} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ rotate: [0, -5, 5, 0] }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', times: [0, 0.2, 0.45, 1] }}
-          style={{ originX: 119, originY: 59 }}
-        />
+        <motion.line x1={140} y1={71} x2={138} y2={110} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ rotate: [0, -6, 6, 0] }}
+          transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', times: [0, 0.15, 0.5, 1] }}
+          style={{ originX: 138, originY: 71 }} />
 
-        {/* Arms — swing opposite to legs */}
-        <motion.line x1={119} y1={72} x2={90} y2={86} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ x2: [90, 100, 90] }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }} />
-        <motion.line x1={119} y1={72} x2={148} y2={86} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ x2: [148, 138, 148] }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }} />
+        {/* Arms — swing for balance */}
+        <motion.line x1={138} y1={82} x2={110} y2={98} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ x2: [110, 122, 110] }} transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }} />
+        <motion.line x1={138} y1={82} x2={166} y2={98} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ x2: [166, 154, 166] }} transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }} />
 
-        {/* Legs — running stride */}
-        <motion.line x1={119} y1={98} x2={100} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ x2: [100, 130, 100] }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }} />
-        <motion.line x1={119} y1={98} x2={138} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ x2: [138, 108, 138] }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }} />
+        {/* Legs — running/changing direction */}
+        <motion.line x1={138} y1={110} x2={115} y2={170} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ x2: [115, 148, 115] }} transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }} />
+        <motion.line x1={138} y1={110} x2={160} y2={170} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ x2: [160, 125, 160] }} transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }} />
       </motion.g>
 
-      {/* Speed trail when bursting */}
-      <motion.g animate={{ opacity: [0, 0.3, 0], x: [-20, -40, -20] }}
-        transition={{ duration: 2.4, repeat: Infinity, ease: 'easeOut', times: [0, 0.15, 0.3] }}>
-        <line x1={120} y1={58} x2={120} y2={100} stroke={SKIN} strokeWidth={1.5} strokeLinecap="round" opacity={0.2} />
-        <line x1={120} y1={70} x2={100} y2={84} stroke={SKIN} strokeWidth={1.5} strokeLinecap="round" opacity={0.2} />
-        <line x1={120} y1={70} x2={140} y2={84} stroke={SKIN} strokeWidth={1.5} strokeLinecap="round" opacity={0.2} />
+      {/* Speed burst effect when exploding */}
+      <motion.g animate={{ opacity: [0, 0.6, 0] }}
+        transition={{ duration: 2.8, repeat: Infinity, times: [0.25, 0.4, 0.55] }}>
+        {[0, 8, 16].map((dy, i) => (
+          <line key={i} x1={85} y1={65 + dy} x2={65} y2={65 + dy} stroke={accent} strokeWidth={1.2} strokeLinecap="round" opacity={0.4} />
+        ))}
       </motion.g>
 
-      {/* Floor markers showing lateral path */}
-      <line x1={60} y1={162} x2={180} y2={162} stroke={GUIDE} strokeWidth={1} strokeDasharray="4 3" />
+      {/* "EXPLOSE" label during burst */}
+      <motion.g animate={{ opacity: [0, 1, 0], x: [0, 15, 30] }}
+        transition={{ duration: 2.8, repeat: Infinity, times: [0.25, 0.35, 0.5] }}>
+        <rect x={145} y={42} width={60} height={16} rx={4} fill={accent} fillOpacity={0.9} />
+        <text x={175} y={53} fill="white" fontSize={8} fontWeight={700} fontFamily="system-ui" textAnchor="middle">EXPLOSE! 💥</text>
+      </motion.g>
+
+      {/* Focus labels */}
+      <FocusLabel text="Faux mouvement de tête" x={15} y={50} color={accent} delay={0} />
+      <FocusLabel text="Explosion dans l'autre sens" x={15} y={70} color={accent} delay={0.3} />
     </g>
   )
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// 3. BALL HANDLING — Standing figure-8 dribble between legs
+// 3. BALL HANDLING — Figure 8, two balls, pound dribble
 // ══════════════════════════════════════════════════════════════════════
-function BallHandlingAnim() {
+function BallHandlingAnim({ accent, accentDim }: { accent: string; accentDim: string }) {
   return (
     <g>
-      <Shadow cx={120} w={30} />
-      {/* Front-facing figure, legs apart */}
-      <circle cx={120} cy={50} r={9} fill="none" stroke={SKIN} strokeWidth={2.2} />
-      <line x1={120} y1={59} x2={120} y2={98} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
-
-      {/* Left arm — follows ball left */}
-      <motion.line x1={120} y1={70}
-        stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-        animate={{ x2: [96, 144, 96], y2: [92, 85, 92] }}
-        transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut', times: [0, 0.5, 1] }}
+      {/* Figure-8 path guide — very visible */}
+      <motion.path
+        d="M100,140 Q125,105 150,140 Q125,175 100,140"
+        fill="none" stroke={accent} strokeWidth={1.2} strokeDasharray="4 3"
+        animate={{ opacity: [0.15, 0.4, 0.15] }}
+        transition={{ duration: 2, repeat: Infinity }}
       />
+      <text x={125} y={135} fill={accent} fontSize={10} fontWeight={800} fontFamily="system-ui" textAnchor="middle" opacity={0.4}>∞</text>
 
-      {/* Right arm — follows ball right */}
-      <motion.line x1={120} y1={70}
-        stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-        animate={{ x2: [144, 96, 144], y2: [85, 92, 85] }}
-        transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut', times: [0, 0.5, 1] }}
-      />
+      {/* Player — standing, legs apart for figure 8 */}
+      <g>
+        {/* Head */}
+        <circle cx={125} cy={68} r={9} fill="none" stroke={accent} strokeWidth={2.5} />
+        {/* "NO LOOK" indicator */}
+        <motion.g animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.5, repeat: Infinity }}>
+          <text x={138} y={65} fill={accent} fontSize={7} fontWeight={700} fontFamily="system-ui">🔍 SANS REGARDER</text>
+        </motion.g>
+        {/* Torso */}
+        <line x1={125} y1={77} x2={125} y2={115} stroke={accent} strokeWidth={2.5} strokeLinecap="round" />
 
-      {/* Legs — spread for figure-8 path */}
-      <line x1={120} y1={98} x2={100} y2={155} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
-      <line x1={120} y1={98} x2={140} y2={155} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+        {/* Arms follow the ball */}
+        <motion.line x1={125} y1={88}
+          stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ x2: [100, 150, 100], y2: [108, 100, 108] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }} />
+        <motion.circle r={2.5} fill={accent}
+          animate={{ cx: [100, 150, 100], cy: [108, 100, 108] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }} />
 
-      {/* Figure-8 path guide */}
-      <path d="M98,115 Q120,100 142,115 Q120,130 98,115" fill="none" stroke={GUIDE} strokeWidth={0.8} strokeDasharray="3 2" />
+        <motion.line x1={125} y1={88}
+          stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ x2: [150, 100, 150], y2: [100, 108, 100] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }} />
+        <motion.circle r={2.5} fill={accent}
+          animate={{ cx: [150, 100, 150], cy: [100, 108, 100] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }} />
 
-      {/* Ball — figure-8 path through legs */}
+        {/* Legs — spread for the ball path */}
+        <line x1={125} y1={115} x2={100} y2={172} stroke={accent} strokeWidth={2.5} strokeLinecap="round" />
+        <line x1={125} y1={115} x2={150} y2={172} stroke={accent} strokeWidth={2.5} strokeLinecap="round" />
+      </g>
+
+      {/* Ball — figure 8 motion */}
       <motion.g
         animate={{
-          x: [-20, 0, 20, 0, -20],
-          y: [0, -18, 0, 12, 0],
+          cx: [100, 125, 150, 125, 100],
+          cy: [140, 110, 140, 170, 140],
         }}
         transition={{
-          duration: 2.2, repeat: Infinity, ease: 'easeInOut',
+          duration: 2.4, repeat: Infinity, ease: 'easeInOut',
           times: [0, 0.25, 0.5, 0.75, 1],
         }}
       >
-        <Ball cx={120} cy={115} />
+        <Ball cx={0} cy={0} r={7} />
       </motion.g>
+
+      {/* Directional arrows along path */}
+      <motion.g animate={{ opacity: [0, 0.6, 0] }} transition={{ duration: 2.4, repeat: Infinity, times: [0, 0.2, 0.4] }}>
+        <Arrow x1={108} y1={128} x2={118} y2={115} color={accent} />
+      </motion.g>
+      <motion.g animate={{ opacity: [0, 0.6, 0] }} transition={{ duration: 2.4, repeat: Infinity, times: [0.5, 0.7, 0.9] }}>
+        <Arrow x1={142} y1={128} x2={132} y2={115} color={accent} />
+      </motion.g>
+
+      {/* Focus labels */}
+      <FocusLabel text="Pattern en 8 entre les jambes" x={15} y={48} color={accent} delay={0} />
+      <FocusLabel text="Main gauche ↔ Main droite" x={15} y={68} color={accent} delay={0.3} />
     </g>
   )
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// 4. SPEED CHANGE — Sprint, decelerate, sprint again (SIDE VIEW)
+// 4. SPEED CHANGE — Sprint → Stop → Sprint
 // ══════════════════════════════════════════════════════════════════════
-function SpeedChangeAnim() {
+function SpeedChangeAnim({ accent, accentDim }: { accent: string; accentDim: string }) {
   return (
     <g>
-      <Shadow cx={120} w={20} />
-      {/* Running figure — side view */}
+      {/* Speed zones on floor */}
+      <motion.g animate={{ opacity: [0.1, 0.3, 0.1] }} transition={{ duration: 3.5, repeat: Infinity }}>
+        <rect x={15} y={168} width={70} height={8} rx={2} fill={accent} opacity={0.15} />
+        <text x={50} y={174} fill={accent} fontSize={6.5} fontWeight={700} fontFamily="system-ui" textAnchor="middle">50%</text>
+        <rect x={95} y={168} width={90} height={8} rx={2} fill={accent} opacity={0.4} />
+        <text x={140} y={174} fill="white" fontSize={6.5} fontWeight={700} fontFamily="system-ui" textAnchor="middle">100% ⚡</text>
+      </motion.g>
+
+      {/* Runner — side view */}
       <motion.g
-        animate={{ x: [-45, -45, 50, 50, -45] }}
-        transition={{ duration: 3.2, repeat: Infinity, ease: 'linear', times: [0, 0.1, 0.4, 0.55, 0.9] }}
+        animate={{ x: [-55, -55, 60, 60, -55] }}
+        transition={{ duration: 3.5, repeat: Infinity, ease: 'linear', times: [0, 0.08, 0.35, 0.55, 0.9] }}
       >
-        {/* Lean forward more during sprint */}
+        {/* More forward lean during sprint */}
         <motion.g
-          animate={{ rotate: [0, 0, -12, -12, 0] }}
-          transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut', times: [0, 0.1, 0.4, 0.55, 0.9] }}
-          style={{ originX: 120, originY: 58 }}
+          animate={{ rotate: [0, 0, -15, -15, 0] }}
+          transition={{ duration: 3.5, repeat: Infinity, times: [0, 0.08, 0.35, 0.55, 0.9] }}
+          style={{ originX: 140, originY: 60 }}
         >
-          <circle cx={120} cy={48} r={9} fill="none" stroke={SKIN} strokeWidth={2.2} />
-          <line x1={120} y1={57} x2={118} y2={96} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+          <circle cx={140} cy={50} r={9} fill="none" stroke={accent} strokeWidth={2.5} />
+          <line x1={140} y1={59} x2={137} y2={100} stroke={accent} strokeWidth={2.5} strokeLinecap="round" />
         </motion.g>
 
-        {/* Arms — pump while running */}
-        <motion.line x1={119} y1={68} x2={102} y2={90} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ x2: [102, 136, 102], y2: [90, 78, 90] }}
-          transition={{ duration: 0.6, repeat: Infinity, ease: 'easeInOut' }} />
-        <motion.line x1={119} y1={68} x2={136} y2={78} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ x2: [136, 102, 136], y2: [78, 90, 78] }}
-          transition={{ duration: 0.6, repeat: Infinity, ease: 'easeInOut' }} />
+        {/* Arms pump */}
+        <motion.line x1={138} y1={72} x2={118} y2={95} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ x2: [118, 158, 118], y2: [95, 80, 95] }}
+          transition={{ duration: 0.55, repeat: Infinity, ease: 'easeInOut' }} />
+        <motion.line x1={138} y1={72} x2={158} y2={80} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ x2: [158, 118, 158], y2: [80, 95, 80] }}
+          transition={{ duration: 0.55, repeat: Infinity, ease: 'easeInOut' }} />
 
-        {/* Legs — running stride */}
-        <motion.line x1={118} y1={96} x2={98} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ x2: [98, 135, 98] }}
-          transition={{ duration: 0.6, repeat: Infinity, ease: 'easeInOut' }} />
-        <motion.line x1={118} y1={96} x2={140} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ x2: [140, 100, 140] }}
-          transition={{ duration: 0.6, repeat: Infinity, ease: 'easeInOut' }} />
+        {/* Legs stride */}
+        <motion.line x1={137} y1={100} x2={115} y2={170} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ x2: [115, 158, 115] }} transition={{ duration: 0.55, repeat: Infinity, ease: 'easeInOut' }} />
+        <motion.line x1={137} y1={100} x2={160} y2={170} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ x2: [160, 118, 160] }} transition={{ duration: 0.55, repeat: Infinity, ease: 'easeInOut' }} />
       </motion.g>
 
-      {/* Speed lines during sprint phase */}
+      {/* Speed lines during sprint */}
       <motion.g animate={{ opacity: [0, 0.5, 0] }}
-        transition={{ duration: 3.2, repeat: Infinity, times: [0.1, 0.25, 0.4] }}>
-        {[{ y: 50 }, { y: 70 }, { y: 90 }].map((p, i) => (
-          <motion.line key={i}
-            x1={75} y1={p.y} x2={55} y2={p.y}
-            stroke={SKIN} strokeWidth={1.2} strokeLinecap="round"
-            animate={{ x1: [75, 95, 75], x2: [55, 75, 55] }}
-            transition={{ duration: 0.3, repeat: Infinity, ease: 'easeOut', delay: i * 0.08 }}
-          />
+        transition={{ duration: 3.5, repeat: Infinity, times: [0.1, 0.25, 0.35] }}>
+        {[{ y: 55 }, { y: 75 }, { y: 95 }].map((p, i) => (
+          <line key={i} x1={80} y1={p.y} x2={55} y2={p.y} stroke={accent} strokeWidth={1.5} strokeLinecap="round" opacity={0.35} />
+        ))}
+        <text x={55} y={48} fill={accent} fontSize={9} fontWeight={800} fontFamily="system-ui">VITE!</text>
+      </motion.g>
+
+      {/* STOP indicator */}
+      <motion.g animate={{ opacity: [0, 1, 0], scale: [0.8, 1.1, 0.8] }}
+        transition={{ duration: 3.5, repeat: Infinity, times: [0.35, 0.42, 0.5] }}
+        style={{ originX: 200, originY: 90 }}>
+        <rect x={180} y={78} width={45} height={20} rx={4} fill="#ef4444" />
+        <text x={202} y={92} fill="white" fontSize={8.5} fontWeight={800} fontFamily="system-ui" textAnchor="middle">STOP 🛑</text>
+      </motion.g>
+
+      {/* Decel marks */}
+      <motion.g animate={{ opacity: [0, 0.5, 0] }}
+        transition={{ duration: 3.5, repeat: Infinity, times: [0.36, 0.44, 0.52] }}>
+        {[0, 5, 10].map((dx, i) => (
+          <line key={i} x1={175 + dx} y1={170} x2={175 + dx} y2={176} stroke={accent} strokeWidth={1} opacity={0.4} />
         ))}
       </motion.g>
 
-      {/* Deceleration marks */}
-      <motion.g animate={{ opacity: [0, 0.3, 0] }}
-        transition={{ duration: 3.2, repeat: Infinity, times: [0.4, 0.5, 0.55] }}>
-        {[0, 6, 12].map((dx, i) => (
-          <line key={i} x1={170 + dx} y1={155} x2={170 + dx} y2={160} stroke={SKIN} strokeWidth={0.8} opacity={0.3} />
-        ))}
-      </motion.g>
+      {/* Focus labels */}
+      <FocusLabel text="Ralentis → Arrête → Explose" x={15} y={48} color={accent} delay={0} />
     </g>
   )
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// 5. DEFENSE — LOW wide stance, hands up, lateral slides (FRONT VIEW)
+// 5. DEFENSE — Low wide stance, hands up, lateral slides
 // ══════════════════════════════════════════════════════════════════════
-function DefenseAnim() {
+function DefenseAnim({ accent, accentDim }: { accent: string; accentDim: string }) {
   return (
     <g>
-      <Shadow cx={120} w={40} />
-      <Hoop x={200} rimY={45} />
-
-      {/* Low defensive stance — slides side to side */}
-      <motion.g
-        animate={{ x: [-25, 25, -25] }}
-        transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut', times: [0, 0.5, 1] }}
-      >
-        {/* Head */}
-        <circle cx={120} cy={68} r={9} fill="none" stroke={SKIN} strokeWidth={2.2} />
-        {/* Torso — very upright, low */}
-        <line x1={120} y1={77} x2={120} y2={105} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
-
-        {/* Arms — HIGH and WIDE, active hands */}
-        <motion.line x1={120} y1={84} x2={92} y2={64} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ y2: [64, 68, 64], x2: [92, 88, 92] }}
-          transition={{ duration: 0.8, repeat: Infinity, ease: 'easeInOut' }} />
-        <motion.line x1={120} y1={84} x2={148} y2={64} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ y2: [64, 60, 64], x2: [148, 152, 148] }}
-          transition={{ duration: 0.8, repeat: Infinity, ease: 'easeInOut' }} />
-
-        {/* Hands — small circles for active hands */}
-        <motion.circle cx={92} cy={64} r={3} fill={SKIN} opacity={0.5}
-          animate={{ cy: [64, 68, 64] }}
-          transition={{ duration: 0.8, repeat: Infinity, ease: 'easeInOut' }} />
-        <motion.circle cx={148} cy={64} r={3} fill={SKIN} opacity={0.5}
-          animate={{ cy: [64, 60, 64] }}
-          transition={{ duration: 0.8, repeat: Infinity, ease: 'easeInOut' }} />
-
-        {/* Thighs — very bent, wide */}
-        <line x1={120} y1={105} x2={96} y2={130} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
-        <line x1={120} y1={105} x2={144} y2={130} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
-        {/* Shins */}
-        <line x1={96} y1={130} x2={86} y2={155} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
-        <line x1={144} y1={130} x2={154} y2={155} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
-      </motion.g>
+      <Hoop x={255} rimY={55} />
 
       {/* Defensive coverage zone */}
-      <motion.ellipse cx={120} cy={120} rx={42} ry={20} fill="none"
-        stroke={SKIN} strokeWidth={0.6} strokeDasharray="4 3" opacity={0.15}
-        animate={{ rx: [42, 38, 42] }}
-        transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
-      />
+      <motion.ellipse cx={130} cy={135} rx={50} ry={30} fill="none"
+        stroke={accent} strokeWidth={1} strokeDasharray="5 4" opacity={0.2}
+        animate={{ rx: [50, 44, 50] }}
+        transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }} />
+      <text x={130} y={165} fill={accent} fontSize={6.5} fontWeight={600} fontFamily="system-ui" textAnchor="middle" opacity={0.35}>ZONE DÉFENSIVE</text>
+
+      {/* Slide direction arrows */}
+      <motion.g animate={{ opacity: [0, 0.7, 0] }} transition={{ duration: 2.8, repeat: Infinity, times: [0, 0.2, 0.4] }}>
+        <Arrow x1={50} y1={135} x2={30} y2={135} color={accent} />
+      </motion.g>
+      <motion.g animate={{ opacity: [0, 0.7, 0] }} transition={{ duration: 2.8, repeat: Infinity, times: [0.5, 0.7, 0.9] }}>
+        <Arrow x1={210} y1={135} x2={230} y2={135} color={accent} />
+      </motion.g>
+
+      {/* Defensive player — LOW, wide, hands UP */}
+      <motion.g
+        animate={{ x: [-30, 30, -30] }}
+        transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', times: [0, 0.5, 1] }}
+      >
+        {/* Head */}
+        <circle cx={130} cy={82} r={9} fill="none" stroke={accent} strokeWidth={2.5} />
+
+        {/* Torso — upright, low center */}
+        <line x1={130} y1={91} x2={130} y2={118} stroke={accent} strokeWidth={2.5} strokeLinecap="round" />
+
+        {/* Arms — HIGH and WIDE, active hands */}
+        <motion.line x1={130} y1={96} x2={100} y2={72} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ y2: [72, 76, 72], x2: [100, 95, 100] }}
+          transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }} />
+        {/* Left hand */}
+        <motion.circle r={4} fill={accent} opacity={0.5}
+          animate={{ cx: [100, 95, 100], cy: [72, 76, 72] }}
+          transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }} />
+
+        <motion.line x1={130} y1={96} x2={160} y2={72} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ y2: [72, 68, 72], x2: [160, 165, 160] }}
+          transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }} />
+        {/* Right hand */}
+        <motion.circle r={4} fill={accent} opacity={0.5}
+          animate={{ cx: [160, 165, 160], cy: [72, 68, 72] }}
+          transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }} />
+
+        {/* "HANDS UP" label */}
+        <motion.g animate={{ opacity: [0.4, 0.9, 0.4] }} transition={{ duration: 1.2, repeat: Infinity }}>
+          <text x={130} y={62} fill={accent} fontSize={7} fontWeight={700} fontFamily="system-ui" textAnchor="middle">✋ MAINS HAUTES</text>
+        </motion.g>
+
+        {/* Thighs — very bent, wide */}
+        <line x1={130} y1={118} x2={102} y2={142} stroke={accent} strokeWidth={2.5} strokeLinecap="round" />
+        <line x1={130} y1={118} x2={158} y2={142} stroke={accent} strokeWidth={2.5} strokeLinecap="round" />
+        {/* Shins */}
+        <line x1={102} y1={142} x2={90} y2={172} stroke={accent} strokeWidth={2.5} strokeLinecap="round" />
+        <line x1={158} y1={142} x2={170} y2={172} stroke={accent} strokeWidth={2.5} strokeLinecap="round" />
+      </motion.g>
+
+      {/* Focus labels */}
+      <FocusLabel text="Stance basse & large" x={15} y={48} color={accent} delay={0} />
+      <FocusLabel text="Glissades latérales rapides" x={15} y={68} color={accent} delay={0.3} />
     </g>
   )
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// 6. SHOOTING — SIDE VIEW: raise ball, extend, follow-through at hoop
+// 6. SHOOTING — BEEF form, raise ball, arc, follow-through
 // ══════════════════════════════════════════════════════════════════════
-function ShootingAnim() {
+function ShootingAnim({ accent, accentDim }: { accent: string; accentDim: string }) {
   return (
     <g>
-      <Shadow cx={80} w={22} />
-      <Hoop x={195} rimY={58} />
+      <Hoop x={248} rimY={62} />
 
-      {/* Shooter — side view, faces right */}
+      {/* BEEF letters along the arc */}
+      <motion.g animate={{ opacity: [0.1, 0.4, 0.1] }} transition={{ duration: 3, repeat: Infinity }}>
+        <text x={50} y={165} fill={accent} fontSize={8} fontWeight={800} fontFamily="system-ui" opacity={0.4}>B</text>
+        <text x={68} y={155} fill={accent} fontSize={8} fontWeight={800} fontFamily="system-ui" opacity={0.4}>E</text>
+        <text x={90} y={148} fill={accent} fontSize={8} fontWeight={800} fontFamily="system-ui" opacity={0.4}>E</text>
+        <text x={115} y={144} fill={accent} fontSize={8} fontWeight={800} fontFamily="system-ui" opacity={0.4}>F</text>
+      </motion.g>
+
+      {/* Trajectory arc guide */}
+      <motion.path
+        d="M75,120 Q150,10 232,62"
+        fill="none" stroke={accent} strokeWidth={1.2} strokeDasharray="4 3"
+        animate={{ opacity: [0.15, 0.4, 0.15] }}
+        transition={{ duration: 2.4, repeat: Infinity }}
+      />
+      <text x={155} y={38} fill={accent} fontSize={6.5} fontWeight={600} fontFamily="system-ui" textAnchor="middle" opacity={0.5}>TRAJECTOIRE ARC</text>
+
+      {/* Shooter — side view, faces right toward hoop */}
       <g>
         {/* Head */}
-        <circle cx={80} cy={52} r={9} fill="none" stroke={SKIN} strokeWidth={2.2} />
+        <circle cx={75} cy={70} r={9} fill="none" stroke={accent} strokeWidth={2.5} />
+        {/* Eyes on target */}
+        <motion.g animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.5, repeat: Infinity }}>
+          <text x={88} y={67} fill={accent} fontSize={7} fontWeight={700} fontFamily="system-ui">👁️ CIBLE</text>
+        </motion.g>
         {/* Torso */}
-        <line x1={80} y1={61} x2={78} y2={100} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+        <line x1={75} y1={79} x2={72} y2={118} stroke={accent} strokeWidth={2.5} strokeLinecap="round" />
 
-        {/* Shooting arm — raise up and extend */}
-        <motion.line x1={80} y1={72}
-          stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{
-            x2: [68, 78, 92, 88],
-            y2: [82, 68, 52, 48],
-          }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', times: [0, 0.25, 0.45, 0.6] }}
-        />
-        {/* Forearm — follow through */}
-        <motion.line x1={78} y1={68}
-          stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{
-            x1: [78, 78, 92, 88],
-            y1: [68, 68, 52, 48],
-            x2: [68, 90, 100, 96],
-            y2: [74, 56, 42, 38],
-          }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', times: [0, 0.25, 0.45, 0.6] }}
-        />
-        {/* Wrist flick indicator */}
-        <motion.g animate={{ opacity: [0, 0, 0.6, 0.3, 0] }}
-          transition={{ duration: 2.4, repeat: Infinity, times: [0, 0.4, 0.5, 0.6, 0.8] }}>
-          <line x1={96} y1={38} x2={100} y2={30} stroke={SKIN} strokeWidth={1} strokeLinecap="round" opacity={0.5} />
+        {/* Shooting arm — raise and extend */}
+        <motion.line x1={75} y1={90}
+          stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ x2: [60, 75, 95, 90], y2: [100, 78, 65, 58] }}
+          transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', times: [0, 0.2, 0.4, 0.55] }} />
+        {/* Forearm/hand */}
+        <motion.line x1={75} y1={78}
+          stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ x1: [60, 75, 95, 90], y1: [100, 78, 65, 58], x2: [60, 88, 108, 100], y2: [92, 68, 50, 44] }}
+          transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', times: [0, 0.2, 0.4, 0.55] }} />
+
+        {/* Follow-through wrist flick */}
+        <motion.g animate={{ opacity: [0, 0, 0.7, 0.3, 0] }}
+          transition={{ duration: 2.8, repeat: Infinity, times: [0, 0.35, 0.45, 0.55, 0.75] }}>
+          <text x={104} y={38} fill={accent} fontSize={7} fontWeight={700} fontFamily="system-ui">✋ WRIST!</text>
         </motion.g>
 
         {/* Guide hand */}
-        <motion.line x1={80} y1={72}
-          x2={68} y2={80} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ x2: [68, 72, 68], y2: [80, 70, 80] }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', times: [0, 0.45, 0.6] }}
-        />
+        <motion.line x1={75} y1={90} x2={60} y2={98} stroke={accent} strokeWidth={2} strokeLinecap="round"
+          animate={{ x2: [60, 65, 60], y2: [98, 85, 98] }}
+          transition={{ duration: 2.8, repeat: Infinity, times: [0, 0.4, 0.55] }} />
 
-        {/* Legs — slight knee bend then extend */}
-        <motion.line x1={78} y1={100} x2={66} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ y2: [154, 150, 154] }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', times: [0, 0.45, 0.6] }} />
-        <motion.line x1={78} y1={100} x2={90} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ y2: [154, 150, 154] }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', times: [0, 0.45, 0.6] }} />
+        {/* Legs — knee bend then extend */}
+        <motion.line x1={72} y1={118} x2={58} y2={172} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ y2: [172, 166, 172] }}
+          transition={{ duration: 2.8, repeat: Infinity, times: [0, 0.4, 0.55] }} />
+        <motion.line x1={72} y1={118} x2={86} y2={172} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ y2: [172, 166, 172] }}
+          transition={{ duration: 2.8, repeat: Infinity, times: [0, 0.4, 0.55] }} />
       </g>
 
       {/* Ball — arc from hand to hoop */}
       <motion.g
         animate={{
-          cx: [68, 78, 120, 170, 182],
-          cy: [74, 56, 30, 38, 58],
+          cx: [60, 75, 130, 200, 232],
+          cy: [100, 78, 28, 42, 62],
           opacity: [1, 1, 1, 1, 0],
-          r: [7, 7, 7, 7, 5],
         }}
-        transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', times: [0.25, 0.35, 0.5, 0.6, 0.7] }}
+        transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', times: [0.2, 0.3, 0.45, 0.55, 0.65] }}
       >
-        <Ball cx={0} cy={0} r={0} />
+        <Ball cx={0} cy={0} r={7} />
       </motion.g>
 
-      {/* Trajectory arc guide */}
-      <path d="M78,56 Q130,15 182,58" fill="none" stroke={GUIDE} strokeWidth={0.7} strokeDasharray="3 3" />
+      {/* SWISH text when ball goes in */}
+      <motion.g animate={{ opacity: [0, 0, 1, 1, 0], scale: [0.5, 0.5, 1.2, 1, 0.8] }}
+        transition={{ duration: 2.8, repeat: Infinity, times: [0, 0.6, 0.65, 0.75, 0.85] }}
+        style={{ originX: 232, originY: 50 }}>
+        <text x={232} y={50} fill="#22c55e" fontSize={10} fontWeight={800} fontFamily="system-ui" textAnchor="middle">SWISH!</text>
+      </motion.g>
+
+      {/* Focus labels */}
+      <FocusLabel text="B=Équilibre E=Yeux E=Coude F=Suivi" x={15} y={38} color={accent} delay={0} />
     </g>
   )
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// 7. FOOTWORK — TOP-DOWN VIEW: ladder drill, quick feet in/out
+// 7. FOOTWORK — Ladder drill, quick feet, pivots
 // ══════════════════════════════════════════════════════════════════════
-function FootworkAnim() {
-  // Ladder rungs (top-down view)
-  const rungs = [70, 95, 120, 145, 170]
+function FootworkAnim({ accent, accentDim }: { accent: string; accentDim: string }) {
+  const rungYs = [75, 100, 125, 150]
   return (
     <g>
       {/* Ladder outline */}
-      <rect x={60} y={55} width={120} height={130} rx={2} fill="none" stroke="#4b5563" strokeWidth={1.2} />
-      {rungs.map((y) => (
-        <line key={y} x1={60} y1={y} x2={180} y2={y} stroke="#4b5563" strokeWidth={0.8} />
+      <rect x={65} y={60} width={130} height={108} rx={3} fill="none" stroke={accent} strokeWidth={1.5} opacity={0.5} />
+      {rungYs.map((y) => (
+        <line key={y} x1={65} y1={y} x2={195} y2={y} stroke={accent} strokeWidth={1} opacity={0.35} />
       ))}
-
-      {/* Left foot — steps in/out pattern */}
-      <motion.ellipse rx={8} ry={12} fill={SKIN} opacity={0.35}
-        animate={{
-          cx: [50, 85, 50, 105, 50, 125, 50, 145, 50, 125, 50, 105, 50, 85, 50],
-          cy: [70, 82, 95, 107, 120, 132, 145, 155, 145, 132, 120, 107, 95, 82, 70],
-        }}
-        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut',
-          times: [0, .07, .14, .21, .28, .35, .42, .5, .57, .64, .71, .78, .85, .92, 1] }}
-      />
-
-      {/* Right foot — mirror pattern */}
-      <motion.ellipse rx={8} ry={12} fill={SKIN} opacity={0.6}
-        animate={{
-          cx: [190, 155, 190, 135, 190, 115, 190, 95, 190, 115, 190, 135, 190, 155, 190],
-          cy: [82, 95, 107, 120, 132, 145, 155, 145, 132, 120, 107, 95, 82, 70, 82],
-        }}
-        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut',
-          times: [0, .07, .14, .21, .28, .35, .42, .5, .57, .64, .71, .78, .85, .92, 1] }}
-      />
+      <text x={130} y={55} fill={accent} fontSize={7} fontWeight={700} fontFamily="system-ui" textAnchor="middle" opacity={0.6}>ÉCHELLE D'AGILITÉ</text>
 
       {/* Direction arrow */}
-      <polygon points="120,45 115,38 125,38" fill={SKIN} opacity={0.4} />
+      <polygon points="130,52 125,46 135,46" fill={accent} opacity={0.5} />
+
+      {/* Left foot — in/out pattern */}
+      <motion.ellipse rx={9} ry={13} fill={accent} opacity={0.3}
+        animate={{
+          cx: [55, 85, 55, 110, 55, 135, 55, 160, 55, 135, 55, 110, 55, 85, 55],
+          cy: [75, 87, 100, 112, 125, 137, 150, 162, 150, 137, 125, 112, 100, 87, 75],
+        }}
+        transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut',
+          times: [0, .07, .14, .21, .28, .35, .42, .5, .57, .64, .71, .78, .85, .92, 1] }}
+      />
+      <text x={55} y={78} fill="white" fontSize={6} fontWeight={700} fontFamily="system-ui" textAnchor="middle" opacity={0.6}>G</text>
+
+      {/* Right foot — mirror pattern */}
+      <motion.ellipse rx={9} ry={13} fill={accent} opacity={0.5}
+        animate={{
+          cx: [205, 175, 205, 150, 205, 125, 205, 100, 205, 125, 205, 150, 205, 175, 205],
+          cy: [87, 100, 112, 125, 137, 150, 162, 150, 137, 125, 112, 100, 87, 75, 87],
+        }}
+        transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut',
+          times: [0, .07, .14, .21, .28, .35, .42, .5, .57, .64, .71, .78, .85, .92, 1] }}
+      />
+      <text x={205} y={90} fill="white" fontSize={6} fontWeight={700} fontFamily="system-ui" textAnchor="middle" opacity={0.6}>D</text>
+
+      {/* "QUICK FEET" pulsing text */}
+      <motion.g animate={{ opacity: [0.3, 0.8, 0.3] }} transition={{ duration: 0.8, repeat: Infinity }}>
+        <text x={130} y={182} fill={accent} fontSize={8} fontWeight={800} fontFamily="system-ui" textAnchor="middle">🦶 PIEDS RAPIDES!</text>
+      </motion.g>
+
+      {/* Focus labels */}
+      <FocusLabel text="Un pied par case" x={15} y={75} color={accent} delay={0} />
+      <FocusLabel text="Restez léger sur les pieds" x={15} y={95} color={accent} delay={0.3} />
     </g>
   )
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// 8. FINISHING — SIDE VIEW: drive, two steps, jump, layup at rim
+// 8. FINISHING — Drive, 2 steps, layup at rim
 // ══════════════════════════════════════════════════════════════════════
-function FinishingAnim() {
+function FinishingAnim({ accent, accentDim }: { accent: string; accentDim: string }) {
   return (
     <g>
-      <Shadow cx={120} w={18} />
-      <Hoop x={195} rimY={62} />
+      <Hoop x={250} rimY={65} />
 
-      {/* Runner — drives from left, 2 steps, jump, layup */}
+      {/* 2-STEP markers on floor */}
+      <motion.g animate={{ opacity: [0.15, 0.4, 0.15] }} transition={{ duration: 3.2, repeat: Infinity }}>
+        <circle cx={110} cy={172} r={10} fill="none" stroke={accent} strokeWidth={1.5} strokeDasharray="3 2" />
+        <text x={110} y={175} fill={accent} fontSize={8} fontWeight={800} fontFamily="system-ui" textAnchor="middle">1</text>
+        <circle cx={160} cy={172} r={10} fill="none" stroke={accent} strokeWidth={1.5} strokeDasharray="3 2" />
+        <text x={160} y={175} fill={accent} fontSize={8} fontWeight={800} fontFamily="system-ui" textAnchor="middle">2</text>
+        <text x={135} y={185} fill={accent} fontSize={7} fontWeight={600} fontFamily="system-ui" textAnchor="middle">2 PAS</text>
+      </motion.g>
+
+      {/* Drive path arrow */}
+      <motion.path
+        d="M40,172 L100,172 L155,172 L200,140"
+        fill="none" stroke={accent} strokeWidth={1.5} strokeDasharray="6 4"
+        animate={{ opacity: [0.15, 0.4, 0.15] }}
+        transition={{ duration: 2, repeat: Infinity }}
+      />
+
+      {/* Player — drives from left, 2 steps, jump, layup */}
       <motion.g
-        animate={{ x: [-50, -20, 30, 60, 30, -50] }}
-        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut',
-          times: [0, 0.2, 0.35, 0.45, 0.6, 1] }}
+        animate={{ x: [-60, -25, 35, 65, 35, -60] }}
+        transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut',
+          times: [0, 0.2, 0.38, 0.48, 0.62, 1] }}
       >
         <motion.g
-          animate={{ y: [0, 0, 0, -30, 0, 0] }}
-          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut',
-            times: [0, 0.2, 0.35, 0.45, 0.6, 1] }}
+          animate={{ y: [0, 0, 0, -35, 0, 0] }}
+          transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut',
+            times: [0, 0.2, 0.38, 0.48, 0.62, 1] }}
         >
           {/* Head */}
-          <circle cx={120} cy={48} r={9} fill="none" stroke={SKIN} strokeWidth={2.2} />
-          {/* Torso — leans forward during drive */}
-          <motion.line x1={120} y1={57} x2={118} y2={96} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-            animate={{ rotate: [0, -4, -8, -5, 0, 0] }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', times: [0, 0.2, 0.35, 0.45, 0.6, 1] }}
-            style={{ originX: 118, originY: 57 }}
-          />
+          <circle cx={120} cy={55} r={9} fill="none" stroke={accent} strokeWidth={2.5} />
+          {/* Torso */}
+          <motion.line x1={120} y1={64} x2={117} y2={105} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+            animate={{ rotate: [0, -5, -10, -6, 0, 0] }}
+            transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut', times: [0, 0.2, 0.38, 0.48, 0.62, 1] }}
+            style={{ originX: 117, originY: 64 }} />
 
           {/* Ball hand — brings ball up for layup */}
-          <motion.line x1={118} y1={68}
-            stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-            animate={{
-              x2: [100, 108, 130, 148, 130, 100],
-              y2: [80, 76, 56, 46, 60, 80],
-            }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut',
-              times: [0, 0.2, 0.35, 0.48, 0.6, 1] }}
-          />
-          {/* Off hand */}
-          <line x1={118} y1={68} x2={136} y2={80} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+          <motion.line x1={117} y1={78}
+            stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+            animate={{ x2: [98, 108, 135, 155, 135, 98], y2: [88, 82, 60, 48, 62, 88] }}
+            transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut',
+              times: [0, 0.2, 0.38, 0.5, 0.62, 1] }} />
+          {/* Off hand for protection */}
+          <motion.line x1={117} y1={78}
+            x2={138} y2={88} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+            animate={{ x2: [138, 130, 120, 115, 130, 138] }}
+            transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut',
+              times: [0, 0.2, 0.38, 0.5, 0.62, 1] }} />
 
-          {/* Legs — running then jump */}
-          <motion.line x1={118} y1={96} x2={98} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-            animate={{ y2: [154, 154, 154, 170, 154, 154], x2: [98, 110, 130, 140, 130, 98] }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', times: [0, 0.2, 0.35, 0.48, 0.6, 1] }}
-          />
-          <motion.line x1={118} y1={96} x2={140} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-            animate={{ y2: [154, 154, 154, 170, 154, 154], x2: [140, 128, 108, 100, 108, 140] }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', times: [0, 0.2, 0.35, 0.48, 0.6, 1] }}
-          />
+          {/* Legs */}
+          <motion.line x1={117} y1={105} x2={95} y2={170} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+            animate={{ y2: [170, 170, 170, 190, 170, 170], x2: [95, 110, 135, 145, 135, 95] }}
+            transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut', times: [0, 0.2, 0.38, 0.5, 0.62, 1] }} />
+          <motion.line x1={117} y1={105} x2={140} y2={170} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+            animate={{ y2: [170, 170, 170, 190, 170, 170], x2: [140, 125, 105, 95, 105, 140] }}
+            transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut', times: [0, 0.2, 0.38, 0.5, 0.62, 1] }} />
         </motion.g>
       </motion.g>
 
-      {/* Ball — separate from hand at release, arcs to hoop */}
+      {/* Ball — releases and arcs to hoop */}
       <motion.g
-        animate={{
-          cx: [70, 88, 150, 178],
-          cy: [80, 76, 42, 60],
-          opacity: [1, 1, 1, 0],
-        }}
-        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', times: [0.4, 0.48, 0.58, 0.68] }}
+        animate={{ cx: [70, 95, 160, 195, 232], cy: [88, 82, 48, 55, 65], opacity: [1, 1, 1, 1, 0] }}
+        transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut', times: [0.42, 0.5, 0.58, 0.64, 0.72] }}
       >
-        <Ball cx={0} cy={0} />
+        <Ball cx={0} cy={0} r={7} />
       </motion.g>
 
-      {/* Drive path */}
-      <line x1={50} y1={162} x2={185} y2={162} stroke={GUIDE} strokeWidth={0.8} strokeDasharray="5 4" />
+      {/* BACKBOARD text hint */}
+      <motion.g animate={{ opacity: [0, 0, 0.8, 0.8, 0] }}
+        transition={{ duration: 3.2, repeat: Infinity, times: [0, 0.55, 0.65, 0.75, 0.85] }}>
+        <text x={250} y={48} fill={accent} fontSize={6.5} fontWeight={700} fontFamily="system-ui" textAnchor="middle">PANNEAU ↗</text>
+      </motion.g>
+
+      {/* Focus labels */}
+      <FocusLabel text="Conduite → 2 pas → Layup" x={15} y={48} color={accent} delay={0} />
+      <FocusLabel text="Main haute au panneau" x={15} y={68} color={accent} delay={0.3} />
     </g>
   )
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// 9. CONDITIONING — JUMP squats, continuous up/down
+// 9. CONDITIONING — Sprints, shuttle, burpees
 // ══════════════════════════════════════════════════════════════════════
-function ConditioningAnim() {
+function ConditioningAnim({ accent, accentDim }: { accent: string; accentDim: string }) {
   return (
     <g>
-      <motion.g animate={{ y: [0, -28, 0] }}
-        transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }}>
-        <Shadow cx={120} w={28} />
-
-        {/* Head */}
-        <circle cx={120} cy={50} r={9} fill="none" stroke={SKIN} strokeWidth={2.2} />
-        {/* Torso */}
-        <motion.line x1={120} y1={59} x2={120} y2={96} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ y2: [96, 94, 96] }}
-          transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }} />
-
-        {/* Arms — pump up during jump */}
-        <motion.line x1={120} y1={70}
-          x2={96} y2={88} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ x2: [96, 90, 96], y2: [88, 58, 88] }}
-          transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }} />
-        <motion.line x1={120} y1={70}
-          x2={144} y2={88} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ x2: [144, 150, 144], y2: [88, 58, 88] }}
-          transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }} />
-
-        {/* Legs — squat then extend */}
-        <motion.line x1={120} y1={96}
-          x2={100} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ x2: [100, 108, 100], y2: [154, 154, 154] }}
-          transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }} />
-        <motion.line x1={120} y1={96}
-          x2={140} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
-          animate={{ x2: [140, 132, 140], y2: [154, 154, 154] }}
-          transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }} />
+      {/* Court lines for sprint */}
+      <motion.g animate={{ opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 2, repeat: Infinity }}>
+        <line x1={30} y1={172} x2={30} y2={178} stroke={accent} strokeWidth={2} />
+        <text x={30} y={188} fill={accent} fontSize={6} fontWeight={600} fontFamily="system-ui" textAnchor="middle">DÉPART</text>
+        <line x1={130} y1={172} x2={130} y2={178} stroke={accent} strokeWidth={2} />
+        <text x={130} y={188} fill={accent} fontSize={6} fontWeight={600} fontFamily="system-ui" textAnchor="middle">MIDI</text>
+        <line x1={235} y1={172} x2={235} y2={178} stroke={accent} strokeWidth={2} />
+        <text x={235} y={188} fill={accent} fontSize={6} fontWeight={600} fontFamily="system-ui" textAnchor="middle">BUT</text>
       </motion.g>
 
-      {/* Impact rings at ground */}
-      <motion.circle cx={120} cy={158} r={4} fill="none" stroke={SKIN} strokeWidth={0.8}
-        animate={{ r: [4, 30], opacity: [0.4, 0] }}
-        transition={{ duration: 0.9, repeat: Infinity, ease: 'easeOut' }} />
-      <motion.circle cx={120} cy={158} r={4} fill="none" stroke={SKIN} strokeWidth={0.6}
-        animate={{ r: [4, 24], opacity: [0.25, 0] }}
-        transition={{ duration: 0.9, repeat: Infinity, ease: 'easeOut', delay: 0.08 }} />
+      {/* Sprint lines */}
+      <line x1={30} y1={175} x2={235} y2={175} stroke={accent} strokeWidth={0.8} strokeDasharray="6 4" opacity={0.2} />
 
-      {/* Upward energy arrow */}
-      <motion.g animate={{ opacity: [0, 0.4, 0], y: [0, -15, -25] }}
-        transition={{ duration: 0.9, repeat: Infinity, ease: 'easeOut', times: [0.05, 0.3, 0.5] }}>
-        <polygon points="120,30 115,40 125,40" fill={SKIN} opacity={0.5} />
+      {/* Sprinting figure */}
+      <motion.g
+        animate={{ x: [-20, -20, 140, 140, -20] }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'linear', times: [0, 0.05, 0.35, 0.55, 0.9] }}
+      >
+        {/* Forward lean */}
+        <motion.g
+          animate={{ rotate: [0, 0, -18, -18, 0] }}
+          transition={{ duration: 3, repeat: Infinity, times: [0, 0.05, 0.35, 0.55, 0.9] }}
+          style={{ originX: 140, originY: 55 }}
+        >
+          <circle cx={140} cy={48} r={9} fill="none" stroke={accent} strokeWidth={2.5} />
+          <line x1={140} y1={57} x2={136} y2={100} stroke={accent} strokeWidth={2.5} strokeLinecap="round" />
+        </motion.g>
+
+        {/* Arms pumping hard */}
+        <motion.line x1={138} y1={70} x2={115} y2={95} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ x2: [115, 162, 115], y2: [95, 75, 95] }}
+          transition={{ duration: 0.5, repeat: Infinity, ease: 'easeInOut' }} />
+        <motion.line x1={138} y1={70} x2={162} y2={75} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ x2: [162, 115, 162], y2: [75, 95, 75] }}
+          transition={{ duration: 0.5, repeat: Infinity, ease: 'easeInOut' }} />
+
+        {/* Legs — full stride */}
+        <motion.line x1={136} y1={100} x2={112} y2={170} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ x2: [112, 162, 112] }} transition={{ duration: 0.5, repeat: Infinity, ease: 'easeInOut' }} />
+        <motion.line x1={136} y1={100} x2={162} y2={170} stroke={accent} strokeWidth={2.5} strokeLinecap="round"
+          animate={{ x2: [162, 112, 162] }} transition={{ duration: 0.5, repeat: Infinity, ease: 'easeInOut' }} />
       </motion.g>
+
+      {/* Speed lines */}
+      <motion.g animate={{ opacity: [0, 0.6, 0] }}
+        transition={{ duration: 3, repeat: Infinity, times: [0.08, 0.25, 0.35] }}>
+        {[{ y: 50 }, { y: 68 }, { y: 86 }].map((p, i) => (
+          <line key={i} x1={85} y1={p.y} x2={60} y2={p.y} stroke={accent} strokeWidth={1.5} strokeLinecap="round" opacity={0.4} />
+        ))}
+      </motion.g>
+
+      {/* "MAX EFFORT" pulsing */}
+      <motion.g animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 0.8, repeat: Infinity }}>
+        <rect x={150} y={35} width={95} height={20} rx={5} fill={accent} fillOpacity={0.2} />
+        <text x={197} y={49} fill={accent} fontSize={8.5} fontWeight={800} fontFamily="system-ui" textAnchor="middle">💪 MAX EFFORT!</text>
+      </motion.g>
+
+      {/* Heart rate indicator */}
+      <motion.g animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }} transition={{ duration: 0.6, repeat: Infinity, ease: 'easeInOut' }}
+        style={{ originX: 20, originY: 55 }}>
+        <text x={20} y={60} fill={accent} fontSize={16}>❤️</text>
+        <text x={32} y={60} fill={accent} fontSize={7} fontWeight={700} fontFamily="system-ui">BPM ↑</text>
+      </motion.g>
+
+      {/* Focus labels */}
+      <FocusLabel text="Sprint ligne de fond → fond" x={15} y={90} color={accent} delay={0} />
     </g>
   )
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// DEFAULT — gentle bounce
+// DEFAULT — gentle bounce with ball
 // ══════════════════════════════════════════════════════════════════════
-function DefaultAnim() {
+function DefaultAnim({ accent, accentDim }: { accent: string; accentDim: string }) {
   return (
     <g>
-      <Shadow cx={120} w={24} />
-      <motion.g animate={{ y: [0, -6, 0] }}
-        transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}>
-        <circle cx={120} cy={52} r={9} fill="none" stroke={SKIN} strokeWidth={2.2} />
-        <line x1={120} y1={61} x2={120} y2={100} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
-        <line x1={120} y1={74} x2={96} y2={90} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
-        <line x1={120} y1={74} x2={144} y2={90} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
-        <line x1={120} y1={100} x2={102} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
-        <line x1={120} y1={100} x2={138} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+      <motion.g animate={{ y: [0, -6, 0] }} transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}>
+        <circle cx={140} cy={62} r={9} fill="none" stroke={accent} strokeWidth={2.5} />
+        <line x1={140} y1={71} x2={140} y2={110} stroke={accent} strokeWidth={2.5} strokeLinecap="round" />
+        <line x1={140} y1={84} x2={115} y2={100} stroke={accent} strokeWidth={2.5} strokeLinecap="round" />
+        <line x1={140} y1={84} x2={165} y2={100} stroke={accent} strokeWidth={2.5} strokeLinecap="round" />
+        <line x1={140} y1={110} x2={120} y2={170} stroke={accent} strokeWidth={2.5} strokeLinecap="round" />
+        <line x1={140} y1={110} x2={160} y2={170} stroke={accent} strokeWidth={2.5} strokeLinecap="round" />
       </motion.g>
-      <Ball cx={148} cy={100} r={7} />
+      <Ball cx={168} cy={108} r={7} />
+      <FocusLabel text="Suivez les instructions" x={60} y={48} color={accent} delay={0} />
     </g>
   )
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// ROUTER + MAIN COMPONENT
+// ANIMATION MAP + MAIN COMPONENT
 // ══════════════════════════════════════════════════════════════════════
-const ANIMS: Record<string, () => React.JSX.Element> = {
+type AnimFn = (props: { accent: string; accentDim: string }) => React.JSX.Element
+
+const ANIMS: Record<string, AnimFn> = {
   pocket_ball: PocketBallAnim,
   shifty: ShiftyAnim,
   ball_handling: BallHandlingAnim,
@@ -638,20 +966,59 @@ const ANIMS: Record<string, () => React.JSX.Element> = {
 }
 
 export function DrillDemoAnimation({ category, className }: Props) {
-  const Anim = ANIMS[category] ?? DefaultAnim
+  const meta = META[category] ?? DEFAULT_META
+  const AnimFn = ANIMS[category] ?? DefaultAnim
   const showFloor = category !== 'footwork'
-  const showHoop = category === 'shooting' || category === 'defense' || category === 'finishing'
 
   return (
-    <div className={cn('relative w-full overflow-hidden rounded-xl bg-gradient-to-b from-gray-900 to-gray-950', className)}>
-      <svg viewBox="0 0 240 170" className="block w-full" style={{ maxHeight: 200 }}>
-        <Badge />
-        {showFloor && <Floor />}
-        {showHoop && category === 'shooting' && <Hoop x={195} rimY={58} />}
-        {showHoop && category === 'defense' && <Hoop x={200} rimY={45} />}
-        {showHoop && category === 'finishing' && <Hoop x={195} rimY={62} />}
-        <Anim />
+    <div className={cn('relative w-full overflow-hidden rounded-2xl', className)}
+      style={{ background: `linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)` }}>
+
+      {/* Header bar with category title */}
+      <div className="px-4 pt-3 pb-1 flex items-center justify-between">
+        <div>
+          <h3 className="text-white font-bold text-sm tracking-tight">{meta.title}</h3>
+          <p className="text-white/50 text-[11px]">{meta.subtitle}</p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: meta.accent }} />
+          <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: meta.accent }}>
+            Démo
+          </span>
+        </div>
+      </div>
+
+      {/* Main SVG animation */}
+      <svg viewBox="0 0 280 200" className="block w-full" style={{ maxHeight: 240 }}>
+        {/* Subtle accent glow */}
+        <defs>
+          <radialGradient id={`glow-${category}`} cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stopColor={meta.accent} stopOpacity={0.08} />
+            <stop offset="100%" stopColor={meta.accent} stopOpacity={0} />
+          </radialGradient>
+        </defs>
+        <rect x={0} y={0} width={280} height={200} fill={`url(#glow-${category})`} />
+
+        {showFloor && <CourtFloor y={175} />}
+        <AnimFn accent={meta.accent} accentDim={meta.accentDim} />
       </svg>
+
+      {/* Focus points footer */}
+      <div className="px-4 py-2.5 flex flex-wrap gap-1.5 border-t border-white/5">
+        {meta.focus.map((f, i) => (
+          <motion.span
+            key={f}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 + i * 0.1, duration: 0.3 }}
+            className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full"
+            style={{ backgroundColor: meta.accentDim, color: meta.accent }}
+          >
+            <span className="w-1 h-1 rounded-full" style={{ backgroundColor: meta.accent }} />
+            {f}
+          </motion.span>
+        ))}
+      </div>
     </div>
   )
 }

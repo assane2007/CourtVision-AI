@@ -1,0 +1,657 @@
+     1→     1→'use client'
+     2→     2→
+     3→     3→import { motion } from 'framer-motion'
+     4→     4→import { cn } from '@/lib/utils'
+     5→     5→
+     6→     6→// ── Types ────────────────────────────────────────────────────────────
+     7→     7→interface Props {
+     8→     8→  category: string
+     9→     9→  className?: string
+    10→    10→}
+    11→    11→
+    12→    12→// ── Palette ──────────────────────────────────────────────────────────
+    13→    13→const SKIN = '#f97316'    // stick figure
+    14→    14→const BALL = '#f97316'    // basketball
+    15→    15→const SEAM = '#9a3412'    // ball seam
+    16→    16→const FLOOR = '#374151'
+    17→    17→const GUIDE = '#f973163d' // faint guide
+    18→    18→
+    19→    19→// ══════════════════════════════════════════════════════════════════════
+    20→    20→// SHARED ELEMENTS
+    21→    21→// ══════════════════════════════════════════════════════════════════════
+    22→    22→
+    23→    23→function Ball({ cx, cy, r = 7 }: { cx: number; cy: number; r?: number }) {
+    24→    24→  return (
+    25→    25→    <g>
+    26→    26→      <circle cx={cx} cy={cy} r={r} fill={BALL} />
+    27→    27→      <line x1={cx} y1={cy - r} x2={cx} y2={cy + r} stroke={SEAM} strokeWidth={0.6} />
+    28→    28→      <line x1={cx - r} y1={cy} x2={cx + r} y2={cy} stroke={SEAM} strokeWidth={0.6} />
+    29→    29→      <path d={`M${cx - r * .6},${cy - r} Q${cx - r * .2},${cy} ${cx - r * .6},${cy + r}`} stroke={SEAM} strokeWidth={0.5} fill="none" />
+    30→    30→      <path d={`M${cx + r * .6},${cy - r} Q${cx + r * .2},${cy} ${cx + r * .6},${cy + r}`} stroke={SEAM} strokeWidth={0.5} fill="none" />
+    31→    31→    </g>
+    32→    32→  )
+    33→    33→}
+    34→    34→
+    35→    35→function Floor({ y = 155 }: { y?: number }) {
+    36→    36→  return (
+    37→    37→    <g>
+    38→    38→      <line x1={10} y1={y} x2={230} y2={y} stroke={FLOOR} strokeWidth={1} />
+    39→    39→      <line x1={10} y1={y + 1} x2={230} y2={y + 1} stroke={FLOOR} strokeWidth={0.3} opacity={0.4} />
+    40→    40→    </g>
+    41→    41→  )
+    42→    42→}
+    43→    43→
+    44→    44→function Badge() {
+    45→    45→  return (
+    46→    46→    <g>
+    47→    47→      <rect x={8} y={6} width={36} height={15} rx={3} fill="white" fillOpacity={0.08} />
+    48→    48→      <text x={26} y={16.5} fill="white" fontSize={7.5} fontWeight={700} fontFamily="system-ui" textAnchor="middle" opacity={0.6}>
+    49→    49→        DÉMO
+    50→    50→      </text>
+    51→    51→    </g>
+    52→    52→  )
+    53→    53→}
+    54→    54→
+    55→    55→function Shadow({ cx, w = 28 }: { cx: number; w?: number }) {
+    56→    56→  return <ellipse cx={cx} cy={158} rx={w} ry={3} fill="black" opacity={0.18} />
+    57→    57→}
+    58→    58→
+    59→    59→function Hoop({ x = 195, rimY = 55 }: { x?: number; rimY?: number }) {
+    60→    60→  return (
+    61→    61→    <g>
+    62→    62→      <line x1={x + 3} y1={rimY - 14} x2={x + 3} y2={155} stroke="#4b5563" strokeWidth={2} />
+    63→    63→      <rect x={x - 3} y={rimY - 18} width={12} height={22} rx={1.5} fill="none" stroke="#6b7280" strokeWidth={1.5} />
+    64→    64→      <line x1={x - 15} y1={rimY + 2} x2={x + 3} y2={rimY + 2} stroke="#ef4444" strokeWidth={2} strokeLinecap="round" />
+    65→    65→      <line x1={x - 12} y1={rimY + 5} x2={x - 7} y2={rimY + 14} stroke="#9ca3af" strokeWidth={0.4} opacity={0.4} />
+    66→    66→      <line x1={x - 5} y1={rimY + 5} x2={x - 1} y2={rimY + 14} stroke="#9ca3af" strokeWidth={0.4} opacity={0.4} />
+    67→    67→    </g>
+    68→    68→  )
+    69→    69→}
+    70→    70→
+    71→    71→// ══════════════════════════════════════════════════════════════════════
+    72→    72→// 1. POCKET BALL — Wide stance, LOW dribble, crossover between legs
+    73→    73→// ══════════════════════════════════════════════════════════════════════
+    74→    74→function PocketBallAnim() {
+    75→    75→  return (
+    76→    76→    <g>
+    77→    77→      <Shadow cx={120} w={36} />
+    78→    78→      {/* Body — low athletic crouch, knees bent */}
+    79→    79→      <motion.g animate={{ x: [0, 0, 0] }}>
+    80→    80→        {/* Head */}
+    81→    81→        <circle cx={120} cy={62} r={9} fill="none" stroke={SKIN} strokeWidth={2.2} />
+    82→    82→        {/* Torso — leaning forward */}
+    83→    83→        <motion.line x1={120} y1={71} x2={118} y2={100} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+    84→    84→
+    85→    85→        {/* Left arm — reaches down to dribble */}
+    86→    86→        <motion.line x1={120} y1={80}
+    87→    87→          x2={96} y2={110} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+    88→    88→          animate={{ x2: [96, 144, 96], y2: [110, 112, 110] }}
+    89→    89→          transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+    90→    90→        />
+    91→    91→
+    92→    92→        {/* Right arm — reaches down to dribble */}
+    93→    93→        <motion.line x1={120} y1={80}
+    94→    94→          x2={144} y2={112} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+    95→    95→          animate={{ x2: [144, 96, 144], y2: [112, 110, 112] }}
+    96→    96→          transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+    97→    97→        />
+    98→    98→
+    99→    99→        {/* Left leg — wide, knee bent */}
+   100→   100→        <motion.line x1={118} y1={100} x2={98} y2={124} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   101→   101→          animate={{ x2: [98, 100, 98] }} transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }} />
+   102→   102→        <motion.line x1={98} y1={124} x2={88} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+   103→   103→
+   104→   104→        {/* Right leg — wide, knee bent */}
+   105→   105→        <motion.line x1={118} y1={100} x2={138} y2={124} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   106→   106→          animate={{ x2: [138, 136, 138] }} transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }} />
+   107→   107→        <motion.line x1={138} y1={124} x2={148} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+   108→   108→      </motion.g>
+   109→   109→
+   110→   110→      {/* Ball — bounces LOW between legs with crossover */}
+   111→   111→      <motion.g
+   112→   112→        animate={{ x: [-18, 18, -18] }}
+   113→   113→        transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut', times: [0, 0.5, 1] }}
+   114→   114→      >
+   115→   115→        <motion.g
+   116→   116→          animate={{ y: [0, -22, 0] }}
+   117→   117→          transition={{ duration: 0.45, repeat: Infinity, ease: [0.33, 0, 0.67, 1] }}
+   118→   118→        >
+   119→   119→          <Ball cx={120} cy={142} />
+   120→   120→        </motion.g>
+   121→   121→      </motion.g>
+   122→   122→
+   123→   123→      {/* Crossover arrow hints */}
+   124→   124→      <motion.g animate={{ opacity: [0, 0.5, 0], x: [0, -8, 0] }}
+   125→   125→        transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut', delay: 0.3 }}>
+   126→   126→        <polygon points="-4,-3 4,0 -4,3" fill={SKIN} opacity={0.6} transform="translate(74,136) rotate(180)" />
+   127→   127→      </motion.g>
+   128→   128→      <motion.g animate={{ opacity: [0, 0.5, 0], x: [0, 8, 0] }}
+   129→   129→        transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut', delay: 1.2 }}>
+   130→   130→        <polygon points="-4,-3 4,0 -4,3" fill={SKIN} opacity={0.6} transform="translate(166,136)" />
+   131→   131→      </motion.g>
+   132→   132→    </g>
+   133→   133→  )
+   134→   134→}
+   135→   135→
+   136→   136→// ══════════════════════════════════════════════════════════════════════
+   137→   137→// 2. SHIFTY — Lateral burst steps, head fake, change of direction
+   138→   138→// ══════════════════════════════════════════════════════════════════════
+   139→   139→function ShiftyAnim() {
+   140→   140→  return (
+   141→   141→    <g>
+   142→   142→      <Shadow cx={120} w={24} />
+   143→   143→      {/* Full body shifts laterally with head fake */}
+   144→   144→      <motion.g
+   145→   145→        animate={{ x: [-35, 8, -35] }}
+   146→   146→        transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', times: [0, 0.45, 1] }}
+   147→   147→      >
+   148→   148→        {/* Head — with head fake lean */}
+   149→   149→        <motion.g
+   150→   150→          animate={{ x: [0, 14, -4, 0], rotate: [0, 6, -8, 0] }}
+   151→   151→          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', times: [0, 0.2, 0.35, 0.5] }}
+   152→   152→          style={{ originX: 120, originY: 55 }}
+   153→   153→        >
+   154→   154→          <circle cx={120} cy={50} r={9} fill="none" stroke={SKIN} strokeWidth={2.2} />
+   155→   155→        </motion.g>
+   156→   156→
+   157→   157→        {/* Torso */}
+   158→   158→        <motion.line x1={120} y1={59} x2={119} y2={98} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   159→   159→          animate={{ rotate: [0, -5, 5, 0] }}
+   160→   160→          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', times: [0, 0.2, 0.45, 1] }}
+   161→   161→          style={{ originX: 119, originY: 59 }}
+   162→   162→        />
+   163→   163→
+   164→   164→        {/* Arms — swing opposite to legs */}
+   165→   165→        <motion.line x1={119} y1={72} x2={90} y2={86} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   166→   166→          animate={{ x2: [90, 100, 90] }}
+   167→   167→          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }} />
+   168→   168→        <motion.line x1={119} y1={72} x2={148} y2={86} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   169→   169→          animate={{ x2: [148, 138, 148] }}
+   170→   170→          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }} />
+   171→   171→
+   172→   172→        {/* Legs — running stride */}
+   173→   173→        <motion.line x1={119} y1={98} x2={100} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   174→   174→          animate={{ x2: [100, 130, 100] }}
+   175→   175→          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }} />
+   176→   176→        <motion.line x1={119} y1={98} x2={138} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   177→   177→          animate={{ x2: [138, 108, 138] }}
+   178→   178→          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }} />
+   179→   179→      </motion.g>
+   180→   180→
+   181→   181→      {/* Speed trail when bursting */}
+   182→   182→      <motion.g animate={{ opacity: [0, 0.3, 0], x: [-20, -40, -20] }}
+   183→   183→        transition={{ duration: 2.4, repeat: Infinity, ease: 'easeOut', times: [0, 0.15, 0.3] }}>
+   184→   184→        <line x1={120} y1={58} x2={120} y2={100} stroke={SKIN} strokeWidth={1.5} strokeLinecap="round" opacity={0.2} />
+   185→   185→        <line x1={120} y1={70} x2={100} y2={84} stroke={SKIN} strokeWidth={1.5} strokeLinecap="round" opacity={0.2} />
+   186→   186→        <line x1={120} y1={70} x2={140} y2={84} stroke={SKIN} strokeWidth={1.5} strokeLinecap="round" opacity={0.2} />
+   187→   187→      </motion.g>
+   188→   188→
+   189→   189→      {/* Floor markers showing lateral path */}
+   190→   190→      <line x1={60} y1={162} x2={180} y2={162} stroke={GUIDE} strokeWidth={1} strokeDasharray="4 3" />
+   191→   191→    </g>
+   192→   192→  )
+   193→   193→}
+   194→   194→
+   195→   195→// ══════════════════════════════════════════════════════════════════════
+   196→   196→// 3. BALL HANDLING — Standing figure-8 dribble between legs
+   197→   197→// ══════════════════════════════════════════════════════════════════════
+   198→   198→function BallHandlingAnim() {
+   199→   199→  return (
+   200→   200→    <g>
+   201→   201→      <Shadow cx={120} w={30} />
+   202→   202→      {/* Front-facing figure, legs apart */}
+   203→   203→      <circle cx={120} cy={50} r={9} fill="none" stroke={SKIN} strokeWidth={2.2} />
+   204→   204→      <line x1={120} y1={59} x2={120} y2={98} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+   205→   205→
+   206→   206→      {/* Left arm — follows ball left */}
+   207→   207→      <motion.line x1={120} y1={70}
+   208→   208→        stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   209→   209→        animate={{ x2: [96, 144, 96], y2: [92, 85, 92] }}
+   210→   210→        transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut', times: [0, 0.5, 1] }}
+   211→   211→      />
+   212→   212→
+   213→   213→      {/* Right arm — follows ball right */}
+   214→   214→      <motion.line x1={120} y1={70}
+   215→   215→        stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   216→   216→        animate={{ x2: [144, 96, 144], y2: [85, 92, 85] }}
+   217→   217→        transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut', times: [0, 0.5, 1] }}
+   218→   218→      />
+   219→   219→
+   220→   220→      {/* Legs — spread for figure-8 path */}
+   221→   221→      <line x1={120} y1={98} x2={100} y2={155} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+   222→   222→      <line x1={120} y1={98} x2={140} y2={155} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+   223→   223→
+   224→   224→      {/* Figure-8 path guide */}
+   225→   225→      <path d="M98,115 Q120,100 142,115 Q120,130 98,115" fill="none" stroke={GUIDE} strokeWidth={0.8} strokeDasharray="3 2" />
+   226→   226→
+   227→   227→      {/* Ball — figure-8 path through legs */}
+   228→   228→      <motion.g
+   229→   229→        animate={{
+   230→   230→          x: [-20, 0, 20, 0, -20],
+   231→   231→          y: [0, -18, 0, 12, 0],
+   232→   232→        }}
+   233→   233→        transition={{
+   234→   234→          duration: 2.2, repeat: Infinity, ease: 'easeInOut',
+   235→   235→          times: [0, 0.25, 0.5, 0.75, 1],
+   236→   236→        }}
+   237→   237→      >
+   238→   238→        <Ball cx={120} cy={115} />
+   239→   239→      </motion.g>
+   240→   240→    </g>
+   241→   241→  )
+   242→   242→}
+   243→   243→
+   244→   244→// ══════════════════════════════════════════════════════════════════════
+   245→   245→// 4. SPEED CHANGE — Sprint, decelerate, sprint again (SIDE VIEW)
+   246→   246→// ══════════════════════════════════════════════════════════════════════
+   247→   247→function SpeedChangeAnim() {
+   248→   248→  return (
+   249→   249→    <g>
+   250→   250→      <Shadow cx={120} w={20} />
+   251→   251→      {/* Running figure — side view */}
+   252→   252→      <motion.g
+   253→   253→        animate={{ x: [-45, -45, 50, 50, -45] }}
+   254→   254→        transition={{ duration: 3.2, repeat: Infinity, ease: 'linear', times: [0, 0.1, 0.4, 0.55, 0.9] }}
+   255→   255→      >
+   256→   256→        {/* Lean forward more during sprint */}
+   257→   257→        <motion.g
+   258→   258→          animate={{ rotate: [0, 0, -12, -12, 0] }}
+   259→   259→          transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut', times: [0, 0.1, 0.4, 0.55, 0.9] }}
+   260→   260→          style={{ originX: 120, originY: 58 }}
+   261→   261→        >
+   262→   262→          <circle cx={120} cy={48} r={9} fill="none" stroke={SKIN} strokeWidth={2.2} />
+   263→   263→          <line x1={120} y1={57} x2={118} y2={96} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+   264→   264→        </motion.g>
+   265→   265→
+   266→   266→        {/* Arms — pump while running */}
+   267→   267→        <motion.line x1={119} y1={68} x2={102} y2={90} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   268→   268→          animate={{ x2: [102, 136, 102], y2: [90, 78, 90] }}
+   269→   269→          transition={{ duration: 0.6, repeat: Infinity, ease: 'easeInOut' }} />
+   270→   270→        <motion.line x1={119} y1={68} x2={136} y2={78} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   271→   271→          animate={{ x2: [136, 102, 136], y2: [78, 90, 78] }}
+   272→   272→          transition={{ duration: 0.6, repeat: Infinity, ease: 'easeInOut' }} />
+   273→   273→
+   274→   274→        {/* Legs — running stride */}
+   275→   275→        <motion.line x1={118} y1={96} x2={98} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   276→   276→          animate={{ x2: [98, 135, 98] }}
+   277→   277→          transition={{ duration: 0.6, repeat: Infinity, ease: 'easeInOut' }} />
+   278→   278→        <motion.line x1={118} y1={96} x2={140} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   279→   279→          animate={{ x2: [140, 100, 140] }}
+   280→   280→          transition={{ duration: 0.6, repeat: Infinity, ease: 'easeInOut' }} />
+   281→   281→      </motion.g>
+   282→   282→
+   283→   283→      {/* Speed lines during sprint phase */}
+   284→   284→      <motion.g animate={{ opacity: [0, 0.5, 0] }}
+   285→   285→        transition={{ duration: 3.2, repeat: Infinity, times: [0.1, 0.25, 0.4] }}>
+   286→   286→        {[{ y: 50 }, { y: 70 }, { y: 90 }].map((p, i) => (
+   287→   287→          <motion.line key={i}
+   288→   288→            x1={75} y1={p.y} x2={55} y2={p.y}
+   289→   289→            stroke={SKIN} strokeWidth={1.2} strokeLinecap="round"
+   290→   290→            animate={{ x1: [75, 95, 75], x2: [55, 75, 55] }}
+   291→   291→            transition={{ duration: 0.3, repeat: Infinity, ease: 'easeOut', delay: i * 0.08 }}
+   292→   292→          />
+   293→   293→        ))}
+   294→   294→      </motion.g>
+   295→   295→
+   296→   296→      {/* Deceleration marks */}
+   297→   297→      <motion.g animate={{ opacity: [0, 0.3, 0] }}
+   298→   298→        transition={{ duration: 3.2, repeat: Infinity, times: [0.4, 0.5, 0.55] }}>
+   299→   299→        {[0, 6, 12].map((dx, i) => (
+   300→   300→          <line key={i} x1={170 + dx} y1={155} x2={170 + dx} y2={160} stroke={SKIN} strokeWidth={0.8} opacity={0.3} />
+   301→   301→        ))}
+   302→   302→      </motion.g>
+   303→   303→    </g>
+   304→   304→  )
+   305→   305→}
+   306→   306→
+   307→   307→// ══════════════════════════════════════════════════════════════════════
+   308→   308→// 5. DEFENSE — LOW wide stance, hands up, lateral slides (FRONT VIEW)
+   309→   309→// ══════════════════════════════════════════════════════════════════════
+   310→   310→function DefenseAnim() {
+   311→   311→  return (
+   312→   312→    <g>
+   313→   313→      <Shadow cx={120} w={40} />
+   314→   314→      <Hoop x={200} rimY={45} />
+   315→   315→
+   316→   316→      {/* Low defensive stance — slides side to side */}
+   317→   317→      <motion.g
+   318→   318→        animate={{ x: [-25, 25, -25] }}
+   319→   319→        transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut', times: [0, 0.5, 1] }}
+   320→   320→      >
+   321→   321→        {/* Head */}
+   322→   322→        <circle cx={120} cy={68} r={9} fill="none" stroke={SKIN} strokeWidth={2.2} />
+   323→   323→        {/* Torso — very upright, low */}
+   324→   324→        <line x1={120} y1={77} x2={120} y2={105} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+   325→   325→
+   326→   326→        {/* Arms — HIGH and WIDE, active hands */}
+   327→   327→        <motion.line x1={120} y1={84} x2={92} y2={64} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   328→   328→          animate={{ y2: [64, 68, 64], x2: [92, 88, 92] }}
+   329→   329→          transition={{ duration: 0.8, repeat: Infinity, ease: 'easeInOut' }} />
+   330→   330→        <motion.line x1={120} y1={84} x2={148} y2={64} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   331→   331→          animate={{ y2: [64, 60, 64], x2: [148, 152, 148] }}
+   332→   332→          transition={{ duration: 0.8, repeat: Infinity, ease: 'easeInOut' }} />
+   333→   333→
+   334→   334→        {/* Hands — small circles for active hands */}
+   335→   335→        <motion.circle cx={92} cy={64} r={3} fill={SKIN} opacity={0.5}
+   336→   336→          animate={{ cy: [64, 68, 64] }}
+   337→   337→          transition={{ duration: 0.8, repeat: Infinity, ease: 'easeInOut' }} />
+   338→   338→        <motion.circle cx={148} cy={64} r={3} fill={SKIN} opacity={0.5}
+   339→   339→          animate={{ cy: [64, 60, 64] }}
+   340→   340→          transition={{ duration: 0.8, repeat: Infinity, ease: 'easeInOut' }} />
+   341→   341→
+   342→   342→        {/* Thighs — very bent, wide */}
+   343→   343→        <line x1={120} y1={105} x2={96} y2={130} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+   344→   344→        <line x1={120} y1={105} x2={144} y2={130} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+   345→   345→        {/* Shins */}
+   346→   346→        <line x1={96} y1={130} x2={86} y2={155} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+   347→   347→        <line x1={144} y1={130} x2={154} y2={155} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+   348→   348→      </motion.g>
+   349→   349→
+   350→   350→      {/* Defensive coverage zone */}
+   351→   351→      <motion.ellipse cx={120} cy={120} rx={42} ry={20} fill="none"
+   352→   352→        stroke={SKIN} strokeWidth={0.6} strokeDasharray="4 3" opacity={0.15}
+   353→   353→        animate={{ rx: [42, 38, 42] }}
+   354→   354→        transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
+   355→   355→      />
+   356→   356→    </g>
+   357→   357→  )
+   358→   358→}
+   359→   359→
+   360→   360→// ══════════════════════════════════════════════════════════════════════
+   361→   361→// 6. SHOOTING — SIDE VIEW: raise ball, extend, follow-through at hoop
+   362→   362→// ══════════════════════════════════════════════════════════════════════
+   363→   363→function ShootingAnim() {
+   364→   364→  return (
+   365→   365→    <g>
+   366→   366→      <Shadow cx={80} w={22} />
+   367→   367→      <Hoop x={195} rimY={58} />
+   368→   368→
+   369→   369→      {/* Shooter — side view, faces right */}
+   370→   370→      <g>
+   371→   371→        {/* Head */}
+   372→   372→        <circle cx={80} cy={52} r={9} fill="none" stroke={SKIN} strokeWidth={2.2} />
+   373→   373→        {/* Torso */}
+   374→   374→        <line x1={80} y1={61} x2={78} y2={100} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+   375→   375→
+   376→   376→        {/* Shooting arm — raise up and extend */}
+   377→   377→        <motion.line x1={80} y1={72}
+   378→   378→          stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   379→   379→          animate={{
+   380→   380→            x2: [68, 78, 92, 88],
+   381→   381→            y2: [82, 68, 52, 48],
+   382→   382→          }}
+   383→   383→          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', times: [0, 0.25, 0.45, 0.6] }}
+   384→   384→        />
+   385→   385→        {/* Forearm — follow through */}
+   386→   386→        <motion.line x1={78} y1={68}
+   387→   387→          stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   388→   388→          animate={{
+   389→   389→            x1: [78, 78, 92, 88],
+   390→   390→            y1: [68, 68, 52, 48],
+   391→   391→            x2: [68, 90, 100, 96],
+   392→   392→            y2: [74, 56, 42, 38],
+   393→   393→          }}
+   394→   394→          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', times: [0, 0.25, 0.45, 0.6] }}
+   395→   395→        />
+   396→   396→        {/* Wrist flick indicator */}
+   397→   397→        <motion.g animate={{ opacity: [0, 0, 0.6, 0.3, 0] }}
+   398→   398→          transition={{ duration: 2.4, repeat: Infinity, times: [0, 0.4, 0.5, 0.6, 0.8] }}>
+   399→   399→          <line x1={96} y1={38} x2={100} y2={30} stroke={SKIN} strokeWidth={1} strokeLinecap="round" opacity={0.5} />
+   400→   400→        </motion.g>
+   401→   401→
+   402→   402→        {/* Guide hand */}
+   403→   403→        <motion.line x1={80} y1={72}
+   404→   404→          x2={68} y2={80} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   405→   405→          animate={{ x2: [68, 72, 68], y2: [80, 70, 80] }}
+   406→   406→          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', times: [0, 0.45, 0.6] }}
+   407→   407→        />
+   408→   408→
+   409→   409→        {/* Legs — slight knee bend then extend */}
+   410→   410→        <motion.line x1={78} y1={100} x2={66} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   411→   411→          animate={{ y2: [154, 150, 154] }}
+   412→   412→          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', times: [0, 0.45, 0.6] }} />
+   413→   413→        <motion.line x1={78} y1={100} x2={90} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   414→   414→          animate={{ y2: [154, 150, 154] }}
+   415→   415→          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', times: [0, 0.45, 0.6] }} />
+   416→   416→      </g>
+   417→   417→
+   418→   418→      {/* Ball — arc from hand to hoop */}
+   419→   419→      <motion.g
+   420→   420→        animate={{
+   421→   421→          cx: [68, 78, 120, 170, 182],
+   422→   422→          cy: [74, 56, 30, 38, 58],
+   423→   423→          opacity: [1, 1, 1, 1, 0],
+   424→   424→          r: [7, 7, 7, 7, 5],
+   425→   425→        }}
+   426→   426→        transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', times: [0.25, 0.35, 0.5, 0.6, 0.7] }}
+   427→   427→      >
+   428→   428→        <Ball cx={0} cy={0} r={0} />
+   429→   429→      </motion.g>
+   430→   430→
+   431→   431→      {/* Trajectory arc guide */}
+   432→   432→      <path d="M78,56 Q130,15 182,58" fill="none" stroke={GUIDE} strokeWidth={0.7} strokeDasharray="3 3" />
+   433→   433→    </g>
+   434→   434→  )
+   435→   435→}
+   436→   436→
+   437→   437→// ══════════════════════════════════════════════════════════════════════
+   438→   438→// 7. FOOTWORK — TOP-DOWN VIEW: ladder drill, quick feet in/out
+   439→   439→// ══════════════════════════════════════════════════════════════════════
+   440→   440→function FootworkAnim() {
+   441→   441→  // Ladder rungs (top-down view)
+   442→   442→  const rungs = [70, 95, 120, 145, 170]
+   443→   443→  return (
+   444→   444→    <g>
+   445→   445→      {/* Ladder outline */}
+   446→   446→      <rect x={60} y={55} width={120} height={130} rx={2} fill="none" stroke="#4b5563" strokeWidth={1.2} />
+   447→   447→      {rungs.map((y) => (
+   448→   448→        <line key={y} x1={60} y1={y} x2={180} y2={y} stroke="#4b5563" strokeWidth={0.8} />
+   449→   449→      ))}
+   450→   450→
+   451→   451→      {/* Left foot — steps in/out pattern */}
+   452→   452→      <motion.ellipse rx={8} ry={12} fill={SKIN} opacity={0.35}
+   453→   453→        animate={{
+   454→   454→          cx: [50, 85, 50, 105, 50, 125, 50, 145, 50, 125, 50, 105, 50, 85, 50],
+   455→   455→          cy: [70, 82, 95, 107, 120, 132, 145, 155, 145, 132, 120, 107, 95, 82, 70],
+   456→   456→        }}
+   457→   457→        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut',
+   458→   458→          times: [0, .07, .14, .21, .28, .35, .42, .5, .57, .64, .71, .78, .85, .92, 1] }}
+   459→   459→      />
+   460→   460→
+   461→   461→      {/* Right foot — mirror pattern */}
+   462→   462→      <motion.ellipse rx={8} ry={12} fill={SKIN} opacity={0.6}
+   463→   463→        animate={{
+   464→   464→          cx: [190, 155, 190, 135, 190, 115, 190, 95, 190, 115, 190, 135, 190, 155, 190],
+   465→   465→          cy: [82, 95, 107, 120, 132, 145, 155, 145, 132, 120, 107, 95, 82, 70, 82],
+   466→   466→        }}
+   467→   467→        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut',
+   468→   468→          times: [0, .07, .14, .21, .28, .35, .42, .5, .57, .64, .71, .78, .85, .92, 1] }}
+   469→   469→      />
+   470→   470→
+   471→   471→      {/* Direction arrow */}
+   472→   472→      <polygon points="120,45 115,38 125,38" fill={SKIN} opacity={0.4} />
+   473→   473→    </g>
+   474→   474→  )
+   475→   475→}
+   476→   476→
+   477→   477→// ══════════════════════════════════════════════════════════════════════
+   478→   478→// 8. FINISHING — SIDE VIEW: drive, two steps, jump, layup at rim
+   479→   479→// ══════════════════════════════════════════════════════════════════════
+   480→   480→function FinishingAnim() {
+   481→   481→  return (
+   482→   482→    <g>
+   483→   483→      <Shadow cx={120} w={18} />
+   484→   484→      <Hoop x={195} rimY={62} />
+   485→   485→
+   486→   486→      {/* Runner — drives from left, 2 steps, jump, layup */}
+   487→   487→      <motion.g
+   488→   488→        animate={{ x: [-50, -20, 30, 60, 30, -50] }}
+   489→   489→        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut',
+   490→   490→          times: [0, 0.2, 0.35, 0.45, 0.6, 1] }}
+   491→   491→      >
+   492→   492→        <motion.g
+   493→   493→          animate={{ y: [0, 0, 0, -30, 0, 0] }}
+   494→   494→          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut',
+   495→   495→            times: [0, 0.2, 0.35, 0.45, 0.6, 1] }}
+   496→   496→        >
+   497→   497→          {/* Head */}
+   498→   498→          <circle cx={120} cy={48} r={9} fill="none" stroke={SKIN} strokeWidth={2.2} />
+   499→   499→          {/* Torso — leans forward during drive */}
+   500→   500→          <motion.line x1={120} y1={57} x2={118} y2={96} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   501→   501→            animate={{ rotate: [0, -4, -8, -5, 0, 0] }}
+   502→   502→            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', times: [0, 0.2, 0.35, 0.45, 0.6, 1] }}
+   503→   503→            style={{ originX: 118, originY: 57 }}
+   504→   504→          />
+   505→   505→
+   506→   506→          {/* Ball hand — brings ball up for layup */}
+   507→   507→          <motion.line x1={118} y1={68}
+   508→   508→            stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   509→   509→            animate={{
+   510→   510→              x2: [100, 108, 130, 148, 130, 100],
+   511→   511→              y2: [80, 76, 56, 46, 60, 80],
+   512→   512→            }}
+   513→   513→            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut',
+   514→   514→              times: [0, 0.2, 0.35, 0.48, 0.6, 1] }}
+   515→   515→          />
+   516→   516→          {/* Off hand */}
+   517→   517→          <line x1={118} y1={68} x2={136} y2={80} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+   518→   518→
+   519→   519→          {/* Legs — running then jump */}
+   520→   520→          <motion.line x1={118} y1={96} x2={98} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   521→   521→            animate={{ y2: [154, 154, 154, 170, 154, 154], x2: [98, 110, 130, 140, 130, 98] }}
+   522→   522→            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', times: [0, 0.2, 0.35, 0.48, 0.6, 1] }}
+   523→   523→          />
+   524→   524→          <motion.line x1={118} y1={96} x2={140} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   525→   525→            animate={{ y2: [154, 154, 154, 170, 154, 154], x2: [140, 128, 108, 100, 108, 140] }}
+   526→   526→            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', times: [0, 0.2, 0.35, 0.48, 0.6, 1] }}
+   527→   527→          />
+   528→   528→        </motion.g>
+   529→   529→      </motion.g>
+   530→   530→
+   531→   531→      {/* Ball — separate from hand at release, arcs to hoop */}
+   532→   532→      <motion.g
+   533→   533→        animate={{
+   534→   534→          cx: [70, 88, 150, 178],
+   535→   535→          cy: [80, 76, 42, 60],
+   536→   536→          opacity: [1, 1, 1, 0],
+   537→   537→        }}
+   538→   538→        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', times: [0.4, 0.48, 0.58, 0.68] }}
+   539→   539→      >
+   540→   540→        <Ball cx={0} cy={0} />
+   541→   541→      </motion.g>
+   542→   542→
+   543→   543→      {/* Drive path */}
+   544→   544→      <line x1={50} y1={162} x2={185} y2={162} stroke={GUIDE} strokeWidth={0.8} strokeDasharray="5 4" />
+   545→   545→    </g>
+   546→   546→  )
+   547→   547→}
+   548→   548→
+   549→   549→// ══════════════════════════════════════════════════════════════════════
+   550→   550→// 9. CONDITIONING — JUMP squats, continuous up/down
+   551→   551→// ══════════════════════════════════════════════════════════════════════
+   552→   552→function ConditioningAnim() {
+   553→   553→  return (
+   554→   554→    <g>
+   555→   555→      <motion.g animate={{ y: [0, -28, 0] }}
+   556→   556→        transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }}>
+   557→   557→        <Shadow cx={120} w={28} />
+   558→   558→
+   559→   559→        {/* Head */}
+   560→   560→        <circle cx={120} cy={50} r={9} fill="none" stroke={SKIN} strokeWidth={2.2} />
+   561→   561→        {/* Torso */}
+   562→   562→        <motion.line x1={120} y1={59} x2={120} y2={96} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   563→   563→          animate={{ y2: [96, 94, 96] }}
+   564→   564→          transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }} />
+   565→   565→
+   566→   566→        {/* Arms — pump up during jump */}
+   567→   567→        <motion.line x1={120} y1={70}
+   568→   568→          x2={96} y2={88} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   569→   569→          animate={{ x2: [96, 90, 96], y2: [88, 58, 88] }}
+   570→   570→          transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }} />
+   571→   571→        <motion.line x1={120} y1={70}
+   572→   572→          x2={144} y2={88} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   573→   573→          animate={{ x2: [144, 150, 144], y2: [88, 58, 88] }}
+   574→   574→          transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }} />
+   575→   575→
+   576→   576→        {/* Legs — squat then extend */}
+   577→   577→        <motion.line x1={120} y1={96}
+   578→   578→          x2={100} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   579→   579→          animate={{ x2: [100, 108, 100], y2: [154, 154, 154] }}
+   580→   580→          transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }} />
+   581→   581→        <motion.line x1={120} y1={96}
+   582→   582→          x2={140} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round"
+   583→   583→          animate={{ x2: [140, 132, 140], y2: [154, 154, 154] }}
+   584→   584→          transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }} />
+   585→   585→      </motion.g>
+   586→   586→
+   587→   587→      {/* Impact rings at ground */}
+   588→   588→      <motion.circle cx={120} cy={158} r={4} fill="none" stroke={SKIN} strokeWidth={0.8}
+   589→   589→        animate={{ r: [4, 30], opacity: [0.4, 0] }}
+   590→   590→        transition={{ duration: 0.9, repeat: Infinity, ease: 'easeOut' }} />
+   591→   591→      <motion.circle cx={120} cy={158} r={4} fill="none" stroke={SKIN} strokeWidth={0.6}
+   592→   592→        animate={{ r: [4, 24], opacity: [0.25, 0] }}
+   593→   593→        transition={{ duration: 0.9, repeat: Infinity, ease: 'easeOut', delay: 0.08 }} />
+   594→   594→
+   595→   595→      {/* Upward energy arrow */}
+   596→   596→      <motion.g animate={{ opacity: [0, 0.4, 0], y: [0, -15, -25] }}
+   597→   597→        transition={{ duration: 0.9, repeat: Infinity, ease: 'easeOut', times: [0.05, 0.3, 0.5] }}>
+   598→   598→        <polygon points="120,30 115,40 125,40" fill={SKIN} opacity={0.5} />
+   599→   599→      </motion.g>
+   600→   600→    </g>
+   601→   601→  )
+   602→   602→}
+   603→   603→
+   604→   604→// ══════════════════════════════════════════════════════════════════════
+   605→   605→// DEFAULT — gentle bounce
+   606→   606→// ══════════════════════════════════════════════════════════════════════
+   607→   607→function DefaultAnim() {
+   608→   608→  return (
+   609→   609→    <g>
+   610→   610→      <Shadow cx={120} w={24} />
+   611→   611→      <motion.g animate={{ y: [0, -6, 0] }}
+   612→   612→        transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}>
+   613→   613→        <circle cx={120} cy={52} r={9} fill="none" stroke={SKIN} strokeWidth={2.2} />
+   614→   614→        <line x1={120} y1={61} x2={120} y2={100} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+   615→   615→        <line x1={120} y1={74} x2={96} y2={90} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+   616→   616→        <line x1={120} y1={74} x2={144} y2={90} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+   617→   617→        <line x1={120} y1={100} x2={102} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+   618→   618→        <line x1={120} y1={100} x2={138} y2={154} stroke={SKIN} strokeWidth={2.2} strokeLinecap="round" />
+   619→   619→      </motion.g>
+   620→   620→      <Ball cx={148} cy={100} r={7} />
+   621→   621→    </g>
+   622→   622→  )
+   623→   623→}
+   624→   624→
+   625→   625→// ══════════════════════════════════════════════════════════════════════
+   626→   626→// ROUTER + MAIN COMPONENT
+   627→   627→// ══════════════════════════════════════════════════════════════════════
+   628→   628→const ANIMS: Record<string, () => React.JSX.Element> = {
+   629→   629→  pocket_ball: PocketBallAnim,
+   630→   630→  shifty: ShiftyAnim,
+   631→   631→  ball_handling: BallHandlingAnim,
+   632→   632→  speed_change: SpeedChangeAnim,
+   633→   633→  defense: DefenseAnim,
+   634→   634→  shooting: ShootingAnim,
+   635→   635→  footwork: FootworkAnim,
+   636→   636→  finishing: FinishingAnim,
+   637→   637→  conditioning: ConditioningAnim,
+   638→   638→}
+   639→   639→
+   640→   640→export function DrillDemoAnimation({ category, className }: Props) {
+   641→   641→  const Anim = ANIMS[category] ?? DefaultAnim
+   642→   642→  const showFloor = category !== 'footwork'
+   643→   643→  const showHoop = category === 'shooting' || category === 'defense' || category === 'finishing'
+   644→   644→
+   645→   645→  return (
+   646→   646→    <div className={cn('relative w-full overflow-hidden rounded-xl bg-gradient-to-b from-gray-900 to-gray-950', className)}>
+   647→   647→      <svg viewBox="0 0 240 170" className="block w-full" style={{ maxHeight: 200 }}>
+   648→   648→        <Badge />
+   649→   649→        {showFloor && <Floor />}
+   650→   650→        {showHoop && category === 'shooting' && <Hoop x={195} rimY={58} />}
+   651→   651→        {showHoop && category === 'defense' && <Hoop x={200} rimY={45} />}
+   652→   652→        {showHoop && category === 'finishing' && <Hoop x={195} rimY={62} />}
+   653→   653→        <Anim />
+   654→   654→      </svg>
+   655→   655→    </div>
+   656→   656→  )
+   657→   657→}
