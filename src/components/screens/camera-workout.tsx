@@ -28,6 +28,41 @@ import {
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
+// Load MediaPipe via script tag (Turbopack doesn't support dynamic URL imports)
+async function loadMediaPipe() {
+  const win = window as unknown as Record<string, unknown>
+  if (win.__mediapipe_vision__) return win.__mediapipe_vision__ as typeof import('@mediapipe/tasks-vision')
+
+  return new Promise<typeof import('@mediapipe/tasks-vision')>((resolve, reject) => {
+    const script = document.createElement('script')
+    script.type = 'module'
+    script.textContent = `
+      import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/+esm').then(mod => {
+        window.__mediapipe_vision__ = mod;
+        window.__mediapipe_vision_ready__ = true;
+        window.dispatchEvent(new Event('mediapipe-ready'));
+      }).catch(err => {
+        window.__mediapipe_vision_err__ = err;
+        window.dispatchEvent(new Event('mediapipe-error'));
+      });
+    `
+    document.head.appendChild(script)
+
+    function onReady() {
+      window.removeEventListener('mediapipe-ready', onReady)
+      window.removeEventListener('mediapipe-error', onError)
+      resolve(win.__mediapipe_vision__ as typeof import('@mediapipe/tasks-vision'))
+    }
+    function onError() {
+      window.removeEventListener('mediapipe-ready', onReady)
+      window.removeEventListener('mediapipe-error', onError)
+      reject(win.__mediapipe_vision_err__ || new Error('Failed to load MediaPipe'))
+    }
+    window.addEventListener('mediapipe-ready', onReady)
+    window.addEventListener('mediapipe-error', onError)
+  })
+}
+
 interface Landmark {
   x: number
   y: number
@@ -629,9 +664,7 @@ export default function CameraWorkoutScreen() {
 
     async function initMediaPipe() {
       try {
-        const vision = await import(
-          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/+esm'
-        )
+        const vision = await loadMediaPipe()
         if (cancelled) return
 
         const { PoseLandmarker, FilesetResolver } = vision
