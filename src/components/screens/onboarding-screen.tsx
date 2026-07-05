@@ -328,7 +328,7 @@ export default function OnboardingScreen() {
             <motion.div
               className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-400"
               animate={{ width: `${((step + 1) / 3) * 100}%` }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
+              transition={{ duration: 0.4, ease: 'easeOut' as const }}
             />
           </div>
           <div className="flex items-center justify-between">

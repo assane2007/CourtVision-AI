@@ -515,7 +515,7 @@ const overlayVariants = {
   visible: {
     opacity: 1,
     scale: 1,
-    transition: { duration: 0.3, ease: 'easeOut' },
+    transition: { duration: 0.3, ease: 'easeOut' as const },
   },
   exit: {
     opacity: 0,
@@ -529,7 +529,7 @@ const countPulse = {
   animate: {
     scale: [0.5, 1.2, 1],
     opacity: [0, 1, 1],
-    transition: { duration: 0.6, ease: 'easeOut' },
+    transition: { duration: 0.6, ease: 'easeOut' as const },
   },
   exit: { scale: 1.5, opacity: 0, transition: { duration: 0.3 } },
 }
@@ -1467,7 +1467,7 @@ export default function CameraWorkoutScreen() {
                 className="h-full bg-gradient-to-r from-orange-500 to-amber-400 rounded-full"
                 initial={{ width: 0 }}
                 animate={{ width: `${progressPercent}%` }}
-                transition={{ duration: 0.5, ease: 'easeOut' }}
+                transition={{ duration: 0.5, ease: 'easeOut' as const }}
               />
             </div>
           </div>

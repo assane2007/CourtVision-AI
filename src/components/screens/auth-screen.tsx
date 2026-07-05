@@ -141,7 +141,7 @@ function ConfettiBurst({ onDone }: { onDone: () => void }) {
           key={p.id}
           initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
           animate={{ x: p.x, y: p.y, opacity: 0, scale: 0.3 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
+          transition={{ duration: 0.6, ease: 'easeOut' as const }}
           onAnimationComplete={p.id === 0 ? onDone : undefined}
           className="absolute rounded-full"
           style={{
@@ -226,7 +226,7 @@ export default function AuthScreen() {
 
         if (!res.ok) {
           const body = await res.json().catch(() => ({}))
-          throw new Error(body.message ?? 'Erreur lors de la création du compte.')
+          throw new Error(body.error ?? 'Erreur lors de la création du compte.')
         }
 
         // Auto-login after successful signup
@@ -332,7 +332,7 @@ export default function AuthScreen() {
           transition={{
             duration: ball.duration,
             repeat: Infinity,
-            ease: 'easeInOut',
+            ease: 'easeInOut' as const,
           }}
           aria-hidden
         >

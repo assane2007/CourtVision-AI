@@ -98,7 +98,7 @@ export function AchievementsScreen() {
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
-              transition={{ duration: 1, ease: 'easeOut', delay: 0.3 }}
+              transition={{ duration: 1, ease: 'easeOut' as const, delay: 0.3 }}
               className="h-full bg-gradient-to-r from-orange-500 to-amber-400 rounded-full"
             />
           </div>

@@ -45,7 +45,7 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 18 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' as const } },
 }
 
 // ── Label maps ──────────────────────────────────────────────────────
@@ -267,7 +267,7 @@ export function ProfileScreen() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                transition={{ duration: 0.3, ease: 'easeInOut' as const }}
                 className="overflow-hidden"
               >
                 <Card className="border-0 shadow-md">

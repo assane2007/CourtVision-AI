@@ -4,6 +4,8 @@ import bcrypt from 'bcryptjs'
 import { db } from './db'
 
 export const authOptions: NextAuthOptions = {
+  // Trust the host from request headers (essential behind reverse proxy/gateway)
+  trustHost: true,
   providers: [
     CredentialsProvider({
       name: 'credentials',

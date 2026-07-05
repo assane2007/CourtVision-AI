@@ -53,7 +53,7 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 18 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' as const } },
 }
 
 // ── Custom tooltip for bar chart ────────────────────────────────────
@@ -292,7 +292,7 @@ export function StatsScreen() {
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${progress}%` }}
-                            transition={{ delay: 0.4 + idx * 0.05, duration: 0.6, ease: 'easeOut' }}
+                            transition={{ delay: 0.4 + idx * 0.05, duration: 0.6, ease: 'easeOut' as const }}
                             className={`absolute inset-y-0 left-0 rounded-full bg-gradient-to-r ${meta?.color ?? 'from-orange-500 to-amber-500'}`}
                           />
                         </div>
@@ -400,7 +400,7 @@ export function StatsScreen() {
                 </svg>
                 <motion.div
                   animate={{ y: [0, -6, 0] }}
-                  transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' as const }}
                   className="absolute -top-2 left-1/2 -translate-x-1/2 text-4xl"
                 >
                   🏀
