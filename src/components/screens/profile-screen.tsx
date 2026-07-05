@@ -5,21 +5,17 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSession, signOut } from 'next-auth/react'
 import {
-  Home,
-  Dumbbell,
-  BarChart3,
-  User,
   Pencil,
   X,
   LogOut,
   ChevronRight,
-  Shield,
   Calendar,
   Activity,
   Flame,
   TrendingUp,
   Sparkles,
   Trophy,
+  User,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -35,6 +31,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useAppStore } from '@/stores/app'
+import { BottomNav } from '@/components/shared/bottom-nav'
 import { toast } from 'sonner'
 
 // ── Animation variants ──────────────────────────────────────────────
@@ -150,7 +147,7 @@ export function ProfileScreen() {
           <Skeleton className="h-24 rounded-xl" />
           <Skeleton className="h-20 rounded-xl" />
         </div>
-        <BottomNavBar currentScreen={currentScreen} navigate={navigate} />
+        <BottomNav />
       </div>
     )
   }
@@ -475,42 +472,7 @@ export function ProfileScreen() {
         </div>
       </motion.div>
 
-      <BottomNavBar currentScreen={currentScreen} navigate={navigate} />
+      <BottomNav />
     </div>
-  )
-}
-
-// ── Reusable Bottom Nav Bar ─────────────────────────────────────────
-function BottomNavBar({
-  currentScreen,
-  navigate,
-}: {
-  currentScreen: string
-  navigate: (screen: 'home' | 'train-hub' | 'stats' | 'profile') => void
-}) {
-  return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50 pb-safe">
-      <div className="max-w-lg mx-auto flex items-center justify-around h-16">
-        {[
-          { icon: Home, label: 'Accueil', screen: 'home' as const },
-          { icon: Dumbbell, label: 'Training', screen: 'train-hub' as const },
-          { icon: BarChart3, label: 'Stats', screen: 'stats' as const },
-          { icon: User, label: 'Profil', screen: 'profile' as const },
-        ].map((tab) => (
-          <button
-            key={tab.screen}
-            onClick={() => navigate(tab.screen)}
-            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors ${
-              currentScreen === tab.screen
-                ? 'text-orange-500'
-                : 'text-muted-foreground'
-            }`}
-          >
-            <tab.icon className="h-5 w-5" />
-            <span className="text-xs font-medium">{tab.label}</span>
-          </button>
-        ))}
-      </div>
-    </nav>
   )
 }

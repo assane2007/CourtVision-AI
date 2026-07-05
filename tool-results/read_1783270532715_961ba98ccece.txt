@@ -1,0 +1,795 @@
+   600→    },
+   601→    onError: () => {
+   602→      toast.error('Erreur de sauvegarde', {
+   603→        description: 'Impossible de sauvegarder la session',
+   604→      })
+   605→    },
+   606→  })
+   607→
+   608→  // ── Load MediaPipe ────────────────────────────────────────────────────
+   609→  useEffect(() => {
+   610→    let cancelled = false
+   611→
+   612→    async function initMediaPipe() {
+   613→      try {
+   614→        const vision = await import(
+   615→          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/+esm'
+   616→        )
+   617→        if (cancelled) return
+   618→
+   619→        const { PoseLandmarker, FilesetResolver } = vision
+   620→
+   621→        const filesetResolver = await FilesetResolver.forVisionTasks(
+   622→          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm',
+   623→        )
+   624→        if (cancelled) return
+   625→
+   626→        poseLandmarkerRef.current = await PoseLandmarker.createFromOptions(
+   627→          filesetResolver,
+   628→          {
+   629→            baseOptions: {
+   630→              modelAssetPath:
+   631→                'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
+   632→              delegate: 'GPU',
+   633→            },
+   634→            runningMode: 'VIDEO',
+   635→            numPoses: 1,
+   636→          },
+   637→        )
+   638→
+   639→        if (!cancelled) {
+   640→          setIsModelLoaded(true)
+   641→        }
+   642→      } catch {
+   643→        if (!cancelled) {
+   644→          console.warn('MediaPipe failed to load, falling back to demo mode')
+   645→          setIsDemoMode(true)
+   646→          setIsModelLoaded(true)
+   647→        }
+   648→      }
+   649→    }
+   650→
+   651→    initMediaPipe()
+   652→
+   653→    return () => {
+   654→      cancelled = true
+   655→    }
+   656→  }, [])
+   657→
+   658→  // ── Camera setup ──────────────────────────────────────────────────────
+   659→  const setupCamera = useCallback(async () => {
+   660→    try {
+   661→      const stream = await navigator.mediaDevices.getUserMedia({
+   662→        video: {
+   663→          facingMode: 'user',
+   664→          width: { ideal: 640 },
+   665→          height: { ideal: 480 },
+   666→        },
+   667→      })
+   668→      streamRef.current = stream
+   669→
+   670→      if (videoRef.current) {
+   671→        videoRef.current.srcObject = stream
+   672→        await videoRef.current.play()
+   673→      }
+   674→      setPhase('countdown')
+   675→      setCountdown(COUNTDOWN_SECONDS)
+   676→    } catch (err) {
+   677→      const msg =
+   678→        err instanceof DOMException && err.name === 'NotAllowedError'
+   679→          ? 'Caméra non autorisée. Veuillez autoriser l\'accès à la caméra dans les paramètres de votre navigateur.'
+   680→          : 'Impossible d\'accéder à la caméra. Vérifiez que votre appareil dispose d\'une caméra.'
+   681→      setCameraError(msg)
+   682→      setPhase('error')
+   683→    }
+   684→  }, [])
+   685→
+   686→  // ── Start camera when model is loaded ─────────────────────────────────
+   687→  useEffect(() => {
+   688→    if (isModelLoaded && !isDrillLoading) {
+   689→      setupCamera()
+   690→    }
+   691→  }, [isModelLoaded, isDrillLoading, setupCamera])
+   692→
+   693→  // ── Countdown logic ───────────────────────────────────────────────────
+   694→  useEffect(() => {
+   695→    if (phase !== 'countdown') return
+   696→
+   697→    countdownRef.current = setInterval(() => {
+   698→      setCountdown((prev) => {
+   699→        if (prev <= 1) {
+   700→          if (countdownRef.current) clearInterval(countdownRef.current)
+   701→          setPhase('active')
+   702→          setTimeRemaining(totalDuration)
+   703→          startTimeRef.current = Date.now()
+   704→          pausedTimeRef.current = 0
+   705→          return 0
+   706→        }
+   707→        return prev - 1
+   708→      })
+   709→    }, 1000)
+   710→
+   711→    return () => {
+   712→      if (countdownRef.current) clearInterval(countdownRef.current)
+   713→    }
+   714→  }, [phase, totalDuration])
+   715→
+   716→  // ── Timer logic (active phase) ────────────────────────────────────────
+   717→  useEffect(() => {
+   718→    if (phase !== 'active') return
+   719→
+   720→    timerRef.current = setInterval(() => {
+   721→      setTimeRemaining((prev) => {
+   722→        if (prev <= 1) {
+   723→          if (timerRef.current) clearInterval(timerRef.current)
+   724→          handleWorkoutEnd()
+   725→          return 0
+   726→        }
+   727→        return prev - 1
+   728→      })
+   729→    }, 1000)
+   730→
+   731→    return () => {
+   732→      if (timerRef.current) clearInterval(timerRef.current)
+   733→    }
+   734→  }, [phase])
+   735→
+   736→  // ── Demo mode rep simulation ──────────────────────────────────────────
+   737→  useEffect(() => {
+   738→    if (!isDemoMode || phase !== 'active') {
+   739→      if (demoRepTimerRef.current) {
+   740→        clearInterval(demoRepTimerRef.current)
+   741→        demoRepTimerRef.current = null
+   742→      }
+   743→      return
+   744→    }
+   745→
+   746→    const category = drill?.category ?? 'ball_handling'
+   747→    // Different intervals per category for realistic feel
+   748→    const intervalMap: Record<string, number> = {
+   749→      pocket_ball: 800,
+   750→      ball_handling: 900,
+   751→      shifty: 1200,
+   752→      speed_change: 1000,
+   753→      defense: 1500,
+   754→      shooting: 2500,
+   755→      footwork: 700,
+   756→      finishing: 2000,
+   757→      conditioning: 1500,
+   758→    }
+   759→    const interval = intervalMap[category] ?? 1000
+   760→
+   761→    demoRepTimerRef.current = setInterval(() => {
+   762→      const demoScore = 55 + Math.floor(Math.random() * 40)
+   763→      setReps((prev) => prev + 1)
+   764→      setCurrentScore(demoScore)
+   765→      scoresRef.current.push({
+   766→        posture: demoScore + Math.floor(Math.random() * 10 - 5),
+   767→        stanceWidth: demoScore + Math.floor(Math.random() * 15 - 7),
+   768→        armPosition: demoScore + Math.floor(Math.random() * 10 - 5),
+   769→        movementQuality: demoScore + Math.floor(Math.random() * 20 - 10),
+   770→      })
+   771→
+   772→      const feedbackOptions = [
+   773→        FEEDBACK_MESSAGES.goodPosture,
+   774→        FEEDBACK_MESSAGES.goodSpeed,
+   775→        FEEDBACK_MESSAGES.greatForm,
+   776→        FEEDBACK_MESSAGES.keepGoing,
+   777→      ]
+   778→      setFeedback(feedbackOptions[Math.floor(Math.random() * feedbackOptions.length)])
+   779→    }, interval)
+   780→
+   781→    return () => {
+   782→      if (demoRepTimerRef.current) clearInterval(demoRepTimerRef.current)
+   783→    }
+   784→  }, [isDemoMode, phase, drill?.category])
+   785→
+   786→  // ── Detection loop (non-demo mode) ────────────────────────────────────
+   787→  useEffect(() => {
+   788→    if (phase !== 'active' || isDemoMode) return
+   789→    if (!videoRef.current || !canvasRef.current || !poseLandmarkerRef.current) return
+   790→
+   791→    const video = videoRef.current
+   792→    const canvas = canvasRef.current
+   793→    const ctx = canvas.getContext('2d')
+   794→    if (!ctx) return
+   795→
+   796→    const category = drill?.category ?? 'ball_handling'
+   797→    let lastFeedbackUpdate = 0
+   798→
+   799→    function detect() {
+   800→      if (phase !== 'active') return
+   801→
+   802→      const poseLandmarker = poseLandmarkerRef.current as {
+   803→        detect: (input: HTMLVideoElement, timestamp: number) => {
+   804→          landmarks: Landmark[][]
+   805→        }
+   806→      }
+   807→
+   808→      if (video.readyState >= 2) {
+   809→        const timestamp = performance.now()
+   810→        let results: { landmarks: Landmark[][] } = { landmarks: [] }
+   811→
+   812→        try {
+   813→          results = poseLandmarker.detect(video, timestamp)
+   814→        } catch {
+   815→          // Silently retry on detection errors
+   816→        }
+   817→
+   818→        const detectedLandmarks = results.landmarks?.[0]
+   819→
+   820→        if (detectedLandmarks && detectedLandmarks.length >= 33) {
+   821→          // Draw skeleton
+   822→          drawSkeleton(ctx, detectedLandmarks, canvas.width, canvas.height)
+   823→
+   824→          // Rep detection
+   825→          const { rep, updatedTracker } = detectRep(
+   826→            detectedLandmarks,
+   827→            category,
+   828→            repTrackerRef.current,
+   829→            Date.now(),
+   830→          )
+   831→          repTrackerRef.current = updatedTracker
+   832→
+   833→          if (rep) {
+   834→            setReps((prev) => prev + 1)
+   835→          }
+   836→
+   837→          // Form scoring (every 3 frames for perf)
+   838→          if (updatedTracker.sampleCount % 3 === 0) {
+   839→            const { score, feedback: fb } = analyzeForm(
+   840→              detectedLandmarks,
+   841→              category,
+   842→              updatedTracker,
+   843→            )
+   844→            scoresRef.current.push(score)
+   845→            if (scoresRef.current.length > 30) {
+   846→              scoresRef.current = scoresRef.current.slice(-30)
+   847→            }
+   848→            setCurrentScore(computeScore(scoresRef.current))
+   849→
+   850→            const now = Date.now()
+   851→            if (now - lastFeedbackUpdate > 2000 && fb) {
+   852→              setFeedback(fb)
+   853→              lastFeedbackUpdate = now
+   854→            }
+   855→
+   856→            // Keep going message after 5 reps
+   857→            if (rep && updatedTracker.sampleCount > 15) {
+   858→              setFeedback(FEEDBACK_MESSAGES.keepGoing)
+   859→            }
+   860→          }
+   861→        }
+   862→      }
+   863→
+   864→      rafRef.current = requestAnimationFrame(detect)
+   865→    }
+   866→
+   867→    rafRef.current = requestAnimationFrame(detect)
+   868→
+   869→    return () => {
+   870→      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+   871→    }
+   872→  }, [phase, isDemoMode, drill?.category])
+   873→
+   874→  // ── Handle workout end ────────────────────────────────────────────────
+   875→  const handleWorkoutEnd = useCallback(() => {
+   876→    if (phase === 'completed') return
+   877→
+   878→    // Stop timer
+   879→    if (timerRef.current) clearInterval(timerRef.current)
+   880→    if (demoRepTimerRef.current) clearInterval(demoRepTimerRef.current)
+   881→
+   882→    // Stop detection loop
+   883→    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+   884→
+   885→    const elapsedSec = Math.round(
+   886→      (Date.now() - startTimeRef.current - pausedTimeRef.current) / 1000,
+   887→    )
+   888→    setElapsedAtEnd(Math.min(elapsedSec, totalDuration))
+   889→
+   890→    const score = computeScore(scoresRef.current)
+   891→    setFinalScore(score)
+   892→    setPhase('completed')
+   893→  }, [phase, totalDuration])
+   894→
+   895→  // ── Cleanup on unmount ────────────────────────────────────────────────
+   896→  useEffect(() => {
+   897→    return () => {
+   898→      if (streamRef.current) {
+   899→        streamRef.current.getTracks().forEach((track) => track.stop())
+   900→      }
+   901→      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+   902→      if (timerRef.current) clearInterval(timerRef.current)
+   903→      if (countdownRef.current) clearInterval(countdownRef.current)
+   904→      if (demoRepTimerRef.current) clearInterval(demoRepTimerRef.current)
+   905→    }
+   906→  }, [])
+   907→
+   908→  // ── Handlers ──────────────────────────────────────────────────────────
+   909→  const handlePause = () => {
+   910→    if (phase === 'active') {
+   911→      if (timerRef.current) clearInterval(timerRef.current)
+   912→      if (demoRepTimerRef.current) clearInterval(demoRepTimerRef.current)
+   913→      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+   914→      setPhase('paused')
+   915→    }
+   916→  }
+   917→
+   918→  const handleResume = () => {
+   919→    if (phase === 'paused') {
+   920→      pausedTimeRef.current += Date.now() - (startTimeRef.current + (totalDuration - timeRemaining) * 1000 + pausedTimeRef.current - startTimeRef.current)
+   921→      setPhase('active')
+   922→    }
+   923→  }
+   924→
+   925→  const handleStop = () => {
+   926→    handleWorkoutEnd()
+   927→  }
+   928→
+   929→  const handleRestart = () => {
+   930→    // Reset state
+   931→    setReps(0)
+   932→    setCurrentScore(0)
+   933→    setFeedback('')
+   934→    setFinalScore(0)
+   935→    setElapsedAtEnd(0)
+   936→    repTrackerRef.current = createRepTracker()
+   937→    scoresRef.current = []
+   938→
+   939→    // Start countdown again
+   940→    setPhase('countdown')
+   941→    setCountdown(COUNTDOWN_SECONDS)
+   942→  }
+   943→
+   944→  const handleSave = () => {
+   945→    if (!drill) return
+   946→    saveMutation.mutate({
+   947→      drillId: drill.id,
+   948→      reps,
+   949→      score: finalScore,
+   950→      durationSec: elapsedAtEnd || totalDuration - timeRemaining,
+   951→    })
+   952→  }
+   953→
+   954→  const handleBackToHub = () => {
+   955→    navigate('train-hub')
+   956→  }
+   957→
+   958→  // ── Derived values ────────────────────────────────────────────────────
+   959→  const progressPercent = totalDuration > 0
+   960→    ? ((totalDuration - timeRemaining) / totalDuration) * 100
+   961→    : 0
+   962→
+   963→  // ── Loading state ─────────────────────────────────────────────────────
+   964→  if (phase === 'loading' || isDrillLoading) {
+   965→    return (
+   966→      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center gap-4 px-4">
+   967→        <Loader2 className="h-10 w-10 text-orange-500 animate-spin" />
+   968→        <p className="text-white/70 text-sm">Chargement du modèle IA...</p>
+   969→        <Skeleton className="h-3 w-48 bg-white/10" />
+   970→      </div>
+   971→    )
+   972→  }
+   973→
+   974→  // ── Error state ───────────────────────────────────────────────────────
+   975→  if (phase === 'error') {
+   976→    return (
+   977→      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center gap-4 px-4">
+   978→        <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-2">
+   979→          <AlertTriangle className="h-8 w-8 text-red-400" />
+   980→        </div>
+   981→        <h2 className="text-white text-lg font-semibold">Erreur Caméra</h2>
+   982→        <p className="text-white/60 text-sm text-center max-w-xs">{cameraError}</p>
+   983→        <div className="flex gap-3 mt-4">
+   984→          <Button variant="outline" onClick={goBack} className="text-white border-white/20 hover:bg-white/10">
+   985→            <ArrowLeft className="h-4 w-4 mr-2" />
+   986→            Retour
+   987→          </Button>
+   988→          <Button onClick={setupCamera} className="bg-orange-500 hover:bg-orange-600 text-white">
+   989→            <RotateCcw className="h-4 w-4 mr-2" />
+   990→            Réessayer
+   991→          </Button>
+   992→        </div>
+   993→      </div>
+   994→    )
+   995→  }
+   996→
+   997→  // ── Render ────────────────────────────────────────────────────────────
+   998→  return (
+   999→    <div className="min-h-screen bg-gray-950 flex flex-col">
+  1000→      {/* ── Top Bar ─────────────────────────────────────────────────── */}
+  1001→      <header className="relative z-30 flex items-center justify-between h-12 px-3 bg-gray-950/90 backdrop-blur-md">
+  1002→        <Button
+  1003→          variant="ghost"
+  1004→          size="icon"
+  1005→          onClick={() => {
+  1006→            if (phase === 'active' || phase === 'paused') {
+  1007→              handleStop()
+  1008→            }
+  1009→            goBack()
+  1010→          }}
+  1011→          className="text-white/80 hover:text-white hover:bg-white/10 -ml-1 rounded-lg"
+  1012→          aria-label="Retour"
+  1013→        >
+  1014→          <ArrowLeft className="h-5 w-5" />
+  1015→        </Button>
+  1016→
+  1017→        <div className="flex items-center gap-2">
+  1018→          {drill && <span className="text-sm">{drill.icon}</span>}
+  1019→          <h1 className="text-white text-sm font-medium truncate max-w-[180px]">
+  1020→            {drill?.nameFr ?? 'Exercice'}
+  1021→          </h1>
+  1022→          {isDemoMode && (
+  1023→            <Badge
+  1024→              variant="outline"
+  1025→              className="text-[10px] font-medium bg-amber-500/20 text-amber-400 border-amber-500/30 px-1.5 py-0"
+  1026→            >
+  1027→              Mode Démo
+  1028→            </Badge>
+  1029→          )}
+  1030→        </div>
+  1031→
+  1032→        <div className="flex items-center gap-1">
+  1033→          {/* Timer in header */}
+  1034→          {(phase === 'active' || phase === 'paused') && (
+  1035→            <div
+  1036→              className={`font-mono text-lg font-bold tabular-nums ${
+  1037→                timeRemaining <= 10 ? 'text-red-400 animate-pulse' : 'text-white'
+  1038→              }`}
+  1039→            >
+  1040→              {formatTime(timeRemaining)}
+  1041→            </div>
+  1042→          )}
+  1043→          <button
+  1044→            onClick={() => setIsMuted(!isMuted)}
+  1045→            className="text-white/60 hover:text-white ml-1 p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+  1046→            aria-label={isMuted ? 'Activer le son' : 'Couper le son'}
+  1047→          >
+  1048→            {isMuted ? (
+  1049→              <VolumeX className="h-4 w-4" />
+  1050→            ) : (
+  1051→              <Volume2 className="h-4 w-4" />
+  1052→            )}
+  1053→          </button>
+  1054→        </div>
+  1055→      </header>
+  1056→
+  1057→      {/* ── Video Area ───────────────────────────────────────────────── */}
+  1058→      <div className="relative flex-1 flex items-center justify-center bg-black overflow-hidden">
+  1059→        <div className="relative w-full max-w-2xl" style={{ aspectRatio: '4/3' }}>
+  1060→          {/* Video */}
+  1061→          <video
+  1062→            ref={videoRef}
+  1063→            className="absolute inset-0 w-full h-full object-cover"
+  1064→            style={{ transform: 'scaleX(-1)' }}
+  1065→            playsInline
+  1066→            muted
+  1067→          />
+  1068→
+  1069→          {/* Skeleton Canvas */}
+  1070→          <canvas
+  1071→            ref={canvasRef}
+  1072→            width={640}
+  1073→            height={480}
+  1074→            className="absolute inset-0 w-full h-full"
+  1075→            style={{ transform: 'scaleX(-1)' }}
+  1076→          />
+  1077→
+  1078→          {/* ── Countdown Overlay ──────────────────────────────────── */}
+  1079→          <AnimatePresence>
+  1080→            {phase === 'countdown' && (
+  1081→              <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-20">
+  1082→                <AnimatePresence mode="wait">
+  1083→                  <motion.div
+  1084→                    key={countdown}
+  1085→                    variants={countPulse}
+  1086→                    initial="initial"
+  1087→                    animate="animate"
+  1088→                    exit="exit"
+  1089→                    className="text-8xl font-black text-white drop-shadow-2xl"
+  1090→                  >
+  1091→                    {countdown}
+  1092→                  </motion.div>
+  1093→                </AnimatePresence>
+  1094→              </div>
+  1095→            )}
+  1096→          </AnimatePresence>
+  1097→
+  1098→          {/* ── Active/Paused Overlay UI ───────────────────────────── */}
+  1099→          {(phase === 'active' || phase === 'paused') && (
+  1100→            <>
+  1101→              {/* Rep Count - top right */}
+  1102→              <div className="absolute top-3 right-3 z-10 text-right">
+  1103→                <div className="bg-black/50 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10">
+  1104→                  <p className="text-[10px] uppercase tracking-wider text-white/50 font-medium">
+  1105→                    Répétitions
+  1106→                  </p>
+  1107→                  <p className="text-4xl font-black text-white tabular-nums leading-none mt-0.5">
+  1108→                    {reps}
+  1109→                  </p>
+  1110→                  {drill && (
+  1111→                    <p className="text-[10px] text-white/40 mt-1">
+  1112→                      Objectif: {drill.targetReps}
+  1113→                    </p>
+  1114→                  )}
+  1115→                </div>
+  1116→              </div>
+  1117→
+  1118→              {/* Score - top left */}
+  1119→              <div
+  1120→                className={`absolute top-3 left-3 z-10 border rounded-xl px-4 py-2 backdrop-blur-sm ${
+  1121→                  getScoreBgColor(currentScore)
+  1122→                }`}
+  1123→              >
+  1124→                <p className="text-[10px] uppercase tracking-wider text-white/50 font-medium">
+  1125→                  Score
+  1126→                </p>
+  1127→                <p
+  1128→                  className={`text-3xl font-black tabular-nums leading-none mt-0.5 ${getScoreColor(
+  1129→                    currentScore,
+  1130→                  )}`}
+  1131→                >
+  1132→                  {currentScore}
+  1133→                </p>
+  1134→                <p className="text-[10px] text-white/40 mt-1">/ 100</p>
+  1135→              </div>
+  1136→
+  1137→              {/* Paused Overlay */}
+  1138→              {phase === 'paused' && (
+  1139→                <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-15">
+  1140→                  <div className="text-center">
+  1141→                    <Pause className="h-16 w-16 text-white/80 mx-auto mb-3" />
+  1142→                    <p className="text-white text-xl font-bold">En Pause</p>
+  1143→                    <p className="text-white/50 text-sm mt-1">
+  1144→                      {formatTime(timeRemaining)} restant
+  1145→                    </p>
+  1146→                  </div>
+  1147→                </div>
+  1148→              )}
+  1149→            </>
+  1150→          )}
+  1151→
+  1152→          {/* ── Completion Overlay ─────────────────────────────────── */}
+  1153→          <AnimatePresence>
+  1154→            {phase === 'completed' && (
+  1155→              <motion.div
+  1156→                variants={overlayVariants}
+  1157→                initial="hidden"
+  1158→                animate="visible"
+  1159→                exit="exit"
+  1160→                className="absolute inset-0 z-20 flex items-center justify-center bg-black/80 backdrop-blur-md"
+  1161→              >
+  1162→                <Card className="w-[90%] max-w-sm bg-gray-900 border-gray-700 text-white shadow-2xl">
+  1163→                  <CardContent className="p-6 space-y-5">
+  1164→                    {/* Header */}
+  1165→                    <div className="text-center">
+  1166→                      <div className="text-3xl mb-2">🏆</div>
+  1167→                      <h2 className="text-xl font-bold">Session Terminée!</h2>
+  1168→                      {drill && (
+  1169→                        <p className="text-white/50 text-sm mt-1">
+  1170→                          {drill.nameFr}
+  1171→                        </p>
+  1172→                      )}
+  1173→                    </div>
+  1174→
+  1175→                    {/* Stars */}
+  1176→                    <div className="flex justify-center gap-1">
+  1177→                      {Array.from({ length: 5 }).map((_, i) => (
+  1178→                        <Star
+  1179→                          key={i}
+  1180→                          className={`h-7 w-7 transition-colors ${
+  1181→                            i < getStarCount(finalScore)
+  1182→                              ? 'fill-amber-400 text-amber-400'
+  1183→                              : 'text-gray-600'
+  1184→                          }`}
+  1185→                        />
+  1186→                      ))}
+  1187→                    </div>
+  1188→
+  1189→                    {/* Stats Grid */}
+  1190→                    <div className="grid grid-cols-3 gap-3">
+  1191→                      <div className="bg-gray-800 rounded-xl p-3 text-center">
+  1192→                        <p className="text-2xl font-black text-orange-400 tabular-nums">
+  1193→                          {reps}
+  1194→                        </p>
+  1195→                        <p className="text-[10px] text-white/40 uppercase tracking-wider mt-1">
+  1196→                          Réps
+  1197→                        </p>
+  1198→                      </div>
+  1199→                      <div
+  1200→                        className={`rounded-xl p-3 text-center border ${getScoreBgColor(
+  1201→                          finalScore,
+  1202→                        )}`}
+  1203→                      >
+  1204→                        <p
+  1205→                          className={`text-2xl font-black tabular-nums ${getScoreColor(
+  1206→                            finalScore,
+  1207→                          )}`}
+  1208→                        >
+  1209→                          {finalScore}
+  1210→                        </p>
+  1211→                        <p className="text-[10px] text-white/40 uppercase tracking-wider mt-1">
+  1212→                          Score
+  1213→                        </p>
+  1214→                      </div>
+  1215→                      <div className="bg-gray-800 rounded-xl p-3 text-center">
+  1216→                        <p className="text-2xl font-black text-white tabular-nums">
+  1217→                          {formatTime(elapsedAtEnd || totalDuration - timeRemaining)}
+  1218→                        </p>
+  1219→                        <p className="text-[10px] text-white/40 uppercase tracking-wider mt-1">
+  1220→                          Durée
+  1221→                        </p>
+  1222→                      </div>
+  1223→                    </div>
+  1224→
+  1225→                    {/* Form badge */}
+  1226→                    <div className="flex justify-center">
+  1227→                      <Badge
+  1228→                        className={`text-xs font-semibold px-3 py-1 ${
+  1229→                          finalScore >= 80
+  1230→                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+  1231→                            : finalScore >= 50
+  1232→                              ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+  1233→                              : 'bg-red-500/20 text-red-400 border border-red-500/30'
+  1234→                        }`}
+  1235→                      >
+  1236→                        <ShieldCheck className="h-3.5 w-3.5 mr-1" />
+  1237→                        {finalScore >= 80
+  1238→                          ? 'Excellente forme'
+  1239→                          : finalScore >= 50
+  1240→                            ? 'Bonne forme'
+  1241→                            : 'À améliorer'}
+  1242→                      </Badge>
+  1243→                    </div>
+  1244→
+  1245→                    {/* Action Buttons */}
+  1246→                    <div className="space-y-2.5 pt-1">
+  1247→                      <Button
+  1248→                        onClick={handleSave}
+  1249→                        disabled={saveMutation.isPending}
+  1250→                        className="w-full h-12 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/25"
+  1251→                      >
+  1252→                        {saveMutation.isPending ? (
+  1253→                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+  1254→                        ) : (
+  1255→                          <Save className="h-4 w-4 mr-2" />
+  1256→                        )}
+  1257→                        Sauvegarder
+  1258→                      </Button>
+  1259→                      <div className="grid grid-cols-2 gap-2.5">
+  1260→                        <Button
+  1261→                          variant="outline"
+  1262→                          onClick={handleRestart}
+  1263→                          className="h-11 border-gray-600 text-white hover:bg-gray-800 rounded-xl"
+  1264→                        >
+  1265→                          <RotateCcw className="h-4 w-4 mr-2" />
+  1266→                          Refaire
+  1267→                        </Button>
+  1268→                        <Button
+  1269→                          variant="outline"
+  1270→                          onClick={handleBackToHub}
+  1271→                          className="h-11 border-gray-600 text-white hover:bg-gray-800 rounded-xl"
+  1272→                        >
+  1273→                          <ArrowLeft className="h-4 w-4 mr-2" />
+  1274→                          Retour
+  1275→                        </Button>
+  1276→                      </div>
+  1277→                    </div>
+  1278→                  </CardContent>
+  1279→                </Card>
+  1280→              </motion.div>
+  1281→            )}
+  1282→          </AnimatePresence>
+  1283→        </div>
+  1284→
+  1285→        {/* Camera off placeholder if no stream */}
+  1286→        {!streamRef.current && phase === 'loading' && (
+  1287→          <div className="absolute inset-0 flex flex-col items-center justify-center text-white/40 gap-3">
+  1288→            <Camera className="h-12 w-12" />
+  1289→            <p className="text-sm">Initialisation de la caméra...</p>
+  1290→          </div>
+  1291→        )}
+  1292→      </div>
+  1293→
+  1294→      {/* ── Bottom Panel ────────────────────────────────────────────── */}
+  1295→      <div className="bg-gray-900 border-t border-gray-800 px-4 py-3 space-y-3">
+  1296→        {/* Feedback Card */}
+  1297→        <AnimatePresence mode="wait">
+  1298→          {feedback && (phase === 'active' || phase === 'paused') && (
+  1299→            <motion.div
+  1300→              key={feedback}
+  1301→              initial={{ opacity: 0, y: 8 }}
+  1302→              animate={{ opacity: 1, y: 0 }}
+  1303→              exit={{ opacity: 0, y: -8 }}
+  1304→              transition={{ duration: 0.25 }}
+  1305→              className="bg-gray-800/80 backdrop-blur-sm rounded-xl px-4 py-2.5 border border-gray-700/50"
+  1306→            >
+  1307→              <p className="text-white text-sm font-medium text-center">
+  1308→                {feedback}
+  1309→              </p>
+  1310→            </motion.div>
+  1311→          )}
+  1312→        </AnimatePresence>
+  1313→
+  1314→        {/* Progress Bar */}
+  1315→        {(phase === 'active' || phase === 'paused') && (
+  1316→          <div className="space-y-1.5">
+  1317→            <div className="flex justify-between items-center text-xs text-white/40">
+  1318→              <span>Progression</span>
+  1319→              <span className="tabular-nums">
+  1320→                {Math.round(progressPercent)}%
+  1321→              </span>
+  1322→            </div>
+  1323→            <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden">
+  1324→              <motion.div
+  1325→                className="h-full bg-gradient-to-r from-orange-500 to-amber-400 rounded-full"
+  1326→                initial={{ width: 0 }}
+  1327→                animate={{ width: `${progressPercent}%` }}
+  1328→                transition={{ duration: 0.5, ease: 'easeOut' }}
+  1329→              />
+  1330→            </div>
+  1331→          </div>
+  1332→        )}
+  1333→
+  1334→        {/* Controls */}
+  1335→        <div className="flex items-center justify-center gap-4">
+  1336→          {/* Stop button */}
+  1337→          {(phase === 'active' || phase === 'paused') && (
+  1338→            <Button
+  1339→              variant="ghost"
+  1340→              size="icon"
+  1341→              onClick={handleStop}
+  1342→              className="h-12 w-12 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/30 hover:text-red-300 transition-colors"
+  1343→              aria-label="Arrêter"
+  1344→            >
+  1345→              <Square className="h-5 w-5" />
+  1346→            </Button>
+  1347→          )}
+  1348→
+  1349→          {/* Pause / Resume */}
+  1350→          {phase === 'active' && (
+  1351→            <Button
+  1352→              variant="ghost"
+  1353→              size="icon"
+  1354→              onClick={handlePause}
+  1355→              className="h-14 w-14 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors border border-white/10"
+  1356→              aria-label="Pause"
+  1357→            >
+  1358→              <Pause className="h-6 w-6" />
+  1359→            </Button>
+  1360→          )}
+  1361→
+  1362→          {phase === 'paused' && (
+  1363→            <Button
+  1364→              variant="ghost"
+  1365→              size="icon"
+  1366→              onClick={handleResume}
+  1367→              className="h-14 w-14 rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/30"
+  1368→              aria-label="Reprendre"
+  1369→            >
+  1370→              <Play className="h-6 w-6 ml-0.5" />
+  1371→            </Button>
+  1372→          )}
+  1373→
+  1374→          {/* Camera indicator */}
+  1375→          {phase === 'active' && (
+  1376→            <div className="flex items-center gap-1.5 text-xs text-white/40">
+  1377→              <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+  1378→              <span>EN DIRECT</span>
+  1379→            </div>
+  1380→          )}
+  1381→
+  1382→          {phase === 'paused' && (
+  1383→            <div className="flex items-center gap-1.5 text-xs text-amber-400/70">
+  1384→              <Pause className="h-3 w-3" />
+  1385→              <span>PAUSE</span>
+  1386→            </div>
+  1387→          )}
+  1388→        </div>
+  1389→      </div>
+  1390→    </div>
+  1391→  )
+  1392→}
+  1393→
+  1394→export default CameraWorkoutScreen

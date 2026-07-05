@@ -21,6 +21,8 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppStore } from '@/stores/app'
 import { cn } from '@/lib/utils'
+import { BottomNav } from '@/components/shared/bottom-nav'
+import { CATEGORY_LABELS } from '@/lib/constants'
 
 // ---------------------------------------------------------------------------
 // Animation helpers
@@ -80,17 +82,7 @@ interface Session {
 // ---------------------------------------------------------------------------
 // Category label map
 // ---------------------------------------------------------------------------
-const categoryLabels: Record<string, string> = {
-  pocket_ball: 'Balle de Poche',
-  shifty: 'Démarquage',
-  ball_handling: 'Maniement',
-  speed_change: 'Vitesse',
-  defense: 'Défense',
-  shooting: 'Tir',
-  footwork: 'Placement',
-  finishing: 'Finition',
-  conditioning: 'Condition',
-}
+const categoryLabels = CATEGORY_LABELS
 
 // ---------------------------------------------------------------------------
 // Quick‑stat card
@@ -305,64 +297,7 @@ function SessionsSkeleton() {
   )
 }
 
-// ---------------------------------------------------------------------------
-// Bottom Navigation
-// ---------------------------------------------------------------------------
-function BottomNav() {
-  const { navigate, currentScreen } = useAppStore()
 
-  const tabs = [
-    {
-      icon: '🏠',
-      label: 'Accueil',
-      screen: 'home' as const,
-      active: currentScreen === 'home',
-    },
-    {
-      icon: '🏋️',
-      label: 'Entraînement',
-      screen: 'train-hub' as const,
-      active: false,
-    },
-    {
-      icon: '📊',
-      label: 'Stats',
-      screen: 'stats' as const,
-      active: false,
-    },
-    {
-      icon: '👤',
-      label: 'Profil',
-      screen: 'profile' as const,
-      active: false,
-    },
-  ]
-
-  return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
-      <div className="mx-auto flex h-16 max-w-lg items-center justify-around px-2">
-        {tabs.map((tab) => (
-          <button
-            key={tab.screen}
-            type="button"
-            onClick={() => navigate(tab.screen)}
-            className={cn(
-              'flex flex-col items-center gap-0.5 rounded-xl px-3 py-1.5 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-              tab.active
-                ? 'text-orange-600'
-                : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            <span className="text-xl" role="img" aria-label={tab.label}>
-              {tab.icon}
-            </span>
-            <span>{tab.label}</span>
-          </button>
-        ))}
-      </div>
-    </nav>
-  )
-}
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -656,7 +591,6 @@ export default function HomeScreen() {
         </motion.div>
       </motion.div>
 
-      {/* Bottom Navigation */}
       <BottomNav />
     </div>
   )

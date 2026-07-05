@@ -38,6 +38,7 @@ model Drill {
   targetReps  Int      @default(10)
   icon        String   @default("🎯")
   isActive    Boolean  @default(true)
+  isCustom    Boolean  @default(false)
   createdAt   DateTime @default(now())
 
   favorites   DrillFavorite[]

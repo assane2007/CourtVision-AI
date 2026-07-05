@@ -11,10 +11,6 @@ import {
   Zap,
   ChevronRight,
   ListOrdered,
-  Home,
-  Dumbbell,
-  BarChart3,
-  User,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -22,27 +18,11 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppStore } from '@/stores/app'
+import { BottomNav } from '@/components/shared/bottom-nav'
+import { getCategoryLabel, DIFFICULTY_CONFIG } from '@/lib/constants'
 import { toast } from 'sonner'
 
-// ── Category label map ──────────────────────────────────────────────
-const categoryLabels: Record<string, string> = {
-  pocket_ball: 'Ballon de Poche',
-  shifty: 'Déplacements',
-  ball_handling: 'Maniement de Balle',
-  speed_change: 'Changement de Vitesse',
-  defense: 'Défense',
-  shooting: 'Tir',
-  footwork: 'Travail des Pieds',
-  finishing: 'Finition',
-  conditioning: 'Condition Physique',
-}
-
-const difficultyConfig: Record<string, { label: string; className: string }> = {
-  beginner: { label: 'Débutant', className: 'bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border-emerald-500/20' },
-  intermediate: { label: 'Intermédiaire', className: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20' },
-  advanced: { label: 'Avancé', className: 'bg-red-500/15 text-red-500 dark:text-red-400 border-red-500/20' },
-}
-
+// ── Animation variants ──────────────────────────────────────────────
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -56,8 +36,9 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
 }
 
+// ── Component ───────────────────────────────────────────────────────
 export function DrillDetailScreen() {
-  const { selectedDrillId, goBack, navigate, currentScreen } = useAppStore()
+  const { selectedDrillId, goBack, navigate } = useAppStore()
   const queryClient = useQueryClient()
 
   // ── Fetch drills ─────────────────────────────────────────────────
@@ -104,7 +85,7 @@ export function DrillDetailScreen() {
           <Skeleton className="h-48 w-full rounded-2xl" />
           <Skeleton className="h-14 w-full rounded-xl" />
         </div>
-        <BottomNavBar currentScreen={currentScreen} navigate={navigate} />
+        <BottomNav />
       </div>
     )
   }
@@ -120,13 +101,13 @@ export function DrillDetailScreen() {
             Retour
           </Button>
         </div>
-        <BottomNavBar currentScreen={currentScreen} navigate={navigate} />
+        <BottomNav />
       </div>
     )
   }
 
-  const diff = difficultyConfig[drill.difficulty] ?? difficultyConfig.beginner
-  const categoryLabel = categoryLabels[drill.category] ?? drill.category
+  const diff = DIFFICULTY_CONFIG[drill.difficulty] ?? DIFFICULTY_CONFIG.beginner
+  const categoryLabel = getCategoryLabel(drill.category)
   const instructions: string[] = drill.instructionsFr
     ? drill.instructionsFr.split('\n').filter((s: string) => s.trim())
     : []
@@ -300,42 +281,7 @@ export function DrillDetailScreen() {
         </div>
       </motion.div>
 
-      <BottomNavBar currentScreen={currentScreen} navigate={navigate} />
+      <BottomNav />
     </div>
-  )
-}
-
-// ── Reusable Bottom Nav Bar ─────────────────────────────────────────
-function BottomNavBar({
-  currentScreen,
-  navigate,
-}: {
-  currentScreen: string
-  navigate: (screen: 'home' | 'train-hub' | 'stats' | 'profile') => void
-}) {
-  return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50 pb-safe">
-      <div className="max-w-lg mx-auto flex items-center justify-around h-16">
-        {[
-          { icon: Home, label: 'Accueil', screen: 'home' as const },
-          { icon: Dumbbell, label: 'Training', screen: 'train-hub' as const },
-          { icon: BarChart3, label: 'Stats', screen: 'stats' as const },
-          { icon: User, label: 'Profil', screen: 'profile' as const },
-        ].map((tab) => (
-          <button
-            key={tab.screen}
-            onClick={() => navigate(tab.screen)}
-            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors ${
-              currentScreen === tab.screen
-                ? 'text-orange-500'
-                : 'text-muted-foreground'
-            }`}
-          >
-            <tab.icon className="h-5 w-5" />
-            <span className="text-xs font-medium">{tab.label}</span>
-          </button>
-        ))}
-      </div>
-    </nav>
   )
 }

@@ -3,19 +3,15 @@
 import { motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import {
-  Home,
-  Dumbbell,
-  BarChart3,
-  User,
   Flame,
   TrendingUp,
   Calendar,
   Activity,
   Trophy,
+  BarChart3,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -35,6 +31,8 @@ import {
   CartesianGrid,
 } from 'recharts'
 import { useAppStore } from '@/stores/app'
+import { BottomNav } from '@/components/shared/bottom-nav'
+import { CATEGORY_META, getCategoryLabel } from '@/lib/constants'
 
 // ── Day name mapping ────────────────────────────────────────────────
 const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
@@ -42,32 +40,6 @@ const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
 function getDayLabel(dateStr: string): string {
   const date = new Date(dateStr + 'T00:00:00')
   return dayNames[date.getDay()]
-}
-
-// ── Category label map ──────────────────────────────────────────────
-const categoryLabels: Record<string, string> = {
-  pocket_ball: 'Ballon de Poche',
-  shifty: 'Déplacements',
-  ball_handling: 'Maniement de Balle',
-  speed_change: 'Changement de Vitesse',
-  defense: 'Défense',
-  shooting: 'Tir',
-  footwork: 'Travail des Pieds',
-  finishing: 'Finition',
-  conditioning: 'Condition Physique',
-}
-
-// ── Category meta (icon, label, gradient color) ─────────────────────
-const categoryMeta: Record<string, { icon: string; label: string; color: string }> = {
-  pocket_ball: { icon: '👝', label: 'Balle de Poche', color: 'from-amber-500 to-orange-500' },
-  shifty: { icon: '↔️', label: 'Démarquage', color: 'from-cyan-500 to-blue-500' },
-  ball_handling: { icon: '🤹', label: 'Maniement', color: 'from-green-500 to-emerald-500' },
-  speed_change: { icon: '⚡', label: 'Vitesse', color: 'from-yellow-500 to-amber-500' },
-  defense: { icon: '🛡️', label: 'Défense', color: 'from-red-500 to-rose-500' },
-  shooting: { icon: '🎯', label: 'Tir', color: 'from-purple-500 to-violet-500' },
-  footwork: { icon: '🦶', label: 'Placement', color: 'from-teal-500 to-cyan-500' },
-  finishing: { icon: '🏅', label: 'Finition', color: 'from-orange-500 to-red-500' },
-  conditioning: { icon: '💪', label: 'Condition', color: 'from-pink-500 to-rose-500' },
 }
 
 // ── Animation variants ──────────────────────────────────────────────
@@ -169,7 +141,7 @@ export function StatsScreen() {
           <Skeleton className="h-52 rounded-2xl" />
           <Skeleton className="h-64 rounded-2xl" />
         </div>
-        <BottomNavBar currentScreen={currentScreen} navigate={navigate} />
+        <BottomNav />
       </div>
     )
   }
@@ -285,7 +257,7 @@ export function StatsScreen() {
                 </CardHeader>
                 <CardContent className="px-5 pb-5 space-y-4">
                   {categories.map((cat: CategoryStat, idx: number) => {
-                    const meta = categoryMeta[cat.category]
+                    const meta = CATEGORY_META[cat.category]
                     const progress = Math.min((cat.avgScore / 10) * 100, 100)
                     const scoreColor =
                       cat.avgScore >= 7
@@ -304,7 +276,7 @@ export function StatsScreen() {
                           <div className="flex items-center gap-2">
                             <span className="text-base leading-none">{meta?.icon ?? '🏀'}</span>
                             <span className="text-sm font-medium">
-                              {meta?.label ?? categoryLabels[cat.category] ?? cat.category}
+                              {meta?.label ?? getCategoryLabel(cat.category) ?? cat.category}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
@@ -452,7 +424,7 @@ export function StatsScreen() {
         </div>
       </motion.div>
 
-      <BottomNavBar currentScreen={currentScreen} navigate={navigate} />
+      <BottomNav />
     </div>
   )
 }
@@ -489,37 +461,3 @@ function StatCard({
   )
 }
 
-// ── Reusable Bottom Nav Bar ─────────────────────────────────────────
-function BottomNavBar({
-  currentScreen,
-  navigate,
-}: {
-  currentScreen: string
-  navigate: (screen: 'home' | 'train-hub' | 'stats' | 'profile') => void
-}) {
-  return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50 pb-safe">
-      <div className="max-w-lg mx-auto flex items-center justify-around h-16">
-        {[
-          { icon: Home, label: 'Accueil', screen: 'home' as const },
-          { icon: Dumbbell, label: 'Training', screen: 'train-hub' as const },
-          { icon: BarChart3, label: 'Stats', screen: 'stats' as const },
-          { icon: User, label: 'Profil', screen: 'profile' as const },
-        ].map((tab) => (
-          <button
-            key={tab.screen}
-            onClick={() => navigate(tab.screen)}
-            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors ${
-              currentScreen === tab.screen
-                ? 'text-orange-500'
-                : 'text-muted-foreground'
-            }`}
-          >
-            <tab.icon className="h-5 w-5" />
-            <span className="text-xs font-medium">{tab.label}</span>
-          </button>
-        ))}
-      </div>
-    </nav>
-  )
-}

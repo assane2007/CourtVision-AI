@@ -6,14 +6,12 @@ import { useAppStore } from '@/stores/app'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 import {
   ArrowLeft,
   Camera,
-  CameraOff,
   Pause,
   Play,
   Square,
@@ -25,6 +23,7 @@ import {
   Loader2,
   AlertTriangle,
   ShieldCheck,
+  Sparkles,
 } from 'lucide-react'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -83,6 +82,13 @@ interface ScoreDetail {
   movementQuality: number
 }
 
+interface AIFormCheckResult {
+  score: number
+  feedback: string
+  issues: string[]
+  goodPoints: string[]
+}
+
 // ─── MediaPipe Pose Connections ──────────────────────────────────────────────
 
 const POSE_CONNECTIONS: [number, number][] = [
@@ -101,6 +107,7 @@ const LANDMARK_COLOR = '#f97316'
 const LANDMARK_RADIUS = 5
 const CONNECTION_WIDTH = 3
 const COUNTDOWN_SECONDS = 3
+const AI_CHECK_COOLDOWN_MS = 10_000
 
 const FEEDBACK_MESSAGES = {
   goodPosture: 'Bonne posture! ✅',
@@ -203,7 +210,6 @@ function analyzeForm(
   const rWrist = landmarks[16]
   const lHip = landmarks[23]
   const rHip = landmarks[24]
-  const nose = landmarks[0]
 
   // Posture: shoulders level?
   const shoulderDy = Math.abs(lShoulder.y - rShoulder.y)
@@ -530,13 +536,14 @@ const countPulse = {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function CameraWorkoutScreen() {
+export default function CameraWorkoutScreen() {
   const { selectedDrillId, goBack, navigate } = useAppStore()
   const queryClient = useQueryClient()
 
   // ── Refs ──────────────────────────────────────────────────────────────
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const captureCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const poseLandmarkerRef = useRef<unknown>(null)
   const rafRef = useRef<number>(0)
@@ -544,15 +551,15 @@ export function CameraWorkoutScreen() {
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const repTrackerRef = useRef<RepTracker>(createRepTracker())
   const scoresRef = useRef<ScoreDetail[]>([])
-  const lastTimestampRef = useRef<number>(0)
   const startTimeRef = useRef<number>(0)
-  const pausedTimeRef = useRef<number>(0)
-  const demoRepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const pausedAtRef = useRef<number>(0)
+  const pauseAccumRef = useRef<number>(0)
+  const aiCooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const phaseRef = useRef<WorkoutPhase>('loading')
 
   // ── State ─────────────────────────────────────────────────────────────
   const [phase, setPhase] = useState<WorkoutPhase>('loading')
   const [isModelLoaded, setIsModelLoaded] = useState(false)
-  const [isDemoMode, setIsDemoMode] = useState(false)
   const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS)
   const [timeRemaining, setTimeRemaining] = useState(0)
   const [reps, setReps] = useState(0)
@@ -562,6 +569,17 @@ export function CameraWorkoutScreen() {
   const [isMuted, setIsMuted] = useState(false)
   const [elapsedAtEnd, setElapsedAtEnd] = useState(0)
   const [finalScore, setFinalScore] = useState(0)
+
+  // AI form check state
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiCooldownRemaining, setAiCooldownRemaining] = useState(0)
+  const [aiResult, setAiResult] = useState<AIFormCheckResult | null>(null)
+  const [aiError, setAiError] = useState('')
+
+  // Keep phaseRef in sync
+  useEffect(() => {
+    phaseRef.current = phase
+  }, [phase])
 
   // ── Fetch drill ───────────────────────────────────────────────────────
   const { data, isLoading: isDrillLoading } = useQuery({
@@ -639,11 +657,13 @@ export function CameraWorkoutScreen() {
         if (!cancelled) {
           setIsModelLoaded(true)
         }
-      } catch {
+      } catch (err) {
         if (!cancelled) {
-          console.warn('MediaPipe failed to load, falling back to demo mode')
-          setIsDemoMode(true)
-          setIsModelLoaded(true)
+          console.error('MediaPipe failed to load:', err)
+          setCameraError(
+            'Impossible de charger le modèle de détection de pose. Vérifiez votre connexion internet et réessayez.',
+          )
+          setPhase('error')
         }
       }
     }
@@ -657,6 +677,7 @@ export function CameraWorkoutScreen() {
 
   // ── Camera setup ──────────────────────────────────────────────────────
   const setupCamera = useCallback(async () => {
+    setCameraError('')
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -701,7 +722,7 @@ export function CameraWorkoutScreen() {
           setPhase('active')
           setTimeRemaining(totalDuration)
           startTimeRef.current = Date.now()
-          pausedTimeRef.current = 0
+          pauseAccumRef.current = 0
           return 0
         }
         return prev - 1
@@ -731,61 +752,11 @@ export function CameraWorkoutScreen() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)
     }
-  }, [phase])
+  }, [phase]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Demo mode rep simulation ──────────────────────────────────────────
+  // ── Detection loop ────────────────────────────────────────────────────
   useEffect(() => {
-    if (!isDemoMode || phase !== 'active') {
-      if (demoRepTimerRef.current) {
-        clearInterval(demoRepTimerRef.current)
-        demoRepTimerRef.current = null
-      }
-      return
-    }
-
-    const category = drill?.category ?? 'ball_handling'
-    // Different intervals per category for realistic feel
-    const intervalMap: Record<string, number> = {
-      pocket_ball: 800,
-      ball_handling: 900,
-      shifty: 1200,
-      speed_change: 1000,
-      defense: 1500,
-      shooting: 2500,
-      footwork: 700,
-      finishing: 2000,
-      conditioning: 1500,
-    }
-    const interval = intervalMap[category] ?? 1000
-
-    demoRepTimerRef.current = setInterval(() => {
-      const demoScore = 55 + Math.floor(Math.random() * 40)
-      setReps((prev) => prev + 1)
-      setCurrentScore(demoScore)
-      scoresRef.current.push({
-        posture: demoScore + Math.floor(Math.random() * 10 - 5),
-        stanceWidth: demoScore + Math.floor(Math.random() * 15 - 7),
-        armPosition: demoScore + Math.floor(Math.random() * 10 - 5),
-        movementQuality: demoScore + Math.floor(Math.random() * 20 - 10),
-      })
-
-      const feedbackOptions = [
-        FEEDBACK_MESSAGES.goodPosture,
-        FEEDBACK_MESSAGES.goodSpeed,
-        FEEDBACK_MESSAGES.greatForm,
-        FEEDBACK_MESSAGES.keepGoing,
-      ]
-      setFeedback(feedbackOptions[Math.floor(Math.random() * feedbackOptions.length)])
-    }, interval)
-
-    return () => {
-      if (demoRepTimerRef.current) clearInterval(demoRepTimerRef.current)
-    }
-  }, [isDemoMode, phase, drill?.category])
-
-  // ── Detection loop (non-demo mode) ────────────────────────────────────
-  useEffect(() => {
-    if (phase !== 'active' || isDemoMode) return
+    if (phase !== 'active') return
     if (!videoRef.current || !canvasRef.current || !poseLandmarkerRef.current) return
 
     const video = videoRef.current
@@ -797,7 +768,7 @@ export function CameraWorkoutScreen() {
     let lastFeedbackUpdate = 0
 
     function detect() {
-      if (phase !== 'active') return
+      if (phaseRef.current !== 'active') return
 
       const poseLandmarker = poseLandmarkerRef.current as {
         detect: (input: HTMLVideoElement, timestamp: number) => {
@@ -869,28 +840,30 @@ export function CameraWorkoutScreen() {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
-  }, [phase, isDemoMode, drill?.category])
+  }, [phase, drill?.category])
 
   // ── Handle workout end ────────────────────────────────────────────────
   const handleWorkoutEnd = useCallback(() => {
-    if (phase === 'completed') return
+    if (phaseRef.current === 'completed') return
 
     // Stop timer
     if (timerRef.current) clearInterval(timerRef.current)
-    if (demoRepTimerRef.current) clearInterval(demoRepTimerRef.current)
 
     // Stop detection loop
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
 
+    // Stop AI cooldown
+    if (aiCooldownTimerRef.current) clearInterval(aiCooldownTimerRef.current)
+
     const elapsedSec = Math.round(
-      (Date.now() - startTimeRef.current - pausedTimeRef.current) / 1000,
+      (Date.now() - startTimeRef.current - pauseAccumRef.current) / 1000,
     )
     setElapsedAtEnd(Math.min(elapsedSec, totalDuration))
 
     const score = computeScore(scoresRef.current)
     setFinalScore(score)
     setPhase('completed')
-  }, [phase, totalDuration])
+  }, [totalDuration])
 
   // ── Cleanup on unmount ────────────────────────────────────────────────
   useEffect(() => {
@@ -901,7 +874,7 @@ export function CameraWorkoutScreen() {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
       if (timerRef.current) clearInterval(timerRef.current)
       if (countdownRef.current) clearInterval(countdownRef.current)
-      if (demoRepTimerRef.current) clearInterval(demoRepTimerRef.current)
+      if (aiCooldownTimerRef.current) clearInterval(aiCooldownTimerRef.current)
     }
   }, [])
 
@@ -909,15 +882,15 @@ export function CameraWorkoutScreen() {
   const handlePause = () => {
     if (phase === 'active') {
       if (timerRef.current) clearInterval(timerRef.current)
-      if (demoRepTimerRef.current) clearInterval(demoRepTimerRef.current)
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
+      pausedAtRef.current = Date.now()
       setPhase('paused')
     }
   }
 
   const handleResume = () => {
     if (phase === 'paused') {
-      pausedTimeRef.current += Date.now() - (startTimeRef.current + (totalDuration - timeRemaining) * 1000 + pausedTimeRef.current - startTimeRef.current)
+      pauseAccumRef.current += Date.now() - pausedAtRef.current
       setPhase('active')
     }
   }
@@ -933,6 +906,9 @@ export function CameraWorkoutScreen() {
     setFeedback('')
     setFinalScore(0)
     setElapsedAtEnd(0)
+    setAiResult(null)
+    setAiError('')
+    setAiCooldownRemaining(0)
     repTrackerRef.current = createRepTracker()
     scoresRef.current = []
 
@@ -955,6 +931,86 @@ export function CameraWorkoutScreen() {
     navigate('train-hub')
   }
 
+  // ── AI Form Check ─────────────────────────────────────────────────────
+  const handleAIFormCheck = useCallback(async () => {
+    if (aiLoading || aiCooldownRemaining > 0 || phase !== 'active') return
+    if (!videoRef.current) return
+
+    setAiLoading(true)
+    setAiError('')
+    setAiResult(null)
+
+    try {
+      // Capture current video frame to an offscreen canvas
+      const video = videoRef.current
+      const captureCanvas = document.createElement('canvas')
+      captureCanvas.width = 640
+      captureCanvas.height = 480
+      const captureCtx = captureCanvas.getContext('2d')
+      if (!captureCtx) throw new Error('Canvas context unavailable')
+
+      // Mirror the capture to match what the user sees
+      captureCtx.translate(640, 0)
+      captureCtx.scale(-1, 1)
+      captureCtx.drawImage(video, 0, 0, 640, 480)
+      captureCanvasRef.current = captureCanvas
+
+      const imageBase64 = captureCanvas.toDataURL('image/jpeg', 0.8)
+
+      const response = await fetch('/api/ai/form-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64,
+          drillName: drill?.nameFr ?? drill?.name ?? 'Exercice',
+          category: drill?.category ?? 'ball_handling',
+          drillInstructions: drill?.instructionsFr ?? drill?.instructions ?? '',
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Erreur serveur')
+      }
+
+      const result: AIFormCheckResult = await response.json()
+      setAiResult(result)
+
+      // Update feedback with AI response
+      if (result.feedback) {
+        setFeedback(result.feedback)
+      }
+
+      // Update score based on AI response if it returned a valid score
+      if (typeof result.score === 'number' && result.score > 0) {
+        scoresRef.current.push({
+          posture: result.score,
+          stanceWidth: result.score,
+          armPosition: result.score,
+          movementQuality: result.score,
+        })
+        setCurrentScore(computeScore(scoresRef.current))
+      }
+    } catch (err) {
+      console.error('AI form check failed:', err)
+      setAiError('Vérification IA indisponible. Réessayez.')
+    } finally {
+      setAiLoading(false)
+
+      // Start cooldown
+      setAiCooldownRemaining(10)
+      if (aiCooldownTimerRef.current) clearInterval(aiCooldownTimerRef.current)
+      aiCooldownTimerRef.current = setInterval(() => {
+        setAiCooldownRemaining((prev) => {
+          if (prev <= 1) {
+            if (aiCooldownTimerRef.current) clearInterval(aiCooldownTimerRef.current)
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+    }
+  }, [aiLoading, aiCooldownRemaining, phase, drill])
+
   // ── Derived values ────────────────────────────────────────────────────
   const progressPercent = totalDuration > 0
     ? ((totalDuration - timeRemaining) / totalDuration) * 100
@@ -963,10 +1019,10 @@ export function CameraWorkoutScreen() {
   // ── Loading state ─────────────────────────────────────────────────────
   if (phase === 'loading' || isDrillLoading) {
     return (
-      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center gap-4 px-4">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-4">
         <Loader2 className="h-10 w-10 text-orange-500 animate-spin" />
-        <p className="text-white/70 text-sm">Chargement du modèle IA...</p>
-        <Skeleton className="h-3 w-48 bg-white/10" />
+        <p className="text-foreground text-sm">Chargement du modèle IA...</p>
+        <Skeleton className="h-3 w-48" />
       </div>
     )
   }
@@ -974,14 +1030,14 @@ export function CameraWorkoutScreen() {
   // ── Error state ───────────────────────────────────────────────────────
   if (phase === 'error') {
     return (
-      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center gap-4 px-4">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-4">
         <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-2">
           <AlertTriangle className="h-8 w-8 text-red-400" />
         </div>
-        <h2 className="text-white text-lg font-semibold">Erreur Caméra</h2>
-        <p className="text-white/60 text-sm text-center max-w-xs">{cameraError}</p>
+        <h2 className="text-foreground text-lg font-semibold">Erreur</h2>
+        <p className="text-muted-foreground text-sm text-center max-w-xs">{cameraError}</p>
         <div className="flex gap-3 mt-4">
-          <Button variant="outline" onClick={goBack} className="text-white border-white/20 hover:bg-white/10">
+          <Button variant="outline" onClick={goBack} className="text-foreground">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Retour
           </Button>
@@ -996,9 +1052,9 @@ export function CameraWorkoutScreen() {
 
   // ── Render ────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       {/* ── Top Bar ─────────────────────────────────────────────────── */}
-      <header className="relative z-30 flex items-center justify-between h-12 px-3 bg-gray-950/90 backdrop-blur-md">
+      <header className="relative z-30 flex items-center justify-between h-12 px-3 bg-black/90 backdrop-blur-md">
         <Button
           variant="ghost"
           size="icon"
@@ -1019,14 +1075,6 @@ export function CameraWorkoutScreen() {
           <h1 className="text-white text-sm font-medium truncate max-w-[180px]">
             {drill?.nameFr ?? 'Exercice'}
           </h1>
-          {isDemoMode && (
-            <Badge
-              variant="outline"
-              className="text-[10px] font-medium bg-amber-500/20 text-amber-400 border-amber-500/30 px-1.5 py-0"
-            >
-              Mode Démo
-            </Badge>
-          )}
         </div>
 
         <div className="flex items-center gap-1">
@@ -1292,35 +1340,129 @@ export function CameraWorkoutScreen() {
       </div>
 
       {/* ── Bottom Panel ────────────────────────────────────────────── */}
-      <div className="bg-gray-900 border-t border-gray-800 px-4 py-3 space-y-3">
-        {/* Feedback Card */}
+      <div className="bg-background border-t border-border px-4 py-3 space-y-3">
+        {/* AI Feedback Area */}
         <AnimatePresence mode="wait">
-          {feedback && (phase === 'active' || phase === 'paused') && (
+          {(aiResult || aiError) && (phase === 'active' || phase === 'paused') && (
+            <motion.div
+              key={aiResult?.feedback ?? aiError}
+              initial={{ opacity: 0, y: 8, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: 'auto' }}
+              exit={{ opacity: 0, y: -8, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden"
+            >
+              <div className="rounded-xl border border-border px-4 py-3 space-y-2.5">
+                {/* AI Label */}
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-orange-400" />
+                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                    Vérification IA
+                  </span>
+                  {aiResult && (
+                    <span
+                      className={`ml-auto text-sm font-bold tabular-nums ${getScoreColor(aiResult.score)}`}
+                    >
+                      {aiResult.score}/100
+                    </span>
+                  )}
+                </div>
+
+                {/* Feedback text */}
+                {aiError ? (
+                  <p className="text-red-400 text-sm text-center">{aiError}</p>
+                ) : aiResult ? (
+                  <p className="text-foreground text-sm text-center font-medium">
+                    {aiResult.feedback}
+                  </p>
+                ) : null}
+
+                {/* Issues pills */}
+                {aiResult?.issues && aiResult.issues.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 justify-center">
+                    {aiResult.issues.map((issue, i) => (
+                      <Badge
+                        key={i}
+                        variant="outline"
+                        className="text-[11px] bg-red-500/10 text-red-400 border-red-500/20"
+                      >
+                        {issue}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                {/* Good points pills */}
+                {aiResult?.goodPoints && aiResult.goodPoints.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 justify-center">
+                    {aiResult.goodPoints.map((point, i) => (
+                      <Badge
+                        key={i}
+                        variant="outline"
+                        className="text-[11px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                      >
+                        {point}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Local feedback (when no AI result) */}
+          {feedback && !aiResult && !aiError && (phase === 'active' || phase === 'paused') && (
             <motion.div
               key={feedback}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.25 }}
-              className="bg-gray-800/80 backdrop-blur-sm rounded-xl px-4 py-2.5 border border-gray-700/50"
+              className="rounded-xl border border-border px-4 py-2.5"
             >
-              <p className="text-white text-sm font-medium text-center">
+              <p className="text-foreground text-sm font-medium text-center">
                 {feedback}
               </p>
             </motion.div>
           )}
         </AnimatePresence>
 
+        {/* AI Check Button */}
+        {(phase === 'active' || phase === 'paused') && (
+          <div className="flex justify-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAIFormCheck}
+              disabled={aiLoading || aiCooldownRemaining > 0 || phase === 'paused'}
+              className="gap-1.5 border-orange-500/30 text-orange-400 hover:bg-orange-500/10 hover:text-orange-300 disabled:opacity-50 disabled:hover:bg-transparent rounded-full px-4"
+            >
+              {aiLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              {aiLoading ? (
+                'Analyse en cours...'
+              ) : aiCooldownRemaining > 0 ? (
+                <span className="tabular-nums">Réessayer dans {aiCooldownRemaining}s</span>
+              ) : (
+                'Vérification IA'
+              )}
+            </Button>
+          </div>
+        )}
+
         {/* Progress Bar */}
         {(phase === 'active' || phase === 'paused') && (
           <div className="space-y-1.5">
-            <div className="flex justify-between items-center text-xs text-white/40">
+            <div className="flex justify-between items-center text-xs text-muted-foreground">
               <span>Progression</span>
               <span className="tabular-nums">
                 {Math.round(progressPercent)}%
               </span>
             </div>
-            <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden">
+            <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
               <motion.div
                 className="h-full bg-gradient-to-r from-orange-500 to-amber-400 rounded-full"
                 initial={{ width: 0 }}
@@ -1352,7 +1494,7 @@ export function CameraWorkoutScreen() {
               variant="ghost"
               size="icon"
               onClick={handlePause}
-              className="h-14 w-14 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors border border-white/10"
+              className="h-14 w-14 rounded-full bg-primary/10 text-foreground hover:bg-primary/20 transition-colors border border-border"
               aria-label="Pause"
             >
               <Pause className="h-6 w-6" />
@@ -1373,7 +1515,7 @@ export function CameraWorkoutScreen() {
 
           {/* Camera indicator */}
           {phase === 'active' && (
-            <div className="flex items-center gap-1.5 text-xs text-white/40">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
               <span>EN DIRECT</span>
             </div>
@@ -1390,5 +1532,3 @@ export function CameraWorkoutScreen() {
     </div>
   )
 }
-
-export default CameraWorkoutScreen
