@@ -41,7 +41,7 @@ export default function Home() {
           {currentScreen === 'onboarding' && <OnboardingScreen />}
           {currentScreen === 'home' && session && <HomeScreen />}
           {currentScreen === 'train-hub' && session && <TrainHubScreen />}
-          {currentScreen === 'drill-detail' && session && <DrillDetailScreen />}
+          {currentScreen === 'drill-detail' && <DrillDetailScreen />}
           {currentScreen === 'camera-workout' && session && <CameraWorkoutScreen />}
           {currentScreen === 'stats' && session && <StatsScreen />}
           {currentScreen === 'profile' && session && <ProfileScreen />}

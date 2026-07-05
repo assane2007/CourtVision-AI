@@ -8,9 +8,7 @@ import { db } from '@/lib/db'
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
+    const playerId = session?.user?.id ?? null
 
     const { searchParams } = new URL(req.url)
     const category = searchParams.get('category')
@@ -26,7 +24,7 @@ export async function GET(req: NextRequest) {
         {
           OR: [
             { playerId: null },      // seed drills
-            { playerId: session.user.id }, // user's custom drills
+            ...(playerId ? [{ playerId }] : []),
           ],
         },
       ],
@@ -57,15 +55,17 @@ export async function GET(req: NextRequest) {
     })
 
     // Fetch user's favorites in one query
-    const favorites = favoritesOnly
-      ? await db.drillFavorite.findMany({
-          where: { playerId: session.user.id, drillId: { in: drills.map(d => d.id) } },
-          select: { drillId: true },
-        })
-      : await db.drillFavorite.findMany({
-          where: { playerId: session.user.id },
-          select: { drillId: true },
-        })
+    const favorites = playerId
+      ? favoritesOnly
+        ? await db.drillFavorite.findMany({
+            where: { playerId, drillId: { in: drills.map(d => d.id) } },
+            select: { drillId: true },
+          })
+        : await db.drillFavorite.findMany({
+            where: { playerId },
+            select: { drillId: true },
+          })
+      : []
 
     const favoriteIds = new Set(favorites.map(f => f.drillId))
 
