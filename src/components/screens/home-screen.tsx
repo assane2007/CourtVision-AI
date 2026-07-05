@@ -324,11 +324,13 @@ export default function HomeScreen() {
     staleTime: 1000 * 60 * 5,
   })
 
-  const { data: sessions, isLoading: sessionsLoading } = useQuery<Session[]>({
+  const { data: sessionsData, isLoading: sessionsLoading } = useQuery<{ sessions: Session[] }>({
     queryKey: ['sessions'],
     queryFn: () => fetch('/api/sessions').then((r) => r.json()),
     staleTime: 1000 * 60 * 2,
   })
+
+  const sessions = sessionsData?.sessions
 
   const recentSessions = sessions?.slice(0, 5) ?? []
 
