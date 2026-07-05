@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type Screen = 'auth' | 'onboarding' | 'home' | 'train-hub' | 'drill-detail' | 'camera-workout' | 'stats' | 'profile'
+export type Screen = 'auth' | 'onboarding' | 'home' | 'train-hub' | 'drill-detail' | 'camera-workout' | 'stats' | 'profile' | 'achievements'
 
 interface AppState {
   currentScreen: Screen

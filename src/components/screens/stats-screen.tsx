@@ -15,8 +15,6 @@ import {
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -57,6 +55,19 @@ const categoryLabels: Record<string, string> = {
   footwork: 'Travail des Pieds',
   finishing: 'Finition',
   conditioning: 'Condition Physique',
+}
+
+// ── Category meta (icon, label, gradient color) ─────────────────────
+const categoryMeta: Record<string, { icon: string; label: string; color: string }> = {
+  pocket_ball: { icon: '👝', label: 'Balle de Poche', color: 'from-amber-500 to-orange-500' },
+  shifty: { icon: '↔️', label: 'Démarquage', color: 'from-cyan-500 to-blue-500' },
+  ball_handling: { icon: '🤹', label: 'Maniement', color: 'from-green-500 to-emerald-500' },
+  speed_change: { icon: '⚡', label: 'Vitesse', color: 'from-yellow-500 to-amber-500' },
+  defense: { icon: '🛡️', label: 'Défense', color: 'from-red-500 to-rose-500' },
+  shooting: { icon: '🎯', label: 'Tir', color: 'from-purple-500 to-violet-500' },
+  footwork: { icon: '🦶', label: 'Placement', color: 'from-teal-500 to-cyan-500' },
+  finishing: { icon: '🏅', label: 'Finition', color: 'from-orange-500 to-red-500' },
+  conditioning: { icon: '💪', label: 'Condition', color: 'from-pink-500 to-rose-500' },
 }
 
 // ── Animation variants ──────────────────────────────────────────────
@@ -274,7 +285,14 @@ export function StatsScreen() {
                 </CardHeader>
                 <CardContent className="px-5 pb-5 space-y-4">
                   {categories.map((cat: CategoryStat, idx: number) => {
+                    const meta = categoryMeta[cat.category]
                     const progress = Math.min((cat.avgScore / 10) * 100, 100)
+                    const scoreColor =
+                      cat.avgScore >= 7
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : cat.avgScore >= 4
+                          ? 'text-amber-600 dark:text-amber-400'
+                          : 'text-red-500 dark:text-red-400'
                     return (
                       <motion.div
                         key={cat.category}
@@ -283,19 +301,29 @@ export function StatsScreen() {
                         transition={{ delay: 0.3 + idx * 0.05, duration: 0.3 }}
                       >
                         <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-sm font-medium">
-                            {categoryLabels[cat.category] ?? cat.category}
-                          </span>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-base leading-none">{meta?.icon ?? '🏀'}</span>
+                            <span className="text-sm font-medium">
+                              {meta?.label ?? categoryLabels[cat.category] ?? cat.category}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] text-muted-foreground">
                               {cat.drills} exercice{cat.drills > 1 ? 's' : ''}
                             </span>
-                            <Badge variant="secondary" className="text-xs font-semibold">
+                            <span className={`text-sm font-bold ${scoreColor}`}>
                               {cat.avgScore}
-                            </Badge>
+                            </span>
                           </div>
                         </div>
-                        <Progress value={progress} className="h-2" />
+                        <div className="relative h-2.5 w-full rounded-full bg-muted overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${progress}%` }}
+                            transition={{ delay: 0.4 + idx * 0.05, duration: 0.6, ease: 'easeOut' }}
+                            className={`absolute inset-y-0 left-0 rounded-full bg-gradient-to-r ${meta?.color ?? 'from-orange-500 to-amber-500'}`}
+                          />
+                        </div>
                       </motion.div>
                     )
                   })}
@@ -372,16 +400,47 @@ export function StatsScreen() {
           {!statsLoading && stats?.totalSessions === 0 && (
             <motion.div
               variants={itemVariants}
-              className="py-16 text-center"
+              className="py-12 flex flex-col items-center"
             >
-              <div className="text-5xl mb-4">📊</div>
+              {/* Basketball court illustration */}
+              <div className="relative w-56 h-40 mb-6">
+                <svg viewBox="0 0 240 160" className="w-full h-full drop-shadow-lg">
+                  {/* Court floor */}
+                  <rect x="10" y="10" width="220" height="140" rx="8" fill="#f97316" opacity="0.1" />
+                  <rect x="12" y="12" width="216" height="136" rx="6" fill="none" stroke="#f97316" strokeWidth="1.5" opacity="0.3" />
+                  {/* Half-court line */}
+                  <line x1="120" y1="12" x2="120" y2="148" stroke="#f97316" strokeWidth="1" opacity="0.25" />
+                  {/* Center circle */}
+                  <circle cx="120" cy="80" r="22" fill="none" stroke="#f97316" strokeWidth="1" opacity="0.25" />
+                  <circle cx="120" cy="80" r="3" fill="#f97316" opacity="0.35" />
+                  {/* Left key / paint */}
+                  <rect x="12" y="48" width="48" height="64" fill="none" stroke="#f97316" strokeWidth="1" opacity="0.25" />
+                  <circle cx="60" cy="80" r="12" fill="none" stroke="#f97316" strokeWidth="1" opacity="0.2" strokeDasharray="3 3" />
+                  {/* Right key / paint */}
+                  <rect x="180" y="48" width="48" height="64" fill="none" stroke="#f97316" strokeWidth="1" opacity="0.25" />
+                  <circle cx="180" cy="80" r="12" fill="none" stroke="#f97316" strokeWidth="1" opacity="0.2" strokeDasharray="3 3" />
+                  {/* Basketballs */}
+                  <circle cx="36" cy="80" r="7" fill="#f97316" opacity="0.18" />
+                  <circle cx="204" cy="80" r="7" fill="#f97316" opacity="0.18" />
+                  {/* Three-point arcs (simplified) */}
+                  <path d="M 12 38 Q 80 20 12 38" fill="none" stroke="#f97316" strokeWidth="1" opacity="0.15" />
+                  <path d="M 228 38 Q 160 20 228 38" fill="none" stroke="#f97316" strokeWidth="1" opacity="0.15" />
+                </svg>
+                <motion.div
+                  animate={{ y: [0, -6, 0] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                  className="absolute -top-2 left-1/2 -translate-x-1/2 text-4xl"
+                >
+                  🏀
+                </motion.div>
+              </div>
               <h3 className="font-semibold text-lg mb-1">Aucune donnée</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Commencez votre premier entraînement pour voir vos statistiques.
+              <p className="text-sm text-muted-foreground mb-6 max-w-[260px]">
+                Commencez votre premier entraînement pour suivre votre progression et voir vos statistiques.
               </p>
               <Button
                 onClick={() => navigate('train-hub')}
-                className="bg-orange-500 hover:bg-orange-600"
+                className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold px-6 shadow-lg shadow-orange-500/25 rounded-full"
               >
                 <Dumbbell className="h-4 w-4 mr-2" />
                 Commencer l&apos;entraînement

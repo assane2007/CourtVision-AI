@@ -39,6 +39,10 @@ const ProfileScreen = dynamic(
   () => import('@/components/screens/profile-screen').then(m => m.default || m.ProfileScreen),
   { ssr: false }
 )
+const AchievementsScreen = dynamic(
+  () => import('@/components/screens/achievements-screen').then(m => m.default || m.AchievementsScreen),
+  { ssr: false }
+)
 
 export default function Home() {
   const { data: session, status } = useSession()
@@ -86,6 +90,7 @@ export default function Home() {
           {currentScreen === 'camera-workout' && session && <CameraWorkoutScreen />}
           {currentScreen === 'stats' && session && <StatsScreen />}
           {currentScreen === 'profile' && session && <ProfileScreen />}
+          {currentScreen === 'achievements' && session && <AchievementsScreen />}
 
           {/* Fallback: not authenticated screens redirect to auth */}
           {!session && currentScreen !== 'auth' && <AuthScreen />}

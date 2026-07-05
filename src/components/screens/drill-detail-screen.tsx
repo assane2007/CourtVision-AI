@@ -11,6 +11,10 @@ import {
   Zap,
   ChevronRight,
   ListOrdered,
+  Home,
+  Dumbbell,
+  BarChart3,
+  User,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -34,9 +38,9 @@ const categoryLabels: Record<string, string> = {
 }
 
 const difficultyConfig: Record<string, { label: string; className: string }> = {
-  beginner: { label: 'Débutant', className: 'bg-emerald-500/15 text-emerald-600 border-emerald-200' },
-  intermediate: { label: 'Intermédiaire', className: 'bg-amber-500/15 text-amber-600 border-amber-200' },
-  advanced: { label: 'Avancé', className: 'bg-red-500/15 text-red-600 border-red-200' },
+  beginner: { label: 'Débutant', className: 'bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border-emerald-500/20' },
+  intermediate: { label: 'Intermédiaire', className: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20' },
+  advanced: { label: 'Avancé', className: 'bg-red-500/15 text-red-500 dark:text-red-400 border-red-500/20' },
 }
 
 const containerVariants = {
@@ -184,7 +188,7 @@ export function DrillDetailScreen() {
               <div className="h-1.5 bg-gradient-to-r from-orange-400 via-orange-500 to-amber-500" />
               <CardContent className="p-6 space-y-4">
                 <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center text-3xl">
+                  <div className="flex-shrink-0 w-16 h-16 rounded-2xl bg-orange-500/10 flex items-center justify-center text-3xl">
                     {drill.icon}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -213,7 +217,7 @@ export function DrillDetailScreen() {
 
                 <div className="flex items-center gap-6">
                   <div className="flex items-center gap-2 text-sm">
-                    <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
                       <Clock className="h-4 w-4 text-orange-500" />
                     </div>
                     <div>
@@ -222,7 +226,7 @@ export function DrillDetailScreen() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
                       <Target className="h-4 w-4 text-orange-500" />
                     </div>
                     <div>
@@ -231,7 +235,7 @@ export function DrillDetailScreen() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
                       <Zap className="h-4 w-4 text-orange-500" />
                     </div>
                     <div>
@@ -302,8 +306,6 @@ export function DrillDetailScreen() {
 }
 
 // ── Reusable Bottom Nav Bar ─────────────────────────────────────────
-import { Home, Dumbbell, BarChart3, User } from 'lucide-react'
-
 function BottomNavBar({
   currentScreen,
   navigate,

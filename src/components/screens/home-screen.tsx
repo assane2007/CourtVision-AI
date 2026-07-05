@@ -14,6 +14,7 @@ import {
   ChevronRight,
   User,
 } from 'lucide-react'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -80,13 +81,13 @@ interface Session {
 // Category label map
 // ---------------------------------------------------------------------------
 const categoryLabels: Record<string, string> = {
-  pocket_ball: 'Pocket Ball',
-  shifty: 'Shifty',
-  ball_handling: 'Dribble',
+  pocket_ball: 'Balle de Poche',
+  shifty: 'Démarquage',
+  ball_handling: 'Maniement',
   speed_change: 'Vitesse',
   defense: 'Défense',
   shooting: 'Tir',
-  footwork: 'Pieds',
+  footwork: 'Placement',
   finishing: 'Finition',
   conditioning: 'Condition',
 }
@@ -403,7 +404,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -415,31 +416,70 @@ export default function HomeScreen() {
         {/* ---------------------------------------------------------------- */}
         <motion.header
           variants={itemVariants}
-          className="mb-6 flex items-center justify-between"
+          className="mb-4 flex items-center justify-between"
         >
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              Bonjour, {userName} 👋
+            <h1 className="text-xl font-bold tracking-tight">
+              {userName}
             </h1>
             <p className="mt-0.5 text-sm text-muted-foreground">
               Prêt pour l&apos;entraînement ?
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => navigate('profile')}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-sm font-bold text-white shadow-md transition-shadow hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Voir le profil"
-          >
-            {userInitial}
-          </button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <button
+              type="button"
+              onClick={() => navigate('profile')}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-xs font-bold text-white shadow-md transition-shadow hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Voir le profil"
+            >
+              {userInitial}
+            </button>
+          </div>
         </motion.header>
+
+        {/* ---------------------------------------------------------------- */}
+        {/* Basketball Court Mini Banner                                     */}
+        {/* ---------------------------------------------------------------- */}
+        <motion.div variants={itemVariants} className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500 via-orange-600 to-amber-600 p-5 text-white mb-6">
+          {/* Court lines SVG background */}
+          <svg className="absolute inset-0 w-full h-full opacity-10" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice">
+            <rect x="5" y="5" width="390" height="190" rx="12" fill="none" stroke="white" strokeWidth="2"/>
+            <circle cx="200" cy="100" r="40" fill="none" stroke="white" strokeWidth="1.5"/>
+            <line x1="200" y1="5" x2="200" y2="60" stroke="white" strokeWidth="1.5"/>
+            <rect x="140" y="5" width="120" height="50" fill="none" stroke="white" strokeWidth="1.5"/>
+            <circle cx="200" cy="55" r="8" fill="none" stroke="white" strokeWidth="1.5"/>
+            <path d="M 60 5 Q 60 100 140 100" fill="none" stroke="white" strokeWidth="1.5"/>
+            <path d="M 340 5 Q 340 100 260 100" fill="none" stroke="white" strokeWidth="1.5"/>
+          </svg>
+
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <p className="text-orange-100 text-xs font-medium">Aujourd&apos;hui</p>
+                <p className="text-xl font-bold">
+                  {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                </p>
+              </div>
+              <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <span className="text-3xl">🏀</span>
+              </div>
+            </div>
+            <p className="text-orange-100 text-sm">
+              {stats?.weekSessions > 0
+                ? `${stats.weekSessions} séance${stats.weekSessions > 1 ? 's' : ''} cette semaine — continuez !`
+                : 'Aucune séance cette semaine — commencez maintenant !'
+              }
+            </p>
+          </div>
+        </motion.div>
 
         {/* ---------------------------------------------------------------- */}
         {/* Quick Stats                                                     */}
         {/* ---------------------------------------------------------------- */}
-        <section aria-label="Statistiques rapides" className="mb-8">
+        <section aria-label="Statistiques rapides" className="mb-6">
           {statsLoading ? (
             <StatsSkeleton />
           ) : (
@@ -481,6 +521,27 @@ export default function HomeScreen() {
             </motion.div>
           )}
         </section>
+
+        {/* ---------------------------------------------------------------- */}
+        {/* Streak Widget                                                   */}
+        {/* ---------------------------------------------------------------- */}
+        <motion.div variants={itemVariants} className="flex items-center gap-3 bg-gradient-to-r from-orange-500/10 to-transparent border border-orange-500/20 rounded-xl px-4 py-3 mb-8">
+          <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+            <Flame className="h-5 w-5 text-orange-500" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium">Série en cours</p>
+            <p className="text-xs text-muted-foreground">
+              {stats?.weekSessions > 0
+                ? `${stats.weekSessions} jour${stats.weekSessions > 1 ? 's' : ''} d'affilée cette semaine`
+                : 'Commencez votre série aujourd\'hui !'
+              }
+            </p>
+          </div>
+          {stats?.weekSessions > 0 && (
+            <div className="text-2xl font-bold text-orange-500">{stats.weekSessions}🔥</div>
+          )}
+        </motion.div>
 
         {/* ---------------------------------------------------------------- */}
         {/* AI Recommendations                                              */}
@@ -574,12 +635,23 @@ export default function HomeScreen() {
         {/* ---------------------------------------------------------------- */}
         <motion.div variants={itemVariants} className="pb-4">
           <Button
-            size="lg"
-            className="h-14 w-full rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 text-base font-semibold shadow-lg shadow-orange-500/25 transition-all hover:from-orange-600 hover:to-orange-700 hover:shadow-xl hover:shadow-orange-500/30"
             onClick={() => navigate('train-hub')}
+            className={cn(
+              'w-full py-6 text-base font-semibold rounded-2xl shadow-lg shadow-orange-500/25 transition-all',
+              'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 hover:shadow-xl hover:shadow-orange-500/30',
+              !stats?.weekSessions && 'animate-pulse'
+            )}
+            asChild
           >
-            <Camera className="mr-2 h-5 w-5" />
-            Démarrer l&apos;Entraînement
+            <motion.div
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              className="flex items-center justify-center gap-2"
+            >
+              <Camera className="h-5 w-5" />
+              Démarrer l&apos;Entraînement
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </motion.div>
           </Button>
         </motion.div>
       </motion.div>

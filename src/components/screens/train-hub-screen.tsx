@@ -103,6 +103,7 @@ export default function TrainHubScreen() {
   const [activeCategory, setActiveCategory] = useState('all')
   const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([])
   const [showDifficultyFilter, setShowDifficultyFilter] = useState(false)
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
 
   // ── Data Fetching ────────────────────────────────────────────────────────
 
@@ -116,6 +117,15 @@ export default function TrainHubScreen() {
 
   const drills: Drill[] = data?.drills ?? []
   const favoriteIds: string[] = data?.favoriteIds ?? []
+
+  // ── Drill count per category ────────────────────────────────────────────
+  const drillCountsByCategory = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const d of drills) {
+      counts[d.category] = (counts[d.category] ?? 0) + 1
+    }
+    return counts
+  }, [drills])
 
   // ── Favorite Mutation ────────────────────────────────────────────────────
 
@@ -167,6 +177,10 @@ export default function TrainHubScreen() {
       result = result.filter((d) => selectedDifficulties.includes(d.difficulty))
     }
 
+    if (showFavoritesOnly) {
+      result = result.filter((d) => favoriteIds.includes(d.id))
+    }
+
     if (search.trim()) {
       const q = search.toLowerCase().trim()
       result = result.filter(
@@ -178,7 +192,7 @@ export default function TrainHubScreen() {
     }
 
     return result
-  }, [drills, activeCategory, selectedDifficulties, search])
+  }, [drills, activeCategory, selectedDifficulties, search, showFavoritesOnly, favoriteIds])
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
@@ -230,6 +244,19 @@ export default function TrainHubScreen() {
               className="pl-9 pr-4 h-10 rounded-full border-gray-200 bg-gray-50 focus:bg-white transition-colors"
             />
           </div>
+          <Button
+            variant={showFavoritesOnly ? 'default' : 'outline'}
+            size="icon"
+            className={`h-10 w-10 rounded-full shrink-0 transition-colors ${
+              showFavoritesOnly
+                ? 'bg-orange-500 hover:bg-orange-600 border-orange-500 text-white'
+                : ''
+            }`}
+            onClick={() => setShowFavoritesOnly((v) => !v)}
+            aria-label="Filtrer les favoris"
+          >
+            <Heart className={`h-4 w-4 ${showFavoritesOnly ? 'fill-current' : ''}`} />
+          </Button>
           <Button
             variant={showDifficultyFilter ? 'default' : 'outline'}
             size="icon"
@@ -286,6 +313,7 @@ export default function TrainHubScreen() {
           <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-1 px-1">
             {CATEGORIES.map((cat) => {
               const isActive = activeCategory === cat.key
+              const count = cat.key === 'all' ? drills.length : drillCountsByCategory[cat.key] ?? 0
               return (
                 <button
                   key={cat.key}
@@ -302,6 +330,14 @@ export default function TrainHubScreen() {
                 >
                   <span className="text-base leading-none">{cat.icon}</span>
                   <span>{cat.label}</span>
+                  <span
+                    className={`
+                      ml-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold leading-none px-1
+                      ${isActive ? 'bg-white/25 text-white' : 'bg-background/70 text-muted-foreground'}
+                    `}
+                  >
+                    {count}
+                  </span>
                 </button>
               )
             })}

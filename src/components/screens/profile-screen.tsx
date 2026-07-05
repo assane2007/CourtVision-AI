@@ -19,6 +19,7 @@ import {
   Flame,
   TrendingUp,
   Sparkles,
+  Trophy,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -55,6 +56,7 @@ const positionLabels: Record<string, string> = {
   guard: 'Meneur / Arrière',
   forward: 'Ailier',
   center: 'Pivot',
+  all_around: 'Polyvalent',
 }
 
 const levelLabels: Record<string, string> = {
@@ -381,22 +383,47 @@ export function ProfileScreen() {
               </CardHeader>
               <CardContent className="px-5 pb-5">
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="text-center p-3 rounded-xl bg-orange-50">
+                  <div className="text-center p-3 rounded-xl bg-orange-500/10 dark:bg-orange-500/15">
                     <Flame className="h-5 w-5 text-orange-500 mx-auto mb-1" />
                     <p className="text-lg font-bold">{stats?.totalSessions ?? 0}</p>
                     <p className="text-[11px] text-muted-foreground">Séances</p>
                   </div>
-                  <div className="text-center p-3 rounded-xl bg-emerald-50">
+                  <div className="text-center p-3 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15">
                     <Activity className="h-5 w-5 text-emerald-500 mx-auto mb-1" />
                     <p className="text-lg font-bold">{stats?.totalReps ?? 0}</p>
                     <p className="text-[11px] text-muted-foreground">Répétitions</p>
                   </div>
-                  <div className="text-center p-3 rounded-xl bg-sky-50">
+                  <div className="text-center p-3 rounded-xl bg-sky-500/10 dark:bg-sky-500/15">
                     <TrendingUp className="h-5 w-5 text-sky-500 mx-auto mb-1" />
                     <p className="text-lg font-bold">{stats?.avgScore ? `${stats.avgScore}` : '—'}</p>
                     <p className="text-[11px] text-muted-foreground">Score Moy.</p>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* ── Mes Succès ───────────────────────────────────────── */}
+          <motion.div variants={itemVariants}>
+            <Card className="border-0 shadow-md overflow-hidden">
+              <CardContent className="p-0">
+                <button
+                  onClick={() => navigate('achievements')}
+                  className="w-full flex items-center gap-3 px-5 py-4 hover:bg-muted/50 transition-colors text-left group"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                    <Trophy className="h-4 w-4 text-amber-500" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium group-hover:text-orange-600 transition-colors">
+                      Mes Succès
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Voir vos badges et accomplissements
+                    </p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </button>
               </CardContent>
             </Card>
           </motion.div>
@@ -409,7 +436,7 @@ export function ProfileScreen() {
                   onClick={handleSignOut}
                   className="w-full flex items-center gap-3 px-5 py-4 hover:bg-muted/50 transition-colors text-left group"
                 >
-                  <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
+                  <div className="w-9 h-9 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0">
                     <LogOut className="h-4 w-4 text-red-500" />
                   </div>
                   <div className="flex-1">

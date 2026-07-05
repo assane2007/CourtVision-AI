@@ -312,19 +312,41 @@ export default function OnboardingScreen() {
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-y-auto bg-gradient-to-br from-gray-950 via-gray-900 to-black px-4 py-10">
       {/* Ambient glow */}
       <div className="pointer-events-none absolute left-1/2 top-1/3 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-500/5 blur-[120px]" />
+      {/* Basketball court background */}
+      <svg className="pointer-events-none absolute inset-0 w-full h-full opacity-[0.03]" viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice">
+        <rect x="20" y="20" width="360" height="760" rx="12" fill="none" stroke="white" strokeWidth="2"/>
+        <circle cx="200" cy="400" r="60" fill="none" stroke="white" strokeWidth="1.5"/>
+        <line x1="20" y1="400" x2="380" y2="400" stroke="white" strokeWidth="1"/>
+        <rect x="130" y="20" width="140" height="90" fill="none" stroke="white" strokeWidth="1.5"/>
+        <circle cx="200" cy="110" r="8" fill="none" stroke="white" strokeWidth="1.5"/>
+      </svg>
 
       <div className="relative z-10 flex w-full max-w-md flex-col items-center gap-8">
-        {/* Progress dots */}
-        <div className="flex items-center gap-2">
-          {[0, 1, 2].map((i) => (
+        {/* Progress bar + dots */}
+        <div className="w-full space-y-2">
+          <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
             <motion.div
-              key={i}
-              variants={dotVariants}
-              animate={i === step ? 'active' : 'inactive'}
-              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-              className="h-2.5 w-2.5 rounded-full"
+              className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-400"
+              animate={{ width: `${((step + 1) / 3) * 100}%` }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
             />
-          ))}
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-white/30 uppercase tracking-widest">
+              Étape {step + 1} sur 3
+            </span>
+            <div className="flex items-center gap-2">
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  variants={dotVariants}
+                  animate={i === step ? 'active' : 'inactive'}
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  className="h-2 w-2 rounded-full"
+                />
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Step header */}
