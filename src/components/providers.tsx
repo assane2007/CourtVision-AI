@@ -4,7 +4,7 @@ import { ThemeProvider } from 'next-themes'
 import { SessionProvider as NextAuthSessionProvider } from 'next-auth/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Toaster } from 'sonner'
+import { Toaster } from '@/components/ui/sonner'
 import { PWAInstallPrompt } from '@/components/pwa-install-prompt'
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -27,7 +27,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <NextAuthSessionProvider>
         <QueryClientProvider client={queryClient}>
           {children}
-          <Toaster position="top-center" richColors />
+          <Toaster
+            position="top-center"
+            richColors
+            toastOptions={{
+              duration: 3500,
+            }}
+          />
           <PWAInstallPrompt />
         </QueryClientProvider>
       </NextAuthSessionProvider>

@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppStore } from '@/stores/app'
 import { BottomNav } from '@/components/shared/bottom-nav'
-import { cn } from '@/lib/utils'
+import { SwipeToGoBack } from '@/components/shared/swipe-back'
+import { apiFetch, cn } from '@/lib/utils'
 
 interface Achievement {
   type: string
@@ -33,7 +34,7 @@ const itemVariants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { type: 'spring', stiffness: 400, damping: 25 },
+    transition: { type: 'spring' as const, stiffness: 400, damping: 25 },
   },
 }
 
@@ -47,7 +48,7 @@ export function AchievementsScreen() {
     totalAchievements: number
   }>({
     queryKey: ['achievements'],
-    queryFn: () => fetch('/api/achievements').then(r => r.json()),
+    queryFn: () => apiFetch('/api/achievements'),
     staleTime: 30_000,
   })
 
@@ -57,7 +58,7 @@ export function AchievementsScreen() {
   const progress = totalAchievements > 0 ? (totalUnlocked / totalAchievements) * 100 : 0
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <SwipeToGoBack className="min-h-screen bg-background pb-20">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b">
         <div className="max-w-2xl mx-auto flex items-center gap-3 px-4 py-3">
@@ -91,11 +92,11 @@ export function AchievementsScreen() {
               <Medal className="h-5 w-5 text-orange-500" />
               <span className="font-semibold text-sm">Progression</span>
             </div>
-            <span className="text-2xl font-bold text-orange-500">
+            <span className="text-2xl font-bold text-orange-500 dark:text-orange-400">
               {Math.round(progress)}%
             </span>
           </div>
-          <div className="w-full h-3 bg-black/20 rounded-full overflow-hidden">
+          <div className="w-full h-3 bg-foreground/10 rounded-full overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
@@ -148,8 +149,8 @@ export function AchievementsScreen() {
                 className={cn(
                   'relative rounded-2xl border p-4 flex flex-col items-center text-center gap-2 transition-all',
                   achievement.unlocked
-                    ? 'bg-gradient-to-b from-orange-500/10 to-transparent border-orange-500/30 shadow-[0_0_20px_rgba(249,115,22,0.08)]'
-                    : 'bg-muted/30 border-border/50 opacity-50'
+                    ? 'bg-gradient-to-b from-orange-500/10 to-transparent border-orange-500/30 dark:border-orange-500/20 shadow-[0_0_20px_rgba(249,115,22,0.08)]'
+                    : 'bg-muted/30 dark:bg-muted/20 border-border/50 opacity-60 dark:opacity-40'
                 )}
               >
                 {/* Glow effect for unlocked */}
@@ -202,7 +203,7 @@ export function AchievementsScreen() {
       </div>
 
       <BottomNav />
-    </div>
+    </SwipeToGoBack>
   )
 }
 

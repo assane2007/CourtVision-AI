@@ -122,6 +122,45 @@
   }
 }
 
+/* Branded text selection */
+::selection {
+  @apply bg-orange-500/30 text-orange-900;
+}
+.dark ::selection {
+  @apply text-orange-100;
+}
+
+/* Custom scrollbar — thin with orange accent */
+@media not (pointer: coarse) {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.7 0.12 45 / 40%);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.7 0.12 45 / 60%);
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.7 0.12 45 / 40%) transparent;
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    background: oklch(0.7 0.12 45 / 25%);
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.7 0.12 45 / 40%);
+  }
+  .dark * {
+    scrollbar-color: oklch(0.7 0.12 45 / 25%) transparent;
+  }
+}
+
 /* PWA safe-area utilities for iOS notch / home indicator */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .pb-safe {
@@ -167,4 +206,13 @@ button, a, [role="button"] {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Hide scrollbar but keep scrollable */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }

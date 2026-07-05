@@ -32,7 +32,25 @@ import {
 } from '@/components/ui/select'
 import { useAppStore } from '@/stores/app'
 import { BottomNav } from '@/components/shared/bottom-nav'
+import { apiFetch } from '@/lib/utils'
 import { toast } from 'sonner'
+
+interface PlayerData {
+  id?: string
+  name?: string
+  email?: string
+  position?: string
+  level?: string
+  goals?: string
+  createdAt?: string
+}
+
+interface StatsData {
+  totalSessions?: number
+  totalReps?: number
+  avgScore?: number
+  weekSessions?: number
+}
 
 // ── Animation variants ──────────────────────────────────────────────
 const containerVariants = {
@@ -73,19 +91,19 @@ const goalsLabels: Record<string, string> = {
 
 // ── Component ───────────────────────────────────────────────────────
 export function ProfileScreen() {
-  const { currentScreen, navigate } = useAppStore()
+  const { navigate } = useAppStore()
   useSession()
   const queryClient = useQueryClient()
   // ── Fetch player ────────────────────────────────────────────────
-  const { data: player, isLoading } = useQuery({
+  const { data: player, isLoading } = useQuery<PlayerData>({
     queryKey: ['player'],
-    queryFn: () => fetch('/api/player').then((r) => r.json()),
+    queryFn: () => apiFetch<PlayerData>('/api/player'),
   })
 
   // ── Fetch stats for summary ─────────────────────────────────────
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<StatsData>({
     queryKey: ['stats'],
-    queryFn: () => fetch('/api/stats').then((r) => r.json()),
+    queryFn: () => apiFetch<StatsData>('/api/stats'),
   })
 
   // ── Derived initial form data from player ─────────────────────
@@ -110,11 +128,11 @@ export function ProfileScreen() {
   // ── Update mutation ─────────────────────────────────────────────
   const updateMutation = useMutation({
     mutationFn: (data: typeof formData) =>
-      fetch('/api/player', {
+      apiFetch('/api/player', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
-      }).then((r) => r.json()),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['player'] })
       setIsEditing(false)
@@ -208,7 +226,7 @@ export function ProfileScreen() {
         <div className="px-4 pt-5 space-y-5">
           {/* ── Profile Card ──────────────────────────────────────── */}
           <motion.div variants={itemVariants}>
-            <Card className="border-0 shadow-lg overflow-hidden">
+            <Card className="border-0 dark:border-border/50 shadow-lg dark:shadow-md overflow-hidden">
               <div className="h-1.5 bg-gradient-to-r from-orange-400 via-orange-500 to-amber-500" />
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
@@ -222,10 +240,10 @@ export function ProfileScreen() {
                     <p className="text-sm text-muted-foreground truncate">{player?.email}</p>
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       <Badge variant="secondary" className="text-xs">
-                        {positionLabels[player?.position] ?? player?.position}
+                        {positionLabels[player?.position ?? ''] ?? player?.position}
                       </Badge>
                       <Badge variant="outline" className="text-xs">
-                        {levelLabels[player?.level] ?? player?.level}
+                        {levelLabels[player?.level ?? ''] ?? player?.level}
                       </Badge>
                     </div>
                   </div>
@@ -270,7 +288,7 @@ export function ProfileScreen() {
                 transition={{ duration: 0.3, ease: 'easeInOut' as const }}
                 className="overflow-hidden"
               >
-                <Card className="border-0 shadow-md">
+                <Card className="border-0 dark:border-border/50 shadow-md">
                   <CardHeader className="pb-3 px-5 pt-5">
                     <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
                       <Pencil className="h-4 w-4 text-orange-500" />
@@ -371,7 +389,7 @@ export function ProfileScreen() {
 
           {/* ── Stats Summary ─────────────────────────────────────── */}
           <motion.div variants={itemVariants}>
-            <Card className="border-0 shadow-md">
+            <Card className="border-0 dark:border-border/50 shadow-md">
               <CardHeader className="pb-2 px-5 pt-5">
                 <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-orange-500" />
@@ -402,7 +420,7 @@ export function ProfileScreen() {
 
           {/* ── Mes Succès ───────────────────────────────────────── */}
           <motion.div variants={itemVariants}>
-            <Card className="border-0 shadow-md overflow-hidden">
+            <Card className="border-0 dark:border-border/50 shadow-md overflow-hidden">
               <CardContent className="p-0">
                 <button
                   onClick={() => navigate('achievements')}
@@ -427,7 +445,7 @@ export function ProfileScreen() {
 
           {/* ── Account Actions ───────────────────────────────────── */}
           <motion.div variants={itemVariants}>
-            <Card className="border-0 shadow-md overflow-hidden">
+            <Card className="border-0 dark:border-border/50 shadow-md overflow-hidden">
               <CardContent className="p-0">
                 <button
                   onClick={handleSignOut}
@@ -437,7 +455,7 @@ export function ProfileScreen() {
                     <LogOut className="h-4 w-4 text-red-500" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-red-600 group-hover:text-red-700">
+                    <p className="text-sm font-medium text-red-600 dark:text-red-400 group-hover:text-red-700 dark:group-hover:text-red-300">
                       Déconnexion
                     </p>
                     <p className="text-xs text-muted-foreground">

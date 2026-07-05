@@ -18,6 +18,7 @@ import {
   CircleDot,
 } from 'lucide-react'
 import { useAppStore } from '@/stores/app'
+import { apiFetch } from '@/lib/utils'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -207,7 +208,7 @@ export default function OnboardingScreen() {
     setIsSubmitting(true)
 
     try {
-      await fetch('/api/player', {
+      await apiFetch('/api/player', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

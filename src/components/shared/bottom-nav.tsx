@@ -1,11 +1,13 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Home, Dumbbell, BarChart3, User } from 'lucide-react'
+import { Home, ClipboardList, Dumbbell, BarChart3, User } from 'lucide-react'
 import { useAppStore, type Screen } from '@/stores/app'
+import { hapticLight } from '@/lib/haptics'
 
 const tabs: { icon: typeof Home; label: string; screen: Screen }[] = [
   { icon: Home, label: 'Accueil', screen: 'home' },
+  { icon: ClipboardList, label: 'Plans', screen: 'plans' },
   { icon: Dumbbell, label: 'Entraînement', screen: 'train-hub' },
   { icon: BarChart3, label: 'Stats', screen: 'stats' },
   { icon: User, label: 'Profil', screen: 'profile' },
@@ -23,8 +25,8 @@ export function BottomNav() {
             <button
               key={tab.screen}
               type="button"
-              onClick={() => navigate(tab.screen)}
-              className={`flex flex-col items-center gap-0.5 rounded-xl px-3 py-1.5 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              onClick={() => { hapticLight(); navigate(tab.screen) }}
+              className={`flex flex-col items-center gap-0.5 rounded-xl px-2.5 py-1.5 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 isActive
                   ? 'text-orange-500'
                   : 'text-muted-foreground hover:text-foreground'

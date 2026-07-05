@@ -1,0 +1,1648 @@
+     1→     1→'use client'
+     2→     2→
+     3→     3→import { useState, useRef, useEffect, useCallback } from 'react'
+     4→     4→import { motion, AnimatePresence } from 'framer-motion'
+     5→     5→import { useAppStore } from '@/stores/app'
+     6→     6→import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+     7→     7→import { Card, CardContent } from '@/components/ui/card'
+     8→     8→import { Button } from '@/components/ui/button'
+     9→     9→import { Badge } from '@/components/ui/badge'
+    10→    10→import { Skeleton } from '@/components/ui/skeleton'
+    11→    11→import { toast } from 'sonner'
+    12→    12→import {
+    13→    13→  ArrowLeft,
+    14→    14→  Camera,
+    15→    15→  Pause,
+    16→    16→  Play,
+    17→    17→  Square,
+    18→    18→  RotateCcw,
+    19→    19→  Save,
+    20→    20→  Star,
+    21→    21→  Volume2,
+    22→    22→  VolumeX,
+    23→    23→  Loader2,
+    24→    24→  AlertTriangle,
+    25→    25→  ShieldCheck,
+    26→    26→  Sparkles,
+    27→    27→} from 'lucide-react'
+    28→    28→
+    29→    29→// ─── Types ───────────────────────────────────────────────────────────────────
+    30→    30→
+    31→    31→// Load MediaPipe via script tag (Turbopack doesn't support dynamic URL imports)
+    32→    32→async function loadMediaPipe() {
+    33→    33→  const win = window as unknown as Record<string, unknown>
+    34→    34→  if (win.__mediapipe_vision__) return win.__mediapipe_vision__ as typeof import('@mediapipe/tasks-vision')
+    35→    35→
+    36→    36→  return new Promise<typeof import('@mediapipe/tasks-vision')>((resolve, reject) => {
+    37→    37→    const script = document.createElement('script')
+    38→    38→    script.type = 'module'
+    39→    39→    script.textContent = `
+    40→    40→      import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/+esm').then(mod => {
+    41→    41→        window.__mediapipe_vision__ = mod;
+    42→    42→        window.__mediapipe_vision_ready__ = true;
+    43→    43→        window.dispatchEvent(new Event('mediapipe-ready'));
+    44→    44→      }).catch(err => {
+    45→    45→        window.__mediapipe_vision_err__ = err;
+    46→    46→        window.dispatchEvent(new Event('mediapipe-error'));
+    47→    47→      });
+    48→    48→    `
+    49→    49→    document.head.appendChild(script)
+    50→    50→
+    51→    51→    function onReady() {
+    52→    52→      window.removeEventListener('mediapipe-ready', onReady)
+    53→    53→      window.removeEventListener('mediapipe-error', onError)
+    54→    54→      resolve(win.__mediapipe_vision__ as typeof import('@mediapipe/tasks-vision'))
+    55→    55→    }
+    56→    56→    function onError() {
+    57→    57→      window.removeEventListener('mediapipe-ready', onReady)
+    58→    58→      window.removeEventListener('mediapipe-error', onError)
+    59→    59→      reject(win.__mediapipe_vision_err__ || new Error('Failed to load MediaPipe'))
+    60→    60→    }
+    61→    61→    window.addEventListener('mediapipe-ready', onReady)
+    62→    62→    window.addEventListener('mediapipe-error', onError)
+    63→    63→  })
+    64→    64→}
+    65→    65→
+    66→    66→interface Landmark {
+    67→    67→  x: number
+    68→    68→  y: number
+    69→    69→  z: number
+    70→    70→  visibility?: number
+    71→    71→}
+    72→    72→
+    73→    73→type WorkoutPhase =
+    74→    74→  | 'loading'
+    75→    75→  | 'countdown'
+    76→    76→  | 'active'
+    77→    77→  | 'paused'
+    78→    78→  | 'completed'
+    79→    79→  | 'error'
+    80→    80→
+    81→    81→interface Drill {
+    82→    82→  id: string
+    83→    83→  name: string
+    84→    84→  nameFr: string
+    85→    85→  category: string
+    86→    86→  difficulty: string
+    87→    87→  description: string
+    88→    88→  descriptionFr: string
+    89→    89→  instructions: string
+    90→    90→  instructionsFr: string
+    91→    91→  durationSec: number
+    92→    92→  targetReps: number
+    93→    93→  icon: string
+    94→    94→}
+    95→    95→
+    96→    96→interface RepTracker {
+    97→    97→  lastPos: number
+    98→    98→  direction: 'up' | 'down' | 'left' | 'right' | 'none'
+    99→    99→  lastRepTime: number
+   100→   100→  peakPositions: number[]
+   101→   101→  troughPositions: number[]
+   102→   102→  sampleCount: number
+   103→   103→  totalMovement: number
+   104→   104→  lastXPos: number
+   105→   105→  lastYPos: number
+   106→   106→  lastHipY: number
+   107→   107→  lastWristY: number
+   108→   108→  lastAnkleLX: number
+   109→   109→  lastAnkleRX: number
+   110→   110→  velocityHistory: number[]
+   111→   111→}
+   112→   112→
+   113→   113→interface ScoreDetail {
+   114→   114→  posture: number
+   115→   115→  stanceWidth: number
+   116→   116→  armPosition: number
+   117→   117→  movementQuality: number
+   118→   118→}
+   119→   119→
+   120→   120→interface AIFormCheckResult {
+   121→   121→  score: number
+   122→   122→  feedback: string
+   123→   123→  issues: string[]
+   124→   124→  goodPoints: string[]
+   125→   125→}
+   126→   126→
+   127→   127→// ─── MediaPipe Pose Connections ──────────────────────────────────────────────
+   128→   128→
+   129→   129→const POSE_CONNECTIONS: [number, number][] = [
+   130→   130→  [11, 12], [11, 13], [13, 15], [12, 14], [14, 16],
+   131→   131→  [11, 23], [12, 24], [23, 24], [23, 25], [24, 26],
+   132→   132→  [25, 27], [26, 28], [27, 29], [28, 30], [29, 31], [30, 32],
+   133→   133→  [15, 17], [15, 19], [15, 21], [16, 18], [16, 20], [16, 22],
+   134→   134→  [0, 1], [1, 2], [2, 3], [3, 7], [0, 4], [4, 5], [5, 6], [6, 8],
+   135→   135→  [9, 10],
+   136→   136→]
+   137→   137→
+   138→   138→// ─── Constants ───────────────────────────────────────────────────────────────
+   139→   139→
+   140→   140→const REP_DEBOUNCE_MS = 500
+   141→   141→const LANDMARK_COLOR = '#f97316'
+   142→   142→const LANDMARK_RADIUS = 5
+   143→   143→const CONNECTION_WIDTH = 3
+   144→   144→const COUNTDOWN_SECONDS = 3
+   145→   145→const AI_CHECK_COOLDOWN_MS = 10_000
+   146→   146→
+   147→   147→const FEEDBACK_MESSAGES = {
+   148→   148→  goodPosture: 'Bonne posture! ✅',
+   149→   149→  leanRight: 'Restez droit! 📐',
+   150→   150→  leanLeft: 'Restez droit! 📐',
+   151→   151→  tooSlow: 'Plus vite! ⚡',
+   152→   152→  goodSpeed: 'Excellent rythme! 🔥',
+   153→   153→  armsLow: 'Montez les bras! 💪',
+   154→   154→  keepGoing: 'Continuez comme ça! 🎯',
+   155→   155→  greatForm: 'Superbe forme! 💯',
+   156→   156→  narrowStance: 'Écartez les pieds! 🦶',
+   157→   157→  wideStance: 'Resserrez la garde! 🛡️',
+   158→   158→}
+   159→   159→
+   160→   160→const SCORE_COLORS: Record<string, string> = {
+   161→   161→  green: 'text-emerald-400',
+   162→   162→  orange: 'text-orange-400',
+   163→   163→  red: 'text-red-400',
+   164→   164→}
+   165→   165→
+   166→   166→const SCORE_BG_COLORS: Record<string, string> = {
+   167→   167→  green: 'bg-emerald-500/20 border-emerald-500/30',
+   168→   168→  orange: 'bg-orange-500/20 border-orange-500/30',
+   169→   169→  red: 'bg-red-500/20 border-red-500/30',
+   170→   170→}
+   171→   171→
+   172→   172→// ─── Helpers ─────────────────────────────────────────────────────────────────
+   173→   173→
+   174→   174→function formatTime(seconds: number): string {
+   175→   175→  const m = Math.floor(seconds / 60)
+   176→   176→  const s = seconds % 60
+   177→   177→  return `${m}:${s.toString().padStart(2, '0')}`
+   178→   178→}
+   179→   179→
+   180→   180→function getScoreColor(score: number): string {
+   181→   181→  if (score >= 80) return SCORE_COLORS.green
+   182→   182→  if (score >= 50) return SCORE_COLORS.orange
+   183→   183→  return SCORE_COLORS.red
+   184→   184→}
+   185→   185→
+   186→   186→function getScoreBgColor(score: number): string {
+   187→   187→  if (score >= 80) return SCORE_BG_COLORS.green
+   188→   188→  if (score >= 50) return SCORE_BG_COLORS.orange
+   189→   189→  return SCORE_BG_COLORS.red
+   190→   190→}
+   191→   191→
+   192→   192→function getStarCount(score: number): number {
+   193→   193→  if (score >= 90) return 5
+   194→   194→  if (score >= 75) return 4
+   195→   195→  if (score >= 60) return 3
+   196→   196→  if (score >= 40) return 2
+   197→   197→  return 1
+   198→   198→}
+   199→   199→
+   200→   200→function createRepTracker(): RepTracker {
+   201→   201→  return {
+   202→   202→    lastPos: 0,
+   203→   203→    direction: 'none',
+   204→   204→    lastRepTime: 0,
+   205→   205→    peakPositions: [],
+   206→   206→    troughPositions: [],
+   207→   207→    sampleCount: 0,
+   208→   208→    totalMovement: 0,
+   209→   209→    lastXPos: 0,
+   210→   210→    lastYPos: 0,
+   211→   211→    lastHipY: 0,
+   212→   212→    lastWristY: 0,
+   213→   213→    lastAnkleLX: 0,
+   214→   214→    lastAnkleRX: 0,
+   215→   215→    velocityHistory: [],
+   216→   216→  }
+   217→   217→}
+   218→   218→
+   219→   219→function computeScore(scores: ScoreDetail[]): number {
+   220→   220→  if (scores.length === 0) return 0
+   221→   221→  const recent = scores.slice(-10)
+   222→   222→
+   223→   223→  // Movement is a prerequisite: if average movement is near 0, score = 0
+   224→   224→  const avgMovement = recent.reduce((s, d) => s + d.movementQuality, 0) / recent.length
+   225→   225→  if (avgMovement < 10) return 0
+   226→   226→
+   227→   227→  // Movement quality is the dominant factor (55%), form is secondary (45%)
+   228→   228→  const avg =
+   229→   229→    recent.reduce(
+   230→   230→      (sum, s) =>
+   231→   231→        sum +
+   232→   232→        (s.movementQuality * 0.55 +
+   233→   233→          s.posture * 0.15 +
+   234→   234→          s.stanceWidth * 0.08 +
+   235→   235→          s.armPosition * 0.22),
+   236→   236→      0,
+   237→   237→    ) / recent.length
+   238→   238→  return Math.round(Math.min(100, Math.max(0, avg)))
+   239→   239→}
+   240→   240→
+   241→   241→function analyzeForm(
+   242→   242→  landmarks: Landmark[],
+   243→   243→  category: string,
+   244→   244→  tracker: RepTracker,
+   245→   245→): { score: ScoreDetail; feedback: string } {
+   246→   246→  const lShoulder = landmarks[11]
+   247→   247→  const rShoulder = landmarks[12]
+   248→   248→  const lAnkle = landmarks[27]
+   249→   249→  const rAnkle = landmarks[28]
+   250→   250→  const lWrist = landmarks[15]
+   251→   251→  const rWrist = landmarks[16]
+   252→   252→  const lHip = landmarks[23]
+   253→   253→  const rHip = landmarks[24]
+   254→   254→
+   255→   255→  // ── 1. Posture: shoulders level? (0-100, baseline ~60) ──
+   256→   256→  const shoulderDy = Math.abs(lShoulder.y - rShoulder.y)
+   257→   257→  const postureScore = Math.max(0, Math.min(100, 90 - shoulderDy * 600))
+   258→   258→
+   259→   259→  // ── 2. Stance width: ankle distance (0-100, baseline ~30) ──
+   260→   260→  const ankleDist = Math.abs(lAnkle.x - rAnkle.x)
+   261→   261→  let stanceScore = 30
+   262→   262→  if (ankleDist > 0.15 && ankleDist < 0.45) stanceScore = 85
+   263→   263→  else if (ankleDist > 0.1 && ankleDist < 0.55) stanceScore = 60
+   264→   264→  else if (ankleDist < 0.1) stanceScore = 15
+   265→   265→  else stanceScore = 20
+   266→   266→
+   267→   267→  // ── 3. Arm position: depends on category (0-100, baseline ~30) ──
+   268→   268→  let armScore = 30
+   269→   269→  const avgWristY = (lWrist.y + rWrist.y) / 2
+   270→   270→  const avgShoulderY = (lShoulder.y + rShoulder.y) / 2
+   271→   271→  if (category === 'shooting') {
+   272→   272→    const wristAbove = avgShoulderY - avgWristY
+   273→   273→    armScore = Math.min(100, Math.max(0, 30 + wristAbove * 400))
+   274→   274→  } else if (category === 'defense') {
+   275→   275→    const wristBelow = avgWristY - avgShoulderY
+   276→   276→    armScore = Math.min(100, Math.max(0, 30 + wristBelow * 300))
+   277→   277→  } else if (category === 'ball_handling' || category === 'pocket_ball') {
+   278→   278→    armScore = avgWristY > avgShoulderY ? 60 : 25
+   279→   279→  }
+   280→   280→
+   281→   281→  // ── 4. Movement quality (DOMINANT: 50% weight) (0-100, baseline 0) ──
+   282→   282→  const velocities = tracker.velocityHistory
+   283→   283→  let moveScore = 0
+   284→   284→  if (velocities.length > 3) {
+   285→   285→    const recent = velocities.slice(-10)
+   286→   286→    const avgSpeed = recent.reduce((a, b) => a + b, 0) / recent.length
+   287→   287→
+   288→   288→    // Speed scoring: 0 speed = 0 score, good speed = high score
+   289→   289→    // Threshold: below 0.002 = too slow, 0.003-0.008 = good, above 0.01 = erratic
+   290→   290→    if (avgSpeed < 0.001) {
+   291→   291→      moveScore = 0 // Not moving at all
+   292→   292→    } else if (avgSpeed < 0.002) {
+   293→   293→      moveScore = 15 // Barely moving
+   294→   294→    } else if (avgSpeed < 0.008) {
+   295→   295→      // Good range — score proportionally
+   296→   296→      moveScore = Math.min(95, 40 + (avgSpeed - 0.002) * 15000)
+   297→   297→    } else {
+   298→   298→      // Too fast/erratic — penalize
+   299→   299→      moveScore = Math.max(30, 95 - (avgSpeed - 0.008) * 5000)
+   300→   300→    }
+   301→   301→
+   302→   302→    // Consistency bonus: low variance = more controlled movement
+   303→   303→    if (recent.length > 5) {
+   304→   304→      const mean = recent.reduce((a, b) => a + b, 0) / recent.length
+   305→   305→      const variance =
+   306→   306→        recent.reduce((sum, v) => sum + (v - mean) ** 2, 0) / recent.length
+   307→   307→      // Variance penalty: high variance = jerky/uncontrolled
+   308→   308→      const variancePenalty = Math.min(30, variance * 50000)
+   309→   309→      moveScore = Math.max(0, moveScore - variancePenalty)
+   310→   310→    }
+   311→   311→  }
+   312→   312→  // If no velocity data yet, score stays at 0
+   313→   313→
+   314→   314→  const score: ScoreDetail = {
+   315→   315→    posture: postureScore,
+   316→   316→    stanceWidth: stanceScore,
+   317→   317→    armPosition: armScore,
+   318→   318→    movementQuality: moveScore,
+   319→   319→  }
+   320→   320→
+   321→   321→  // ── Feedback generation ──
+   322→   322→  let feedback = ''
+   323→   323→  const hipMidX = (lHip.x + rHip.x) / 2
+   324→   324→  const shoulderMidX = (lShoulder.x + rShoulder.x) / 2
+   325→   325→  const lean = hipMidX - shoulderMidX
+   326→   326→
+   327→   327→  // Prioritize: inactivity > form issues > praise
+   328→   328→  if (velocities.length > 3) {
+   329→   329→    const recentSpeed = velocities.slice(-5).reduce((a, b) => a + b, 0) / 5
+   330→   330→    if (recentSpeed < 0.001) {
+   331→   331→      feedback = FEEDBACK_MESSAGES.tooSlow
+   332→   332→    }
+   333→   333→  }
+   334→   334→  if (!feedback && Math.abs(lean) > 0.04) {
+   335→   335→    feedback = FEEDBACK_MESSAGES.leanRight
+   336→   336→  }
+   337→   337→  if (!feedback && category === 'shooting' && avgWristY > avgShoulderY + 0.05) {
+   338→   338→    feedback = FEEDBACK_MESSAGES.armsLow
+   339→   339→  }
+   340→   340→  if (!feedback && ankleDist < 0.12 && category !== 'shooting') {
+   341→   341→    feedback = FEEDBACK_MESSAGES.narrowStance
+   342→   342→  }
+   343→   343→  if (!feedback && ankleDist > 0.5 && category !== 'finishing') {
+   344→   344→    feedback = FEEDBACK_MESSAGES.wideStance
+   345→   345→  }
+   346→   346→  if (!feedback && velocities.length > 5) {
+   347→   347→    const recentSpeed = velocities.slice(-3).reduce((a, b) => a + b, 0) / 3
+   348→   348→    if (recentSpeed > 0.003 && recentSpeed < 0.008) {
+   349→   349→      feedback = FEEDBACK_MESSAGES.goodSpeed
+   350→   350→    }
+   351→   351→  }
+   352→   352→  if (!feedback && postureScore > 80 && moveScore > 70) {
+   353→   353→    feedback = FEEDBACK_MESSAGES.goodPosture
+   354→   354→  }
+   355→   355→  if (!feedback && postureScore > 90 && moveScore > 80) {
+   356→   356→    feedback = FEEDBACK_MESSAGES.greatForm
+   357→   357→  }
+   358→   358→
+   359→   359→  return { score, feedback }
+   360→   360→}
+   361→   361→
+   362→   362→function detectRep(
+   363→   363→  landmarks: Landmark[],
+   364→   364→  category: string,
+   365→   365→  tracker: RepTracker,
+   366→   366→  now: number,
+   367→   367→): { rep: boolean; updatedTracker: RepTracker } {
+   368→   368→  const t = { ...tracker }
+   369→   369→  t.sampleCount++
+   370→   370→
+   371→   371→  let repDetected = false
+   372→   372→
+   373→   373→  // Helper: compute velocity from position history
+   374→   374→  const computeVelocity = (current: number, last: number): number =>
+   375→   375→    Math.abs(current - last)
+   376→   376→
+   377→   377→  switch (category) {
+   378→   378→    case 'pocket_ball':
+   379→   379→    case 'ball_handling': {
+   380→   380→      const wristY = (landmarks[15].y + landmarks[16].y) / 2
+   381→   381→      const velocity = computeVelocity(wristY, t.lastWristY)
+   382→   382→      t.velocityHistory.push(velocity)
+   383→   383→      if (t.velocityHistory.length > 20) t.velocityHistory.shift()
+   384→   384→
+   385→   385→      if (t.sampleCount > 5) {
+   386→   386→        if (t.direction === 'up' && wristY > t.lastWristY + 0.01) {
+   387→   387→          t.direction = 'down'
+   388→   388→        } else if (t.direction === 'down' && wristY < t.lastWristY - 0.01) {
+   389→   389→          t.direction = 'up'
+   390→   390→          if (now - t.lastRepTime > REP_DEBOUNCE_MS) {
+   391→   391→            repDetected = true
+   392→   392→            t.lastRepTime = now
+   393→   393→          }
+   394→   394→        }
+   395→   395→        if (t.direction === 'none') t.direction = wristY > t.lastWristY ? 'down' : 'up'
+   396→   396→      }
+   397→   397→      t.lastWristY = wristY
+   398→   398→      break
+   399→   399→    }
+   400→   400→    case 'shifty':
+   401→   401→    case 'speed_change': {
+   402→   402→      const hipX = (landmarks[23].x + landmarks[24].x) / 2
+   403→   403→      const velocity = computeVelocity(hipX, t.lastXPos)
+   404→   404→      t.velocityHistory.push(velocity)
+   405→   405→      if (t.velocityHistory.length > 20) t.velocityHistory.shift()
+   406→   406→
+   407→   407→      if (t.sampleCount > 5) {
+   408→   408→        if (t.direction === 'right' && hipX < t.lastXPos - 0.015) {
+   409→   409→          t.direction = 'left'
+   410→   410→        } else if (t.direction === 'left' && hipX > t.lastXPos + 0.015) {
+   411→   411→          t.direction = 'right'
+   412→   412→          if (now - t.lastRepTime > REP_DEBOUNCE_MS) {
+   413→   413→            repDetected = true
+   414→   414→            t.lastRepTime = now
+   415→   415→          }
+   416→   416→        }
+   417→   417→        if (t.direction === 'none') t.direction = hipX > t.lastXPos ? 'right' : 'left'
+   418→   418→      }
+   419→   419→      t.lastXPos = hipX
+   420→   420→      break
+   421→   421→    }
+   422→   422→    case 'defense': {
+   423→   423→      const hipX = (landmarks[23].x + landmarks[24].x) / 2
+   424→   424→      const velocity = computeVelocity(hipX, t.lastXPos)
+   425→   425→      t.velocityHistory.push(velocity)
+   426→   426→      if (t.velocityHistory.length > 20) t.velocityHistory.shift()
+   427→   427→
+   428→   428→      if (t.sampleCount > 5) {
+   429→   429→        if (t.direction === 'right' && hipX < t.lastXPos - 0.02) {
+   430→   430→          t.direction = 'left'
+   431→   431→        } else if (t.direction === 'left' && hipX > t.lastXPos + 0.02) {
+   432→   432→          t.direction = 'right'
+   433→   433→          if (now - t.lastRepTime > REP_DEBOUNCE_MS) {
+   434→   434→            repDetected = true
+   435→   435→            t.lastRepTime = now
+   436→   436→          }
+   437→   437→        }
+   438→   438→        if (t.direction === 'none') t.direction = hipX > t.lastXPos ? 'right' : 'left'
+   439→   439→      }
+   440→   440→      t.lastXPos = hipX
+   441→   441→      break
+   442→   442→    }
+   443→   443→    case 'shooting': {
+   444→   444→      const wristY = Math.min(landmarks[15].y, landmarks[16].y)
+   445→   445→      const velocity = computeVelocity(wristY, t.lastWristY)
+   446→   446→      t.velocityHistory.push(velocity)
+   447→   447→      if (t.velocityHistory.length > 20) t.velocityHistory.shift()
+   448→   448→
+   449→   449→      if (t.sampleCount > 5) {
+   450→   450→        if (t.direction === 'down' && wristY < t.lastWristY - 0.02) {
+   451→   451→          t.direction = 'up'
+   452→   452→        } else if (t.direction === 'up' && wristY > t.lastWristY + 0.02) {
+   453→   453→          t.direction = 'down'
+   454→   454→          if (now - t.lastRepTime > REP_DEBOUNCE_MS) {
+   455→   455→            repDetected = true
+   456→   456→            t.lastRepTime = now
+   457→   457→          }
+   458→   458→        }
+   459→   459→        if (t.direction === 'none') t.direction = wristY > t.lastWristY ? 'down' : 'up'
+   460→   460→      }
+   461→   461→      t.lastWristY = wristY
+   462→   462→      break
+   463→   463→    }
+   464→   464→    case 'footwork': {
+   465→   465→      const lAnkleX = landmarks[27].x
+   466→   466→      const rAnkleX = landmarks[28].x
+   467→   467→      const footShift = Math.abs(lAnkleX - t.lastAnkleLX) + Math.abs(rAnkleX - t.lastAnkleRX)
+   468→   468→      const velocity = footShift
+   469→   469→      t.velocityHistory.push(velocity)
+   470→   470→      if (t.velocityHistory.length > 20) t.velocityHistory.shift()
+   471→   471→
+   472→   472→      if (t.sampleCount > 5 && footShift > 0.03) {
+   473→   473→        if (now - t.lastRepTime > REP_DEBOUNCE_MS) {
+   474→   474→          repDetected = true
+   475→   475→          t.lastRepTime = now
+   476→   476→        }
+   477→   477→      }
+   478→   478→      t.lastAnkleLX = lAnkleX
+   479→   479→      t.lastAnkleRX = rAnkleX
+   480→   480→      break
+   481→   481→    }
+   482→   482→    case 'finishing': {
+   483→   483→      const hipY = (landmarks[23].y + landmarks[24].y) / 2
+   484→   484→      const velocity = computeVelocity(hipY, t.lastHipY)
+   485→   485→      t.velocityHistory.push(velocity)
+   486→   486→      if (t.velocityHistory.length > 20) t.velocityHistory.shift()
+   487→   487→
+   488→   488→      if (t.sampleCount > 5) {
+   489→   489→        if (t.direction === 'down' && hipY < t.lastHipY - 0.03) {
+   490→   490→          t.direction = 'up'
+   491→   491→        } else if (t.direction === 'up' && hipY > t.lastHipY + 0.02) {
+   492→   492→          t.direction = 'down'
+   493→   493→          if (now - t.lastRepTime > REP_DEBOUNCE_MS) {
+   494→   494→            repDetected = true
+   495→   495→            t.lastRepTime = now
+   496→   496→          }
+   497→   497→        }
+   498→   498→        if (t.direction === 'none') t.direction = hipY > t.lastHipY ? 'down' : 'up'
+   499→   499→      }
+   500→   500→      t.lastHipY = hipY
+   501→   501→      break
+   502→   502→    }
+   503→   503→    case 'conditioning': {
+   504→   504→      const hipX = (landmarks[23].x + landmarks[24].x) / 2
+   505→   505→      const hipY = (landmarks[23].y + landmarks[24].y) / 2
+   506→   506→      const dx = computeVelocity(hipX, t.lastXPos)
+   507→   507→      const dy = computeVelocity(hipY, t.lastYPos)
+   508→   508→      const speed = Math.sqrt(dx * dx + dy * dy)
+   509→   509→      t.totalMovement += speed
+   510→   510→
+   511→   511→      if (t.velocityHistory.length > 20) t.velocityHistory.shift()
+   512→   512→      t.velocityHistory.push(speed)
+   513→   513→
+   514→   514→      // Count a "rep" for every ~0.5 total accumulated movement
+   515→   515→      if (t.totalMovement > 0.5 && now - t.lastRepTime > REP_DEBOUNCE_MS * 2) {
+   516→   516→        repDetected = true
+   517→   517→        t.lastRepTime = now
+   518→   518→        t.totalMovement = 0
+   519→   519→      }
+   520→   520→      t.lastXPos = hipX
+   521→   521→      t.lastYPos = hipY
+   522→   522→      break
+   523→   523→    }
+   524→   524→  }
+   525→   525→
+   526→   526→  return { rep: repDetected, updatedTracker: t }
+   527→   527→}
+   528→   528→
+   529→   529→function drawSkeleton(
+   530→   530→  ctx: CanvasRenderingContext2D,
+   531→   531→  landmarks: Landmark[],
+   532→   532→  width: number,
+   533→   533→  height: number,
+   534→   534→) {
+   535→   535→  ctx.clearRect(0, 0, width, height)
+   536→   536→  if (!landmarks || landmarks.length < 33) return
+   537→   537→
+   538→   538→  // Draw connections
+   539→   539→  ctx.strokeStyle = LANDMARK_COLOR
+   540→   540→  ctx.lineWidth = CONNECTION_WIDTH
+   541→   541→  ctx.lineCap = 'round'
+   542→   542→
+   543→   543→  for (const [i, j] of POSE_CONNECTIONS) {
+   544→   544→    const a = landmarks[i]
+   545→   545→    const b = landmarks[j]
+   546→   546→    if (!a || !b) continue
+   547→   547→    if ((a.visibility ?? 0) < 0.5 || (b.visibility ?? 0) < 0.5) continue
+   548→   548→
+   549→   549→    // Mirror X coordinates
+   550→   550→    const ax = (1 - a.x) * width
+   551→   551→    const ay = a.y * height
+   552→   552→    const bx = (1 - b.x) * width
+   553→   553→    const by = b.y * height
+   554→   554→
+   555→   555→    ctx.beginPath()
+   556→   556→    ctx.moveTo(ax, ay)
+   557→   557→    ctx.lineTo(bx, by)
+   558→   558→    ctx.stroke()
+   559→   559→  }
+   560→   560→
+   561→   561→  // Draw landmarks
+   562→   562→  for (let i = 0; i < landmarks.length; i++) {
+   563→   563→    const lm = landmarks[i]
+   564→   564→    if (!lm) continue
+   565→   565→    if ((lm.visibility ?? 0) < 0.5) continue
+   566→   566→
+   567→   567→    const x = (1 - lm.x) * width
+   568→   568→    const y = lm.y * height
+   569→   569→
+   570→   570→    ctx.beginPath()
+   571→   571→    ctx.arc(x, y, LANDMARK_RADIUS, 0, Math.PI * 2)
+   572→   572→    ctx.fillStyle = LANDMARK_COLOR
+   573→   573→    ctx.fill()
+   574→   574→    ctx.strokeStyle = '#ffffff'
+   575→   575→    ctx.lineWidth = 1.5
+   576→   576→    ctx.stroke()
+   577→   577→  }
+   578→   578→}
+   579→   579→
+   580→   580→// ─── Animation Variants ─────────────────────────────────────────────────────
+   581→   581→
+   582→   582→const overlayVariants = {
+   583→   583→  hidden: { opacity: 0, scale: 0.95 },
+   584→   584→  visible: {
+   585→   585→    opacity: 1,
+   586→   586→    scale: 1,
+   587→   587→    transition: { duration: 0.3, ease: 'easeOut' as const },
+   588→   588→  },
+   589→   589→  exit: {
+   590→   590→    opacity: 0,
+   591→   591→    scale: 0.95,
+   592→   592→    transition: { duration: 0.2 },
+   593→   593→  },
+   594→   594→}
+   595→   595→
+   596→   596→const countPulse = {
+   597→   597→  initial: { scale: 0.5, opacity: 0 },
+   598→   598→  animate: {
+   599→   599→    scale: [0.5, 1.2, 1],
+   600→   600→    opacity: [0, 1, 1],
+   601→   601→    transition: { duration: 0.6, ease: 'easeOut' as const },
+   602→   602→  },
+   603→   603→  exit: { scale: 1.5, opacity: 0, transition: { duration: 0.3 } },
+   604→   604→}
+   605→   605→
+   606→   606→// ─── Component ───────────────────────────────────────────────────────────────
+   607→   607→
+   608→   608→export default function CameraWorkoutScreen() {
+   609→   609→  const { selectedDrillId, goBack, navigate } = useAppStore()
+   610→   610→  const queryClient = useQueryClient()
+   611→   611→
+   612→   612→  // ── Refs ──────────────────────────────────────────────────────────────
+   613→   613→  const videoRef = useRef<HTMLVideoElement>(null)
+   614→   614→  const canvasRef = useRef<HTMLCanvasElement>(null)
+   615→   615→  const captureCanvasRef = useRef<HTMLCanvasElement | null>(null)
+   616→   616→  const streamRef = useRef<MediaStream | null>(null)
+   617→   617→  const poseLandmarkerRef = useRef<unknown>(null)
+   618→   618→  const rafRef = useRef<number>(0)
+   619→   619→  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+   620→   620→  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
+   621→   621→  const repTrackerRef = useRef<RepTracker>(createRepTracker())
+   622→   622→  const scoresRef = useRef<ScoreDetail[]>([])
+   623→   623→  const startTimeRef = useRef<number>(0)
+   624→   624→  const pausedAtRef = useRef<number>(0)
+   625→   625→  const pauseAccumRef = useRef<number>(0)
+   626→   626→  const aiCooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+   627→   627→  const phaseRef = useRef<WorkoutPhase>('loading')
+   628→   628→
+   629→   629→  // ── State ─────────────────────────────────────────────────────────────
+   630→   630→  const [phase, setPhase] = useState<WorkoutPhase>('loading')
+   631→   631→  const [isModelLoaded, setIsModelLoaded] = useState(false)
+   632→   632→  const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS)
+   633→   633→  const [timeRemaining, setTimeRemaining] = useState(0)
+   634→   634→  const [reps, setReps] = useState(0)
+   635→   635→  const [currentScore, setCurrentScore] = useState(0)
+   636→   636→  const [feedback, setFeedback] = useState('')
+   637→   637→  const [cameraError, setCameraError] = useState('')
+   638→   638→  const [isMuted, setIsMuted] = useState(false)
+   639→   639→  const [elapsedAtEnd, setElapsedAtEnd] = useState(0)
+   640→   640→  const [finalScore, setFinalScore] = useState(0)
+   641→   641→
+   642→   642→  // AI form check state
+   643→   643→  const [aiLoading, setAiLoading] = useState(false)
+   644→   644→  const [aiCooldownRemaining, setAiCooldownRemaining] = useState(0)
+   645→   645→  const [aiResult, setAiResult] = useState<AIFormCheckResult | null>(null)
+   646→   646→  const [aiError, setAiError] = useState('')
+   647→   647→
+   648→   648→  // Keep phaseRef in sync
+   649→   649→  useEffect(() => {
+   650→   650→    phaseRef.current = phase
+   651→   651→  }, [phase])
+   652→   652→
+   653→   653→  // ── Fetch drill ───────────────────────────────────────────────────────
+   654→   654→  const { data, isLoading: isDrillLoading } = useQuery({
+   655→   655→    queryKey: ['drills'],
+   656→   656→    queryFn: () => fetch('/api/drills').then((r) => r.json()),
+   657→   657→  })
+   658→   658→
+   659→   659→  const drill: Drill | undefined = data?.drills?.find(
+   660→   660→    (d: { id: string }) => d.id === selectedDrillId,
+   661→   661→  )
+   662→   662→
+   663→   663→  const totalDuration = drill?.durationSec ?? 60
+   664→   664→
+   665→   665→  // ── Save session mutation ─────────────────────────────────────────────
+   666→   666→  const saveMutation = useMutation({
+   667→   667→    mutationFn: (payload: {
+   668→   668→      drillId: string
+   669→   669→      reps: number
+   670→   670→      score: number
+   671→   671→      durationSec: number
+   672→   672→    }) =>
+   673→   673→      fetch('/api/sessions', {
+   674→   674→        method: 'POST',
+   675→   675→        headers: { 'Content-Type': 'application/json' },
+   676→   676→        body: JSON.stringify(payload),
+   677→   677→      }).then((r) => {
+   678→   678→        if (!r.ok) throw new Error('Failed to save session')
+   679→   679→        return r.json()
+   680→   680→      }),
+   681→   681→    onSuccess: () => {
+   682→   682→      queryClient.invalidateQueries({ queryKey: ['sessions'] })
+   683→   683→      queryClient.invalidateQueries({ queryKey: ['stats'] })
+   684→   684→      toast.success('Session sauvegardée! 🎉', {
+   685→   685→        description: `${reps} répétitions enregistrées`,
+   686→   686→      })
+   687→   687→    },
+   688→   688→    onError: () => {
+   689→   689→      toast.error('Erreur de sauvegarde', {
+   690→   690→        description: 'Impossible de sauvegarder la session',
+   691→   691→      })
+   692→   692→    },
+   693→   693→  })
+   694→   694→
+   695→   695→  // ── Load MediaPipe ────────────────────────────────────────────────────
+   696→   696→  useEffect(() => {
+   697→   697→    let cancelled = false
+   698→   698→
+   699→   699→    async function initMediaPipe() {
+   700→   700→      try {
+   701→   701→        const vision = await loadMediaPipe()
+   702→   702→        if (cancelled) return
+   703→   703→
+   704→   704→        const { PoseLandmarker, FilesetResolver } = vision
+   705→   705→
+   706→   706→        const filesetResolver = await FilesetResolver.forVisionTasks(
+   707→   707→          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm',
+   708→   708→        )
+   709→   709→        if (cancelled) return
+   710→   710→
+   711→   711→        poseLandmarkerRef.current = await PoseLandmarker.createFromOptions(
+   712→   712→          filesetResolver,
+   713→   713→          {
+   714→   714→            baseOptions: {
+   715→   715→              modelAssetPath:
+   716→   716→                'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
+   717→   717→              delegate: 'GPU',
+   718→   718→            },
+   719→   719→            runningMode: 'VIDEO',
+   720→   720→            numPoses: 1,
+   721→   721→          },
+   722→   722→        )
+   723→   723→
+   724→   724→        if (!cancelled) {
+   725→   725→          setIsModelLoaded(true)
+   726→   726→        }
+   727→   727→      } catch (err) {
+   728→   728→        if (!cancelled) {
+   729→   729→          console.error('MediaPipe failed to load:', err)
+   730→   730→          setCameraError(
+   731→   731→            'Impossible de charger le modèle de détection de pose. Vérifiez votre connexion internet et réessayez.',
+   732→   732→          )
+   733→   733→          setPhase('error')
+   734→   734→        }
+   735→   735→      }
+   736→   736→    }
+   737→   737→
+   738→   738→    initMediaPipe()
+   739→   739→
+   740→   740→    return () => {
+   741→   741→      cancelled = true
+   742→   742→    }
+   743→   743→  }, [])
+   744→   744→
+   745→   745→  // ── Camera setup ──────────────────────────────────────────────────────
+   746→   746→  const setupCamera = useCallback(async () => {
+   747→   747→    setCameraError('')
+   748→   748→    try {
+   749→   749→      const stream = await navigator.mediaDevices.getUserMedia({
+   750→   750→        video: {
+   751→   751→          facingMode: 'user',
+   752→   752→          width: { ideal: 640 },
+   753→   753→          height: { ideal: 480 },
+   754→   754→        },
+   755→   755→        audio: false,
+   756→   756→      })
+   757→   757→      streamRef.current = stream
+   758→   758→
+   759→   759→      const video = videoRef.current
+   760→   760→      if (!video) {
+   761→   761→        stream.getTracks().forEach((t) => t.stop())
+   762→   762→        setCameraError('Élément vidéo introuvable.')
+   763→   763→        setPhase('error')
+   764→   764→        return
+   765→   765→      }
+   766→   766→
+   767→   767→      video.srcObject = stream
+   768→   768→      video.setAttribute('playsinline', '')
+   769→   769→      video.muted = true
+   770→   770→
+   771→   771→      // Wait for the video to be ready before playing
+   772→   772→      await new Promise<void>((resolve, reject) => {
+   773→   773→        video.onloadedmetadata = () => resolve()
+   774→   774→        video.onerror = () => reject(new Error('Erreur de chargement vidéo'))
+   775→   775→        // Timeout in case metadata never loads
+   776→   776→        setTimeout(() => reject(new Error('Timeout vidéo')), 10000)
+   777→   777→      })
+   778→   778→
+   779→   779→      try {
+   780→   780→        await video.play()
+   781→   781→      } catch (playErr) {
+   782→   782→        // Some browsers need a retry or user gesture
+   783→   783→        console.warn('video.play() failed, retrying...', playErr)
+   784→   784→        await new Promise((r) => setTimeout(r, 300))
+   785→   785→        try {
+   786→   786→          await video.play()
+   787→   787→        } catch {
+   788→   788→          setCameraError('Impossible de démarrer la vidéo. Réessayez.')
+   789→   789→          stream.getTracks().forEach((t) => t.stop())
+   790→   790→          setPhase('error')
+   791→   791→          return
+   792→   792→        }
+   793→   793→      }
+   794→   794→
+   795→   795→      setPhase('countdown')
+   796→   796→      setCountdown(COUNTDOWN_SECONDS)
+   797→   797→    } catch (err) {
+   798→   798→      const msg =
+   799→   799→        err instanceof DOMException && err.name === 'NotAllowedError'
+   800→   800→          ? 'Caméra non autorisée. Veuillez autoriser l\'accès à la caméra dans les paramètres de votre navigateur.'
+   801→   801→          : err instanceof DOMException && err.name === 'NotFoundError'
+   802→   802→            ? 'Aucune caméra détectée sur cet appareil.'
+   803→   803→            : err instanceof DOMException && err.name === 'NotReadableError'
+   804→   804→              ? 'La caméra est déjà utilisée par une autre application.'
+   805→   805→              : 'Impossible d\'accéder à la caméra. Vérifiez que votre appareil dispose d\'une caméra.'
+   806→   806→      setCameraError(msg)
+   807→   807→      setPhase('error')
+   808→   808→    }
+   809→   809→  }, [])
+   810→   810→
+   811→   811→  // ── Start camera as soon as drill is loaded (don't wait for MediaPipe) ─
+   812→   812→  const cameraStartedRef = useRef(false)
+   813→   813→  useEffect(() => {
+   814→   814→    if (!isDrillLoading && !cameraStartedRef.current) {
+   815→   815→      cameraStartedRef.current = true
+   816→   816→      setupCamera()
+   817→   817→    }
+   818→   818→  }, [isDrillLoading, setupCamera])
+   819→   819→
+   820→   820→  // ── Countdown logic ───────────────────────────────────────────────────
+   821→   821→  useEffect(() => {
+   822→   822→    if (phase !== 'countdown') return
+   823→   823→
+   824→   824→    countdownRef.current = setInterval(() => {
+   825→   825→      setCountdown((prev) => {
+   826→   826→        if (prev <= 1) {
+   827→   827→          if (countdownRef.current) clearInterval(countdownRef.current)
+   828→   828→          setPhase('active')
+   829→   829→          setTimeRemaining(totalDuration)
+   830→   830→          startTimeRef.current = Date.now()
+   831→   831→          pauseAccumRef.current = 0
+   832→   832→          return 0
+   833→   833→        }
+   834→   834→        return prev - 1
+   835→   835→      })
+   836→   836→    }, 1000)
+   837→   837→
+   838→   838→    return () => {
+   839→   839→      if (countdownRef.current) clearInterval(countdownRef.current)
+   840→   840→    }
+   841→   841→  }, [phase, totalDuration])
+   842→   842→
+   843→   843→  // ── Timer logic (active phase) ────────────────────────────────────────
+   844→   844→  useEffect(() => {
+   845→   845→    if (phase !== 'active') return
+   846→   846→
+   847→   847→    timerRef.current = setInterval(() => {
+   848→   848→      setTimeRemaining((prev) => {
+   849→   849→        if (prev <= 1) {
+   850→   850→          if (timerRef.current) clearInterval(timerRef.current)
+   851→   851→          handleWorkoutEnd()
+   852→   852→          return 0
+   853→   853→        }
+   854→   854→        return prev - 1
+   855→   855→      })
+   856→   856→    }, 1000)
+   857→   857→
+   858→   858→    return () => {
+   859→   859→      if (timerRef.current) clearInterval(timerRef.current)
+   860→   860→    }
+   861→   861→  }, [phase]) // eslint-disable-line react-hooks/exhaustive-deps
+   862→   862→
+   863→   863→  // ── Detection loop ────────────────────────────────────────────────────
+   864→   864→  useEffect(() => {
+   865→   865→    if (phase !== 'active') return
+   866→   866→    if (!videoRef.current || !canvasRef.current || !poseLandmarkerRef.current) return
+   867→   867→
+   868→   868→    const video = videoRef.current
+   869→   869→    const canvas = canvasRef.current
+   870→   870→    const ctx = canvas.getContext('2d')
+   871→   871→    if (!ctx) return
+   872→   872→
+   873→   873→    const category = drill?.category ?? 'ball_handling'
+   874→   874→    let lastFeedbackUpdate = 0
+   875→   875→
+   876→   876→    function detect() {
+   877→   877→      if (phaseRef.current !== 'active') return
+   878→   878→
+   879→   879→      const poseLandmarker = poseLandmarkerRef.current as {
+   880→   880→        detect: (input: HTMLVideoElement, timestamp: number) => {
+   881→   881→          landmarks: Landmark[][]
+   882→   882→        }
+   883→   883→      }
+   884→   884→
+   885→   885→      if (video.readyState >= 2) {
+   886→   886→        const timestamp = performance.now()
+   887→   887→        let results: { landmarks: Landmark[][] } = { landmarks: [] }
+   888→   888→
+   889→   889→        try {
+   890→   890→          results = poseLandmarker.detect(video, timestamp)
+   891→   891→        } catch {
+   892→   892→          // Silently retry on detection errors
+   893→   893→        }
+   894→   894→
+   895→   895→        const detectedLandmarks = results.landmarks?.[0]
+   896→   896→
+   897→   897→        if (detectedLandmarks && detectedLandmarks.length >= 33) {
+   898→   898→          // Draw skeleton
+   899→   899→          drawSkeleton(ctx, detectedLandmarks, canvas.width, canvas.height)
+   900→   900→
+   901→   901→          // Rep detection
+   902→   902→          const { rep, updatedTracker } = detectRep(
+   903→   903→            detectedLandmarks,
+   904→   904→            category,
+   905→   905→            repTrackerRef.current,
+   906→   906→            Date.now(),
+   907→   907→          )
+   908→   908→          repTrackerRef.current = updatedTracker
+   909→   909→
+   910→   910→          if (rep) {
+   911→   911→            setReps((prev) => prev + 1)
+   912→   912→          }
+   913→   913→
+   914→   914→          // Form scoring (every 3 frames for perf)
+   915→   915→          if (updatedTracker.sampleCount % 3 === 0) {
+   916→   916→            const { score, feedback: fb } = analyzeForm(
+   917→   917→              detectedLandmarks,
+   918→   918→              category,
+   919→   919→              updatedTracker,
+   920→   920→            )
+   921→   921→            scoresRef.current.push(score)
+   922→   922→            if (scoresRef.current.length > 30) {
+   923→   923→              scoresRef.current = scoresRef.current.slice(-30)
+   924→   924→            }
+   925→   925→            setCurrentScore(computeScore(scoresRef.current))
+   926→   926→
+   927→   927→            const now = Date.now()
+   928→   928→            if (now - lastFeedbackUpdate > 2000 && fb) {
+   929→   929→              setFeedback(fb)
+   930→   930→              lastFeedbackUpdate = now
+   931→   931→            }
+   932→   932→
+   933→   933→            // Keep going message after 5 reps
+   934→   934→            if (rep && updatedTracker.sampleCount > 15) {
+   935→   935→              setFeedback(FEEDBACK_MESSAGES.keepGoing)
+   936→   936→            }
+   937→   937→          }
+   938→   938→        }
+   939→   939→      }
+   940→   940→
+   941→   941→      rafRef.current = requestAnimationFrame(detect)
+   942→   942→    }
+   943→   943→
+   944→   944→    rafRef.current = requestAnimationFrame(detect)
+   945→   945→
+   946→   946→    return () => {
+   947→   947→      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+   948→   948→    }
+   949→   949→  }, [phase, drill?.category])
+   950→   950→
+   951→   951→  // ── Handle workout end ────────────────────────────────────────────────
+   952→   952→  const handleWorkoutEnd = useCallback(() => {
+   953→   953→    if (phaseRef.current === 'completed') return
+   954→   954→
+   955→   955→    // Stop timer
+   956→   956→    if (timerRef.current) clearInterval(timerRef.current)
+   957→   957→
+   958→   958→    // Stop detection loop
+   959→   959→    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+   960→   960→
+   961→   961→    // Stop AI cooldown
+   962→   962→    if (aiCooldownTimerRef.current) clearInterval(aiCooldownTimerRef.current)
+   963→   963→
+   964→   964→    const elapsedSec = Math.round(
+   965→   965→      (Date.now() - startTimeRef.current - pauseAccumRef.current) / 1000,
+   966→   966→    )
+   967→   967→    setElapsedAtEnd(Math.min(elapsedSec, totalDuration))
+   968→   968→
+   969→   969→    const score = computeScore(scoresRef.current)
+   970→   970→    setFinalScore(score)
+   971→   971→    setPhase('completed')
+   972→   972→  }, [totalDuration])
+   973→   973→
+   974→   974→  // ── Cleanup on unmount ────────────────────────────────────────────────
+   975→   975→  useEffect(() => {
+   976→   976→    return () => {
+   977→   977→      if (streamRef.current) {
+   978→   978→        streamRef.current.getTracks().forEach((track) => track.stop())
+   979→   979→      }
+   980→   980→      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+   981→   981→      if (timerRef.current) clearInterval(timerRef.current)
+   982→   982→      if (countdownRef.current) clearInterval(countdownRef.current)
+   983→   983→      if (aiCooldownTimerRef.current) clearInterval(aiCooldownTimerRef.current)
+   984→   984→    }
+   985→   985→  }, [])
+   986→   986→
+   987→   987→  // ── Handlers ──────────────────────────────────────────────────────────
+   988→   988→  const handlePause = () => {
+   989→   989→    if (phase === 'active') {
+   990→   990→      if (timerRef.current) clearInterval(timerRef.current)
+   991→   991→      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+   992→   992→      pausedAtRef.current = Date.now()
+   993→   993→      setPhase('paused')
+   994→   994→    }
+   995→   995→  }
+   996→   996→
+   997→   997→  const handleResume = () => {
+   998→   998→    if (phase === 'paused') {
+   999→   999→      pauseAccumRef.current += Date.now() - pausedAtRef.current
+  1000→  1000→      setPhase('active')
+  1001→  1001→    }
+  1002→  1002→  }
+  1003→  1003→
+  1004→  1004→  const handleStop = () => {
+  1005→  1005→    handleWorkoutEnd()
+  1006→  1006→  }
+  1007→  1007→
+  1008→  1008→  const handleRestart = () => {
+  1009→  1009→    // Reset state
+  1010→  1010→    setReps(0)
+  1011→  1011→    setCurrentScore(0)
+  1012→  1012→    setFeedback('')
+  1013→  1013→    setFinalScore(0)
+  1014→  1014→    setElapsedAtEnd(0)
+  1015→  1015→    setAiResult(null)
+  1016→  1016→    setAiError('')
+  1017→  1017→    setAiCooldownRemaining(0)
+  1018→  1018→    repTrackerRef.current = createRepTracker()
+  1019→  1019→    scoresRef.current = []
+  1020→  1020→
+  1021→  1021→    // Start countdown again
+  1022→  1022→    setPhase('countdown')
+  1023→  1023→    setCountdown(COUNTDOWN_SECONDS)
+  1024→  1024→  }
+  1025→  1025→
+  1026→  1026→  const handleSave = () => {
+  1027→  1027→    if (!drill) return
+  1028→  1028→    saveMutation.mutate({
+  1029→  1029→      drillId: drill.id,
+  1030→  1030→      reps,
+  1031→  1031→      score: finalScore,
+  1032→  1032→      durationSec: elapsedAtEnd || totalDuration - timeRemaining,
+  1033→  1033→    })
+  1034→  1034→  }
+  1035→  1035→
+  1036→  1036→  const handleBackToHub = () => {
+  1037→  1037→    navigate('train-hub')
+  1038→  1038→  }
+  1039→  1039→
+  1040→  1040→  // ── AI Form Check ─────────────────────────────────────────────────────
+  1041→  1041→  const handleAIFormCheck = useCallback(async () => {
+  1042→  1042→    if (aiLoading || aiCooldownRemaining > 0 || phase !== 'active') return
+  1043→  1043→    if (!videoRef.current) return
+  1044→  1044→
+  1045→  1045→    setAiLoading(true)
+  1046→  1046→    setAiError('')
+  1047→  1047→    setAiResult(null)
+  1048→  1048→
+  1049→  1049→    try {
+  1050→  1050→      // Capture current video frame to an offscreen canvas
+  1051→  1051→      const video = videoRef.current
+  1052→  1052→      const captureCanvas = document.createElement('canvas')
+  1053→  1053→      captureCanvas.width = 640
+  1054→  1054→      captureCanvas.height = 480
+  1055→  1055→      const captureCtx = captureCanvas.getContext('2d')
+  1056→  1056→      if (!captureCtx) throw new Error('Canvas context unavailable')
+  1057→  1057→
+  1058→  1058→      // Mirror the capture to match what the user sees
+  1059→  1059→      captureCtx.translate(640, 0)
+  1060→  1060→      captureCtx.scale(-1, 1)
+  1061→  1061→      captureCtx.drawImage(video, 0, 0, 640, 480)
+  1062→  1062→      captureCanvasRef.current = captureCanvas
+  1063→  1063→
+  1064→  1064→      const imageBase64 = captureCanvas.toDataURL('image/jpeg', 0.8)
+  1065→  1065→
+  1066→  1066→      const response = await fetch('/api/ai/form-check', {
+  1067→  1067→        method: 'POST',
+  1068→  1068→        headers: { 'Content-Type': 'application/json' },
+  1069→  1069→        body: JSON.stringify({
+  1070→  1070→          imageBase64,
+  1071→  1071→          drillName: drill?.nameFr ?? drill?.name ?? 'Exercice',
+  1072→  1072→          category: drill?.category ?? 'ball_handling',
+  1073→  1073→          drillInstructions: drill?.instructionsFr ?? drill?.instructions ?? '',
+  1074→  1074→        }),
+  1075→  1075→      })
+  1076→  1076→
+  1077→  1077→      if (!response.ok) {
+  1078→  1078→        throw new Error('Erreur serveur')
+  1079→  1079→      }
+  1080→  1080→
+  1081→  1081→      const result: AIFormCheckResult = await response.json()
+  1082→  1082→      setAiResult(result)
+  1083→  1083→
+  1084→  1084→      // Update feedback with AI response
+  1085→  1085→      if (result.feedback) {
+  1086→  1086→        setFeedback(result.feedback)
+  1087→  1087→      }
+  1088→  1088→
+  1089→  1089→      // Update score from AI response — only nudge movement quality, not inflate all dimensions
+  1090→  1090→      if (typeof result.score === 'number' && result.score > 0) {
+  1091→  1091→        scoresRef.current.push({
+  1092→  1092→          posture: Math.min(90, result.score * 0.8),
+  1093→  1093→          stanceWidth: 50,
+  1094→  1094→          armPosition: Math.min(90, result.score * 0.7),
+  1095→  1095→          movementQuality: result.score,
+  1096→  1096→        })
+  1097→  1097→        setCurrentScore(computeScore(scoresRef.current))
+  1098→  1098→      }
+  1099→  1099→    } catch (err) {
+  1100→  1100→      console.error('AI form check failed:', err)
+  1101→  1101→      setAiError('Vérification IA indisponible. Réessayez.')
+  1102→  1102→    } finally {
+  1103→  1103→      setAiLoading(false)
+  1104→  1104→
+  1105→  1105→      // Start cooldown
+  1106→  1106→      setAiCooldownRemaining(10)
+  1107→  1107→      if (aiCooldownTimerRef.current) clearInterval(aiCooldownTimerRef.current)
+  1108→  1108→      aiCooldownTimerRef.current = setInterval(() => {
+  1109→  1109→        setAiCooldownRemaining((prev) => {
+  1110→  1110→          if (prev <= 1) {
+  1111→  1111→            if (aiCooldownTimerRef.current) clearInterval(aiCooldownTimerRef.current)
+  1112→  1112→            return 0
+  1113→  1113→          }
+  1114→  1114→          return prev - 1
+  1115→  1115→        })
+  1116→  1116→      }, 1000)
+  1117→  1117→    }
+  1118→  1118→  }, [aiLoading, aiCooldownRemaining, phase, drill])
+  1119→  1119→
+  1120→  1120→  // ── Derived values ────────────────────────────────────────────────────
+  1121→  1121→  const progressPercent = totalDuration > 0
+  1122→  1122→    ? ((totalDuration - timeRemaining) / totalDuration) * 100
+  1123→  1123→    : 0
+  1124→  1124→
+  1125→  1125→  // ── Loading state ─────────────────────────────────────────────────────
+  1126→  1126→  if (isDrillLoading) {
+  1127→  1127→    return (
+  1128→  1128→      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-4">
+  1129→  1129→        <Loader2 className="h-10 w-10 text-orange-500 animate-spin" />
+  1130→  1130→        <p className="text-foreground text-sm">Chargement de l'exercice...</p>
+  1131→  1131→        <Skeleton className="h-3 w-48" />
+  1132→  1132→      </div>
+  1133→  1133→    )
+  1134→  1134→  }
+  1135→  1135→
+  1136→  1136→  // ── Error state ───────────────────────────────────────────────────────
+  1137→  1137→  if (phase === 'error') {
+  1138→  1138→    return (
+  1139→  1139→      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-4">
+  1140→  1140→        <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-2">
+  1141→  1141→          <AlertTriangle className="h-8 w-8 text-red-400" />
+  1142→  1142→        </div>
+  1143→  1143→        <h2 className="text-foreground text-lg font-semibold">Erreur</h2>
+  1144→  1144→        <p className="text-muted-foreground text-sm text-center max-w-xs">{cameraError}</p>
+  1145→  1145→        <div className="flex gap-3 mt-4">
+  1146→  1146→          <Button variant="outline" onClick={goBack} className="text-foreground">
+  1147→  1147→            <ArrowLeft className="h-4 w-4 mr-2" />
+  1148→  1148→            Retour
+  1149→  1149→          </Button>
+  1150→  1150→          <Button onClick={setupCamera} className="bg-orange-500 hover:bg-orange-600 text-white">
+  1151→  1151→            <RotateCcw className="h-4 w-4 mr-2" />
+  1152→  1152→            Réessayer
+  1153→  1153→          </Button>
+  1154→  1154→        </div>
+  1155→  1155→      </div>
+  1156→  1156→    )
+  1157→  1157→  }
+  1158→  1158→
+  1159→  1159→  // ── Render ────────────────────────────────────────────────────────────
+  1160→  1160→  return (
+  1161→  1161→    <div className="min-h-screen flex flex-col">
+  1162→  1162→      {/* ── Top Bar ─────────────────────────────────────────────────── */}
+  1163→  1163→      <header className="relative z-30 flex items-center justify-between h-12 px-3 bg-black/90 backdrop-blur-md">
+  1164→  1164→        <Button
+  1165→  1165→          variant="ghost"
+  1166→  1166→          size="icon"
+  1167→  1167→          onClick={() => {
+  1168→  1168→            if (phase === 'active' || phase === 'paused') {
+  1169→  1169→              handleStop()
+  1170→  1170→            }
+  1171→  1171→            goBack()
+  1172→  1172→          }}
+  1173→  1173→          className="text-white/80 hover:text-white hover:bg-white/10 -ml-1 rounded-lg"
+  1174→  1174→          aria-label="Retour"
+  1175→  1175→        >
+  1176→  1176→          <ArrowLeft className="h-5 w-5" />
+  1177→  1177→        </Button>
+  1178→  1178→
+  1179→  1179→        <div className="flex items-center gap-2">
+  1180→  1180→          {drill && <span className="text-sm">{drill.icon}</span>}
+  1181→  1181→          <h1 className="text-white text-sm font-medium truncate max-w-[180px]">
+  1182→  1182→            {drill?.nameFr ?? 'Exercice'}
+  1183→  1183→          </h1>
+  1184→  1184→        </div>
+  1185→  1185→
+  1186→  1186→        <div className="flex items-center gap-1">
+  1187→  1187→          {/* Timer in header */}
+  1188→  1188→          {(phase === 'active' || phase === 'paused') && (
+  1189→  1189→            <div
+  1190→  1190→              className={`font-mono text-lg font-bold tabular-nums ${
+  1191→  1191→                timeRemaining <= 10 ? 'text-red-400 animate-pulse' : 'text-white'
+  1192→  1192→              }`}
+  1193→  1193→            >
+  1194→  1194→              {formatTime(timeRemaining)}
+  1195→  1195→            </div>
+  1196→  1196→          )}
+  1197→  1197→          <button
+  1198→  1198→            onClick={() => setIsMuted(!isMuted)}
+  1199→  1199→            className="text-white/60 hover:text-white ml-1 p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+  1200→  1200→            aria-label={isMuted ? 'Activer le son' : 'Couper le son'}
+  1201→  1201→          >
+  1202→  1202→            {isMuted ? (
+  1203→  1203→              <VolumeX className="h-4 w-4" />
+  1204→  1204→            ) : (
+  1205→  1205→              <Volume2 className="h-4 w-4" />
+  1206→  1206→            )}
+  1207→  1207→          </button>
+  1208→  1208→        </div>
+  1209→  1209→      </header>
+  1210→  1210→
+  1211→  1211→      {/* ── Video Area ───────────────────────────────────────────────── */}
+  1212→  1212→      <div className="relative flex-1 flex items-center justify-center bg-black overflow-hidden">
+  1213→  1213→        <div className="relative w-full max-w-2xl" style={{ aspectRatio: '4/3' }}>
+  1214→  1214→          {/* Video */}
+  1215→  1215→          <video
+  1216→  1216→            ref={videoRef}
+  1217→  1217→            className="absolute inset-0 w-full h-full object-cover"
+  1218→  1218→            style={{ transform: 'scaleX(-1)' }}
+  1219→  1219→            playsInline
+  1220→  1220→            muted
+  1221→  1221→          />
+  1222→  1222→
+  1223→  1223→          {/* Skeleton Canvas */}
+  1224→  1224→          <canvas
+  1225→  1225→            ref={canvasRef}
+  1226→  1226→            width={640}
+  1227→  1227→            height={480}
+  1228→  1228→            className="absolute inset-0 w-full h-full"
+  1229→  1229→            style={{ transform: 'scaleX(-1)' }}
+  1230→  1230→          />
+  1231→  1231→
+  1232→  1232→          {/* MediaPipe loading indicator */}
+  1233→  1233→          {!isModelLoaded && phase !== 'error' && (
+  1234→  1234→            <div className="absolute top-3 left-3 z-20 flex items-center gap-2 rounded-full bg-black/60 backdrop-blur-sm px-3 py-1.5">
+  1235→  1235→              <Loader2 className="h-3.5 w-3.5 text-orange-400 animate-spin" />
+  1236→  1236→              <span className="text-[11px] text-white/80">Modèle IA en cours...</span>
+  1237→  1237→            </div>
+  1238→  1238→          )}
+  1239→  1239→
+  1240→  1240→          {/* ── Countdown Overlay ──────────────────────────────────── */}
+  1241→  1241→          <AnimatePresence>
+  1242→  1242→            {phase === 'countdown' && (
+  1243→  1243→              <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-20">
+  1244→  1244→                <AnimatePresence mode="wait">
+  1245→  1245→                  <motion.div
+  1246→  1246→                    key={countdown}
+  1247→  1247→                    variants={countPulse}
+  1248→  1248→                    initial="initial"
+  1249→  1249→                    animate="animate"
+  1250→  1250→                    exit="exit"
+  1251→  1251→                    className="text-8xl font-black text-white drop-shadow-2xl"
+  1252→  1252→                  >
+  1253→  1253→                    {countdown}
+  1254→  1254→                  </motion.div>
+  1255→  1255→                </AnimatePresence>
+  1256→  1256→              </div>
+  1257→  1257→            )}
+  1258→  1258→          </AnimatePresence>
+  1259→  1259→
+  1260→  1260→          {/* ── Active/Paused Overlay UI ───────────────────────────── */}
+  1261→  1261→          {(phase === 'active' || phase === 'paused') && (
+  1262→  1262→            <>
+  1263→  1263→              {/* Rep Count - top right */}
+  1264→  1264→              <div className="absolute top-3 right-3 z-10 text-right">
+  1265→  1265→                <div className="bg-black/50 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10">
+  1266→  1266→                  <p className="text-[10px] uppercase tracking-wider text-white/50 font-medium">
+  1267→  1267→                    Répétitions
+  1268→  1268→                  </p>
+  1269→  1269→                  <p className="text-4xl font-black text-white tabular-nums leading-none mt-0.5">
+  1270→  1270→                    {reps}
+  1271→  1271→                  </p>
+  1272→  1272→                  {drill && (
+  1273→  1273→                    <p className="text-[10px] text-white/40 mt-1">
+  1274→  1274→                      Objectif: {drill.targetReps}
+  1275→  1275→                    </p>
+  1276→  1276→                  )}
+  1277→  1277→                </div>
+  1278→  1278→              </div>
+  1279→  1279→
+  1280→  1280→              {/* Score - top left */}
+  1281→  1281→              <div
+  1282→  1282→                className={`absolute top-3 left-3 z-10 border rounded-xl px-4 py-2 backdrop-blur-sm ${
+  1283→  1283→                  getScoreBgColor(currentScore)
+  1284→  1284→                }`}
+  1285→  1285→              >
+  1286→  1286→                <p className="text-[10px] uppercase tracking-wider text-white/50 font-medium">
+  1287→  1287→                  Score
+  1288→  1288→                </p>
+  1289→  1289→                <p
+  1290→  1290→                  className={`text-3xl font-black tabular-nums leading-none mt-0.5 ${getScoreColor(
+  1291→  1291→                    currentScore,
+  1292→  1292→                  )}`}
+  1293→  1293→                >
+  1294→  1294→                  {currentScore}
+  1295→  1295→                </p>
+  1296→  1296→                <p className="text-[10px] text-white/40 mt-1">/ 100</p>
+  1297→  1297→              </div>
+  1298→  1298→
+  1299→  1299→              {/* Paused Overlay */}
+  1300→  1300→              {phase === 'paused' && (
+  1301→  1301→                <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-15">
+  1302→  1302→                  <div className="text-center">
+  1303→  1303→                    <Pause className="h-16 w-16 text-white/80 mx-auto mb-3" />
+  1304→  1304→                    <p className="text-white text-xl font-bold">En Pause</p>
+  1305→  1305→                    <p className="text-white/50 text-sm mt-1">
+  1306→  1306→                      {formatTime(timeRemaining)} restant
+  1307→  1307→                    </p>
+  1308→  1308→                  </div>
+  1309→  1309→                </div>
+  1310→  1310→              )}
+  1311→  1311→            </>
+  1312→  1312→          )}
+  1313→  1313→
+  1314→  1314→          {/* ── Completion Overlay ─────────────────────────────────── */}
+  1315→  1315→          <AnimatePresence>
+  1316→  1316→            {phase === 'completed' && (
+  1317→  1317→              <motion.div
+  1318→  1318→                variants={overlayVariants}
+  1319→  1319→                initial="hidden"
+  1320→  1320→                animate="visible"
+  1321→  1321→                exit="exit"
+  1322→  1322→                className="absolute inset-0 z-20 flex items-center justify-center bg-black/80 backdrop-blur-md"
+  1323→  1323→              >
+  1324→  1324→                <Card className="w-[90%] max-w-sm bg-gray-900 border-gray-700 text-white shadow-2xl">
+  1325→  1325→                  <CardContent className="p-6 space-y-5">
+  1326→  1326→                    {/* Header */}
+  1327→  1327→                    <div className="text-center">
+  1328→  1328→                      <div className="text-3xl mb-2">🏆</div>
+  1329→  1329→                      <h2 className="text-xl font-bold">Session Terminée!</h2>
+  1330→  1330→                      {drill && (
+  1331→  1331→                        <p className="text-white/50 text-sm mt-1">
+  1332→  1332→                          {drill.nameFr}
+  1333→  1333→                        </p>
+  1334→  1334→                      )}
+  1335→  1335→                    </div>
+  1336→  1336→
+  1337→  1337→                    {/* Stars */}
+  1338→  1338→                    <div className="flex justify-center gap-1">
+  1339→  1339→                      {Array.from({ length: 5 }).map((_, i) => (
+  1340→  1340→                        <Star
+  1341→  1341→                          key={i}
+  1342→  1342→                          className={`h-7 w-7 transition-colors ${
+  1343→  1343→                            i < getStarCount(finalScore)
+  1344→  1344→                              ? 'fill-amber-400 text-amber-400'
+  1345→  1345→                              : 'text-gray-600'
+  1346→  1346→                          }`}
+  1347→  1347→                        />
+  1348→  1348→                      ))}
+  1349→  1349→                    </div>
+  1350→  1350→
+  1351→  1351→                    {/* Stats Grid */}
+  1352→  1352→                    <div className="grid grid-cols-3 gap-3">
+  1353→  1353→                      <div className="bg-gray-800 rounded-xl p-3 text-center">
+  1354→  1354→                        <p className="text-2xl font-black text-orange-400 tabular-nums">
+  1355→  1355→                          {reps}
+  1356→  1356→                        </p>
+  1357→  1357→                        <p className="text-[10px] text-white/40 uppercase tracking-wider mt-1">
+  1358→  1358→                          Réps
+  1359→  1359→                        </p>
+  1360→  1360→                      </div>
+  1361→  1361→                      <div
+  1362→  1362→                        className={`rounded-xl p-3 text-center border ${getScoreBgColor(
+  1363→  1363→                          finalScore,
+  1364→  1364→                        )}`}
+  1365→  1365→                      >
+  1366→  1366→                        <p
+  1367→  1367→                          className={`text-2xl font-black tabular-nums ${getScoreColor(
+  1368→  1368→                            finalScore,
+  1369→  1369→                          )}`}
+  1370→  1370→                        >
+  1371→  1371→                          {finalScore}
+  1372→  1372→                        </p>
+  1373→  1373→                        <p className="text-[10px] text-white/40 uppercase tracking-wider mt-1">
+  1374→  1374→                          Score
+  1375→  1375→                        </p>
+  1376→  1376→                      </div>
+  1377→  1377→                      <div className="bg-gray-800 rounded-xl p-3 text-center">
+  1378→  1378→                        <p className="text-2xl font-black text-white tabular-nums">
+  1379→  1379→                          {formatTime(elapsedAtEnd || totalDuration - timeRemaining)}
+  1380→  1380→                        </p>
+  1381→  1381→                        <p className="text-[10px] text-white/40 uppercase tracking-wider mt-1">
+  1382→  1382→                          Durée
+  1383→  1383→                        </p>
+  1384→  1384→                      </div>
+  1385→  1385→                    </div>
+  1386→  1386→
+  1387→  1387→                    {/* Form badge */}
+  1388→  1388→                    <div className="flex justify-center">
+  1389→  1389→                      <Badge
+  1390→  1390→                        className={`text-xs font-semibold px-3 py-1 ${
+  1391→  1391→                          finalScore >= 80
+  1392→  1392→                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+  1393→  1393→                            : finalScore >= 50
+  1394→  1394→                              ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+  1395→  1395→                              : 'bg-red-500/20 text-red-400 border border-red-500/30'
+  1396→  1396→                        }`}
+  1397→  1397→                      >
+  1398→  1398→                        <ShieldCheck className="h-3.5 w-3.5 mr-1" />
+  1399→  1399→                        {finalScore >= 80
+  1400→  1400→                          ? 'Excellente forme'
+  1401→  1401→                          : finalScore >= 50
+  1402→  1402→                            ? 'Bonne forme'
+  1403→  1403→                            : 'À améliorer'}
+  1404→  1404→                      </Badge>
+  1405→  1405→                    </div>
+  1406→  1406→
+  1407→  1407→                    {/* Action Buttons */}
+  1408→  1408→                    <div className="space-y-2.5 pt-1">
+  1409→  1409→                      <Button
+  1410→  1410→                        onClick={handleSave}
+  1411→  1411→                        disabled={saveMutation.isPending}
+  1412→  1412→                        className="w-full h-12 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/25"
+  1413→  1413→                      >
+  1414→  1414→                        {saveMutation.isPending ? (
+  1415→  1415→                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+  1416→  1416→                        ) : (
+  1417→  1417→                          <Save className="h-4 w-4 mr-2" />
+  1418→  1418→                        )}
+  1419→  1419→                        Sauvegarder
+  1420→  1420→                      </Button>
+  1421→  1421→                      <div className="grid grid-cols-2 gap-2.5">
+  1422→  1422→                        <Button
+  1423→  1423→                          variant="outline"
+  1424→  1424→                          onClick={handleRestart}
+  1425→  1425→                          className="h-11 border-gray-600 text-white hover:bg-gray-800 rounded-xl"
+  1426→  1426→                        >
+  1427→  1427→                          <RotateCcw className="h-4 w-4 mr-2" />
+  1428→  1428→                          Refaire
+  1429→  1429→                        </Button>
+  1430→  1430→                        <Button
+  1431→  1431→                          variant="outline"
+  1432→  1432→                          onClick={handleBackToHub}
+  1433→  1433→                          className="h-11 border-gray-600 text-white hover:bg-gray-800 rounded-xl"
+  1434→  1434→                        >
+  1435→  1435→                          <ArrowLeft className="h-4 w-4 mr-2" />
+  1436→  1436→                          Retour
+  1437→  1437→                        </Button>
+  1438→  1438→                      </div>
+  1439→  1439→                    </div>
+  1440→  1440→                  </CardContent>
+  1441→  1441→                </Card>
+  1442→  1442→              </motion.div>
+  1443→  1443→            )}
+  1444→  1444→          </AnimatePresence>
+  1445→  1445→        </div>
+  1446→  1446→
+  1447→  1447→        {/* Camera off placeholder if no stream */}
+  1448→  1448→        {!streamRef.current && phase === 'loading' && (
+  1449→  1449→          <div className="absolute inset-0 flex flex-col items-center justify-center text-white/40 gap-3">
+  1450→  1450→            <Camera className="h-12 w-12" />
+  1451→  1451→            <p className="text-sm">Initialisation de la caméra...</p>
+  1452→  1452→          </div>
+  1453→  1453→        )}
+  1454→  1454→      </div>
+  1455→  1455→
+  1456→  1456→      {/* ── Bottom Panel ────────────────────────────────────────────── */}
+  1457→  1457→      <div className="bg-background border-t border-border px-4 py-3 space-y-3">
+  1458→  1458→        {/* AI Feedback Area */}
+  1459→  1459→        <AnimatePresence mode="wait">
+  1460→  1460→          {(aiResult || aiError) && (phase === 'active' || phase === 'paused') && (
+  1461→  1461→            <motion.div
+  1462→  1462→              key={aiResult?.feedback ?? aiError}
+  1463→  1463→              initial={{ opacity: 0, y: 8, height: 0 }}
+  1464→  1464→              animate={{ opacity: 1, y: 0, height: 'auto' }}
+  1465→  1465→              exit={{ opacity: 0, y: -8, height: 0 }}
+  1466→  1466→              transition={{ duration: 0.3 }}
+  1467→  1467→              className="overflow-hidden"
+  1468→  1468→            >
+  1469→  1469→              <div className="rounded-xl border border-border px-4 py-3 space-y-2.5">
+  1470→  1470→                {/* AI Label */}
+  1471→  1471→                <div className="flex items-center gap-1.5">
+  1472→  1472→                  <Sparkles className="h-3.5 w-3.5 text-orange-400" />
+  1473→  1473→                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+  1474→  1474→                    Vérification IA
+  1475→  1475→                  </span>
+  1476→  1476→                  {aiResult && (
+  1477→  1477→                    <span
+  1478→  1478→                      className={`ml-auto text-sm font-bold tabular-nums ${getScoreColor(aiResult.score)}`}
+  1479→  1479→                    >
+  1480→  1480→                      {aiResult.score}/100
+  1481→  1481→                    </span>
+  1482→  1482→                  )}
+  1483→  1483→                </div>
+  1484→  1484→
+  1485→  1485→                {/* Feedback text */}
+  1486→  1486→                {aiError ? (
+  1487→  1487→                  <p className="text-red-400 text-sm text-center">{aiError}</p>
+  1488→  1488→                ) : aiResult ? (
+  1489→  1489→                  <p className="text-foreground text-sm text-center font-medium">
+  1490→  1490→                    {aiResult.feedback}
+  1491→  1491→                  </p>
+  1492→  1492→                ) : null}
+  1493→  1493→
+  1494→  1494→                {/* Issues pills */}
+  1495→  1495→                {aiResult?.issues && aiResult.issues.length > 0 && (
+  1496→  1496→                  <div className="flex flex-wrap gap-1.5 justify-center">
+  1497→  1497→                    {aiResult.issues.map((issue, i) => (
+  1498→  1498→                      <Badge
+  1499→  1499→                        key={i}
+  1500→  1500→                        variant="outline"
+  1501→  1501→                        className="text-[11px] bg-red-500/10 text-red-400 border-red-500/20"
+  1502→  1502→                      >
+  1503→  1503→                        {issue}
+  1504→  1504→                      </Badge>
+  1505→  1505→                    ))}
+  1506→  1506→                  </div>
+  1507→  1507→                )}
+  1508→  1508→
+  1509→  1509→                {/* Good points pills */}
+  1510→  1510→                {aiResult?.goodPoints && aiResult.goodPoints.length > 0 && (
+  1511→  1511→                  <div className="flex flex-wrap gap-1.5 justify-center">
+  1512→  1512→                    {aiResult.goodPoints.map((point, i) => (
+  1513→  1513→                      <Badge
+  1514→  1514→                        key={i}
+  1515→  1515→                        variant="outline"
+  1516→  1516→                        className="text-[11px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+  1517→  1517→                      >
+  1518→  1518→                        {point}
+  1519→  1519→                      </Badge>
+  1520→  1520→                    ))}
+  1521→  1521→                  </div>
+  1522→  1522→                )}
+  1523→  1523→              </div>
+  1524→  1524→            </motion.div>
+  1525→  1525→          )}
+  1526→  1526→
+  1527→  1527→          {/* Local feedback (when no AI result) */}
+  1528→  1528→          {feedback && !aiResult && !aiError && (phase === 'active' || phase === 'paused') && (
+  1529→  1529→            <motion.div
+  1530→  1530→              key={feedback}
+  1531→  1531→              initial={{ opacity: 0, y: 8 }}
+  1532→  1532→              animate={{ opacity: 1, y: 0 }}
+  1533→  1533→              exit={{ opacity: 0, y: -8 }}
+  1534→  1534→              transition={{ duration: 0.25 }}
+  1535→  1535→              className="rounded-xl border border-border px-4 py-2.5"
+  1536→  1536→            >
+  1537→  1537→              <p className="text-foreground text-sm font-medium text-center">
+  1538→  1538→                {feedback}
+  1539→  1539→              </p>
+  1540→  1540→            </motion.div>
+  1541→  1541→          )}
+  1542→  1542→        </AnimatePresence>
+  1543→  1543→
+  1544→  1544→        {/* AI Check Button */}
+  1545→  1545→        {(phase === 'active' || phase === 'paused') && (
+  1546→  1546→          <div className="flex justify-center">
+  1547→  1547→            <Button
+  1548→  1548→              variant="outline"
+  1549→  1549→              size="sm"
+  1550→  1550→              onClick={handleAIFormCheck}
+  1551→  1551→              disabled={aiLoading || aiCooldownRemaining > 0 || phase === 'paused'}
+  1552→  1552→              className="gap-1.5 border-orange-500/30 text-orange-400 hover:bg-orange-500/10 hover:text-orange-300 disabled:opacity-50 disabled:hover:bg-transparent rounded-full px-4"
+  1553→  1553→            >
+  1554→  1554→              {aiLoading ? (
+  1555→  1555→                <Loader2 className="h-4 w-4 animate-spin" />
+  1556→  1556→              ) : (
+  1557→  1557→                <Sparkles className="h-4 w-4" />
+  1558→  1558→              )}
+  1559→  1559→              {aiLoading ? (
+  1560→  1560→                'Analyse en cours...'
+  1561→  1561→              ) : aiCooldownRemaining > 0 ? (
+  1562→  1562→                <span className="tabular-nums">Réessayer dans {aiCooldownRemaining}s</span>
+  1563→  1563→              ) : (
+  1564→  1564→                'Vérification IA'
+  1565→  1565→              )}
+  1566→  1566→            </Button>
+  1567→  1567→          </div>
+  1568→  1568→        )}
+  1569→  1569→
+  1570→  1570→        {/* Progress Bar */}
+  1571→  1571→        {(phase === 'active' || phase === 'paused') && (
+  1572→  1572→          <div className="space-y-1.5">
+  1573→  1573→            <div className="flex justify-between items-center text-xs text-muted-foreground">
+  1574→  1574→              <span>Progression</span>
+  1575→  1575→              <span className="tabular-nums">
+  1576→  1576→                {Math.round(progressPercent)}%
+  1577→  1577→              </span>
+  1578→  1578→            </div>
+  1579→  1579→            <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+  1580→  1580→              <motion.div
+  1581→  1581→                className="h-full bg-gradient-to-r from-orange-500 to-amber-400 rounded-full"
+  1582→  1582→                initial={{ width: 0 }}
+  1583→  1583→                animate={{ width: `${progressPercent}%` }}
+  1584→  1584→                transition={{ duration: 0.5, ease: 'easeOut' as const }}
+  1585→  1585→              />
+  1586→  1586→            </div>
+  1587→  1587→          </div>
+  1588→  1588→        )}
+  1589→  1589→
+  1590→  1590→        {/* Controls */}
+  1591→  1591→        <div className="flex items-center justify-center gap-4">
+  1592→  1592→          {/* Stop button */}
+  1593→  1593→          {(phase === 'active' || phase === 'paused') && (
+  1594→  1594→            <Button
+  1595→  1595→              variant="ghost"
+  1596→  1596→              size="icon"
+  1597→  1597→              onClick={handleStop}
+  1598→  1598→              className="h-12 w-12 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/30 hover:text-red-300 transition-colors"
+  1599→  1599→              aria-label="Arrêter"
+  1600→  1600→            >
+  1601→  1601→              <Square className="h-5 w-5" />
+  1602→  1602→            </Button>
+  1603→  1603→          )}
+  1604→  1604→
+  1605→  1605→          {/* Pause / Resume */}
+  1606→  1606→          {phase === 'active' && (
+  1607→  1607→            <Button
+  1608→  1608→              variant="ghost"
+  1609→  1609→              size="icon"
+  1610→  1610→              onClick={handlePause}
+  1611→  1611→              className="h-14 w-14 rounded-full bg-primary/10 text-foreground hover:bg-primary/20 transition-colors border border-border"
+  1612→  1612→              aria-label="Pause"
+  1613→  1613→            >
+  1614→  1614→              <Pause className="h-6 w-6" />
+  1615→  1615→            </Button>
+  1616→  1616→          )}
+  1617→  1617→
+  1618→  1618→          {phase === 'paused' && (
+  1619→  1619→            <Button
+  1620→  1620→              variant="ghost"
+  1621→  1621→              size="icon"
+  1622→  1622→              onClick={handleResume}
+  1623→  1623→              className="h-14 w-14 rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/30"
+  1624→  1624→              aria-label="Reprendre"
+  1625→  1625→            >
+  1626→  1626→              <Play className="h-6 w-6 ml-0.5" />
+  1627→  1627→            </Button>
+  1628→  1628→          )}
+  1629→  1629→
+  1630→  1630→          {/* Camera indicator */}
+  1631→  1631→          {phase === 'active' && (
+  1632→  1632→            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+  1633→  1633→              <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+  1634→  1634→              <span>EN DIRECT</span>
+  1635→  1635→            </div>
+  1636→  1636→          )}
+  1637→  1637→
+  1638→  1638→          {phase === 'paused' && (
+  1639→  1639→            <div className="flex items-center gap-1.5 text-xs text-amber-400/70">
+  1640→  1640→              <Pause className="h-3 w-3" />
+  1641→  1641→              <span>PAUSE</span>
+  1642→  1642→            </div>
+  1643→  1643→          )}
+  1644→  1644→        </div>
+  1645→  1645→      </div>
+  1646→  1646→    </div>
+  1647→  1647→  )
+  1648→  1648→}

@@ -24,7 +24,18 @@ import {
   AlertTriangle,
   ShieldCheck,
   Sparkles,
+  Plus,
+  SkipForward,
+  Timer,
 } from 'lucide-react'
+import {
+  initAudio,
+  toggleMute as toggleAudioMute,
+  isAudioMuted as getAudioMuted,
+  setMuted as setAudioMuted,
+  playSound,
+  destroyAudio,
+} from '@/lib/audio'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -75,7 +86,9 @@ type WorkoutPhase =
   | 'countdown'
   | 'active'
   | 'paused'
+  | 'rest'
   | 'completed'
+  | 'plan-next'
   | 'error'
 
 interface Drill {
@@ -142,7 +155,12 @@ const LANDMARK_COLOR = '#f97316'
 const LANDMARK_RADIUS = 5
 const CONNECTION_WIDTH = 3
 const COUNTDOWN_SECONDS = 3
+const COUNTDOWN_READY_MS = 800
 const AI_CHECK_COOLDOWN_MS = 10_000
+const HALF_WARNING_THRESHOLD = 0.5
+const REST_OPTIONS = [10, 15, 30, 60] as const
+const DEFAULT_REST_SEC = 15
+const DEFAULT_SETS = 1
 
 const FEEDBACK_MESSAGES = {
   goodPosture: 'Bonne posture! ✅',
@@ -187,6 +205,20 @@ function getScoreBgColor(score: number): string {
   if (score >= 80) return SCORE_BG_COLORS.green
   if (score >= 50) return SCORE_BG_COLORS.orange
   return SCORE_BG_COLORS.red
+}
+
+function getGaugeColor(score: number): string {
+  if (score >= 80) return '#34d399'  // emerald-400
+  if (score >= 60) return '#4ade80'  // green-400
+  if (score >= 30) return '#fbbf24'  // amber-400
+  return '#f87171'                    // red-400
+}
+
+function getGaugeTrackColor(score: number): string {
+  if (score >= 80) return '#34d39933'
+  if (score >= 60) return '#4ade8033'
+  if (score >= 30) return '#fbbf2433'
+  return '#f8717133'
 }
 
 function getStarCount(score: number): number {
@@ -285,31 +317,24 @@ function analyzeForm(
     const recent = velocities.slice(-10)
     const avgSpeed = recent.reduce((a, b) => a + b, 0) / recent.length
 
-    // Speed scoring: 0 speed = 0 score, good speed = high score
-    // Threshold: below 0.002 = too slow, 0.003-0.008 = good, above 0.01 = erratic
     if (avgSpeed < 0.001) {
-      moveScore = 0 // Not moving at all
+      moveScore = 0
     } else if (avgSpeed < 0.002) {
-      moveScore = 15 // Barely moving
+      moveScore = 15
     } else if (avgSpeed < 0.008) {
-      // Good range — score proportionally
       moveScore = Math.min(95, 40 + (avgSpeed - 0.002) * 15000)
     } else {
-      // Too fast/erratic — penalize
       moveScore = Math.max(30, 95 - (avgSpeed - 0.008) * 5000)
     }
 
-    // Consistency bonus: low variance = more controlled movement
     if (recent.length > 5) {
       const mean = recent.reduce((a, b) => a + b, 0) / recent.length
       const variance =
         recent.reduce((sum, v) => sum + (v - mean) ** 2, 0) / recent.length
-      // Variance penalty: high variance = jerky/uncontrolled
       const variancePenalty = Math.min(30, variance * 50000)
       moveScore = Math.max(0, moveScore - variancePenalty)
     }
   }
-  // If no velocity data yet, score stays at 0
 
   const score: ScoreDetail = {
     posture: postureScore,
@@ -324,7 +349,6 @@ function analyzeForm(
   const shoulderMidX = (lShoulder.x + rShoulder.x) / 2
   const lean = hipMidX - shoulderMidX
 
-  // Prioritize: inactivity > form issues > praise
   if (velocities.length > 3) {
     const recentSpeed = velocities.slice(-5).reduce((a, b) => a + b, 0) / 5
     if (recentSpeed < 0.001) {
@@ -370,7 +394,6 @@ function detectRep(
 
   let repDetected = false
 
-  // Helper: compute velocity from position history
   const computeVelocity = (current: number, last: number): number =>
     Math.abs(current - last)
 
@@ -511,7 +534,6 @@ function detectRep(
       if (t.velocityHistory.length > 20) t.velocityHistory.shift()
       t.velocityHistory.push(speed)
 
-      // Count a "rep" for every ~0.5 total accumulated movement
       if (t.totalMovement > 0.5 && now - t.lastRepTime > REP_DEBOUNCE_MS * 2) {
         repDetected = true
         t.lastRepTime = now
@@ -535,7 +557,6 @@ function drawSkeleton(
   ctx.clearRect(0, 0, width, height)
   if (!landmarks || landmarks.length < 33) return
 
-  // Draw connections
   ctx.strokeStyle = LANDMARK_COLOR
   ctx.lineWidth = CONNECTION_WIDTH
   ctx.lineCap = 'round'
@@ -546,7 +567,6 @@ function drawSkeleton(
     if (!a || !b) continue
     if ((a.visibility ?? 0) < 0.5 || (b.visibility ?? 0) < 0.5) continue
 
-    // Mirror X coordinates
     const ax = (1 - a.x) * width
     const ay = a.y * height
     const bx = (1 - b.x) * width
@@ -558,7 +578,6 @@ function drawSkeleton(
     ctx.stroke()
   }
 
-  // Draw landmarks
   for (let i = 0; i < landmarks.length; i++) {
     const lm = landmarks[i]
     if (!lm) continue
@@ -603,11 +622,170 @@ const countPulse = {
   exit: { scale: 1.5, opacity: 0, transition: { duration: 0.3 } },
 }
 
+// Reduced-motion variants (instant, no scale)
+const countPulseReduced = {
+  initial: { scale: 1, opacity: 0 },
+  animate: {
+    scale: 1,
+    opacity: 1,
+    transition: { duration: 0.05 },
+  },
+  exit: { opacity: 0, transition: { duration: 0.05 } },
+}
+
+// ─── Sub-components ──────────────────────────────────────────────────────────
+
+/** Semi-circular gauge for live score display. */
+function ScoreGauge({ score, size = 80 }: { score: number; size?: number }) {
+  const strokeWidth = 6
+  const radius = (size - strokeWidth) / 2
+  const center = size / 2
+  const circumference = Math.PI * radius // semi-circle
+
+  // Score as a fraction of the semi-circle (0 = left, 1 = right)
+  const progress = Math.min(1, Math.max(0, score / 100))
+  const dashOffset = circumference * (1 - progress)
+
+  const color = getGaugeColor(score)
+  const trackColor = getGaugeTrackColor(score)
+
+  return (
+    <svg width={size} height={size / 2 + 10} viewBox={`0 0 ${size} ${size / 2 + 10}`}>
+      {/* Track (background arc) */}
+      <path
+        d={`M ${strokeWidth / 2} ${center} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${center}`}
+        fill="none"
+        stroke={trackColor}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+      />
+      {/* Progress arc */}
+      <motion.path
+        d={`M ${strokeWidth / 2} ${center} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${center}`}
+        fill="none"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeDasharray={circumference}
+        initial={{ strokeDashoffset: circumference }}
+        animate={{ strokeDashoffset: dashOffset }}
+        transition={{ duration: 0.5, ease: 'easeOut' as const }}
+      />
+      {/* Score text */}
+      <text
+        x={center}
+        y={center - 4}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        className="fill-current"
+        style={{ fontSize: '18px', fontWeight: 900, color }}
+      >
+        {score}
+      </text>
+      <text
+        x={center}
+        y={center + 12}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        className="fill-white/40"
+        style={{ fontSize: '8px', fontWeight: 600 }}
+      >
+        SCORE
+      </text>
+    </svg>
+  )
+}
+
+/** Circular progress timer for the workout duration. */
+function CircularTimer({
+  remaining,
+  total,
+  size = 72,
+}: {
+  remaining: number
+  total: number
+  size?: number
+}) {
+  const strokeWidth = 4
+  const radius = (size - strokeWidth) / 2
+  const center = size / 2
+  const circumference = 2 * Math.PI * radius
+
+  const progress = total > 0 ? remaining / total : 0
+  const dashOffset = circumference * (1 - progress)
+
+  const isUrgent = remaining <= 10
+  const color = isUrgent ? '#f87171' : '#ffffff'
+
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        className="-rotate-90"
+      >
+        {/* Track */}
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke="rgba(255,255,255,0.15)"
+          strokeWidth={strokeWidth}
+        />
+        {/* Progress */}
+        <motion.circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke={color}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          animate={{ strokeDashoffset: dashOffset }}
+          transition={{ duration: 0.5, ease: 'easeOut' as const }}
+        />
+      </svg>
+      {/* Time text */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span
+          className={`font-mono text-sm font-bold tabular-nums ${isUrgent ? 'text-red-400' : 'text-white'}`}
+        >
+          {formatTime(remaining)}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+/** Floating +1 animation for rep detection. */
+function FloatingRep() {
+  return (
+    <motion.div
+      initial={{ opacity: 1, y: 0, scale: 1 }}
+      animate={{ opacity: 0, y: -60, scale: 1.3 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.8, ease: 'easeOut' as const }}
+      className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 pointer-events-none"
+    >
+      <span className="text-2xl font-black text-emerald-400 drop-shadow-lg">+1</span>
+    </motion.div>
+  )
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function CameraWorkoutScreen() {
-  const { selectedDrillId, goBack, navigate } = useAppStore()
+  const { selectedDrillId, goBack, navigate, planDrillQueue, planCurrentIndex, planResults, advancePlanDrill, setWorkoutResult, clearPlanExecution, selectDrill } = useAppStore()
+  const isPlanMode = planDrillQueue.length > 0
   const queryClient = useQueryClient()
+
+  // Check for reduced-motion preference
+  const prefersReducedMotion = typeof window !== 'undefined'
+    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    : false
 
   // ── Refs ──────────────────────────────────────────────────────────────
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -618,6 +796,8 @@ export default function CameraWorkoutScreen() {
   const rafRef = useRef<number>(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const restTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const restPulseTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const repTrackerRef = useRef<RepTracker>(createRepTracker())
   const scoresRef = useRef<ScoreDetail[]>([])
   const startTimeRef = useRef<number>(0)
@@ -625,19 +805,33 @@ export default function CameraWorkoutScreen() {
   const pauseAccumRef = useRef<number>(0)
   const aiCooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const phaseRef = useRef<WorkoutPhase>('loading')
+  const halfTimeFiredRef = useRef(false)
+  const audioInitRef = useRef(false)
+  const totalRepsAcrossSetsRef = useRef(0)
+  const totalScoreAccumRef = useRef<ScoreDetail[]>([])
 
   // ── State ─────────────────────────────────────────────────────────────
   const [phase, setPhase] = useState<WorkoutPhase>('loading')
   const [isModelLoaded, setIsModelLoaded] = useState(false)
   const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS)
+  const [showReady, setShowReady] = useState(false)
   const [timeRemaining, setTimeRemaining] = useState(0)
   const [reps, setReps] = useState(0)
   const [currentScore, setCurrentScore] = useState(0)
   const [feedback, setFeedback] = useState('')
   const [cameraError, setCameraError] = useState('')
-  const [isMuted, setIsMuted] = useState(false)
+  const [isMuted, setIsMuted] = useState(true)
   const [elapsedAtEnd, setElapsedAtEnd] = useState(0)
   const [finalScore, setFinalScore] = useState(0)
+
+  // Rest / set tracking
+  const [currentSet, setCurrentSet] = useState(1)
+  const [totalSets, setTotalSets] = useState(DEFAULT_SETS)
+  const [restDuration, setRestDuration] = useState(DEFAULT_REST_SEC)
+  const [restRemaining, setRestRemaining] = useState(DEFAULT_REST_SEC)
+
+  // Rep animation
+  const [repFloatKey, setRepFloatKey] = useState(0)
 
   // AI form check state
   const [aiLoading, setAiLoading] = useState(false)
@@ -691,6 +885,22 @@ export default function CameraWorkoutScreen() {
       })
     },
   })
+
+  // ── Audio init on first interaction ──────────────────────────────────
+  const ensureAudioInit = useCallback(() => {
+    if (!audioInitRef.current) {
+      audioInitRef.current = true
+      initAudio()
+      setAudioMuted(isMuted)
+    }
+  }, [isMuted])
+
+  // Sync mute state to audio engine
+  useEffect(() => {
+    if (audioInitRef.current) {
+      setAudioMuted(isMuted)
+    }
+  }, [isMuted])
 
   // ── Load MediaPipe ────────────────────────────────────────────────────
   useEffect(() => {
@@ -768,18 +978,15 @@ export default function CameraWorkoutScreen() {
       video.setAttribute('playsinline', '')
       video.muted = true
 
-      // Wait for the video to be ready before playing
       await new Promise<void>((resolve, reject) => {
         video.onloadedmetadata = () => resolve()
         video.onerror = () => reject(new Error('Erreur de chargement vidéo'))
-        // Timeout in case metadata never loads
         setTimeout(() => reject(new Error('Timeout vidéo')), 10000)
       })
 
       try {
         await video.play()
       } catch (playErr) {
-        // Some browsers need a retry or user gesture
         console.warn('video.play() failed, retrying...', playErr)
         await new Promise((r) => setTimeout(r, 300))
         try {
@@ -792,8 +999,15 @@ export default function CameraWorkoutScreen() {
         }
       }
 
-      setPhase('countdown')
-      setCountdown(COUNTDOWN_SECONDS)
+      // Show "PRÊT?" first, then start countdown
+      setShowReady(true)
+      ensureAudioInit()
+      playSound('countdown-tick') // Audio cue for ready
+      setTimeout(() => {
+        setShowReady(false)
+        setPhase('countdown')
+        setCountdown(COUNTDOWN_SECONDS)
+      }, COUNTDOWN_READY_MS)
     } catch (err) {
       const msg =
         err instanceof DOMException && err.name === 'NotAllowedError'
@@ -806,7 +1020,7 @@ export default function CameraWorkoutScreen() {
       setCameraError(msg)
       setPhase('error')
     }
-  }, [])
+  }, [ensureAudioInit])
 
   // ── Start camera as soon as drill is loaded (don't wait for MediaPipe) ─
   const cameraStartedRef = useRef(false)
@@ -817,20 +1031,33 @@ export default function CameraWorkoutScreen() {
     }
   }, [isDrillLoading, setupCamera])
 
-  // ── Countdown logic ───────────────────────────────────────────────────
+  // ── Countdown logic (3-2-1 with audio cues) ──────────────────────────
   useEffect(() => {
     if (phase !== 'countdown') return
+
+    // Play tick for the initial countdown value
+    if (countdown === COUNTDOWN_SECONDS) {
+      playSound('countdown-tick')
+    }
 
     countdownRef.current = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
           if (countdownRef.current) clearInterval(countdownRef.current)
-          setPhase('active')
-          setTimeRemaining(totalDuration)
-          startTimeRef.current = Date.now()
-          pauseAccumRef.current = 0
+          // Play GO sound
+          playSound('countdown-go')
+          // Brief delay to let the GO sound play, then start
+          setTimeout(() => {
+            setPhase('active')
+            setTimeRemaining(totalDuration)
+            startTimeRef.current = Date.now()
+            pauseAccumRef.current = 0
+            halfTimeFiredRef.current = false
+          }, 300)
           return 0
         }
+        // Play tick for next number
+        playSound('countdown-tick')
         return prev - 1
       })
     }, 1000)
@@ -838,9 +1065,9 @@ export default function CameraWorkoutScreen() {
     return () => {
       if (countdownRef.current) clearInterval(countdownRef.current)
     }
-  }, [phase, totalDuration])
+  }, [phase, totalDuration, countdown])
 
-  // ── Timer logic (active phase) ────────────────────────────────────────
+  // ── Timer logic (active phase) with half-time warning ────────────────
   useEffect(() => {
     if (phase !== 'active') return
 
@@ -848,7 +1075,50 @@ export default function CameraWorkoutScreen() {
       setTimeRemaining((prev) => {
         if (prev <= 1) {
           if (timerRef.current) clearInterval(timerRef.current)
-          handleWorkoutEnd()
+          // Play time-up sound
+          playSound('time-up')
+          // Small delay then end
+          setTimeout(() => handleWorkoutEnd(), 500)
+          return 0
+        }
+
+        // Half-time warning
+        const newRemaining = prev - 1
+        const elapsed = totalDuration - newRemaining
+        if (
+          !halfTimeFiredRef.current &&
+          elapsed >= totalDuration * HALF_WARNING_THRESHOLD
+        ) {
+          halfTimeFiredRef.current = true
+          playSound('half-warning')
+        }
+
+        return newRemaining
+      })
+    }, 1000)
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+  }, [phase, totalDuration])
+
+  // ── Rest timer logic ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (phase !== 'rest') return
+
+    // Play rest pulse every 2 seconds
+    playSound('rest-pulse')
+    restPulseTimerRef.current = setInterval(() => {
+      playSound('rest-pulse')
+    }, 2000)
+
+    restTimerRef.current = setInterval(() => {
+      setRestRemaining((prev) => {
+        if (prev <= 1) {
+          if (restTimerRef.current) clearInterval(restTimerRef.current)
+          if (restPulseTimerRef.current) clearInterval(restPulseTimerRef.current)
+          // Start next set
+          startNextSet()
           return 0
         }
         return prev - 1
@@ -856,9 +1126,10 @@ export default function CameraWorkoutScreen() {
     }, 1000)
 
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
+      if (restTimerRef.current) clearInterval(restTimerRef.current)
+      if (restPulseTimerRef.current) clearInterval(restPulseTimerRef.current)
     }
-  }, [phase]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [phase])
 
   // ── Detection loop ────────────────────────────────────────────────────
   useEffect(() => {
@@ -895,10 +1166,8 @@ export default function CameraWorkoutScreen() {
         const detectedLandmarks = results.landmarks?.[0]
 
         if (detectedLandmarks && detectedLandmarks.length >= 33) {
-          // Draw skeleton
-          drawSkeleton(ctx, detectedLandmarks, canvas.width, canvas.height)
+          drawSkeleton(ctx!, detectedLandmarks, canvas.width, canvas.height)
 
-          // Rep detection
           const { rep, updatedTracker } = detectRep(
             detectedLandmarks,
             category,
@@ -909,9 +1178,12 @@ export default function CameraWorkoutScreen() {
 
           if (rep) {
             setReps((prev) => prev + 1)
+            // Trigger +1 floating animation
+            setRepFloatKey((k) => k + 1)
+            // Play rep ding
+            playSound('rep-ding')
           }
 
-          // Form scoring (every 3 frames for perf)
           if (updatedTracker.sampleCount % 3 === 0) {
             const { score, feedback: fb } = analyzeForm(
               detectedLandmarks,
@@ -930,7 +1202,6 @@ export default function CameraWorkoutScreen() {
               lastFeedbackUpdate = now
             }
 
-            // Keep going message after 5 reps
             if (rep && updatedTracker.sampleCount > 15) {
               setFeedback(FEEDBACK_MESSAGES.keepGoing)
             }
@@ -948,17 +1219,29 @@ export default function CameraWorkoutScreen() {
     }
   }, [phase, drill?.category])
 
-  // ── Handle workout end ────────────────────────────────────────────────
+  // ── Start next set (after rest) ──────────────────────────────────────
+  const startNextSet = useCallback(() => {
+    setCurrentSet((prev) => prev + 1)
+    setReps(0)
+    setCurrentScore(0)
+    setFeedback('')
+    setRepFloatKey(0)
+    repTrackerRef.current = createRepTracker()
+    scoresRef.current = []
+    halfTimeFiredRef.current = false
+
+    // Start countdown for next set
+    setShowReady(false)
+    setPhase('countdown')
+    setCountdown(COUNTDOWN_SECONDS)
+  }, [])
+
+  // ── Handle workout end (single set or final set) ─────────────────────
   const handleWorkoutEnd = useCallback(() => {
     if (phaseRef.current === 'completed') return
 
-    // Stop timer
     if (timerRef.current) clearInterval(timerRef.current)
-
-    // Stop detection loop
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
-
-    // Stop AI cooldown
     if (aiCooldownTimerRef.current) clearInterval(aiCooldownTimerRef.current)
 
     const elapsedSec = Math.round(
@@ -966,10 +1249,32 @@ export default function CameraWorkoutScreen() {
     )
     setElapsedAtEnd(Math.min(elapsedSec, totalDuration))
 
-    const score = computeScore(scoresRef.current)
+    // Accumulate across sets
+    totalRepsAcrossSetsRef.current += reps
+    totalScoreAccumRef.current.push(...scoresRef.current)
+
+    // If more sets remain, enter rest phase instead of completed
+    if (currentSet < totalSets) {
+      setPhase('rest')
+      setRestRemaining(restDuration)
+      return
+    }
+
+    const score = computeScore(totalScoreAccumRef.current)
     setFinalScore(score)
     setPhase('completed')
-  }, [totalDuration])
+  }, [totalDuration, currentSet, totalSets, reps, restDuration])
+
+  // ── Rest controls ────────────────────────────────────────────────────
+  const handleExtendRest = useCallback(() => {
+    setRestRemaining((prev) => prev + 15)
+  }, [])
+
+  const handleSkipRest = useCallback(() => {
+    if (restTimerRef.current) clearInterval(restTimerRef.current)
+    if (restPulseTimerRef.current) clearInterval(restPulseTimerRef.current)
+    startNextSet()
+  }, [startNextSet])
 
   // ── Cleanup on unmount ────────────────────────────────────────────────
   useEffect(() => {
@@ -980,13 +1285,28 @@ export default function CameraWorkoutScreen() {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
       if (timerRef.current) clearInterval(timerRef.current)
       if (countdownRef.current) clearInterval(countdownRef.current)
+      if (restTimerRef.current) clearInterval(restTimerRef.current)
+      if (restPulseTimerRef.current) clearInterval(restPulseTimerRef.current)
       if (aiCooldownTimerRef.current) clearInterval(aiCooldownTimerRef.current)
+      if (planNextTimerRef.current) clearInterval(planNextTimerRef.current)
+      destroyAudio()
     }
   }, [])
+
+  // ── Auto-transition in plan mode when drill completes ────────────────
+  const handlePlanDrillCompleteRef = useRef<() => void>(() => {})
+  // Will be assigned below after the callback is defined
+
+  useEffect(() => {
+    if (phase === 'completed' && isPlanMode) {
+      handlePlanDrillCompleteRef.current()
+    }
+  }, [phase, isPlanMode])
 
   // ── Handlers ──────────────────────────────────────────────────────────
   const handlePause = () => {
     if (phase === 'active') {
+      ensureAudioInit()
       if (timerRef.current) clearInterval(timerRef.current)
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
       pausedAtRef.current = Date.now()
@@ -996,17 +1316,20 @@ export default function CameraWorkoutScreen() {
 
   const handleResume = () => {
     if (phase === 'paused') {
+      ensureAudioInit()
       pauseAccumRef.current += Date.now() - pausedAtRef.current
       setPhase('active')
     }
   }
 
   const handleStop = () => {
+    ensureAudioInit()
     handleWorkoutEnd()
   }
 
   const handleRestart = () => {
-    // Reset state
+    ensureAudioInit()
+    // Reset all state
     setReps(0)
     setCurrentScore(0)
     setFeedback('')
@@ -1015,13 +1338,134 @@ export default function CameraWorkoutScreen() {
     setAiResult(null)
     setAiError('')
     setAiCooldownRemaining(0)
+    setCurrentSet(1)
+    totalRepsAcrossSetsRef.current = 0
+    totalScoreAccumRef.current = []
     repTrackerRef.current = createRepTracker()
     scoresRef.current = []
+    halfTimeFiredRef.current = false
+    setRepFloatKey(0)
 
-    // Start countdown again
-    setPhase('countdown')
-    setCountdown(COUNTDOWN_SECONDS)
+    // Start countdown again (with PRÊT?)
+    setShowReady(true)
+    playSound('countdown-tick')
+    setTimeout(() => {
+      setShowReady(false)
+      setPhase('countdown')
+      setCountdown(COUNTDOWN_SECONDS)
+    }, COUNTDOWN_READY_MS)
   }
+
+  // Plan-next countdown state
+  const [planNextCountdown, setPlanNextCountdown] = useState(3)
+  const planNextTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // ── Plan execution: handle drill completion in plan mode ────────────
+  const handlePlanDrillComplete = useCallback(() => {
+    if (!drill) return
+    const elapsed = elapsedAtEnd || totalDuration - timeRemaining
+    const totalRepsNow = totalSets > 1 ? totalRepsAcrossSetsRef.current + reps : reps
+
+    // Save individual session
+    saveMutation.mutate({
+      drillId: drill.id,
+      reps: totalRepsNow,
+      score: finalScore,
+      durationSec: elapsed,
+    })
+
+    // Record result for plan
+    advancePlanDrill({
+      drillId: drill.id,
+      drillName: drill.name,
+      drillNameFr: drill.nameFr,
+      drillCategory: drill.category,
+      drillIcon: drill.icon,
+      reps: totalRepsNow,
+      score: finalScore,
+      durationSec: elapsed,
+      targetReps: drill.targetReps,
+    })
+
+    const nextIndex = planCurrentIndex + 1
+    if (nextIndex >= planDrillQueue.length) {
+      // Plan finished — aggregate results and navigate to summary
+      const allResults = [...planResults, {
+        drillId: drill.id,
+        drillName: drill.name,
+        drillNameFr: drill.nameFr,
+        drillCategory: drill.category,
+        drillIcon: drill.icon,
+        reps: totalRepsNow,
+        score: finalScore,
+        durationSec: elapsed,
+        targetReps: drill.targetReps,
+      }]
+      const totalRepsSum = allResults.reduce((s, r) => s + r.reps, 0)
+      const totalDurationSum = allResults.reduce((s, r) => s + r.durationSec, 0)
+      const totalScoreAvg = Math.round(allResults.reduce((s, r) => s + r.score, 0) / allResults.length)
+
+      setWorkoutResult({
+        drills: allResults,
+        totalReps: totalRepsSum,
+        totalScore: totalScoreAvg,
+        totalDurationSec: totalDurationSum,
+      })
+      clearPlanExecution()
+      navigate('workout-summary')
+    } else {
+      // More drills remain — show plan-next transition
+      setPhase('plan-next')
+      setPlanNextCountdown(3)
+    }
+  }, [drill, elapsedAtEnd, totalDuration, timeRemaining, totalSets, reps, finalScore, planCurrentIndex, planDrillQueue, planResults, advancePlanDrill, setWorkoutResult, clearPlanExecution, navigate, saveMutation])
+
+  // Assign to ref so the useEffect above can call it
+  handlePlanDrillCompleteRef.current = handlePlanDrillComplete
+
+  // ── Plan-next countdown timer ────────────────────────────────────────
+  useEffect(() => {
+    if (phase !== 'plan-next') return
+
+    planNextTimerRef.current = setInterval(() => {
+      setPlanNextCountdown((prev) => {
+        if (prev <= 1) {
+          if (planNextTimerRef.current) clearInterval(planNextTimerRef.current)
+          // Transition to next drill
+          const nextIndex = useAppStore.getState().planCurrentIndex
+          const queue = useAppStore.getState().planDrillQueue
+          if (nextIndex < queue.length) {
+            const nextDrill = queue[nextIndex]
+            selectDrill(nextDrill.drillId)
+          }
+          // Reset all workout state
+          setReps(0)
+          setCurrentScore(0)
+          setFeedback('')
+          setFinalScore(0)
+          setElapsedAtEnd(0)
+          setAiResult(null)
+          setAiError('')
+          setAiCooldownRemaining(0)
+          setCurrentSet(1)
+          totalRepsAcrossSetsRef.current = 0
+          totalScoreAccumRef.current = []
+          repTrackerRef.current = createRepTracker()
+          scoresRef.current = []
+          halfTimeFiredRef.current = false
+          setRepFloatKey(0)
+          setPhase('countdown')
+          setCountdown(COUNTDOWN_SECONDS)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => {
+      if (planNextTimerRef.current) clearInterval(planNextTimerRef.current)
+    }
+  }, [phase, selectDrill])
 
   const handleSave = () => {
     if (!drill) return
@@ -1034,7 +1478,16 @@ export default function CameraWorkoutScreen() {
   }
 
   const handleBackToHub = () => {
+    if (isPlanMode) {
+      clearPlanExecution()
+    }
     navigate('train-hub')
+  }
+
+  const handleMuteToggle = () => {
+    ensureAudioInit()
+    const newMuted = toggleAudioMute()
+    setIsMuted(newMuted)
   }
 
   // ── AI Form Check ─────────────────────────────────────────────────────
@@ -1047,7 +1500,6 @@ export default function CameraWorkoutScreen() {
     setAiResult(null)
 
     try {
-      // Capture current video frame to an offscreen canvas
       const video = videoRef.current
       const captureCanvas = document.createElement('canvas')
       captureCanvas.width = 640
@@ -1055,7 +1507,6 @@ export default function CameraWorkoutScreen() {
       const captureCtx = captureCanvas.getContext('2d')
       if (!captureCtx) throw new Error('Canvas context unavailable')
 
-      // Mirror the capture to match what the user sees
       captureCtx.translate(640, 0)
       captureCtx.scale(-1, 1)
       captureCtx.drawImage(video, 0, 0, 640, 480)
@@ -1081,12 +1532,10 @@ export default function CameraWorkoutScreen() {
       const result: AIFormCheckResult = await response.json()
       setAiResult(result)
 
-      // Update feedback with AI response
       if (result.feedback) {
         setFeedback(result.feedback)
       }
 
-      // Update score from AI response — only nudge movement quality, not inflate all dimensions
       if (typeof result.score === 'number' && result.score > 0) {
         scoresRef.current.push({
           posture: Math.min(90, result.score * 0.8),
@@ -1102,7 +1551,6 @@ export default function CameraWorkoutScreen() {
     } finally {
       setAiLoading(false)
 
-      // Start cooldown
       setAiCooldownRemaining(10)
       if (aiCooldownTimerRef.current) clearInterval(aiCooldownTimerRef.current)
       aiCooldownTimerRef.current = setInterval(() => {
@@ -1122,12 +1570,15 @@ export default function CameraWorkoutScreen() {
     ? ((totalDuration - timeRemaining) / totalDuration) * 100
     : 0
 
+  const displayReps = totalSets > 1 ? totalRepsAcrossSetsRef.current + reps : reps
+  const targetReps = drill?.targetReps ?? 10
+
   // ── Loading state ─────────────────────────────────────────────────────
   if (isDrillLoading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-4">
         <Loader2 className="h-10 w-10 text-orange-500 animate-spin" />
-        <p className="text-foreground text-sm">Chargement de l'exercice...</p>
+        <p className="text-foreground text-sm">Chargement de l&apos;exercice...</p>
         <Skeleton className="h-3 w-48" />
       </div>
     )
@@ -1165,9 +1616,11 @@ export default function CameraWorkoutScreen() {
           variant="ghost"
           size="icon"
           onClick={() => {
+            ensureAudioInit()
             if (phase === 'active' || phase === 'paused') {
               handleStop()
             }
+            if (isPlanMode) clearPlanExecution()
             goBack()
           }}
           className="text-white/80 hover:text-white hover:bg-white/10 -ml-1 rounded-lg"
@@ -1178,24 +1631,28 @@ export default function CameraWorkoutScreen() {
 
         <div className="flex items-center gap-2">
           {drill && <span className="text-sm">{drill.icon}</span>}
-          <h1 className="text-white text-sm font-medium truncate max-w-[180px]">
+          <h1 className="text-white text-sm font-medium truncate max-w-[140px]">
             {drill?.nameFr ?? 'Exercice'}
           </h1>
+          {totalSets > 1 && (
+            <Badge variant="outline" className="text-[10px] text-orange-400 border-orange-500/30 bg-orange-500/10 px-1.5 py-0">
+              S{currentSet}/{totalSets}
+            </Badge>
+          )}
+          {isPlanMode && (
+            <Badge variant="outline" className="text-[10px] text-sky-400 border-sky-500/30 bg-sky-500/10 px-1.5 py-0">
+              {planCurrentIndex + 1}/{planDrillQueue.length}
+            </Badge>
+          )}
         </div>
 
         <div className="flex items-center gap-1">
-          {/* Timer in header */}
+          {/* Circular Timer in header */}
           {(phase === 'active' || phase === 'paused') && (
-            <div
-              className={`font-mono text-lg font-bold tabular-nums ${
-                timeRemaining <= 10 ? 'text-red-400 animate-pulse' : 'text-white'
-              }`}
-            >
-              {formatTime(timeRemaining)}
-            </div>
+            <CircularTimer remaining={timeRemaining} total={totalDuration} size={44} />
           )}
           <button
-            onClick={() => setIsMuted(!isMuted)}
+            onClick={handleMuteToggle}
             className="text-white/60 hover:text-white ml-1 p-1.5 rounded-lg hover:bg-white/10 transition-colors"
             aria-label={isMuted ? 'Activer le son' : 'Couper le son'}
           >
@@ -1230,28 +1687,65 @@ export default function CameraWorkoutScreen() {
           />
 
           {/* MediaPipe loading indicator */}
-          {!isModelLoaded && phase !== 'error' && (
+          {!isModelLoaded && (phase as string) !== 'error' && (
             <div className="absolute top-3 left-3 z-20 flex items-center gap-2 rounded-full bg-black/60 backdrop-blur-sm px-3 py-1.5">
               <Loader2 className="h-3.5 w-3.5 text-orange-400 animate-spin" />
               <span className="text-[11px] text-white/80">Modèle IA en cours...</span>
             </div>
           )}
 
-          {/* ── Countdown Overlay ──────────────────────────────────── */}
+          {/* ── PRÊT? Overlay (before countdown) ────────────────────── */}
           <AnimatePresence>
-            {phase === 'countdown' && (
+            {showReady && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: prefersReducedMotion ? 0.05 : 0.3 }}
+                className="absolute inset-0 flex items-center justify-center bg-black/60 z-20"
+              >
+                <motion.div
+                  initial={prefersReducedMotion ? {} : { scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: prefersReducedMotion ? 0.05 : 0.5, ease: 'easeOut' as const }}
+                  className="text-center"
+                >
+                  <p className="text-6xl font-black text-white drop-shadow-2xl tracking-tight">
+                    PRÊT?
+                  </p>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ── Countdown Overlay (3-2-1-GO!) ──────────────────────── */}
+          <AnimatePresence>
+            {phase === 'countdown' && !showReady && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-20">
                 <AnimatePresence mode="wait">
-                  <motion.div
-                    key={countdown}
-                    variants={countPulse}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                    className="text-8xl font-black text-white drop-shadow-2xl"
-                  >
-                    {countdown}
-                  </motion.div>
+                  {countdown > 0 ? (
+                    <motion.div
+                      key={countdown}
+                      variants={prefersReducedMotion ? countPulseReduced : countPulse}
+                      initial="initial"
+                      animate="animate"
+                      exit="exit"
+                      className="text-8xl font-black text-white drop-shadow-2xl"
+                    >
+                      {countdown}
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="go"
+                      initial={prefersReducedMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 1.5 }}
+                      transition={{ duration: prefersReducedMotion ? 0.05 : 0.4, ease: 'easeOut' as const }}
+                      className="text-7xl font-black text-orange-400 drop-shadow-2xl"
+                    >
+                      GO!
+                    </motion.div>
+                  )}
                 </AnimatePresence>
               </div>
             )}
@@ -1260,40 +1754,49 @@ export default function CameraWorkoutScreen() {
           {/* ── Active/Paused Overlay UI ───────────────────────────── */}
           {(phase === 'active' || phase === 'paused') && (
             <>
-              {/* Rep Count - top right */}
-              <div className="absolute top-3 right-3 z-10 text-right">
-                <div className="bg-black/50 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10">
-                  <p className="text-[10px] uppercase tracking-wider text-white/50 font-medium">
-                    Répétitions
-                  </p>
-                  <p className="text-4xl font-black text-white tabular-nums leading-none mt-0.5">
-                    {reps}
-                  </p>
-                  {drill && (
-                    <p className="text-[10px] text-white/40 mt-1">
-                      Objectif: {drill.targetReps}
-                    </p>
-                  )}
+              {/* Score Gauge — left side */}
+              <div className="absolute bottom-4 left-3 z-10">
+                <div className="bg-black/40 backdrop-blur-md rounded-2xl px-2 pt-2 pb-1 border border-white/10">
+                  <ScoreGauge score={currentScore} size={88} />
                 </div>
               </div>
 
-              {/* Score - top left */}
-              <div
-                className={`absolute top-3 left-3 z-10 border rounded-xl px-4 py-2 backdrop-blur-sm ${
-                  getScoreBgColor(currentScore)
-                }`}
-              >
-                <p className="text-[10px] uppercase tracking-wider text-white/50 font-medium">
-                  Score
-                </p>
-                <p
-                  className={`text-3xl font-black tabular-nums leading-none mt-0.5 ${getScoreColor(
-                    currentScore,
-                  )}`}
-                >
-                  {currentScore}
-                </p>
-                <p className="text-[10px] text-white/40 mt-1">/ 100</p>
+              {/* Target Reps — right side top */}
+              <div className="absolute top-3 right-3 z-10 text-right">
+                <div className="bg-black/40 backdrop-blur-md rounded-xl px-3 py-1.5 border border-white/10">
+                  <p className="text-[10px] uppercase tracking-wider text-white/50 font-medium">
+                    Objectif
+                  </p>
+                  <p className="text-sm font-bold text-white tabular-nums leading-none mt-0.5">
+                    {Math.min(displayReps, targetReps)}/{targetReps}
+                  </p>
+                </div>
+              </div>
+
+              {/* Rep Counter — center bottom (large) */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 text-center">
+                <div className="relative">
+                  <div className="bg-black/40 backdrop-blur-md rounded-2xl px-6 py-3 border border-white/10">
+                    <p className="text-[10px] uppercase tracking-wider text-white/50 font-medium">
+                      Répétitions
+                    </p>
+                    <motion.p
+                      key={displayReps}
+                      initial={prefersReducedMotion ? {} : { scale: 1.3, color: '#34d399' }}
+                      animate={{ scale: 1, color: '#ffffff' }}
+                      transition={{ duration: prefersReducedMotion ? 0.05 : 0.3 }}
+                      className="text-5xl font-black text-white tabular-nums leading-none mt-0.5"
+                    >
+                      {displayReps}
+                    </motion.p>
+                  </div>
+                  {/* Floating +1 */}
+                  <AnimatePresence>
+                    {repFloatKey > 0 && (
+                      <FloatingRep key={repFloatKey} />
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
 
               {/* Paused Overlay */}
@@ -1311,9 +1814,152 @@ export default function CameraWorkoutScreen() {
             </>
           )}
 
+          {/* ── Rest Overlay ───────────────────────────────────────── */}
+          <AnimatePresence>
+            {phase === 'rest' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-20"
+              >
+                <div className="text-center space-y-6">
+                  {/* Rest label */}
+                  <motion.div
+                    initial={prefersReducedMotion ? {} : { y: -10 }}
+                    animate={{ y: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <p className="text-white/60 text-sm font-medium uppercase tracking-widest">
+                      Pause Repos
+                    </p>
+                    <p className="text-white/40 text-xs mt-1">
+                      Série {currentSet}/{totalSets} terminée
+                    </p>
+                  </motion.div>
+
+                  {/* Rest timer circle */}
+                  <div className="flex justify-center">
+                    <div className="bg-black/50 backdrop-blur-md rounded-full p-4 border border-white/10">
+                      <motion.p
+                        key={restRemaining}
+                        initial={prefersReducedMotion ? {} : { scale: 1.1 }}
+                        animate={{ scale: 1 }}
+                        transition={{ duration: 0.2 }}
+                        className="text-6xl font-black text-white tabular-nums"
+                      >
+                        {restRemaining}
+                      </motion.p>
+                      <p className="text-white/40 text-xs text-center mt-1">secondes</p>
+                    </div>
+                  </div>
+
+                  {/* Rest controls */}
+                  <div className="flex justify-center gap-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleExtendRest}
+                      className="gap-1.5 border-white/20 text-white/80 hover:bg-white/10 hover:text-white rounded-full px-4"
+                    >
+                      <Plus className="h-4 w-4" />
+                      +15s
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleSkipRest}
+                      className="gap-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-full px-4"
+                    >
+                      <SkipForward className="h-4 w-4" />
+                      Passer
+                    </Button>
+                  </div>
+
+                  {/* Rest duration selector */}
+                  <div className="flex items-center justify-center gap-2">
+                    <Timer className="h-3 w-3 text-white/40" />
+                    <span className="text-white/40 text-[11px]">Durée repos:</span>
+                    {REST_OPTIONS.map((opt) => (
+                      <button
+                        key={opt}
+                        onClick={() => setRestDuration(opt)}
+                        className={`text-[11px] px-2 py-0.5 rounded-full transition-colors ${
+                          restDuration === opt
+                            ? 'bg-orange-500/30 text-orange-400 border border-orange-500/40'
+                            : 'text-white/40 hover:text-white/60 border border-white/10'
+                        }`}
+                      >
+                        {opt}s
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ── Plan-Next Transition Overlay ──────────────────────────── */}
+          <AnimatePresence>
+            {phase === 'plan-next' && (
+              <motion.div
+                variants={overlayVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="absolute inset-0 z-20 flex items-center justify-center bg-black/80 backdrop-blur-md"
+              >
+                <div className="text-center space-y-4">
+                  {/* Progress indicator */}
+                  <p className="text-white/50 text-sm font-medium uppercase tracking-widest">
+                    Exercice {planCurrentIndex + 1} / {planDrillQueue.length}
+                  </p>
+                  <div className="w-full max-w-[200px] mx-auto h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-orange-500 rounded-full transition-all duration-500"
+                      style={{ width: `${((planCurrentIndex) / planDrillQueue.length) * 100}%` }}
+                    />
+                  </div>
+
+                  {/* "NEXT" label */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    <p className="text-white/40 text-xs uppercase tracking-[0.3em] mb-2">Suivant</p>
+                    <div className="flex items-center justify-center gap-3">
+                      {(() => {
+                        const nextDrill = planDrillQueue[planCurrentIndex]
+                        return nextDrill ? (
+                          <>
+                            <span className="text-3xl">{nextDrill.icon}</span>
+                            <p className="text-white text-xl font-bold">{nextDrill.nameFr}</p>
+                          </>
+                        ) : null
+                      })()}
+                    </div>
+                  </motion.div>
+
+                  {/* Countdown */}
+                  <motion.div
+                    key={planNextCountdown}
+                    initial={prefersReducedMotion ? {} : { scale: 1.3, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                    className="w-20 h-20 mx-auto rounded-full bg-orange-500/20 border-2 border-orange-500/40 flex items-center justify-center"
+                  >
+                    <span className="text-4xl font-black text-orange-400 tabular-nums">
+                      {planNextCountdown}
+                    </span>
+                  </motion.div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* ── Completion Overlay ─────────────────────────────────── */}
           <AnimatePresence>
-            {phase === 'completed' && (
+            {phase === 'completed' && !isPlanMode && (
               <motion.div
                 variants={overlayVariants}
                 initial="hidden"
@@ -1330,6 +1976,7 @@ export default function CameraWorkoutScreen() {
                       {drill && (
                         <p className="text-white/50 text-sm mt-1">
                           {drill.nameFr}
+                          {totalSets > 1 && <span className="text-white/30"> · {totalSets} séries</span>}
                         </p>
                       )}
                     </div>
@@ -1352,7 +1999,7 @@ export default function CameraWorkoutScreen() {
                     <div className="grid grid-cols-3 gap-3">
                       <div className="bg-gray-800 rounded-xl p-3 text-center">
                         <p className="text-2xl font-black text-orange-400 tabular-nums">
-                          {reps}
+                          {displayReps}
                         </p>
                         <p className="text-[10px] text-white/40 uppercase tracking-wider mt-1">
                           Réps
@@ -1455,6 +2102,52 @@ export default function CameraWorkoutScreen() {
 
       {/* ── Bottom Panel ────────────────────────────────────────────── */}
       <div className="bg-background border-t border-border px-4 py-3 space-y-3">
+        {/* Sets & Rest Config (visible before workout starts or during countdown) */}
+        {(phase === 'countdown' || phase === 'loading' || showReady) && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Séries:</span>
+              {([1, 2, 3, 4, 5] as const).map((n) => (
+                <button
+                  key={n}
+                  onClick={() => {
+                    ensureAudioInit()
+                    setTotalSets(n)
+                  }}
+                  disabled={phase !== 'countdown' && phase !== 'loading' && !showReady}
+                  className={`text-xs w-7 h-7 rounded-full transition-colors ${
+                    totalSets === n
+                      ? 'bg-orange-500 text-white font-bold'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  } disabled:opacity-50`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <Timer className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Repos:</span>
+              {REST_OPTIONS.map((opt) => (
+                <button
+                  key={opt}
+                  onClick={() => {
+                    ensureAudioInit()
+                    setRestDuration(opt)
+                  }}
+                  className={`text-[11px] px-2 py-0.5 rounded-full transition-colors ${
+                    restDuration === opt
+                      ? 'bg-orange-500/20 text-orange-500 font-semibold border border-orange-500/30'
+                      : 'text-muted-foreground border border-border hover:bg-muted'
+                  }`}
+                >
+                  {opt}s
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* AI Feedback Area */}
         <AnimatePresence mode="wait">
           {(aiResult || aiError) && (phase === 'active' || phase === 'paused') && (
@@ -1467,7 +2160,6 @@ export default function CameraWorkoutScreen() {
               className="overflow-hidden"
             >
               <div className="rounded-xl border border-border px-4 py-3 space-y-2.5">
-                {/* AI Label */}
                 <div className="flex items-center gap-1.5">
                   <Sparkles className="h-3.5 w-3.5 text-orange-400" />
                   <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
@@ -1482,7 +2174,6 @@ export default function CameraWorkoutScreen() {
                   )}
                 </div>
 
-                {/* Feedback text */}
                 {aiError ? (
                   <p className="text-red-400 text-sm text-center">{aiError}</p>
                 ) : aiResult ? (
@@ -1491,7 +2182,6 @@ export default function CameraWorkoutScreen() {
                   </p>
                 ) : null}
 
-                {/* Issues pills */}
                 {aiResult?.issues && aiResult.issues.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 justify-center">
                     {aiResult.issues.map((issue, i) => (
@@ -1506,7 +2196,6 @@ export default function CameraWorkoutScreen() {
                   </div>
                 )}
 
-                {/* Good points pills */}
                 {aiResult?.goodPoints && aiResult.goodPoints.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 justify-center">
                     {aiResult.goodPoints.map((point, i) => (

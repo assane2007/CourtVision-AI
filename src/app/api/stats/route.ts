@@ -4,12 +4,17 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 
 // GET /api/stats — Comprehensive player stats with optimized queries
-export async function GET() {
+// Query params: ?days=7 (default 7, max 30) — controls dailyStats range
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
+
+    const { searchParams } = new URL(request.url)
+    const rawDays = parseInt(searchParams.get('days') ?? '7', 10)
+    const days = Math.min(Math.max(rawDays, 1), 30) // clamp 1–30
 
     const playerId = session.user.id
     const now = new Date()
@@ -46,7 +51,7 @@ export async function GET() {
         where: { playerId, startedAt: { gte: oneWeekAgo } },
       }),
 
-      // All sessions for daily breakdown (last 30 days max for efficiency)
+      // All sessions for daily breakdown (fetch up to 30 days, then slice)
       db.workoutSession.findMany({
         where: {
           playerId,
@@ -69,12 +74,12 @@ export async function GET() {
       }),
     ])
 
-    // ── Build daily stats (last 7 days) ────────────────────────────────
+    // ── Build daily stats (last N days based on query param) ────────────
 
     const dailyMap = new Map<string, { sessions: number; reps: number; score: number }>()
 
-    // Initialize last 7 days
-    for (let i = 6; i >= 0; i--) {
+    // Initialize last N days
+    for (let i = days - 1; i >= 0; i--) {
       const day = new Date(now)
       day.setDate(day.getDate() - i)
       day.setHours(0, 0, 0, 0)

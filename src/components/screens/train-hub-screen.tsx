@@ -77,7 +77,7 @@ const cardVariants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { type: 'spring', stiffness: 300, damping: 24 },
+    transition: { type: 'spring' as const, stiffness: 300, damping: 24 },
   },
   exit: {
     opacity: 0,
@@ -711,13 +711,13 @@ export default function TrainHubScreen() {
                     exit="exit"
                   >
                     <Card
-                      className="group cursor-pointer relative overflow-hidden rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-200 bg-card bg-gradient-to-br from-card to-card/50"
+                      className="group cursor-pointer relative overflow-hidden rounded-2xl shadow-sm dark:shadow-none dark:border-border/50 hover:shadow-md dark:hover:border-border/80 transition-all duration-200 bg-card bg-gradient-to-br from-card to-card/50"
                       onClick={() => handleCardClick(drill)}
                     >
                       {/* Favorite button */}
                       <button
                         onClick={(e) => handleToggleFavorite(e, drill.id)}
-                        className="absolute top-3 right-3 z-10 h-8 w-8 flex items-center justify-center rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-sm hover:scale-110 active:scale-95 transition-transform"
+                        className="absolute top-3 right-3 z-10 h-8 w-8 flex items-center justify-center rounded-full bg-background/80 dark:bg-background/60 backdrop-blur-sm border border-border dark:border-border/50 shadow-sm hover:scale-110 active:scale-95 transition-transform"
                         aria-label={
                           isFav
                             ? 'Retirer des favoris'

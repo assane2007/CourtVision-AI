@@ -19,8 +19,10 @@ import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppStore } from '@/stores/app'
 import { BottomNav } from '@/components/shared/bottom-nav'
+import { SwipeToGoBack } from '@/components/shared/swipe-back'
 import { getCategoryLabel, DIFFICULTY_CONFIG } from '@/lib/constants'
 import { DrillDemoAnimation } from '@/components/drill-demo-animation'
+import { apiFetch } from '@/lib/utils'
 import { toast } from 'sonner'
 
 // ── Animation variants ──────────────────────────────────────────────
@@ -43,9 +45,12 @@ export function DrillDetailScreen() {
   const queryClient = useQueryClient()
 
   // ── Fetch drills ─────────────────────────────────────────────────
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<{
+    drills: Array<{ id: string; name: string; nameFr: string; category: string; difficulty: string; description: string; descriptionFr: string; instructions: string; instructionsFr: string; durationSec: number; targetReps: number; icon: string }>
+    favoriteIds: string[]
+  }>({
     queryKey: ['drills'],
-    queryFn: () => fetch('/api/drills').then((r) => r.json()),
+    queryFn: () => apiFetch('/api/drills'),
   })
 
   const drill = data?.drills?.find((d: { id: string }) => d.id === selectedDrillId)
@@ -54,11 +59,11 @@ export function DrillDetailScreen() {
   // ── Favorite mutation ────────────────────────────────────────────
   const favoriteMutation = useMutation({
     mutationFn: () =>
-      fetch('/api/drills/favorite', {
+      apiFetch<{ favorited: boolean }>('/api/drills/favorite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ drillId: selectedDrillId }),
-      }).then((r) => r.json()),
+      }),
     onSuccess: (result: { favorited: boolean }) => {
       queryClient.invalidateQueries({ queryKey: ['drills'] })
       toast(result.favorited ? 'Ajouté aux favoris' : 'Retiré des favoris', {
@@ -114,7 +119,7 @@ export function DrillDetailScreen() {
     : []
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <SwipeToGoBack className="min-h-screen bg-background pb-24">
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -165,7 +170,7 @@ export function DrillDetailScreen() {
         <div className="px-4 pt-5 space-y-5">
           {/* ── Drill Info Card ──────────────────────────────────── */}
           <motion.div variants={itemVariants}>
-            <Card className="border-0 shadow-lg overflow-hidden">
+            <Card className="border-0 dark:border-border/50 shadow-lg dark:shadow-md overflow-hidden">
               {/* Accent top bar */}
               <div className="h-1.5 bg-gradient-to-r from-orange-400 via-orange-500 to-amber-500" />
               {/* Animated drill demo */}
@@ -235,7 +240,7 @@ export function DrillDetailScreen() {
           {/* ── Instructions Section ─────────────────────────────── */}
           {instructions.length > 0 && (
             <motion.div variants={itemVariants}>
-              <Card className="border-0 shadow-md">
+              <Card className="border-0 dark:border-border/50 shadow-md">
                 <CardContent className="p-5 space-y-4">
                   <div className="flex items-center gap-2">
                     <ListOrdered className="h-5 w-5 text-orange-500" />
@@ -285,7 +290,7 @@ export function DrillDetailScreen() {
       </motion.div>
 
       <BottomNav />
-    </div>
+    </SwipeToGoBack>
   )
 }
 

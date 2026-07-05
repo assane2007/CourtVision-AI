@@ -10,6 +10,7 @@ import {
   Trophy,
   BarChart3,
   Dumbbell,
+  ChevronRight,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -33,7 +34,10 @@ import {
 } from 'recharts'
 import { useAppStore } from '@/stores/app'
 import { BottomNav } from '@/components/shared/bottom-nav'
+import { PullToRefresh } from '@/components/shared/pull-to-refresh'
+import { AnimatedNumber } from '@/components/shared/animated-number'
 import { CATEGORY_META, getCategoryLabel } from '@/lib/constants'
+import { apiFetch } from '@/lib/utils'
 
 // ── Day name mapping ────────────────────────────────────────────────
 const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
@@ -104,26 +108,40 @@ interface SessionEntry {
 }
 
 // ── Component ───────────────────────────────────────────────────────
+interface StatsResponse {
+  totalSessions: number
+  totalReps: number
+  avgScore: number
+  weekSessions: number
+  dailyStats: DailyStat[]
+  categories: CategoryStat[]
+  currentStreak?: number
+  bestStreak?: number
+}
+
 export function StatsScreen() {
   const { currentScreen, navigate } = useAppStore()
 
   // ── Fetch stats ─────────────────────────────────────────────────
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading } = useQuery<StatsResponse>({
     queryKey: ['stats'],
-    queryFn: () => fetch('/api/stats').then((r) => r.json()),
+    queryFn: () => apiFetch<StatsResponse>('/api/stats'),
   })
 
   // ── Fetch recent sessions ───────────────────────────────────────
-  const { data: sessions, isLoading: sessionsLoading } = useQuery({
+  const { data: sessionsData, isLoading: sessionsLoading } = useQuery<{ sessions: SessionEntry[] }>({
     queryKey: ['sessions'],
-    queryFn: () => fetch('/api/sessions').then((r) => r.json()),
+    queryFn: () => apiFetch<{ sessions: SessionEntry[] }>('/api/sessions'),
   })
 
-  const recentSessions: SessionEntry[] = sessions?.slice?.(0, 10) ?? []
+  const recentSessions: SessionEntry[] = sessionsData?.sessions?.slice(0, 10) ?? []
   const dailyStats: DailyStat[] = stats?.dailyStats ?? []
   const categories: CategoryStat[] = stats?.categories ?? []
 
   // ── Loading skeleton ────────────────────────────────────────────
+  // Suppress unused variable lint (currentScreen is available for future use)
+  void currentScreen
+
   if (statsLoading || sessionsLoading) {
     return (
       <div className="min-h-screen bg-background pb-24">
@@ -149,6 +167,9 @@ export function StatsScreen() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
+      <PullToRefresh
+        queryKeys={[['stats'], ['sessions']]}
+      >
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -198,9 +219,30 @@ export function StatsScreen() {
             />
           </motion.div>
 
+          {/* ── Records Link Card ──────────────────────────────────── */}
+          <motion.div variants={itemVariants}>
+            <Card
+              className="border-0 shadow-md cursor-pointer group hover:shadow-lg transition-shadow"
+              onClick={() => navigate('records')}
+            >
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shrink-0 shadow-md shadow-orange-500/20">
+                  <Trophy className="h-6 w-6 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-semibold">Voir mes records personnels</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Meilleurs scores, tendances et progrès
+                  </p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-orange-500 transition-colors shrink-0" />
+              </CardContent>
+            </Card>
+          </motion.div>
+
           {/* ── Weekly Activity Chart ─────────────────────────────── */}
           <motion.div variants={itemVariants}>
-            <Card className="border-0 shadow-md">
+            <Card className="border-0 dark:border-border/50 shadow-md">
               <CardHeader className="pb-2 px-5 pt-5">
                 <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
                   <BarChart3 className="h-4 w-4 text-orange-500" />
@@ -249,7 +291,7 @@ export function StatsScreen() {
           {/* ── Category Performance ──────────────────────────────── */}
           {categories.length > 0 && (
             <motion.div variants={itemVariants}>
-              <Card className="border-0 shadow-md">
+              <Card className="border-0 dark:border-border/50 shadow-md">
                 <CardHeader className="pb-2 px-5 pt-5">
                   <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
                     <Trophy className="h-4 w-4 text-orange-500" />
@@ -308,7 +350,7 @@ export function StatsScreen() {
           {/* ── Recent Sessions Table ─────────────────────────────── */}
           {recentSessions.length > 0 && (
             <motion.div variants={itemVariants}>
-              <Card className="border-0 shadow-md">
+              <Card className="border-0 dark:border-border/50 shadow-md">
                 <CardHeader className="pb-2 px-5 pt-5">
                   <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-orange-500" />
@@ -347,10 +389,10 @@ export function StatsScreen() {
                               <TableCell className="text-xs font-semibold text-right py-2.5">
                                 <span className={
                                   session.totalScore >= 7
-                                    ? 'text-emerald-600'
+                                    ? 'text-emerald-600 dark:text-emerald-400'
                                     : session.totalScore >= 4
-                                      ? 'text-amber-600'
-                                      : 'text-red-500'
+                                      ? 'text-amber-600 dark:text-amber-400'
+                                      : 'text-red-500 dark:text-red-400'
                                 }>
                                   {session.totalScore.toFixed(1)}
                                 </span>
@@ -424,6 +466,7 @@ export function StatsScreen() {
           <div className="h-2" />
         </div>
       </motion.div>
+      </PullToRefresh>
 
       <BottomNav />
     </div>
@@ -443,18 +486,27 @@ function StatCard({
   color: string
 }) {
   const colorMap: Record<string, string> = {
-    orange: 'bg-orange-50 border-orange-100',
-    emerald: 'bg-emerald-50 border-emerald-100',
-    sky: 'bg-sky-50 border-sky-100',
-    violet: 'bg-violet-50 border-violet-100',
+    orange: 'bg-orange-50 dark:bg-orange-500/10 border-orange-100 dark:border-orange-500/20',
+    emerald: 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20',
+    sky: 'bg-sky-50 dark:bg-sky-500/10 border-sky-100 dark:border-sky-500/20',
+    violet: 'bg-violet-50 dark:bg-violet-500/10 border-violet-100 dark:border-violet-500/20',
   }
+
+  const numericValue = typeof value === 'number' ? value : parseFloat(value as string)
+  const isNumeric = !isNaN(numericValue) && typeof value !== 'string'
 
   return (
     <Card className={`border ${colorMap[color] ?? colorMap.orange}`}>
       <CardContent className="p-4 flex items-start gap-3">
         <div className="flex-shrink-0 mt-0.5">{icon}</div>
         <div>
-          <p className="text-2xl font-bold leading-tight">{value}</p>
+          {isNumeric ? (
+            <p className="text-2xl font-bold leading-tight">
+              <AnimatedNumber value={numericValue} />
+            </p>
+          ) : (
+            <p className="text-2xl font-bold leading-tight">{value}</p>
+          )}
           <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
         </div>
       </CardContent>
