@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { toggleFavoriteSchema, getZodErrorMessage } from '@/lib/validations'
 
+// POST /api/drills/favorite — Toggle favorite on/off
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -10,9 +12,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
-    const { drillId } = await req.json()
-    if (!drillId) {
-      return NextResponse.json({ error: 'Drill ID requis' }, { status: 400 })
+    const body = await req.json()
+    const parsed = toggleFavoriteSchema.safeParse(body)
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: getZodErrorMessage(parsed.error) },
+        { status: 400 }
+      )
+    }
+
+    const { drillId } = parsed.data
+
+    // Verify drill exists and is accessible to the user
+    const drill = await db.drill.findFirst({
+      where: {
+        id: drillId,
+        isActive: true,
+        OR: [
+          { playerId: null },
+          { playerId: session.user.id },
+        ],
+      },
+      select: { id: true },
+    })
+
+    if (!drill) {
+      return NextResponse.json({ error: 'Exercice non trouvé' }, { status: 404 })
     }
 
     const existing = await db.drillFavorite.findUnique({
@@ -29,7 +55,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ favorited: true })
     }
   } catch (error) {
-    console.error('Favorite toggle error:', error)
+    console.error('[POST /api/drills/favorite]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

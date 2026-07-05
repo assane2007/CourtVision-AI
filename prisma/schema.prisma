@@ -20,12 +20,15 @@ model Player {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  sessions    WorkoutSession[]
-  favorites   DrillFavorite[]
+  sessions      WorkoutSession[]
+  favorites     DrillFavorite[]
+  customDrills  Drill[]
+  trainingPlans TrainingPlan[]
 }
 
 model Drill {
   id          String   @id @default(cuid())
+  playerId    String?   // nullable — only set for custom drills; seed drills have no owner
   name        String
   nameFr      String
   category    String   // pocket_ball, shifty, ball_handling, speed_change, defense, shooting, footwork, finishing, conditioning
@@ -41,8 +44,12 @@ model Drill {
   isCustom    Boolean  @default(false)
   createdAt   DateTime @default(now())
 
-  favorites   DrillFavorite[]
-  sessions    WorkoutSessionDrill[]
+  player              Player?  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  favorites           DrillFavorite[]
+  sessions            WorkoutSessionDrill[]
+  trainingPlanDrills  TrainingPlanDrill[]
+
+  @@index([playerId])
 }
 
 model WorkoutSession {
@@ -97,11 +104,33 @@ model TrainingPlan {
   playerId    String
   name        String
   description String?
+  isPublic    Boolean  @default(false)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  drills      TrainingPlanDrill[]
+
   @@index([playerId])
+}
+
+model TrainingPlanDrill {
+  id          String   @id @default(cuid())
+  planId      String
+  drillId     String
+  order       Int      @default(0)
+  targetReps  Int      @default(10)
+  targetSets  Int      @default(1)
+  restSec     Int      @default(30)
+  createdAt   DateTime @default(now())
+
+  plan        TrainingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  drill       Drill        @relation(fields: [drillId], references: [id])
+
+  @@unique([planId, drillId])
+  @@index([planId])
+  @@index([drillId])
 }
 
 model Achievement {

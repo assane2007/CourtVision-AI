@@ -2,34 +2,31 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { createDrillSchema, getZodErrorMessage } from '@/lib/validations'
 
-// POST /api/drills/create — Create a custom drill
+// POST /api/drills/create — Create a custom drill owned by the current user
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
     const body = await req.json()
-    const { name, nameFr, category, difficulty, description, descriptionFr, instructions, instructionsFr, durationSec, targetReps, icon } = body
+    const parsed = createDrillSchema.safeParse(body)
 
-    if (!nameFr || !category || !difficulty) {
-      return NextResponse.json({ error: 'Champs requis manquants (nom, catégorie, difficulté)' }, { status: 400 })
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: getZodErrorMessage(parsed.error) },
+        { status: 400 }
+      )
     }
 
-    const validCategories = ['pocket_ball', 'shifty', 'ball_handling', 'speed_change', 'defense', 'shooting', 'footwork', 'finishing', 'conditioning']
-    if (!validCategories.includes(category)) {
-      return NextResponse.json({ error: 'Catégorie invalide' }, { status: 400 })
-    }
-
-    const validDifficulties = ['beginner', 'intermediate', 'advanced']
-    if (!validDifficulties.includes(difficulty)) {
-      return NextResponse.json({ error: 'Difficulté invalide' }, { status: 400 })
-    }
+    const { name, nameFr, category, difficulty, description, descriptionFr, instructions, instructionsFr, durationSec, targetReps, icon } = parsed.data
 
     const drill = await db.drill.create({
       data: {
+        playerId: session.user.id,
         name: name || nameFr,
         nameFr,
         category,
@@ -38,17 +35,17 @@ export async function POST(req: NextRequest) {
         descriptionFr: descriptionFr || description || '',
         instructions: instructions || instructionsFr || '',
         instructionsFr: instructionsFr || instructions || '',
-        durationSec: Math.max(10, Math.min(300, durationSec || 30)),
-        targetReps: Math.max(1, Math.min(100, targetReps || 10)),
+        durationSec: durationSec ?? 30,
+        targetReps: targetReps ?? 10,
         icon: icon || '🏀',
         isActive: true,
         isCustom: true,
       },
     })
 
-    return NextResponse.json({ drill })
+    return NextResponse.json({ drill }, { status: 201 })
   } catch (error) {
-    console.error('Failed to create drill:', error)
+    console.error('[POST /api/drills/create]', error)
     return NextResponse.json({ error: 'Erreur lors de la création' }, { status: 500 })
   }
 }

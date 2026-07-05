@@ -20,7 +20,7 @@ const ACHIEVEMENTS = [
   { type: 'master', title: 'Maître', description: 'Essayez toutes les catégories', icon: '🎓' },
   { type: 'night_owl', title: 'Oiseau de Nuit', description: 'Entraînez-vous après 22h', icon: '🦉' },
   { type: 'early_bird', title: 'Lève-tôt', description: 'Entraînez-vous avant 8h', icon: '🐦' },
-]
+] as const
 
 export async function GET() {
   try {
@@ -31,43 +31,31 @@ export async function GET() {
 
     const playerId = session.user.id
 
-    // Gather player stats
-    const totalSessions = await db.workoutSession.count({ where: { playerId } })
+    // Gather stats in parallel
+    const [totalSessions, totalRepsResult, avgScoreResult, weekSessions, sessionDrills, sessions] = await Promise.all([
+      db.workoutSession.count({ where: { playerId } }),
+      db.workoutSession.aggregate({ where: { playerId }, _sum: { totalReps: true } }),
+      db.workoutSession.aggregate({ where: { playerId }, _avg: { totalScore: true } }),
+      (() => {
+        const oneWeekAgo = new Date()
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+        return db.workoutSession.count({ where: { playerId, startedAt: { gte: oneWeekAgo } } })
+      })(),
+      db.workoutSessionDrill.findMany({
+        where: { session: { playerId } },
+        include: { drill: { select: { category: true } } },
+      }),
+      db.workoutSession.findMany({
+        where: { playerId },
+        select: { startedAt: true },
+        orderBy: { startedAt: 'desc' },
+      }),
+    ])
 
-    const totalRepsResult = await db.workoutSession.aggregate({
-      where: { playerId },
-      _sum: { totalReps: true },
-    })
     const totalReps = totalRepsResult._sum.totalReps || 0
-
-    const avgScoreResult = await db.workoutSession.aggregate({
-      where: { playerId },
-      _avg: { totalScore: true },
-    })
     const avgScore = avgScoreResult._avg.totalScore || 0
-
-    const oneWeekAgo = new Date()
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
-    const weekSessions = await db.workoutSession.count({
-      where: { playerId, startedAt: { gte: oneWeekAgo } },
-    })
-
-    // Categories tried
-    const sessionDrills = await db.workoutSessionDrill.findMany({
-      where: { session: { playerId } },
-      include: { drill: true },
-    })
     const categoriesTried = new Set(sessionDrills.map(sd => sd.drill.category))
 
-    // Favorites count
-    const favoriteCount = await db.drillFavorite.count({ where: { playerId } })
-
-    // Check time-based achievements
-    const sessions = await db.workoutSession.findMany({
-      where: { playerId },
-      select: { startedAt: true },
-      orderBy: { startedAt: 'desc' },
-    })
     const hasNightSession = sessions.some(s => {
       const h = new Date(s.startedAt).getHours()
       return h >= 22 || h < 5
@@ -77,7 +65,7 @@ export async function GET() {
       return h >= 5 && h < 8
     })
 
-    // Determine which achievements are unlocked
+    // Determine conditions
     const conditions: Record<string, boolean> = {
       first_login: true,
       first_workout: totalSessions >= 1,
@@ -97,23 +85,22 @@ export async function GET() {
       early_bird: hasEarlySession,
     }
 
-    // Get already unlocked achievements
+    // Get already unlocked
     const unlocked = await db.achievement.findMany({
       where: { playerId },
       select: { type: true, unlockedAt: true },
     })
     const unlockedMap = new Map(unlocked.map(u => [u.type, u.unlockedAt]))
 
-    // Check for new unlocks
-    const newUnlocks: { type: string; title: string; description: string; icon: string; unlockedAt: Date }[] = []
-
+    // Find new unlocks
+    const newUnlocks: typeof ACHIEVEMENTS[number][] = []
     for (const achievement of ACHIEVEMENTS) {
       if (!unlockedMap.has(achievement.type) && conditions[achievement.type]) {
-        newUnlocks.push({ ...achievement, unlockedAt: new Date() })
+        newUnlocks.push(achievement)
       }
     }
 
-    // Save new unlocks
+    // Save new unlocks in batch
     if (newUnlocks.length > 0) {
       await db.achievement.createMany({
         data: newUnlocks.map(n => ({
@@ -122,12 +109,10 @@ export async function GET() {
           title: n.title,
           description: n.description,
           icon: n.icon,
-          unlockedAt: n.unlockedAt,
         })),
       })
     }
 
-    // Build response
     const allAchievements = ACHIEVEMENTS.map(a => ({
       ...a,
       unlocked: unlockedMap.has(a.type) || conditions[a.type],
@@ -141,7 +126,7 @@ export async function GET() {
       totalAchievements: allAchievements.length,
     })
   } catch (error) {
-    console.error('Achievements error:', error)
+    console.error('[GET /api/achievements]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
