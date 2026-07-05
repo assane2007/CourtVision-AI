@@ -34,21 +34,27 @@ export async function POST(req: NextRequest) {
 
     const zai = await ZAI.create()
 
-    const prompt = `Tu es un coach de basketball expert en analyse de mouvement. Analyse cette image d'une personne en train de faire l'exercice de basketball suivant:
+    const prompt = `Tu es un coach de basketball expert en analyse de mouvement. Analyse cette image d'une caméra.
 
-Exercice: ${drillName}
+EXERCICE DEMANDÉ: ${drillName}
 Catégorie: ${category}
 ${drillInstructions ? `Instructions: ${drillInstructions}` : ''}
 
-Évalue la forme et la posture du joueur. Réponds UNIQUEMENT en JSON valide avec cette structure exacte (pas de markdown, pas de backticks):
+RÈGLES D'ÉVALUATION IMPORTANTES:
+1. Vérifie d'ABORD si une balle de basketball est visible dans l'image.
+2. Si AUCUNE balle n'est visible ET que l'exercice nécessite une balle (ball_handling, pocket_ball, shooting, finishing), le score MAXIMUM est 20 et tu DOIS le mentionner dans "issues".
+3. Si AUCUNE balle n'est visible ET que l'exercice ne nécessite PAS de balle (defense, shifty, speed_change, agility), évalue normalement la posture et le mouvement.
+4. Si le joueur est immobile, assis, ou ne fait pas l'exercice, le score doit être 0-15.
+5. Ne SUPPOSE JAMAIS qu'il y a une balle si tu ne la vois pas clairement.
+6. N'invente pas de détails que tu ne vois pas dans l'image.
+
+Réponds UNIQUEMENT en JSON valide (pas de markdown, pas de backticks):
 {
   "score": <nombre 0-100>,
-  "feedback": "<retour en français, 1-2 phrases maximum, encouragement ou correction spécifique>",
-  "issues": ["<problème 1 si applicable>", "<problème 2 si applicable>"],
-  "goodPoints": ["<point positif 1>", "<point positif 2>"]
-}
-
-Sois précis dans tes retours. Si la forme est excellente (score > 85), félicite. Si des corrections sont nécessaires, sois spécifique sur ce qui doit changer.`
+  "feedback": "<retour en français, 1-2 phrases max>",
+  "issues": ["<problème 1>", "<problème 2>"],
+  "goodPoints": ["<point positif 1>"]
+}`
 
     const response = await zai.chat.completions.createVision({
       model: 'gpt-4o',
@@ -79,13 +85,13 @@ Sois précis dans tes retours. Si la forme est excellente (score > 85), félicit
       const jsonMatch = content.match(/\{[\s\S]*\}/)
       result = jsonMatch
         ? JSON.parse(jsonMatch[0])
-        : { score: 50, feedback: content, issues: [], goodPoints: [] }
+        : { score: 10, feedback: 'Analyse incomplète — réessayez', issues: [], goodPoints: [] }
     } catch {
-      result = { score: 50, feedback: content, issues: [], goodPoints: [] }
+      result = { score: 10, feedback: 'Erreur d\'analyse — réessayez', issues: [], goodPoints: [] }
     }
 
     // Clamp score
-    result.score = Math.max(0, Math.min(100, Math.round(Number(result.score) || 50)))
+    result.score = Math.max(0, Math.min(100, Math.round(Number(result.score) || 10)))
 
     // Ensure arrays
     result.issues = Array.isArray(result.issues) ? result.issues : []
