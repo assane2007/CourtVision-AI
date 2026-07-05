@@ -12,6 +12,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
+    // Check content-length before parsing body
+    const contentLength = parseInt(req.headers.get('content-length') || '0', 10)
+    if (contentLength > 1_000_000) {
+      return NextResponse.json({ error: 'Requête trop volumineuse' }, { status: 413 })
+    }
+
     const body = await req.json()
     const parsed = createSessionSchema.safeParse(body)
 

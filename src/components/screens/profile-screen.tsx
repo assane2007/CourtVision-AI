@@ -48,7 +48,7 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' as const } },
 }
 
-// ── Label maps ──────────────────────────────────────────────────────
+// ── Profile-specific labels (extends shared constants) ──────────────
 const positionLabels: Record<string, string> = {
   guard: 'Meneur / Arrière',
   forward: 'Ailier',

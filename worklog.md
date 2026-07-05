@@ -212,3 +212,52 @@ Stage Summary:
 - Video player has full controls (play/pause, progress, time, restart)
 - Ken Burns animation gives cinematic video feel
 - No new lint errors
+---
+Task ID: 6-a
+Agent: Security Agent
+Task: Fix critical security and stability issues — JWT secret, password validation, security headers, rate limiting, body size limits, API response validation
+
+Work Log:
+- Fixed JWT SECRET in /src/lib/auth.ts: replaced hardcoded fallback with IIFE that throws FATAL error if NEXTAUTH_SECRET env var is missing
+- Strengthened password validation in /src/lib/validations.ts: changed from min(6) to min(8) + regex requiring uppercase letter and digit
+- Created /src/middleware.ts: security-only middleware (no auth logic) adding X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy, Permissions-Policy, X-XSS-Protection; matcher excludes api/_next/static/drill-demos
+- Created /src/lib/rate-limit.ts: in-memory rate limiter with 15-min window, 10 max attempts per identifier
+- Applied rate limiting to /src/lib/auth.ts authorize function (checks credentials.email before DB lookup)
+- Applied rate limiting to /src/app/api/auth/signup/route.ts (after duplicate email check, returns 429 with French message)
+- Added content-length body size checks (1MB limit) to 6 API routes: signup, sessions POST, drills/create, drills/favorite, player PATCH, plans POST
+- Added 10MB content-length check to /src/app/api/ai/form-check/route.ts (higher limit for image uploads)
+- Added apiFetch<T> helper to /src/lib/utils.ts: wraps fetch with automatic error parsing and throwing
+- Updated /src/components/screens/home-screen.tsx: replaced 3 raw fetch().then(r => r.json()) calls with apiFetch()
+- Updated /src/components/screens/auth-screen.tsx: replaced raw fetch in signup handler with apiFetch()
+
+Lint: All 6 errors and 1 warning are pre-existing (page.tsx, theme-toggle.tsx, camera-workout.tsx, upload/). Zero new lint errors from this task.
+
+Stage Summary:
+- JWT secret no longer has insecure hardcoded fallback — app crashes safely if env var missing
+- Passwords now require 8+ chars, uppercase, and digit
+- Security headers applied to all page routes via middleware (no auth logic that would break Next.js 16)
+- Rate limiting protects both login (10 attempts/15min) and signup (10 attempts/15min per email)
+- All POST/PUT/PATCH API routes reject requests >1MB (form-check allows 10MB)
+- Client-side fetches now use type-safe apiFetch helper with automatic error propagation
+---
+Task ID: 7
+Agent: Main
+Task: Fix P1 quality and UX issues — duplicated BottomNav, error boundary, reduced motion, lazy loading, dependency cleanup, profile labels audit
+
+Work Log:
+- Fixed achievements-screen.tsx: replaced inline duplicated bottom nav (with English "Training" label) with shared `<BottomNav />` component; removed unused imports (Home, Dumbbell, BarChart3, User from lucide-react); removed unused `currentScreen` from store destructuring; kept `cn` import (still used in the file)
+- Added ErrorBoundary class component to page.tsx: French error UI with reload button, wraps the entire `<main>` content; imports Component and ReactNode from React
+- Added `prefers-reduced-motion` CSS media query to end of globals.css: disables all animations, transitions, and scroll-behavior for users who prefer reduced motion
+- Added `loading="lazy"` attribute to the drill demo `<img>` tag in drill-demo-animation.tsx
+- Removed 28 unused npm packages: @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities, @hookform/resolvers, @mdxeditor/editor, react-markdown, react-syntax-highlighter, react-resizable-panels, input-otp, react-day-picker, vaul, react-hook-form, cmdk, next-intl, uuid, @reactuses/core, @tanstack/react-table, embla-carousel-react, @radix-ui/react-menubar, @radix-ui/react-navigation-menu, @radix-ui/react-toggle, @radix-ui/react-toggle-group, @radix-ui/react-calendar, @radix-ui/react-context-menu, @radix-ui/react-hover-card, @radix-ui/react-dropdown-menu, @radix-ui/react-popover, @radix-ui/react-checkbox, date-fns
+- Verified profile-screen.tsx label maps against Zod validation enums: levelLabels matches VALID_LEVELS exactly; goalsLabels matches VALID_GOALS exactly; positionLabels has extra 'all_around' (by design for profile display); added comment `// Profile-specific labels (extends shared constants)`
+
+Lint: All 6 errors and 1 warning are pre-existing (page.tsx, theme-toggle.tsx, camera-workout.tsx, upload/). Zero new lint errors from this task.
+
+Stage Summary:
+- Achievements screen now uses consistent shared BottomNav (no more English "Training" label)
+- App-level error boundary catches and displays React render errors with French recovery UI
+- Users who prefer reduced motion get animations/transitions disabled automatically
+- Drill demo images lazy-loaded for better performance
+- 28 unused packages removed, reducing bundle size
+- Profile label maps verified consistent with backend validation enums

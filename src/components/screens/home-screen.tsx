@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppStore } from '@/stores/app'
-import { cn } from '@/lib/utils'
+import { cn, apiFetch } from '@/lib/utils'
 import { BottomNav } from '@/components/shared/bottom-nav'
 import { CATEGORY_LABELS } from '@/lib/constants'
 
@@ -312,7 +312,7 @@ export default function HomeScreen() {
   // ---- Data fetching ----
   const { data: stats, isLoading: statsLoading } = useQuery<StatsResponse>({
     queryKey: ['stats'],
-    queryFn: () => fetch('/api/stats').then((r) => r.json()),
+    queryFn: () => apiFetch('/api/stats'),
     staleTime: 1000 * 60 * 2,
   })
 
@@ -320,13 +320,13 @@ export default function HomeScreen() {
     RecommendationDrill[]
   >({
     queryKey: ['recommendations'],
-    queryFn: () => fetch('/api/recommendations').then((r) => r.json()),
+    queryFn: () => apiFetch('/api/recommendations'),
     staleTime: 1000 * 60 * 5,
   })
 
   const { data: sessionsData, isLoading: sessionsLoading } = useQuery<{ sessions: Session[] }>({
     queryKey: ['sessions'],
-    queryFn: () => fetch('/api/sessions').then((r) => r.json()),
+    queryFn: () => apiFetch<{ sessions: Session[] }>('/api/sessions'),
     staleTime: 1000 * 60 * 2,
   })
 

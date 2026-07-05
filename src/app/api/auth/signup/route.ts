@@ -2,9 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { db } from '@/lib/db'
 import { signupSchema, getZodErrorMessage } from '@/lib/validations'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
   try {
+    // Check content-length before parsing body
+    const contentLength = parseInt(req.headers.get('content-length') || '0', 10)
+    if (contentLength > 1_000_000) {
+      return NextResponse.json({ error: 'Requête trop volumineuse' }, { status: 413 })
+    }
+
     const body = await req.json()
 
     // Check duplicate email first (before full validation)
@@ -17,6 +24,14 @@ export async function POST(req: NextRequest) {
           { status: 409 }
         )
       }
+    }
+
+    const rateResult = rateLimit(rawEmail || 'unknown')
+    if (!rateResult.success) {
+      return NextResponse.json(
+        { error: 'Trop de tentatives. Réessayez dans 15 minutes.' },
+        { status: 429 }
+      )
     }
 
     const parsed = signupSchema.safeParse(body)

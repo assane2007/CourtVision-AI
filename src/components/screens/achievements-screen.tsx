@@ -2,11 +2,12 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Trophy, ArrowLeft, Lock, Home, Dumbbell, BarChart3, User, Medal } from 'lucide-react'
+import { Trophy, ArrowLeft, Lock, Medal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppStore } from '@/stores/app'
+import { BottomNav } from '@/components/shared/bottom-nav'
 import { cn } from '@/lib/utils'
 
 interface Achievement {
@@ -37,7 +38,7 @@ const itemVariants = {
 }
 
 export function AchievementsScreen() {
-  const { navigate, currentScreen } = useAppStore()
+  const { navigate } = useAppStore()
 
   const { data, isLoading } = useQuery<{
     achievements: Achievement[]
@@ -200,31 +201,7 @@ export function AchievementsScreen() {
         )}
       </div>
 
-      {/* Bottom Nav */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-xl border-t z-50">
-        <div className="max-w-lg mx-auto flex items-center justify-around h-16">
-          {[
-            { icon: Home, label: 'Accueil', screen: 'home' as const },
-            { icon: Dumbbell, label: 'Training', screen: 'train-hub' as const },
-            { icon: BarChart3, label: 'Stats', screen: 'stats' as const },
-            { icon: User, label: 'Profil', screen: 'profile' as const },
-          ].map((tab) => (
-            <button
-              key={tab.screen}
-              onClick={() => navigate(tab.screen)}
-              className={cn(
-                'flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors',
-                currentScreen === tab.screen
-                  ? 'text-orange-500'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <tab.icon className="h-5 w-5" />
-              <span className="text-[10px] font-medium">{tab.label}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
+      <BottomNav />
     </div>
   )
 }

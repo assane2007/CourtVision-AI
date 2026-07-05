@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, Eye, EyeOff, Dribbble } from 'lucide-react'
 
 import { useAppStore } from '@/stores/app'
+import { apiFetch } from '@/lib/utils'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -214,7 +215,7 @@ export default function AuthScreen() {
       setSignupLoading(true)
 
       try {
-        const res = await fetch('/api/auth/signup', {
+        await apiFetch('/api/auth/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -223,11 +224,6 @@ export default function AuthScreen() {
             name: signupName,
           }),
         })
-
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}))
-          throw new Error(body.error ?? 'Erreur lors de la création du compte.')
-        }
 
         // Auto-login after successful signup
         const result = await signIn('credentials', {

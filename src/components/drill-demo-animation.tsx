@@ -162,6 +162,7 @@ export function DrillDemoAnimation({ category, className }: Props) {
           <img
             src={imagePath}
             alt={meta.title}
+            loading="lazy"
             className={cn(
               'w-full h-full object-cover transition-opacity duration-500',
               imageLoaded ? 'opacity-100' : 'opacity-0'

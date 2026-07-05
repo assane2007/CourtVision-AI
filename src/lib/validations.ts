@@ -16,7 +16,10 @@ export const VALID_GOALS = ['shooting', 'ball_handling', 'defense', 'conditionin
 
 export const signupSchema = z.object({
   email: z.string().email('Email invalide'),
-  password: z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères'),
+  password: z.string()
+    .min(8, 'Le mot de passe doit contenir au moins 8 caractères')
+    .regex(/[A-Z]/, 'Le mot de passe doit contenir au moins une majuscule')
+    .regex(/[0-9]/, 'Le mot de passe doit contenir au moins un chiffre'),
   name: z.string().min(2, 'Le nom doit contenir au moins 2 caractères').max(50),
 })
 

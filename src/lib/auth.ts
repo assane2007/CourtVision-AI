@@ -2,6 +2,7 @@ import type { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import { db } from './db'
+import { rateLimit } from './rate-limit'
 
 export const authOptions: NextAuthOptions = {
   // Trust the host from request headers (essential behind reverse proxy/gateway)
@@ -15,6 +16,11 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
+          return null
+        }
+
+        const rateResult = rateLimit(credentials.email)
+        if (!rateResult.success) {
           return null
         }
 
@@ -65,5 +71,9 @@ export const authOptions: NextAuthOptions = {
       return session
     }
   },
-  secret: process.env.NEXTAUTH_SECRET || 'courtvision-ai-secret-key-2024',
+  secret: (() => {
+    const s = process.env.NEXTAUTH_SECRET
+    if (!s) throw new Error('FATAL: NEXTAUTH_SECRET environment variable is not set')
+    return s
+  })(),
 }
