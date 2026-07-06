@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
               "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob:",
-              "connect-src 'self' https://*.space-z.ai",
+              "connect-src 'self' https://*.space-z.ai https://cdn.jsdelivr.net https://storage.googleapis.com",
               "font-src 'self'",
               "frame-ancestors 'self' https://*.space-z.ai",
             ].join("; "),
