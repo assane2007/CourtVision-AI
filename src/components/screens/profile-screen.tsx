@@ -19,6 +19,7 @@ import {
   Settings,
   Shield,
   History,
+  Target,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -303,6 +304,34 @@ export function ProfileScreen() {
                 )}
               </CardContent>
             </Card>
+          </motion.div>
+
+          {/* ── Scouting Report Entry ─────────────────────────────── */}
+          <motion.div variants={itemVariants}>
+            <button
+              type="button"
+              onClick={() => navigate('scouting')}
+              className="w-full text-left"
+            >
+              <Card className="border-0 dark:border-border/50 shadow-lg dark:shadow-md overflow-hidden hover:shadow-xl transition-shadow group cursor-pointer">
+                <div className="h-1 bg-gradient-to-r from-orange-400 via-amber-500 to-orange-500" />
+                <CardContent className="p-5 flex items-center gap-4">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500/20 to-amber-500/20 border border-orange-500/20 flex-shrink-0">
+                    <Target className="h-7 w-7 text-orange-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-base flex items-center gap-2">
+                      Mon ADN de Joueur
+                      <Sparkles className="h-4 w-4 text-orange-500" />
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      Rapport de scout IA
+                    </p>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0" />
+                </CardContent>
+              </Card>
+            </button>
           </motion.div>
 
           {/* ── XP & Level Section ───────────────────────────────── */}

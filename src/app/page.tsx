@@ -17,6 +17,9 @@ const StatsScreen = dynamic(() => import('@/components/screens/stats-screen'), {
 const ProfileScreen = dynamic(() => import('@/components/screens/profile-screen'), { ssr: false })
 const AchievementsScreen = dynamic(() => import('@/components/screens/achievements-screen'), { ssr: false })
 const SettingsScreen = dynamic(() => import('@/components/screens/settings-screen'), { ssr: false })
+const ScoutingScreen = dynamic(() => import('@/components/screens/scouting-screen'), { ssr: false })
+const AICoachScreen = dynamic(() => import('@/components/screens/ai-coach-screen'), { ssr: false })
+const ReactionTrainerScreen = dynamic(() => import('@/components/screens/reaction-trainer-screen'), { ssr: false })
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false }
@@ -164,6 +167,9 @@ export default function Home() {
               {currentScreen === 'profile' && session && <ProfileScreen />}
               {currentScreen === 'achievements' && session && <AchievementsScreen />}
               {currentScreen === 'settings' && session && <SettingsScreen />}
+              {currentScreen === 'scouting' && session && <ScoutingScreen />}
+              {currentScreen === 'ai-coach' && session && <AICoachScreen />}
+              {currentScreen === 'reaction-trainer' && session && <ReactionTrainerScreen />}
               {!session && currentScreen !== 'auth' && <AuthScreen />}
             </StaggerChildren>
           </motion.div>

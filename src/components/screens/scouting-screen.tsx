@@ -1,0 +1,861 @@
+'use client'
+
+import { useMemo } from 'react'
+import { motion } from 'framer-motion'
+import { useQuery } from '@tanstack/react-query'
+import {
+  ArrowLeft,
+  Sparkles,
+  Target,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Trophy,
+  Activity,
+  Crosshair,
+  Footprints,
+  Shield,
+  Wind,
+  Zap,
+} from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useAppStore } from '@/stores/app'
+import { SwipeToGoBack } from '@/components/shared/swipe-back'
+import { apiFetch } from '@/lib/utils'
+import { containerVariants, itemVariants } from '@/lib/animations'
+import { getLevelInfo, getLevelColor } from '@/lib/xp'
+import { cn } from '@/lib/utils'
+
+// ── Types ──────────────────────────────────────────────────────────────────
+
+interface ScoutingCategory {
+  name: string
+  key: string
+  avgScore: number
+  totalReps: number
+  totalSessions: number
+  trend: 'up' | 'down' | 'stable'
+  lastScores: number[]
+}
+
+interface ScoutingData {
+  player: {
+    name: string
+    level: number
+    xp: number
+    xpLevel: number
+  }
+  categories: ScoutingCategory[]
+  overallGrade: string
+  overallScore: number
+  totalWorkouts: number
+  totalReps: number
+  lastActive: string | null
+  levelAvg: number
+}
+
+// ── Category icons & colors ────────────────────────────────────────────────
+
+const CATEGORY_ICONS: Record<string, typeof Crosshair> = {
+  shooting: Crosshair,
+  dribble: Zap,
+  vitesse: Wind,
+  defense: Shield,
+  placement: Footprints,
+  endurance: Activity,
+}
+
+const CATEGORY_EMOJIS: Record<string, string> = {
+  shooting: '🎯',
+  dribble: '🤹',
+  vitesse: '⚡',
+  defense: '🛡️',
+  placement: '🦶',
+  endurance: '💪',
+}
+
+const CATEGORY_FR: Record<string, string> = {
+  shooting: 'Tir',
+  dribble: 'Maniement de Balle',
+  vitesse: 'Vitesse',
+  defense: 'Défense',
+  placement: 'Placement Pieds',
+  endurance: 'Condition Physique',
+}
+
+// ── Grade config ───────────────────────────────────────────────────────────
+
+const GRADE_COLORS: Record<string, { bg: string; ring: string; text: string }> = {
+  S: { bg: 'bg-amber-400/20', ring: 'ring-amber-400', text: 'text-amber-400' },
+  A: { bg: 'bg-emerald-400/20', ring: 'ring-emerald-400', text: 'text-emerald-400' },
+  B: { bg: 'bg-cyan-400/20', ring: 'ring-cyan-400', text: 'text-cyan-400' },
+  C: { bg: 'bg-orange-400/20', ring: 'ring-orange-400', text: 'text-orange-400' },
+  D: { bg: 'bg-red-400/20', ring: 'ring-red-400', text: 'text-red-400' },
+  F: { bg: 'bg-gray-400/20', ring: 'ring-gray-400', text: 'text-gray-400' },
+}
+
+// ── Radar chart component ──────────────────────────────────────────────────
+
+const RADAR_SIZE = 300
+const CENTER = RADAR_SIZE / 2
+const MAX_RADIUS = 120
+const LABEL_RADIUS = MAX_RADIUS + 28
+
+function RadarChart({ categories }: { categories: ScoutingCategory[] }) {
+  const axes = categories.map((c) => ({
+    label: c.name,
+    value: Math.min(100, Math.max(0, c.avgScore)),
+  }))
+
+  const angleStep = (2 * Math.PI) / axes.length
+  // Start from top (-PI/2)
+  const getPoint = (index: number, radius: number) => {
+    const angle = -Math.PI / 2 + index * angleStep
+    return {
+      x: CENTER + radius * Math.cos(angle),
+      y: CENTER + radius * Math.sin(angle),
+    }
+  }
+
+  // Grid rings (20%, 40%, 60%, 80%, 100%)
+  const gridRings = [0.2, 0.4, 0.6, 0.8, 1.0]
+
+  // Data polygon points
+  const dataPoints = axes.map((axis, i) => {
+    const r = (axis.value / 100) * MAX_RADIUS
+    const pt = getPoint(i, r)
+    return `${pt.x},${pt.y}`
+  })
+
+  // Axis line points
+  const axisLines = axes.map((_, i) => {
+    const pt = getPoint(i, MAX_RADIUS)
+    return `${CENTER},${CENTER} ${pt.x},${pt.y}`
+  })
+
+  // Label positions
+  const labelPositions = axes.map((axis, i) => {
+    const pt = getPoint(i, LABEL_RADIUS)
+    return { ...pt, label: axis.label, value: axis.value }
+  })
+
+  return (
+    <svg
+      viewBox={`0 0 ${RADAR_SIZE} ${RADAR_SIZE}`}
+      className="w-full h-full max-w-[320px] max-h-[320px] mx-auto"
+      role="img"
+      aria-label="Graphique radar ADN Basketteur"
+    >
+      <defs>
+        <linearGradient id="radarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="rgb(249, 115, 22)" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="rgb(251, 191, 36)" stopOpacity="0.25" />
+        </linearGradient>
+        <linearGradient id="radarStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="rgb(249, 115, 22)" />
+          <stop offset="100%" stopColor="rgb(251, 191, 36)" />
+        </linearGradient>
+      </defs>
+
+      {/* Grid rings */}
+      {gridRings.map((ring, i) => {
+        const points = axes.map((_, j) => {
+          const pt = getPoint(j, MAX_RADIUS * ring)
+          return `${pt.x},${pt.y}`
+        }).join(' ')
+        return (
+          <polygon
+            key={`grid-${i}`}
+            points={points}
+            fill="none"
+            stroke="currentColor"
+            strokeOpacity={0.12}
+            strokeWidth={1}
+          />
+        )
+      })}
+
+      {/* Axis lines */}
+      {axisLines.map((pts, i) => (
+        <line
+          key={`axis-${i}`}
+          x1={CENTER}
+          y1={CENTER}
+          x2={parseFloat(pts.split(' ')[1].split(',')[0])}
+          y2={parseFloat(pts.split(' ')[1].split(',')[1])}
+          stroke="currentColor"
+          strokeOpacity={0.15}
+          strokeWidth={1}
+        />
+      ))}
+
+      {/* Data polygon */}
+      {dataPoints.join(' ') && (
+        <polygon
+          points={dataPoints.join(' ')}
+          fill="url(#radarGradient)"
+          stroke="url(#radarStroke)"
+          strokeWidth={2.5}
+          strokeLinejoin="round"
+        />
+      )}
+
+      {/* Data points (dots) */}
+      {axes.map((axis, i) => {
+        const r = (axis.value / 100) * MAX_RADIUS
+        const pt = getPoint(i, r)
+        return (
+          <circle
+            key={`dot-${i}`}
+            cx={pt.x}
+            cy={pt.y}
+            r={4}
+            fill="rgb(249, 115, 22)"
+            stroke="white"
+            strokeWidth={2}
+          />
+        )
+      })}
+
+      {/* Labels */}
+      {labelPositions.map((lp, i) => {
+        const isTop = i === 0
+        const isBottom = i === Math.floor(axes.length / 2)
+        const isRight = i > 0 && i < Math.floor(axes.length / 2)
+        const isLeft = i > Math.floor(axes.length / 2) && i < axes.length
+
+        let anchor: string = 'middle'
+        let dy = 0
+        if (isTop) {
+          dy = -6
+        } else if (isBottom) {
+          dy = 14
+        } else if (isRight) {
+          anchor = 'start'
+          dy = 5
+        } else if (isLeft) {
+          anchor = 'end'
+          dy = 5
+        }
+
+        return (
+          <text
+            key={`label-${i}`}
+            x={lp.x}
+            y={lp.y + dy}
+            textAnchor={anchor}
+            className="fill-foreground text-[11px] font-semibold"
+          >
+            {lp.label}
+          </text>
+        )
+      })}
+    </svg>
+  )
+}
+
+// ── AI Scouting text generator (client-side templates) ─────────────────────
+
+function generateScoutingText(
+  playerName: string,
+  categories: ScoutingCategory[],
+  overallScore: number,
+  overallGrade: string,
+): {
+  strengths: string
+  improvements: string
+  profile: string
+  recommendation: string
+} {
+  // Sort categories by score
+  const sorted = [...categories].sort((a, b) => b.avgScore - a.avgScore)
+  const topCategories = sorted.filter((c) => c.avgScore > 0).slice(0, 3)
+  const bottomCategories = [...sorted].filter((c) => c.avgScore > 0).reverse().slice(0, 2)
+
+  // If no data at all
+  if (sorted.every((c) => c.avgScore === 0)) {
+    return {
+      strengths: 'Aucune donnée suffisante pour évaluer les points forts.',
+      improvements: 'Commencez vos premiers entraînements pour recevoir une analyse complète.',
+      profile: `${playerName} est un nouveau joueur sur CourtVision AI. Aucune session d\'entraînement n\'a encore été complétée, ce qui ne permet pas de générer un profil détaillé.`,
+      recommendation: 'Recommandé : complétez au moins 3 sessions d\'entraînement dans différentes catégories pour activer votre premier rapport de scout IA complet.',
+    }
+  }
+
+  // ── Strengths ───────────────────────────────────────────────────────
+  const strengthLines = topCategories.map((cat) => {
+    const catFr = CATEGORY_FR[cat.key] ?? cat.name
+    if (cat.avgScore >= 80) {
+      return `Excellente maîtrise en ${catFr.toLowerCase()} avec un score moyen remarquable de ${cat.avgScore}/100 — c\'est un atout compétitif majeur.`
+    }
+    if (cat.avgScore >= 65) {
+      return `Bonne base technique en ${catFr.toLowerCase()} (${cat.avgScore}/100), montre de solides fondamentaux.`
+    }
+    return `${catFr} est le point le plus développé actuellement (${cat.avgScore}/100), avec une marge de progression intéressante.`
+  })
+
+  const strengths =
+    strengthLines.length > 0
+      ? strengthLines.join(' ')
+      : 'Aucune donnée suffisante pour évaluer les points forts.'
+
+  // ── Improvements ────────────────────────────────────────────────────
+  const improvementLines = bottomCategories.map((cat) => {
+    const catFr = CATEGORY_FR[cat.key] ?? cat.name
+    if (cat.avgScore < 30) {
+      return `${catFr} (${cat.avgScore}/100) nécessite un travail significatif et régulier — c\'est la priorité absolue.`
+    }
+    if (cat.avgScore < 50) {
+      return `${catFr} (${cat.avgScore}/100) reste en dessous du niveau attendu — des drills ciblés sont recommandés.`
+    }
+    return `${catFr} (${cat.avgScore}/100) peut encore progresser pour atteindre un niveau compétitif.`
+  })
+
+  const improvements =
+    improvementLines.length > 0
+      ? improvementLines.join(' ')
+      : 'Toutes les catégories montrent un bon niveau.'
+
+  // ── Drill recommendations per weak category ─────────────────────────
+  const drillRecs: Record<string, string> = {
+    shooting: 'drills BEEF, One Motion Shot et Catches & Shoot',
+    dribble: 'drills de balle de poche, crossovers et figure-8',
+    vitesse: 'drills de changement de vitesse, sprints et stop-and-go',
+    defense: 'drills de glissade défensive, closeout et reaction defense',
+    placement: 'drills de footwork, jab steps et pivot series',
+    endurance: 'drills de condition physique, Tabata et circuits haute intensité',
+  }
+
+  // ── Profile ─────────────────────────────────────────────────────────
+  const topKey = topCategories[0]?.key ?? ''
+  const topFr = CATEGORY_FR[topKey] ?? 'basketteur'
+  const topScore = topCategories[0]?.avgScore ?? 0
+  const filledCount = categories.filter((c) => c.avgScore > 0).length
+
+  let profile = ''
+  if (filledCount <= 2) {
+    profile = `${playerName} est un joueur en développement avec des aptitudes prometteuses. Les données actuelles couvrent ${filledCount} catégorie${filledCount > 1 ? 's' : ''} sur 6 — continuez à varier vos entraînements pour un profil plus complet.`
+  } else if (overallScore >= 75) {
+    profile = `${playerName} présente un profil de joueur complet et compétitif avec des aptitudes supérieures en ${topFr.toLowerCase()} (score moyen : ${topScore}/100). La polyvalence est un atout clé de ce profil. Le score global de ${overallScore}/100 place ce joueur dans le haut du panier.`
+  } else if (overallScore >= 55) {
+    profile = `${playerName} présente un profil équilibré avec un point fort notable en ${topFr.toLowerCase()} (${topScore}/100). Le joueur montre de bonnes bases dans l\'ensemble des catégories avec un score global de ${overallScore}/100.`
+  } else if (overallScore >= 35) {
+    profile = `${playerName} est un joueur en progression constante. Le point fort actuel se situe en ${topFr.toLowerCase()} (${topScore}/100). Le score global de ${overallScore}/100 indique un potentiel de développement important avec un entraînement régulier.`
+  } else {
+    profile = `${playerName} est en phase de construction de ses fondamentaux. Le meilleur score se situe en ${topFr.toLowerCase()} (${topScore}/100). Un travail régulier et structuré permettra une progression rapide.`
+  }
+
+  // ── Recommendation ──────────────────────────────────────────────────
+  const weakKey = bottomCategories[0]?.key ?? ''
+  const weakFr = CATEGORY_FR[weakKey] ?? 'fondamentaux'
+  const weakScore = bottomCategories[0]?.avgScore ?? 0
+  const rec = drillRecs[weakKey] ?? 'drills fondamentaux variés'
+
+  let recommendation = ''
+  if (bottomCategories.length > 0 && weakScore < 50) {
+    recommendation = `Focus prioritaire sur ${weakFr.toLowerCase()} (${weakScore}/100) — recommandé : ${rec}. Visez 3 sessions hebdomadaires dans cette catégorie avec une progression progressive de la difficulté.`
+  } else if (bottomCategories.length > 0) {
+    recommendation = `Continuez à travailler ${weakFr.toLowerCase()} pour élever votre plancher (${weakScore}/100 → objectif 70+). ${rec} sont de bons choix pour progresser.`
+  } else {
+    recommendation = 'Maintenez votre régime d\'entraînement actuel et poussez vers des drills de difficulté supérieure pour continuer à progresser.'
+  }
+
+  if (overallScore >= 70) {
+    recommendation += ' Passez aux drills avancés pour continuer à progresser et ne pas stagner.'
+  }
+
+  return { strengths, improvements, profile, recommendation }
+}
+
+// ── Main component ─────────────────────────────────────────────────────────
+
+export function ScoutingScreen() {
+  const goBack = useAppStore((s) => s.goBack)
+
+  const { data, isLoading, isError } = useQuery<ScoutingData>({
+    queryKey: ['scouting'],
+    queryFn: () => apiFetch<ScoutingData>('/api/scouting'),
+    staleTime: 1000 * 60 * 5,
+  })
+
+  const scoutingText = useMemo(() => {
+    if (!data) return null
+    return generateScoutingText(
+      data.player.name,
+      data.categories,
+      data.overallScore,
+      data.overallGrade,
+    )
+  }, [data])
+
+  const gradeColor = GRADE_COLORS[data?.overallGrade ?? 'F'] ?? GRADE_COLORS.F
+
+  const levelInfo = data ? getLevelInfo(data.player.xp) : null
+
+  const lastActiveFormatted = data?.lastActive
+    ? new Date(data.lastActive).toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : null
+
+  const initials = data?.player.name
+    ? data.player.name
+        .split(' ')
+        .map((w) => w[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    : '??'
+
+  return (
+    <SwipeToGoBack className="min-h-screen bg-background pb-24">
+      <div className="max-w-lg mx-auto px-4 pt-4">
+        {/* ── Header ────────────────────────────────────────────────── */}
+        <div className="flex items-center gap-3 mb-6">
+          <button
+            onClick={goBack}
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-card border border-border hover:bg-muted transition-colors"
+            aria-label="Retour"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-orange-500" />
+            <h1 className="text-lg font-bold">Rapport de Scout IA</h1>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <LoadingSkeleton />
+        ) : isError || !data ? (
+          <ErrorState />
+        ) : (
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-6"
+          >
+            {/* ── Section 1: Player Identity Card ───────────────────── */}
+            <motion.div variants={itemVariants}>
+              <Card className="border-0 shadow-lg overflow-hidden">
+                <div className="h-1.5 bg-gradient-to-r from-orange-400 via-amber-500 to-orange-500" />
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-5">
+                    {/* Avatar with level badge */}
+                    <div className="relative flex-shrink-0">
+                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                        {initials}
+                      </div>
+                      <div
+                        className={cn(
+                          'absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-background text-xs font-bold',
+                          getLevelColor(data.player.level),
+                          levelInfo
+                            ? 'bg-gradient-to-br from-orange-500/30 to-amber-500/30'
+                            : 'bg-muted',
+                        )}
+                      >
+                        {data.player.level}
+                      </div>
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-xl font-bold truncate">
+                        {data.player.name}
+                      </h2>
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {levelInfo?.levelTitle ?? `Niveau ${data.player.level}`}
+                      </p>
+
+                      {/* XP progress */}
+                      {levelInfo && !levelInfo.isMaxLevel && (
+                        <div className="mt-3 space-y-1">
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>XP</span>
+                            <span>
+                              {levelInfo.xpInCurrentLevel}/
+                              {levelInfo.xpNeededForNextLevel}
+                            </span>
+                          </div>
+                          <Progress
+                            value={levelInfo.progress * 100}
+                            className="h-1.5"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Last updated */}
+                  {lastActiveFormatted && (
+                    <p className="text-xs text-muted-foreground mt-4 text-right">
+                      Dernière mise à jour : {lastActiveFormatted}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* ── Section 2: Radar Chart — ADN Basketteur ──────────── */}
+            <motion.div variants={itemVariants}>
+              <Card className="border-0 shadow-lg">
+                <CardHeader className="pb-2 pt-5 px-5">
+                  <CardTitle className="text-base font-bold flex items-center gap-2">
+                    <Target className="h-5 w-5 text-orange-500" />
+                    ADN Basketteur
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-5 pb-6">
+                  <div className="w-full" style={{ minHeight: 280 }}>
+                    <RadarChart categories={data.categories} />
+                  </div>
+                  {/* Score labels below radar */}
+                  <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2">
+                    {data.categories.map((cat) => (
+                      <span
+                        key={cat.key}
+                        className="text-xs text-muted-foreground"
+                      >
+                        {cat.name}:{' '}
+                        <span className="font-semibold text-foreground">
+                          {cat.avgScore > 0 ? cat.avgScore : '—'}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* ── Section 3: Overall Grade ─────────────────────────── */}
+            <motion.div variants={itemVariants}>
+              <div className="flex justify-center">
+                <div className="flex flex-col items-center gap-2">
+                  <div
+                    className={cn(
+                      'flex h-24 w-24 items-center justify-center rounded-full ring-4 shadow-xl',
+                      gradeColor.bg,
+                      gradeColor.ring,
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'text-4xl font-black',
+                        gradeColor.text,
+                      )}
+                    >
+                      {data.overallGrade}
+                    </span>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold">{data.overallScore}</p>
+                    <p className="text-xs text-muted-foreground">Score global / 100</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* ── Section 4: AI Scouting Text Analysis ─────────────── */}
+            {scoutingText && (
+              <motion.div variants={itemVariants} className="space-y-4">
+                <Card className="border-0 shadow-lg">
+                  <CardHeader className="pb-2 pt-5 px-5">
+                    <CardTitle className="text-base font-bold flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-orange-500" />
+                      Analyse Scout IA
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-5 pb-6 space-y-5">
+                    {/* Points Forts */}
+                    <div>
+                      <h3 className="text-sm font-bold text-emerald-500 mb-1.5 flex items-center gap-1.5">
+                        <TrendingUp className="h-4 w-4" />
+                        Points Forts
+                      </h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {scoutingText.strengths}
+                      </p>
+                    </div>
+
+                    {/* Axes d'Amélioration */}
+                    <div>
+                      <h3 className="text-sm font-bold text-orange-500 mb-1.5 flex items-center gap-1.5">
+                        <TrendingDown className="h-4 w-4" />
+                        Axes d&apos;Amélioration
+                      </h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {scoutingText.improvements}
+                      </p>
+                    </div>
+
+                    {/* Profil de Joueur */}
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground mb-1.5 flex items-center gap-1.5">
+                        <Activity className="h-4 w-4 text-orange-500" />
+                        Profil de Joueur
+                      </h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {scoutingText.profile}
+                      </p>
+                    </div>
+
+                    {/* Recommandation */}
+                    <div className="rounded-xl bg-orange-500/10 border border-orange-500/20 p-4">
+                      <h3 className="text-sm font-bold text-orange-600 dark:text-orange-400 mb-1.5 flex items-center gap-1.5">
+                        <Trophy className="h-4 w-4" />
+                        Recommandation
+                      </h3>
+                      <p className="text-sm text-orange-700 dark:text-orange-300 leading-relaxed">
+                        {scoutingText.recommendation}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* ── Section 5: Category Breakdown Cards ───────────────── */}
+            <motion.div variants={itemVariants}>
+              <Card className="border-0 shadow-lg">
+                <CardHeader className="pb-2 pt-5 px-5">
+                  <CardTitle className="text-base font-bold">
+                    Détail par Catégorie
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-5 pb-6">
+                  <div className="grid grid-cols-2 gap-3">
+                    {data.categories.map((cat) => (
+                      <CategoryCard key={cat.key} category={cat} />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* ── Section 6: Comparison ─────────────────────────────── */}
+            <motion.div variants={itemVariants}>
+              <Card className="border-0 shadow-lg">
+                <CardContent className="p-5">
+                  <h3 className="text-sm font-bold mb-3">
+                    Comparaison au niveau {data.player.level}
+                  </h3>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-muted-foreground">Moyenne niveau</span>
+                        <span className="font-semibold">{data.levelAvg}</span>
+                      </div>
+                      <Progress value={data.levelAvg} className="h-2" />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4 mt-3">
+                    <div className="flex-1">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-muted-foreground">Votre score</span>
+                        <span className="font-bold text-orange-500">
+                          {data.overallScore}
+                        </span>
+                      </div>
+                      <Progress
+                        value={data.overallScore}
+                        className="h-2"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex justify-center">
+                    {data.overallScore >= data.levelAvg ? (
+                      <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/20 gap-1.5 px-3 py-1.5">
+                        <TrendingUp className="h-3.5 w-3.5" />
+                        Au-dessus de la moyenne
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/25 hover:bg-orange-500/20 gap-1.5 px-3 py-1.5">
+                        <TrendingDown className="h-3.5 w-3.5" />
+                        En dessous de la moyenne
+                      </Badge>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* ── Footer stats ──────────────────────────────────────── */}
+            <motion.div variants={itemVariants}>
+              <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground pb-4">
+                <span>{data.totalWorkouts} séances</span>
+                <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />
+                <span>{data.totalReps} répétitions</span>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </div>
+    </SwipeToGoBack>
+  )
+}
+
+// ── Category breakdown card ─────────────────────────────────────────────────
+
+function CategoryCard({ category }: { category: ScoutingCategory }) {
+  const Icon = CATEGORY_ICONS[category.key] ?? Activity
+  const emoji = CATEGORY_EMOJIS[category.key] ?? '🏀'
+
+  const TrendIcon =
+    category.trend === 'up'
+      ? TrendingUp
+      : category.trend === 'down'
+        ? TrendingDown
+        : Minus
+  const trendColor =
+    category.trend === 'up'
+      ? 'text-emerald-500'
+      : category.trend === 'down'
+        ? 'text-red-500'
+        : 'text-muted-foreground'
+
+  return (
+    <div className="rounded-xl border border-border/60 bg-card p-3.5 space-y-2.5">
+      {/* Header: emoji + name + trend */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <span className="text-base">{emoji}</span>
+          <span className="text-xs font-semibold truncate">
+            {CATEGORY_FR[category.key] ?? category.name}
+          </span>
+        </div>
+        <TrendIcon className={cn('h-3.5 w-3.5', trendColor)} />
+      </div>
+
+      {/* Score */}
+      <div className="flex items-baseline gap-1">
+        <span className="text-2xl font-black tabular-nums">
+          {category.avgScore > 0 ? Math.round(category.avgScore) : '—'}
+        </span>
+        {category.avgScore > 0 && (
+          <span className="text-xs text-muted-foreground">/100</span>
+        )}
+      </div>
+
+      {/* Mini progress bar */}
+      {category.avgScore > 0 && (
+        <Progress value={category.avgScore} className="h-1" />
+      )}
+
+      {/* Stats line */}
+      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+        <span>{category.totalReps} reps</span>
+        <span className="w-0.5 h-0.5 rounded-full bg-current" />
+        <span>{category.totalSessions} sessions</span>
+      </div>
+    </div>
+  )
+}
+
+// ── Loading skeleton ────────────────────────────────────────────────────────
+
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      {/* Identity card skeleton */}
+      <Card className="border-0 shadow-lg">
+        <div className="h-1.5 bg-muted" />
+        <CardContent className="p-6">
+          <div className="flex items-center gap-5">
+            <Skeleton className="h-20 w-20 rounded-full" />
+            <div className="flex-1 space-y-3">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-1.5 w-full rounded-full" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Radar chart skeleton */}
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="pb-2 pt-5 px-5">
+          <Skeleton className="h-5 w-36" />
+        </CardHeader>
+        <CardContent className="px-5 pb-6 flex justify-center">
+          <Skeleton className="h-[300px] w-[300px] rounded-full" />
+        </CardContent>
+      </Card>
+
+      {/* Grade skeleton */}
+      <div className="flex justify-center">
+        <div className="flex flex-col items-center gap-2">
+          <Skeleton className="h-24 w-24 rounded-full" />
+          <Skeleton className="h-7 w-16" />
+          <Skeleton className="h-3 w-28" />
+        </div>
+      </div>
+
+      {/* Text analysis skeleton */}
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="pb-2 pt-5 px-5">
+          <Skeleton className="h-5 w-36" />
+        </CardHeader>
+        <CardContent className="px-5 pb-6 space-y-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-4/5" />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Category breakdown skeleton */}
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="pb-2 pt-5 px-5">
+          <Skeleton className="h-5 w-40" />
+        </CardHeader>
+        <CardContent className="px-5 pb-6">
+          <div className="grid grid-cols-2 gap-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-28 rounded-xl" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ── Error state ─────────────────────────────────────────────────────────────
+
+function ErrorState() {
+  const goBack = useAppStore((s) => s.goBack)
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-4 py-20">
+      <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center">
+        <Shield className="h-8 w-8 text-red-500" />
+      </div>
+      <div className="text-center space-y-2">
+        <h3 className="font-bold text-lg">Erreur de chargement</h3>
+        <p className="text-sm text-muted-foreground max-w-xs">
+          Impossible de générer le rapport de scout. Vérifiez votre connexion et réessayez.
+        </p>
+      </div>
+      <button
+        onClick={goBack}
+        className="px-5 py-2.5 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors"
+      >
+        Retour au profil
+      </button>
+    </div>
+  )
+}
+
+export default ScoutingScreen

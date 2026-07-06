@@ -1,0 +1,182 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { rateLimit } from '@/lib/rate-limit'
+
+// ─── GET /api/reaction ─────────────────────────────────────────────────────────
+// Returns player's reaction history (last 20 sessions) + personal bests per type
+
+interface RoundInput {
+  reactionMs: number
+  correct: boolean
+}
+
+export async function GET() {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+
+  try {
+    // Get last 20 scores, grouped by creation batch (all scores from same second)
+    const recentScores = await db.reactionScore.findMany({
+      where: { playerId: session.user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 200, // enough to cover ~20 games of 10 rounds each
+    })
+
+    // Group into game sessions (scores within 2 seconds of each other)
+    const games: {
+      id: string
+      type: string
+      avgMs: number
+      accuracy: number
+      bestMs: number
+      rounds: number
+      createdAt: string
+    }[] = []
+
+    let currentGroup: typeof recentScores = []
+    let lastTime = 0
+
+    for (const score of recentScores) {
+      const timeDiff = lastTime ? Math.abs(score.createdAt.getTime() - lastTime) : 0
+      if (timeDiff > 2000 && currentGroup.length > 0) {
+        // Push the group
+        const type = currentGroup[0].type
+        const avgMs = Math.round(currentGroup.reduce((s, r) => s + r.reactionMs, 0) / currentGroup.length)
+        const accuracy = Math.round((currentGroup.filter(r => r.correct).length / currentGroup.length) * 100)
+        const bestMs = Math.min(...currentGroup.map(r => r.reactionMs))
+        games.push({
+          id: currentGroup[0].id,
+          type,
+          avgMs,
+          accuracy,
+          bestMs,
+          rounds: currentGroup.length,
+          createdAt: currentGroup[0].createdAt.toISOString(),
+        })
+        currentGroup = []
+      }
+      currentGroup.push(score)
+      lastTime = score.createdAt.getTime()
+    }
+
+    // Push last group
+    if (currentGroup.length > 0) {
+      const type = currentGroup[0].type
+      const avgMs = Math.round(currentGroup.reduce((s, r) => s + r.reactionMs, 0) / currentGroup.length)
+      const accuracy = Math.round((currentGroup.filter(r => r.correct).length / currentGroup.length) * 100)
+      const bestMs = Math.min(...currentGroup.map(r => r.reactionMs))
+      games.push({
+        id: currentGroup[0].id,
+        type,
+        avgMs,
+        accuracy,
+        bestMs,
+        rounds: currentGroup.length,
+        createdAt: currentGroup[0].createdAt.toISOString(),
+      })
+    }
+
+    // Personal bests per type
+    const allScores = await db.reactionScore.findMany({
+      where: { playerId: session.user.id, correct: true },
+    })
+
+    const personalBests: Record<string, number> = {}
+    for (const score of allScores) {
+      if (!personalBests[score.type] || score.reactionMs < personalBests[score.type]) {
+        personalBests[score.type] = score.reactionMs
+      }
+    }
+
+    return NextResponse.json({
+      history: games.slice(0, 20),
+      personalBests,
+    })
+  } catch (error) {
+    console.error('GET /api/reaction error:', error)
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+  }
+}
+
+// ─── POST /api/reaction ────────────────────────────────────────────────────────
+// Save a reaction game result
+
+export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+
+  const rl = rateLimit(session.user.id, 10, 15 * 60 * 1000)
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: 'Trop de requêtes. Réessayez plus tard.' },
+      { status: 429 },
+    )
+  }
+
+  try {
+    const body = await req.json()
+    const { type, rounds }: { type: string; rounds: RoundInput[] } = body
+
+    if (!type || !Array.isArray(rounds) || rounds.length === 0) {
+      return NextResponse.json({ error: 'Données invalides' }, { status: 400 })
+    }
+
+    const validTypes = ['direction', 'color', 'shot_clock', 'reflex']
+    if (!validTypes.includes(type)) {
+      return NextResponse.json({ error: 'Type de jeu invalide' }, { status: 400 })
+    }
+
+    // Calculate aggregate stats
+    const totalMs = rounds.reduce((s, r) => s + r.reactionMs, 0)
+    const avgMs = Math.round(totalMs / rounds.length)
+    const correctCount = rounds.filter(r => r.correct).length
+    const accuracy = Math.round((correctCount / rounds.length) * 100)
+
+    // Save each round
+    await db.reactionScore.createMany({
+      data: rounds.map((round) => ({
+        playerId: session.user!.id,
+        type,
+        reactionMs: round.reactionMs,
+        correct: round.correct,
+      })),
+    })
+
+    // Award XP if average reaction time is under 400ms
+    let xpAwarded = 0
+    if (avgMs < 400 && accuracy >= 70) {
+      xpAwarded = avgMs < 250 ? 30 : avgMs < 300 ? 20 : 10
+      try {
+        await fetch(`${process.env.NEXTAUTH_URL || ''}/api/xp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            source: 'challenge',
+            description: `Reaction Trainer: ${type} — ${avgMs}ms moyen`,
+            amount: xpAwarded,
+          }),
+        })
+      } catch {
+        // Non-blocking: XP award failure doesn't break the response
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      avgMs,
+      accuracy,
+      rounds: rounds.length,
+      bestMs: Math.min(...rounds.map(r => r.reactionMs)),
+      xpAwarded,
+    })
+  } catch (error) {
+    console.error('POST /api/reaction error:', error)
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+  }
+}

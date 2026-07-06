@@ -42,6 +42,8 @@ model Player {
   customDrills  Drill[]
   trainingPlans TrainingPlan[]
   xpLogs        XpLog[]
+  reactionScores ReactionScore[]
+  aiChatMessages AIChatMessage[]
 }
 
 model Drill {
@@ -162,6 +164,33 @@ model Achievement {
 
   @@unique([playerId, type])
   @@index([playerId])
+}
+
+model ReactionScore {
+  id          String   @id @default(cuid())
+  playerId    String
+  type        String   // direction, color, decision, shot_clock
+  reactionMs  Int
+  correct     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([createdAt])
+}
+
+model AIChatMessage {
+  id        String   @id @default(cuid())
+  playerId  String
+  role      String   // user, assistant
+  content   String
+  createdAt DateTime @default(now())
+
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([createdAt])
 }
 
 model XpLog {

@@ -8,8 +8,10 @@ import {
   Camera,
   Clock,
   ChevronRight,
+  MessageCircle,
   Shield,
   Sparkles,
+  Zap,
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
@@ -687,6 +689,33 @@ export default function HomeScreen() {
         </section>
 
         {/* ---------------------------------------------------------------- */}
+        {/* Reaction Trainer (Cognitive Training)                           */}
+        {/* ---------------------------------------------------------------- */}
+        <motion.div variants={itemVariants}>
+          <motion.div
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+            onClick={() => navigate('reaction-trainer')}
+            className="relative overflow-hidden rounded-2xl p-4 cursor-pointer shadow-lg"
+            style={{
+              background: 'linear-gradient(135deg, #f97316 0%, #f59e0b 50%, #f97316 100%)',
+            }}
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.15),transparent_60%)]" />
+            <div className="relative flex items-center gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
+                <Zap className="h-7 w-7 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-bold text-white">Entraînement Cognitif</h3>
+                <p className="text-sm text-orange-100 truncate">Teste tes réflexes de basketteur</p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-white/70 shrink-0" />
+            </div>
+          </motion.div>
+        </motion.div>
+
+        {/* ---------------------------------------------------------------- */}
         {/* Motivational Quote                                              */}
         {/* ---------------------------------------------------------------- */}
         <section className="mb-6">
@@ -767,6 +796,21 @@ export default function HomeScreen() {
       </PullToRefresh>
 
       <BottomNav />
+
+      {/* ── FAB: AI Coach ─────────────────────────────────────────── */}
+      <motion.button
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.92 }}
+        onClick={() => navigate('ai-coach')}
+        className="fixed bottom-20 right-4 z-40 h-14 w-14 rounded-full bg-orange-500 text-white shadow-lg shadow-orange-500/30 flex items-center justify-center"
+      >
+        <motion.div
+          animate={{ scale: [1, 1.12, 1] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <MessageCircle className="h-6 w-6" />
+        </motion.div>
+      </motion.button>
     </div>
   )
 }
