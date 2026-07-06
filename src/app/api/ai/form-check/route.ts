@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import ZAI from 'z-ai-web-dev-sdk'
 import { formCheckSchema, getZodErrorMessage } from '@/lib/validations'
+import { rateLimit } from '@/lib/rate-limit'
 
 // POST /api/ai/form-check — AI form verification during camera workout
 export async function POST(req: NextRequest) {
@@ -10,6 +11,15 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    }
+
+    // Rate limit: 5 attempts per 15 minutes (expensive AI call)
+    const rateResult = rateLimit(`ai-form-check:${session.user.email}`, 5, 15 * 60 * 1000)
+    if (!rateResult.success) {
+      return NextResponse.json(
+        { error: 'Trop de demandes d\'analyse IA. Réessayez dans 15 minutes.' },
+        { status: 429 }
+      )
     }
 
     // Check content-length before parsing body (10MB max for image uploads)
@@ -29,6 +39,15 @@ export async function POST(req: NextRequest) {
     }
 
     const { imageBase64, drillName, category, drillInstructions } = parsed.data
+
+    // Validate base64 image format
+    const imageFormatRegex = /^data:image\/(jpeg|png|webp);base64,/
+    if (!imageFormatRegex.test(imageBase64)) {
+      return NextResponse.json(
+        { error: 'Format d\'image invalide. Seuls les formats JPEG, PNG et WebP sont acceptés.' },
+        { status: 400 }
+      )
+    }
 
     // Validate image is reasonable size (< 5MB base64)
     if (imageBase64.length > 7_000_000) {

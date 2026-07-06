@@ -77,3 +77,49 @@ self.addEventListener('fetch', (event) => {
 function isStaticAsset(pathname: string): boolean {
   return /\.(js|css|png|jpg|jpeg|svg|ico|woff2?|ttf|eot|webp|avif)$/i.test(pathname)
 }
+
+// ─── Push Notification Support ──────────────────────────────────────────────────
+
+self.addEventListener('push', (event) => {
+  let data = { title: 'CourtVision AI', body: '', tag: 'default' }
+
+  if (event.data) {
+    try {
+      data = { ...data, ...event.data.json() }
+    } catch {
+      data.body = event.data.text()
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/icon-512.png',
+      badge: '/icon-512.png',
+      tag: data.tag,
+      vibrate: [100, 50, 100],
+      data: {
+        url: data.url || '/',
+      },
+    })
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+
+  const urlToOpen = event.notification.data?.url || '/'
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Focus existing window if available
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus()
+        }
+      }
+      // Otherwise open new window
+      return self.clients.openWindow(urlToOpen)
+    })
+  )
+})

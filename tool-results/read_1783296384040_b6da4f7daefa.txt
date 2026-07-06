@@ -1,0 +1,797 @@
+     1→'use client'
+     2→
+     3→import { useState, useMemo, useCallback } from 'react'
+     4→import { useAppStore } from '@/stores/app'
+     5→import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+     6→import { Card, CardContent } from '@/components/ui/card'
+     7→import { Input } from '@/components/ui/input'
+     8→import { Button } from '@/components/ui/button'
+     9→import { Badge } from '@/components/ui/badge'
+    10→import {
+    11→  Dialog,
+    12→  DialogContent,
+    13→  DialogDescription,
+    14→  DialogFooter,
+    15→  DialogHeader,
+    16→  DialogTitle,
+    17→  DialogTrigger,
+    18→} from '@/components/ui/dialog'
+    19→import {
+    20→  Select,
+    21→  SelectContent,
+    22→  SelectItem,
+    23→  SelectTrigger,
+    24→  SelectValue,
+    25→} from '@/components/ui/select'
+    26→import { Label } from '@/components/ui/label'
+    27→import { Textarea } from '@/components/ui/textarea'
+    28→import { Separator } from '@/components/ui/separator'
+    29→import { BottomNav } from '@/components/shared/bottom-nav'
+    30→import { apiFetch } from '@/lib/utils'
+    31→import {
+    32→  CATEGORIES_LIST,
+    33→  DIFFICULTIES,
+    34→  DIFFICULTY_BADGE_MAP,
+    35→  getCategoryLabel,
+    36→} from '@/lib/constants'
+    37→import {
+    38→  Search,
+    39→  Heart,
+    40→  Clock,
+    41→  Target,
+    42→  Filter,
+    43→  Plus,
+    44→  Loader2,
+    45→} from 'lucide-react'
+    46→import { motion, AnimatePresence } from 'framer-motion'
+    47→
+    48→// ─── Types ───────────────────────────────────────────────────────────────────
+    49→
+    50→interface Drill {
+    51→  id: string
+    52→  name: string
+    53→  nameFr: string
+    54→  category: string
+    55→  difficulty: string
+    56→  description: string
+    57→  descriptionFr: string
+    58→  instructions: string
+    59→  instructionsFr: string
+    60→  durationSec: number
+    61→  targetReps: number
+    62→  icon: string
+    63→}
+    64→
+    65→// ─── Animation Variants ─────────────────────────────────────────────────────
+    66→
+    67→const containerVariants = {
+    68→  hidden: { opacity: 0 },
+    69→  visible: {
+    70→    opacity: 1,
+    71→    transition: { staggerChildren: 0.05 },
+    72→  },
+    73→}
+    74→
+    75→const cardVariants = {
+    76→  hidden: { opacity: 0, y: 16, scale: 0.97 },
+    77→  visible: {
+    78→    opacity: 1,
+    79→    y: 0,
+    80→    scale: 1,
+    81→    transition: { type: 'spring' as const, stiffness: 300, damping: 24 },
+    82→  },
+    83→  exit: {
+    84→    opacity: 0,
+    85→    scale: 0.95,
+    86→    transition: { duration: 0.15 },
+    87→  },
+    88→}
+    89→
+    90→const difficultyDotColor: Record<string, string> = {
+    91→  beginner: 'bg-emerald-500',
+    92→  intermediate: 'bg-orange-500',
+    93→  advanced: 'bg-red-500',
+    94→}
+    95→
+    96→// ─── Component ───────────────────────────────────────────────────────────────
+    97→
+    98→export default function TrainHubScreen() {
+    99→  const navigate = useAppStore((s) => s.navigate)
+   100→  const selectDrill = useAppStore((s) => s.selectDrill)
+   101→
+   102→  const queryClient = useQueryClient()
+   103→
+   104→  // ── Create Dialog State ─────────────────────────────────────────────────
+   105→
+   106→  const [createOpen, setCreateOpen] = useState(false)
+   107→  const [createForm, setCreateForm] = useState({
+   108→    nameFr: '',
+   109→    category: '',
+   110→    difficulty: '',
+   111→    descriptionFr: '',
+   112→    instructionsFr: '',
+   113→    durationSec: 30,
+   114→    targetReps: 10,
+   115→    icon: '🏀',
+   116→  })
+   117→  const [createError, setCreateError] = useState('')
+   118→
+   119→  // ── Local Filters ────────────────────────────────────────────────────────
+   120→
+   121→  const [search, setSearch] = useState('')
+   122→  const [activeCategory, setActiveCategory] = useState('all')
+   123→  const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([])
+   124→  const [showDifficultyFilter, setShowDifficultyFilter] = useState(false)
+   125→  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
+   126→
+   127→  // ── Data Fetching ────────────────────────────────────────────────────────
+   128→
+   129→  const { data, isLoading } = useQuery<{
+   130→    drills: Drill[]
+   131→    favoriteIds: string[]
+   132→  }>({
+   133→    queryKey: ['drills'],
+   134→    queryFn: () => apiFetch('/api/drills'),
+   135→  })
+   136→
+   137→  const drills: Drill[] = data?.drills ?? []
+   138→  const favoriteIds: string[] = data?.favoriteIds ?? []
+   139→
+   140→  // ── Drill count per category ────────────────────────────────────────────
+   141→
+   142→  const drillCountsByCategory = useMemo(() => {
+   143→    const counts: Record<string, number> = {}
+   144→    for (const d of drills) {
+   145→      counts[d.category] = (counts[d.category] ?? 0) + 1
+   146→    }
+   147→    return counts
+   148→  }, [drills])
+   149→
+   150→  // ── Favorite Mutation ────────────────────────────────────────────────────
+   151→
+   152→  const favoriteMutation = useMutation({
+   153→    mutationFn: async (drillId: string) => {
+   154→      return apiFetch<{ favorited: boolean }>('/api/drills/favorite', {
+   155→        method: 'POST',
+   156→        headers: { 'Content-Type': 'application/json' },
+   157→        body: JSON.stringify({ drillId }),
+   158→      })
+   159→    },
+   160→    onMutate: async (drillId) => {
+   161→      await queryClient.cancelQueries({ queryKey: ['drills'] })
+   162→      const previous = queryClient.getQueryData<{ drills: Drill[]; favoriteIds: string[] }>(['drills'])
+   163→
+   164→      const isFav = favoriteIds.includes(drillId)
+   165→      queryClient.setQueryData(['drills'], {
+   166→        ...previous,
+   167→        favoriteIds: isFav
+   168→          ? favoriteIds.filter((id) => id !== drillId)
+   169→          : [...favoriteIds, drillId],
+   170→      })
+   171→
+   172→      return { previous }
+   173→    },
+   174→    onError: (_err, _drillId, context) => {
+   175→      if (context?.previous) {
+   176→        queryClient.setQueryData(['drills'], context.previous)
+   177→      }
+   178→    },
+   179→    onSettled: () => {
+   180→      queryClient.invalidateQueries({ queryKey: ['drills'] })
+   181→    },
+   182→  })
+   183→
+   184→  // ── Create Drill Mutation ───────────────────────────────────────────────
+   185→
+   186→  const createMutation = useMutation({
+   187→    mutationFn: async () => {
+   188→      return apiFetch('/api/drills/create', {
+   189→        method: 'POST',
+   190→        headers: { 'Content-Type': 'application/json' },
+   191→        body: JSON.stringify(createForm),
+   192→      })
+   193→    },
+   194→    onSuccess: () => {
+   195→      queryClient.invalidateQueries({ queryKey: ['drills'] })
+   196→      setCreateOpen(false)
+   197→      resetCreateForm()
+   198→    },
+   199→    onError: (err) => {
+   200→      setCreateError(err.message)
+   201→    },
+   202→  })
+   203→
+   204→  const resetCreateForm = useCallback(() => {
+   205→    setCreateForm({
+   206→      nameFr: '',
+   207→      category: '',
+   208→      difficulty: '',
+   209→      descriptionFr: '',
+   210→      instructionsFr: '',
+   211→      durationSec: 30,
+   212→      targetReps: 10,
+   213→      icon: '🏀',
+   214→    })
+   215→    setCreateError('')
+   216→  }, [])
+   217→
+   218→  const handleCreateOpenChange = useCallback(
+   219→    (open: boolean) => {
+   220→      setCreateOpen(open)
+   221→      if (!open) {
+   222→        resetCreateForm()
+   223→      }
+   224→    },
+   225→    [resetCreateForm],
+   226→  )
+   227→
+   228→  // ── Filtering ────────────────────────────────────────────────────────────
+   229→
+   230→  const filteredDrills = useMemo(() => {
+   231→    let result = drills
+   232→
+   233→    if (activeCategory !== 'all') {
+   234→      result = result.filter((d) => d.category === activeCategory)
+   235→    }
+   236→
+   237→    if (selectedDifficulties.length > 0) {
+   238→      result = result.filter((d) => selectedDifficulties.includes(d.difficulty))
+   239→    }
+   240→
+   241→    if (showFavoritesOnly) {
+   242→      result = result.filter((d) => favoriteIds.includes(d.id))
+   243→    }
+   244→
+   245→    if (search.trim()) {
+   246→      const q = search.toLowerCase().trim()
+   247→      result = result.filter(
+   248→        (d) =>
+   249→          d.nameFr.toLowerCase().includes(q) ||
+   250→          d.name.toLowerCase().includes(q) ||
+   251→          d.category.toLowerCase().includes(q),
+   252→      )
+   253→    }
+   254→
+   255→    return result
+   256→  }, [drills, activeCategory, selectedDifficulties, search, showFavoritesOnly, favoriteIds])
+   257→
+   258→  // ── Handlers ─────────────────────────────────────────────────────────────
+   259→
+   260→  const handleCardClick = (drill: Drill) => {
+   261→    selectDrill(drill.id)
+   262→    navigate('drill-detail')
+   263→  }
+   264→
+   265→  const handleToggleFavorite = (e: React.MouseEvent, drillId: string) => {
+   266→    e.stopPropagation()
+   267→    favoriteMutation.mutate(drillId)
+   268→  }
+   269→
+   270→  const toggleDifficulty = (key: string) => {
+   271→    setSelectedDifficulties((prev) =>
+   272→      prev.includes(key) ? prev.filter((d) => d !== key) : [...prev, key],
+   273→    )
+   274→  }
+   275→
+   276→  const isCreateFormValid =
+   277→    createForm.nameFr.trim() !== '' &&
+   278→    createForm.category !== '' &&
+   279→    createForm.difficulty !== ''
+   280→
+   281→  // ── Render ───────────────────────────────────────────────────────────────
+   282→
+   283→  return (
+   284→    <div className="min-h-screen flex flex-col bg-background">
+   285→      {/* ── Header ──────────────────────────────────────────────────────── */}
+   286→      <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-lg border-b border-border">
+   287→        <div className="max-w-4xl mx-auto px-4 pt-4 pb-3">
+   288→          <div className="flex items-center justify-between gap-3">
+   289→            <div className="min-w-0">
+   290→              <h1 className="text-2xl font-bold tracking-tight text-foreground truncate">
+   291→                Centre d&apos;Entraînement
+   292→              </h1>
+   293→              <p className="text-sm text-muted-foreground mt-0.5">
+   294→                Explorez et maîtrisez chaque exercice
+   295→              </p>
+   296→            </div>
+   297→
+   298→            {/* Create drill button */}
+   299→            <Dialog open={createOpen} onOpenChange={handleCreateOpenChange}>
+   300→              <DialogTrigger asChild>
+   301→                <Button
+   302→                  size="sm"
+   303→                  className="shrink-0 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-sm shadow-orange-500/25 gap-1.5"
+   304→                >
+   305→                  <Plus className="h-4 w-4" />
+   306→                  <span className="hidden sm:inline">Créer un exercice</span>
+   307→                </Button>
+   308→              </DialogTrigger>
+   309→
+   310→              <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+   311→                <DialogHeader>
+   312→                  <DialogTitle className="text-foreground flex items-center gap-2">
+   313→                    <span className="text-xl">✨</span>
+   314→                    Créer un exercice
+   315→                  </DialogTitle>
+   316→                  <DialogDescription>
+   317→                    Ajoutez un exercice personnalisé à votre bibliothèque d&apos;entraînement.
+   318→                  </DialogDescription>
+   319→                </DialogHeader>
+   320→
+   321→                <Separator className="my-1" />
+   322→
+   323→                {createError && (
+   324→                  <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
+   325→                    {createError}
+   326→                  </p>
+   327→                )}
+   328→
+   329→                <div className="grid gap-4 py-2">
+   330→                  {/* Name */}
+   331→                  <div className="grid gap-2">
+   332→                    <Label htmlFor="drill-name">Nom de l&apos;exercice *</Label>
+   333→                    <Input
+   334→                      id="drill-name"
+   335→                      placeholder="Ex: Crossover latéral rapide"
+   336→                      value={createForm.nameFr}
+   337→                      onChange={(e) =>
+   338→                        setCreateForm((f) => ({ ...f, nameFr: e.target.value }))
+   339→                      }
+   340→                    />
+   341→                  </div>
+   342→
+   343→                  {/* Category + Difficulty row */}
+   344→                  <div className="grid grid-cols-2 gap-3">
+   345→                    <div className="grid gap-2">
+   346→                      <Label>Catégorie *</Label>
+   347→                      <Select
+   348→                        value={createForm.category}
+   349→                        onValueChange={(v) =>
+   350→                          setCreateForm((f) => ({ ...f, category: v }))
+   351→                        }
+   352→                      >
+   353→                        <SelectTrigger className="w-full">
+   354→                          <SelectValue placeholder="Choisir..." />
+   355→                        </SelectTrigger>
+   356→                        <SelectContent>
+   357→                          {CATEGORIES_LIST.filter((c) => c.key !== 'all').map(
+   358→                            (cat) => (
+   359→                              <SelectItem key={cat.key} value={cat.key}>
+   360→                                <span className="flex items-center gap-2">
+   361→                                  <span>{cat.icon}</span>
+   362→                                  {cat.label}
+   363→                                </span>
+   364→                              </SelectItem>
+   365→                            ),
+   366→                          )}
+   367→                        </SelectContent>
+   368→                      </Select>
+   369→                    </div>
+   370→
+   371→                    <div className="grid gap-2">
+   372→                      <Label>Difficulté *</Label>
+   373→                      <Select
+   374→                        value={createForm.difficulty}
+   375→                        onValueChange={(v) =>
+   376→                          setCreateForm((f) => ({ ...f, difficulty: v }))
+   377→                        }
+   378→                      >
+   379→                        <SelectTrigger className="w-full">
+   380→                          <SelectValue placeholder="Choisir..." />
+   381→                        </SelectTrigger>
+   382→                        <SelectContent>
+   383→                          {DIFFICULTIES.map((d) => (
+   384→                            <SelectItem key={d.key} value={d.key}>
+   385→                              <span className="flex items-center gap-2">
+   386→                                <span
+   387→                                  className={`h-2 w-2 rounded-full ${d.color}`}
+   388→                                />
+   389→                                {d.label}
+   390→                              </span>
+   391→                            </SelectItem>
+   392→                          ))}
+   393→                        </SelectContent>
+   394→                      </Select>
+   395→                    </div>
+   396→                  </div>
+   397→
+   398→                  {/* Description */}
+   399→                  <div className="grid gap-2">
+   400→                    <Label htmlFor="drill-desc">Description</Label>
+   401→                    <Input
+   402→                      id="drill-desc"
+   403→                      placeholder="Brève description de l'exercice"
+   404→                      value={createForm.descriptionFr}
+   405→                      onChange={(e) =>
+   406→                        setCreateForm((f) => ({
+   407→                          ...f,
+   408→                          descriptionFr: e.target.value,
+   409→                        }))
+   410→                      }
+   411→                    />
+   412→                  </div>
+   413→
+   414→                  {/* Instructions */}
+   415→                  <div className="grid gap-2">
+   416→                    <Label htmlFor="drill-instructions">Instructions</Label>
+   417→                    <Textarea
+   418→                      id="drill-instructions"
+   419→                      placeholder="Étape par étape, décrivez comment réaliser l'exercice..."
+   420→                      value={createForm.instructionsFr}
+   421→                      onChange={(e) =>
+   422→                        setCreateForm((f) => ({
+   423→                          ...f,
+   424→                          instructionsFr: e.target.value,
+   425→                        }))
+   426→                      }
+   427→                      rows={4}
+   428→                    />
+   429→                  </div>
+   430→
+   431→                  {/* Duration + Reps row */}
+   432→                  <div className="grid grid-cols-2 gap-3">
+   433→                    <div className="grid gap-2">
+   434→                      <Label htmlFor="drill-duration">
+   435→                        Durée (secondes)
+   436→                      </Label>
+   437→                      <Input
+   438→                        id="drill-duration"
+   439→                        type="number"
+   440→                        min={10}
+   441→                        max={300}
+   442→                        value={createForm.durationSec}
+   443→                        onChange={(e) =>
+   444→                          setCreateForm((f) => ({
+   445→                            ...f,
+   446→                            durationSec: Number(e.target.value) || 30,
+   447→                          }))
+   448→                        }
+   449→                      />
+   450→                    </div>
+   451→
+   452→                    <div className="grid gap-2">
+   453→                      <Label htmlFor="drill-reps">Répétitions cible</Label>
+   454→                      <Input
+   455→                        id="drill-reps"
+   456→                        type="number"
+   457→                        min={1}
+   458→                        max={100}
+   459→                        value={createForm.targetReps}
+   460→                        onChange={(e) =>
+   461→                          setCreateForm((f) => ({
+   462→                            ...f,
+   463→                            targetReps: Number(e.target.value) || 10,
+   464→                          }))
+   465→                        }
+   466→                      />
+   467→                    </div>
+   468→                  </div>
+   469→
+   470→                  {/* Icon picker */}
+   471→                  <div className="grid gap-2">
+   472→                    <Label htmlFor="drill-icon">Icône (emoji)</Label>
+   473→                    <Input
+   474→                      id="drill-icon"
+   475→                      placeholder="🏀"
+   476→                      value={createForm.icon}
+   477→                      onChange={(e) =>
+   478→                        setCreateForm((f) => ({ ...f, icon: e.target.value }))
+   479→                      }
+   480→                      className="w-20 text-center text-2xl"
+   481→                      maxLength={4}
+   482→                    />
+   483→                    <p className="text-xs text-muted-foreground">
+   484→                      Collez un emoji pour représenter l&apos;exercice
+   485→                    </p>
+   486→                  </div>
+   487→                </div>
+   488→
+   489→                <DialogFooter>
+   490→                  <Button
+   491→                    variant="outline"
+   492→                    onClick={() => setCreateOpen(false)}
+   493→                    className="rounded-full"
+   494→                  >
+   495→                    Annuler
+   496→                  </Button>
+   497→                  <Button
+   498→                    onClick={() => createMutation.mutate()}
+   499→                    disabled={!isCreateFormValid || createMutation.isPending}
+   500→                    className="rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-sm shadow-orange-500/25 gap-2"
+   501→                  >
+   502→                    {createMutation.isPending && (
+   503→                      <Loader2 className="h-4 w-4 animate-spin" />
+   504→                    )}
+   505→                    Créer l&apos;exercice
+   506→                  </Button>
+   507→                </DialogFooter>
+   508→              </DialogContent>
+   509→            </Dialog>
+   510→          </div>
+   511→        </div>
+   512→
+   513→        {/* Search + Filter row */}
+   514→        <div className="max-w-4xl mx-auto px-4 pb-3 flex items-center gap-2">
+   515→          <div className="relative flex-1">
+   516→            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+   517→            <Input
+   518→              placeholder="Rechercher un exercice..."
+   519→              value={search}
+   520→              onChange={(e) => setSearch(e.target.value)}
+   521→              className="pl-9 pr-4 h-10 rounded-full bg-muted/50 border-border/60 focus:bg-card transition-colors"
+   522→            />
+   523→          </div>
+   524→          <Button
+   525→            variant={showFavoritesOnly ? 'default' : 'outline'}
+   526→            size="icon"
+   527→            className={`h-10 w-10 rounded-full shrink-0 transition-colors ${
+   528→              showFavoritesOnly
+   529→                ? 'bg-orange-500 hover:bg-orange-600 border-orange-500 text-white'
+   530→                : ''
+   531→            }`}
+   532→            onClick={() => setShowFavoritesOnly((v) => !v)}
+   533→            aria-label="Filtrer les favoris"
+   534→          >
+   535→            <Heart className={`h-4 w-4 ${showFavoritesOnly ? 'fill-current' : ''}`} />
+   536→          </Button>
+   537→          <Button
+   538→            variant={showDifficultyFilter ? 'default' : 'outline'}
+   539→            size="icon"
+   540→            className="h-10 w-10 rounded-full shrink-0"
+   541→            onClick={() => setShowDifficultyFilter((v) => !v)}
+   542→          >
+   543→            <Filter className="h-4 w-4" />
+   544→          </Button>
+   545→        </div>
+   546→
+   547→        {/* Difficulty filter (collapsible) */}
+   548→        <AnimatePresence>
+   549→          {showDifficultyFilter && (
+   550→            <motion.div
+   551→              initial={{ height: 0, opacity: 0 }}
+   552→              animate={{ height: 'auto', opacity: 1 }}
+   553→              exit={{ height: 0, opacity: 0 }}
+   554→              transition={{ duration: 0.2 }}
+   555→              className="overflow-hidden"
+   556→            >
+   557→              <div className="max-w-4xl mx-auto px-4 pb-3 flex items-center gap-2">
+   558→                {DIFFICULTIES.map((diff) => {
+   559→                  const isActive = selectedDifficulties.includes(diff.key)
+   560→                  return (
+   561→                    <button
+   562→                      key={diff.key}
+   563→                      onClick={() => toggleDifficulty(diff.key)}
+   564→                      className={`
+   565→                        inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium
+   566→                        transition-colors border
+   567→                        ${
+   568→                          isActive
+   569→                            ? 'bg-foreground text-background border-foreground'
+   570→                            : 'bg-card text-muted-foreground border-border hover:border-foreground/30'
+   571→                        }
+   572→                      `}
+   573→                    >
+   574→                      <span
+   575→                        className={`h-2 w-2 rounded-full ${diff.color} ${
+   576→                          isActive ? 'ring-2 ring-background/40' : ''
+   577→                        }`}
+   578→                      />
+   579→                      {diff.label}
+   580→                    </button>
+   581→                  )
+   582→                })}
+   583→              </div>
+   584→            </motion.div>
+   585→          )}
+   586→        </AnimatePresence>
+   587→
+   588→        {/* Category pills */}
+   589→        <div className="max-w-4xl mx-auto px-4 pb-3">
+   590→          <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-1 px-1">
+   591→            {CATEGORIES_LIST.map((cat) => {
+   592→              const isActive = activeCategory === cat.key
+   593→              const count =
+   594→                cat.key === 'all'
+   595→                  ? drills.length
+   596→                  : drillCountsByCategory[cat.key] ?? 0
+   597→              return (
+   598→                <button
+   599→                  key={cat.key}
+   600→                  onClick={() => setActiveCategory(cat.key)}
+   601→                  className={`
+   602→                    inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium
+   603→                    whitespace-nowrap transition-all duration-200 shrink-0 border
+   604→                    ${
+   605→                      isActive
+   606→                        ? 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-500/25'
+   607→                        : 'bg-muted text-muted-foreground border-transparent hover:bg-muted/80'
+   608→                    }
+   609→                  `}
+   610→                >
+   611→                  <span className="text-base leading-none">{cat.icon}</span>
+   612→                  <span>{cat.label}</span>
+   613→                  <span
+   614→                    className={`
+   615→                      ml-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold leading-none px-1
+   616→                      ${isActive ? 'bg-white/25 text-white' : 'bg-background/70 text-muted-foreground'}
+   617→                    `}
+   618→                  >
+   619→                    {count}
+   620→                  </span>
+   621→                </button>
+   622→              )
+   623→            })}
+   624→          </div>
+   625→        </div>
+   626→      </header>
+   627→
+   628→      {/* ── Main Content ────────────────────────────────────────────────── */}
+   629→      <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-4 pb-24">
+   630→        {/* Results count */}
+   631→        <p className="text-xs text-muted-foreground mb-3">
+   632→          {filteredDrills.length} exercice
+   633→          {filteredDrills.length !== 1 ? 's' : ''} trouvé
+   634→          {filteredDrills.length !== 1 ? 's' : ''}
+   635→        </p>
+   636→
+   637→        {/* Loading state */}
+   638→        {isLoading && (
+   639→          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+   640→            {Array.from({ length: 6 }).map((_, i) => (
+   641→              <Card key={i} className="animate-pulse bg-card">
+   642→                <CardContent className="p-4 space-y-3">
+   643→                  <div className="h-12 w-12 rounded-xl bg-muted" />
+   644→                  <div className="h-4 w-3/4 rounded bg-muted" />
+   645→                  <div className="h-3 w-1/2 rounded bg-muted" />
+   646→                  <div className="flex gap-2">
+   647→                    <div className="h-5 w-16 rounded-full bg-muted" />
+   648→                    <div className="h-5 w-20 rounded-full bg-muted" />
+   649→                  </div>
+   650→                </CardContent>
+   651→              </Card>
+   652→            ))}
+   653→          </div>
+   654→        )}
+   655→
+   656→        {/* Empty state */}
+   657→        {!isLoading && filteredDrills.length === 0 && (
+   658→          <motion.div
+   659→            initial={{ opacity: 0, y: 20 }}
+   660→            animate={{ opacity: 1, y: 0 }}
+   661→            className="flex flex-col items-center justify-center py-20 text-center"
+   662→          >
+   663→            <span className="text-5xl mb-4">🔍</span>
+   664→            <h3 className="text-lg font-semibold text-foreground">
+   665→              Aucun exercice trouvé
+   666→            </h3>
+   667→            <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+   668→              Essayez de modifier vos filtres ou votre recherche
+   669→            </p>
+   670→            <Button
+   671→              variant="outline"
+   672→              className="mt-4 rounded-full"
+   673→              onClick={() => {
+   674→                setSearch('')
+   675→                setActiveCategory('all')
+   676→                setSelectedDifficulties([])
+   677→              }}
+   678→            >
+   679→              Réinitialiser les filtres
+   680→            </Button>
+   681→          </motion.div>
+   682→        )}
+   683→
+   684→        {/* Drill grid */}
+   685→        {!isLoading && filteredDrills.length > 0 && (
+   686→          <motion.div
+   687→            key={`${activeCategory}-${selectedDifficulties.join()}-${search}`}
+   688→            variants={containerVariants}
+   689→            initial="hidden"
+   690→            animate="visible"
+   691→            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+   692→          >
+   693→            <AnimatePresence mode="popLayout">
+   694→              {filteredDrills.map((drill) => {
+   695→                const isFav = favoriteIds.includes(drill.id)
+   696→                const diffClass = DIFFICULTY_BADGE_MAP[drill.difficulty] ?? ''
+   697→                const dotColor =
+   698→                  difficultyDotColor[drill.difficulty] ?? 'bg-muted-foreground'
+   699→
+   700→                return (
+   701→                  <motion.div
+   702→                    key={drill.id}
+   703→                    variants={cardVariants}
+   704→                    layout
+   705→                    exit="exit"
+   706→                  >
+   707→                    <Card
+   708→                      className="group cursor-pointer relative overflow-hidden rounded-2xl shadow-sm dark:shadow-none dark:border-border/50 hover:shadow-md dark:hover:border-border/80 transition-all duration-200 bg-card bg-gradient-to-br from-card to-card/50"
+   709→                      onClick={() => handleCardClick(drill)}
+   710→                    >
+   711→                      {/* Favorite button */}
+   712→                      <button
+   713→                        onClick={(e) => handleToggleFavorite(e, drill.id)}
+   714→                        className="absolute top-3 right-3 z-10 h-8 w-8 flex items-center justify-center rounded-full bg-background/80 dark:bg-background/60 backdrop-blur-sm border border-border dark:border-border/50 shadow-sm hover:scale-110 active:scale-95 transition-transform"
+   715→                        aria-label={
+   716→                          isFav
+   717→                            ? 'Retirer des favoris'
+   718→                            : 'Ajouter aux favoris'
+   719→                        }
+   720→                      >
+   721→                        <Heart
+   722→                          className={`h-4 w-4 transition-colors duration-200 ${
+   723→                            isFav
+   724→                              ? 'fill-orange-500 text-orange-500'
+   725→                              : 'text-muted-foreground'
+   726→                          }`}
+   727→                        />
+   728→                      </button>
+   729→
+   730→                      <CardContent className="p-4 pb-5">
+   731→                        {/* Icon */}
+   732→                        <motion.div
+   733→                          whileHover={{ scale: 1.1, rotate: -5 }}
+   734→                          transition={{
+   735→                            type: 'spring',
+   736→                            stiffness: 400,
+   737→                            damping: 17,
+   738→                          }}
+   739→                          className="h-14 w-14 rounded-xl bg-orange-500/10 dark:bg-orange-500/15 flex items-center justify-center text-3xl mb-3"
+   740→                        >
+   741→                          {drill.icon}
+   742→                        </motion.div>
+   743→
+   744→                        {/* Name */}
+   745→                        <h3 className="font-semibold text-foreground text-sm leading-snug pr-8 line-clamp-2">
+   746→                          {drill.nameFr}
+   747→                        </h3>
+   748→
+   749→                        {/* Badges */}
+   750→                        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+   751→                          <Badge
+   752→                            variant="secondary"
+   753→                            className="text-[11px] px-2 py-0 h-5 font-medium"
+   754→                          >
+   755→                            {getCategoryLabel(drill.category)}
+   756→                          </Badge>
+   757→                          <Badge
+   758→                            variant="outline"
+   759→                            className={`text-[11px] px-2 py-0 h-5 font-medium border-0 ${diffClass}`}
+   760→                          >
+   761→                            <span
+   762→                              className={`h-1.5 w-1.5 rounded-full ${dotColor} mr-1.5 shrink-0`}
+   763→                            />
+   764→                            {drill.difficulty === 'beginner'
+   765→                              ? 'Débutant'
+   766→                              : drill.difficulty === 'intermediate'
+   767→                                ? 'Intermédiaire'
+   768→                                : 'Avancé'}
+   769→                          </Badge>
+   770→                        </div>
+   771→
+   772→                        {/* Meta info */}
+   773→                        <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
+   774→                          <span className="inline-flex items-center gap-1">
+   775→                            <Clock className="h-3 w-3" />
+   776→                            {drill.durationSec}s
+   777→                          </span>
+   778→                          <span className="inline-flex items-center gap-1">
+   779→                            <Target className="h-3 w-3" />
+   780→                            {drill.targetReps} reps
+   781→                          </span>
+   782→                        </div>
+   783→                      </CardContent>
+   784→                    </Card>
+   785→                  </motion.div>
+   786→                )
+   787→              })}
+   788→            </AnimatePresence>
+   789→          </motion.div>
+   790→        )}
+   791→      </main>
+   792→
+   793→      {/* ── Bottom Navigation ───────────────────────────────────────────── */}
+   794→      <BottomNav />
+   795→    </div>
+   796→  )
+   797→}

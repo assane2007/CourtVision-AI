@@ -127,6 +127,7 @@ export function StreakCalendar({ dailyStats }: StreakCalendarProps) {
                     key={cell.date}
                     className="flex-1 flex items-center justify-center"
                     title={`${cell.date} — ${cell.sessions} séance${cell.sessions > 1 ? 's' : ''}`}
+                    aria-label={`${new Date(cell.date + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}: ${cell.sessions} séance${cell.sessions > 1 ? 's' : ''}`}
                   >
                     <motion.div
                       initial={{ scale: 0 }}

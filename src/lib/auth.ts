@@ -5,7 +5,7 @@ import { db } from './db'
 import { rateLimit } from './rate-limit'
 
 export const authOptions: NextAuthOptions = {
-  // Trust the host from request headers (essential behind reverse proxy/gateway)
+  // Required behind Caddy reverse proxy for correct callback URL resolution
   trustHost: true,
   providers: [
     CredentialsProvider({
@@ -48,7 +48,7 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 7 * 24 * 60 * 60, // 7 days
   },
   pages: {
     signIn: '/',

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { useAppStore } from '@/stores/app'
 import { apiFetch } from '@/lib/utils'
+import { toast } from 'sonner'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -219,7 +220,8 @@ export default function OnboardingScreen() {
         }),
       })
     } catch {
-      // Silently proceed even if the API call fails — the user can re-do onboarding
+      // Notify user that preferences weren't saved, but still proceed
+      toast.error('Erreur de sauvegarde. Vos préférences seront sauvegardées plus tard.')
     } finally {
       setIsSubmitting(false)
       navigate('home')
@@ -232,12 +234,17 @@ export default function OnboardingScreen() {
       <motion.button
         key={option.value}
         type="button"
+        role="radio"
+        aria-checked={isSelected}
+        tabIndex={0}
+        aria-label={option.title}
         onClick={() => onSelect(option.value)}
         whileHover={{ scale: 1.03, y: -2 }}
         whileTap={{ scale: 0.97 }}
         className={`
           relative flex flex-col items-center gap-3 rounded-2xl border p-5 text-center
           transition-colors duration-200 cursor-pointer select-none w-full
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500
           ${
             isSelected
               ? 'border-orange-500 bg-orange-500/10 shadow-lg shadow-orange-500/10'
@@ -290,19 +297,19 @@ export default function OnboardingScreen() {
     switch (step) {
       case 0:
         return (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div role="radiogroup" aria-label="Poste" className="grid grid-cols-2 gap-3 sm:gap-4">
             {positionOptions.map((opt) => renderCard(opt, position, setPosition))}
           </div>
         )
       case 1:
         return (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div role="radiogroup" aria-label="Niveau" className="grid grid-cols-2 gap-3 sm:gap-4">
             {levelOptions.map((opt) => renderCard(opt, level, setLevel))}
           </div>
         )
       case 2:
         return (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+          <div role="radiogroup" aria-label="Objectif principal" className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
             {goalOptions.map((opt) => renderCard(opt, goal, setGoal))}
           </div>
         )

@@ -23,38 +23,26 @@ import { SwipeToGoBack } from '@/components/shared/swipe-back'
 import { getCategoryLabel, DIFFICULTY_CONFIG } from '@/lib/constants'
 import { DrillDemoAnimation } from '@/components/drill-demo-animation'
 import { apiFetch } from '@/lib/utils'
+import { containerVariants, itemVariants } from '@/lib/animations'
 import { toast } from 'sonner'
-
-// ── Animation variants ──────────────────────────────────────────────
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.1 },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' as const } },
-}
 
 // ── Component ───────────────────────────────────────────────────────
 export function DrillDetailScreen() {
   const { selectedDrillId, goBack, navigate } = useAppStore()
   const queryClient = useQueryClient()
 
-  // ── Fetch drills ─────────────────────────────────────────────────
+  // ── Fetch single drill ────────────────────────────────────────────
   const { data, isLoading } = useQuery<{
-    drills: Array<{ id: string; name: string; nameFr: string; category: string; difficulty: string; description: string; descriptionFr: string; instructions: string; instructionsFr: string; durationSec: number; targetReps: number; icon: string }>
-    favoriteIds: string[]
+    drill: { id: string; name: string; nameFr: string; category: string; difficulty: string; description: string; descriptionFr: string; instructions: string; instructionsFr: string; durationSec: number; targetReps: number; icon: string }
+    isFavorited: boolean
   }>({
-    queryKey: ['drills'],
-    queryFn: () => apiFetch('/api/drills'),
+    queryKey: ['drill', selectedDrillId],
+    queryFn: () => apiFetch(`/api/drills/${selectedDrillId}`),
+    enabled: !!selectedDrillId,
   })
 
-  const drill = data?.drills?.find((d: { id: string }) => d.id === selectedDrillId)
-  const isFavorited = data?.favoriteIds?.includes(selectedDrillId ?? '')
+  const drill = data?.drill
+  const isFavorited = data?.isFavorited ?? false
 
   // ── Favorite mutation ────────────────────────────────────────────
   const favoriteMutation = useMutation({
@@ -65,7 +53,7 @@ export function DrillDetailScreen() {
         body: JSON.stringify({ drillId: selectedDrillId }),
       }),
     onSuccess: (result: { favorited: boolean }) => {
-      queryClient.invalidateQueries({ queryKey: ['drills'] })
+      queryClient.invalidateQueries({ queryKey: ['drill', selectedDrillId] })
       toast(result.favorited ? 'Ajouté aux favoris' : 'Retiré des favoris', {
         description: result.favorited ? 'Exercice favori' : 'Exercice retiré',
       })

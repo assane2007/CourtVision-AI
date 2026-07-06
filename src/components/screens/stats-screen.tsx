@@ -38,6 +38,7 @@ import { PullToRefresh } from '@/components/shared/pull-to-refresh'
 import { AnimatedNumber } from '@/components/shared/animated-number'
 import { CATEGORY_META, getCategoryLabel } from '@/lib/constants'
 import { apiFetch } from '@/lib/utils'
+import { containerVariants, itemVariants } from '@/lib/animations'
 
 // ── Day name mapping ────────────────────────────────────────────────
 const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
@@ -45,20 +46,6 @@ const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
 function getDayLabel(dateStr: string): string {
   const date = new Date(dateStr + 'T00:00:00')
   return dayNames[date.getDay()]
-}
-
-// ── Animation variants ──────────────────────────────────────────────
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.07, delayChildren: 0.05 },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 18 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' as const } },
 }
 
 // ── Custom tooltip for bar chart ────────────────────────────────────
@@ -120,7 +107,7 @@ interface StatsResponse {
 }
 
 export function StatsScreen() {
-  const { currentScreen, navigate } = useAppStore()
+  const { navigate } = useAppStore()
 
   // ── Fetch stats ─────────────────────────────────────────────────
   const { data: stats, isLoading: statsLoading } = useQuery<StatsResponse>({
@@ -137,10 +124,6 @@ export function StatsScreen() {
   const recentSessions: SessionEntry[] = sessionsData?.sessions?.slice(0, 10) ?? []
   const dailyStats: DailyStat[] = stats?.dailyStats ?? []
   const categories: CategoryStat[] = stats?.categories ?? []
-
-  // ── Loading skeleton ────────────────────────────────────────────
-  // Suppress unused variable lint (currentScreen is available for future use)
-  void currentScreen
 
   if (statsLoading || sessionsLoading) {
     return (

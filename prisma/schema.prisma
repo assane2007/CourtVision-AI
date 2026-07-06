@@ -20,10 +20,28 @@ model Player {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // XP & Leveling
+  xp          Int      @default(0)
+  xpLevel     Int      @default(1)
+
+  // User preferences
+  weeklyGoalSessions Int @default(3)
+  weeklyGoalReps     Int @default(50)
+  preferredRestSec   Int @default(15)
+  soundEnabled       Boolean @default(true)
+  hapticsEnabled     Boolean @default(true)
+  language           String  @default("fr") // fr, en
+
+  // Notification preferences
+  notifStreak        Boolean @default(true)
+  notifChallenge     Boolean @default(true)
+  notifAchievement   Boolean @default(true)
+
   sessions      WorkoutSession[]
   favorites     DrillFavorite[]
   customDrills  Drill[]
   trainingPlans TrainingPlan[]
+  xpLogs        XpLog[]
 }
 
 model Drill {
@@ -142,5 +160,20 @@ model Achievement {
   icon        String
   unlockedAt  DateTime @default(now())
 
+  @@unique([playerId, type])
   @@index([playerId])
+}
+
+model XpLog {
+  id          String   @id @default(cuid())
+  playerId    String
+  amount      Int
+  source      String   // workout, streak, achievement, challenge, bonus
+  description String
+  createdAt   DateTime @default(now())
+
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([createdAt])
 }

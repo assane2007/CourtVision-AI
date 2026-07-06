@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { BottomNav } from '@/components/shared/bottom-nav'
 import { CreatePlanDialog } from '@/components/dialogs/create-plan-dialog'
-import { apiFetch } from '@/lib/utils'
+import { apiFetch, formatDuration } from '@/lib/utils'
 import {
   ClipboardList,
   Plus,
@@ -74,18 +74,6 @@ function estimateTotalTime(drills: PlanDrill[]): number {
     total += pd.restSec * (pd.targetSets - 1)
   }
   return total
-}
-
-function formatDuration(totalSec: number): string {
-  if (totalSec < 60) return `${totalSec}s`
-  const min = Math.floor(totalSec / 60)
-  const sec = totalSec % 60
-  if (min >= 60) {
-    const h = Math.floor(min / 60)
-    const m = min % 60
-    return sec > 0 ? `${h}h ${m}min ${sec}s` : `${h}h ${m}min`
-  }
-  return sec > 0 ? `${min}min ${sec}s` : `${min}min`
 }
 
 // ─── Main Component ──────────────────────────────────────────────────────────
@@ -255,7 +243,7 @@ export default function PlansScreen() {
                         </div>
                         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                           <Clock className="h-3.5 w-3.5" />
-                          <span>{formatDuration(totalTime)}</span>
+                          <span>{formatDuration(totalTime * 1000)}</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                           <Target className="h-3.5 w-3.5" />

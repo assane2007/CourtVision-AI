@@ -1,0 +1,2002 @@
+     1→     1→'use client'
+     2→     2→
+     3→     3→import { useState, useRef, useEffect, useCallback } from 'react'
+     4→     4→import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+     5→     5→import { useAppStore } from '@/stores/app'
+     6→     6→import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+     7→     7→import { Card, CardContent } from '@/components/ui/card'
+     8→     8→import { Button } from '@/components/ui/button'
+     9→     9→import { Badge } from '@/components/ui/badge'
+    10→    10→import { Skeleton } from '@/components/ui/skeleton'
+    11→    11→import { toast } from 'sonner'
+    12→    12→import {
+    13→    13→  ArrowLeft,
+    14→    14→  Camera,
+    15→    15→  Pause,
+    16→    16→  Play,
+    17→    17→  Square,
+    18→    18→  RotateCcw,
+    19→    19→  Save,
+    20→    20→  Star,
+    21→    21→  Volume2,
+    22→    22→  VolumeX,
+    23→    23→  Loader2,
+    24→    24→  AlertTriangle,
+    25→    25→  ShieldCheck,
+    26→    26→  Sparkles,
+    27→    27→  Plus,
+    28→    28→  SkipForward,
+    29→    29→  Timer,
+    30→    30→} from 'lucide-react'
+    31→    31→import { apiFetch } from '@/lib/utils'
+    32→    32→import {
+    33→    33→  initAudio,
+    34→    34→  toggleMute as toggleAudioMute,
+    35→    35→  isAudioMuted as getAudioMuted,
+    36→    36→  setMuted as setAudioMuted,
+    37→    37→  playSound,
+    38→    38→  destroyAudio,
+    39→    39→} from '@/lib/audio'
+    40→    40→
+    41→    41→// ─── Types ───────────────────────────────────────────────────────────────────
+    42→    42→
+    43→    43→// Load MediaPipe via script tag (Turbopack doesn't support dynamic URL imports)
+    44→    44→async function loadMediaPipe() {
+    45→    45→  const win = window as unknown as Record<string, unknown>
+    46→    46→  if (win.__mediapipe_vision__) return win.__mediapipe_vision__ as typeof import('@mediapipe/tasks-vision')
+    47→    47→
+    48→    48→  return new Promise<typeof import('@mediapipe/tasks-vision')>((resolve, reject) => {
+    49→    49→    const script = document.createElement('script')
+    50→    50→    script.type = 'module'
+    51→    51→    script.textContent = `
+    52→    52→      import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/+esm').then(mod => {
+    53→    53→        window.__mediapipe_vision__ = mod;
+    54→    54→        window.__mediapipe_vision_ready__ = true;
+    55→    55→        window.dispatchEvent(new Event('mediapipe-ready'));
+    56→    56→      }).catch(err => {
+    57→    57→        window.__mediapipe_vision_err__ = err;
+    58→    58→        window.dispatchEvent(new Event('mediapipe-error'));
+    59→    59→      });
+    60→    60→    `
+    61→    61→    document.head.appendChild(script)
+    62→    62→
+    63→    63→    function onReady() {
+    64→    64→      window.removeEventListener('mediapipe-ready', onReady)
+    65→    65→      window.removeEventListener('mediapipe-error', onError)
+    66→    66→      resolve(win.__mediapipe_vision__ as typeof import('@mediapipe/tasks-vision'))
+    67→    67→    }
+    68→    68→    function onError() {
+    69→    69→      window.removeEventListener('mediapipe-ready', onReady)
+    70→    70→      window.removeEventListener('mediapipe-error', onError)
+    71→    71→      reject(win.__mediapipe_vision_err__ || new Error('Failed to load MediaPipe'))
+    72→    72→    }
+    73→    73→    window.addEventListener('mediapipe-ready', onReady)
+    74→    74→    window.addEventListener('mediapipe-error', onError)
+    75→    75→  })
+    76→    76→}
+    77→    77→
+    78→    78→interface Landmark {
+    79→    79→  x: number
+    80→    80→  y: number
+    81→    81→  z: number
+    82→    82→  visibility?: number
+    83→    83→}
+    84→    84→
+    85→    85→type WorkoutPhase =
+    86→    86→  | 'loading'
+    87→    87→  | 'countdown'
+    88→    88→  | 'active'
+    89→    89→  | 'paused'
+    90→    90→  | 'rest'
+    91→    91→  | 'completed'
+    92→    92→  | 'plan-next'
+    93→    93→  | 'error'
+    94→    94→
+    95→    95→interface Drill {
+    96→    96→  id: string
+    97→    97→  name: string
+    98→    98→  nameFr: string
+    99→    99→  category: string
+   100→   100→  difficulty: string
+   101→   101→  description: string
+   102→   102→  descriptionFr: string
+   103→   103→  instructions: string
+   104→   104→  instructionsFr: string
+   105→   105→  durationSec: number
+   106→   106→  targetReps: number
+   107→   107→  icon: string
+   108→   108→}
+   109→   109→
+   110→   110→interface RepTracker {
+   111→   111→  lastPos: number
+   112→   112→  direction: 'up' | 'down' | 'left' | 'right' | 'none'
+   113→   113→  lastRepTime: number
+   114→   114→  peakPositions: number[]
+   115→   115→  troughPositions: number[]
+   116→   116→  sampleCount: number
+   117→   117→  totalMovement: number
+   118→   118→  lastXPos: number
+   119→   119→  lastYPos: number
+   120→   120→  lastHipY: number
+   121→   121→  lastWristY: number
+   122→   122→  lastAnkleLX: number
+   123→   123→  lastAnkleRX: number
+   124→   124→  velocityHistory: number[]
+   125→   125→}
+   126→   126→
+   127→   127→interface ScoreDetail {
+   128→   128→  posture: number
+   129→   129→  stanceWidth: number
+   130→   130→  armPosition: number
+   131→   131→  movementQuality: number
+   132→   132→}
+   133→   133→
+   134→   134→interface AIFormCheckResult {
+   135→   135→  score: number
+   136→   136→  feedback: string
+   137→   137→  issues: string[]
+   138→   138→  goodPoints: string[]
+   139→   139→}
+   140→   140→
+   141→   141→// ─── MediaPipe Pose Connections ──────────────────────────────────────────────
+   142→   142→
+   143→   143→const POSE_CONNECTIONS: [number, number][] = [
+   144→   144→  [11, 12], [11, 13], [13, 15], [12, 14], [14, 16],
+   145→   145→  [11, 23], [12, 24], [23, 24], [23, 25], [24, 26],
+   146→   146→  [25, 27], [26, 28], [27, 29], [28, 30], [29, 31], [30, 32],
+   147→   147→  [15, 17], [15, 19], [15, 21], [16, 18], [16, 20], [16, 22],
+   148→   148→  [0, 1], [1, 2], [2, 3], [3, 7], [0, 4], [4, 5], [5, 6], [6, 8],
+   149→   149→  [9, 10],
+   150→   150→]
+   151→   151→
+   152→   152→// ─── Constants ───────────────────────────────────────────────────────────────
+   153→   153→
+   154→   154→const REP_DEBOUNCE_MS = 500
+   155→   155→const LANDMARK_COLOR = '#f97316'
+   156→   156→const LANDMARK_RADIUS = 5
+   157→   157→const CONNECTION_WIDTH = 3
+   158→   158→const COUNTDOWN_SECONDS = 3
+   159→   159→const COUNTDOWN_READY_MS = 800
+   160→   160→const AI_CHECK_COOLDOWN_MS = 10_000
+   161→   161→const HALF_WARNING_THRESHOLD = 0.5
+   162→   162→const REST_OPTIONS = [10, 15, 30, 60] as const
+   163→   163→const DEFAULT_REST_SEC = 15
+   164→   164→const DEFAULT_SETS = 1
+   165→   165→
+   166→   166→const FEEDBACK_MESSAGES = {
+   167→   167→  goodPosture: 'Bonne posture! ✅',
+   168→   168→  leanRight: 'Restez droit! 📐',
+   169→   169→  leanLeft: 'Restez droit! 📐',
+   170→   170→  tooSlow: 'Plus vite! ⚡',
+   171→   171→  goodSpeed: 'Excellent rythme! 🔥',
+   172→   172→  armsLow: 'Montez les bras! 💪',
+   173→   173→  keepGoing: 'Continuez comme ça! 🎯',
+   174→   174→  greatForm: 'Superbe forme! 💯',
+   175→   175→  narrowStance: 'Écartez les pieds! 🦶',
+   176→   176→  wideStance: 'Resserrez la garde! 🛡️',
+   177→   177→}
+   178→   178→
+   179→   179→const SCORE_COLORS: Record<string, string> = {
+   180→   180→  green: 'text-emerald-400',
+   181→   181→  orange: 'text-orange-400',
+   182→   182→  red: 'text-red-400',
+   183→   183→}
+   184→   184→
+   185→   185→const SCORE_BG_COLORS: Record<string, string> = {
+   186→   186→  green: 'bg-emerald-500/20 border-emerald-500/30',
+   187→   187→  orange: 'bg-orange-500/20 border-orange-500/30',
+   188→   188→  red: 'bg-red-500/20 border-red-500/30',
+   189→   189→}
+   190→   190→
+   191→   191→// ─── Helpers ─────────────────────────────────────────────────────────────────
+   192→   192→
+   193→   193→function formatTime(seconds: number): string {
+   194→   194→  const m = Math.floor(seconds / 60)
+   195→   195→  const s = seconds % 60
+   196→   196→  return `${m}:${s.toString().padStart(2, '0')}`
+   197→   197→}
+   198→   198→
+   199→   199→function getScoreColor(score: number): string {
+   200→   200→  if (score >= 80) return SCORE_COLORS.green
+   201→   201→  if (score >= 50) return SCORE_COLORS.orange
+   202→   202→  return SCORE_COLORS.red
+   203→   203→}
+   204→   204→
+   205→   205→function getScoreBgColor(score: number): string {
+   206→   206→  if (score >= 80) return SCORE_BG_COLORS.green
+   207→   207→  if (score >= 50) return SCORE_BG_COLORS.orange
+   208→   208→  return SCORE_BG_COLORS.red
+   209→   209→}
+   210→   210→
+   211→   211→function getGaugeColor(score: number): string {
+   212→   212→  if (score >= 80) return '#34d399'  // emerald-400
+   213→   213→  if (score >= 60) return '#4ade80'  // green-400
+   214→   214→  if (score >= 30) return '#fbbf24'  // amber-400
+   215→   215→  return '#f87171'                    // red-400
+   216→   216→}
+   217→   217→
+   218→   218→function getGaugeTrackColor(score: number): string {
+   219→   219→  if (score >= 80) return '#34d39933'
+   220→   220→  if (score >= 60) return '#4ade8033'
+   221→   221→  if (score >= 30) return '#fbbf2433'
+   222→   222→  return '#f8717133'
+   223→   223→}
+   224→   224→
+   225→   225→function getStarCount(score: number): number {
+   226→   226→  if (score >= 90) return 5
+   227→   227→  if (score >= 75) return 4
+   228→   228→  if (score >= 60) return 3
+   229→   229→  if (score >= 40) return 2
+   230→   230→  return 1
+   231→   231→}
+   232→   232→
+   233→   233→function createRepTracker(): RepTracker {
+   234→   234→  return {
+   235→   235→    lastPos: 0,
+   236→   236→    direction: 'none',
+   237→   237→    lastRepTime: 0,
+   238→   238→    peakPositions: [],
+   239→   239→    troughPositions: [],
+   240→   240→    sampleCount: 0,
+   241→   241→    totalMovement: 0,
+   242→   242→    lastXPos: 0,
+   243→   243→    lastYPos: 0,
+   244→   244→    lastHipY: 0,
+   245→   245→    lastWristY: 0,
+   246→   246→    lastAnkleLX: 0,
+   247→   247→    lastAnkleRX: 0,
+   248→   248→    velocityHistory: [],
+   249→   249→  }
+   250→   250→}
+   251→   251→
+   252→   252→function computeScore(scores: ScoreDetail[]): number {
+   253→   253→  if (scores.length === 0) return 0
+   254→   254→  const recent = scores.slice(-10)
+   255→   255→
+   256→   256→  // Movement is a prerequisite: if average movement is near 0, score = 0
+   257→   257→  const avgMovement = recent.reduce((s, d) => s + d.movementQuality, 0) / recent.length
+   258→   258→  if (avgMovement < 10) return 0
+   259→   259→
+   260→   260→  // Movement quality is the dominant factor (55%), form is secondary (45%)
+   261→   261→  const avg =
+   262→   262→    recent.reduce(
+   263→   263→      (sum, s) =>
+   264→   264→        sum +
+   265→   265→        (s.movementQuality * 0.55 +
+   266→   266→          s.posture * 0.15 +
+   267→   267→          s.stanceWidth * 0.08 +
+   268→   268→          s.armPosition * 0.22),
+   269→   269→      0,
+   270→   270→    ) / recent.length
+   271→   271→  return Math.round(Math.min(100, Math.max(0, avg)))
+   272→   272→}
+   273→   273→
+   274→   274→function analyzeForm(
+   275→   275→  landmarks: Landmark[],
+   276→   276→  category: string,
+   277→   277→  tracker: RepTracker,
+   278→   278→): { score: ScoreDetail; feedback: string } {
+   279→   279→  const lShoulder = landmarks[11]
+   280→   280→  const rShoulder = landmarks[12]
+   281→   281→  const lAnkle = landmarks[27]
+   282→   282→  const rAnkle = landmarks[28]
+   283→   283→  const lWrist = landmarks[15]
+   284→   284→  const rWrist = landmarks[16]
+   285→   285→  const lHip = landmarks[23]
+   286→   286→  const rHip = landmarks[24]
+   287→   287→
+   288→   288→  // ── 1. Posture: shoulders level? (0-100, baseline ~60) ──
+   289→   289→  const shoulderDy = Math.abs(lShoulder.y - rShoulder.y)
+   290→   290→  const postureScore = Math.max(0, Math.min(100, 90 - shoulderDy * 600))
+   291→   291→
+   292→   292→  // ── 2. Stance width: ankle distance (0-100, baseline ~30) ──
+   293→   293→  const ankleDist = Math.abs(lAnkle.x - rAnkle.x)
+   294→   294→  let stanceScore = 30
+   295→   295→  if (ankleDist > 0.15 && ankleDist < 0.45) stanceScore = 85
+   296→   296→  else if (ankleDist > 0.1 && ankleDist < 0.55) stanceScore = 60
+   297→   297→  else if (ankleDist < 0.1) stanceScore = 15
+   298→   298→  else stanceScore = 20
+   299→   299→
+   300→   300→  // ── 3. Arm position: depends on category (0-100, baseline ~30) ──
+   301→   301→  let armScore = 30
+   302→   302→  const avgWristY = (lWrist.y + rWrist.y) / 2
+   303→   303→  const avgShoulderY = (lShoulder.y + rShoulder.y) / 2
+   304→   304→  if (category === 'shooting') {
+   305→   305→    const wristAbove = avgShoulderY - avgWristY
+   306→   306→    armScore = Math.min(100, Math.max(0, 30 + wristAbove * 400))
+   307→   307→  } else if (category === 'defense') {
+   308→   308→    const wristBelow = avgWristY - avgShoulderY
+   309→   309→    armScore = Math.min(100, Math.max(0, 30 + wristBelow * 300))
+   310→   310→  } else if (category === 'ball_handling' || category === 'pocket_ball') {
+   311→   311→    armScore = avgWristY > avgShoulderY ? 60 : 25
+   312→   312→  }
+   313→   313→
+   314→   314→  // ── 4. Movement quality (DOMINANT: 50% weight) (0-100, baseline 0) ──
+   315→   315→  const velocities = tracker.velocityHistory
+   316→   316→  let moveScore = 0
+   317→   317→  if (velocities.length > 3) {
+   318→   318→    const recent = velocities.slice(-10)
+   319→   319→    const avgSpeed = recent.reduce((a, b) => a + b, 0) / recent.length
+   320→   320→
+   321→   321→    if (avgSpeed < 0.001) {
+   322→   322→      moveScore = 0
+   323→   323→    } else if (avgSpeed < 0.002) {
+   324→   324→      moveScore = 15
+   325→   325→    } else if (avgSpeed < 0.008) {
+   326→   326→      moveScore = Math.min(95, 40 + (avgSpeed - 0.002) * 15000)
+   327→   327→    } else {
+   328→   328→      moveScore = Math.max(30, 95 - (avgSpeed - 0.008) * 5000)
+   329→   329→    }
+   330→   330→
+   331→   331→    if (recent.length > 5) {
+   332→   332→      const mean = recent.reduce((a, b) => a + b, 0) / recent.length
+   333→   333→      const variance =
+   334→   334→        recent.reduce((sum, v) => sum + (v - mean) ** 2, 0) / recent.length
+   335→   335→      const variancePenalty = Math.min(30, variance * 50000)
+   336→   336→      moveScore = Math.max(0, moveScore - variancePenalty)
+   337→   337→    }
+   338→   338→  }
+   339→   339→
+   340→   340→  const score: ScoreDetail = {
+   341→   341→    posture: postureScore,
+   342→   342→    stanceWidth: stanceScore,
+   343→   343→    armPosition: armScore,
+   344→   344→    movementQuality: moveScore,
+   345→   345→  }
+   346→   346→
+   347→   347→  // ── Feedback generation ──
+   348→   348→  let feedback = ''
+   349→   349→  const hipMidX = (lHip.x + rHip.x) / 2
+   350→   350→  const shoulderMidX = (lShoulder.x + rShoulder.x) / 2
+   351→   351→  const lean = hipMidX - shoulderMidX
+   352→   352→
+   353→   353→  if (velocities.length > 3) {
+   354→   354→    const recentSpeed = velocities.slice(-5).reduce((a, b) => a + b, 0) / 5
+   355→   355→    if (recentSpeed < 0.001) {
+   356→   356→      feedback = FEEDBACK_MESSAGES.tooSlow
+   357→   357→    }
+   358→   358→  }
+   359→   359→  if (!feedback && Math.abs(lean) > 0.04) {
+   360→   360→    feedback = FEEDBACK_MESSAGES.leanRight
+   361→   361→  }
+   362→   362→  if (!feedback && category === 'shooting' && avgWristY > avgShoulderY + 0.05) {
+   363→   363→    feedback = FEEDBACK_MESSAGES.armsLow
+   364→   364→  }
+   365→   365→  if (!feedback && ankleDist < 0.12 && category !== 'shooting') {
+   366→   366→    feedback = FEEDBACK_MESSAGES.narrowStance
+   367→   367→  }
+   368→   368→  if (!feedback && ankleDist > 0.5 && category !== 'finishing') {
+   369→   369→    feedback = FEEDBACK_MESSAGES.wideStance
+   370→   370→  }
+   371→   371→  if (!feedback && velocities.length > 5) {
+   372→   372→    const recentSpeed = velocities.slice(-3).reduce((a, b) => a + b, 0) / 3
+   373→   373→    if (recentSpeed > 0.003 && recentSpeed < 0.008) {
+   374→   374→      feedback = FEEDBACK_MESSAGES.goodSpeed
+   375→   375→    }
+   376→   376→  }
+   377→   377→  if (!feedback && postureScore > 80 && moveScore > 70) {
+   378→   378→    feedback = FEEDBACK_MESSAGES.goodPosture
+   379→   379→  }
+   380→   380→  if (!feedback && postureScore > 90 && moveScore > 80) {
+   381→   381→    feedback = FEEDBACK_MESSAGES.greatForm
+   382→   382→  }
+   383→   383→
+   384→   384→  return { score, feedback }
+   385→   385→}
+   386→   386→
+   387→   387→function detectRep(
+   388→   388→  landmarks: Landmark[],
+   389→   389→  category: string,
+   390→   390→  tracker: RepTracker,
+   391→   391→  now: number,
+   392→   392→): { rep: boolean; updatedTracker: RepTracker } {
+   393→   393→  const t = { ...tracker }
+   394→   394→  t.sampleCount++
+   395→   395→
+   396→   396→  let repDetected = false
+   397→   397→
+   398→   398→  const computeVelocity = (current: number, last: number): number =>
+   399→   399→    Math.abs(current - last)
+   400→   400→
+   401→   401→  switch (category) {
+   402→   402→    case 'pocket_ball':
+   403→   403→    case 'ball_handling': {
+   404→   404→      const wristY = (landmarks[15].y + landmarks[16].y) / 2
+   405→   405→      const velocity = computeVelocity(wristY, t.lastWristY)
+   406→   406→      t.velocityHistory.push(velocity)
+   407→   407→      if (t.velocityHistory.length > 20) t.velocityHistory.shift()
+   408→   408→
+   409→   409→      if (t.sampleCount > 5) {
+   410→   410→        if (t.direction === 'up' && wristY > t.lastWristY + 0.01) {
+   411→   411→          t.direction = 'down'
+   412→   412→        } else if (t.direction === 'down' && wristY < t.lastWristY - 0.01) {
+   413→   413→          t.direction = 'up'
+   414→   414→          if (now - t.lastRepTime > REP_DEBOUNCE_MS) {
+   415→   415→            repDetected = true
+   416→   416→            t.lastRepTime = now
+   417→   417→          }
+   418→   418→        }
+   419→   419→        if (t.direction === 'none') t.direction = wristY > t.lastWristY ? 'down' : 'up'
+   420→   420→      }
+   421→   421→      t.lastWristY = wristY
+   422→   422→      break
+   423→   423→    }
+   424→   424→    case 'shifty':
+   425→   425→    case 'speed_change': {
+   426→   426→      const hipX = (landmarks[23].x + landmarks[24].x) / 2
+   427→   427→      const velocity = computeVelocity(hipX, t.lastXPos)
+   428→   428→      t.velocityHistory.push(velocity)
+   429→   429→      if (t.velocityHistory.length > 20) t.velocityHistory.shift()
+   430→   430→
+   431→   431→      if (t.sampleCount > 5) {
+   432→   432→        if (t.direction === 'right' && hipX < t.lastXPos - 0.015) {
+   433→   433→          t.direction = 'left'
+   434→   434→        } else if (t.direction === 'left' && hipX > t.lastXPos + 0.015) {
+   435→   435→          t.direction = 'right'
+   436→   436→          if (now - t.lastRepTime > REP_DEBOUNCE_MS) {
+   437→   437→            repDetected = true
+   438→   438→            t.lastRepTime = now
+   439→   439→          }
+   440→   440→        }
+   441→   441→        if (t.direction === 'none') t.direction = hipX > t.lastXPos ? 'right' : 'left'
+   442→   442→      }
+   443→   443→      t.lastXPos = hipX
+   444→   444→      break
+   445→   445→    }
+   446→   446→    case 'defense': {
+   447→   447→      const hipX = (landmarks[23].x + landmarks[24].x) / 2
+   448→   448→      const velocity = computeVelocity(hipX, t.lastXPos)
+   449→   449→      t.velocityHistory.push(velocity)
+   450→   450→      if (t.velocityHistory.length > 20) t.velocityHistory.shift()
+   451→   451→
+   452→   452→      if (t.sampleCount > 5) {
+   453→   453→        if (t.direction === 'right' && hipX < t.lastXPos - 0.02) {
+   454→   454→          t.direction = 'left'
+   455→   455→        } else if (t.direction === 'left' && hipX > t.lastXPos + 0.02) {
+   456→   456→          t.direction = 'right'
+   457→   457→          if (now - t.lastRepTime > REP_DEBOUNCE_MS) {
+   458→   458→            repDetected = true
+   459→   459→            t.lastRepTime = now
+   460→   460→          }
+   461→   461→        }
+   462→   462→        if (t.direction === 'none') t.direction = hipX > t.lastXPos ? 'right' : 'left'
+   463→   463→      }
+   464→   464→      t.lastXPos = hipX
+   465→   465→      break
+   466→   466→    }
+   467→   467→    case 'shooting': {
+   468→   468→      const wristY = Math.min(landmarks[15].y, landmarks[16].y)
+   469→   469→      const velocity = computeVelocity(wristY, t.lastWristY)
+   470→   470→      t.velocityHistory.push(velocity)
+   471→   471→      if (t.velocityHistory.length > 20) t.velocityHistory.shift()
+   472→   472→
+   473→   473→      if (t.sampleCount > 5) {
+   474→   474→        if (t.direction === 'down' && wristY < t.lastWristY - 0.02) {
+   475→   475→          t.direction = 'up'
+   476→   476→        } else if (t.direction === 'up' && wristY > t.lastWristY + 0.02) {
+   477→   477→          t.direction = 'down'
+   478→   478→          if (now - t.lastRepTime > REP_DEBOUNCE_MS) {
+   479→   479→            repDetected = true
+   480→   480→            t.lastRepTime = now
+   481→   481→          }
+   482→   482→        }
+   483→   483→        if (t.direction === 'none') t.direction = wristY > t.lastWristY ? 'down' : 'up'
+   484→   484→      }
+   485→   485→      t.lastWristY = wristY
+   486→   486→      break
+   487→   487→    }
+   488→   488→    case 'footwork': {
+   489→   489→      const lAnkleX = landmarks[27].x
+   490→   490→      const rAnkleX = landmarks[28].x
+   491→   491→      const footShift = Math.abs(lAnkleX - t.lastAnkleLX) + Math.abs(rAnkleX - t.lastAnkleRX)
+   492→   492→      const velocity = footShift
+   493→   493→      t.velocityHistory.push(velocity)
+   494→   494→      if (t.velocityHistory.length > 20) t.velocityHistory.shift()
+   495→   495→
+   496→   496→      if (t.sampleCount > 5 && footShift > 0.03) {
+   497→   497→        if (now - t.lastRepTime > REP_DEBOUNCE_MS) {
+   498→   498→          repDetected = true
+   499→   499→          t.lastRepTime = now
+   500→   500→        }
+   501→   501→      }
+   502→   502→      t.lastAnkleLX = lAnkleX
+   503→   503→      t.lastAnkleRX = rAnkleX
+   504→   504→      break
+   505→   505→    }
+   506→   506→    case 'finishing': {
+   507→   507→      const hipY = (landmarks[23].y + landmarks[24].y) / 2
+   508→   508→      const velocity = computeVelocity(hipY, t.lastHipY)
+   509→   509→      t.velocityHistory.push(velocity)
+   510→   510→      if (t.velocityHistory.length > 20) t.velocityHistory.shift()
+   511→   511→
+   512→   512→      if (t.sampleCount > 5) {
+   513→   513→        if (t.direction === 'down' && hipY < t.lastHipY - 0.03) {
+   514→   514→          t.direction = 'up'
+   515→   515→        } else if (t.direction === 'up' && hipY > t.lastHipY + 0.02) {
+   516→   516→          t.direction = 'down'
+   517→   517→          if (now - t.lastRepTime > REP_DEBOUNCE_MS) {
+   518→   518→            repDetected = true
+   519→   519→            t.lastRepTime = now
+   520→   520→          }
+   521→   521→        }
+   522→   522→        if (t.direction === 'none') t.direction = hipY > t.lastHipY ? 'down' : 'up'
+   523→   523→      }
+   524→   524→      t.lastHipY = hipY
+   525→   525→      break
+   526→   526→    }
+   527→   527→    case 'conditioning': {
+   528→   528→      const hipX = (landmarks[23].x + landmarks[24].x) / 2
+   529→   529→      const hipY = (landmarks[23].y + landmarks[24].y) / 2
+   530→   530→      const dx = computeVelocity(hipX, t.lastXPos)
+   531→   531→      const dy = computeVelocity(hipY, t.lastYPos)
+   532→   532→      const speed = Math.sqrt(dx * dx + dy * dy)
+   533→   533→      t.totalMovement += speed
+   534→   534→
+   535→   535→      if (t.velocityHistory.length > 20) t.velocityHistory.shift()
+   536→   536→      t.velocityHistory.push(speed)
+   537→   537→
+   538→   538→      if (t.totalMovement > 0.5 && now - t.lastRepTime > REP_DEBOUNCE_MS * 2) {
+   539→   539→        repDetected = true
+   540→   540→        t.lastRepTime = now
+   541→   541→        t.totalMovement = 0
+   542→   542→      }
+   543→   543→      t.lastXPos = hipX
+   544→   544→      t.lastYPos = hipY
+   545→   545→      break
+   546→   546→    }
+   547→   547→  }
+   548→   548→
+   549→   549→  return { rep: repDetected, updatedTracker: t }
+   550→   550→}
+   551→   551→
+   552→   552→function drawSkeleton(
+   553→   553→  ctx: CanvasRenderingContext2D,
+   554→   554→  landmarks: Landmark[],
+   555→   555→  width: number,
+   556→   556→  height: number,
+   557→   557→) {
+   558→   558→  ctx.clearRect(0, 0, width, height)
+   559→   559→  if (!landmarks || landmarks.length < 33) return
+   560→   560→
+   561→   561→  ctx.strokeStyle = LANDMARK_COLOR
+   562→   562→  ctx.lineWidth = CONNECTION_WIDTH
+   563→   563→  ctx.lineCap = 'round'
+   564→   564→
+   565→   565→  for (const [i, j] of POSE_CONNECTIONS) {
+   566→   566→    const a = landmarks[i]
+   567→   567→    const b = landmarks[j]
+   568→   568→    if (!a || !b) continue
+   569→   569→    if ((a.visibility ?? 0) < 0.5 || (b.visibility ?? 0) < 0.5) continue
+   570→   570→
+   571→   571→    const ax = (1 - a.x) * width
+   572→   572→    const ay = a.y * height
+   573→   573→    const bx = (1 - b.x) * width
+   574→   574→    const by = b.y * height
+   575→   575→
+   576→   576→    ctx.beginPath()
+   577→   577→    ctx.moveTo(ax, ay)
+   578→   578→    ctx.lineTo(bx, by)
+   579→   579→    ctx.stroke()
+   580→   580→  }
+   581→   581→
+   582→   582→  for (let i = 0; i < landmarks.length; i++) {
+   583→   583→    const lm = landmarks[i]
+   584→   584→    if (!lm) continue
+   585→   585→    if ((lm.visibility ?? 0) < 0.5) continue
+   586→   586→
+   587→   587→    const x = (1 - lm.x) * width
+   588→   588→    const y = lm.y * height
+   589→   589→
+   590→   590→    ctx.beginPath()
+   591→   591→    ctx.arc(x, y, LANDMARK_RADIUS, 0, Math.PI * 2)
+   592→   592→    ctx.fillStyle = LANDMARK_COLOR
+   593→   593→    ctx.fill()
+   594→   594→    ctx.strokeStyle = '#ffffff'
+   595→   595→    ctx.lineWidth = 1.5
+   596→   596→    ctx.stroke()
+   597→   597→  }
+   598→   598→}
+   599→   599→
+   600→   600→// ─── Animation Variants ─────────────────────────────────────────────────────
+   601→   601→
+   602→   602→const overlayVariants = {
+   603→   603→  hidden: { opacity: 0, scale: 0.95 },
+   604→   604→  visible: {
+   605→   605→    opacity: 1,
+   606→   606→    scale: 1,
+   607→   607→    transition: { duration: 0.3, ease: 'easeOut' as const },
+   608→   608→  },
+   609→   609→  exit: {
+   610→   610→    opacity: 0,
+   611→   611→    scale: 0.95,
+   612→   612→    transition: { duration: 0.2 },
+   613→   613→  },
+   614→   614→}
+   615→   615→
+   616→   616→const countPulse = {
+   617→   617→  initial: { scale: 0.5, opacity: 0 },
+   618→   618→  animate: {
+   619→   619→    scale: [0.5, 1.2, 1],
+   620→   620→    opacity: [0, 1, 1],
+   621→   621→    transition: { duration: 0.6, ease: 'easeOut' as const },
+   622→   622→  },
+   623→   623→  exit: { scale: 1.5, opacity: 0, transition: { duration: 0.3 } },
+   624→   624→}
+   625→   625→
+   626→   626→// Reduced-motion variants (instant, no scale)
+   627→   627→const countPulseReduced = {
+   628→   628→  initial: { scale: 1, opacity: 0 },
+   629→   629→  animate: {
+   630→   630→    scale: 1,
+   631→   631→    opacity: 1,
+   632→   632→    transition: { duration: 0.05 },
+   633→   633→  },
+   634→   634→  exit: { opacity: 0, transition: { duration: 0.05 } },
+   635→   635→}
+   636→   636→
+   637→   637→// ─── Sub-components ──────────────────────────────────────────────────────────
+   638→   638→
+   639→   639→/** Semi-circular gauge for live score display. */
+   640→   640→function ScoreGauge({ score, size = 80 }: { score: number; size?: number }) {
+   641→   641→  const strokeWidth = 6
+   642→   642→  const radius = (size - strokeWidth) / 2
+   643→   643→  const center = size / 2
+   644→   644→  const circumference = Math.PI * radius // semi-circle
+   645→   645→
+   646→   646→  // Score as a fraction of the semi-circle (0 = left, 1 = right)
+   647→   647→  const progress = Math.min(1, Math.max(0, score / 100))
+   648→   648→  const dashOffset = circumference * (1 - progress)
+   649→   649→
+   650→   650→  const color = getGaugeColor(score)
+   651→   651→  const trackColor = getGaugeTrackColor(score)
+   652→   652→
+   653→   653→  return (
+   654→   654→    <svg width={size} height={size / 2 + 10} viewBox={`0 0 ${size} ${size / 2 + 10}`}>
+   655→   655→      {/* Track (background arc) */}
+   656→   656→      <path
+   657→   657→        d={`M ${strokeWidth / 2} ${center} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${center}`}
+   658→   658→        fill="none"
+   659→   659→        stroke={trackColor}
+   660→   660→        strokeWidth={strokeWidth}
+   661→   661→        strokeLinecap="round"
+   662→   662→      />
+   663→   663→      {/* Progress arc */}
+   664→   664→      <motion.path
+   665→   665→        d={`M ${strokeWidth / 2} ${center} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${center}`}
+   666→   666→        fill="none"
+   667→   667→        stroke={color}
+   668→   668→        strokeWidth={strokeWidth}
+   669→   669→        strokeLinecap="round"
+   670→   670→        strokeDasharray={circumference}
+   671→   671→        initial={{ strokeDashoffset: circumference }}
+   672→   672→        animate={{ strokeDashoffset: dashOffset }}
+   673→   673→        transition={{ duration: 0.5, ease: 'easeOut' as const }}
+   674→   674→      />
+   675→   675→      {/* Score text */}
+   676→   676→      <text
+   677→   677→        x={center}
+   678→   678→        y={center - 4}
+   679→   679→        textAnchor="middle"
+   680→   680→        dominantBaseline="middle"
+   681→   681→        className="fill-current"
+   682→   682→        style={{ fontSize: '18px', fontWeight: 900, color }}
+   683→   683→      >
+   684→   684→        {score}
+   685→   685→      </text>
+   686→   686→      <text
+   687→   687→        x={center}
+   688→   688→        y={center + 12}
+   689→   689→        textAnchor="middle"
+   690→   690→        dominantBaseline="middle"
+   691→   691→        className="fill-white/40"
+   692→   692→        style={{ fontSize: '8px', fontWeight: 600 }}
+   693→   693→      >
+   694→   694→        SCORE
+   695→   695→      </text>
+   696→   696→    </svg>
+   697→   697→  )
+   698→   698→}
+   699→   699→
+   700→   700→/** Circular progress timer for the workout duration. */
+   701→   701→function CircularTimer({
+   702→   702→  remaining,
+   703→   703→  total,
+   704→   704→  size = 72,
+   705→   705→}: {
+   706→   706→  remaining: number
+   707→   707→  total: number
+   708→   708→  size?: number
+   709→   709→}) {
+   710→   710→  const strokeWidth = 4
+   711→   711→  const radius = (size - strokeWidth) / 2
+   712→   712→  const center = size / 2
+   713→   713→  const circumference = 2 * Math.PI * radius
+   714→   714→
+   715→   715→  const progress = total > 0 ? remaining / total : 0
+   716→   716→  const dashOffset = circumference * (1 - progress)
+   717→   717→
+   718→   718→  const isUrgent = remaining <= 10
+   719→   719→  const color = isUrgent ? '#f87171' : '#ffffff'
+   720→   720→
+   721→   721→  return (
+   722→   722→    <div className="relative" style={{ width: size, height: size }}>
+   723→   723→      <svg
+   724→   724→        width={size}
+   725→   725→        height={size}
+   726→   726→        viewBox={`0 0 ${size} ${size}`}
+   727→   727→        className="-rotate-90"
+   728→   728→      >
+   729→   729→        {/* Track */}
+   730→   730→        <circle
+   731→   731→          cx={center}
+   732→   732→          cy={center}
+   733→   733→          r={radius}
+   734→   734→          fill="none"
+   735→   735→          stroke="rgba(255,255,255,0.15)"
+   736→   736→          strokeWidth={strokeWidth}
+   737→   737→        />
+   738→   738→        {/* Progress */}
+   739→   739→        <motion.circle
+   740→   740→          cx={center}
+   741→   741→          cy={center}
+   742→   742→          r={radius}
+   743→   743→          fill="none"
+   744→   744→          stroke={color}
+   745→   745→          strokeWidth={strokeWidth}
+   746→   746→          strokeLinecap="round"
+   747→   747→          strokeDasharray={circumference}
+   748→   748→          animate={{ strokeDashoffset: dashOffset }}
+   749→   749→          transition={{ duration: 0.5, ease: 'easeOut' as const }}
+   750→   750→        />
+   751→   751→      </svg>
+   752→   752→      {/* Time text */}
+   753→   753→      <div className="absolute inset-0 flex items-center justify-center">
+   754→   754→        <span
+   755→   755→          className={`font-mono text-sm font-bold tabular-nums ${isUrgent ? 'text-red-400' : 'text-white'}`}
+   756→   756→        >
+   757→   757→          {formatTime(remaining)}
+   758→   758→        </span>
+   759→   759→      </div>
+   760→   760→    </div>
+   761→   761→  )
+   762→   762→}
+   763→   763→
+   764→   764→/** Floating +1 animation for rep detection. */
+   765→   765→function FloatingRep() {
+   766→   766→  return (
+   767→   767→    <motion.div
+   768→   768→      initial={{ opacity: 1, y: 0, scale: 1 }}
+   769→   769→      animate={{ opacity: 0, y: -60, scale: 1.3 }}
+   770→   770→      exit={{ opacity: 0 }}
+   771→   771→      transition={{ duration: 0.8, ease: 'easeOut' as const }}
+   772→   772→      className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 pointer-events-none"
+   773→   773→    >
+   774→   774→      <span className="text-2xl font-black text-emerald-400 drop-shadow-lg">+1</span>
+   775→   775→    </motion.div>
+   776→   776→  )
+   777→   777→}
+   778→   778→
+   779→   779→// ─── Component ───────────────────────────────────────────────────────────────
+   780→   780→
+   781→   781→export default function CameraWorkoutScreen() {
+   782→   782→  const { selectedDrillId, goBack, navigate, planDrillQueue, planCurrentIndex, planResults, advancePlanDrill, setWorkoutResult, clearPlanExecution, selectDrill } = useAppStore()
+   783→   783→  const isPlanMode = planDrillQueue.length > 0
+   784→   784→  const queryClient = useQueryClient()
+   785→   785→
+   786→   786→  // Check for reduced-motion preference
+   787→   787→  const prefersReducedMotion = useReducedMotion() ?? false
+   788→   788→
+   789→   789→  // ── Refs ──────────────────────────────────────────────────────────────
+   790→   790→  const videoRef = useRef<HTMLVideoElement>(null)
+   791→   791→  const canvasRef = useRef<HTMLCanvasElement>(null)
+   792→   792→  const captureCanvasRef = useRef<HTMLCanvasElement | null>(null)
+   793→   793→  const streamRef = useRef<MediaStream | null>(null)
+   794→   794→  const poseLandmarkerRef = useRef<unknown>(null)
+   795→   795→  const rafRef = useRef<number>(0)
+   796→   796→  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+   797→   797→  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
+   798→   798→  const restTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+   799→   799→  const restPulseTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+   800→   800→  const repTrackerRef = useRef<RepTracker>(createRepTracker())
+   801→   801→  const scoresRef = useRef<ScoreDetail[]>([])
+   802→   802→  const startTimeRef = useRef<number>(0)
+   803→   803→  const pausedAtRef = useRef<number>(0)
+   804→   804→  const pauseAccumRef = useRef<number>(0)
+   805→   805→  const aiCooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+   806→   806→  const phaseRef = useRef<WorkoutPhase>('loading')
+   807→   807→  const halfTimeFiredRef = useRef(false)
+   808→   808→  const audioInitRef = useRef(false)
+   809→   809→  const totalRepsAcrossSetsRef = useRef(0)
+   810→   810→  const totalScoreAccumRef = useRef<ScoreDetail[]>([])
+   811→   811→
+   812→   812→  // ── State ─────────────────────────────────────────────────────────────
+   813→   813→  const [phase, setPhase] = useState<WorkoutPhase>('loading')
+   814→   814→  const [isModelLoaded, setIsModelLoaded] = useState(false)
+   815→   815→  const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS)
+   816→   816→  const [showReady, setShowReady] = useState(false)
+   817→   817→  const [timeRemaining, setTimeRemaining] = useState(0)
+   818→   818→  const [reps, setReps] = useState(0)
+   819→   819→  const [currentScore, setCurrentScore] = useState(0)
+   820→   820→  const [feedback, setFeedback] = useState('')
+   821→   821→  const [cameraError, setCameraError] = useState('')
+   822→   822→  const [isMuted, setIsMuted] = useState(true)
+   823→   823→  const [elapsedAtEnd, setElapsedAtEnd] = useState(0)
+   824→   824→  const [finalScore, setFinalScore] = useState(0)
+   825→   825→
+   826→   826→  // Rest / set tracking
+   827→   827→  const [currentSet, setCurrentSet] = useState(1)
+   828→   828→  const [totalSets, setTotalSets] = useState(DEFAULT_SETS)
+   829→   829→  const [restDuration, setRestDuration] = useState(DEFAULT_REST_SEC)
+   830→   830→  const [restRemaining, setRestRemaining] = useState(DEFAULT_REST_SEC)
+   831→   831→
+   832→   832→  // Rep animation
+   833→   833→  const [repFloatKey, setRepFloatKey] = useState(0)
+   834→   834→
+   835→   835→  // AI form check state
+   836→   836→  const [aiLoading, setAiLoading] = useState(false)
+   837→   837→  const [aiCooldownRemaining, setAiCooldownRemaining] = useState(0)
+   838→   838→  const [aiResult, setAiResult] = useState<AIFormCheckResult | null>(null)
+   839→   839→  const [aiError, setAiError] = useState('')
+   840→   840→
+   841→   841→  // Keep phaseRef in sync
+   842→   842→  useEffect(() => {
+   843→   843→    phaseRef.current = phase
+   844→   844→  }, [phase])
+   845→   845→
+   846→   846→  // ── Fetch drill ───────────────────────────────────────────────────────
+   847→   847→  const { data, isLoading: isDrillLoading } = useQuery({
+   848→   848→    queryKey: ['drills'],
+   849→   849→    queryFn: () => apiFetch('/api/drills'),
+   850→   850→  })
+   851→   851→
+   852→   852→  const drill: Drill | undefined = data?.drills?.find(
+   853→   853→    (d: { id: string }) => d.id === selectedDrillId,
+   854→   854→  )
+   855→   855→
+   856→   856→  const totalDuration = drill?.durationSec ?? 60
+   857→   857→
+   858→   858→  // ── Save session mutation ─────────────────────────────────────────────
+   859→   859→  const saveMutation = useMutation({
+   860→   860→    mutationFn: (payload: {
+   861→   861→      drillId: string
+   862→   862→      reps: number
+   863→   863→      score: number
+   864→   864→      durationSec: number
+   865→   865→    }) =>
+   866→   866→      apiFetch('/api/sessions', {
+   867→   867→        method: 'POST',
+   868→   868→        headers: { 'Content-Type': 'application/json' },
+   869→   869→        body: JSON.stringify(payload),
+   870→   870→      }),
+   871→   871→    onSuccess: () => {
+   872→   872→      queryClient.invalidateQueries({ queryKey: ['sessions'] })
+   873→   873→      queryClient.invalidateQueries({ queryKey: ['stats'] })
+   874→   874→      toast.success('Session sauvegardée! 🎉', {
+   875→   875→        description: `${reps} répétitions enregistrées`,
+   876→   876→      })
+   877→   877→    },
+   878→   878→    onError: () => {
+   879→   879→      toast.error('Erreur de sauvegarde', {
+   880→   880→        description: 'Impossible de sauvegarder la session',
+   881→   881→      })
+   882→   882→    },
+   883→   883→  })
+   884→   884→
+   885→   885→  // ── Audio init on first interaction ──────────────────────────────────
+   886→   886→  const ensureAudioInit = useCallback(() => {
+   887→   887→    if (!audioInitRef.current) {
+   888→   888→      audioInitRef.current = true
+   889→   889→      initAudio()
+   890→   890→      setAudioMuted(isMuted)
+   891→   891→    }
+   892→   892→  }, [isMuted])
+   893→   893→
+   894→   894→  // Sync mute state to audio engine
+   895→   895→  useEffect(() => {
+   896→   896→    if (audioInitRef.current) {
+   897→   897→      setAudioMuted(isMuted)
+   898→   898→    }
+   899→   899→  }, [isMuted])
+   900→   900→
+   901→   901→  // ── Load MediaPipe ────────────────────────────────────────────────────
+   902→   902→  useEffect(() => {
+   903→   903→    let cancelled = false
+   904→   904→
+   905→   905→    async function initMediaPipe() {
+   906→   906→      try {
+   907→   907→        const vision = await loadMediaPipe()
+   908→   908→        if (cancelled) return
+   909→   909→
+   910→   910→        const { PoseLandmarker, FilesetResolver } = vision
+   911→   911→
+   912→   912→        const filesetResolver = await FilesetResolver.forVisionTasks(
+   913→   913→          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm',
+   914→   914→        )
+   915→   915→        if (cancelled) return
+   916→   916→
+   917→   917→        poseLandmarkerRef.current = await PoseLandmarker.createFromOptions(
+   918→   918→          filesetResolver,
+   919→   919→          {
+   920→   920→            baseOptions: {
+   921→   921→              modelAssetPath:
+   922→   922→                'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
+   923→   923→              delegate: 'GPU',
+   924→   924→            },
+   925→   925→            runningMode: 'VIDEO',
+   926→   926→            numPoses: 1,
+   927→   927→          },
+   928→   928→        )
+   929→   929→
+   930→   930→        if (!cancelled) {
+   931→   931→          setIsModelLoaded(true)
+   932→   932→        }
+   933→   933→      } catch (err) {
+   934→   934→        if (!cancelled) {
+   935→   935→          console.error('MediaPipe failed to load:', err)
+   936→   936→          setCameraError(
+   937→   937→            'Impossible de charger le modèle de détection de pose. Vérifiez votre connexion internet et réessayez.',
+   938→   938→          )
+   939→   939→          setPhase('error')
+   940→   940→        }
+   941→   941→      }
+   942→   942→    }
+   943→   943→
+   944→   944→    initMediaPipe()
+   945→   945→
+   946→   946→    return () => {
+   947→   947→      cancelled = true
+   948→   948→    }
+   949→   949→  }, [])
+   950→   950→
+   951→   951→  // ── Camera setup ──────────────────────────────────────────────────────
+   952→   952→  const setupCamera = useCallback(async () => {
+   953→   953→    setCameraError('')
+   954→   954→    try {
+   955→   955→      const stream = await navigator.mediaDevices.getUserMedia({
+   956→   956→        video: {
+   957→   957→          facingMode: 'user',
+   958→   958→          width: { ideal: 640 },
+   959→   959→          height: { ideal: 480 },
+   960→   960→        },
+   961→   961→        audio: false,
+   962→   962→      })
+   963→   963→      streamRef.current = stream
+   964→   964→
+   965→   965→      const video = videoRef.current
+   966→   966→      if (!video) {
+   967→   967→        stream.getTracks().forEach((t) => t.stop())
+   968→   968→        setCameraError('Élément vidéo introuvable.')
+   969→   969→        setPhase('error')
+   970→   970→        return
+   971→   971→      }
+   972→   972→
+   973→   973→      video.srcObject = stream
+   974→   974→      video.setAttribute('playsinline', '')
+   975→   975→      video.muted = true
+   976→   976→
+   977→   977→      await new Promise<void>((resolve, reject) => {
+   978→   978→        video.onloadedmetadata = () => resolve()
+   979→   979→        video.onerror = () => reject(new Error('Erreur de chargement vidéo'))
+   980→   980→        setTimeout(() => reject(new Error('Timeout vidéo')), 10000)
+   981→   981→      })
+   982→   982→
+   983→   983→      try {
+   984→   984→        await video.play()
+   985→   985→      } catch (playErr) {
+   986→   986→        console.warn('video.play() failed, retrying...', playErr)
+   987→   987→        await new Promise((r) => setTimeout(r, 300))
+   988→   988→        try {
+   989→   989→          await video.play()
+   990→   990→        } catch {
+   991→   991→          setCameraError('Impossible de démarrer la vidéo. Réessayez.')
+   992→   992→          stream.getTracks().forEach((t) => t.stop())
+   993→   993→          setPhase('error')
+   994→   994→          return
+   995→   995→        }
+   996→   996→      }
+   997→   997→
+   998→   998→      // Show "PRÊT?" first, then start countdown
+   999→   999→      setShowReady(true)
+  1000→  1000→      ensureAudioInit()
+  1001→  1001→      playSound('countdown-tick') // Audio cue for ready
+  1002→  1002→      setTimeout(() => {
+  1003→  1003→        setShowReady(false)
+  1004→  1004→        setPhase('countdown')
+  1005→  1005→        setCountdown(COUNTDOWN_SECONDS)
+  1006→  1006→      }, COUNTDOWN_READY_MS)
+  1007→  1007→    } catch (err) {
+  1008→  1008→      const msg =
+  1009→  1009→        err instanceof DOMException && err.name === 'NotAllowedError'
+  1010→  1010→          ? 'Caméra non autorisée. Veuillez autoriser l\'accès à la caméra dans les paramètres de votre navigateur.'
+  1011→  1011→          : err instanceof DOMException && err.name === 'NotFoundError'
+  1012→  1012→            ? 'Aucune caméra détectée sur cet appareil.'
+  1013→  1013→            : err instanceof DOMException && err.name === 'NotReadableError'
+  1014→  1014→              ? 'La caméra est déjà utilisée par une autre application.'
+  1015→  1015→              : 'Impossible d\'accéder à la caméra. Vérifiez que votre appareil dispose d\'une caméra.'
+  1016→  1016→      setCameraError(msg)
+  1017→  1017→      setPhase('error')
+  1018→  1018→    }
+  1019→  1019→  }, [ensureAudioInit])
+  1020→  1020→
+  1021→  1021→  // ── Start camera as soon as drill is loaded (don't wait for MediaPipe) ─
+  1022→  1022→  const cameraStartedRef = useRef(false)
+  1023→  1023→  useEffect(() => {
+  1024→  1024→    if (!isDrillLoading && !cameraStartedRef.current) {
+  1025→  1025→      cameraStartedRef.current = true
+  1026→  1026→      setupCamera()
+  1027→  1027→    }
+  1028→  1028→  }, [isDrillLoading, setupCamera])
+  1029→  1029→
+  1030→  1030→  // ── Countdown logic (3-2-1 with audio cues) ──────────────────────────
+  1031→  1031→  useEffect(() => {
+  1032→  1032→    if (phase !== 'countdown') return
+  1033→  1033→
+  1034→  1034→    // Play tick for the initial countdown value
+  1035→  1035→    if (countdown === COUNTDOWN_SECONDS) {
+  1036→  1036→      playSound('countdown-tick')
+  1037→  1037→    }
+  1038→  1038→
+  1039→  1039→    countdownRef.current = setInterval(() => {
+  1040→  1040→      setCountdown((prev) => {
+  1041→  1041→        if (prev <= 1) {
+  1042→  1042→          if (countdownRef.current) clearInterval(countdownRef.current)
+  1043→  1043→          // Play GO sound
+  1044→  1044→          playSound('countdown-go')
+  1045→  1045→          // Brief delay to let the GO sound play, then start
+  1046→  1046→          setTimeout(() => {
+  1047→  1047→            setPhase('active')
+  1048→  1048→            setTimeRemaining(totalDuration)
+  1049→  1049→            startTimeRef.current = Date.now()
+  1050→  1050→            pauseAccumRef.current = 0
+  1051→  1051→            halfTimeFiredRef.current = false
+  1052→  1052→          }, 300)
+  1053→  1053→          return 0
+  1054→  1054→        }
+  1055→  1055→        // Play tick for next number
+  1056→  1056→        playSound('countdown-tick')
+  1057→  1057→        return prev - 1
+  1058→  1058→      })
+  1059→  1059→    }, 1000)
+  1060→  1060→
+  1061→  1061→    return () => {
+  1062→  1062→      if (countdownRef.current) clearInterval(countdownRef.current)
+  1063→  1063→    }
+  1064→  1064→  }, [phase, totalDuration, countdown])
+  1065→  1065→
+  1066→  1066→  // ── Timer logic (active phase) with half-time warning ────────────────
+  1067→  1067→  useEffect(() => {
+  1068→  1068→    if (phase !== 'active') return
+  1069→  1069→
+  1070→  1070→    timerRef.current = setInterval(() => {
+  1071→  1071→      setTimeRemaining((prev) => {
+  1072→  1072→        if (prev <= 1) {
+  1073→  1073→          if (timerRef.current) clearInterval(timerRef.current)
+  1074→  1074→          // Play time-up sound
+  1075→  1075→          playSound('time-up')
+  1076→  1076→          // Small delay then end
+  1077→  1077→          setTimeout(() => handleWorkoutEndRef.current(), 500)
+  1078→  1078→          return 0
+  1079→  1079→        }
+  1080→  1080→
+  1081→  1081→        // Half-time warning
+  1082→  1082→        const newRemaining = prev - 1
+  1083→  1083→        const elapsed = totalDuration - newRemaining
+  1084→  1084→        if (
+  1085→  1085→          !halfTimeFiredRef.current &&
+  1086→  1086→          elapsed >= totalDuration * HALF_WARNING_THRESHOLD
+  1087→  1087→        ) {
+  1088→  1088→          halfTimeFiredRef.current = true
+  1089→  1089→          playSound('half-warning')
+  1090→  1090→        }
+  1091→  1091→
+  1092→  1092→        return newRemaining
+  1093→  1093→      })
+  1094→  1094→    }, 1000)
+  1095→  1095→
+  1096→  1096→    return () => {
+  1097→  1097→      if (timerRef.current) clearInterval(timerRef.current)
+  1098→  1098→    }
+  1099→  1099→  }, [phase, totalDuration])
+  1100→  1100→
+  1101→  1101→  // ── Rest timer logic ─────────────────────────────────────────────────
+  1102→  1102→  useEffect(() => {
+  1103→  1103→    if (phase !== 'rest') return
+  1104→  1104→
+  1105→  1105→    // Play rest pulse every 2 seconds
+  1106→  1106→    playSound('rest-pulse')
+  1107→  1107→    restPulseTimerRef.current = setInterval(() => {
+  1108→  1108→      playSound('rest-pulse')
+  1109→  1109→    }, 2000)
+  1110→  1110→
+  1111→  1111→    restTimerRef.current = setInterval(() => {
+  1112→  1112→      setRestRemaining((prev) => {
+  1113→  1113→        if (prev <= 1) {
+  1114→  1114→          if (restTimerRef.current) clearInterval(restTimerRef.current)
+  1115→  1115→          if (restPulseTimerRef.current) clearInterval(restPulseTimerRef.current)
+  1116→  1116→          // Start next set
+  1117→  1117→          startNextSetRef.current()
+  1118→  1118→          return 0
+  1119→  1119→        }
+  1120→  1120→        return prev - 1
+  1121→  1121→      })
+  1122→  1122→    }, 1000)
+  1123→  1123→
+  1124→  1124→    return () => {
+  1125→  1125→      if (restTimerRef.current) clearInterval(restTimerRef.current)
+  1126→  1126→      if (restPulseTimerRef.current) clearInterval(restPulseTimerRef.current)
+  1127→  1127→    }
+  1128→  1128→  }, [phase])
+  1129→  1129→
+  1130→  1130→  // ── Detection loop ────────────────────────────────────────────────────
+  1131→  1131→  useEffect(() => {
+  1132→  1132→    if (phase !== 'active') return
+  1133→  1133→    if (!videoRef.current || !canvasRef.current || !poseLandmarkerRef.current) return
+  1134→  1134→
+  1135→  1135→    const video = videoRef.current
+  1136→  1136→    const canvas = canvasRef.current
+  1137→  1137→    const ctx = canvas.getContext('2d')
+  1138→  1138→    if (!ctx) return
+  1139→  1139→
+  1140→  1140→    const category = drill?.category ?? 'ball_handling'
+  1141→  1141→    let lastFeedbackUpdate = 0
+  1142→  1142→
+  1143→  1143→    function detect() {
+  1144→  1144→      if (phaseRef.current !== 'active') return
+  1145→  1145→
+  1146→  1146→      const poseLandmarker = poseLandmarkerRef.current as {
+  1147→  1147→        detect: (input: HTMLVideoElement, timestamp: number) => {
+  1148→  1148→          landmarks: Landmark[][]
+  1149→  1149→        }
+  1150→  1150→      }
+  1151→  1151→
+  1152→  1152→      if (video.readyState >= 2) {
+  1153→  1153→        const timestamp = performance.now()
+  1154→  1154→        let results: { landmarks: Landmark[][] } = { landmarks: [] }
+  1155→  1155→
+  1156→  1156→        try {
+  1157→  1157→          results = poseLandmarker.detect(video, timestamp)
+  1158→  1158→        } catch {
+  1159→  1159→          // Silently retry on detection errors
+  1160→  1160→        }
+  1161→  1161→
+  1162→  1162→        const detectedLandmarks = results.landmarks?.[0]
+  1163→  1163→
+  1164→  1164→        if (detectedLandmarks && detectedLandmarks.length >= 33) {
+  1165→  1165→          drawSkeleton(ctx!, detectedLandmarks, canvas.width, canvas.height)
+  1166→  1166→
+  1167→  1167→          const { rep, updatedTracker } = detectRep(
+  1168→  1168→            detectedLandmarks,
+  1169→  1169→            category,
+  1170→  1170→            repTrackerRef.current,
+  1171→  1171→            Date.now(),
+  1172→  1172→          )
+  1173→  1173→          repTrackerRef.current = updatedTracker
+  1174→  1174→
+  1175→  1175→          if (rep) {
+  1176→  1176→            setReps((prev) => prev + 1)
+  1177→  1177→            // Trigger +1 floating animation
+  1178→  1178→            setRepFloatKey((k) => k + 1)
+  1179→  1179→            // Play rep ding
+  1180→  1180→            playSound('rep-ding')
+  1181→  1181→          }
+  1182→  1182→
+  1183→  1183→          if (updatedTracker.sampleCount % 3 === 0) {
+  1184→  1184→            const { score, feedback: fb } = analyzeForm(
+  1185→  1185→              detectedLandmarks,
+  1186→  1186→              category,
+  1187→  1187→              updatedTracker,
+  1188→  1188→            )
+  1189→  1189→            scoresRef.current.push(score)
+  1190→  1190→            if (scoresRef.current.length > 30) {
+  1191→  1191→              scoresRef.current = scoresRef.current.slice(-30)
+  1192→  1192→            }
+  1193→  1193→            setCurrentScore(computeScore(scoresRef.current))
+  1194→  1194→
+  1195→  1195→            const now = Date.now()
+  1196→  1196→            if (now - lastFeedbackUpdate > 2000 && fb) {
+  1197→  1197→              setFeedback(fb)
+  1198→  1198→              lastFeedbackUpdate = now
+  1199→  1199→            }
+  1200→  1200→
+  1201→  1201→            if (rep && updatedTracker.sampleCount > 15) {
+  1202→  1202→              setFeedback(FEEDBACK_MESSAGES.keepGoing)
+  1203→  1203→            }
+  1204→  1204→          }
+  1205→  1205→        }
+  1206→  1206→      }
+  1207→  1207→
+  1208→  1208→      rafRef.current = requestAnimationFrame(detect)
+  1209→  1209→    }
+  1210→  1210→
+  1211→  1211→    rafRef.current = requestAnimationFrame(detect)
+  1212→  1212→
+  1213→  1213→    return () => {
+  1214→  1214→      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+  1215→  1215→    }
+  1216→  1216→  }, [phase, drill?.category])
+  1217→  1217→
+  1218→  1218→  // ── Start next set (after rest) ──────────────────────────────────────
+  1219→  1219→  const startNextSet = useCallback(() => {
+  1220→  1220→    setCurrentSet((prev) => prev + 1)
+  1221→  1221→    setReps(0)
+  1222→  1222→    setCurrentScore(0)
+  1223→  1223→    setFeedback('')
+  1224→  1224→    setRepFloatKey(0)
+  1225→  1225→    repTrackerRef.current = createRepTracker()
+  1226→  1226→    scoresRef.current = []
+  1227→  1227→    halfTimeFiredRef.current = false
+  1228→  1228→
+  1229→  1229→    // Start countdown for next set
+  1230→  1230→    setShowReady(false)
+  1231→  1231→    setPhase('countdown')
+  1232→  1232→    setCountdown(COUNTDOWN_SECONDS)
+  1233→  1233→  }, [])
+  1234→  1234→
+  1235→  1235→  // ── Handle workout end (single set or final set) ─────────────────────
+  1236→  1236→  const handleWorkoutEnd = useCallback(() => {
+  1237→  1237→    if (phaseRef.current === 'completed') return
+  1238→  1238→
+  1239→  1239→    if (timerRef.current) clearInterval(timerRef.current)
+  1240→  1240→    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+  1241→  1241→    if (aiCooldownTimerRef.current) clearInterval(aiCooldownTimerRef.current)
+  1242→  1242→
+  1243→  1243→    const elapsedSec = Math.round(
+  1244→  1244→      (Date.now() - startTimeRef.current - pauseAccumRef.current) / 1000,
+  1245→  1245→    )
+  1246→  1246→    setElapsedAtEnd(Math.min(elapsedSec, totalDuration))
+  1247→  1247→
+  1248→  1248→    // Accumulate across sets
+  1249→  1249→    totalRepsAcrossSetsRef.current += reps
+  1250→  1250→    totalScoreAccumRef.current.push(...scoresRef.current)
+  1251→  1251→
+  1252→  1252→    // If more sets remain, enter rest phase instead of completed
+  1253→  1253→    if (currentSet < totalSets) {
+  1254→  1254→      setPhase('rest')
+  1255→  1255→      setRestRemaining(restDuration)
+  1256→  1256→      return
+  1257→  1257→    }
+  1258→  1258→
+  1259→  1259→    const score = computeScore(totalScoreAccumRef.current)
+  1260→  1260→    setFinalScore(score)
+  1261→  1261→    setPhase('completed')
+  1262→  1262→  }, [totalDuration, currentSet, totalSets, reps, restDuration])
+  1263→  1263→
+  1264→  1264→  // ── Rest controls ────────────────────────────────────────────────────
+  1265→  1265→  const handleExtendRest = useCallback(() => {
+  1266→  1266→    setRestRemaining((prev) => prev + 15)
+  1267→  1267→  }, [])
+  1268→  1268→
+  1269→  1269→  const handleSkipRest = useCallback(() => {
+  1270→  1270→    if (restTimerRef.current) clearInterval(restTimerRef.current)
+  1271→  1271→    if (restPulseTimerRef.current) clearInterval(restPulseTimerRef.current)
+  1272→  1272→    startNextSet()
+  1273→  1273→  }, [startNextSet])
+  1274→  1274→
+  1275→  1275→  // Refs for use in timer intervals (avoids stale closures)
+  1276→  1276→  const handleWorkoutEndRef = useRef(handleWorkoutEnd)
+  1277→  1277→  handleWorkoutEndRef.current = handleWorkoutEnd
+  1278→  1278→  const startNextSetRef = useRef(startNextSet)
+  1279→  1279→  startNextSetRef.current = startNextSet
+  1280→  1280→
+  1281→  1281→  // ── Cleanup on unmount ────────────────────────────────────────────────
+  1282→  1282→  useEffect(() => {
+  1283→  1283→    return () => {
+  1284→  1284→      if (streamRef.current) {
+  1285→  1285→        streamRef.current.getTracks().forEach((track) => track.stop())
+  1286→  1286→      }
+  1287→  1287→      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+  1288→  1288→      if (timerRef.current) clearInterval(timerRef.current)
+  1289→  1289→      if (countdownRef.current) clearInterval(countdownRef.current)
+  1290→  1290→      if (restTimerRef.current) clearInterval(restTimerRef.current)
+  1291→  1291→      if (restPulseTimerRef.current) clearInterval(restPulseTimerRef.current)
+  1292→  1292→      if (aiCooldownTimerRef.current) clearInterval(aiCooldownTimerRef.current)
+  1293→  1293→      if (planNextTimerRef.current) clearInterval(planNextTimerRef.current)
+  1294→  1294→      destroyAudio()
+  1295→  1295→    }
+  1296→  1296→  }, [])
+  1297→  1297→
+  1298→  1298→  // ── Auto-transition in plan mode when drill completes ────────────────
+  1299→  1299→  const handlePlanDrillCompleteRef = useRef<() => void>(() => {})
+  1300→  1300→  // Will be assigned below after the callback is defined
+  1301→  1301→
+  1302→  1302→  useEffect(() => {
+  1303→  1303→    if (phase === 'completed' && isPlanMode) {
+  1304→  1304→      handlePlanDrillCompleteRef.current()
+  1305→  1305→    }
+  1306→  1306→  }, [phase, isPlanMode])
+  1307→  1307→
+  1308→  1308→  // ── Handlers ──────────────────────────────────────────────────────────
+  1309→  1309→  const handlePause = () => {
+  1310→  1310→    if (phase === 'active') {
+  1311→  1311→      ensureAudioInit()
+  1312→  1312→      if (timerRef.current) clearInterval(timerRef.current)
+  1313→  1313→      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+  1314→  1314→      pausedAtRef.current = Date.now()
+  1315→  1315→      setPhase('paused')
+  1316→  1316→    }
+  1317→  1317→  }
+  1318→  1318→
+  1319→  1319→  const handleResume = () => {
+  1320→  1320→    if (phase === 'paused') {
+  1321→  1321→      ensureAudioInit()
+  1322→  1322→      pauseAccumRef.current += Date.now() - pausedAtRef.current
+  1323→  1323→      setPhase('active')
+  1324→  1324→    }
+  1325→  1325→  }
+  1326→  1326→
+  1327→  1327→  const handleStop = () => {
+  1328→  1328→    ensureAudioInit()
+  1329→  1329→    handleWorkoutEnd()
+  1330→  1330→  }
+  1331→  1331→
+  1332→  1332→  const handleRestart = () => {
+  1333→  1333→    ensureAudioInit()
+  1334→  1334→    // Reset all state
+  1335→  1335→    setReps(0)
+  1336→  1336→    setCurrentScore(0)
+  1337→  1337→    setFeedback('')
+  1338→  1338→    setFinalScore(0)
+  1339→  1339→    setElapsedAtEnd(0)
+  1340→  1340→    setAiResult(null)
+  1341→  1341→    setAiError('')
+  1342→  1342→    setAiCooldownRemaining(0)
+  1343→  1343→    setCurrentSet(1)
+  1344→  1344→    totalRepsAcrossSetsRef.current = 0
+  1345→  1345→    totalScoreAccumRef.current = []
+  1346→  1346→    repTrackerRef.current = createRepTracker()
+  1347→  1347→    scoresRef.current = []
+  1348→  1348→    halfTimeFiredRef.current = false
+  1349→  1349→    setRepFloatKey(0)
+  1350→  1350→
+  1351→  1351→    // Start countdown again (with PRÊT?)
+  1352→  1352→    setShowReady(true)
+  1353→  1353→    playSound('countdown-tick')
+  1354→  1354→    setTimeout(() => {
+  1355→  1355→      setShowReady(false)
+  1356→  1356→      setPhase('countdown')
+  1357→  1357→      setCountdown(COUNTDOWN_SECONDS)
+  1358→  1358→    }, COUNTDOWN_READY_MS)
+  1359→  1359→  }
+  1360→  1360→
+  1361→  1361→  // Plan-next countdown state
+  1362→  1362→  const [planNextCountdown, setPlanNextCountdown] = useState(3)
+  1363→  1363→  const planNextTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  1364→  1364→
+  1365→  1365→  // ── Plan execution: handle drill completion in plan mode ────────────
+  1366→  1366→  const handlePlanDrillComplete = useCallback(() => {
+  1367→  1367→    if (!drill) return
+  1368→  1368→    const elapsed = elapsedAtEnd || totalDuration - timeRemaining
+  1369→  1369→    const totalRepsNow = totalSets > 1 ? totalRepsAcrossSetsRef.current + reps : reps
+  1370→  1370→
+  1371→  1371→    // Save individual session
+  1372→  1372→    saveMutation.mutate({
+  1373→  1373→      drillId: drill.id,
+  1374→  1374→      reps: totalRepsNow,
+  1375→  1375→      score: finalScore,
+  1376→  1376→      durationSec: elapsed,
+  1377→  1377→    })
+  1378→  1378→
+  1379→  1379→    // Record result for plan
+  1380→  1380→    advancePlanDrill({
+  1381→  1381→      drillId: drill.id,
+  1382→  1382→      drillName: drill.name,
+  1383→  1383→      drillNameFr: drill.nameFr,
+  1384→  1384→      drillCategory: drill.category,
+  1385→  1385→      drillIcon: drill.icon,
+  1386→  1386→      reps: totalRepsNow,
+  1387→  1387→      score: finalScore,
+  1388→  1388→      durationSec: elapsed,
+  1389→  1389→      targetReps: drill.targetReps,
+  1390→  1390→    })
+  1391→  1391→
+  1392→  1392→    const nextIndex = planCurrentIndex + 1
+  1393→  1393→    if (nextIndex >= planDrillQueue.length) {
+  1394→  1394→      // Plan finished — aggregate results and navigate to summary
+  1395→  1395→      const allResults = [...planResults, {
+  1396→  1396→        drillId: drill.id,
+  1397→  1397→        drillName: drill.name,
+  1398→  1398→        drillNameFr: drill.nameFr,
+  1399→  1399→        drillCategory: drill.category,
+  1400→  1400→        drillIcon: drill.icon,
+  1401→  1401→        reps: totalRepsNow,
+  1402→  1402→        score: finalScore,
+  1403→  1403→        durationSec: elapsed,
+  1404→  1404→        targetReps: drill.targetReps,
+  1405→  1405→      }]
+  1406→  1406→      const totalRepsSum = allResults.reduce((s, r) => s + r.reps, 0)
+  1407→  1407→      const totalDurationSum = allResults.reduce((s, r) => s + r.durationSec, 0)
+  1408→  1408→      const totalScoreAvg = Math.round(allResults.reduce((s, r) => s + r.score, 0) / allResults.length)
+  1409→  1409→
+  1410→  1410→      setWorkoutResult({
+  1411→  1411→        drills: allResults,
+  1412→  1412→        totalReps: totalRepsSum,
+  1413→  1413→        totalScore: totalScoreAvg,
+  1414→  1414→        totalDurationSec: totalDurationSum,
+  1415→  1415→      })
+  1416→  1416→      clearPlanExecution()
+  1417→  1417→      navigate('workout-summary')
+  1418→  1418→    } else {
+  1419→  1419→      // More drills remain — show plan-next transition
+  1420→  1420→      setPhase('plan-next')
+  1421→  1421→      setPlanNextCountdown(3)
+  1422→  1422→    }
+  1423→  1423→  }, [drill, elapsedAtEnd, totalDuration, timeRemaining, totalSets, reps, finalScore, planCurrentIndex, planDrillQueue, planResults, advancePlanDrill, setWorkoutResult, clearPlanExecution, navigate, saveMutation])
+  1424→  1424→
+  1425→  1425→  // Assign to ref so the useEffect above can call it
+  1426→  1426→  handlePlanDrillCompleteRef.current = handlePlanDrillComplete
+  1427→  1427→
+  1428→  1428→  // ── Plan-next countdown timer ────────────────────────────────────────
+  1429→  1429→  useEffect(() => {
+  1430→  1430→    if (phase !== 'plan-next') return
+  1431→  1431→
+  1432→  1432→    planNextTimerRef.current = setInterval(() => {
+  1433→  1433→      setPlanNextCountdown((prev) => {
+  1434→  1434→        if (prev <= 1) {
+  1435→  1435→          if (planNextTimerRef.current) clearInterval(planNextTimerRef.current)
+  1436→  1436→          // Transition to next drill
+  1437→  1437→          const nextIndex = useAppStore.getState().planCurrentIndex
+  1438→  1438→          const queue = useAppStore.getState().planDrillQueue
+  1439→  1439→          if (nextIndex < queue.length) {
+  1440→  1440→            const nextDrill = queue[nextIndex]
+  1441→  1441→            selectDrill(nextDrill.drillId)
+  1442→  1442→          }
+  1443→  1443→          // Reset all workout state
+  1444→  1444→          setReps(0)
+  1445→  1445→          setCurrentScore(0)
+  1446→  1446→          setFeedback('')
+  1447→  1447→          setFinalScore(0)
+  1448→  1448→          setElapsedAtEnd(0)
+  1449→  1449→          setAiResult(null)
+  1450→  1450→          setAiError('')
+  1451→  1451→          setAiCooldownRemaining(0)
+  1452→  1452→          setCurrentSet(1)
+  1453→  1453→          totalRepsAcrossSetsRef.current = 0
+  1454→  1454→          totalScoreAccumRef.current = []
+  1455→  1455→          repTrackerRef.current = createRepTracker()
+  1456→  1456→          scoresRef.current = []
+  1457→  1457→          halfTimeFiredRef.current = false
+  1458→  1458→          setRepFloatKey(0)
+  1459→  1459→          setPhase('countdown')
+  1460→  1460→          setCountdown(COUNTDOWN_SECONDS)
+  1461→  1461→          return 0
+  1462→  1462→        }
+  1463→  1463→        return prev - 1
+  1464→  1464→      })
+  1465→  1465→    }, 1000)
+  1466→  1466→
+  1467→  1467→    return () => {
+  1468→  1468→      if (planNextTimerRef.current) clearInterval(planNextTimerRef.current)
+  1469→  1469→    }
+  1470→  1470→  }, [phase, selectDrill])
+  1471→  1471→
+  1472→  1472→  const handleSave = () => {
+  1473→  1473→    if (!drill) return
+  1474→  1474→    saveMutation.mutate({
+  1475→  1475→      drillId: drill.id,
+  1476→  1476→      reps,
+  1477→  1477→      score: finalScore,
+  1478→  1478→      durationSec: elapsedAtEnd || totalDuration - timeRemaining,
+  1479→  1479→    })
+  1480→  1480→  }
+  1481→  1481→
+  1482→  1482→  const handleBackToHub = () => {
+  1483→  1483→    if (isPlanMode) {
+  1484→  1484→      clearPlanExecution()
+  1485→  1485→    }
+  1486→  1486→    navigate('train-hub')
+  1487→  1487→  }
+  1488→  1488→
+  1489→  1489→  const handleMuteToggle = () => {
+  1490→  1490→    ensureAudioInit()
+  1491→  1491→    const newMuted = toggleAudioMute()
+  1492→  1492→    setIsMuted(newMuted)
+  1493→  1493→  }
+  1494→  1494→
+  1495→  1495→  // ── AI Form Check ─────────────────────────────────────────────────────
+  1496→  1496→  const handleAIFormCheck = useCallback(async () => {
+  1497→  1497→    if (aiLoading || aiCooldownRemaining > 0 || phase !== 'active') return
+  1498→  1498→    if (!videoRef.current) return
+  1499→  1499→
+  1500→  1500→    setAiLoading(true)
+  1501→  1501→    setAiError('')
+  1502→  1502→    setAiResult(null)
+  1503→  1503→
+  1504→  1504→    try {
+  1505→  1505→      const video = videoRef.current
+  1506→  1506→      const captureCanvas = document.createElement('canvas')
+  1507→  1507→      captureCanvas.width = 640
+  1508→  1508→      captureCanvas.height = 480
+  1509→  1509→      const captureCtx = captureCanvas.getContext('2d')
+  1510→  1510→      if (!captureCtx) throw new Error('Canvas context unavailable')
+  1511→  1511→
+  1512→  1512→      captureCtx.translate(640, 0)
+  1513→  1513→      captureCtx.scale(-1, 1)
+  1514→  1514→      captureCtx.drawImage(video, 0, 0, 640, 480)
+  1515→  1515→      captureCanvasRef.current = captureCanvas
+  1516→  1516→
+  1517→  1517→      const imageBase64 = captureCanvas.toDataURL('image/jpeg', 0.8)
+  1518→  1518→
+  1519→  1519→      const result: AIFormCheckResult = await apiFetch('/api/ai/form-check', {
+  1520→  1520→        method: 'POST',
+  1521→  1521→        headers: { 'Content-Type': 'application/json' },
+  1522→  1522→        body: JSON.stringify({
+  1523→  1523→          imageBase64,
+  1524→  1524→          drillName: drill?.nameFr ?? drill?.name ?? 'Exercice',
+  1525→  1525→          category: drill?.category ?? 'ball_handling',
+  1526→  1526→          drillInstructions: drill?.instructionsFr ?? drill?.instructions ?? '',
+  1527→  1527→        }),
+  1528→  1528→      })
+  1529→  1529→      setAiResult(result)
+  1530→  1530→
+  1531→  1531→      if (result.feedback) {
+  1532→  1532→        setFeedback(result.feedback)
+  1533→  1533→      }
+  1534→  1534→
+  1535→  1535→      if (typeof result.score === 'number' && result.score > 0) {
+  1536→  1536→        scoresRef.current.push({
+  1537→  1537→          posture: Math.min(90, result.score * 0.8),
+  1538→  1538→          stanceWidth: 50,
+  1539→  1539→          armPosition: Math.min(90, result.score * 0.7),
+  1540→  1540→          movementQuality: result.score,
+  1541→  1541→        })
+  1542→  1542→        setCurrentScore(computeScore(scoresRef.current))
+  1543→  1543→      }
+  1544→  1544→    } catch (err) {
+  1545→  1545→      console.error('AI form check failed:', err)
+  1546→  1546→      setAiError('Vérification IA indisponible. Réessayez.')
+  1547→  1547→    } finally {
+  1548→  1548→      setAiLoading(false)
+  1549→  1549→
+  1550→  1550→      setAiCooldownRemaining(10)
+  1551→  1551→      if (aiCooldownTimerRef.current) clearInterval(aiCooldownTimerRef.current)
+  1552→  1552→      aiCooldownTimerRef.current = setInterval(() => {
+  1553→  1553→        setAiCooldownRemaining((prev) => {
+  1554→  1554→          if (prev <= 1) {
+  1555→  1555→            if (aiCooldownTimerRef.current) clearInterval(aiCooldownTimerRef.current)
+  1556→  1556→            return 0
+  1557→  1557→          }
+  1558→  1558→          return prev - 1
+  1559→  1559→        })
+  1560→  1560→      }, 1000)
+  1561→  1561→    }
+  1562→  1562→  }, [aiLoading, aiCooldownRemaining, phase, drill])
+  1563→  1563→
+  1564→  1564→  // ── Derived values ────────────────────────────────────────────────────
+  1565→  1565→  const progressPercent = totalDuration > 0
+  1566→  1566→    ? ((totalDuration - timeRemaining) / totalDuration) * 100
+  1567→  1567→    : 0
+  1568→  1568→
+  1569→  1569→  const displayReps = totalSets > 1 ? totalRepsAcrossSetsRef.current + reps : reps
+  1570→  1570→  const targetReps = drill?.targetReps ?? 10
+  1571→  1571→
+  1572→  1572→  // ── Loading state ─────────────────────────────────────────────────────
+  1573→  1573→  if (isDrillLoading) {
+  1574→  1574→    return (
+  1575→  1575→      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-4">
+  1576→  1576→        <Loader2 className="h-10 w-10 text-orange-500 animate-spin" />
+  1577→  1577→        <p className="text-foreground text-sm">Chargement de l&apos;exercice...</p>
+  1578→  1578→        <Skeleton className="h-3 w-48" />
+  1579→  1579→      </div>
+  1580→  1580→    )
+  1581→  1581→  }
+  1582→  1582→
+  1583→  1583→  // ── Error state ───────────────────────────────────────────────────────
+  1584→  1584→  if (phase === 'error') {
+  1585→  1585→    return (
+  1586→  1586→      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-4">
+  1587→  1587→        <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-2">
+  1588→  1588→          <AlertTriangle className="h-8 w-8 text-red-400" />
+  1589→  1589→        </div>
+  1590→  1590→        <h2 className="text-foreground text-lg font-semibold">Erreur</h2>
+  1591→  1591→        <p className="text-muted-foreground text-sm text-center max-w-xs">{cameraError}</p>
+  1592→  1592→        <div className="flex gap-3 mt-4">
+  1593→  1593→          <Button variant="outline" onClick={goBack} className="text-foreground">
+  1594→  1594→            <ArrowLeft className="h-4 w-4 mr-2" />
+  1595→  1595→            Retour
+  1596→  1596→          </Button>
+  1597→  1597→          <Button onClick={setupCamera} className="bg-orange-500 hover:bg-orange-600 text-white">
+  1598→  1598→            <RotateCcw className="h-4 w-4 mr-2" />
+  1599→  1599→            Réessayer
+  1600→  1600→          </Button>
+  1601→  1601→        </div>
+  1602→  1602→      </div>
+  1603→  1603→    )
+  1604→  1604→  }
+  1605→  1605→
+  1606→  1606→  // ── Render ────────────────────────────────────────────────────────────
+  1607→  1607→  return (
+  1608→  1608→    <div className="min-h-screen flex flex-col">
+  1609→  1609→      {/* ── Top Bar ─────────────────────────────────────────────────── */}
+  1610→  1610→      <header className="relative z-30 flex items-center justify-between h-12 px-3 bg-black/90 backdrop-blur-md">
+  1611→  1611→        <Button
+  1612→  1612→          variant="ghost"
+  1613→  1613→          size="icon"
+  1614→  1614→          onClick={() => {
+  1615→  1615→            ensureAudioInit()
+  1616→  1616→            if (phase === 'active' || phase === 'paused') {
+  1617→  1617→              handleStop()
+  1618→  1618→            }
+  1619→  1619→            if (isPlanMode) clearPlanExecution()
+  1620→  1620→            goBack()
+  1621→  1621→          }}
+  1622→  1622→          className="text-white/80 hover:text-white hover:bg-white/10 -ml-1 rounded-lg"
+  1623→  1623→          aria-label="Retour"
+  1624→  1624→        >
+  1625→  1625→          <ArrowLeft className="h-5 w-5" />
+  1626→  1626→        </Button>
+  1627→  1627→
+  1628→  1628→        <div className="flex items-center gap-2">
+  1629→  1629→          {drill && <span className="text-sm">{drill.icon}</span>}
+  1630→  1630→          <h1 className="text-white text-sm font-medium truncate max-w-[140px]">
+  1631→  1631→            {drill?.nameFr ?? 'Exercice'}
+  1632→  1632→          </h1>
+  1633→  1633→          {totalSets > 1 && (
+  1634→  1634→            <Badge variant="outline" className="text-[10px] text-orange-400 border-orange-500/30 bg-orange-500/10 px-1.5 py-0">
+  1635→  1635→              S{currentSet}/{totalSets}
+  1636→  1636→            </Badge>
+  1637→  1637→          )}
+  1638→  1638→          {isPlanMode && (
+  1639→  1639→            <Badge variant="outline" className="text-[10px] text-sky-400 border-sky-500/30 bg-sky-500/10 px-1.5 py-0">
+  1640→  1640→              {planCurrentIndex + 1}/{planDrillQueue.length}
+  1641→  1641→            </Badge>
+  1642→  1642→          )}
+  1643→  1643→        </div>
+  1644→  1644→
+  1645→  1645→        <div className="flex items-center gap-1">
+  1646→  1646→          {/* Circular Timer in header */}
+  1647→  1647→          {(phase === 'active' || phase === 'paused') && (
+  1648→  1648→            <CircularTimer remaining={timeRemaining} total={totalDuration} size={44} />
+  1649→  1649→          )}
+  1650→  1650→          <button
+  1651→  1651→            onClick={handleMuteToggle}
+  1652→  1652→            className="text-white/60 hover:text-white ml-1 p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+  1653→  1653→            aria-label={isMuted ? 'Activer le son' : 'Couper le son'}
+  1654→  1654→          >
+  1655→  1655→            {isMuted ? (
+  1656→  1656→              <VolumeX className="h-4 w-4" />
+  1657→  1657→            ) : (
+  1658→  1658→              <Volume2 className="h-4 w-4" />
+  1659→  1659→            )}
+  1660→  1660→          </button>
+  1661→  1661→        </div>
+  1662→  1662→      </header>
+  1663→  1663→
+  1664→  1664→      {/* ── Video Area ───────────────────────────────────────────────── */}
+  1665→  1665→      <div className="relative flex-1 flex items-center justify-center bg-black overflow-hidden">
+  1666→  1666→        <div className="relative w-full max-w-2xl" style={{ aspectRatio: '4/3' }}>
+  1667→  1667→          {/* Video */}
+  1668→  1668→          <video
+  1669→  1669→            ref={videoRef}
+  1670→  1670→            className="absolute inset-0 w-full h-full object-cover"
+  1671→  1671→            style={{ transform: 'scaleX(-1)' }}
+  1672→  1672→            playsInline
+  1673→  1673→            muted
+  1674→  1674→          />
+  1675→  1675→
+  1676→  1676→          {/* Skeleton Canvas */}
+  1677→  1677→          <canvas
+  1678→  1678→            ref={canvasRef}
+  1679→  1679→            width={640}
+  1680→  1680→            height={480}
+  1681→  1681→            className="absolute inset-0 w-full h-full"
+  1682→  1682→            style={{ transform: 'scaleX(-1)' }}
+  1683→  1683→          />
+  1684→  1684→
+  1685→  1685→          {/* MediaPipe loading indicator */}
+  1686→  1686→          {!isModelLoaded && (phase as string) !== 'error' && (
+  1687→  1687→            <div className="absolute top-3 left-3 z-20 flex items-center gap-2 rounded-full bg-black/60 backdrop-blur-sm px-3 py-1.5">
+  1688→  1688→              <Loader2 className="h-3.5 w-3.5 text-orange-400 animate-spin" />
+  1689→  1689→              <span className="text-[11px] text-white/80">Modèle IA en cours...</span>
+  1690→  1690→            </div>
+  1691→  1691→          )}
+  1692→  1692→
+  1693→  1693→          {/* ── PRÊT? Overlay (before countdown) ────────────────────── */}
+  1694→  1694→          <AnimatePresence>
+  1695→  1695→            {showReady && (
+  1696→  1696→              <motion.div
+  1697→  1697→                initial={{ opacity: 0 }}
+  1698→  1698→                animate={{ opacity: 1 }}
+  1699→  1699→                exit={{ opacity: 0 }}
+  1700→  1700→                transition={{ duration: prefersReducedMotion ? 0.05 : 0.3 }}
+  1701→  1701→                className="absolute inset-0 flex items-center justify-center bg-black/60 z-20"
+  1702→  1702→              >
+  1703→  1703→                <motion.div
+  1704→  1704→                  initial={prefersReducedMotion ? {} : { scale: 0.5, opacity: 0 }}
+  1705→  1705→                  animate={{ scale: 1, opacity: 1 }}
+  1706→  1706→                  transition={{ duration: prefersReducedMotion ? 0.05 : 0.5, ease: 'easeOut' as const }}
+  1707→  1707→                  className="text-center"
+  1708→  1708→                >
+  1709→  1709→                  <p className="text-6xl font-black text-white drop-shadow-2xl tracking-tight">
+  1710→  1710→                    PRÊT?
+  1711→  1711→                  </p>
+  1712→  1712→                </motion.div>
+  1713→  1713→              </motion.div>
+  1714→  1714→            )}
+  1715→  1715→          </AnimatePresence>
+  1716→  1716→
+  1717→  1717→          {/* ── Countdown Overlay (3-2-1-GO!) ──────────────────────── */}
+  1718→  1718→          <AnimatePresence>
+  1719→  1719→            {phase === 'countdown' && !showReady && (
+  1720→  1720→              <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-20">
+  1721→  1721→                <AnimatePresence mode="wait">
+  1722→  1722→                  {countdown > 0 ? (
+  1723→  1723→                    <motion.div
+  1724→  1724→                      key={countdown}
+  1725→  1725→                      variants={prefersReducedMotion ? countPulseReduced : countPulse}
+  1726→  1726→                      initial="initial"
+  1727→  1727→                      animate="animate"
+  1728→  1728→                      exit="exit"
+  1729→  1729→                      className="text-8xl font-black text-white drop-shadow-2xl"
+  1730→  1730→                    >
+  1731→  1731→                      {countdown}
+  1732→  1732→                    </motion.div>
+  1733→  1733→                  ) : (
+  1734→  1734→                    <motion.div
+  1735→  1735→                      key="go"
+  1736→  1736→                      initial={prefersReducedMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.5 }}
+  1737→  1737→                      animate={{ opacity: 1, scale: 1 }}
+  1738→  1738→                      exit={{ opacity: 0, scale: 1.5 }}
+  1739→  1739→                      transition={{ duration: prefersReducedMotion ? 0.05 : 0.4, ease: 'easeOut' as const }}
+  1740→  1740→                      className="text-7xl font-black text-orange-400 drop-shadow-2xl"
+  1741→  1741→                    >
+  1742→  1742→                      GO!
+  1743→  1743→                    </motion.div>
+  1744→  1744→                  )}
+  1745→  1745→                </AnimatePresence>
+  1746→  1746→              </div>
+  1747→  1747→            )}
+  1748→  1748→          </AnimatePresence>
+  1749→  1749→
+  1750→  1750→          {/* ── Active/Paused Overlay UI ───────────────────────────── */}
+  1751→  1751→          {(phase === 'active' || phase === 'paused') && (
+  1752→  1752→            <>
+  1753→  1753→              {/* Score Gauge — left side */}
+  1754→  1754→              <div className="absolute bottom-4 left-3 z-10">
+  1755→  1755→                <div className="bg-black/40 backdrop-blur-md rounded-2xl px-2 pt-2 pb-1 border border-white/10">
+  1756→  1756→                  <ScoreGauge score={currentScore} size={88} />
+  1757→  1757→                </div>
+  1758→  1758→              </div>
+  1759→  1759→
+  1760→  1760→              {/* Target Reps — right side top */}
+  1761→  1761→              <div className="absolute top-3 right-3 z-10 text-right">
+  1762→  1762→                <div className="bg-black/40 backdrop-blur-md rounded-xl px-3 py-1.5 border border-white/10">
+  1763→  1763→                  <p className="text-[10px] uppercase tracking-wider text-white/50 font-medium">
+  1764→  1764→                    Objectif
+  1765→  1765→                  </p>
+  1766→  1766→                  <p className="text-sm font-bold text-white tabular-nums leading-none mt-0.5">
+  1767→  1767→                    {Math.min(displayReps, targetReps)}/{targetReps}
+  1768→  1768→                  </p>
+  1769→  1769→                </div>
+  1770→  1770→              </div>
+  1771→  1771→
+  1772→  1772→              {/* Rep Counter — center bottom (large) */}
+  1773→  1773→              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 text-center">
+  1774→  1774→                <div className="relative">
+  1775→  1775→                  <div className="bg-black/40 backdrop-blur-md rounded-2xl px-6 py-3 border border-white/10">
+  1776→  1776→                    <p className="text-[10px] uppercase tracking-wider text-white/50 font-medium">
+  1777→  1777→                      Répétitions
+  1778→  1778→                    </p>
+  1779→  1779→                    <motion.p
+  1780→  1780→                      key={displayReps}
+  1781→  1781→                      initial={prefersReducedMotion ? {} : { scale: 1.3, color: '#34d399' }}
+  1782→  1782→                      animate={{ scale: 1, color: '#ffffff' }}
+  1783→  1783→                      transition={{ duration: prefersReducedMotion ? 0.05 : 0.3 }}
+  1784→  1784→                      className="text-5xl font-black text-white tabular-nums leading-none mt-0.5"
+  1785→  1785→                    >
+  1786→  1786→                      {displayReps}
+  1787→  1787→                    </motion.p>
+  1788→  1788→                  </div>
+  1789→  1789→                  {/* Floating +1 */}
+  1790→  1790→                  <AnimatePresence>
+  1791→  1791→                    {repFloatKey > 0 && (
+  1792→  1792→                      <FloatingRep key={repFloatKey} />
+  1793→  1793→                    )}
+  1794→  1794→                  </AnimatePresence>
+  1795→  1795→                </div>
+  1796→  1796→              </div>
+  1797→  1797→
+  1798→  1798→              {/* Paused Overlay */}
+  1799→  1799→              {phase === 'paused' && (
+  1800→  1800→                <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-15">
+  1801→  1801→                  <div className="text-center">
+  1802→  1802→                    <Pause className="h-16 w-16 text-white/80 mx-auto mb-3" />
+  1803→  1803→                    <p className="text-white text-xl font-bold">En Pause</p>
+  1804→  1804→                    <p className="text-white/50 text-sm mt-1">
+  1805→  1805→                      {formatTime(timeRemaining)} restant
+  1806→  1806→                    </p>
+  1807→  1807→                  </div>
+  1808→  1808→                </div>
+  1809→  1809→              )}
+  1810→  1810→            </>
+  1811→  1811→          )}
+  1812→  1812→
+  1813→  1813→          {/* ── Rest Overlay ───────────────────────────────────────── */}
+  1814→  1814→          <AnimatePresence>
+  1815→  1815→            {phase === 'rest' && (
+  1816→  1816→              <motion.div
+  1817→  1817→                initial={{ opacity: 0 }}
+  1818→  1818→                animate={{ opacity: 1 }}
+  1819→  1819→                exit={{ opacity: 0 }}
+  1820→  1820→                className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-20"
+  1821→  1821→              >
+  1822→  1822→                <div className="text-center space-y-6">
+  1823→  1823→                  {/* Rest label */}
+  1824→  1824→                  <motion.div
+  1825→  1825→                    initial={prefersReducedMotion ? {} : { y: -10 }}
+  1826→  1826→                    animate={{ y: 0 }}
+  1827→  1827→                    transition={{ duration: 0.3 }}
+  1828→  1828→                  >
+  1829→  1829→                    <p className="text-white/60 text-sm font-medium uppercase tracking-widest">
+  1830→  1830→                      Pause Repos
+  1831→  1831→                    </p>
+  1832→  1832→                    <p className="text-white/40 text-xs mt-1">
+  1833→  1833→                      Série {currentSet}/{totalSets} terminée
+  1834→  1834→                    </p>
+  1835→  1835→                  </motion.div>
+  1836→  1836→
+  1837→  1837→                  {/* Rest timer circle */}
+  1838→  1838→                  <div className="flex justify-center">
+  1839→  1839→                    <div className="bg-black/50 backdrop-blur-md rounded-full p-4 border border-white/10">
+  1840→  1840→                      <motion.p
+  1841→  1841→                        key={restRemaining}
+  1842→  1842→                        initial={prefersReducedMotion ? {} : { scale: 1.1 }}
+  1843→  1843→                        animate={{ scale: 1 }}
+  1844→  1844→                        transition={{ duration: 0.2 }}
+  1845→  1845→                        className="text-6xl font-black text-white tabular-nums"
+  1846→  1846→                      >
+  1847→  1847→                        {restRemaining}
+  1848→  1848→                      </motion.p>
+  1849→  1849→                      <p className="text-white/40 text-xs text-center mt-1">secondes</p>
+  1850→  1850→                    </div>
+  1851→  1851→                  </div>
+  1852→  1852→
+  1853→  1853→                  {/* Rest controls */}
+  1854→  1854→                  <div className="flex justify-center gap-3">
+  1855→  1855→                    <Button
+  1856→  1856→                      variant="outline"
+  1857→  1857→                      size="sm"
+  1858→  1858→                      onClick={handleExtendRest}
+  1859→  1859→                      className="gap-1.5 border-white/20 text-white/80 hover:bg-white/10 hover:text-white rounded-full px-4"
+  1860→  1860→                    >
+  1861→  1861→                      <Plus className="h-4 w-4" />
+  1862→  1862→                      +15s
+  1863→  1863→                    </Button>
+  1864→  1864→                    <Button
+  1865→  1865→                      size="sm"
+  1866→  1866→                      onClick={handleSkipRest}
+  1867→  1867→                      className="gap-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-full px-4"
+  1868→  1868→                    >
+  1869→  1869→                      <SkipForward className="h-4 w-4" />
+  1870→  1870→                      Passer
+  1871→  1871→                    </Button>
+  1872→  1872→                  </div>
+  1873→  1873→
+  1874→  1874→                  {/* Rest duration selector */}
+  1875→  1875→                  <div className="flex items-center justify-center gap-2">
+  1876→  1876→                    <Timer className="h-3 w-3 text-white/40" />
+  1877→  1877→                    <span className="text-white/40 text-[11px]">Durée repos:</span>
+  1878→  1878→                    {REST_OPTIONS.map((opt) => (
+  1879→  1879→                      <button
+  1880→  1880→                        key={opt}
+  1881→  1881→                        onClick={() => setRestDuration(opt)}
+  1882→  1882→                        className={`text-[11px] px-2 py-0.5 rounded-full transition-colors ${
+  1883→  1883→                          restDuration === opt
+  1884→  1884→                            ? 'bg-orange-500/30 text-orange-400 border border-orange-500/40'
+  1885→  1885→                            : 'text-white/40 hover:text-white/60 border border-white/10'
+  1886→  1886→                        }`}
+  1887→  1887→                      >
+  1888→  1888→                        {opt}s
+  1889→  1889→                      </button>
+  1890→  1890→                    ))}
+  1891→  1891→                  </div>
+  1892→  1892→                </div>
+  1893→  1893→              </motion.div>
+  1894→  1894→            )}
+  1895→  1895→          </AnimatePresence>
+  1896→  1896→
+  1897→  1897→          {/* ── Plan-Next Transition Overlay ──────────────────────────── */}
+  1898→  1898→          <AnimatePresence>
+  1899→  1899→            {phase === 'plan-next' && (
+  1900→  1900→              <motion.div
+  1901→  1901→                variants={overlayVariants}
+  1902→  1902→                initial="hidden"
+  1903→  1903→                animate="visible"
+  1904→  1904→                exit="exit"
+  1905→  1905→                className="absolute inset-0 z-20 flex items-center justify-center bg-black/80 backdrop-blur-md"
+  1906→  1906→              >
+  1907→  1907→                <div className="text-center space-y-4">
+  1908→  1908→                  {/* Progress indicator */}
+  1909→  1909→                  <p className="text-white/50 text-sm font-medium uppercase tracking-widest">
+  1910→  1910→                    Exercice {planCurrentIndex + 1} / {planDrillQueue.length}
+  1911→  1911→                  </p>
+  1912→  1912→                  <div className="w-full max-w-[200px] mx-auto h-1.5 bg-white/10 rounded-full overflow-hidden">
+  1913→  1913→                    <div
+  1914→  1914→                      className="h-full bg-orange-500 rounded-full transition-all duration-500"
+  1915→  1915→                      style={{ width: `${((planCurrentIndex) / planDrillQueue.length) * 100}%` }}
+  1916→  1916→                    />
+  1917→  1917→                  </div>
+  1918→  1918→
+  1919→  1919→                  {/* "NEXT" label */}
+  1920→  1920→                  <motion.div
+  1921→  1921→                    initial={{ opacity: 0, y: 20 }}
+  1922→  1922→                    animate={{ opacity: 1, y: 0 }}
+  1923→  1923→                    transition={{ delay: 0.1 }}
+  1924→  1924→                  >
+  1925→  1925→                    <p className="text-white/40 text-xs uppercase tracking-[0.3em] mb-2">Suivant</p>
+  1926→  1926→                    <div className="flex items-center justify-center gap-3">
+  1927→  1927→                      {(() => {
+  1928→  1928→                        const nextDrill = planDrillQueue[planCurrentIndex]
+  1929→  1929→                        return nextDrill ? (
+  1930→  1930→                          <>
+  1931→  1931→                            <span className="text-3xl">{nextDrill.icon}</span>
+  1932→  1932→                            <p className="text-white text-xl font-bold">{nextDrill.nameFr}</p>
+  1933→  1933→                          </>
+  1934→  1934→                        ) : null
+  1935→  1935→                      })()}
+  1936→  1936→                    </div>
+  1937→  1937→                  </motion.div>
+  1938→  1938→
+  1939→  1939→                  {/* Countdown */}
+  1940→  1940→                  <motion.div
+  1941→  1941→                    key={planNextCountdown}
+  1942→  1942→                    initial={prefersReducedMotion ? {} : { scale: 1.3, opacity: 0 }}
+  1943→  1943→                    animate={{ scale: 1, opacity: 1 }}
+  1944→  1944→                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+  1945→  1945→                    className="w-20 h-20 mx-auto rounded-full bg-orange-500/20 border-2 border-orange-500/40 flex items-center justify-center"
+  1946→  1946→                  >
+  1947→  1947→                    <span className="text-4xl font-black text-orange-400 tabular-nums">
+  1948→  1948→                      {planNextCountdown}
+  1949→  1949→                    </span>
+  1950→  1950→                  </motion.div>
+  1951→  1951→                </div>
+  1952→  1952→              </motion.div>
+  1953→  1953→            )}
+  1954→  1954→          </AnimatePresence>
+  1955→  1955→
+  1956→  1956→          {/* ── Completion Overlay ─────────────────────────────────── */}
+  1957→  1957→          <AnimatePresence>
+  1958→  1958→            {phase === 'completed' && !isPlanMode && (
+  1959→  1959→              <motion.div
+  1960→  1960→                variants={overlayVariants}
+  1961→  1961→                initial="hidden"
+  1962→  1962→                animate="visible"
+  1963→  1963→                exit="exit"
+  1964→  1964→                className="absolute inset-0 z-20 flex items-center justify-center bg-black/80 backdrop-blur-md"
+  1965→  1965→              >
+  1966→  1966→                <Card className="w-[90%] max-w-sm bg-gray-900 border-gray-700 text-white shadow-2xl">
+  1967→  1967→                  <CardContent className="p-6 space-y-5">
+  1968→  1968→                    {/* Header */}
+  1969→  1969→                    <div className="text-center">
+  1970→  1970→                      <div className="text-3xl mb-2">🏆</div>
+  1971→  1971→                      <h2 className="text-xl font-bold">Session Terminée!</h2>
+  1972→  1972→                      {drill && (
+  1973→  1973→                        <p className="text-white/50 text-sm mt-1">
+  1974→  1974→                          {drill.nameFr}
+  1975→  1975→                          {totalSets > 1 && <span className="text-white/30"> · {totalSets} séries</span>}
+  1976→  1976→                        </p>
+  1977→  1977→                      )}
+  1978→  1978→                    </div>
+  1979→  1979→
+  1980→  1980→                    {/* Stars */}
+  1981→  1981→                    <div className="flex justify-center gap-1">
+  1982→  1982→                      {Array.from({ length: 5 }).map((_, i) => (
+  1983→  1983→                        <Star
+  1984→  1984→                          key={i}
+  1985→  1985→                          className={`h-7 w-7 transition-colors ${
+  1986→  1986→                            i < getStarCount(finalScore)
+  1987→  1987→                              ? 'fill-amber-400 text-amber-400'
+  1988→  1988→                              : 'text-gray-600'
+  1989→  1989→                          }`}
+  1990→  1990→                        />
+  1991→  1991→                      ))}
+  1992→  1992→                    </div>
+  1993→  1993→
+  1994→  1994→                    {/* Stats Grid */}
+  1995→  1995→                    <div className="grid grid-cols-3 gap-3">
+  1996→  1996→                      <div className="bg-gray-800 rounded-xl p-3 text-center">
+  1997→  1997→                        <p className="text-2xl font-black text-orange-400 tabular-nums">
+  1998→  1998→                          {displayReps}
+  1999→  1999→                        </p>
+  2000→  2000→                        <p className="text-[10px] text-white/40 uppercase tracking-wider mt-1">
+
+[showing lines 1-2000 of 2002; use offset=2001 with limit to continue reading]

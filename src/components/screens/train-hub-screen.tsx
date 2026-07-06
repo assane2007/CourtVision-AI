@@ -705,7 +705,16 @@ export default function TrainHubScreen() {
                     exit="exit"
                   >
                     <Card
-                      className="group cursor-pointer relative overflow-hidden rounded-2xl shadow-sm dark:shadow-none dark:border-border/50 hover:shadow-md dark:hover:border-border/80 transition-all duration-200 bg-card bg-gradient-to-br from-card to-card/50"
+                      role="button"
+                      tabIndex={0}
+                      aria-label={drill.nameFr}
+                      onKeyDown={(e: React.KeyboardEvent) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          handleCardClick(drill)
+                        }
+                      }}
+                      className="group cursor-pointer relative overflow-hidden rounded-2xl shadow-sm dark:shadow-none dark:border-border/50 hover:shadow-md dark:hover:border-border/80 transition-all duration-200 bg-card bg-gradient-to-br from-card to-card/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
                       onClick={() => handleCardClick(drill)}
                     >
                       {/* Favorite button */}

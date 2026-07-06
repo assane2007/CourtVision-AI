@@ -1,0 +1,727 @@
+     1→'use client'
+     2→
+     3→import { useState, useMemo, useCallback } from 'react'
+     4→import { motion, AnimatePresence } from 'framer-motion'
+     5→import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+     6→import { Button } from '@/components/ui/button'
+     7→import { Input } from '@/components/ui/input'
+     8→import { Label } from '@/components/ui/label'
+     9→import { Textarea } from '@/components/ui/textarea'
+    10→import { Badge } from '@/components/ui/badge'
+    11→import { Switch } from '@/components/ui/switch'
+    12→import { Skeleton } from '@/components/ui/skeleton'
+    13→import { Separator } from '@/components/ui/separator'
+    14→import {
+    15→  Sheet,
+    16→  SheetContent,
+    17→  SheetHeader,
+    18→  SheetTitle,
+    19→} from '@/components/ui/sheet'
+    20→import {
+    21→  Select,
+    22→  SelectContent,
+    23→  SelectItem,
+    24→  SelectTrigger,
+    25→  SelectValue,
+    26→} from '@/components/ui/select'
+    27→import { apiFetch } from '@/lib/utils'
+    28→import { getCategoryLabel, CATEGORIES_LIST } from '@/lib/constants'
+    29→import {
+    30→  ArrowLeft,
+    31→  ArrowRight,
+    32→  Check,
+    33→  Clock,
+    34→  Target,
+    35→  Plus,
+    36→  Search,
+    37→  X,
+    38→} from 'lucide-react'
+    39→import { toast } from 'sonner'
+    40→
+    41→// ─── Types ───────────────────────────────────────────────────────────────────
+    42→
+    43→interface Drill {
+    44→  id: string
+    45→  name: string
+    46→  nameFr: string
+    47→  category: string
+    48→  difficulty: string
+    49→  description: string
+    50→  descriptionFr: string
+    51→  instructions: string
+    52→  instructionsFr: string
+    53→  durationSec: number
+    54→  targetReps: number
+    55→  icon: string
+    56→}
+    57→
+    58→interface PlanDrillEdit {
+    59→  drillId: string
+    60→  nameFr: string
+    61→  icon: string
+    62→  category: string
+    63→  durationSec: number
+    64→  defaultTargetReps: number
+    65→  targetReps: number
+    66→  targetSets: number
+    67→  restSec: number
+    68→}
+    69→
+    70→interface PlanDrillExisting {
+    71→  id: string
+    72→  order: number
+    73→  targetReps: number
+    74→  targetSets: number
+    75→  restSec: number
+    76→  drill: {
+    77→    id: string
+    78→    nameFr: string
+    79→    icon: string
+    80→    category: string
+    81→    difficulty?: string
+    82→    durationSec?: number
+    83→    targetReps?: number
+    84→  }
+    85→}
+    86→
+    87→interface PlanForEdit {
+    88→  id: string
+    89→  name: string
+    90→  description: string | null
+    91→  isPublic: boolean
+    92→  drills: PlanDrillExisting[]
+    93→}
+    94→
+    95→interface CreatePlanDialogProps {
+    96→  open: boolean
+    97→  onOpenChange: (open: boolean) => void
+    98→  editPlan?: PlanForEdit | null
+    99→}
+   100→
+   101→// ─── Helpers ─────────────────────────────────────────────────────────────────
+   102→
+   103→const REST_OPTIONS = [10, 15, 30, 60] as const
+   104→const SET_OPTIONS = [1, 2, 3, 4, 5] as const
+   105→
+   106→function formatDuration(totalSec: number): string {
+   107→  if (totalSec < 60) return `${totalSec}s`
+   108→  const min = Math.floor(totalSec / 60)
+   109→  const sec = totalSec % 60
+   110→  if (min >= 60) {
+   111→    const h = Math.floor(min / 60)
+   112→    const m = min % 60
+   113→    return sec > 0 ? `${h}h ${m}min ${sec}s` : `${h}h ${m}min`
+   114→  }
+   115→  return sec > 0 ? `${min}min ${sec}s` : `${min}min`
+   116→}
+   117→
+   118→// ─── Component ───────────────────────────────────────────────────────────────
+   119→
+   120→export function CreatePlanDialog({ open, onOpenChange, editPlan }: CreatePlanDialogProps) {
+   121→  const queryClient = useQueryClient()
+   122→  const [step, setStep] = useState(1)
+   123→
+   124→  // Step 1 state — initialized from editPlan (component remounts via key)
+   125→  const [name, setName] = useState(editPlan?.name ?? '')
+   126→  const [description, setDescription] = useState(editPlan?.description ?? '')
+   127→  const [isPublic, setIsPublic] = useState(editPlan?.isPublic ?? false)
+   128→
+   129→  // Step 2 state
+   130→  const [search, setSearch] = useState('')
+   131→  const [selectedDrills, setSelectedDrills] = useState<PlanDrillEdit[]>(() =>
+   132→    editPlan
+   133→      ? editPlan.drills.map((pd) => ({
+   134→          drillId: pd.drill.id,
+   135→          nameFr: pd.drill.nameFr,
+   136→          icon: pd.drill.icon,
+   137→          category: pd.drill.category,
+   138→          durationSec: pd.drill.durationSec ?? 30,
+   139→          defaultTargetReps: pd.drill.targetReps ?? 10,
+   140→          targetReps: pd.targetReps,
+   141→          targetSets: pd.targetSets,
+   142→          restSec: pd.restSec,
+   143→        }))
+   144→      : [],
+   145→  )
+   146→  const [categoryFilter, setCategoryFilter] = useState('all')
+   147→
+   148→  // ── Fetch drills ──────────────────────────────────────────────────────
+   149→  const { data: drillsData, isLoading: drillsLoading } = useQuery<{ drills: Drill[] }>({
+   150→    queryKey: ['drills'],
+   151→    queryFn: () => apiFetch<{ drills: Drill[] }>('/api/drills'),
+   152→    enabled: open,
+   153→  })
+   154→
+   155→  const allDrills = drillsData?.drills ?? []
+   156→
+   157→  // ── Filtered drills for selection ─────────────────────────────────────
+   158→  const filteredDrills = useMemo(() => {
+   159→    let drills = allDrills
+   160→    if (categoryFilter !== 'all') {
+   161→      drills = drills.filter((d) => d.category === categoryFilter)
+   162→    }
+   163→    if (search.trim()) {
+   164→      const q = search.toLowerCase()
+   165→      drills = drills.filter(
+   166→        (d) =>
+   167→          d.nameFr.toLowerCase().includes(q) ||
+   168→          d.name.toLowerCase().includes(q) ||
+   169→          d.category.toLowerCase().includes(q),
+   170→      )
+   171→    }
+   172→    return drills
+   173→  }, [allDrills, categoryFilter, search])
+   174→
+   175→  // ── Check if a drill is selected ──────────────────────────────────────
+   176→  const isSelected = useCallback(
+   177→    (drillId: string) => selectedDrills.some((d) => d.drillId === drillId),
+   178→    [selectedDrills],
+   179→  )
+   180→
+   181→  // ── Toggle drill selection ────────────────────────────────────────────
+   182→  const toggleDrill = useCallback((drill: Drill) => {
+   183→    setSelectedDrills((prev) => {
+   184→      if (prev.some((d) => d.drillId === drill.id)) {
+   185→        return prev.filter((d) => d.drillId !== drill.id)
+   186→      }
+   187→      return [
+   188→        ...prev,
+   189→        {
+   190→          drillId: drill.id,
+   191→          nameFr: drill.nameFr,
+   192→          icon: drill.icon,
+   193→          category: drill.category,
+   194→          durationSec: drill.durationSec,
+   195→          defaultTargetReps: drill.targetReps,
+   196→          targetReps: drill.targetReps,
+   197→          targetSets: 1,
+   198→          restSec: 15,
+   199→        },
+   200→      ]
+   201→    })
+   202→  }, [])
+   203→
+   204→  // ── Update selected drill settings ────────────────────────────────────
+   205→  const updateSelectedDrill = useCallback(
+   206→    (drillId: string, field: keyof PlanDrillEdit, value: number) => {
+   207→      setSelectedDrills((prev) =>
+   208→        prev.map((d) =>
+   209→          d.drillId === drillId ? { ...d, [field]: value } : d,
+   210→        ),
+   211→      )
+   212→    },
+   213→    [],
+   214→  )
+   215→
+   216→  // ── Remove selected drill ─────────────────────────────────────────────
+   217→  const removeSelectedDrill = useCallback((drillId: string) => {
+   218→    setSelectedDrills((prev) => prev.filter((d) => d.drillId !== drillId))
+   219→  }, [])
+   220→
+   221→  // ── Move drill up/down (reorder) ──────────────────────────────────────
+   222→  const moveDrill = useCallback((index: number, direction: 'up' | 'down') => {
+   223→    setSelectedDrills((prev) => {
+   224→      const arr = [...prev]
+   225→      const target = direction === 'up' ? index - 1 : index + 1
+   226→      if (target < 0 || target >= arr.length) return prev
+   227→      ;[arr[index], arr[target]] = [arr[target], arr[index]]
+   228→      return arr
+   229→    })
+   230→  }, [])
+   231→
+   232→  // ── Computed totals ───────────────────────────────────────────────────
+   233→  const totals = useMemo(() => {
+   234→    let totalReps = 0
+   235→    let totalSec = 0
+   236→    for (const d of selectedDrills) {
+   237→      totalReps += d.targetReps * d.targetSets
+   238→      totalSec += d.durationSec * d.targetSets + d.restSec * (d.targetSets - 1)
+   239→    }
+   240→    return { totalReps, totalSec }
+   241→  }, [selectedDrills])
+   242→
+   243→  // ── Create / Update mutation ──────────────────────────────────────────
+   244→  const saveMutation = useMutation({
+   245→    mutationFn: () => {
+   246→      const payload = {
+   247→        name,
+   248→        description: description || undefined,
+   249→        isPublic,
+   250→        drillIds: selectedDrills.map((d) => d.drillId),
+   251→      }
+   252→      if (editPlan) {
+   253→        return apiFetch<{ plan: unknown }>(`/api/plans/${editPlan.id}`, {
+   254→          method: 'PATCH',
+   255→          headers: { 'Content-Type': 'application/json' },
+   256→          body: JSON.stringify(payload),
+   257→        })
+   258→      }
+   259→      return apiFetch<{ plan: unknown }>('/api/plans', {
+   260→        method: 'POST',
+   261→        headers: { 'Content-Type': 'application/json' },
+   262→        body: JSON.stringify(payload),
+   263→      })
+   264→    },
+   265→    onSuccess: () => {
+   266→      queryClient.invalidateQueries({ queryKey: ['plans'] })
+   267→      toast.success(editPlan ? 'Plan modifié !' : 'Plan créé !', {
+   268→        description: editPlan
+   269→          ? `"${name}" a été mis à jour.`
+   270→          : `"${name}" est prêt à être lancé.`,
+   271→      })
+   272→      onOpenChange(false)
+   273→    },
+   274→    onError: (err) => {
+   275→      toast.error('Erreur', { description: (err as Error).message })
+   276→    },
+   277→  })
+   278→
+   279→  // ── Validation ────────────────────────────────────────────────────────
+   280→  const canProceed = step === 1 ? name.trim().length >= 2 : true
+   281→  const canSave = name.trim().length >= 2 && selectedDrills.length > 0
+   282→
+   283→  return (
+   284→    <Sheet open={open} onOpenChange={onOpenChange}>
+   285→      <SheetContent side="bottom" className="h-[92vh] sm:h-[85vh] rounded-t-2xl flex flex-col p-0">
+   286→        {/* ── Step indicator ─────────────────────────────────────────────── */}
+   287→        <SheetHeader className="px-4 pt-4 pb-0">
+   288→          <div className="flex items-center justify-between mb-3">
+   289→            <SheetTitle className="text-base">
+   290→              {editPlan ? 'Modifier le plan' : 'Nouveau plan'}
+   291→            </SheetTitle>
+   292→            {open && (
+   293→              <div className="flex items-center gap-1.5">
+   294→                {[1, 2, 3].map((s) => (
+   295→                  <div
+   296→                    key={s}
+   297→                    className={`h-1.5 rounded-full transition-all duration-300 ${
+   298→                      s <= step ? 'w-6 bg-orange-500' : 'w-1.5 bg-muted'
+   299→                    }`}
+   300→                  />
+   301→                ))}
+   302→              </div>
+   303→            )}
+   304→          </div>
+   305→        </SheetHeader>
+   306→
+   307→        <Separator />
+   308→
+   309→        {/* ── Step Content ──────────────────────────────────────────────── */}
+   310→        <div className="flex-1 overflow-y-auto">
+   311→          <AnimatePresence mode="wait">
+   312→            {/* ─── Step 1: Basic Info ──────────────────────────────────────── */}
+   313→            {step === 1 && (
+   314→              <motion.div
+   315→                key="step1"
+   316→                initial={{ opacity: 0, x: 40 }}
+   317→                animate={{ opacity: 1, x: 0 }}
+   318→                exit={{ opacity: 0, x: -40 }}
+   319→                transition={{ duration: 0.2 }}
+   320→                className="px-4 py-5 space-y-5"
+   321→              >
+   322→                <div className="space-y-2">
+   323→                  <Label htmlFor="plan-name" className="text-sm font-medium">
+   324→                    Nom du plan <span className="text-red-500">*</span>
+   325→                  </Label>
+   326→                  <Input
+   327→                    id="plan-name"
+   328→                    placeholder="Ex: Entraînement du matin"
+   329→                    value={name}
+   330→                    onChange={(e) => setName(e.target.value)}
+   331→                    maxLength={100}
+   332→                    className="h-11"
+   333→                  />
+   334→                  <p className="text-xs text-muted-foreground">{name.length}/100</p>
+   335→                </div>
+   336→
+   337→                <div className="space-y-2">
+   338→                  <Label htmlFor="plan-desc" className="text-sm font-medium">
+   339→                    Description
+   340→                  </Label>
+   341→                  <Textarea
+   342→                    id="plan-desc"
+   343→                    placeholder="Décrivez votre plan d'entraînement..."
+   344→                    value={description}
+   345→                    onChange={(e) => setDescription(e.target.value)}
+   346→                    maxLength={1000}
+   347→                    rows={3}
+   348→                    className="resize-none"
+   349→                  />
+   350→                </div>
+   351→
+   352→                <div className="flex items-center justify-between py-2">
+   353→                  <div>
+   354→                    <Label htmlFor="plan-public" className="text-sm font-medium">
+   355→                      Plan public
+   356→                    </Label>
+   357→                    <p className="text-xs text-muted-foreground mt-0.5">
+   358→                      Les autres joueurs pourront voir ce plan
+   359→                    </p>
+   360→                  </div>
+   361→                  <Switch
+   362→                    id="plan-public"
+   363→                    checked={isPublic}
+   364→                    onCheckedChange={setIsPublic}
+   365→                  />
+   366→                </div>
+   367→              </motion.div>
+   368→            )}
+   369→
+   370→            {/* ─── Step 2: Select Drills ──────────────────────────────────── */}
+   371→            {step === 2 && (
+   372→              <motion.div
+   373→                key="step2"
+   374→                initial={{ opacity: 0, x: 40 }}
+   375→                animate={{ opacity: 1, x: 0 }}
+   376→                exit={{ opacity: 0, x: -40 }}
+   377→                transition={{ duration: 0.2 }}
+   378→                className="flex flex-col"
+   379→              >
+   380→                {/* Search */}
+   381→                <div className="px-4 pt-4 pb-2 space-y-3">
+   382→                  <div className="relative">
+   383→                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+   384→                    <Input
+   385→                      placeholder="Rechercher un exercice..."
+   386→                      value={search}
+   387→                      onChange={(e) => setSearch(e.target.value)}
+   388→                      className="h-10 pl-9"
+   389→                    />
+   390→                  </div>
+   391→
+   392→                  {/* Category filter pills */}
+   393→                  <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
+   394→                    {CATEGORIES_LIST.map((cat) => (
+   395→                      <button
+   396→                        key={cat.key}
+   397→                        onClick={() => setCategoryFilter(cat.key)}
+   398→                        className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${
+   399→                          categoryFilter === cat.key
+   400→                            ? 'bg-orange-500 text-white'
+   401→                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+   402→                        }`}
+   403→                      >
+   404→                        <span>{cat.icon}</span>
+   405→                        {cat.label}
+   406→                      </button>
+   407→                    ))}
+   408→                  </div>
+   409→                </div>
+   410→
+   411→                {/* Drill grid */}
+   412→                <div className="px-4 pb-3">
+   413→                  {drillsLoading ? (
+   414→                    <div className="grid grid-cols-2 gap-2">
+   415→                      {[1, 2, 3, 4, 5, 6].map((i) => (
+   416→                        <Skeleton key={i} className="h-20 rounded-xl" />
+   417→                      ))}
+   418→                    </div>
+   419→                  ) : (
+   420→                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+   421→                      {filteredDrills.map((drill) => {
+   422→                        const selected = isSelected(drill.id)
+   423→                        return (
+   424→                          <motion.button
+   425→                            key={drill.id}
+   426→                            whileTap={{ scale: 0.97 }}
+   427→                            onClick={() => toggleDrill(drill)}
+   428→                            className={`relative flex items-center gap-2 p-2.5 rounded-xl border text-left transition-colors ${
+   429→                              selected
+   430→                                ? 'border-orange-500 bg-orange-500/10'
+   431→                                : 'border-border hover:border-orange-500/40 hover:bg-muted/50'
+   432→                            }`}
+   433→                          >
+   434→                            {selected && (
+   435→                              <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center">
+   436→                                <Check className="h-3 w-3 text-white" />
+   437→                              </div>
+   438→                            )}
+   439→                            <span className="text-xl">{drill.icon}</span>
+   440→                            <div className="min-w-0 flex-1">
+   441→                              <p className="text-xs font-medium truncate">{drill.nameFr}</p>
+   442→                              <p className="text-[10px] text-muted-foreground truncate">
+   443→                                {getCategoryLabel(drill.category)}
+   444→                              </p>
+   445→                            </div>
+   446→                          </motion.button>
+   447→                        )
+   448→                      })}
+   449→                      {filteredDrills.length === 0 && !drillsLoading && (
+   450→                        <div className="col-span-2 text-center py-6 text-sm text-muted-foreground">
+   451→                          Aucun exercice trouvé
+   452→                        </div>
+   453→                      )}
+   454→                    </div>
+   455→                  )}
+   456→                </div>
+   457→
+   458→                <Separator />
+   459→
+   460→                {/* Selected drills config */}
+   461→                <div className="px-4 pt-3 pb-4">
+   462→                  <div className="flex items-center justify-between mb-2">
+   463→                    <p className="text-sm font-semibold">
+   464→                      Exercices sélectionnés ({selectedDrills.length})
+   465→                    </p>
+   466→                    {selectedDrills.length > 0 && (
+   467→                      <span className="text-xs text-muted-foreground">
+   468→                        {formatDuration(totals.totalSec)} · {totals.totalReps} rép.
+   469→                      </span>
+   470→                    )}
+   471→                  </div>
+   472→
+   473→                  {selectedDrills.length === 0 ? (
+   474→                    <p className="text-xs text-muted-foreground text-center py-4">
+   475→                      Sélectionnez des exercices ci-dessus
+   476→                    </p>
+   477→                  ) : (
+   478→                    <div className="space-y-2 max-h-48 overflow-y-auto">
+   479→                      <AnimatePresence mode="popLayout">
+   480→                        {selectedDrills.map((sd, idx) => (
+   481→                          <motion.div
+   482→                            key={sd.drillId}
+   483→                            layout
+   484→                            initial={{ opacity: 0, y: 10 }}
+   485→                            animate={{ opacity: 1, y: 0 }}
+   486→                            exit={{ opacity: 0, scale: 0.9 }}
+   487→                            className="border rounded-xl p-2.5 space-y-2"
+   488→                          >
+   489→                            {/* Drill name + move / remove */}
+   490→                            <div className="flex items-center gap-2">
+   491→                              <span className="text-base font-bold text-muted-foreground w-5 text-center tabular-nums">
+   492→                                {idx + 1}
+   493→                              </span>
+   494→                              <div className="w-7 h-7 rounded-lg bg-orange-500/10 flex items-center justify-center shrink-0">
+   495→                                <span className="text-sm">{sd.icon}</span>
+   496→                              </div>
+   497→                              <p className="text-sm font-medium truncate flex-1">{sd.nameFr}</p>
+   498→                              <div className="flex items-center gap-0.5">
+   499→                                <button
+   500→                                  onClick={() => moveDrill(idx, 'up')}
+   501→                                  disabled={idx === 0}
+   502→                                  className="p-1 rounded-md hover:bg-muted disabled:opacity-30 transition-colors"
+   503→                                  aria-label="Monter"
+   504→                                >
+   505→                                  <ArrowLeft className="h-3.5 w-3.5 rotate-90" />
+   506→                                </button>
+   507→                                <button
+   508→                                  onClick={() => moveDrill(idx, 'down')}
+   509→                                  disabled={idx === selectedDrills.length - 1}
+   510→                                  className="p-1 rounded-md hover:bg-muted disabled:opacity-30 transition-colors"
+   511→                                  aria-label="Descendre"
+   512→                                >
+   513→                                  <ArrowLeft className="h-3.5 w-3.5 -rotate-90" />
+   514→                                </button>
+   515→                                <button
+   516→                                  onClick={() => removeSelectedDrill(sd.drillId)}
+   517→                                  className="p-1 rounded-md hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"
+   518→                                  aria-label="Retirer"
+   519→                                >
+   520→                                  <X className="h-3.5 w-3.5" />
+   521→                                </button>
+   522→                              </div>
+   523→                            </div>
+   524→
+   525→                            {/* Settings row */}
+   526→                            <div className="flex items-center gap-2 pl-7">
+   527→                              {/* Reps */}
+   528→                              <div className="flex items-center gap-1 flex-1">
+   529→                                <Target className="h-3 w-3 text-muted-foreground shrink-0" />
+   530→                                <Input
+   531→                                  type="number"
+   532→                                  min={1}
+   533→                                  max={200}
+   534→                                  value={sd.targetReps}
+   535→                                  onChange={(e) =>
+   536→                                    updateSelectedDrill(
+   537→                                      sd.drillId,
+   538→                                      'targetReps',
+   539→                                      Math.max(1, Math.min(200, parseInt(e.target.value) || 1)),
+   540→                                    )
+   541→                                  }
+   542→                                  className="h-7 w-16 text-xs px-1.5"
+   543→                                />
+   544→                              </div>
+   545→                              {/* Sets */}
+   546→                              <Select
+   547→                                value={String(sd.targetSets)}
+   548→                                onValueChange={(v) =>
+   549→                                  updateSelectedDrill(sd.drillId, 'targetSets', parseInt(v))
+   550→                                }
+   551→                              >
+   552→                                <SelectTrigger className="h-7 w-[70px] text-xs">
+   553→                                  <SelectValue />
+   554→                                </SelectTrigger>
+   555→                                <SelectContent>
+   556→                                  {SET_OPTIONS.map((n) => (
+   557→                                    <SelectItem key={n} value={String(n)} className="text-xs">
+   558→                                      {n} série{n > 1 ? 's' : ''}
+   559→                                    </SelectItem>
+   560→                                  ))}
+   561→                                </SelectContent>
+   562→                              </Select>
+   563→                              {/* Rest */}
+   564→                              <Select
+   565→                                value={String(sd.restSec)}
+   566→                                onValueChange={(v) =>
+   567→                                  updateSelectedDrill(sd.drillId, 'restSec', parseInt(v))
+   568→                                }
+   569→                              >
+   570→                                <SelectTrigger className="h-7 w-[70px] text-xs">
+   571→                                  <Clock className="h-3 w-3 mr-0.5" />
+   572→                                  <SelectValue />
+   573→                                </SelectTrigger>
+   574→                                <SelectContent>
+   575→                                  {REST_OPTIONS.map((r) => (
+   576→                                    <SelectItem key={r} value={String(r)} className="text-xs">
+   577→                                      {r}s
+   578→                                    </SelectItem>
+   579→                                  ))}
+   580→                                </SelectContent>
+   581→                              </Select>
+   582→                            </div>
+   583→                          </motion.div>
+   584→                        ))}
+   585→                      </AnimatePresence>
+   586→                    </div>
+   587→                  )}
+   588→                </div>
+   589→              </motion.div>
+   590→            )}
+   591→
+   592→            {/* ─── Step 3: Review & Save ──────────────────────────────────── */}
+   593→            {step === 3 && (
+   594→              <motion.div
+   595→                key="step3"
+   596→                initial={{ opacity: 0, x: 40 }}
+   597→                animate={{ opacity: 1, x: 0 }}
+   598→                exit={{ opacity: 0, x: -40 }}
+   599→                transition={{ duration: 0.2 }}
+   600→                className="px-4 py-5 space-y-4"
+   601→              >
+   602→                {/* Plan name */}
+   603→                <div>
+   604→                  <h3 className="text-lg font-bold">{name}</h3>
+   605→                  {description && (
+   606→                    <p className="text-sm text-muted-foreground mt-1">{description}</p>
+   607→                  )}
+   608→                  {isPublic && (
+   609→                    <Badge variant="outline" className="mt-2 text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+   610→                      Public
+   611→                    </Badge>
+   612→                  )}
+   613→                </div>
+   614→
+   615→                <Separator />
+   616→
+   617→                {/* Summary cards */}
+   618→                <div className="grid grid-cols-3 gap-2">
+   619→                  <div className="bg-muted rounded-xl p-3 text-center">
+   620→                    <p className="text-xl font-bold">{selectedDrills.length}</p>
+   621→                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">
+   622→                      Exercices
+   623→                    </p>
+   624→                  </div>
+   625→                  <div className="bg-muted rounded-xl p-3 text-center">
+   626→                    <p className="text-xl font-bold">{totals.totalReps}</p>
+   627→                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">
+   628→                      Répétitions
+   629→                    </p>
+   630→                  </div>
+   631→                  <div className="bg-muted rounded-xl p-3 text-center">
+   632→                    <p className="text-xl font-bold">{formatDuration(totals.totalSec)}</p>
+   633→                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">
+   634→                      Durée
+   635→                    </p>
+   636→                  </div>
+   637→                </div>
+   638→
+   639→                <Separator />
+   640→
+   641→                {/* Ordered drill list */}
+   642→                <div>
+   643→                  <p className="text-sm font-semibold mb-2">Ordre des exercices</p>
+   644→                  <div className="space-y-1.5">
+   645→                    {selectedDrills.map((sd, idx) => (
+   646→                      <div
+   647→                        key={sd.drillId}
+   648→                        className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
+   649→                      >
+   650→                        <span className="text-xs font-bold text-muted-foreground w-4 text-center tabular-nums">
+   651→                          {idx + 1}
+   652→                        </span>
+   653→                        <span className="text-base">{sd.icon}</span>
+   654→                        <div className="flex-1 min-w-0">
+   655→                          <p className="text-sm font-medium truncate">{sd.nameFr}</p>
+   656→                          <p className="text-[10px] text-muted-foreground">
+   657→                            {sd.targetReps} rép. × {sd.targetSets} série{sd.targetSets > 1 ? 's' : ''}
+   658→                            {sd.restSec > 0 && ` · ${sd.restSec}s repos`}
+   659→                          </p>
+   660→                        </div>
+   661→                        <Badge variant="outline" className="text-[10px] shrink-0">
+   662→                          {formatDuration(sd.durationSec * sd.targetSets + sd.restSec * (sd.targetSets - 1))}
+   663→                        </Badge>
+   664→                      </div>
+   665→                    ))}
+   666→                  </div>
+   667→                </div>
+   668→              </motion.div>
+   669→            )}
+   670→          </AnimatePresence>
+   671→        </div>
+   672→
+   673→        {/* ── Footer / Navigation ─────────────────────────────────────────── */}
+   674→        <div className="border-t bg-background px-4 py-3 space-y-2">
+   675→          {step < 3 && (
+   676→            <>
+   677→              {step === 2 && selectedDrills.length > 0 && (
+   678→                <p className="text-xs text-muted-foreground text-center">
+   679→                  {selectedDrills.length} exercice{selectedDrills.length > 1 ? 's' : ''} ·{' '}
+   680→                  {totals.totalReps} rép. · {formatDuration(totals.totalSec)}
+   681→                </p>
+   682→              )}
+   683→              <div className="flex items-center gap-2">
+   684→                {step > 1 && (
+   685→                  <Button
+   686→                    variant="outline"
+   687→                    onClick={() => setStep((s) => s - 1)}
+   688→                    className="h-11 rounded-xl"
+   689→                  >
+   690→                    <ArrowLeft className="h-4 w-4 mr-1.5" />
+   691→                    Retour
+   692→                  </Button>
+   693→                )}
+   694→                <Button
+   695→                  onClick={() => setStep((s) => s + 1)}
+   696→                  disabled={!canProceed}
+   697→                  className="flex-1 h-11 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl"
+   698→                >
+   699→                  Suivant
+   700→                  <ArrowRight className="h-4 w-4 ml-1.5" />
+   701→                </Button>
+   702→              </div>
+   703→            </>
+   704→          )}
+   705→          {step === 3 && (
+   706→            <Button
+   707→              onClick={() => saveMutation.mutate()}
+   708→              disabled={!canSave || saveMutation.isPending}
+   709→              className="w-full h-11 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl"
+   710→            >
+   711→              {saveMutation.isPending ? (
+   712→                <motion.div
+   713→                  animate={{ rotate: 360 }}
+   714→                  transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+   715→                  className="w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"
+   716→                />
+   717→              ) : (
+   718→                <Check className="h-4 w-4 mr-2" />
+   719→              )}
+   720→              {editPlan ? 'Modifier le plan' : 'Créer le plan'}
+   721→            </Button>
+   722→          )}
+   723→        </div>
+   724→      </SheetContent>
+   725→    </Sheet>
+   726→  )
+   727→}

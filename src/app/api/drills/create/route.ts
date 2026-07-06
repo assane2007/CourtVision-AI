@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { createDrillSchema, getZodErrorMessage } from '@/lib/validations'
+import { rateLimit } from '@/lib/rate-limit'
 
 // POST /api/drills/create — Create a custom drill owned by the current user
 export async function POST(req: NextRequest) {
@@ -10,6 +11,14 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    }
+
+    const rateResult = rateLimit(`drills:create:${session.user.email}`, 20, 15 * 60 * 1000)
+    if (!rateResult.success) {
+      return NextResponse.json(
+        { error: 'Trop de requêtes. Réessayez dans 15 minutes.' },
+        { status: 429 }
+      )
     }
 
     // Check content-length before parsing body

@@ -40,7 +40,8 @@ export function ProgressRing({
   return (
     <div className="flex flex-col items-center gap-1">
       <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} className="-rotate-90">
+        <svg width={size} height={size} className="-rotate-90" role="progressbar" aria-valuenow={Math.round(animatedValue)} aria-valuemin={0} aria-valuemax={100}>
+          <title>{label}: {Math.round(animatedValue)}%</title>
           <defs>
             <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#f97316" />
@@ -76,7 +77,8 @@ export function ProgressRing({
           <span className="text-lg font-bold leading-none tabular-nums">{centerText}</span>
         </div>
       </div>
-      <span className="text-[11px] font-medium text-muted-foreground leading-tight text-center">
+      <span className="sr-only">{label}: {Math.round(animatedValue)}%</span>
+      <span className="text-[11px] font-medium text-muted-foreground leading-tight text-center" aria-hidden="true">
         {label}
       </span>
     </div>

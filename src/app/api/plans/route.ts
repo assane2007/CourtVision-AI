@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { createPlanSchema, getZodErrorMessage } from '@/lib/validations'
+import { rateLimit } from '@/lib/rate-limit'
 
 // GET /api/plans — List user's training plans
 export async function GET() {
@@ -39,6 +40,14 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
+    const rateResult = rateLimit(`plans:post:${session.user.email}`, 20, 15 * 60 * 1000)
+    if (!rateResult.success) {
+      return NextResponse.json(
+        { error: 'Trop de requêtes. Réessayez dans 15 minutes.' },
+        { status: 429 }
+      )
     }
 
     // Check content-length before parsing body

@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useSession, signOut } from 'next-auth/react'
+import { signOut } from 'next-auth/react'
 import {
   Pencil,
   X,
@@ -16,6 +16,9 @@ import {
   Sparkles,
   Trophy,
   User,
+  Settings,
+  Shield,
+  History,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -23,6 +26,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Progress } from '@/components/ui/progress'
 import {
   Select,
   SelectContent,
@@ -32,7 +36,9 @@ import {
 } from '@/components/ui/select'
 import { useAppStore } from '@/stores/app'
 import { BottomNav } from '@/components/shared/bottom-nav'
-import { apiFetch } from '@/lib/utils'
+import { cn, apiFetch } from '@/lib/utils'
+import { containerVariants, itemVariants } from '@/lib/animations'
+import { getLevelInfo, getLevelColor, getLevelBgColor } from '@/lib/xp'
 import { toast } from 'sonner'
 
 interface PlayerData {
@@ -43,6 +49,8 @@ interface PlayerData {
   level?: string
   goals?: string
   createdAt?: string
+  xp?: number
+  xpLevel?: number
 }
 
 interface StatsData {
@@ -52,18 +60,28 @@ interface StatsData {
   weekSessions?: number
 }
 
-// ── Animation variants ──────────────────────────────────────────────
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.07, delayChildren: 0.05 },
-  },
+interface XpLogEntry {
+  id: string
+  amount: number
+  source: string
+  description: string
+  createdAt: string
 }
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 18 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' as const } },
+interface XpHistoryResponse {
+  xp: number
+  level: number
+  logs: XpLogEntry[]
+}
+
+// ── Source icon mapping ─────────────────────────────────────────────
+const SOURCE_ICONS: Record<string, string> = {
+  workout: '🎯',
+  streak: '🔥',
+  achievement: '🏅',
+  challenge: '🎯',
+  bonus: '⭐',
+  rep: '💪',
 }
 
 // ── Profile-specific labels (extends shared constants) ──────────────
@@ -92,7 +110,6 @@ const goalsLabels: Record<string, string> = {
 // ── Component ───────────────────────────────────────────────────────
 export function ProfileScreen() {
   const { navigate } = useAppStore()
-  useSession()
   const queryClient = useQueryClient()
   // ── Fetch player ────────────────────────────────────────────────
   const { data: player, isLoading } = useQuery<PlayerData>({
@@ -100,11 +117,21 @@ export function ProfileScreen() {
     queryFn: () => apiFetch<PlayerData>('/api/player'),
   })
 
+  // ── Fetch XP history ────────────────────────────────────────────
+  const { data: xpHistory, isLoading: xpHistoryLoading } = useQuery<XpHistoryResponse>({
+    queryKey: ['xp-history'],
+    queryFn: () => apiFetch<XpHistoryResponse>('/api/xp?limit=5'),
+    staleTime: 1000 * 60 * 2,
+  })
+
   // ── Fetch stats for summary ─────────────────────────────────────
   const { data: stats } = useQuery<StatsData>({
     queryKey: ['stats'],
     queryFn: () => apiFetch<StatsData>('/api/stats'),
   })
+
+  // ── Derived XP info ─────────────────────────────────────────────
+  const levelInfo = player?.xp != null ? getLevelInfo(player.xp) : null
 
   // ── Derived initial form data from player ─────────────────────
   const initialFormData = useMemo(
@@ -162,6 +189,7 @@ export function ProfileScreen() {
         </header>
         <div className="max-w-lg mx-auto px-4 pt-5 space-y-4">
           <Skeleton className="h-44 rounded-2xl" />
+          <Skeleton className="h-28 rounded-xl" />
           <Skeleton className="h-24 rounded-xl" />
           <Skeleton className="h-20 rounded-xl" />
         </div>
@@ -271,6 +299,75 @@ export function ProfileScreen() {
                         year: 'numeric',
                       })}
                     </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* ── XP & Level Section ───────────────────────────────── */}
+          <motion.div variants={itemVariants}>
+            <Card className="border-0 dark:border-border/50 shadow-lg dark:shadow-md overflow-hidden">
+              <div className="h-1.5 bg-gradient-to-r from-orange-400 via-amber-500 to-orange-500" />
+              <CardContent className="p-6">
+                {levelInfo ? (
+                  <div className="flex flex-col items-center text-center gap-4">
+                    {/* Large Level Badge */}
+                    <div className="flex flex-col items-center gap-2">
+                      <div
+                        className={cn(
+                          'flex h-16 w-16 items-center justify-center rounded-2xl border-2 shadow-lg',
+                          getLevelBgColor(levelInfo.currentLevel),
+                        )}
+                      >
+                        <Shield className={cn('h-8 w-8', getLevelColor(levelInfo.currentLevel))} />
+                      </div>
+                      <div>
+                        <p className={cn('text-2xl font-extrabold', getLevelColor(levelInfo.currentLevel))}>
+                          {levelInfo.isMaxLevel ? 'NIVEAU MAX' : `Niveau ${levelInfo.currentLevel}`}
+                        </p>
+                        <p className="text-sm font-medium text-muted-foreground">
+                          {levelInfo.levelTitle}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* XP Progress Bar */}
+                    <div className="w-full space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">XP</span>
+                        {levelInfo.isMaxLevel ? (
+                          <span className="font-semibold text-orange-500">NIVEAU MAX ATTEINT</span>
+                        ) : (
+                          <span className="tabular-nums text-muted-foreground">
+                            <span className="font-semibold text-orange-600 dark:text-orange-400">
+                              {levelInfo.xpInCurrentLevel}
+                            </span>
+                            {' / '}
+                            {levelInfo.xpNeededForNextLevel} XP
+                          </span>
+                        )}
+                      </div>
+                      <Progress
+                        value={levelInfo.progress * 100}
+                        className="h-3 bg-orange-500/20 [&>[data-slot=progress-indicator]]:bg-gradient-to-r [&>[data-slot=progress-indicator]]:from-orange-500 [&>[data-slot=progress-indicator]]:to-amber-500"
+                      />
+                      {!levelInfo.isMaxLevel && (
+                        <p className="text-[11px] text-muted-foreground">
+                          {levelInfo.xpNeededForNextLevel! - levelInfo.xpInCurrentLevel} XP restant avant le niveau {levelInfo.currentLevel + 1}
+                        </p>
+                      )}
+                      <p className="text-[11px] text-muted-foreground">
+                        Total : {levelInfo.currentXp} XP
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-3">
+                    <Skeleton className="h-16 w-16 rounded-2xl" />
+                    <Skeleton className="h-7 w-36" />
+                    <Skeleton className="h-2 w-full rounded-full" />
+                    <Skeleton className="h-3 w-24" />
                   </div>
                 )}
               </CardContent>
@@ -388,6 +485,80 @@ export function ProfileScreen() {
             )}
           </AnimatePresence>
 
+          {/* ── XP History Section ────────────────────────────────── */}
+          <motion.div variants={itemVariants}>
+            <Card className="border-0 dark:border-border/50 shadow-md overflow-hidden">
+              <CardHeader className="pb-2 px-5 pt-5">
+                <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                  <History className="h-4 w-4 text-orange-500" />
+                  Historique XP
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-5 pb-4">
+                {xpHistoryLoading ? (
+                  <div className="space-y-3">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <Skeleton className="h-8 w-8 rounded-lg flex-shrink-0" />
+                        <div className="flex-1 space-y-1">
+                          <Skeleton className="h-3.5 w-3/4" />
+                          <Skeleton className="h-2.5 w-1/2" />
+                        </div>
+                        <Skeleton className="h-4 w-10" />
+                      </div>
+                    ))}
+                  </div>
+                ) : xpHistory?.logs && xpHistory.logs.length > 0 ? (
+                  <div className="space-y-1">
+                    <div className="max-h-96 overflow-y-auto">
+                      {xpHistory.logs.map((log) => (
+                        <div
+                          key={log.id}
+                          className="flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10 text-sm flex-shrink-0">
+                            {SOURCE_ICONS[log.source] ?? '⭐'}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{log.description}</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {new Date(log.createdAt).toLocaleDateString('fr-FR', {
+                                day: 'numeric',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </p>
+                          </div>
+                          <span className="text-sm font-bold text-orange-500 flex-shrink-0">
+                            +{log.amount} XP
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => navigate('settings')}
+                      className="w-full flex items-center justify-center gap-1.5 pt-2 text-xs text-orange-500 font-medium hover:text-orange-600 transition-colors"
+                    >
+                      <span>Voir tout</span>
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="py-6 text-center">
+                    <Sparkles className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+                    <p className="text-sm text-muted-foreground">
+                      Aucun gain d&apos;XP pour le moment
+                    </p>
+                    <p className="text-xs text-muted-foreground/70 mt-0.5">
+                      Complétez des exercices pour gagner de l&apos;XP !
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+
           {/* ── Stats Summary ─────────────────────────────────────── */}
           <motion.div variants={itemVariants}>
             <Card className="border-0 dark:border-border/50 shadow-md">
@@ -436,6 +607,31 @@ export function ProfileScreen() {
                     </p>
                     <p className="text-xs text-muted-foreground">
                       Voir vos badges et accomplissements
+                    </p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* ── Settings Link ────────────────────────────────────── */}
+          <motion.div variants={itemVariants}>
+            <Card className="border-0 dark:border-border/50 shadow-md overflow-hidden">
+              <CardContent className="p-0">
+                <button
+                  onClick={() => navigate('settings')}
+                  className="w-full flex items-center gap-3 px-5 py-4 hover:bg-muted/50 transition-colors text-left group"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                    <Settings className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium group-hover:text-orange-600 transition-colors">
+                      Paramètres
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Notifications, son, préférences
                     </p>
                   </div>
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />

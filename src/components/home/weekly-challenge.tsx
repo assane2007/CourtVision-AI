@@ -229,13 +229,21 @@ export function WeeklyChallenge({
                 {Math.round(percentage)}%
               </span>
             </div>
-            <Progress
-              value={percentage}
-              className={cn(
+            <div
+              role="progressbar"
+              aria-valuenow={Math.min(currentProgress, challenge.target)}
+              aria-valuemin={0}
+              aria-valuemax={challenge.target}
+              aria-label={`Défi de la semaine: ${Math.min(currentProgress, challenge.target)}/${challenge.target} accompli`}
+            >
+              <Progress
+                value={percentage}
+                className={cn(
                 'h-2.5',
                 completed && '[&>[data-slot=progress-indicator]]:bg-gradient-to-r [&>[data-slot=progress-indicator]]:from-orange-500 [&>[data-slot=progress-indicator]]:to-amber-400',
               )}
             />
+            </div>
           </div>
 
           {completed && (

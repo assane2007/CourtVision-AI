@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type Screen = 'auth' | 'onboarding' | 'home' | 'plans' | 'train-hub' | 'drill-detail' | 'camera-workout' | 'workout-summary' | 'stats' | 'records' | 'profile' | 'achievements'
+export type Screen = 'auth' | 'onboarding' | 'home' | 'plans' | 'train-hub' | 'drill-detail' | 'camera-workout' | 'workout-summary' | 'stats' | 'records' | 'profile' | 'achievements' | 'settings'
 
 export interface WorkoutDrillResult {
   drillId: string

@@ -16,6 +16,7 @@ const WorkoutSummaryScreen = dynamic(() => import('@/components/screens/workout-
 const StatsScreen = dynamic(() => import('@/components/screens/stats-screen'), { ssr: false })
 const ProfileScreen = dynamic(() => import('@/components/screens/profile-screen'), { ssr: false })
 const AchievementsScreen = dynamic(() => import('@/components/screens/achievements-screen'), { ssr: false })
+const SettingsScreen = dynamic(() => import('@/components/screens/settings-screen'), { ssr: false })
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false }
@@ -135,7 +136,7 @@ export default function Home() {
 
   return (
     <ErrorBoundary>
-      <main className="min-h-screen bg-background">
+      <main id="main-content" className="min-h-screen bg-background">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={currentScreen}
@@ -162,6 +163,7 @@ export default function Home() {
               {currentScreen === 'stats' && session && <StatsScreen />}
               {currentScreen === 'profile' && session && <ProfileScreen />}
               {currentScreen === 'achievements' && session && <AchievementsScreen />}
+              {currentScreen === 'settings' && session && <SettingsScreen />}
               {!session && currentScreen !== 'auth' && <AuthScreen />}
             </StaggerChildren>
           </motion.div>

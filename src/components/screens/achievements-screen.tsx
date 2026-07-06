@@ -10,6 +10,7 @@ import { useAppStore } from '@/stores/app'
 import { BottomNav } from '@/components/shared/bottom-nav'
 import { SwipeToGoBack } from '@/components/shared/swipe-back'
 import { apiFetch, cn } from '@/lib/utils'
+import { containerVariants, itemVariants } from '@/lib/animations'
 
 interface Achievement {
   type: string
@@ -18,24 +19,6 @@ interface Achievement {
   icon: string
   unlocked: boolean
   unlockedAt: string | null
-}
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.06, delayChildren: 0.1 },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { type: 'spring' as const, stiffness: 400, damping: 25 },
-  },
 }
 
 export function AchievementsScreen() {

@@ -21,9 +21,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useAppStore } from '@/stores/app'
 import { BottomNav } from '@/components/shared/bottom-nav'
 import { CATEGORIES_LIST, CATEGORY_META, getCategoryMeta } from '@/lib/constants'
-import { apiFetch } from '@/lib/utils'
-
-// ── Types ────────────────────────────────────────────────────────────────────
+import { apiFetch, formatDuration } from '@/lib/utils'
+import { containerVariants, itemVariants } from '@/lib/animations'
 
 interface DrillRecord {
   drillId: string
@@ -53,32 +52,6 @@ interface RecordsSummary {
 interface RecordsResponse {
   records: DrillRecord[]
   summary: RecordsSummary
-}
-
-// ── Animation variants ──────────────────────────────────────────────────────
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.06, delayChildren: 0.05 },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' as const } },
-}
-
-// ── Helpers ─────────────────────────────────────────────────────────────────
-
-function formatDuration(ms: number): string {
-  if (!ms) return '—'
-  const sec = Math.floor(ms / 1000)
-  const min = Math.floor(sec / 60)
-  const s = sec % 60
-  if (min === 0) return `${s}s`
-  return `${min}min ${s.toString().padStart(2, '0')}s`
 }
 
 function formatDate(dateStr: string): string {
@@ -482,13 +455,15 @@ export function RecordsScreen() {
           )}
 
           {/* ── Category Tabs ────────────────────────────────────────── */}
-          <motion.div variants={itemVariants} className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
+          <motion.div variants={itemVariants} role="tablist" aria-label="Catégories" className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
             {CATEGORIES_LIST.map((cat) => (
               <button
                 key={cat.key}
                 type="button"
+                role="tab"
+                aria-selected={activeCategory === cat.key}
                 onClick={() => setActiveCategory(cat.key)}
-                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors border ${
+                className={`shrink-0 px-3.5 py-2.5 rounded-full text-xs font-medium transition-colors border min-h-[44px] flex items-center ${
                   activeCategory === cat.key
                     ? 'bg-orange-500 text-white border-orange-500'
                     : 'bg-muted/50 text-muted-foreground border-transparent hover:bg-muted'

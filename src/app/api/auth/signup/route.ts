@@ -14,26 +14,6 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json()
 
-    // Check duplicate email first (before full validation)
-    const rawEmail = body?.email
-    if (rawEmail && typeof rawEmail === 'string') {
-      const existing = await db.player.findUnique({ where: { email: rawEmail } })
-      if (existing) {
-        return NextResponse.json(
-          { error: 'Un compte avec cet email existe déjà' },
-          { status: 409 }
-        )
-      }
-    }
-
-    const rateResult = rateLimit(rawEmail || 'unknown')
-    if (!rateResult.success) {
-      return NextResponse.json(
-        { error: 'Trop de tentatives. Réessayez dans 15 minutes.' },
-        { status: 429 }
-      )
-    }
-
     const parsed = signupSchema.safeParse(body)
 
     if (!parsed.success) {
@@ -44,6 +24,24 @@ export async function POST(req: NextRequest) {
     }
 
     const { email, password, name } = parsed.data
+
+    const rateResult = rateLimit(email)
+    if (!rateResult.success) {
+      return NextResponse.json(
+        { error: 'Trop de tentatives. Réessayez dans 15 minutes.' },
+        { status: 429 }
+      )
+    }
+
+    // Check duplicate email after rate limiting and validation (prevents enumeration)
+    const existing = await db.player.findUnique({ where: { email } })
+    if (existing) {
+      // Generic message to prevent email enumeration
+      return NextResponse.json(
+        { error: 'Impossible de créer le compte. Veuillez réessayer.' },
+        { status: 409 }
+      )
+    }
 
     const hashedPassword = await bcrypt.hash(password, 12)
 
