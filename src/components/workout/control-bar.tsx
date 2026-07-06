@@ -371,8 +371,8 @@ export function BottomPanel({
       />
 
       <AnimatePresence mode="wait">
-        <AIFeedback aiResult={aiResult} aiError={aiError} phase={phase} />
-        <LocalFeedback feedback={feedback} phase={phase} aiResult={aiResult} aiError={aiError} />
+        <AIFeedback key="ai" aiResult={aiResult} aiError={aiError} phase={phase} />
+        <LocalFeedback key="local" feedback={feedback} phase={phase} aiResult={aiResult} aiError={aiError} />
       </AnimatePresence>
 
       <AICheckButton
