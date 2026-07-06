@@ -398,7 +398,7 @@ export function SettingsScreen() {
               </Card>
             </motion.div>
 
-            {/* -─ Notifications -------------------- */
+            {/* Notifications */}
             <motion.div variants={itemVariants}>
               <Card>
                 <CardHeader className="pb-2">
