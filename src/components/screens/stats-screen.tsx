@@ -301,11 +301,11 @@ export function StatsScreen() {
                 <CardContent className="px-5 pb-5 space-y-4">
                   {categories.map((cat: CategoryStat, idx: number) => {
                     const meta = CATEGORY_META[cat.category]
-                    const progress = Math.min((cat.avgScore / 10) * 100, 100)
+                    const progress = Math.min(cat.avgScore, 100)
                     const scoreColor =
-                      cat.avgScore >= 7
+                      cat.avgScore >= 70
                         ? 'text-emerald-600 dark:text-emerald-400'
-                        : cat.avgScore >= 4
+                        : cat.avgScore >= 40
                           ? 'text-amber-600 dark:text-amber-400'
                           : 'text-red-500 dark:text-red-400'
                     return (

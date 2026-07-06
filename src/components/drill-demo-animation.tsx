@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Play, Pause, RotateCcw, Volume2, VolumeX } from 'lucide-react'
+import { Play, Pause, RotateCcw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -106,7 +106,6 @@ export function DrillDemoAnimation({ category, className }: Props) {
 
   const [isPlaying, setIsPlaying] = useState(true)
   const [progress, setProgress] = useState(0)
-  const [muted, setMuted] = useState(true)
   const [imageLoaded, setImageLoaded] = useState(false)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 

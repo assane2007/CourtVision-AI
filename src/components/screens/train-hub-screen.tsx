@@ -27,6 +27,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { BottomNav } from '@/components/shared/bottom-nav'
+import { apiFetch } from '@/lib/utils'
 import {
   CATEGORIES_LIST,
   DIFFICULTIES,
@@ -130,7 +131,7 @@ export default function TrainHubScreen() {
     favoriteIds: string[]
   }>({
     queryKey: ['drills'],
-    queryFn: () => fetch('/api/drills').then((r) => r.json()),
+    queryFn: () => apiFetch('/api/drills'),
   })
 
   const drills: Drill[] = data?.drills ?? []
@@ -150,13 +151,11 @@ export default function TrainHubScreen() {
 
   const favoriteMutation = useMutation({
     mutationFn: async (drillId: string) => {
-      const res = await fetch('/api/drills/favorite', {
+      return apiFetch<{ favorited: boolean }>('/api/drills/favorite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ drillId }),
       })
-      if (!res.ok) throw new Error('Failed to toggle favorite')
-      return res.json() as Promise<{ favorited: boolean }>
     },
     onMutate: async (drillId) => {
       await queryClient.cancelQueries({ queryKey: ['drills'] })
@@ -186,16 +185,11 @@ export default function TrainHubScreen() {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch('/api/drills/create', {
+      return apiFetch('/api/drills/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(createForm),
       })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error || 'Erreur lors de la création')
-      }
-      return res.json()
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['drills'] })

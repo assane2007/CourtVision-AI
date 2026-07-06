@@ -125,3 +125,11 @@ export function hapticSuccess(): void {
   setTimeout(() => playClick(1200, 0.06, 0.2), 100)
   setTimeout(() => playClick(1500, 0.1, 0.25), 200)
 }
+
+/** Clean up AudioContext to prevent memory leak */
+export function destroyHaptics(): void {
+  if (_clickCtx) {
+    try { _clickCtx.close() } catch { /* already closed */ }
+    _clickCtx = null
+  }
+}

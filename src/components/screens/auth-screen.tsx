@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { toast } from 'sonner'
 
 /* ── Floating basketball config ──────────────────────────────────── */
 const floatingBasketballs = [
@@ -295,6 +296,7 @@ export default function AuthScreen() {
           <button
             type="button"
             className="text-xs text-orange-400/60 hover:text-orange-400/90 transition-colors cursor-pointer"
+            onClick={() => toast.info('Fonctionnalité à venir')}
           >
             Mot de passe oublié ?
           </button>
@@ -429,6 +431,7 @@ export default function AuthScreen() {
                       initial={{ opacity: 0, y: -4 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="text-sm text-red-400 font-medium"
+                      role="alert"
                     >
                       {loginError}
                     </motion.p>
@@ -512,6 +515,7 @@ export default function AuthScreen() {
                       initial={{ opacity: 0, y: -4 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="text-sm text-red-400 font-medium"
+                      role="alert"
                     >
                       {signupError}
                     </motion.p>

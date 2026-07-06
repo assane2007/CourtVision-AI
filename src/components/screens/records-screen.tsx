@@ -190,6 +190,7 @@ function TrendIndicator({ scores }: { scores: number[] }) {
 
 function RecordCard({ record, index }: { record: DrillRecord; index: number }) {
   const catMeta = getCategoryMeta(record.drillCategory)
+  if (!catMeta) return null
   const catColor = getCategoryColor(record.drillCategory)
 
   return (

@@ -1,0 +1,719 @@
+     1→'use client'
+     2→
+     3→import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+     4→import { motion, useReducedMotion } from 'framer-motion'
+     5→import { useAppStore, type WorkoutResult, type WorkoutDrillResult } from '@/stores/app'
+     6→import { Card, CardContent } from '@/components/ui/card'
+     7→import { Button } from '@/components/ui/button'
+     8→import { Badge } from '@/components/ui/badge'
+     9→import { Clock, Target, Flame, Trophy, RotateCcw, Home, Share2, Star, Crown } from 'lucide-react'
+    10→import { toast } from 'sonner'
+    11→import { useQuery } from '@tanstack/react-query'
+    12→import { CATEGORY_META } from '@/lib/constants'
+    13→import { apiFetch } from '@/lib/utils'
+    14→
+    15→// ─── Types ─────────────────────────────────────────────────────────────────────
+    16→
+    17→interface ConfettiParticle {
+    18→  id: number
+    19→  x: number
+    20→  y: number
+    21→  size: number
+    22→  color: string
+    23→  rotation: number
+    24→  velocityX: number
+    25→  velocityY: number
+    26→  rotationSpeed: number
+    27→  shape: 'circle' | 'rect' | 'triangle'
+    28→}
+    29→
+    30→interface GradeInfo {
+    31→  label: string
+    32→  emoji: string
+    33→  color: string
+    34→  glow: string
+    35→}
+    36→
+    37→// ─── Helpers ───────────────────────────────────────────────────────────────────
+    38→
+    39→function getGrade(score: number): GradeInfo {
+    40→  if (score > 80) return { label: 'EXCELLENT', emoji: '🏆', color: 'text-amber-400', glow: 'shadow-amber-500/40' }
+    41→  if (score > 60) return { label: 'TRÈS BIEN', emoji: '🔥', color: 'text-orange-400', glow: 'shadow-orange-500/40' }
+    42→  if (score > 40) return { label: 'BIEN', emoji: '💪', color: 'text-emerald-400', glow: 'shadow-emerald-500/40' }
+    43→  return { label: 'À AMÉLIORER', emoji: '📈', color: 'text-sky-400', glow: 'shadow-sky-500/40' }
+    44→}
+    45→
+    46→function getScoreBarColor(score: number): string {
+    47→  if (score >= 80) return 'bg-emerald-500'
+    48→  if (score >= 60) return 'bg-amber-500'
+    49→  if (score >= 40) return 'bg-orange-500'
+    50→  return 'bg-red-500'
+    51→}
+    52→
+    53→function formatDuration(totalSec: number): string {
+    54→  const min = Math.floor(totalSec / 60)
+    55→  const sec = totalSec % 60
+    56→  if (min === 0) return `${sec}s`
+    57→  return `${min}min ${sec.toString().padStart(2, '0')}s`
+    58→}
+    59→
+    60→function generateConfetti(count: number): ConfettiParticle[] {
+    61→  const colors = ['#f97316', '#f59e0b', '#fbbf24', '#ffffff', '#fed7aa', '#fb923c', '#fdba74']
+    62→  const shapes: ConfettiParticle['shape'][] = ['circle', 'rect', 'triangle']
+    63→
+    64→  return Array.from({ length: count }, (_, i) => ({
+    65→    id: i,
+    66→    x: 50 + (Math.random() - 0.5) * 30,
+    67→    y: 40 + (Math.random() - 0.5) * 20,
+    68→    size: 4 + Math.random() * 8,
+    69→    color: colors[Math.floor(Math.random() * colors.length)],
+    70→    rotation: Math.random() * 360,
+    71→    velocityX: (Math.random() - 0.5) * 15,
+    72→    velocityY: -(5 + Math.random() * 12),
+    73→    rotationSpeed: (Math.random() - 0.5) * 720,
+    74→    shape: shapes[Math.floor(Math.random() * shapes.length)],
+    75→  }))
+    76→}
+    77→
+    78→// ─── Court SVG Pattern ────────────────────────────────────────────────────────
+    79→
+    80→function CourtLinesSVG() {
+    81→  return (
+    82→    <svg
+    83→      className="absolute inset-0 w-full h-full pointer-events-none"
+    84→      viewBox="0 0 1000 1000"
+    85→      preserveAspectRatio="xMidYMid slice"
+    86→      fill="none"
+    87→      xmlns="http://www.w3.org/2000/svg"
+    88→    >
+    89→      <rect x="100" y="50" width="800" height="900" stroke="white" strokeWidth="2" opacity="0.04" />
+    90→      <line x1="100" y1="500" x2="900" y2="500" stroke="white" strokeWidth="2" opacity="0.04" />
+    91→      <circle cx="500" cy="500" r="60" stroke="white" strokeWidth="2" opacity="0.04" />
+    92→      <circle cx="500" cy="500" r="6" fill="white" opacity="0.04" />
+    93→      <rect x="350" y="50" width="300" height="190" stroke="white" strokeWidth="2" opacity="0.04" />
+    94→      <circle cx="500" cy="240" r="60" stroke="white" strokeWidth="2" opacity="0.03" strokeDasharray="0 94 188 94" />
+    95→      <path d="M 170 50 L 170 240 Q 170 440 500 440 Q 830 440 830 240 L 830 50" stroke="white" strokeWidth="2" opacity="0.04" />
+    96→      <circle cx="500" cy="100" r="22" stroke="white" strokeWidth="2" opacity="0.03" />
+    97→      <line x1="440" y1="60" x2="560" y2="60" stroke="white" strokeWidth="3" opacity="0.03" />
+    98→      <rect x="350" y="760" width="300" height="190" stroke="white" strokeWidth="2" opacity="0.04" />
+    99→      <circle cx="500" cy="760" r="60" stroke="white" strokeWidth="2" opacity="0.03" strokeDasharray="0 94 188 94" />
+   100→      <path d="M 170 950 L 170 760 Q 170 560 500 560 Q 830 560 830 760 L 830 950" stroke="white" strokeWidth="2" opacity="0.04" />
+   101→      <circle cx="500" cy="900" r="22" stroke="white" strokeWidth="2" opacity="0.03" />
+   102→      <line x1="440" y1="940" x2="560" y2="940" stroke="white" strokeWidth="3" opacity="0.03" />
+   103→    </svg>
+   104→  )
+   105→}
+   106→
+   107→// ─── Confetti Component ───────────────────────────────────────────────────────
+   108→
+   109→function ConfettiExplosion() {
+   110→  const prefersReducedMotion = useReducedMotion()
+   111→  const particles = useMemo(() => generateConfetti(55), [])
+   112→
+   113→  if (prefersReducedMotion) return null
+   114→
+   115→  return (
+   116→    <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">
+   117→      {particles.map((p) => (
+   118→        <motion.div
+   119→          key={p.id}
+   120→          className="absolute"
+   121→          style={{
+   122→            left: `${p.x}%`,
+   123→            top: `${p.y}%`,
+   124→          }}
+   125→          initial={{ opacity: 1, y: 0, x: 0, rotate: 0, scale: 0 }}
+   126→          animate={{
+   127→            opacity: [1, 1, 1, 0],
+   128→            y: [0, p.velocityY * 8, p.velocityY * 20],
+   129→            x: [0, p.velocityX * 3, p.velocityX * 8],
+   130→            rotate: [0, p.rotationSpeed * 0.5, p.rotationSpeed],
+   131→            scale: [0, 1.2, 0.6],
+   132→          }}
+   133→          transition={{
+   134→            duration: 2.5 + Math.random() * 1,
+   135→            ease: [0.25, 0.46, 0.45, 0.94],
+   136→            delay: Math.random() * 0.3,
+   137→          }}
+   138→        >
+   139→          {p.shape === 'circle' && (
+   140→            <div
+   141→              className="rounded-full"
+   142→              style={{ width: p.size, height: p.size, backgroundColor: p.color }}
+   143→            />
+   144→          )}
+   145→          {p.shape === 'rect' && (
+   146→            <div
+   147→              style={{
+   148→                width: p.size * 1.5,
+   149→                height: p.size * 0.6,
+   150→                backgroundColor: p.color,
+   151→                borderRadius: 1,
+   152→              }}
+   153→            />
+   154→          )}
+   155→          {p.shape === 'triangle' && (
+   156→            <div
+   157→              style={{
+   158→                width: 0,
+   159→                height: 0,
+   160→                borderLeft: `${p.size / 2}px solid transparent`,
+   161→                borderRight: `${p.size / 2}px solid transparent`,
+   162→                borderBottom: `${p.size}px solid ${p.color}`,
+   163→              }}
+   164→            />
+   165→          )}
+   166→        </motion.div>
+   167→      ))}
+   168→    </div>
+   169→  )
+   170→}
+   171→
+   172→// ─── Animated Score Circle ────────────────────────────────────────────────────
+   173→
+   174→function useCountUp(target: number, enabled: boolean): number {
+   175→  const [value, setValue] = useState(0)
+   176→  const frameRef = useRef<number>(0)
+   177→
+   178→  useEffect(() => {
+   179→    if (!enabled) {
+   180→      // Use rAF to avoid synchronous setState in effect (React 19 lint rule)
+   181→      const id = requestAnimationFrame(() => setValue(target))
+   182→      return () => cancelAnimationFrame(id)
+   183→    }
+   184→    const duration = 1800
+   185→    const start = performance.now()
+   186→    const from = 0
+   187→
+   188→    function tick(now: number) {
+   189→      const elapsed = now - start
+   190→      const progress = Math.min(elapsed / duration, 1)
+   191→      // Ease-out cubic
+   192→      const eased = 1 - Math.pow(1 - progress, 3)
+   193→      const current = Math.round(from + (target - from) * eased)
+   194→      setValue(current)
+   195→      if (progress < 1) {
+   196→        frameRef.current = requestAnimationFrame(tick)
+   197→      }
+   198→    }
+   199→
+   200→    frameRef.current = requestAnimationFrame(tick)
+   201→    return () => cancelAnimationFrame(frameRef.current)
+   202→  }, [target, enabled])
+   203→
+   204→  return value
+   205→}
+   206→
+   207→function ScoreCircle({ score, grade }: { score: number; grade: GradeInfo }) {
+   208→  const prefersReducedMotion = useReducedMotion()
+   209→  const displayScore = useCountUp(score, !prefersReducedMotion)
+   210→  const radius = 70
+   211→  const circumference = 2 * Math.PI * radius
+   212→  const strokeDashoffset = circumference - (displayScore / 100) * circumference
+   213→
+   214→  return (
+   215→    <div className="relative flex items-center justify-center">
+   216→      <motion.svg
+   217→        width="180"
+   218→        height="180"
+   219→        viewBox="0 0 180 180"
+   220→        className="-rotate-90"
+   221→        initial={prefersReducedMotion ? {} : { opacity: 0, scale: 0.5 }}
+   222→        animate={{ opacity: 1, scale: 1 }}
+   223→        transition={{ duration: 0.6, ease: 'easeOut' }}
+   224→      >
+   225→        {/* Background track */}
+   226→        <circle
+   227→          cx="90"
+   228→          cy="90"
+   229→          r={radius}
+   230→          fill="none"
+   231→          stroke="rgba(255,255,255,0.08)"
+   232→          strokeWidth="10"
+   233→        />
+   234→        {/* Animated progress */}
+   235→        <motion.circle
+   236→          cx="90"
+   237→          cy="90"
+   238→          r={radius}
+   239→          fill="none"
+   240→          stroke="url(#scoreGradient)"
+   241→          strokeWidth="10"
+   242→          strokeLinecap="round"
+   243→          strokeDasharray={circumference}
+   244→          initial={prefersReducedMotion ? { strokeDashoffset } : { strokeDashoffset: circumference }}
+   245→          animate={{ strokeDashoffset }}
+   246→          transition={{ duration: 1.8, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.3 }}
+   247→        />
+   248→        <defs>
+   249→          <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+   250→            <stop offset="0%" stopColor="#f97316" />
+   251→            <stop offset="100%" stopColor="#fbbf24" />
+   252→          </linearGradient>
+   253→        </defs>
+   254→      </motion.svg>
+   255→
+   256→      {/* Center content */}
+   257→      <motion.div
+   258→        className="absolute inset-0 flex flex-col items-center justify-center"
+   259→        initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
+   260→        animate={{ opacity: 1, y: 0 }}
+   261→        transition={{ delay: 0.8, duration: 0.5 }}
+   262→      >
+   263→        <span className="text-4xl font-black text-white tabular-nums">{displayScore}</span>
+   264→        <span className="text-xs text-white/40 uppercase tracking-widest mt-0.5">sur 100</span>
+   265→      </motion.div>
+   266→    </div>
+   267→  )
+   268→}
+   269→
+   270→// ─── Stats Card ───────────────────────────────────────────────────────────────
+   271→
+   272→function StatsCard({
+   273→  icon,
+   274→  label,
+   275→  value,
+   276→  subValue,
+   277→  delay,
+   278→}: {
+   279→  icon: React.ReactNode
+   280→  label: string
+   281→  value: string | number
+   282→  subValue?: string
+   283→  delay: number
+   284→}) {
+   285→  const prefersReducedMotion = useReducedMotion()
+   286→  return (
+   287→    <motion.div
+   288→      initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 20 }}
+   289→      animate={{ opacity: 1, y: 0 }}
+   290→      transition={{ duration: 0.5, delay, ease: 'easeOut' }}
+   291→    >
+   292→      <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+   293→        <CardContent className="p-4 flex items-center gap-3">
+   294→          <div className="w-10 h-10 rounded-xl bg-orange-500/15 flex items-center justify-center shrink-0">
+   295→            {icon}
+   296→          </div>
+   297→          <div className="min-w-0">
+   298→            <p className="text-xs text-white/40 uppercase tracking-wider">{label}</p>
+   299→            <p className="text-lg font-bold text-white tabular-nums leading-tight">{value}</p>
+   300→            {subValue && <p className="text-xs text-white/50">{subValue}</p>}
+   301→          </div>
+   302→        </CardContent>
+   303→      </Card>
+   304→    </motion.div>
+   305→  )
+   306→}
+   307→
+   308→// ─── Mini Bar Chart (score per drill) ─────────────────────────────────────────
+   309→
+   310→function DrillScoreChart({ drills }: { drills: WorkoutDrillResult[] }) {
+   311→  const prefersReducedMotion = useReducedMotion()
+   312→  const maxScore = Math.max(...drills.map((d) => d.score), 1)
+   313→
+   314→  return (
+   315→    <motion.div
+   316→      initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 20 }}
+   317→      animate={{ opacity: 1, y: 0 }}
+   318→      transition={{ duration: 0.5, delay: 0.55, ease: 'easeOut' }}
+   319→    >
+   320→      <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+   321→        <CardContent className="p-4">
+   322→          <div className="flex items-center gap-2 mb-3">
+   323→            <Target className="h-4 w-4 text-orange-400" />
+   324→            <p className="text-xs text-white/40 uppercase tracking-wider">Score par exercice</p>
+   325→          </div>
+   326→          <div className="flex items-end gap-2 h-20">
+   327→            {drills.map((drill, i) => (
+   328→              <div key={drill.drillId} className="flex-1 flex flex-col items-center gap-1">
+   329→                <span className="text-[10px] font-bold text-white/70 tabular-nums">{drill.score}</span>
+   330→                <motion.div
+   331→                  className="w-full rounded-t-md min-h-[4px]"
+   332→                  style={{ backgroundColor: drill.score >= 80 ? '#34d399' : drill.score >= 60 ? '#fbbf24' : drill.score >= 40 ? '#f97316' : '#f87171' }}
+   333→                  initial={prefersReducedMotion ? { height: `${(drill.score / maxScore) * 100}%` } : { height: '4px' }}
+   334→                  animate={{ height: `${(drill.score / maxScore) * 100}%` }}
+   335→                  transition={{ duration: 0.8, delay: 0.7 + i * 0.15, ease: [0.25, 0.46, 0.45, 0.94] }}
+   336→                />
+   337→                <span className="text-[9px] text-white/30 text-center leading-tight truncate w-full">
+   338→                  {drill.drillIcon}
+   339→                </span>
+   340→              </div>
+   341→            ))}
+   342→          </div>
+   343→        </CardContent>
+   344→      </Card>
+   345→    </motion.div>
+   346→  )
+   347→}
+   348→
+   349→// ─── Drill Breakdown Card ─────────────────────────────────────────────────────
+   350→
+   351→function DrillBreakdownCard({ drill, delay }: { drill: WorkoutDrillResult; delay: number }) {
+   352→  const prefersReducedMotion = useReducedMotion()
+   353→  const catMeta = CATEGORY_META[drill.drillCategory]
+   354→  const icon = catMeta?.icon ?? drill.drillIcon
+   355→
+   356→  return (
+   357→    <motion.div
+   358→      initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, x: -20 }}
+   359→      animate={{ opacity: 1, x: 0 }}
+   360→      transition={{ duration: 0.4, delay, ease: 'easeOut' }}
+   361→    >
+   362→      <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+   363→        <CardContent className="p-3 flex items-center gap-3">
+   364→          <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-xl shrink-0">
+   365→            {icon}
+   366→          </div>
+   367→          <div className="flex-1 min-w-0">
+   368→            <div className="flex items-center justify-between mb-1">
+   369→              <p className="text-sm font-medium text-white truncate pr-2">{drill.drillNameFr}</p>
+   370→              <div className="flex items-center gap-1.5 shrink-0">
+   371→                {drill.isPersonalBest && (
+   372→                  <Badge className="text-[9px] px-1.5 py-0 bg-amber-500/20 text-amber-400 border-amber-500/30 h-4">
+   373→                    🏅 Record
+   374→                  </Badge>
+   375→                )}
+   376→                <span className="text-sm font-bold text-white tabular-nums w-8 text-right">{drill.score}</span>
+   377→              </div>
+   378→            </div>
+   379→            <div className="flex items-center gap-2">
+   380→              <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+   381→                <motion.div
+   382→                  className={`h-full rounded-full ${getScoreBarColor(drill.score)}`}
+   383→                  initial={prefersReducedMotion ? { width: `${drill.score}%` } : { width: '0%' }}
+   384→                  animate={{ width: `${drill.score}%` }}
+   385→                  transition={{ duration: 0.8, delay: delay + 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+   386→                />
+   387→              </div>
+   388→              <span className="text-[10px] text-white/40 tabular-nums shrink-0">
+   389→                {drill.reps} rép.
+   390→              </span>
+   391→            </div>
+   392→          </div>
+   393→        </CardContent>
+   394→      </Card>
+   395→    </motion.div>
+   396→  )
+   397→}
+   398→
+   399→// ─── Share Function ───────────────────────────────────────────────────────────
+   400→
+   401→async function shareWorkout(result: WorkoutResult) {
+   402→  const bestDrill = result.drills.reduce(
+   403→    (best, d) => (d.score > best.score ? d : best),
+   404→    result.drills[0],
+   405→  )
+   406→  const text = [
+   407→    `🏀 CourtVision AI — Score: ${result.totalScore}%`,
+   408→    `| ${result.totalReps} rép. en ${formatDuration(result.totalDurationSec)}`,
+   409→    `| Exercice: ${bestDrill?.drillNameFr ?? 'N/A'}`,
+   410→  ].join(' ')
+   411→
+   412→  if (typeof navigator !== 'undefined' && navigator.share) {
+   413→    try {
+   414→      await navigator.share({
+   415→        title: 'CourtVision AI — Résultat d\'entraînement',
+   416→        text,
+   417→      })
+   418→    } catch (err) {
+   419→      // User cancelled or error — fallback to clipboard
+   420→      if ((err as DOMException).name !== 'AbortError') {
+   421→        await navigator.clipboard.writeText(text)
+   422→        toast.success('Copié dans le presse-papiers !', { description: text })
+   423→      }
+   424→    }
+   425→  } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+   426→    await navigator.clipboard.writeText(text)
+   427→    toast.success('Copié dans le presse-papiers !', { description: text })
+   428→  }
+   429→}
+   430→
+   431→// ─── Main Component ───────────────────────────────────────────────────────────
+   432→
+   433→// ── Types for records API ──────────────────────────────────────────────
+   434→interface DrillRecord {
+   435→  drillId: string
+   436→  drillNameFr: string
+   437→  bestScore: number
+   438→}
+   439→
+   440→interface RecordsResponse {
+   441→  records: DrillRecord[]
+   442→}
+   443→
+   444→// ── PR Banner Component ──────────────────────────────────────────────────
+   445→function PRBanner({ drillNames }: { drillNames: string[] }) {
+   446→  const prefersReducedMotion = useReducedMotion()
+   447→  return (
+   448→    <motion.div
+   449→      initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: -20, scale: 0.9 }}
+   450→      animate={{ opacity: 1, y: 0, scale: 1 }}
+   451→      transition={{ duration: 0.6, delay: 0.15, type: 'spring', stiffness: 200 }}
+   452→      className="mb-6 px-4"
+   453→    >
+   454→      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 border border-amber-500/30 backdrop-blur-sm">
+   455→        <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-orange-500/5" />
+   456→        <div className="relative px-4 py-3.5 flex items-center gap-3">
+   457→          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/30">
+   458→            <Crown className="h-5 w-5 text-white" />
+   459→          </div>
+   460→          <div className="min-w-0 flex-1">
+   461→            <p className="text-sm font-bold text-amber-300">
+   462→              🏆 NOUVEAU RECORD PERSONNEL !
+   463→            </p>
+   464→            <p className="text-xs text-amber-200/70 mt-0.5 truncate">
+   465→              {drillNames.length === 1
+   466→                ? `Nouveau record sur ${drillNames[0]} !`
+   467→                : `Records battus : ${drillNames.join(', ')}`}
+   468→            </p>
+   469→          </div>
+   470→        </div>
+   471→      </div>
+   472→    </motion.div>
+   473→  )
+   474→}
+   475→
+   476→export default function WorkoutSummaryScreen() {
+   477→  const { workoutResult, navigate, setWorkoutResult, selectDrill } = useAppStore()
+   478→  const prefersReducedMotion = useReducedMotion()
+   479→
+   480→  const grade = useMemo(() => getGrade(workoutResult?.totalScore ?? 0), [workoutResult?.totalScore])
+   481→
+   482→  const calories = useMemo(() => {
+   483→    if (!workoutResult) return 0
+   484→    return Math.round(
+   485→      workoutResult.totalReps * 8 + workoutResult.totalDurationSec * 0.5,
+   486→    )
+   487→  }, [workoutResult])
+   488→
+   489→  const bestDrill = useMemo(() => {
+   490→    if (!workoutResult?.drills.length) return null
+   491→    return workoutResult.drills.reduce(
+   492→      (best, d) => (d.score > best.score ? d : best),
+   493→      workoutResult.drills[0],
+   494→    )
+   495→  }, [workoutResult])
+   496→
+   497→  const handleRestart = useCallback(() => {
+   498→    if (workoutResult?.drills[0]?.drillId) {
+   499→      selectDrill(workoutResult.drills[0].drillId)
+   500→    }
+   501→    setWorkoutResult(null)
+   502→    navigate('camera-workout')
+   503→  }, [workoutResult, selectDrill, setWorkoutResult, navigate])
+   504→
+   505→  const handleHome = useCallback(() => {
+   506→    setWorkoutResult(null)
+   507→    navigate('home')
+   508→  }, [setWorkoutResult, navigate])
+   509→
+   510→  const handleShare = useCallback(() => {
+   511→    if (workoutResult) shareWorkout(workoutResult)
+   512→  }, [workoutResult])
+   513→
+   514→  // ── PR Detection: fetch existing records and compare ──────────────
+   515→  const { data: recordsData } = useQuery<RecordsResponse>({
+   516→    queryKey: ['records-pr-check'],
+   517→    queryFn: () => apiFetch<RecordsResponse>('/api/records'),
+   518→    staleTime: 0,
+   519→  })
+   520→
+   521→  const newPRDrillNames = useMemo(() => {
+   522→    if (!recordsData?.records || !workoutResult) return []
+   523→    const prMap = new Map(recordsData.records.map(r => [r.drillId, r.bestScore]))
+   524→    const names: string[] = []
+   525→    for (const drill of workoutResult.drills) {
+   526→      const prev = prMap.get(drill.drillId)
+   527→      // If no previous record, it's a new record; if score > previous, it's a PR
+   528→      if (prev === undefined || drill.score > prev) {
+   529→        names.push(drill.drillNameFr)
+   530→      }
+   531→    }
+   532→    return names
+   533→  }, [recordsData, workoutResult])
+   534→
+   535→  // Safety: redirect if no result
+   536→  if (!workoutResult) {
+   537→    navigate('home')
+   538→    return null
+   539→  }
+   540→
+   541→  const drills = workoutResult.drills
+   542→
+   543→  return (
+   544→    <div className="fixed inset-0 z-50 overflow-y-auto">
+   545→      {/* Background */}
+   546→      <div className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 relative">
+   547→        <CourtLinesSVG />
+   548→
+   549→        {/* Confetti */}
+   550→        <ConfettiExplosion />
+   551→
+   552→        {/* Content */}
+   553→        <div className="relative z-20 px-4 pt-8 pb-32 pb-safe max-w-lg mx-auto">
+   554→          {/* ── PR Celebration Banner ───────────────────────────────── */}
+   555→          {newPRDrillNames.length > 0 && <PRBanner drillNames={newPRDrillNames} />}
+   556→
+   557→          {/* ── Hero Section ────────────────────────────────────────── */}
+   558→          <motion.div
+   559→            className="flex flex-col items-center text-center mb-8"
+   560→            initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, scale: 0.9 }}
+   561→            animate={{ opacity: 1, scale: 1 }}
+   562→            transition={{ duration: 0.6, ease: 'easeOut' }}
+   563→          >
+   564→            {/* Celebration Emoji */}
+   565→            <motion.div
+   566→              className="text-6xl mb-4"
+   567→              initial={prefersReducedMotion ? {} : { y: 30, opacity: 0 }}
+   568→              animate={{ y: 0, opacity: 1 }}
+   569→              transition={{ delay: 0.2, duration: 0.5, type: 'spring', stiffness: 200 }}
+   570→            >
+   571→              {grade.emoji}
+   572→            </motion.div>
+   573→
+   574→            {/* Score Circle */}
+   575→            <ScoreCircle score={workoutResult.totalScore} grade={grade} />
+   576→
+   577→            {/* Grade Label */}
+   578→            <motion.div
+   579→              initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 10 }}
+   580→              animate={{ opacity: 1, y: 0 }}
+   581→              transition={{ delay: 1, duration: 0.4 }}
+   582→              className="mt-4"
+   583→            >
+   584→              <span className={`text-sm font-bold tracking-[0.25em] uppercase ${grade.color}`}>
+   585→                {grade.label}
+   586→              </span>
+   587→            </motion.div>
+   588→
+   589→            {/* Stars */}
+   590→            <motion.div
+   591→              className="flex gap-1 mt-3"
+   592→              initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0 }}
+   593→              animate={{ opacity: 1 }}
+   594→              transition={{ delay: 1.2, duration: 0.4 }}
+   595→            >
+   596→              {Array.from({ length: 5 }).map((_, i) => (
+   597→                <motion.div
+   598→                  key={i}
+   599→                  initial={prefersReducedMotion ? { scale: 1 } : { scale: 0 }}
+   600→                  animate={{ scale: 1 }}
+   601→                  transition={{ delay: 1.2 + i * 0.1, type: 'spring', stiffness: 300 }}
+   602→                >
+   603→                  <Star
+   604→                    className={`h-6 w-6 ${
+   605→                      i < Math.ceil(workoutResult.totalScore / 20)
+   606→                        ? 'fill-amber-400 text-amber-400'
+   607→                        : 'text-white/15'
+   608→                    }`}
+   609→                  />
+   610→                </motion.div>
+   611→              ))}
+   612→            </motion.div>
+   613→          </motion.div>
+   614→
+   615→          {/* ── Stats Breakdown ─────────────────────────────────────── */}
+   616→          <div className="space-y-3 mb-6">
+   617→            <StatsCard
+   618→              icon={<Clock className="h-5 w-5 text-orange-400" />}
+   619→              label="Durée totale"
+   620→              value={formatDuration(workoutResult.totalDurationSec)}
+   621→              delay={0.3}
+   622→            />
+   623→            <StatsCard
+   624→              icon={<Target className="h-5 w-5 text-orange-400" />}
+   625→              label="Répétitions totales"
+   626→              value={workoutResult.totalReps}
+   627→              subValue={
+   628→                drills.length > 1
+   629→                  ? `Moy. ${Math.round(workoutResult.totalReps / drills.length)} par exercice`
+   630→                  : undefined
+   631→              }
+   632→              delay={0.4}
+   633→            />
+   634→            {drills.length > 1 && (
+   635→              <DrillScoreChart drills={drills} />
+   636→            )}
+   637→            {bestDrill && (
+   638→              <StatsCard
+   639→                icon={<Trophy className="h-5 w-5 text-amber-400" />}
+   640→                label="Meilleur exercice"
+   641→                value={bestDrill.drillNameFr}
+   642→                subValue={`Score: ${bestDrill.score} — ${bestDrill.reps} rép.`}
+   643→                delay={drills.length > 1 ? 0.65 : 0.5}
+   644→              />
+   645→            )}
+   646→            <StatsCard
+   647→              icon={<Flame className="h-5 w-5 text-red-400" />}
+   648→              label="Calories estimées"
+   649→              value={`${calories} kcal`}
+   650→              subValue={`${workoutResult.totalReps} rép × 8 + ${formatDuration(workoutResult.totalDurationSec)} × 0.5`}
+   651→              delay={drills.length > 1 ? 0.75 : 0.6}
+   652→            />
+   653→          </div>
+   654→
+   655→          {/* ── Drill-by-Drill Breakdown ────────────────────────────── */}
+   656→          {drills.length > 1 && (
+   657→            <motion.div
+   658→              className="mb-6"
+   659→              initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 20 }}
+   660→              animate={{ opacity: 1, y: 0 }}
+   661→              transition={{ duration: 0.5, delay: 0.85, ease: 'easeOut' }}
+   662→            >
+   663→              <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-3 px-1">
+   664→                Détail par exercice
+   665→              </h3>
+   666→              <div className="space-y-2">
+   667→                {drills.map((drill, i) => (
+   668→                  <DrillBreakdownCard
+   669→                    key={drill.drillId}
+   670→                    drill={drill}
+   671→                    delay={0.9 + i * 0.1}
+   672→                  />
+   673→                ))}
+   674→              </div>
+   675→            </motion.div>
+   676→          )}
+   677→        </div>
+   678→
+   679→        {/* ── Sticky Bottom Actions ──────────────────────────────────── */}
+   680→        <motion.div
+   681→          className="fixed bottom-0 left-0 right-0 z-30 pb-safe"
+   682→          initial={prefersReducedMotion ? { y: 0 } : { y: 100 }}
+   683→          animate={{ y: 0 }}
+   684→          transition={{ delay: 1.5, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+   685→        >
+   686→          <div className="bg-gradient-to-t from-gray-950 via-gray-950/95 to-transparent pt-8 pb-4 px-4">
+   687→            <div className="max-w-lg mx-auto space-y-2.5">
+   688→              <Button
+   689→                onClick={handleRestart}
+   690→                className="w-full h-12 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/25"
+   691→              >
+   692→                <RotateCcw className="h-4 w-4 mr-2" />
+   693→                Refaire l&apos;entraînement
+   694→              </Button>
+   695→              <div className="grid grid-cols-2 gap-2.5">
+   696→                <Button
+   697→                  variant="outline"
+   698→                  onClick={handleHome}
+   699→                  className="h-11 border-white/15 text-white hover:bg-white/10 rounded-xl"
+   700→                >
+   701→                  <Home className="h-4 w-4 mr-2" />
+   702→                  Retour à l&apos;accueil
+   703→                </Button>
+   704→                <Button
+   705→                  variant="outline"
+   706→                  onClick={handleShare}
+   707→                  className="h-11 border-white/15 text-white hover:bg-white/10 rounded-xl"
+   708→                >
+   709→                  <Share2 className="h-4 w-4 mr-2" />
+   710→                  Partager
+   711→                </Button>
+   712→              </div>
+   713→            </div>
+   714→          </div>
+   715→        </motion.div>
+   716→      </div>
+   717→    </div>
+   718→  )
+   719→}

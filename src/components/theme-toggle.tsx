@@ -1,17 +1,20 @@
 'use client'
 
 import { useTheme } from 'next-themes'
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sun, Moon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export function ThemeToggle({ className }: { className?: string }) {
   const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
 
-  // Avoid hydration mismatch — only render after mount
-  useEffect(() => setMounted(true), [])
+  // Avoid hydration mismatch — useSyncExternalStore is the recommended React 18+ approach
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  )
 
   const isDark = theme === 'dark'
 

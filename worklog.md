@@ -532,3 +532,37 @@ Stage Summary:
 - All TypeScript compilation errors from subagent work resolved
 - Server compiles and serves HTTP 200
 - Pre-existing lint errors remain unchanged
+
+---
+Task ID: Final
+Agent: Main
+Task: Complete remaining todos — browser verification + cron job setup
+
+Work Log:
+- Attempted browser verification via agent-browser; discovered Z.ai platform network namespace isolation prevents agent-browser from reaching dev server on port 3000
+- Caddy gateway on port 81 serves Z.ai shell page (infrastructure layer, not app code)
+- Verified dev server compiles successfully: `GET / 200 in 25.2s`, all API endpoints return 200 (auth, stats, sessions, recommendations)
+- Fixed theme-toggle.tsx lint error: replaced `useEffect(() => setMounted(true), [])` with `useSyncExternalStore` pattern (React 18+ recommended approach)
+- Added `upload/**` to eslint.config.mjs ignores (pre-existing example code, not project code)
+- Lint now passes with 0 errors (down from 5 pre-existing)
+- Created cron job ID 254265: webDevReview every 15 minutes for continuous polish & QA
+- Cleaned up keep-dev-alive.sh helper script
+
+Stage Summary:
+- **Lint: 0 errors** (all pre-existing errors resolved or excluded)
+- **Compilation: Clean** — dev server compiles and serves 200
+- **APIs: All healthy** — auth, stats, sessions, recommendations all 200
+- **Cron: Active** — Job 254265 runs every 15min for ongoing improvement
+- **Infrastructure note**: agent-browser cannot directly test the app due to Z.ai platform network namespace isolation; the cron job's webDevReview will handle ongoing QA
+
+### Project Current Status
+- Basketball training PWA with 10+ screens, real-time pose detection, AI form checking, scoring, drill system
+- Complete feature set: Home (streak calendar, challenges), Training Hub, Camera Workout, Plans, Stats, Records, Achievements, Profile, Drill Detail, Workout Summary
+- Dark/light mode, French UI, PWA manifest, haptic feedback, audio cues, confetti celebrations
+- All code uses apiFetch() wrapper, consistent theming via shadcn/ui, Framer Motion animations
+- Known limitation: SVG drill demos still used (video replacement deferred)
+
+### Unresolved / Next Phase
+- Replace SVG stick-figure drill demos with real video clips
+- Browser E2E testing via Preview Panel (user-verified)
+- The cron job will autonomously continue polishing and adding features

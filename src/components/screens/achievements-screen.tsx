@@ -185,7 +185,7 @@ export function AchievementsScreen() {
 
                 {achievement.unlocked ? (
                   <Badge variant="secondary" className="text-[9px] bg-orange-500/15 text-orange-400 border-orange-500/20 relative z-10">
-                    {new Date(achievement.unlockedAt!).toLocaleDateString('fr-FR', {
+                    {new Date(achievement.unlockedAt ?? '').toLocaleDateString('fr-FR', {
                       day: 'numeric',
                       month: 'short',
                     })}

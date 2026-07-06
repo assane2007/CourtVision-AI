@@ -533,8 +533,13 @@ export default function WorkoutSummaryScreen() {
   }, [recordsData, workoutResult])
 
   // Safety: redirect if no result
+  useEffect(() => {
+    if (!workoutResult) {
+      navigate('home')
+    }
+  }, [workoutResult, navigate])
+
   if (!workoutResult) {
-    navigate('home')
     return null
   }
 

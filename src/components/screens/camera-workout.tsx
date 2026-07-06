@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { useAppStore } from '@/stores/app'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent } from '@/components/ui/card'
@@ -28,6 +28,7 @@ import {
   SkipForward,
   Timer,
 } from 'lucide-react'
+import { apiFetch } from '@/lib/utils'
 import {
   initAudio,
   toggleMute as toggleAudioMute,
@@ -783,9 +784,7 @@ export default function CameraWorkoutScreen() {
   const queryClient = useQueryClient()
 
   // Check for reduced-motion preference
-  const prefersReducedMotion = typeof window !== 'undefined'
-    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    : false
+  const prefersReducedMotion = useReducedMotion() ?? false
 
   // ── Refs ──────────────────────────────────────────────────────────────
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -847,7 +846,7 @@ export default function CameraWorkoutScreen() {
   // ── Fetch drill ───────────────────────────────────────────────────────
   const { data, isLoading: isDrillLoading } = useQuery({
     queryKey: ['drills'],
-    queryFn: () => fetch('/api/drills').then((r) => r.json()),
+    queryFn: () => apiFetch('/api/drills'),
   })
 
   const drill: Drill | undefined = data?.drills?.find(
@@ -864,13 +863,10 @@ export default function CameraWorkoutScreen() {
       score: number
       durationSec: number
     }) =>
-      fetch('/api/sessions', {
+      apiFetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-      }).then((r) => {
-        if (!r.ok) throw new Error('Failed to save session')
-        return r.json()
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] })
@@ -1078,7 +1074,7 @@ export default function CameraWorkoutScreen() {
           // Play time-up sound
           playSound('time-up')
           // Small delay then end
-          setTimeout(() => handleWorkoutEnd(), 500)
+          setTimeout(() => handleWorkoutEndRef.current(), 500)
           return 0
         }
 
@@ -1118,7 +1114,7 @@ export default function CameraWorkoutScreen() {
           if (restTimerRef.current) clearInterval(restTimerRef.current)
           if (restPulseTimerRef.current) clearInterval(restPulseTimerRef.current)
           // Start next set
-          startNextSet()
+          startNextSetRef.current()
           return 0
         }
         return prev - 1
@@ -1275,6 +1271,12 @@ export default function CameraWorkoutScreen() {
     if (restPulseTimerRef.current) clearInterval(restPulseTimerRef.current)
     startNextSet()
   }, [startNextSet])
+
+  // Refs for use in timer intervals (avoids stale closures)
+  const handleWorkoutEndRef = useRef(handleWorkoutEnd)
+  handleWorkoutEndRef.current = handleWorkoutEnd
+  const startNextSetRef = useRef(startNextSet)
+  startNextSetRef.current = startNextSet
 
   // ── Cleanup on unmount ────────────────────────────────────────────────
   useEffect(() => {
@@ -1514,7 +1516,7 @@ export default function CameraWorkoutScreen() {
 
       const imageBase64 = captureCanvas.toDataURL('image/jpeg', 0.8)
 
-      const response = await fetch('/api/ai/form-check', {
+      const result: AIFormCheckResult = await apiFetch('/api/ai/form-check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1524,12 +1526,6 @@ export default function CameraWorkoutScreen() {
           drillInstructions: drill?.instructionsFr ?? drill?.instructions ?? '',
         }),
       })
-
-      if (!response.ok) {
-        throw new Error('Erreur serveur')
-      }
-
-      const result: AIFormCheckResult = await response.json()
       setAiResult(result)
 
       if (result.feedback) {

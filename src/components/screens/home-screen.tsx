@@ -272,20 +272,26 @@ export default function HomeScreen() {
   })
 
   const sessions = sessionsData?.sessions
-  const recentSessions = sessions?.slice(0, 5) ?? []
 
-  // ---- Derived data ----
-  const weeklyGoal = 5 // Default weekly goal
-  const weeklyGoalProgress = stats
-    ? Math.min((stats.weekSessions / weeklyGoal) * 100, 100)
-    : 0
+  // Filter sessions to only this week (Monday–Sunday)
+  const now = new Date()
+  const dayOfWeek = now.getDay()
+  const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+  const startOfWeek = new Date(now)
+  startOfWeek.setDate(now.getDate() - mondayOffset)
+  startOfWeek.setHours(0, 0, 0, 0)
+
+  const weekSessions = sessions?.filter((s) => {
+    const d = new Date(s.startedAt)
+    return d >= startOfWeek
+  }) ?? []
 
   // Count total drills this week (for challenges)
-  const totalDrillsThisWeek = recentSessions.reduce((acc, s) => acc + s.totalDrills, 0)
+  const totalDrillsThisWeek = weekSessions.reduce((acc, s) => acc + s.totalDrills, 0)
 
   // Count high-score drills (>= 80%)
-  const highScoreDrillsCount = sessions
-    ? sessions.reduce(
+  const highScoreDrillsCount = weekSessions
+    ? weekSessions.reduce(
         (acc, s) =>
           acc +
           s.drills.filter((d: SessionDrill) => d.score >= 80).length,
@@ -294,8 +300,8 @@ export default function HomeScreen() {
     : 0
 
   // Count perfect-score drills (>= 90%)
-  const perfectScoreDrillsCount = sessions
-    ? sessions.reduce(
+  const perfectScoreDrillsCount = weekSessions
+    ? weekSessions.reduce(
         (acc, s) =>
           acc +
           s.drills.filter((d: SessionDrill) => d.score >= 90).length,
@@ -315,6 +321,14 @@ export default function HomeScreen() {
         return acc
       }, {})
     : {}
+
+  const recentSessions = sessions?.slice(0, 5) ?? []
+
+  // ---- Derived data ----
+  const weeklyGoal = 5 // Default weekly goal
+  const weeklyGoalProgress = stats
+    ? Math.min((stats.weekSessions / weeklyGoal) * 100, 100)
+    : 0
 
   const enrichedRecommendations = (recommendations ?? []).map((r) => ({
     ...r,
@@ -564,25 +578,23 @@ export default function HomeScreen() {
         {/* CTA: Start Training                                             */}
         {/* ---------------------------------------------------------------- */}
         <motion.div variants={itemVariants} className="pb-4">
-          <Button
-            onClick={() => navigate('train-hub')}
-            className={cn(
-              'w-full py-6 text-base font-semibold rounded-2xl shadow-lg shadow-orange-500/25 transition-all',
-              'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 hover:shadow-xl hover:shadow-orange-500/30',
-              !stats?.weekSessions && 'animate-pulse',
-            )}
-            asChild
+          <motion.div
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
           >
-            <motion.div
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              className="flex items-center justify-center gap-2"
+            <Button
+              onClick={() => navigate('train-hub')}
+              className={cn(
+                'w-full py-6 text-base font-semibold rounded-2xl shadow-lg shadow-orange-500/25 transition-all',
+                'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 hover:shadow-xl hover:shadow-orange-500/30',
+                !stats?.weekSessions && 'animate-pulse',
+              )}
             >
               <Camera className="h-5 w-5" />
               D&eacute;marrer l&apos;Entra&icirc;nement
               <ChevronRight className="ml-1 h-4 w-4" />
-            </motion.div>
-          </Button>
+            </Button>
+          </motion.div>
         </motion.div>
       </motion.div>
       </PullToRefresh>

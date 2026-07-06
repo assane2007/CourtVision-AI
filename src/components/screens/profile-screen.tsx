@@ -326,6 +326,7 @@ export function ProfileScreen() {
                           <SelectItem value="guard">Meneur / Arrière</SelectItem>
                           <SelectItem value="forward">Ailier</SelectItem>
                           <SelectItem value="center">Pivot</SelectItem>
+                          <SelectItem value="all_around">Polyvalent</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

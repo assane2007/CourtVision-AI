@@ -157,7 +157,7 @@ export default function PlansScreen() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-24">
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b">
         <div className="max-w-lg mx-auto flex items-center justify-between h-14 px-4">

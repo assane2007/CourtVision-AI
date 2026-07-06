@@ -81,7 +81,7 @@ export const useAppStore = create<AppState>((set) => ({
 
   navigate: (screen) => set((state) => ({
     currentScreen: screen,
-    screenHistory: [...state.screenHistory, state.currentScreen],
+    screenHistory: [...state.screenHistory.slice(-20), state.currentScreen],
   })),
 
   goBack: () => set((state) => {
