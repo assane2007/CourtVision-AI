@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
+  allowedDevOrigins: [
+    "preview-chat-c57e525c-9404-49d2-b3ca-8cf4027e7546.space-z.ai",
+  ],
   async headers() {
     return [
       {
@@ -19,9 +22,9 @@ const nextConfig: NextConfig = {
               "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob:",
-              "connect-src 'self'",
+              "connect-src 'self' https://*.space-z.ai",
               "font-src 'self'",
-              "frame-ancestors 'self'",
+              "frame-ancestors 'self' https://*.space-z.ai",
             ].join("; "),
           },
           {
@@ -30,7 +33,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "X-Frame-Options",
-            value: "DENY",
+            value: "ALLOW-FROM https://*.space-z.ai",
           },
           {
             key: "Referrer-Policy",
