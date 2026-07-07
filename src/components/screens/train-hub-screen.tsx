@@ -41,6 +41,7 @@ import {
   Target,
   Filter,
   Plus,
+  RefreshCw,
   Loader2,
   X,
 } from 'lucide-react'
@@ -147,7 +148,7 @@ export default function TrainHubScreen() {
   const [totalDrills, setTotalDrills] = useState<number>(0)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
 
-  const { data, isLoading } = useQuery<{
+  const { data, isLoading, isError, refetch } = useQuery<{
     drills: Drill[]
     favoriteIds: string[]
     nextCursor: string | null
@@ -348,6 +349,18 @@ export default function TrainHubScreen() {
     createForm.difficulty !== ''
 
   // ── Render ───────────────────────────────────────────────────────────────
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-20 px-4">
+        <p className="text-sm text-muted-foreground">Impossible de charger les données</p>
+        <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Réessayer
+        </Button>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">

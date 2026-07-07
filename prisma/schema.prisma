@@ -48,6 +48,9 @@ model Player {
   xpLogs        XpLog[]
   reactionScores ReactionScore[]
   aiChatMessages AIChatMessage[]
+
+  @@index([resetToken])
+  @@index([email])
 }
 
 model Drill {

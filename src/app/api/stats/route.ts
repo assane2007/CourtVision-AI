@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { withCache } from '@/lib/cache'
+import { rateLimit } from '@/lib/rate-limit'
 import { calculateStreak } from '@/lib/streak'
 import { trackError } from '@/lib/monitoring'
 
@@ -13,6 +14,11 @@ export async function GET(request: Request) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
+    const rl = rateLimit(`stats:get:${session.user.id}`, 30, 15 * 60 * 1000)
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Trop de requêtes. Réessayez plus tard.' }, { status: 429 })
     }
 
     const { searchParams } = new URL(request.url)

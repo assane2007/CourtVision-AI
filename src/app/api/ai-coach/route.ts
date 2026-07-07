@@ -199,7 +199,7 @@ dis-le honnêtement. Maximum 3-4 phrases par réponse.`
     const zai = await ZAI.create()
     const response = await zai.chat.completions.create({
       messages: [
-        { role: 'assistant', content: systemPrompt },
+        { role: 'system', content: systemPrompt },
         ...chatHistory,
         { role: 'user', content: userMessage },
       ],

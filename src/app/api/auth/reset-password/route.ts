@@ -32,8 +32,7 @@ export async function POST(request: Request) {
       where: { email: email.toLowerCase().trim() },
     })
 
-    // In dev mode, always return success (even if player not found)
-    // to prevent email enumeration. But only return token if found.
+    // Always return success to prevent email enumeration
     if (!player) {
       return NextResponse.json({
         message:
@@ -54,15 +53,18 @@ export async function POST(request: Request) {
       },
     })
 
-    // Build response — token is NEVER returned in production.
-    // In development, include it for testing convenience.
-    const response: { message: string; resetToken?: string } = {
+    // Build response — token is NEVER returned to the client.
+    // In development with explicit opt-in, log to server console for testing.
+    const response: { message: string } = {
       message:
         'Si un compte existe avec cet email, un lien de réinitialisation a été envoyé.',
     }
-    if (process.env.NODE_ENV === 'development') {
-      response.resetToken = resetToken
+
+    // Only log token to server-side console when explicitly opted in
+    if (process.env.DEV_SHOW_RESET_TOKEN === 'true') {
+      console.log(`[DEV] Reset token for ${email}: ${resetToken}`)
     }
+
     return NextResponse.json(response)
   } catch (error) {
     trackError('POST /api/auth/reset-password', error)

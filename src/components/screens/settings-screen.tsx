@@ -41,6 +41,7 @@ import { Separator } from '@/components/ui/separator'
 import { useAppStore } from '@/stores/app'
 import { useState } from 'react'
 import { SwipeToGoBack } from '@/components/shared/swipe-back'
+import { BottomNav } from '@/components/shared/bottom-nav'
 import { apiFetch, cn } from '@/lib/utils'
 import { useTranslation } from '@/components/providers/language-provider'
 import { containerVariants, itemVariants } from '@/lib/animations'
@@ -208,7 +209,7 @@ export function SettingsScreen() {
         </div>
       </header>
 
-      <main className="max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto px-4 pt-4 pb-8">
+      <main className="max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto px-4 pt-4 pb-24">
         {settingsLoading ? (
           <SettingsSkeleton />
         ) : (
@@ -591,6 +592,8 @@ export function SettingsScreen() {
           </motion.div>
         )}
       </main>
+
+      <BottomNav />
     </SwipeToGoBack>
   )
 }

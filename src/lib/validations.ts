@@ -12,14 +12,18 @@ export const VALID_POSITIONS = ['guard', 'forward', 'center'] as [string, ...str
 export const VALID_LEVELS = ['beginner', 'intermediate', 'advanced', 'elite'] as [string, ...string[]]
 export const VALID_GOALS = ['shooting', 'ball_handling', 'defense', 'conditioning', 'general'] as [string, ...string[]]
 
+// ── Reusable password validation (shared between signup and reset) ─────────
+
+const passwordRules = z.string()
+  .min(8, 'Le mot de passe doit contenir au moins 8 caractères')
+  .regex(/[A-Z]/, 'Le mot de passe doit contenir au moins une majuscule')
+  .regex(/[0-9]/, 'Le mot de passe doit contenir au moins un chiffre')
+
 // ── Auth ───────────────────────────────────────────────────────────────────
 
 export const signupSchema = z.object({
   email: z.string().email('Email invalide'),
-  password: z.string()
-    .min(8, 'Le mot de passe doit contenir au moins 8 caractères')
-    .regex(/[A-Z]/, 'Le mot de passe doit contenir au moins une majuscule')
-    .regex(/[0-9]/, 'Le mot de passe doit contenir au moins un chiffre'),
+  password: passwordRules,
   name: z.string().min(2, 'Le nom doit contenir au moins 2 caractères').max(50),
 })
 
@@ -118,7 +122,7 @@ export const resetPasswordSchema = z.object({
 
 export const resetPasswordConfirmSchema = z.object({
   token: z.string().min(1, 'Token requis.'),
-  newPassword: z.string().min(8, 'Le mot de passe doit contenir au moins 8 caractères.'),
+  newPassword: passwordRules,
 })
 
 // ── AI Coach ────────────────────────────────────────────────────────────
@@ -161,7 +165,7 @@ export const settingsPatchSchema = z.object({
   notifChallenge: z.boolean().optional(),
   notifAchievement: z.boolean().optional(),
   name: z.string().min(1).max(50).optional(),
-  avatar: z.string().max(500).optional(),
+  avatar: z.string().max(500).url('URL invalide').optional().nullable(),
 }).refine((data) => Object.keys(data).length > 0, {
   message: 'Au moins un champ est requis.',
 })

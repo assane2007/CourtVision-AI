@@ -192,39 +192,39 @@ export async function GET() {
         const xpReward = getAchievementXp()
         const totalXpToAward = xpReward.amount * newUnlocks.length
 
-        await Promise.all([
+        // Award XP atomically inside a transaction to prevent double-award race conditions
+        await db.$transaction(async (tx) => {
           // Create XP log entries for each achievement
-          db.xpLog.createMany({
+          await tx.xpLog.createMany({
             data: newUnlocks.map(n => ({
               playerId,
               amount: xpReward.amount,
               source: 'achievement',
               description: `Succès débloqué : ${n.title} 🏅`,
             })),
-          }),
+          })
           // Update player XP
-          db.player.update({
+          await tx.player.update({
             where: { id: playerId },
             data: {
               xp: { increment: totalXpToAward },
             },
-          }),
-        ])
-
-        // Recalculate level from new total XP
-        const updatedPlayer = await db.player.findUnique({
-          where: { id: playerId },
-          select: { xp: true, xpLevel: true },
-        })
-        if (updatedPlayer) {
-          const newLevel = getLevelFromXp(updatedPlayer.xp)
-          if (newLevel !== updatedPlayer.xpLevel) {
-            await db.player.update({
-              where: { id: playerId },
-              data: { xpLevel: newLevel },
-            })
+          })
+          // Recalculate level from new total XP
+          const updatedPlayer = await tx.player.findUnique({
+            where: { id: playerId },
+            select: { xp: true, xpLevel: true },
+          })
+          if (updatedPlayer) {
+            const newLevel = getLevelFromXp(updatedPlayer.xp)
+            if (newLevel !== updatedPlayer.xpLevel) {
+              await tx.player.update({
+                where: { id: playerId },
+                data: { xpLevel: newLevel },
+              })
+            }
           }
-        }
+        })
       }
 
       const allAchievements = ACHIEVEMENTS.map(a => ({

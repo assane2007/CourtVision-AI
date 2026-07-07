@@ -16,7 +16,9 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url)
-    const period = (searchParams.get('period') ?? 'all') as Period
+    const rawPeriod = searchParams.get('period') ?? 'all'
+    const validPeriods: Period[] = ['all', 'month', 'week']
+    const period: Period = validPeriods.includes(rawPeriod as Period) ? (rawPeriod as Period) : 'all'
 
     // Rate limit: 30 req / 15 min
     const rl = rateLimit(`leaderboard:${session.user.id}`, 30, 15 * 60 * 1000)
@@ -38,8 +40,8 @@ export async function GET(request: Request) {
       periodFilter = oneMonthAgo
     }
 
-    return withCache(`leaderboard:${period}`, 5 * 60 * 1000, async () => {
-      // Get top 20 players by total score, using DB-level aggregation
+    // Cache ONLY global leaderboard data (no per-user fields inside closure)
+    const globalData = await withCache(`leaderboard:global:${period}`, 5 * 60 * 1000, async () => {
       const players = await db.player.findMany({
         take: 20,
         orderBy: { xp: 'desc' },
@@ -60,21 +62,18 @@ export async function GET(request: Request) {
               startedAt: { gte: periodFilter },
             } : undefined,
             orderBy: { totalScore: 'desc' },
-            take: 100, // limit sessions per player
+            take: 100,
           },
         },
       })
 
-      // Build leaderboard with computed stats
       const leaderboard = players
         .map((p) => {
           const sessions = p.sessions
           const totalSessions = sessions.length
-          const totalReps = sessions.reduce((s, ses) => s + ses.totalReps, 0)
           const totalScore = sessions.reduce((s, ses) => s + ses.totalScore, 0)
           const avgScore = totalSessions > 0 ? Math.round((totalScore / totalSessions) * 10) / 10 : 0
 
-          // For period-based, use score-based ranking for periods
           let sortXp = p.xp
           if (period !== 'all') {
             sortXp = Math.round(totalScore)
@@ -92,63 +91,58 @@ export async function GET(request: Request) {
           }
         })
         .sort((a, b) => b.sortXp - a.sortXp)
-
-      // Assign ranks
-      const ranked = leaderboard.map((p, i) => ({
-        ...p,
-        rank: i + 1,
-      }))
-
-      // Find current player rank using count instead of loading all players
-      let playerRank: number | null = null
-      const currentPlayerRanked = ranked.find((p) => p.playerId === playerId)
-      if (currentPlayerRanked) {
-        playerRank = currentPlayerRanked.rank
-      } else {
-        // Player not in top 20 — count how many have higher XP
-        const currentPlayer = await db.player.findUnique({
-          where: { id: playerId },
-          select: { xp: true },
-        })
-        if (currentPlayer) {
-          playerRank = await db.player.count({
-            where: { xp: { gt: currentPlayer.xp } },
-          }) + 1
-        }
-      }
+        .map((p, i) => ({ ...p, rank: i + 1 }))
 
       const totalPlayers = await db.player.count()
 
-      // For the "friends" section (just the current player context)
-      const friends = currentPlayerRanked
-        ? [
-            {
-              ...currentPlayerRanked,
-              isCurrentUser: true,
-            },
-          ]
-        : []
+      // Return only global data — no per-user fields
+      return { leaderboard, totalPlayers }
+    })
 
-      // Anonymize names for other players (show first name only)
-      const anonymized = ranked.map((p) => ({
-        rank: p.rank,
-        name: p.playerId === playerId
-          ? p.name
-          : p.name.split(' ')[0] || 'Joueur',
-        xp: p.xp,
-        xpLevel: p.xpLevel,
-        totalSessions: p.totalSessions,
-        avgScore: p.avgScore,
-        position: p.position,
-        isCurrentUser: p.playerId === playerId,
-      }))
+    // Compute per-user fields OUTSIDE the cache
+    const { leaderboard: ranked, totalPlayers } = globalData
 
-      return NextResponse.json({
-        leaderboard: anonymized,
-        friends,
-        playerRank,
-        totalPlayers,
+    let playerRank: number | null = null
+    const currentPlayerRanked = ranked.find((p) => p.playerId === playerId)
+    if (currentPlayerRanked) {
+      playerRank = currentPlayerRanked.rank
+    } else {
+      // Player not in top 20 — count how many have higher XP
+      const currentPlayer = await db.player.findUnique({
+        where: { id: playerId },
+        select: { xp: true },
       })
+      if (currentPlayer) {
+        playerRank = await db.player.count({
+          where: { xp: { gt: currentPlayer.xp } },
+        }) + 1
+      }
+    }
+
+    // Per-user friends section (just the current player context)
+    const friends = currentPlayerRanked
+      ? [{ ...currentPlayerRanked, isCurrentUser: true }]
+      : []
+
+    // Anonymize names for other players (show first name only)
+    const anonymized = ranked.map((p) => ({
+      rank: p.rank,
+      name: p.playerId === playerId
+        ? p.name
+        : p.name.split(' ')[0] || 'Joueur',
+      xp: p.xp,
+      xpLevel: p.xpLevel,
+      totalSessions: p.totalSessions,
+      avgScore: p.avgScore,
+      position: p.position,
+      isCurrentUser: p.playerId === playerId,
+    }))
+
+    return NextResponse.json({
+      leaderboard: anonymized,
+      friends,
+      playerRank,
+      totalPlayers,
     })
   } catch (error) {
     trackError('GET /api/leaderboard', error)

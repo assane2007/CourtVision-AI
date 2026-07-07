@@ -17,6 +17,7 @@ import {
   VolumeX,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/utils'
+import { useTranslation } from '@/components/providers/language-provider'
 import {
   initAudio,
   toggleMute as toggleAudioMute,
@@ -71,6 +72,7 @@ import {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function CameraWorkoutScreen() {
+  const { t } = useTranslation()
   const {
     selectedDrillId,
     goBack,
@@ -761,7 +763,7 @@ export default function CameraWorkoutScreen() {
       }
     } catch (err) {
       if (process.env.NODE_ENV === 'development') console.error('AI form check failed:', err)
-      setAiError('Vérification IA indisponible. Réessayez.')
+      setAiError(t('error.serverError'))
     } finally {
       setAiLoading(false)
 

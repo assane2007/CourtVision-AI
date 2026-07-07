@@ -165,7 +165,7 @@ const slideVariants: Variants = {
 const dotVariants: Variants = {
   inactive: {
     scale: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'hsl(var(--muted-foreground))',
   },
   active: {
     scale: 1.3,
@@ -251,7 +251,7 @@ export default function OnboardingScreen() {
           ${
             isSelected
               ? 'border-orange-500 bg-orange-500/10 shadow-lg shadow-orange-500/10'
-              : 'border-white/10 bg-white/5 hover:bg-white/10'
+              : 'border-border bg-muted hover:bg-muted/80'
           }
         `}
         initial={{ opacity: 0, y: 20 }}
@@ -274,7 +274,7 @@ export default function OnboardingScreen() {
             ${
               isSelected
                 ? 'bg-orange-500/20 text-orange-400'
-                : 'bg-white/10 text-white/60'
+                : 'bg-muted/80 text-muted-foreground'
             }
           `}
         >
@@ -282,16 +282,12 @@ export default function OnboardingScreen() {
         </div>
 
         {/* Title */}
-        <h3
-          className={`text-sm font-semibold transition-colors duration-200 ${
-            isSelected ? 'text-white' : 'text-white/80'
-          }`}
-        >
+        <h3 className="text-sm font-semibold transition-colors duration-200 text-foreground">
           {option.title}
         </h3>
 
         {/* Description */}
-        <p className="text-xs leading-relaxed text-white/40">{option.description}</p>
+        <p className="text-xs leading-relaxed text-muted-foreground">{option.description}</p>
       </motion.button>
     )
   }
@@ -320,22 +316,22 @@ export default function OnboardingScreen() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-y-auto bg-gradient-to-br from-gray-950 via-gray-900 to-black px-4 py-10">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-y-auto bg-background px-4 py-10">
       {/* Ambient glow */}
       <div className="pointer-events-none absolute left-1/2 top-1/3 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-500/5 blur-[120px]" />
       {/* Basketball court background */}
-      <svg className="pointer-events-none absolute inset-0 w-full h-full opacity-[0.03]" viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice">
-        <rect x="20" y="20" width="360" height="760" rx="12" fill="none" stroke="white" strokeWidth="2"/>
-        <circle cx="200" cy="400" r="60" fill="none" stroke="white" strokeWidth="1.5"/>
-        <line x1="20" y1="400" x2="380" y2="400" stroke="white" strokeWidth="1"/>
-        <rect x="130" y="20" width="140" height="90" fill="none" stroke="white" strokeWidth="1.5"/>
-        <circle cx="200" cy="110" r="8" fill="none" stroke="white" strokeWidth="1.5"/>
+      <svg className="pointer-events-none absolute inset-0 w-full h-full text-border opacity-[0.15]" viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice">
+        <rect x="20" y="20" width="360" height="760" rx="12" fill="none" stroke="currentColor" strokeWidth="2"/>
+        <circle cx="200" cy="400" r="60" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+        <line x1="20" y1="400" x2="380" y2="400" stroke="currentColor" strokeWidth="1"/>
+        <rect x="130" y="20" width="140" height="90" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+        <circle cx="200" cy="110" r="8" fill="none" stroke="currentColor" strokeWidth="1.5"/>
       </svg>
 
       <div className="relative z-10 flex w-full max-w-md flex-col items-center gap-8">
         {/* Progress bar + dots */}
         <div className="w-full space-y-2">
-          <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+          <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
             <motion.div
               className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-400"
               animate={{ width: `${((step + 1) / 3) * 100}%` }}
@@ -343,7 +339,7 @@ export default function OnboardingScreen() {
             />
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-[10px] text-white/30 uppercase tracking-widest">
+            <span className="text-[10px] text-muted-foreground uppercase tracking-widest">
               Étape {step + 1} sur 3
             </span>
             <div className="flex items-center gap-2">
@@ -371,10 +367,10 @@ export default function OnboardingScreen() {
             transition={{ duration: 0.25 }}
             className="text-center"
           >
-            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
               {stepTitles[step]}
             </h1>
-            <p className="mt-2 text-sm leading-relaxed text-white/50">
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               {stepSubtitles[step]}
             </p>
           </motion.div>
@@ -418,7 +414,7 @@ export default function OnboardingScreen() {
                   variant="ghost"
                   size="sm"
                   onClick={goBack}
-                  className="text-white/70 hover:text-white hover:bg-white/10"
+                  className="text-muted-foreground hover:text-foreground hover:bg-muted"
                   aria-label={t('action.back')}
                 >
                   <ArrowLeft className="h-4 w-4" />
@@ -444,7 +440,7 @@ export default function OnboardingScreen() {
             >
               {isSubmitting ? (
                 <motion.div
-                  className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white"
+                  className="h-4 w-4 rounded-full border-2 border-muted-foreground border-t-foreground"
                   animate={{ rotate: 360 }}
                   transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
                 />

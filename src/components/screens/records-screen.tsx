@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import {
   Trophy,
+  RefreshCw,
   Search,
   ArrowLeft,
   Dumbbell,
@@ -55,8 +56,8 @@ interface RecordsResponse {
   summary: RecordsSummary
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('fr-FR', {
+function formatDate(dateStr: string, language: string): string {
+  return new Date(dateStr).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
     day: 'numeric',
     month: 'short',
   })
@@ -163,6 +164,7 @@ function TrendIndicator({ scores }: { scores: number[] }) {
 // ── Record Card ─────────────────────────────────────────────────────────────
 
 function RecordCard({ record, index }: { record: DrillRecord; index: number }) {
+  const { language } = useTranslation()
   const catMeta = getCategoryMeta(record.drillCategory)
   if (!catMeta) return null
   const catColor = getCategoryColor(record.drillCategory)
@@ -227,7 +229,7 @@ function RecordCard({ record, index }: { record: DrillRecord; index: number }) {
 
           {/* Last completed */}
           <div className="mt-2 text-[11px] text-muted-foreground/70">
-            Dernière fois : {formatDate(record.lastCompleted)}
+            Dernière fois : {formatDate(record.lastCompleted, language)}
           </div>
         </CardContent>
       </Card>
@@ -297,7 +299,7 @@ export function RecordsScreen() {
   const [searchQuery, setSearchQuery] = useState('')
 
   // ── Fetch records ─────────────────────────────────────────────────────
-  const { data, isLoading } = useQuery<RecordsResponse>({
+  const { data, isLoading, isError, refetch } = useQuery<RecordsResponse>({
     queryKey: ['records'],
     queryFn: () => apiFetch<RecordsResponse>('/api/records'),
   })
@@ -348,6 +350,18 @@ export function RecordsScreen() {
           ))}
         </div>
         <BottomNav />
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-20 px-4">
+        <p className="text-sm text-muted-foreground">Impossible de charger les données</p>
+        <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Réessayer
+        </Button>
       </div>
     )
   }

@@ -20,6 +20,7 @@ import {
   Clock,
   Target,
   Dumbbell,
+  RefreshCw,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from '@/components/providers/language-provider'
@@ -90,7 +91,7 @@ export default function PlansScreen() {
   const [dialogKey, setDialogKey] = useState(0)
 
   // ── Fetch plans ───────────────────────────────────────────────────────
-  const { data, isLoading } = useQuery<{ plans: Plan[] }>({
+  const { data, isLoading, isError, refetch } = useQuery<{ plans: Plan[] }>({
     queryKey: ['plans'],
     queryFn: () => apiFetch<{ plans: Plan[] }>('/api/plans'),
   })
@@ -145,6 +146,18 @@ export default function PlansScreen() {
     setCreateOpen(false)
     setEditingPlan(null)
   }, [])
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-20 px-4">
+        <p className="text-sm text-muted-foreground">Impossible de charger les données</p>
+        <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Réessayer
+        </Button>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background pb-24">

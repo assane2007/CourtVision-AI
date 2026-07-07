@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAppStore } from '@/stores/app'
 import { apiFetch } from '@/lib/utils'
+import { useTranslation } from '@/components/providers/language-provider'
 import { BottomNav } from '@/components/shared/bottom-nav'
 import {
   AlertDialog,
@@ -43,6 +44,7 @@ const SUGGESTED_ACTIONS = [
 // Component
 // ---------------------------------------------------------------------------
 export default function AICoachScreen() {
+  const { t } = useTranslation()
   const { data: session } = useSession()
   const userName = session?.user?.name || 'Joueur'
   const goBack = useAppStore((s) => s.goBack)
@@ -191,10 +193,10 @@ export default function AICoachScreen() {
                 <Bot className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="text-base font-bold leading-tight">Coach IA</h1>
+                <h1 className="text-base font-bold leading-tight">{t('coach.title')}</h1>
                 <div className="flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-[11px] text-muted-foreground">En ligne</span>
+                  <span className="text-[11px] text-muted-foreground">{t('coach.online')}</span>
                 </div>
               </div>
             </div>
@@ -218,7 +220,7 @@ export default function AICoachScreen() {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogCancel>{t('action.cancel')}</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleClearChat}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -259,7 +261,7 @@ export default function AICoachScreen() {
               </div>
             </div>
 
-            <h2 className="text-lg font-bold mb-1">Ton coach personnel 🏀</h2>
+            <h2 className="text-lg font-bold mb-1">{t('coach.personalCoach')}</h2>
             <p className="text-sm text-muted-foreground max-w-[280px] mb-8 leading-relaxed">
               Disponible 24h/24 pour t&apos;aider à progresser sur le terrain.
             </p>
@@ -276,7 +278,7 @@ export default function AICoachScreen() {
             {/* Suggested actions */}
             <div className="w-full">
               <p className="text-xs text-muted-foreground mb-3 font-medium">
-                💡 Suggestions rapides
+                {t('coach.suggestedActions')}
               </p>
               <div className="flex flex-wrap gap-2 justify-center">
                 {SUGGESTED_ACTIONS.map((action) => (
@@ -363,7 +365,7 @@ export default function AICoachScreen() {
                 <button
                   key={action}
                   onClick={() => handleSuggestedAction(action)}
-                  className="flex-shrink-0 px-3 py-1.5 rounded-full bg-card border border-border text-[11px] font-medium text-muted-foreground hover:text-orange-600 hover:border-orange-300 dark:hover:text-orange-400 dark:hover:border-orange-700 transition-colors whitespace-nowrap"
+                  className="flex-shrink-0 min-h-[44px] flex items-center px-3 py-2.5 rounded-full bg-card border border-border text-xs font-medium text-muted-foreground hover:text-orange-600 hover:border-orange-300 dark:hover:text-orange-400 dark:hover:border-orange-700 transition-colors whitespace-nowrap"
                 >
                   {action}
                 </button>
@@ -384,7 +386,7 @@ export default function AICoachScreen() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Demande au coach..."
+            placeholder={t('coach.typeMessage')}
             disabled={isLoading}
             className="flex-1 h-11 rounded-full bg-muted border-0 px-4 text-sm focus-visible:ring-1 focus-visible:ring-orange-500/50"
             maxLength={1000}

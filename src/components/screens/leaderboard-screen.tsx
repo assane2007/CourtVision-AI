@@ -118,10 +118,13 @@ export function LeaderboardScreen() {
 
         {/* Period Tabs */}
         <div className="max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto px-4 pb-3">
-          <div className="flex gap-1 bg-muted rounded-xl p-1">
+          <div className="flex gap-1 bg-muted rounded-xl p-1" role="tablist" aria-label="Période du classement">
             {PERIOD_TABS.map((tab) => (
               <button
                 key={tab.value}
+                role="tab"
+                aria-selected={period === tab.value}
+                tabIndex={period === tab.value ? 0 : -1}
                 onClick={() => setPeriod(tab.value)}
                 className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${
                   period === tab.value

@@ -107,6 +107,81 @@ export type TranslationKey =
   | 'grade.C'
   | 'grade.D'
   | 'grade.F'
+  // Reaction Trainer
+  | 'reaction.title'
+  | 'reaction.direction'
+  | 'reaction.color'
+  | 'reaction.shotClock'
+  | 'reaction.reflexPure'
+  | 'reaction.rounds'
+  | 'reaction.reactionTime'
+  | 'reaction.correct'
+  | 'reaction.incorrect'
+  | 'reaction.startTraining'
+  | 'reaction.results'
+  | 'reaction.averageTime'
+  | 'reaction.bestTime'
+  | 'reaction.personalBest'
+  | 'reaction.newRecord'
+  | 'reaction.playAgain'
+  // AI Coach
+  | 'coach.title'
+  | 'coach.online'
+  | 'coach.offline'
+  | 'coach.personalCoach'
+  | 'coach.typeMessage'
+  | 'coach.send'
+  | 'coach.suggestedActions'
+  | 'coach.createPlan'
+  | 'coach.shootingAdvice'
+  | 'coach.ballHandlingAdvice'
+  | 'coach.defenseAdvice'
+  | 'coach.conditioningAdvice'
+  // Pricing
+  | 'pricing.title'
+  | 'pricing.subtitle'
+  | 'pricing.free'
+  | 'pricing.freeDesc'
+  | 'pricing.pro'
+  | 'pricing.proDesc'
+  | 'pricing.elite'
+  | 'pricing.eliteDesc'
+  | 'pricing.popular'
+  | 'pricing.subscribe'
+  | 'pricing.currentPlan'
+  | 'pricing.securePayment'
+  | 'pricing.noCommitment'
+  // Workout Summary
+  | 'summary.sessionComplete'
+  | 'summary.overallGrade'
+  | 'summary.excellent'
+  | 'summary.veryGood'
+  | 'summary.good'
+  | 'summary.average'
+  | 'summary.belowAverage'
+  | 'summary.needsWork'
+  | 'summary.failed'
+  | 'summary.drillResults'
+  | 'summary.totalReps'
+  | 'summary.totalTime'
+  | 'summary.saveAndExit'
+  | 'summary.backToHome'
+  // Camera Workout
+  | 'camera.aiFormCheck'
+  | 'camera.analyzing'
+  | 'camera.goodPoints'
+  | 'camera.issues'
+  | 'camera.score'
+  // Common
+  | 'error.loadFailed'
+  | 'error.serverError'
+  | 'dayNames.mon'
+  | 'dayNames.tue'
+  | 'dayNames.wed'
+  | 'dayNames.thu'
+  | 'dayNames.fri'
+  | 'dayNames.sat'
+  | 'dayNames.sun'
   // Misc
   | 'common.on'
   | 'common.off'
@@ -230,6 +305,87 @@ const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
     'grade.D': 'D',
     'grade.F': 'F',
 
+    // Reaction Trainer
+    'reaction.title': 'Entraînement Cognitif',
+    'reaction.direction': 'Direction Rapide',
+    'reaction.color': 'Couleur & Action',
+    'reaction.shotClock': 'Shot Clock',
+    'reaction.reflexPure': 'Reflexe Joueur',
+    'reaction.rounds': 'tours',
+    'reaction.reactionTime': 'Temps de réaction',
+    'reaction.correct': 'Correct',
+    'reaction.incorrect': 'Incorrect',
+    'reaction.startTraining': 'Commencer',
+    'reaction.results': 'Résultats',
+    'reaction.averageTime': 'Temps moyen',
+    'reaction.bestTime': 'Meilleur temps',
+    'reaction.personalBest': 'Record personnel',
+    'reaction.newRecord': 'Nouveau record !',
+    'reaction.playAgain': 'Rejouer',
+
+    // AI Coach
+    'coach.title': 'Coach IA',
+    'coach.online': 'En ligne',
+    'coach.offline': 'Hors ligne',
+    'coach.personalCoach': 'Ton coach personnel 🏀',
+    'coach.typeMessage': 'Demande au coach...',
+    'coach.send': 'Envoyer',
+    'coach.suggestedActions': '💡 Suggestions rapides',
+    'coach.createPlan': 'Créer un programme',
+    'coach.shootingAdvice': 'Conseil tir',
+    'coach.ballHandlingAdvice': 'Améliorer mon dribble',
+    'coach.defenseAdvice': 'Comment me défendre?',
+    'coach.conditioningAdvice': 'Mon point faible',
+
+    // Pricing
+    'pricing.title': 'Choisis ton plan',
+    'pricing.subtitle': 'Passe au niveau supérieur avec des outils professionnels pour améliorer ton jeu.',
+    'pricing.free': 'Gratuit',
+    'pricing.freeDesc': 'Pour découvrir CourtVision AI',
+    'pricing.pro': 'Pro',
+    'pricing.proDesc': 'Pour les joueurs sérieux',
+    'pricing.elite': 'Élite',
+    'pricing.eliteDesc': "L'expérience ultime",
+    'pricing.popular': 'POPULAIRE',
+    'pricing.subscribe': "S'abonner",
+    'pricing.currentPlan': "C'est ton plan actuel",
+    'pricing.securePayment': 'Paiement sécurisé',
+    'pricing.noCommitment': 'Sans engagement',
+
+    // Workout Summary
+    'summary.sessionComplete': 'Session terminée',
+    'summary.overallGrade': 'Note globale',
+    'summary.excellent': 'EXCELLENT',
+    'summary.veryGood': 'TRÈS BIEN',
+    'summary.good': 'BIEN',
+    'summary.average': 'MOYEN',
+    'summary.belowAverage': 'À AMÉLIORER',
+    'summary.needsWork': 'INSUFFISANT',
+    'summary.failed': 'ÉCHOUÉ',
+    'summary.drillResults': 'Détail par exercice',
+    'summary.totalReps': 'Répétitions totales',
+    'summary.totalTime': 'Durée totale',
+    'summary.saveAndExit': 'Sauvegarder et quitter',
+    'summary.backToHome': "Retour à l'accueil",
+
+    // Camera Workout
+    'camera.aiFormCheck': "Vérification de la forme par l'IA",
+    'camera.analyzing': 'Analyse en cours...',
+    'camera.goodPoints': 'Points positifs',
+    'camera.issues': 'Points à améliorer',
+    'camera.score': 'Score',
+
+    // Common
+    'error.loadFailed': 'Erreur de chargement',
+    'error.serverError': 'Erreur serveur',
+    'dayNames.mon': 'Lun',
+    'dayNames.tue': 'Mar',
+    'dayNames.wed': 'Mer',
+    'dayNames.thu': 'Jeu',
+    'dayNames.fri': 'Ven',
+    'dayNames.sat': 'Sam',
+    'dayNames.sun': 'Dim',
+
     // Misc
     'common.on': 'Activé',
     'common.off': 'Désactivé',
@@ -351,6 +507,87 @@ const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
     'grade.C': 'C',
     'grade.D': 'D',
     'grade.F': 'F',
+
+    // Reaction Trainer
+    'reaction.title': 'Cognitive Training',
+    'reaction.direction': 'Quick Direction',
+    'reaction.color': 'Color & Action',
+    'reaction.shotClock': 'Shot Clock',
+    'reaction.reflexPure': 'Pure Reflex',
+    'reaction.rounds': 'rounds',
+    'reaction.reactionTime': 'Reaction time',
+    'reaction.correct': 'Correct',
+    'reaction.incorrect': 'Incorrect',
+    'reaction.startTraining': 'Start',
+    'reaction.results': 'Results',
+    'reaction.averageTime': 'Average time',
+    'reaction.bestTime': 'Best time',
+    'reaction.personalBest': 'Personal best',
+    'reaction.newRecord': 'New record!',
+    'reaction.playAgain': 'Play Again',
+
+    // AI Coach
+    'coach.title': 'AI Coach',
+    'coach.online': 'Online',
+    'coach.offline': 'Offline',
+    'coach.personalCoach': 'Your personal coach 🏀',
+    'coach.typeMessage': 'Ask the coach...',
+    'coach.send': 'Send',
+    'coach.suggestedActions': '💡 Quick suggestions',
+    'coach.createPlan': 'Create a plan',
+    'coach.shootingAdvice': 'Shooting advice',
+    'coach.ballHandlingAdvice': 'Improve my dribble',
+    'coach.defenseAdvice': 'How to defend?',
+    'coach.conditioningAdvice': 'My weak point',
+
+    // Pricing
+    'pricing.title': 'Choose your plan',
+    'pricing.subtitle': 'Take your game to the next level with professional tools.',
+    'pricing.free': 'Free',
+    'pricing.freeDesc': 'Discover CourtVision AI',
+    'pricing.pro': 'Pro',
+    'pricing.proDesc': 'For serious players',
+    'pricing.elite': 'Elite',
+    'pricing.eliteDesc': 'The ultimate experience',
+    'pricing.popular': 'POPULAR',
+    'pricing.subscribe': 'Subscribe',
+    'pricing.currentPlan': 'This is your current plan',
+    'pricing.securePayment': 'Secure payment',
+    'pricing.noCommitment': 'No commitment',
+
+    // Workout Summary
+    'summary.sessionComplete': 'Session Complete',
+    'summary.overallGrade': 'Overall Grade',
+    'summary.excellent': 'EXCELLENT',
+    'summary.veryGood': 'VERY GOOD',
+    'summary.good': 'GOOD',
+    'summary.average': 'AVERAGE',
+    'summary.belowAverage': 'NEEDS WORK',
+    'summary.needsWork': 'POOR',
+    'summary.failed': 'FAILED',
+    'summary.drillResults': 'Drill Results',
+    'summary.totalReps': 'Total Reps',
+    'summary.totalTime': 'Total Time',
+    'summary.saveAndExit': 'Save & Exit',
+    'summary.backToHome': 'Back to Home',
+
+    // Camera Workout
+    'camera.aiFormCheck': 'AI Form Check',
+    'camera.analyzing': 'Analyzing...',
+    'camera.goodPoints': 'Good points',
+    'camera.issues': 'Issues',
+    'camera.score': 'Score',
+
+    // Common
+    'error.loadFailed': 'Loading failed',
+    'error.serverError': 'Server error',
+    'dayNames.mon': 'Mon',
+    'dayNames.tue': 'Tue',
+    'dayNames.wed': 'Wed',
+    'dayNames.thu': 'Thu',
+    'dayNames.fri': 'Fri',
+    'dayNames.sat': 'Sat',
+    'dayNames.sun': 'Sun',
 
     // Misc
     'common.on': 'On',

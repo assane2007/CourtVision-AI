@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { withCache } from '@/lib/cache'
 import { trackError } from '@/lib/monitoring'
+import { Prisma } from '@prisma/client'
 
 // GET /api/drills — List drills with cursor-based pagination (seed + user's own custom)
 // Query params: ?cursor=xxx&limit=20&category=shooting&difficulty=beginner&search=dribble&favoritesOnly=true
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
 
     // IP-based rate limit (optional auth)
     const ip = req.headers.get('x-forwarded-for') || 'unknown'
-    const rl = rateLimit(`drills:${ip}`, 60, 15 * 60 * 1000)
+    const rl = rateLimit(`drills:get:${ip}`, 60, 15 * 60 * 1000)
     if (!rl.success) {
       return NextResponse.json({ error: 'Trop de requêtes. Réessayez plus tard.' }, { status: 429 })
     }
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const cursor = searchParams.get('cursor')
     const rawLimit = parseInt(searchParams.get('limit') ?? '20', 10)
-    const limit = Math.min(Math.max(rawLimit, 1), 100)
+    const limit = Number.isNaN(rawLimit) ? 20 : Math.min(Math.max(rawLimit, 1), 100)
     const category = searchParams.get('category')
     const difficulty = searchParams.get('difficulty')
     const search = searchParams.get('search')?.trim()
@@ -33,28 +34,28 @@ export async function GET(req: NextRequest) {
     // Build a cache key from query params + playerId
     const cacheKey = `drills:${playerId || 'anon'}:${cursor || ''}:${limit}:${category || 'all'}:${difficulty || 'all'}:${search || ''}:${favoritesOnly}:${customOnly}`
 
+    const orderBy = [{ isCustom: 'asc' as const }, { category: 'asc' as const }, { difficulty: 'asc' as const }]
+
     const result = await withCache(cacheKey, 5 * 60 * 1000, async () => {
-      // Base filter: seed drills (no owner) + user's custom drills
-      const baseWhere: Record<string, unknown> = {
-        AND: [
-          { isActive: true },
-          {
-            OR: [
-              { playerId: null },      // seed drills
-              ...(playerId ? [{ playerId }] : []),
-            ],
-          },
-        ],
-      }
+      // Build typed Prisma filter using proper types
+      const andFilters: Prisma.DrillWhereInput[] = [
+        { isActive: true },
+        {
+          OR: [
+            { playerId: null },
+            ...(playerId ? [{ playerId }] : []),
+          ],
+        },
+      ]
 
       if (category && category !== 'all') {
-        ;(baseWhere.AND as unknown[]).push({ category })
+        andFilters.push({ category })
       }
       if (difficulty) {
-        ;(baseWhere.AND as unknown[]).push({ difficulty })
+        andFilters.push({ difficulty })
       }
       if (search) {
-        ;(baseWhere.AND as unknown[]).push({
+        andFilters.push({
           OR: [
             { nameFr: { contains: search } },
             { name: { contains: search } },
@@ -63,19 +64,19 @@ export async function GET(req: NextRequest) {
         })
       }
       if (customOnly) {
-        ;(baseWhere.AND as unknown[]).push({ isCustom: true })
+        andFilters.push({ isCustom: true })
       }
 
-      const orderBy = [{ isCustom: 'asc' as const }, { category: 'asc' as const }, { difficulty: 'asc' as const }]
+      const baseWhere: Prisma.DrillWhereInput = { AND: andFilters }
 
       // Cursor: use id-based cursor (lexicographic for SQLite)
-      const cursorWhere = cursor
-        ? { ...baseWhere, AND: [...(baseWhere.AND as unknown[]), { id: { gt: cursor } }] }
+      const cursorWhere: Prisma.DrillWhereInput = cursor
+        ? { AND: [...andFilters, { id: { gt: cursor } }] }
         : baseWhere
 
       // Fetch one extra to know if there's a next page
       const drills = await db.drill.findMany({
-        where: cursorWhere as any,
+        where: cursorWhere,
         orderBy,
         take: limit + 1,
       })
@@ -87,7 +88,7 @@ export async function GET(req: NextRequest) {
       // Total count (only on first page to avoid redundant queries on subsequent pages)
       let total: number | undefined
       if (!cursor) {
-        total = await db.drill.count({ where: baseWhere as any })
+        total = await db.drill.count({ where: baseWhere })
       }
 
       // Fetch user's favorites in one query
@@ -98,21 +99,30 @@ export async function GET(req: NextRequest) {
               select: { drillId: true },
             })
           : await db.drillFavorite.findMany({
-              where: { playerId },
+              where: { playerId, drillId: { in: pageDrills.map(d => d.id) } },
               select: { drillId: true },
             })
         : []
 
       const favoriteIds = new Set(favorites.map(f => f.drillId))
 
-      // If favoritesOnly, filter drills server-side
-      const filteredDrills = favoritesOnly
-        ? pageDrills.filter(d => favoriteIds.has(d.id))
-        : pageDrills
-
       return {
-        drills: filteredDrills,
-        favoriteIds: [...favoriteIds],
+        drills: pageDrills.map(d => ({
+          id: d.id,
+          name: d.nameFr || d.name,
+          nameEn: d.name,
+          category: d.category,
+          difficulty: d.difficulty,
+          description: d.descriptionFr || d.description,
+          descriptionEn: d.description,
+          instructions: d.instructionsFr || d.instructions,
+          instructionsEn: d.instructions,
+          durationSec: d.durationSec,
+          targetReps: d.targetReps,
+          icon: d.icon,
+          isCustom: d.isCustom,
+          isFavorite: favoriteIds.has(d.id),
+        })),
         nextCursor,
         total,
       }

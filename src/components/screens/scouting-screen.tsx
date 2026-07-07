@@ -29,6 +29,7 @@ import { apiFetch } from '@/lib/utils'
 import { containerVariants, itemVariants } from '@/lib/animations'
 import { getLevelInfo, getLevelColor } from '@/lib/xp'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/components/providers/language-provider'
 import { BottomNav } from '@/components/shared/bottom-nav'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -406,6 +407,7 @@ function generateScoutingText(
 // ── Main component ─────────────────────────────────────────────────────────
 
 export function ScoutingScreen() {
+  const { t, language } = useTranslation()
   const goBack = useAppStore((s) => s.goBack)
   const navigate = useAppStore((s) => s.navigate)
 
@@ -430,7 +432,7 @@ export function ScoutingScreen() {
   const levelInfo = data ? getLevelInfo(data.player.xp) : null
 
   const lastActiveFormatted = data?.lastActive
-    ? new Date(data.lastActive).toLocaleDateString('fr-FR', {
+    ? new Date(data.lastActive).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
@@ -924,6 +926,7 @@ function LoadingSkeleton() {
 // ── Error state ─────────────────────────────────────────────────────────────
 
 function ErrorState() {
+  const { t } = useTranslation()
   const goBack = useAppStore((s) => s.goBack)
 
   return (
@@ -932,16 +935,16 @@ function ErrorState() {
         <Shield className="h-8 w-8 text-red-500" />
       </div>
       <div className="text-center space-y-2">
-        <h3 className="font-bold text-lg">Erreur de chargement</h3>
+        <h3 className="font-bold text-lg">{t('error.loadFailed')}</h3>
         <p className="text-sm text-muted-foreground max-w-xs">
-          Impossible de générer le rapport de scout. Vérifiez votre connexion et réessayez.
+          {t('error.serverError')}
         </p>
       </div>
       <button
         onClick={goBack}
         className="px-5 py-2.5 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors"
       >
-        Retour au profil
+        {t('action.back')}
       </button>
     </div>
   )

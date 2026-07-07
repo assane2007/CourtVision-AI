@@ -7,9 +7,11 @@ import { Check, X, Crown, Zap, Star, ArrowLeft, Loader2, CreditCard } from 'luci
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { BottomNav } from '@/components/shared/bottom-nav'
 import { useAppStore } from '@/stores/app'
 import { containerVariants, itemVariants } from '@/lib/animations'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/components/providers/language-provider'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -92,6 +94,7 @@ const TIERS: PricingTier[] = [
 // ── Component ──────────────────────────────────────────────────────────────
 
 export default function PricingScreen() {
+  const { t } = useTranslation()
   const goBack = useAppStore((s) => s.goBack)
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
 
@@ -141,11 +144,11 @@ export default function PricingScreen() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-lg font-bold">Choisis ton plan</h1>
+          <h1 className="text-lg font-bold">{t('pricing.title')}</h1>
         </div>
       </header>
 
-      <main className="max-w-lg md:max-w-4xl lg:max-w-5xl mx-auto px-4 pt-6 pb-12">
+      <main className="max-w-lg md:max-w-4xl lg:max-w-5xl mx-auto px-4 pt-6 pb-24">
         <motion.div
           variants={containerVariants}
           initial="hidden"
@@ -155,11 +158,10 @@ export default function PricingScreen() {
           {/* Intro */}
           <motion.div variants={itemVariants} className="text-center space-y-2">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-              Débloque tout ton potentiel
+              {t('pricing.title')}
             </h2>
             <p className="text-muted-foreground text-sm md:text-base max-w-md mx-auto">
-              Passe au niveau supérieur avec des outils professionnels
-              pour améliorer ton jeu.
+              {t('pricing.subtitle')}
             </p>
           </motion.div>
 
@@ -300,19 +302,21 @@ export default function PricingScreen() {
           <motion.div variants={itemVariants} className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground pt-2">
             <span className="flex items-center gap-1">
               <Check className="h-3 w-3 text-emerald-500" />
-              Annulation à tout moment
+              {t('pricing.noCommitment')}
             </span>
             <span className="flex items-center gap-1">
               <Check className="h-3 w-3 text-emerald-500" />
-              Paiement sécurisé
+              {t('pricing.securePayment')}
             </span>
             <span className="flex items-center gap-1">
               <Check className="h-3 w-3 text-emerald-500" />
-              Sans engagement
+              {t('pricing.noCommitment')}
             </span>
           </motion.div>
         </motion.div>
       </main>
+
+      <BottomNav />
     </div>
   )
 }

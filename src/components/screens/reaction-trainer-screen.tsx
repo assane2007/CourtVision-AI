@@ -25,6 +25,7 @@ import { Badge } from '@/components/ui/badge'
 import { SwipeToGoBack } from '@/components/shared/swipe-back'
 import { useAppStore } from '@/stores/app'
 import { apiFetch } from '@/lib/utils'
+import { useTranslation } from '@/components/providers/language-provider'
 import { BottomNav } from '@/components/shared/bottom-nav'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -164,6 +165,7 @@ function formatType(type: string): string {
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function ReactionTrainerScreen() {
+  const { t, language } = useTranslation()
   const goBack = useAppStore((s) => s.goBack)
   const queryClient = useQueryClient()
 
@@ -596,9 +598,9 @@ export default function ReactionTrainerScreen() {
             <div className="flex-1 min-w-0">
               <h1 className="text-lg font-bold tracking-tight truncate">
                 <Zap className="inline h-4 w-4 text-orange-500 mr-1" />
-                Entraînement Cognitif
+                {t('reaction.title')}
               </h1>
-              <p className="text-xs text-muted-foreground">Teste tes réflexes de basketteur</p>
+              <p className="text-xs text-muted-foreground">{t('home.cognitiveTrainingDesc')}</p>
             </div>
             {personalBests[mode] && (
               <Badge variant="secondary" className="shrink-0 text-xs">
@@ -624,8 +626,8 @@ export default function ReactionTrainerScreen() {
                 }`}
               >
                 {m.icon}
-                <span className="hidden sm:inline">{m.label}</span>
-                <span className="sm:hidden">{m.label.split(' ')[0]}</span>
+                <span className="hidden sm:inline">{m.id === 'direction' ? t('reaction.direction') : m.id === 'color' ? t('reaction.color') : m.id === 'shot_clock' ? t('reaction.shotClock') : t('reaction.reflexPure')}</span>
+                <span className="sm:hidden">{m.id === 'direction' ? t('reaction.direction').split(' ')[0] : m.id === 'color' ? t('reaction.color').split('&')[0].trim() : m.id === 'shot_clock' ? t('reaction.shotClock') : t('reaction.reflexPure').split(' ')[0]}</span>
               </button>
             ))}
           </div>
@@ -670,7 +672,7 @@ export default function ReactionTrainerScreen() {
                       className="mt-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-8 py-3 rounded-xl shadow-lg shadow-orange-500/25"
                     >
                       <Zap className="h-4 w-4 mr-2" />
-                      Commencer
+                      {t('reaction.startTraining')}
                     </Button>
                   </motion.div>
                 )}
@@ -1081,11 +1083,11 @@ export default function ReactionTrainerScreen() {
                 <CardContent className="p-4">
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     <div className="text-center bg-muted/50 rounded-xl p-3">
-                      <p className="text-xs text-muted-foreground">Temps moyen</p>
+                      <p className="text-xs text-muted-foreground">{t('reaction.averageTime')}</p>
                       <p className="text-2xl font-bold text-orange-500">{avgMs}<span className="text-sm text-muted-foreground ml-1">ms</span></p>
                     </div>
                     <div className="text-center bg-muted/50 rounded-xl p-3">
-                      <p className="text-xs text-muted-foreground">Meilleur</p>
+                      <p className="text-xs text-muted-foreground">{t('reaction.bestTime')}</p>
                       <p className="text-2xl font-bold text-green-500">{bestMs}<span className="text-sm text-muted-foreground ml-1">ms</span></p>
                     </div>
                     <div className="text-center bg-muted/50 rounded-xl p-3">
@@ -1111,14 +1113,14 @@ export default function ReactionTrainerScreen() {
                       className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl"
                     >
                       <RotateCcw className="h-4 w-4 mr-2" />
-                      Rejouer
+                      {t('reaction.playAgain')}
                     </Button>
                     <Button
                       variant="outline"
                       onClick={goBack}
                       className="flex-1 rounded-xl"
                     >
-                      Retour
+                      {t('action.back')}
                     </Button>
                   </div>
                 </CardContent>
@@ -1154,7 +1156,7 @@ export default function ReactionTrainerScreen() {
                           <Badge variant="secondary" className="text-xs">{entry.rounds} tours</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(entry.createdAt).toLocaleDateString('fr-FR', {
+                          {new Date(entry.createdAt).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
                             day: 'numeric',
                             month: 'short',
                             hour: '2-digit',

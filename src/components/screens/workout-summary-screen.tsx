@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { CATEGORY_META } from '@/lib/constants'
 import { apiFetch } from '@/lib/utils'
+import { useTranslation } from '@/components/providers/language-provider'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { BottomNav } from '@/components/shared/bottom-nav'
 import { ScoreReplay } from '@/components/workout/score-replay'
@@ -506,6 +507,7 @@ function PRBanner({ drillNames }: { drillNames: string[] }) {
 }
 
 export default function WorkoutSummaryScreen() {
+  const { t } = useTranslation()
   const { workoutResult, navigate, setWorkoutResult, selectDrill } = useAppStore()
   const prefersReducedMotion = useReducedMotion()
   const [replayOpen, setReplayOpen] = useState(false)
@@ -654,13 +656,13 @@ export default function WorkoutSummaryScreen() {
           <div className="space-y-3 mb-6">
             <StatsCard
               icon={<Clock className="h-5 w-5 text-orange-400" />}
-              label="Durée totale"
+              label={t('summary.totalTime')}
               value={formatDuration(workoutResult.totalDurationSec)}
               delay={0.3}
             />
             <StatsCard
               icon={<Target className="h-5 w-5 text-orange-400" />}
-              label="Répétitions totales"
+              label={t('summary.totalReps')}
               value={workoutResult.totalReps}
               subValue={
                 drills.length > 1
@@ -699,7 +701,7 @@ export default function WorkoutSummaryScreen() {
               transition={{ duration: 0.5, delay: 0.85, ease: 'easeOut' }}
             >
               <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-3 px-1">
-                Détail par exercice
+                {t('summary.drillResults')}
               </h3>
               <div className="space-y-2">
                 {drills.map((drill, i) => (
@@ -746,7 +748,7 @@ export default function WorkoutSummaryScreen() {
                   className="h-11 border-white/15 text-white hover:bg-white/10 rounded-xl"
                 >
                   <Home className="h-4 w-4 mr-2" />
-                  Retour à l&apos;accueil
+                  {t('summary.backToHome')}
                 </Button>
                 <Button
                   variant="outline"

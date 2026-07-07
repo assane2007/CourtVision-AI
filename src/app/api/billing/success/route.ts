@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { rateLimit } from '@/lib/rate-limit'
 import { trackEvent, trackError } from '@/lib/monitoring'
 
 const VALID_PLANS = ['pro', 'elite'] as const
@@ -10,6 +11,11 @@ export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
+    const rl = rateLimit(`billing:success:${session.user.id}`, 5, 60 * 60 * 1000)
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 })
     }
 
     const plan = req.nextUrl.searchParams.get('plan')

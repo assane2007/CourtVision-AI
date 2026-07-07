@@ -123,7 +123,7 @@ const goalsLabels: Record<string, string> = {
 
 // ── Component ───────────────────────────────────────────────────────
 export function ProfileScreen() {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const { navigate } = useAppStore()
   const queryClient = useQueryClient()
   // ── Fetch player ────────────────────────────────────────────────
@@ -339,7 +339,7 @@ export function ProfileScreen() {
                     <Calendar className="h-3.5 w-3.5" />
                     <span>
                       Membre depuis{' '}
-                      {new Date(player.createdAt).toLocaleDateString('fr-FR', {
+                      {new Date(player.createdAt).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
                         month: 'long',
                         year: 'numeric',
                       })}
@@ -595,7 +595,7 @@ export function ProfileScreen() {
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{log.description}</p>
                             <p className="text-[11px] text-muted-foreground">
-                              {new Date(log.createdAt).toLocaleDateString('fr-FR', {
+                              {new Date(log.createdAt).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
                                 day: 'numeric',
                                 month: 'short',
                                 hour: '2-digit',

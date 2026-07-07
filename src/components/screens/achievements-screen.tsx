@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Trophy, ArrowLeft, Lock, Medal } from 'lucide-react'
+import { Trophy, ArrowLeft, Lock, Medal, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -24,9 +24,9 @@ interface Achievement {
 
 export function AchievementsScreen() {
   const { navigate } = useAppStore()
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
 
-  const { data, isLoading } = useQuery<{
+  const { data, isLoading, isError, refetch } = useQuery<{
     achievements: Achievement[]
     newUnlocks: string[]
     totalUnlocked: number
@@ -41,6 +41,18 @@ export function AchievementsScreen() {
   const totalUnlocked = data?.totalUnlocked || 0
   const totalAchievements = data?.totalAchievements || 0
   const progress = totalAchievements > 0 ? (totalUnlocked / totalAchievements) * 100 : 0
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-20 px-4">
+        <p className="text-sm text-muted-foreground">Impossible de charger les données</p>
+        <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Réessayer
+        </Button>
+      </div>
+    )
+  }
 
   return (
     <SwipeToGoBack className="min-h-screen bg-background pb-20">
@@ -170,7 +182,7 @@ export function AchievementsScreen() {
 
                 {achievement.unlocked ? (
                   <Badge variant="secondary" className="text-[9px] bg-orange-500/15 text-orange-400 border-orange-500/20 relative z-10">
-                    {new Date(achievement.unlockedAt ?? '').toLocaleDateString('fr-FR', {
+                    {new Date(achievement.unlockedAt ?? '').toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
                       day: 'numeric',
                       month: 'short',
                     })}

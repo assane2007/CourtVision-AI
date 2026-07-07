@@ -9,6 +9,7 @@ import {
   Clock,
   ChevronRight,
   MessageCircle,
+  RefreshCw,
   Shield,
   Sparkles,
   Trophy,
@@ -329,7 +330,7 @@ export default function HomeScreen() {
 
   const levelInfo = playerXp ? getLevelInfo(playerXp.xp) : null
 
-  const { data: stats, isLoading: statsLoading } = useQuery<StatsResponse>({
+  const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useQuery<StatsResponse>({
     queryKey: ['stats'],
     queryFn: () => apiFetch('/api/stats'),
     staleTime: 1000 * 60 * 2,
@@ -470,6 +471,18 @@ export default function HomeScreen() {
   const handleSelectDrill = (drillId: string) => {
     selectDrill(drillId)
     navigate('drill-detail')
+  }
+
+  if (statsError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-20 px-4">
+        <p className="text-sm text-muted-foreground">Impossible de charger les données</p>
+        <Button variant="outline" size="sm" onClick={() => refetchStats()}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Réessayer
+        </Button>
+      </div>
+    )
   }
 
   return (

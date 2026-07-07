@@ -4,12 +4,30 @@ import { authOptions } from '@/lib/auth'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
 import { db } from '@/lib/db'
+import { z } from 'zod'
+import { getZodErrorMessage } from '@/lib/validations'
 import {
   calculateWorkoutXp,
   calculateStreakXp,
   type XpReward,
 } from '@/lib/xp'
 import { awardXp } from '@/lib/award-xp'
+
+// Zod schemas for XP POST body
+const workoutXpSchema = z.object({
+  source: z.literal('workout'),
+  score: z.number().min(0).max(100),
+  reps: z.number().int().min(0).max(999),
+  durationSec: z.number().min(0).max(3600).optional(),
+  isPersonalBest: z.boolean().optional(),
+})
+
+const streakXpSchema = z.object({
+  source: z.literal('streak'),
+  streakDays: z.number().int().min(1).max(30),
+})
+
+const xpPostSchema = z.discriminatedUnion('source', [workoutXpSchema, streakXpSchema])
 
 // POST /api/xp — Award workout or streak XP to the current user.
 // Achievement and challenge XP are awarded server-side via awardXp() directly.
@@ -26,35 +44,19 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { source } = body as { source?: string }
-
-    // Only workout and streak are allowed from the client.
-    // Achievement and challenge XP must be awarded server-side.
-    const allowedSources = ['workout', 'streak'] as const
-    if (!source || !allowedSources.includes(source as (typeof allowedSources)[number])) {
-      return NextResponse.json({ error: 'Source de XP invalide' }, { status: 400 })
+    const parsed = xpPostSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: getZodErrorMessage(parsed.error) }, { status: 400 })
     }
 
     const playerId = session.user.id
     let rewards: XpReward[] = []
 
-    if (source === 'workout') {
-      const { score, reps, durationSec, isPersonalBest } = body
-      if (typeof score !== 'number' || typeof reps !== 'number') {
-        return NextResponse.json({ error: 'Paramètres manquants: score, reps' }, { status: 400 })
-      }
-      rewards = calculateWorkoutXp(
-        score,
-        Math.max(0, Math.min(999, Math.round(reps))),
-        Math.max(0, Math.round(durationSec || 0)),
-        !!isPersonalBest,
-      )
-    } else if (source === 'streak') {
-      const { streakDays } = body
-      if (typeof streakDays !== 'number' || streakDays < 1) {
-        return NextResponse.json({ error: 'streakDays invalide' }, { status: 400 })
-      }
-      rewards = [calculateStreakXp(Math.min(streakDays, 30))]
+    if (parsed.data.source === 'workout') {
+      const { score, reps, durationSec, isPersonalBest } = parsed.data
+      rewards = calculateWorkoutXp(score, reps, Math.max(0, Math.round(durationSec || 0)), !!isPersonalBest)
+    } else if (parsed.data.source === 'streak') {
+      rewards = [calculateStreakXp(parsed.data.streakDays)]
     }
 
     const result = await awardXp(playerId, rewards)
@@ -84,7 +86,8 @@ export async function GET(req: NextRequest) {
   try {
     const playerId = session.user.id
     const url = new URL(req.url)
-    const limit = Math.min(50, Math.max(1, parseInt(url.searchParams.get('limit') || '20')))
+    const rawLimit = parseInt(url.searchParams.get('limit') || '20', 10)
+    const limit = Number.isNaN(rawLimit) ? 20 : Math.min(50, Math.max(1, rawLimit))
 
     const [player, xpLogs] = await Promise.all([
       db.player.findUnique({

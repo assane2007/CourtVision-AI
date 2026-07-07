@@ -46,6 +46,7 @@ export async function GET() {
           },
         },
         orderBy: { createdAt: 'asc' },
+        take: 5000, // Safety limit to prevent unbounded memory usage
       })
 
       if (allDrillEntries.length === 0) {

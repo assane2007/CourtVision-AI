@@ -86,15 +86,17 @@ export async function GET() {
       })
     }
 
-    // Personal bests per type
-    const allScores = await db.reactionScore.findMany({
+    // Personal bests per type — use aggregate to avoid loading all rows
+    const personalBestsRaw = await db.reactionScore.groupBy({
+      by: ['type'],
       where: { playerId: session.user.id, correct: true },
+      _min: { reactionMs: true },
     })
 
     const personalBests: Record<string, number> = {}
-    for (const score of allScores) {
-      if (!personalBests[score.type] || score.reactionMs < personalBests[score.type]) {
-        personalBests[score.type] = score.reactionMs
+    for (const row of personalBestsRaw) {
+      if (row._min.reactionMs !== null) {
+        personalBests[row.type] = row._min.reactionMs
       }
     }
 

@@ -44,60 +44,62 @@ export async function DELETE() {
       )
     }
 
-    // ── Cascading deletion (respecting FK constraints) ──────────────
-    // 1. XpLog entries
-    await db.xpLog.deleteMany({ where: { playerId } })
+    // ── Cascading deletion inside a transaction for atomicity ──────
+    await db.$transaction(async (tx) => {
+      // 1. XpLog entries
+      await tx.xpLog.deleteMany({ where: { playerId } })
 
-    // 2. AIChatMessage entries
-    await db.aIChatMessage.deleteMany({ where: { playerId } })
+      // 2. AIChatMessage entries
+      await tx.aIChatMessage.deleteMany({ where: { playerId } })
 
-    // 3. ReactionScore entries
-    await db.reactionScore.deleteMany({ where: { playerId } })
+      // 3. ReactionScore entries
+      await tx.reactionScore.deleteMany({ where: { playerId } })
 
-    // 4. Achievement entries
-    await db.achievement.deleteMany({ where: { playerId } })
+      // 4. Achievement entries
+      await tx.achievement.deleteMany({ where: { playerId } })
 
-    // 5. WorkoutSessionDrill entries (via their sessions)
-    const workoutSessions = await db.workoutSession.findMany({
-      where: { playerId },
-      select: { id: true },
-    })
-    if (workoutSessions.length > 0) {
-      const sessionIds = workoutSessions.map((s) => s.id)
-      await db.workoutSessionDrill.deleteMany({
-        where: { sessionId: { in: sessionIds } },
+      // 5. WorkoutSessionDrill entries (via their sessions)
+      const workoutSessions = await tx.workoutSession.findMany({
+        where: { playerId },
+        select: { id: true },
       })
-    }
+      if (workoutSessions.length > 0) {
+        const sessionIds = workoutSessions.map((s) => s.id)
+        await tx.workoutSessionDrill.deleteMany({
+          where: { sessionId: { in: sessionIds } },
+        })
+      }
 
-    // 6. WorkoutSession entries
-    await db.workoutSession.deleteMany({ where: { playerId } })
+      // 6. WorkoutSession entries
+      await tx.workoutSession.deleteMany({ where: { playerId } })
 
-    // 7. DrillFavorite entries
-    await db.drillFavorite.deleteMany({ where: { playerId } })
+      // 7. DrillFavorite entries
+      await tx.drillFavorite.deleteMany({ where: { playerId } })
 
-    // 8. TrainingPlanDrill entries (via their plans)
-    const trainingPlans = await db.trainingPlan.findMany({
-      where: { playerId },
-      select: { id: true },
-    })
-    if (trainingPlans.length > 0) {
-      const planIds = trainingPlans.map((p) => p.id)
-      await db.trainingPlanDrill.deleteMany({
-        where: { planId: { in: planIds } },
+      // 8. TrainingPlanDrill entries (via their plans)
+      const trainingPlans = await tx.trainingPlan.findMany({
+        where: { playerId },
+        select: { id: true },
       })
-    }
+      if (trainingPlans.length > 0) {
+        const planIds = trainingPlans.map((p) => p.id)
+        await tx.trainingPlanDrill.deleteMany({
+          where: { planId: { in: planIds } },
+        })
+      }
 
-    // 9. TrainingPlan entries
-    await db.trainingPlan.deleteMany({ where: { playerId } })
+      // 9. TrainingPlan entries
+      await tx.trainingPlan.deleteMany({ where: { playerId } })
 
-    // 10. Drill entries (only custom ones where playerId matches)
-    await db.drill.deleteMany({
-      where: { playerId, isCustom: true },
-    })
+      // 10. Drill entries (only custom ones where playerId matches)
+      await tx.drill.deleteMany({
+        where: { playerId, isCustom: true },
+      })
 
-    // 11. Player record itself
-    await db.player.delete({
-      where: { id: playerId },
+      // 11. Player record itself
+      await tx.player.delete({
+        where: { id: playerId },
+      })
     })
 
     return NextResponse.json(

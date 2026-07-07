@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import {
   Flame,
+  RefreshCw,
   TrendingUp,
   Calendar,
   Activity,
@@ -111,17 +112,17 @@ interface StatsResponse {
 
 export function StatsScreen() {
   const { navigate } = useAppStore()
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
 
   // ── Fetch stats ─────────────────────────────────────────────────
-  const { data: stats, isLoading: statsLoading } = useQuery<StatsResponse>({
+  const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useQuery<StatsResponse>({
     queryKey: ['stats'],
     queryFn: () => apiFetch<StatsResponse>('/api/stats'),
   })
 
   // ── Fetch recent sessions with pagination ───────────────────────
   const [sessionPage, setSessionPage] = useState(1)
-  const { data: sessionsData, isLoading: sessionsLoading } = useQuery<{
+  const { data: sessionsData, isLoading: sessionsLoading, isError: sessionsError, refetch: refetchSessions } = useQuery<{
     sessions: SessionEntry[]
     total?: number
     hasMore?: boolean
@@ -155,6 +156,18 @@ export function StatsScreen() {
           <Skeleton className="h-64 rounded-2xl" />
         </div>
         <BottomNav />
+      </div>
+    )
+  }
+
+  if (statsError || sessionsError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-20 px-4">
+        <p className="text-sm text-muted-foreground">Impossible de charger les données</p>
+        <Button variant="outline" size="sm" onClick={() => { refetchStats(); refetchSessions() }}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Réessayer
+        </Button>
       </div>
     )
   }
@@ -372,7 +385,7 @@ export function StatsScreen() {
                       <TableBody>
                         {allSessions.map((session: SessionEntry) => {
                           const date = new Date(session.startedAt)
-                          const dateStr = date.toLocaleDateString('fr-FR', {
+                          const dateStr = date.toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
                             day: 'numeric',
                             month: 'short',
                           })

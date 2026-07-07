@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Flame } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/components/providers/language-provider'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -39,7 +40,9 @@ function getCellBorderColor(dateStr: string, isToday: boolean) {
 // Component
 // ---------------------------------------------------------------------------
 export function StreakCalendar({ dailyStats }: StreakCalendarProps) {
-  const todayStr = new Date().toISOString().split('T')[0]
+  const { language } = useTranslation()
+  const todayDate = new Date()
+  const todayStr = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`
 
   // Build a 4-week grid (28 days, 7 rows × 4 columns)
   const grid = useMemo(() => {
@@ -127,7 +130,7 @@ export function StreakCalendar({ dailyStats }: StreakCalendarProps) {
                     key={cell.date}
                     className="flex-1 flex items-center justify-center"
                     title={`${cell.date} — ${cell.sessions} séance${cell.sessions > 1 ? 's' : ''}`}
-                    aria-label={`${new Date(cell.date + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}: ${cell.sessions} séance${cell.sessions > 1 ? 's' : ''}`}
+                    aria-label={`${new Date(cell.date + 'T00:00:00').toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'long' })}: ${cell.sessions} séance${cell.sessions > 1 ? 's' : ''}`}
                   >
                     <motion.div
                       initial={{ scale: 0 }}
