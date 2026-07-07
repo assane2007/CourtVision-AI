@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import ZAI from 'z-ai-web-dev-sdk'
+import { trackError } from '@/lib/monitoring'
 
 const CATEGORY_LABELS: Record<string, string> = {
   pocket_ball: 'Poche de balle',
@@ -49,7 +50,7 @@ export async function GET() {
       })),
     })
   } catch (error) {
-    console.error('[GET /api/ai-coach]', error)
+    trackError('GET /api/ai-coach', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -208,7 +209,7 @@ dis-le honnêtement. Maximum 3-4 phrases par réponse.`
     // 7. Return reply
     return NextResponse.json({ reply })
   } catch (error) {
-    console.error('[POST /api/ai-coach]', error)
+    trackError('POST /api/ai-coach', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -232,7 +233,7 @@ export async function DELETE() {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[DELETE /api/ai-coach]', error)
+    trackError('DELETE /api/ai-coach', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

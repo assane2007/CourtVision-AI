@@ -184,11 +184,11 @@ export function ProfileScreen() {
     return (
       <div className="min-h-screen bg-background pb-24">
         <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b">
-          <div className="max-w-lg mx-auto flex items-center h-14 px-4">
+          <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto flex items-center h-14 px-4">
             <Skeleton className="h-5 w-28" />
           </div>
         </header>
-        <div className="max-w-lg mx-auto px-4 pt-5 space-y-4">
+        <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto px-4 pt-5 space-y-4">
           <Skeleton className="h-44 rounded-2xl" />
           <Skeleton className="h-28 rounded-xl" />
           <Skeleton className="h-24 rounded-xl" />
@@ -212,14 +212,14 @@ export function ProfileScreen() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="max-w-lg mx-auto"
+        className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto"
       >
         {/* ── Header ─────────────────────────────────────────────── */}
         <motion.header
           variants={itemVariants}
           className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b"
         >
-          <div className="max-w-lg mx-auto flex items-center justify-between h-14 px-4">
+          <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto flex items-center justify-between h-14 px-4">
             <div className="flex items-center gap-2.5">
               <User className="h-5 w-5 text-orange-500" />
               <h1 className="text-base font-semibold">Mon Profil</h1>

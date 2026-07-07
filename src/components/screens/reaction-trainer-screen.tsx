@@ -582,7 +582,7 @@ export default function ReactionTrainerScreen() {
       <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-border/50 px-4 py-3">
-          <div className="flex items-center gap-3 max-w-lg mx-auto">
+          <div className="flex items-center gap-3 max-w-lg md:max-w-3xl lg:max-w-4xl mx-auto">
             <Button
               variant="ghost"
               size="icon"
@@ -608,7 +608,7 @@ export default function ReactionTrainerScreen() {
           </div>
         </header>
 
-        <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
+        <div className="max-w-lg md:max-w-3xl lg:max-w-4xl mx-auto px-4 py-4 space-y-4">
           {/* Mode Selector */}
           <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
             {MODES.map((m) => (

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { rateLimit } from '@/lib/rate-limit'
+import { trackError } from '@/lib/monitoring'
 
 // In-memory store for push subscriptions (keyed by player ID)
 // In production, this would be stored in the database
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[POST /api/notifications/subscribe]', error)
+    trackError('POST /api/notifications/subscribe', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -64,7 +65,7 @@ export async function DELETE(req: NextRequest) {
     pushSubscriptions.delete(session.user.id)
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[DELETE /api/notifications/subscribe]', error)
+    trackError('DELETE /api/notifications/subscribe', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

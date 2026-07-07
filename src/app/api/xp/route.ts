@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
+import { trackError } from '@/lib/monitoring'
 import {
   calculateWorkoutXp,
   calculateStreakXp,
@@ -113,7 +114,7 @@ export async function POST(req: NextRequest) {
       rewards,
     })
   } catch (error) {
-    console.error('[POST /api/xp]', error)
+    trackError('POST /api/xp', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -152,7 +153,7 @@ export async function GET(req: NextRequest) {
       logs: xpLogs,
     })
   } catch (error) {
-    console.error('[GET /api/xp]', error)
+    trackError('GET /api/xp', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

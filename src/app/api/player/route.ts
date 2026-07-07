@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { updateProfileSchema, getZodErrorMessage } from '@/lib/validations'
 import { rateLimit } from '@/lib/rate-limit'
+import { trackError } from '@/lib/monitoring'
 
 // GET /api/player — Get current user's profile
 export async function GET() {
@@ -44,7 +45,7 @@ export async function GET() {
 
     return NextResponse.json(player)
   } catch (error) {
-    console.error('[GET /api/player]', error)
+    trackError('GET /api/player', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -97,7 +98,7 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json(player)
   } catch (error) {
-    console.error('[PATCH /api/player]', error)
+    trackError('PATCH /api/player', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -132,7 +133,7 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'Compte supprimé' })
   } catch (error) {
-    console.error('[DELETE /api/player]', error)
+    trackError('DELETE /api/player', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

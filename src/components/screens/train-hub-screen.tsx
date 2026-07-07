@@ -284,7 +284,7 @@ export default function TrainHubScreen() {
     <div className="min-h-screen flex flex-col bg-background">
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-lg border-b border-border">
-        <div className="max-w-4xl mx-auto px-4 pt-4 pb-3">
+        <div className="max-w-4xl lg:max-w-6xl mx-auto px-4 pt-4 pb-3">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <h1 className="text-2xl font-bold tracking-tight text-foreground truncate">
@@ -511,7 +511,7 @@ export default function TrainHubScreen() {
         </div>
 
         {/* Search + Filter row */}
-        <div className="max-w-4xl mx-auto px-4 pb-3 flex items-center gap-2">
+        <div className="max-w-4xl lg:max-w-6xl mx-auto px-4 pb-3 flex items-center gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -554,7 +554,7 @@ export default function TrainHubScreen() {
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="max-w-4xl mx-auto px-4 pb-3 flex items-center gap-2">
+              <div className="max-w-4xl lg:max-w-6xl mx-auto px-4 pb-3 flex items-center gap-2">
                 {DIFFICULTIES.map((diff) => {
                   const isActive = selectedDifficulties.includes(diff.key)
                   return (
@@ -586,7 +586,7 @@ export default function TrainHubScreen() {
         </AnimatePresence>
 
         {/* Category pills */}
-        <div className="max-w-4xl mx-auto px-4 pb-3">
+        <div className="max-w-4xl lg:max-w-6xl mx-auto px-4 pb-3">
           <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-1 px-1">
             {CATEGORIES_LIST.map((cat) => {
               const isActive = activeCategory === cat.key
@@ -626,7 +626,7 @@ export default function TrainHubScreen() {
       </header>
 
       {/* ── Main Content ────────────────────────────────────────────────── */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-4 pb-24">
+      <main className="flex-1 max-w-4xl lg:max-w-6xl w-full mx-auto px-4 py-4 pb-24">
         {/* Results count */}
         <p className="text-xs text-muted-foreground mb-3">
           {filteredDrills.length} exercice
@@ -636,7 +636,7 @@ export default function TrainHubScreen() {
 
         {/* Loading state */}
         {isLoading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <Card key={i} className="animate-pulse bg-card">
                 <CardContent className="p-4 space-y-3">
@@ -688,7 +688,7 @@ export default function TrainHubScreen() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
           >
             <AnimatePresence mode="popLayout">
               {filteredDrills.map((drill) => {

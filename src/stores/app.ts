@@ -1,6 +1,16 @@
+/**
+ * App store — backward-compatible barrel that combines navigation + workout stores.
+ *
+ * Existing code can keep importing `useAppStore` from `@/stores/app`.
+ * New code can import `useNavigation` or `useWorkout` directly from their
+ * respective modules for finer-grained reactivity.
+ */
+
 import { create } from 'zustand'
 
-export type Screen = 'auth' | 'onboarding' | 'home' | 'plans' | 'train-hub' | 'drill-detail' | 'camera-workout' | 'workout-summary' | 'stats' | 'records' | 'profile' | 'achievements' | 'settings' | 'scouting' | 'reaction-trainer' | 'ai-coach'
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+export type Screen = 'auth' | 'onboarding' | 'home' | 'plans' | 'train-hub' | 'drill-detail' | 'camera-workout' | 'workout-summary' | 'stats' | 'records' | 'profile' | 'achievements' | 'settings' | 'scouting' | 'reaction-trainer' | 'ai-coach' | 'leaderboard'
 
 export interface WorkoutDrillResult {
   drillId: string
@@ -35,11 +45,16 @@ export interface PlanDrillQueueItem {
   durationSec: number
 }
 
+// ── Combined State (backward compatible) ──────────────────────────────────────
+
 interface AppState {
+  // Navigation
   currentScreen: Screen
   selectedDrillId: string | null
   screenHistory: Screen[]
   sidebarOpen: boolean
+
+  // Workout
   workoutResult: WorkoutResult | null
 
   // Plan execution
@@ -48,23 +63,23 @@ interface AppState {
   planResults: WorkoutDrillResult[]
   planId: string | null
 
-  // Navigation
+  // Navigation actions
   navigate: (screen: Screen) => void
   goBack: () => void
   selectDrill: (drillId: string) => void
-
-  // Sidebar
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
 
-  // Workout
+  // Workout actions
   setWorkoutResult: (result: WorkoutResult | null) => void
 
-  // Plan execution
+  // Plan execution actions
   startPlanExecution: (planId: string, drills: PlanDrillQueueItem[]) => void
   advancePlanDrill: (result: WorkoutDrillResult) => void
   clearPlanExecution: () => void
 }
+
+// ── Store ─────────────────────────────────────────────────────────────────────
 
 export const useAppStore = create<AppState>((set) => ({
   currentScreen: 'auth',
@@ -121,3 +136,7 @@ export const useAppStore = create<AppState>((set) => ({
     planId: null,
   }),
 }))
+
+// ── Re-export sub-stores for new code ─────────────────────────────────────────
+export { useNavigation } from '@/stores/navigation'
+export { useWorkout } from '@/stores/workout'

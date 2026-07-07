@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -11,6 +12,7 @@ import {
   BarChart3,
   Dumbbell,
   ChevronRight,
+  ChevronDown,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -115,13 +117,20 @@ export function StatsScreen() {
     queryFn: () => apiFetch<StatsResponse>('/api/stats'),
   })
 
-  // ── Fetch recent sessions ───────────────────────────────────────
-  const { data: sessionsData, isLoading: sessionsLoading } = useQuery<{ sessions: SessionEntry[] }>({
-    queryKey: ['sessions'],
-    queryFn: () => apiFetch<{ sessions: SessionEntry[] }>('/api/sessions'),
+  // ── Fetch recent sessions with pagination ───────────────────────
+  const [sessionPage, setSessionPage] = useState(1)
+  const { data: sessionsData, isLoading: sessionsLoading } = useQuery<{
+    sessions: SessionEntry[]
+    total?: number
+    hasMore?: boolean
+  }>({
+    queryKey: ['sessions', 'page', sessionPage],
+    queryFn: () => apiFetch(`/api/sessions?page=${sessionPage}&limit=20`),
   })
 
-  const recentSessions: SessionEntry[] = sessionsData?.sessions?.slice(0, 10) ?? []
+  const allSessions: SessionEntry[] = sessionsData?.sessions ?? []
+  const totalSessionsCount = sessionsData?.total
+  const hasMoreSessions = sessionsData?.hasMore ?? false
   const dailyStats: DailyStat[] = stats?.dailyStats ?? []
   const categories: CategoryStat[] = stats?.categories ?? []
 
@@ -129,11 +138,11 @@ export function StatsScreen() {
     return (
       <div className="min-h-screen bg-background pb-24">
         <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b">
-          <div className="max-w-lg mx-auto flex items-center h-14 px-4">
+          <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto flex items-center h-14 px-4">
             <Skeleton className="h-5 w-52" />
           </div>
         </header>
-        <div className="max-w-lg mx-auto px-4 pt-5 space-y-4">
+        <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto px-4 pt-5 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             {[...Array(4)].map((_, i) => (
               <Skeleton key={i} className="h-24 rounded-xl" />
@@ -157,14 +166,14 @@ export function StatsScreen() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="max-w-lg mx-auto"
+        className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto"
       >
         {/* ── Header ─────────────────────────────────────────────── */}
         <motion.header
           variants={itemVariants}
           className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b"
         >
-          <div className="max-w-lg mx-auto flex items-center h-14 px-4">
+          <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto flex items-center h-14 px-4">
             <TrendingUp className="h-5 w-5 text-orange-500 mr-2.5" />
             <h1 className="text-base font-semibold">Statistiques &amp; Progression</h1>
           </div>
@@ -174,7 +183,7 @@ export function StatsScreen() {
           {/* ── Overview Cards ────────────────────────────────────── */}
           <motion.div
             variants={itemVariants}
-            className="grid grid-cols-2 gap-3"
+            className="grid grid-cols-2 lg:grid-cols-4 gap-3"
           >
             <StatCard
               icon={<Flame className="h-5 w-5 text-orange-500" />}
@@ -331,14 +340,21 @@ export function StatsScreen() {
           )}
 
           {/* ── Recent Sessions Table ─────────────────────────────── */}
-          {recentSessions.length > 0 && (
+          {allSessions.length > 0 && (
             <motion.div variants={itemVariants}>
               <Card className="border-0 dark:border-border/50 shadow-md">
                 <CardHeader className="pb-2 px-5 pt-5">
-                  <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-orange-500" />
-                    Séances Récentes
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-orange-500" />
+                      Séances Récentes
+                    </CardTitle>
+                    {totalSessionsCount !== undefined && (
+                      <span className="text-xs text-muted-foreground">
+                        {allSessions.length}/{totalSessionsCount}
+                      </span>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="max-h-80 overflow-y-auto">
@@ -352,7 +368,7 @@ export function StatsScreen() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {recentSessions.map((session: SessionEntry) => {
+                        {allSessions.map((session: SessionEntry) => {
                           const date = new Date(session.startedAt)
                           const dateStr = date.toLocaleDateString('fr-FR', {
                             day: 'numeric',
@@ -389,6 +405,19 @@ export function StatsScreen() {
                       </TableBody>
                     </Table>
                   </div>
+                  {hasMoreSessions && (
+                    <div className="px-5 pb-4 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSessionPage((p) => p + 1)}
+                        className="w-full"
+                      >
+                        <ChevronDown className="h-4 w-4 mr-1" />
+                        Charger plus
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>

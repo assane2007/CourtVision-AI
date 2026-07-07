@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
+import { trackError } from '@/lib/monitoring'
 
 // ── Radar chart axis mapping: DB categories → radar axis ────────────────────
 const RADAR_AXES = [
@@ -189,7 +190,7 @@ export async function GET() {
       levelAvg,
     })
   } catch (error) {
-    console.error('[GET /api/scouting]', error)
+    trackError('GET /api/scouting', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

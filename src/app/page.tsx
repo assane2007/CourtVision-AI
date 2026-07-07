@@ -4,6 +4,7 @@ import { useAppStore } from '@/stores/app'
 import { useEffect, Component, type ReactNode, useSyncExternalStore } from 'react'
 import dynamic from 'next/dynamic'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { FeatureGate } from '@/components/feature-gate'
 
 const AuthScreen = dynamic(() => import('@/components/screens/auth-screen'), { ssr: false })
 const OnboardingScreen = dynamic(() => import('@/components/screens/onboarding-screen'), { ssr: false })
@@ -167,9 +168,15 @@ export default function Home() {
               {currentScreen === 'profile' && session && <ProfileScreen />}
               {currentScreen === 'achievements' && session && <AchievementsScreen />}
               {currentScreen === 'settings' && session && <SettingsScreen />}
-              {currentScreen === 'scouting' && session && <ScoutingScreen />}
-              {currentScreen === 'ai-coach' && session && <AICoachScreen />}
-              {currentScreen === 'reaction-trainer' && session && <ReactionTrainerScreen />}
+              {currentScreen === 'scouting' && session && (
+                <FeatureGate flag="scouting"><ScoutingScreen /></FeatureGate>
+              )}
+              {currentScreen === 'ai-coach' && session && (
+                <FeatureGate flag="ai_coach"><AICoachScreen /></FeatureGate>
+              )}
+              {currentScreen === 'reaction-trainer' && session && (
+                <FeatureGate flag="reaction_trainer"><ReactionTrainerScreen /></FeatureGate>
+              )}
               {!session && currentScreen !== 'auth' && <AuthScreen />}
             </StaggerChildren>
           </motion.div>

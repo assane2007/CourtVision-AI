@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
+import { trackError } from '@/lib/monitoring'
 
 // ─── GET /api/reaction ─────────────────────────────────────────────────────────
 // Returns player's reaction history (last 20 sessions) + personal bests per type
@@ -97,7 +98,7 @@ export async function GET() {
       personalBests,
     })
   } catch (error) {
-    console.error('GET /api/reaction error:', error)
+    trackError('GET /api/reaction', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -176,7 +177,7 @@ export async function POST(req: NextRequest) {
       xpAwarded,
     })
   } catch (error) {
-    console.error('POST /api/reaction error:', error)
+    trackError('POST /api/reaction', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

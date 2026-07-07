@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { toggleFavoriteSchema, getZodErrorMessage } from '@/lib/validations'
 import { rateLimit } from '@/lib/rate-limit'
+import { cacheInvalidatePattern } from '@/lib/cache'
+import { trackError } from '@/lib/monitoring'
 
 // POST /api/drills/favorite — Toggle favorite on/off
 export async function POST(req: NextRequest) {
@@ -62,15 +64,17 @@ export async function POST(req: NextRequest) {
 
     if (existing) {
       await db.drillFavorite.delete({ where: { id: existing.id } })
+      cacheInvalidatePattern('drills:')
       return NextResponse.json({ favorited: false })
     } else {
       await db.drillFavorite.create({
         data: { playerId: session.user.id, drillId }
       })
+      cacheInvalidatePattern('drills:')
       return NextResponse.json({ favorited: true })
     }
   } catch (error) {
-    console.error('[POST /api/drills/favorite]', error)
+    trackError('POST /api/drills/favorite', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

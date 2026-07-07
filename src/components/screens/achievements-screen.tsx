@@ -44,7 +44,7 @@ export function AchievementsScreen() {
     <SwipeToGoBack className="min-h-screen bg-background pb-20">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b">
-        <div className="max-w-2xl mx-auto flex items-center gap-3 px-4 py-3">
+        <div className="max-w-2xl md:max-w-3xl lg:max-w-5xl mx-auto flex items-center gap-3 px-4 py-3">
           <Button
             variant="ghost"
             size="icon"
@@ -63,7 +63,7 @@ export function AchievementsScreen() {
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-4 pt-4 space-y-6">
+      <div className="max-w-2xl md:max-w-3xl lg:max-w-5xl mx-auto px-4 pt-4 space-y-6">
         {/* Progress Overview */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -113,7 +113,7 @@ export function AchievementsScreen() {
 
         {/* Achievements Grid */}
         {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {Array.from({ length: 12 }).map((_, i) => (
               <Skeleton key={i} className="h-36 rounded-2xl" />
             ))}

@@ -18,7 +18,7 @@ export function BottomNav() {
 
   return (
     <nav aria-label="Navigation principale" className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-lg supports-[backdrop-filter]:bg-background/80 pb-safe">
-      <div className="mx-auto flex h-16 max-w-lg items-center justify-around px-2">
+      <div className="mx-auto flex h-16 max-w-lg md:max-w-3xl lg:max-w-4xl items-center justify-around px-2">
         {tabs.map((tab) => {
           const isActive = currentScreen === tab.screen
           return (

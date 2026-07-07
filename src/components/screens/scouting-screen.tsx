@@ -17,6 +17,7 @@ import {
   Shield,
   Wind,
   Zap,
+  Dumbbell,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -414,7 +415,7 @@ export function ScoutingScreen() {
 
   return (
     <SwipeToGoBack className="min-h-screen bg-background pb-24">
-      <div className="max-w-lg mx-auto px-4 pt-4">
+      <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto px-4 pt-4">
         {/* ── Header ────────────────────────────────────────────────── */}
         <div className="flex items-center gap-3 mb-6">
           <button
@@ -502,6 +503,46 @@ export function ScoutingScreen() {
               </Card>
             </motion.div>
 
+            {/* ── Empty state when no workout data ──────────────────── */}
+            {data.totalWorkouts === 0 ? (
+              <motion.div variants={itemVariants}>
+                <Card className="border-0 shadow-lg">
+                  <CardContent className="p-8 flex flex-col items-center text-center gap-5">
+                    <div className="relative">
+                      <div className="w-24 h-24 rounded-full bg-orange-500/10 flex items-center justify-center">
+                        <Target className="h-12 w-12 text-orange-500" />
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-amber-400 flex items-center justify-center text-lg shadow-lg">
+                        🏀
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-bold">Aucune donnée disponible</h3>
+                      <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
+                        Ton ADN de Joueur se construit avec tes séances d&apos;entraînement.
+                        Complète au moins une séance pour voir ton profil de scout évoluer !
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => navigate('train-hub')}
+                      className="px-6 py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition-colors shadow-md shadow-orange-500/25 flex items-center gap-2"
+                    >
+                      <Dumbbell className="h-4 w-4" />
+                      Commencer un entraînement
+                    </button>
+                    <div className="grid grid-cols-3 gap-4 mt-2 w-full max-w-xs">
+                      {['🎯 Tir', '🛡️ Défense', '⚡ Vitesse'].map((label) => (
+                        <div key={label} className="text-center p-3 rounded-xl bg-muted/50 border border-border/50">
+                          <p className="text-xs text-muted-foreground">{label}</p>
+                          <p className="text-lg font-bold text-muted-foreground/30 mt-1">—</p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ) : (
+            <div className="contents">
             {/* ── Section 2: Radar Chart — ADN Basketteur ──────────── */}
             <motion.div variants={itemVariants}>
               <Card className="border-0 shadow-lg">
@@ -629,7 +670,7 @@ export function ScoutingScreen() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-5 pb-6">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                     {data.categories.map((cat) => (
                       <CategoryCard key={cat.key} category={cat} />
                     ))}
@@ -696,6 +737,8 @@ export function ScoutingScreen() {
                 <span>{data.totalReps} répétitions</span>
               </div>
             </motion.div>
+            </div>
+            )}
           </motion.div>
         )}
       </div>
@@ -821,7 +864,7 @@ function LoadingSkeleton() {
           <Skeleton className="h-5 w-40" />
         </CardHeader>
         <CardContent className="px-5 pb-6">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-28 rounded-xl" />
             ))}

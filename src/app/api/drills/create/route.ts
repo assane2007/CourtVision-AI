@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { createDrillSchema, getZodErrorMessage } from '@/lib/validations'
 import { rateLimit } from '@/lib/rate-limit'
+import { cacheInvalidatePattern } from '@/lib/cache'
+import { trackError } from '@/lib/monitoring'
 
 // POST /api/drills/create — Create a custom drill owned by the current user
 export async function POST(req: NextRequest) {
@@ -58,9 +60,12 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    // Invalidate drills cache
+    cacheInvalidatePattern('drills:')
+
     return NextResponse.json({ drill }, { status: 201 })
   } catch (error) {
-    console.error('[POST /api/drills/create]', error)
+    trackError('POST /api/drills/create', error)
     return NextResponse.json({ error: 'Erreur lors de la création' }, { status: 500 })
   }
 }

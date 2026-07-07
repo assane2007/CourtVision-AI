@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import ZAI from 'z-ai-web-dev-sdk'
 import { formCheckSchema, getZodErrorMessage } from '@/lib/validations'
 import { rateLimit } from '@/lib/rate-limit'
+import { trackError } from '@/lib/monitoring'
 
 // POST /api/ai/form-check — AI form verification during camera workout
 export async function POST(req: NextRequest) {
@@ -129,7 +130,7 @@ Réponds UNIQUEMENT en JSON valide (pas de markdown, pas de backticks):
 
     return NextResponse.json(result)
   } catch (error) {
-    console.error('[POST /api/ai/form-check]', error)
+    trackError('POST /api/ai/form-check', error)
     return NextResponse.json(
       { error: 'Erreur d\'analyse IA', score: 0, feedback: 'Vérification IA indisponible', issues: [], goodPoints: [] },
       { status: 500 },

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { endSessionSchema, getZodErrorMessage } from '@/lib/validations'
 import { rateLimit } from '@/lib/rate-limit'
+import { trackError } from '@/lib/monitoring'
 
 // GET /api/sessions/[id] — Single session with drill details
 export async function GET(
@@ -36,7 +37,7 @@ export async function GET(
 
     return NextResponse.json(sessionData)
   } catch (error) {
-    console.error('[GET /api/sessions/[id]]', error)
+    trackError('GET /api/sessions/[id]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -92,7 +93,7 @@ export async function PATCH(
 
     return NextResponse.json(updated)
   } catch (error) {
-    console.error('[PATCH /api/sessions/[id]]', error)
+    trackError('PATCH /api/sessions/[id]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -129,7 +130,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, message: 'Séance supprimée' })
   } catch (error) {
-    console.error('[DELETE /api/sessions/[id]]', error)
+    trackError('DELETE /api/sessions/[id]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

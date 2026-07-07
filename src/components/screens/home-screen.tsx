@@ -11,6 +11,7 @@ import {
   MessageCircle,
   Shield,
   Sparkles,
+  Trophy,
   Zap,
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -483,7 +484,7 @@ export default function HomeScreen() {
 
       <PullToRefresh
         queryKeys={[['stats'], ['sessions'], ['recommendations'], ['stats', 'calendar'], ['player-xp']]}
-        className="mx-auto max-w-lg px-4 pb-24 pt-6"
+        className="mx-auto max-w-lg md:max-w-3xl lg:max-w-5xl px-4 pb-24 pt-6"
       >
       <motion.div
         variants={containerVariants}
@@ -687,6 +688,29 @@ export default function HomeScreen() {
             />
           )}
         </section>
+
+        {/* ---------------------------------------------------------------- */}
+        {/* Leaderboard (Classement)                                         */}
+        {/* ---------------------------------------------------------------- */}
+        <motion.div variants={itemVariants}>
+          <motion.div
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+            onClick={() => navigate('leaderboard')}
+            className="relative overflow-hidden rounded-2xl p-4 cursor-pointer shadow-lg bg-card border border-border"
+          >
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10">
+                <Trophy className="h-7 w-7 text-amber-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-bold">Classement</h3>
+                <p className="text-sm text-muted-foreground truncate">Compare ton niveau aux autres joueurs</p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
+            </div>
+          </motion.div>
+        </motion.div>
 
         {/* ---------------------------------------------------------------- */}
         {/* Reaction Trainer (Cognitive Training)                           */}

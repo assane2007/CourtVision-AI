@@ -66,7 +66,7 @@ export function PWAInstallPrompt() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 100, scale: 0.95 }}
           transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-          className="fixed bottom-20 left-4 right-4 z-[100] mx-auto max-w-lg"
+          className="fixed bottom-20 left-4 right-4 z-[100] mx-auto max-w-lg md:max-w-3xl lg:max-w-4xl"
         >
           <div className="relative overflow-hidden rounded-2xl border dark:border-border/50 bg-card p-4 shadow-2xl shadow-black/20 dark:shadow-black/40">
             {/* Background glow */}

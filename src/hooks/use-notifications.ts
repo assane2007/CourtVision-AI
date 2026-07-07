@@ -25,50 +25,37 @@ export interface NotificationState {
   loading: boolean
 }
 
+function getNotificationSupport(): { supported: boolean; permission: NotificationPermission } {
+  if (typeof window === 'undefined') return { supported: false, permission: 'denied' as NotificationPermission }
+  const supported = 'serviceWorker' in navigator && 'PushManager' in window
+  const permission = supported ? Notification.permission : ('denied' as NotificationPermission)
+  return { supported, permission }
+}
+
 export function useNotifications() {
-  const [state, setState] = useState<NotificationState>({
-    supported: false,
-    permission: 'default',
-    subscribed: false,
-    loading: true,
-  })
+  const initialSupport = getNotificationSupport()
+  const [supported] = useState(initialSupport)
+  const [permission, setPermission] = useState<NotificationPermission>(initialSupport.permission)
+  const [subscribed, setSubscribed] = useState(false)
+  const [loading, setLoading] = useState(initialSupport.supported)
 
   useEffect(() => {
-    const supported = 'serviceWorker' in navigator && 'PushManager' in window
-    const permission = supported ? Notification.permission : 'denied'
-    setState({ supported, permission, subscribed: false, loading: true })
+    if (!supported) return
 
-    if (!supported) {
-      setState((s) => ({ ...s, loading: false }))
-      return
-    }
-
-    // Check current subscription
+    // Check current subscription (async — safe for effects)
     navigator.serviceWorker.ready.then(async (registration) => {
       const sub = await registration.pushManager.getSubscription()
-      setState({ supported, permission, subscribed: !!sub, loading: false })
+      setSubscribed(!!sub)
+      setLoading(false)
     }).catch(() => {
-      setState((s) => ({ ...s, loading: false }))
+      setLoading(false)
     })
-  }, [])
-
-  const requestPermission = useCallback(async (): Promise<boolean> => {
-    if (!state.supported) return false
-
-    const permission = await Notification.requestPermission()
-    setState((s) => ({ ...s, permission }))
-
-    if (permission !== 'granted') return false
-
-    // After permission granted, try to subscribe
-    return enableNotifications()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.supported])
+  }, [supported])
 
   const enableNotifications = useCallback(async (): Promise<boolean> => {
-    if (!state.supported) return false
+    if (!supported) return false
 
-    setState((s) => ({ ...s, loading: true }))
+    setLoading(true)
 
     try {
       const registration = await navigator.serviceWorker.ready
@@ -86,20 +73,34 @@ export function useNotifications() {
         body: JSON.stringify(subscription.toJSON()),
       })
 
-      setState((s) => ({ ...s, subscribed: true, loading: false, permission: Notification.permission }))
+      setSubscribed(true)
+      setPermission(Notification.permission)
+      setLoading(false)
       return true
     } catch (err) {
-      console.warn('[useNotifications] Push subscription failed, falling back to local notifications:', err)
-      // Graceful fallback — still mark as "subscribed" for local notification support
-      setState((s) => ({ ...s, subscribed: false, loading: false }))
+      console.warn('[useNotifications] Push subscription failed:', err)
+      setSubscribed(false)
+      setLoading(false)
       return false
     }
-  }, [state.supported])
+  }, [supported])
+
+  const requestPermission = useCallback(async (): Promise<boolean> => {
+    if (!supported) return false
+
+    const newPermission = await Notification.requestPermission()
+    setPermission(newPermission)
+
+    if (newPermission !== 'granted') return false
+
+    // After permission granted, try to subscribe
+    return enableNotifications()
+  }, [supported, enableNotifications])
 
   const disableNotifications = useCallback(async (): Promise<void> => {
-    if (!state.supported) return
+    if (!supported) return
 
-    setState((s) => ({ ...s, loading: true }))
+    setLoading(true)
 
     try {
       const registration = await navigator.serviceWorker.ready
@@ -116,11 +117,14 @@ export function useNotifications() {
         await sub.unsubscribe()
       }
 
-      setState((s) => ({ ...s, subscribed: false, loading: false }))
+      setSubscribed(false)
+      setLoading(false)
     } catch {
-      setState((s) => ({ ...s, loading: false }))
+      setLoading(false)
     }
-  }, [state.supported])
+  }, [supported])
+
+  const state: NotificationState = { supported, permission, subscribed, loading }
 
   return {
     ...state,

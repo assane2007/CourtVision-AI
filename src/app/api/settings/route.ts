@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
+import { trackError } from '@/lib/monitoring'
 
 const VALID_LANGUAGES = ['fr', 'en']
 
@@ -35,7 +36,7 @@ export async function GET() {
 
     return NextResponse.json({ settings: player })
   } catch (error) {
-    console.error('[GET /api/settings]', error)
+    trackError('GET /api/settings', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -130,7 +131,7 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ settings: player })
   } catch (error) {
-    console.error('[PATCH /api/settings]', error)
+    trackError('PATCH /api/settings', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

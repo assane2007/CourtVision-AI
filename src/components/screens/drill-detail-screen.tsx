@@ -68,13 +68,13 @@ export function DrillDetailScreen() {
     return (
       <div className="min-h-screen bg-background pb-24">
         <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b">
-          <div className="max-w-lg mx-auto flex items-center h-14 px-4">
+          <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto flex items-center h-14 px-4">
             <Skeleton className="h-9 w-9 rounded-lg" />
             <Skeleton className="h-5 w-40 mx-auto" />
             <Skeleton className="h-9 w-9 rounded-lg" />
           </div>
         </header>
-        <div className="max-w-lg mx-auto px-4 pt-6 space-y-6">
+        <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto px-4 pt-6 space-y-6">
           <Skeleton className="h-52 w-full rounded-2xl" />
           <Skeleton className="h-48 w-full rounded-2xl" />
           <Skeleton className="h-14 w-full rounded-xl" />
@@ -112,7 +112,7 @@ export function DrillDetailScreen() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="max-w-lg mx-auto"
+        className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto"
       >
         {/* ── Header ─────────────────────────────────────────────── */}
         <motion.header

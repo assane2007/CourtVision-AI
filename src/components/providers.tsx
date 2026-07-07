@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Toaster } from '@/components/ui/sonner'
 import { PWAInstallPrompt } from '@/components/pwa-install-prompt'
+import { CookieConsent } from '@/components/cookie-consent'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
@@ -37,6 +38,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             }}
           />
           <PWAInstallPrompt />
+          <CookieConsent />
         </QueryClientProvider>
       </NextAuthSessionProvider>
     </ThemeProvider>

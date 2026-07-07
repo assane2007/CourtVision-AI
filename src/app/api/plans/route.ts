@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { createPlanSchema, getZodErrorMessage } from '@/lib/validations'
 import { rateLimit } from '@/lib/rate-limit'
+import { trackError } from '@/lib/monitoring'
 
 // GET /api/plans — List user's training plans
 export async function GET() {
@@ -29,7 +30,7 @@ export async function GET() {
 
     return NextResponse.json({ plans })
   } catch (error) {
-    console.error('[GET /api/plans]', error)
+    trackError('GET /api/plans', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -110,7 +111,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ plan }, { status: 201 })
   } catch (error) {
-    console.error('[POST /api/plans]', error)
+    trackError('POST /api/plans', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

@@ -169,7 +169,7 @@ export default function AICoachScreen() {
   const hasMessages = messages.length > 0
 
   return (
-    <div className="min-h-screen flex flex-col bg-background max-w-lg mx-auto relative">
+    <div className="min-h-screen flex flex-col bg-background max-w-lg md:max-w-3xl lg:max-w-4xl mx-auto relative">
       {/* ── Header ──────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="flex items-center justify-between px-4 py-3">
@@ -373,7 +373,7 @@ export default function AICoachScreen() {
       <div className="fixed bottom-0 left-0 right-0 z-20 bg-background/90 backdrop-blur-xl border-t border-border/50 pb-20">
         <form
           onSubmit={handleSubmit}
-          className="max-w-lg mx-auto flex items-center gap-2 px-4 py-3"
+          className="max-w-lg md:max-w-3xl lg:max-w-4xl mx-auto flex items-center gap-2 px-4 py-3"
         >
           <Input
             ref={inputRef}

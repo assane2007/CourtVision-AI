@@ -1206,3 +1206,200 @@ Stage Summary:
 - 2439 lines of new screen code, 612 lines of new API code
 - 3 revolutionary features: Reaction Trainer, Player DNA Scouting, AI Coach
 - All features accessible from home screen (cards + FAB) and profile
+
+---
+Task ID: 2-responsive
+Agent: Frontend Expert
+Task: Fix responsive design for tablet/desktop — remove mobile-only max-w constraints
+
+Work Log:
+- Audited all screen components for `max-w-lg` and `max-w-2xl` constraints
+- Applied responsive breakpoints to 14 files:
+  - Mobile (<768px): keeps current max-w-lg (512px) or max-w-2xl (672px)
+  - Tablet (md: 768px+): expands to max-w-3xl (768px)
+  - Desktop (lg: 1024px+): expands to max-w-5xl (1024px) for content screens, max-w-4xl or max-w-6xl for chat/hub
+- Bottom nav: `max-w-lg` → `max-w-lg md:max-w-3xl lg:max-w-4xl`
+- AI Coach chat: `max-w-lg` → `max-w-lg md:max-w-3xl lg:max-w-4xl` (wider chat feels better)
+- Train Hub: `max-w-4xl` → `max-w-4xl lg:max-w-6xl` (was already somewhat wide)
+- Grid expansions:
+  - Stats overview: `grid-cols-2` → `grid-cols-2 lg:grid-cols-4`
+  - Achievements: `grid-cols-2 md:grid-cols-3` → `grid-cols-2 md:grid-cols-3 lg:grid-cols-4`
+  - Train Hub drill cards: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3` → `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`
+  - Records summary: `grid-cols-2` → `grid-cols-2 lg:grid-cols-4`
+  - Scouting categories: `grid-cols-2` → `grid-cols-2 lg:grid-cols-3`
+- Also fixed PWA install prompt and workout-summary-screen for consistency
+- Camera workout left intentionally constrained (max-w-2xl for video feed)
+- Lint: 0 errors, 1 pre-existing warning (unrelated to changes)
+
+Files Modified:
+1. src/components/shared/bottom-nav.tsx
+2. src/components/screens/home-screen.tsx
+3. src/components/screens/train-hub-screen.tsx
+4. src/components/screens/stats-screen.tsx
+5. src/components/screens/profile-screen.tsx
+6. src/components/screens/achievements-screen.tsx
+7. src/components/screens/plans-screen.tsx
+8. src/components/screens/records-screen.tsx
+9. src/components/screens/settings-screen.tsx
+10. src/components/screens/drill-detail-screen.tsx
+11. src/components/screens/scouting-screen.tsx
+12. src/components/screens/ai-coach-screen.tsx
+13. src/components/screens/reaction-trainer-screen.tsx
+14. src/components/screens/workout-summary-screen.tsx
+15. src/components/pwa-install-prompt.tsx
+
+---
+Task ID: 3-social-rgpd
+Agent: Full-Stack Developer
+Task: Implement social features (leaderboard, share scores) and RGPD compliance (privacy, data export)
+
+Work Log:
+- Read worklog, prisma schema, existing API routes, screen components, store, and lib files
+- Created `/src/app/api/leaderboard/route.ts`: GET endpoint with auth, rate limit (30/15min), period filtering (all/month/week), parallel queries, anonymized names (first name only), top 20 + player rank
+- Created `/src/components/screens/leaderboard-screen.tsx`: Full leaderboard screen with podium (top 3 with 🥇🥈🥉), scrollable list 4-20, period tabs (Global/Ce mois/Cette semaine), VOUS badge, level badges, position labels, skeleton loading, error state
+- Created `/src/app/api/share/route.ts`: POST endpoint, rate limit (10/15min), generates French share text with session date, score, reps, drills, returns shareText + shareUrl
+- Updated `/src/components/screens/workout-summary-screen.tsx`: Enhanced shareWorkout() to call /api/share for richer share text, falls back to local construction if no sessionId or API fails
+- Created `/src/app/api/privacy/route.ts`: GET endpoint returning comprehensive French privacy policy covering data collected, purposes, retention, user rights (access, rectification, deletion, portability), cookies, third-party services, security
+- Created `/src/app/api/player/export/route.ts`: GET endpoint, auth required, rate limit (5/hour), exports ALL player data (profile, sessions, achievements, reaction scores, AI chat, training plans, favorites, XP logs) as downloadable JSON with Content-Disposition
+- Created `/src/components/cookie-consent.tsx`: Bottom banner with AnimatePresence animation, localStorage persistence, Accept + En savoir plus buttons, French text
+- Updated `/src/components/providers.tsx`: Added CookieConsent component
+- Updated `/src/app/api/achievements/route.ts`: Added 10 new achievement types (score_50, score_70, plan_creator, reaction_fast, coach_user, perfect_drill, weekend_warrior, marathon, streak_7, streak_30) with DB-backed conditions, XP awarding on new unlocks (50 XP per achievement), level recalculation
+- Updated `/src/stores/app.ts`: Added 'leaderboard' to Screen type
+- Updated `/src/app/page.tsx`: Added dynamic import for LeaderboardScreen + routing condition
+- Updated `/src/components/screens/home-screen.tsx`: Added "Classement" entry card with Trophy icon above Reaction Trainer, imported Trophy from lucide-react
+- Updated `/src/components/screens/settings-screen.tsx`: Added "Données & Confidentialité" section with ExportDataButton (downloads JSON), PrivacyLink (opens policy), DeleteAccountButton (3-step confirmation), imported Download/Shield/Trash2/Loader2 icons, added useState import
+
+Files Created:
+1. src/app/api/leaderboard/route.ts
+2. src/components/screens/leaderboard-screen.tsx
+3. src/app/api/share/route.ts
+4. src/app/api/privacy/route.ts
+5. src/app/api/player/export/route.ts
+6. src/components/cookie-consent.tsx
+
+Files Modified:
+1. src/components/screens/workout-summary-screen.tsx (enhanced share function)
+2. src/components/providers.tsx (added CookieConsent)
+3. src/app/api/achievements/route.ts (10 new achievements + XP integration)
+4. src/stores/app.ts (added 'leaderboard' screen type)
+5. src/app/page.tsx (added leaderboard routing)
+6. src/components/screens/home-screen.tsx (added Classement card)
+7. src/components/screens/settings-screen.tsx (added RGPD section)
+
+Lint Results: 0 errors, 1 warning (pre-existing in use-notifications.ts)
+
+---
+Task ID: 4-infra
+Agent: Full-Stack Developer
+Task: Server-side caching, Zustand store decomposition, feature flags, monitoring basics, pagination
+
+Work Log:
+
+**PART A: Server-side Caching**
+- Created `/src/lib/cache.ts` with TTL-based in-memory cache (500 entry max, LRU eviction, 5-min auto-cleanup)
+- Exported: `cacheGet<T>`, `cacheSet`, `cacheInvalidate`, `cacheInvalidatePattern`, `withCache<T>`
+- Applied `withCache` to 5 read-only API routes:
+  - `/api/drills` — 5 min TTL (keyed by query params + playerId)
+  - `/api/achievements` — 2 min TTL per user
+  - `/api/stats` — 1 min TTL per user (keyed by days param)
+  - `/api/records` — 2 min TTL per user
+  - `/api/recommendations` — 3 min TTL per user
+- Added cache invalidation on mutations:
+  - `POST /api/drills/create` → invalidates `drills:*`
+  - `POST /api/drills/favorite` → invalidates `drills:*`
+  - `DELETE /api/drills/[id]` → invalidates `drills:*`, `recommendations:*`
+  - `POST /api/sessions` → invalidates `stats:*`, `records:*`, `recommendations:*`, `achievements:*`
+
+**PART B: Zustand Store Decomposition**
+- Created `/src/stores/navigation.ts` — focused navigation store (`useNavigation`)
+- Created `/src/stores/workout.ts` — focused workout/plan store (`useWorkout`)
+- Updated `/src/stores/app.ts` — backward-compatible combined store that re-exports sub-stores
+- All 15+ existing imports of `useAppStore` continue to work unchanged
+
+**PART C: Feature Flags**
+- Created `/src/lib/feature-flags.ts` with 7 flags, localStorage override support, `ALL_FLAGS`, `FEATURE_LABELS`
+- Created `/src/components/feature-gate.tsx` — SSR-safe `<FeatureGate>` component with storage event listener
+- Applied feature gates in `page.tsx` for: reaction_trainer, scouting, ai_coach
+- Added "Fonctionnalités expérimentales" section in settings screen with toggle switches for all flags
+
+**PART D: Monitoring Basics**
+- Created `/src/app/api/health/route.ts` — unauthenticated health check (status, uptime, version, db connectivity)
+- Created `/src/lib/monitoring.ts` — `trackError()`, `trackEvent()`, `getMetrics()` with 100-error buffer
+- Replaced ALL `console.error` calls in ALL 20+ API route files with `trackError()`
+
+**PART E: Pagination**
+- Added `?page=N&limit=N` support to `GET /api/sessions` alongside existing cursor pagination
+- Returns `total`, `totalPages`, `hasMore` for page-based queries
+- Updated `stats-screen.tsx` with "Charger plus" button and session count display
+
+**Files Created:**
+- `/src/lib/cache.ts`
+- `/src/lib/feature-flags.ts`
+- `/src/lib/monitoring.ts`
+- `/src/components/feature-gate.tsx`
+- `/src/stores/navigation.ts`
+- `/src/stores/workout.ts`
+- `/src/app/api/health/route.ts`
+- `/agent-ctx/4-infra-fullstack.md` (work record)
+
+**Files Modified:**
+- `/src/app/api/drills/route.ts`
+- `/src/app/api/achievements/route.ts`
+- `/src/app/api/stats/route.ts`
+- `/src/app/api/records/route.ts`
+- `/src/app/api/recommendations/route.ts`
+- `/src/app/api/sessions/route.ts`
+- `/src/app/api/drills/create/route.ts`
+- `/src/app/api/drills/favorite/route.ts`
+- `/src/app/api/drills/[id]/route.ts`
+- `/src/app/api/ai-coach/route.ts`
+- `/src/app/api/ai/form-check/route.ts`
+- `/src/app/api/auth/signup/route.ts`
+- `/src/app/api/plans/route.ts`
+- `/src/app/api/plans/[id]/route.ts`
+- `/src/app/api/player/route.ts`
+- `/src/app/api/player/export/route.ts`
+- `/src/app/api/scouting/route.ts`
+- `/src/app/api/reaction/route.ts`
+- `/src/app/api/settings/route.ts`
+- `/src/app/api/xp/route.ts`
+- `/src/app/api/notifications/subscribe/route.ts`
+- `/src/app/api/leaderboard/route.ts`
+- `/src/app/api/share/route.ts`
+- `/src/stores/app.ts`
+- `/src/app/page.tsx`
+- `/src/components/screens/settings-screen.tsx`
+- `/src/components/screens/stats-screen.tsx`
+
+**Lint Results:** 0 errors, 1 pre-existing warning (use-notifications.ts unused eslint-disable)
+
+---
+Task ID: 9-video-replay
+Agent: Full-Stack Developer
+Task: Add lightweight video replay feature to post-workout summary
+
+Work Log:
+- Read worklog.md and analyzed existing codebase: workout-summary-screen.tsx, score-display.tsx, app.ts store, scoring.ts, sheet.tsx
+- Designed simplified "Score Replay" approach: animated story-style replay of workout drill results (no heavy pose data storage)
+- Created `/src/components/workout/score-replay.tsx`:
+  - Full animated replay with intro → drill-by-drill → final celebration phases
+  - Each drill shows icon animation, semi-circle score gauge (reusing `getGaugeColor`/`getGaugeTrackColor` from scoring.ts), counting reps, duration, and personal best badge
+  - Final phase shows overall score gauge, total reps, total duration, star rating, celebration particle burst
+  - Controls: play/pause, prev/next drill navigation, speed toggle (0.5×/1×/2×), restart button
+  - Timeline progress bar with drill dot indicators
+  - Dark gray-950 background with orange/amber theme matching the workout UI
+  - Placeholder text "Aucune donnée de mouvement enregistrée" when no drills
+  - Animation loop uses `requestAnimationFrame` with ref-based state snapshot (React 19 lint compliant)
+- Updated `/src/components/screens/workout-summary-screen.tsx`:
+  - Added imports: `Play` icon, `Sheet`/`SheetContent`/`SheetHeader`/`SheetTitle`, `ScoreReplay`
+  - Added `replayOpen` state
+  - Added "Rejouer 🎬" button between "Refaire l'entraînement" and bottom action row
+  - Added `Sheet` (bottom sheet, 85vh max) containing `ScoreReplay` with drill data, total score, reps, duration
+
+**Files Created:**
+- `/src/components/workout/score-replay.tsx`
+
+**Files Modified:**
+- `/src/components/screens/workout-summary-screen.tsx`
+
+**Lint Results:** 0 errors, 1 pre-existing warning (use-notifications.ts unused eslint-disable)

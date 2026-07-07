@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { cacheInvalidatePattern } from '@/lib/cache'
+import { trackError } from '@/lib/monitoring'
 
 // GET /api/drills/[id] — Single drill detail
 export async function GET(
@@ -38,7 +40,7 @@ export async function GET(
 
     return NextResponse.json({ drill, isFavorited: !!fav })
   } catch (error) {
-    console.error('[GET /api/drills/[id]]', error)
+    trackError('GET /api/drills/[id]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -80,9 +82,12 @@ export async function DELETE(
       db.drill.delete({ where: { id } }),
     ])
 
+    cacheInvalidatePattern('drills:')
+    cacheInvalidatePattern('recommendations:')
+
     return NextResponse.json({ success: true, message: 'Exercice supprimé' })
   } catch (error) {
-    console.error('[DELETE /api/drills/[id]]', error)
+    trackError('DELETE /api/drills/[id]', error)
     return NextResponse.json({ error: 'Erreur lors de la suppression' }, { status: 500 })
   }
 }

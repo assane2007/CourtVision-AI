@@ -16,6 +16,11 @@ import {
   Flame,
   Trophy,
   Swords,
+  Download,
+  Shield,
+  Trash2,
+  Loader2,
+  FlaskConical,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -33,9 +38,17 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
 import { useAppStore } from '@/stores/app'
+import { useState } from 'react'
 import { SwipeToGoBack } from '@/components/shared/swipe-back'
 import { apiFetch, cn } from '@/lib/utils'
 import { containerVariants, itemVariants } from '@/lib/animations'
+import {
+  ALL_FLAGS,
+  FEATURE_LABELS,
+  isFeatureEnabled,
+  setFeatureOverride,
+  type FeatureFlag,
+} from '@/lib/feature-flags'
 
 // -─ Types -----------------------------------
 
@@ -176,7 +189,7 @@ export function SettingsScreen() {
     <SwipeToGoBack className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b">
-        <div className="max-w-lg mx-auto flex items-center gap-3 px-4 py-3">
+        <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto flex items-center gap-3 px-4 py-3">
           <Button
             variant="ghost"
             size="icon"
@@ -189,7 +202,7 @@ export function SettingsScreen() {
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 pt-4 pb-8">
+      <main className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto px-4 pt-4 pb-8">
         {settingsLoading ? (
           <SettingsSkeleton />
         ) : (
@@ -468,6 +481,62 @@ export function SettingsScreen() {
               </Card>
             </motion.div>
 
+            {/* -─ Fonctionnalités expérimentales --------- */}
+            <motion.div variants={itemVariants}>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
+                      <FlaskConical className="h-4 w-4 text-orange-500" />
+                    </div>
+                    Fonctionnalités expérimentales
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 space-y-4">
+                  <p className="text-xs text-muted-foreground">
+                    Activez ou désactivez les fonctionnalités en cours de développement. Ces paramètres sont sauvegardés localement.
+                  </p>
+                  {ALL_FLAGS.map((flag: FeatureFlag) => (
+                    <div key={flag} className="flex items-center justify-between">
+                      <Label htmlFor={`flag-${flag}`} className="text-sm font-medium cursor-pointer">
+                        {FEATURE_LABELS[flag]}
+                      </Label>
+                      <Switch
+                        id={`flag-${flag}`}
+                        checked={isFeatureEnabled(flag)}
+                        onCheckedChange={(checked) => {
+                          setFeatureOverride(flag, checked)
+                          toast.success(`${FEATURE_LABELS[flag]} ${checked ? 'activé' : 'désactivé'}`)
+                        }}
+                        className="data-[state=checked]:bg-orange-500"
+                      />
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* -─ Données & RGPD ------------------------- */}
+            <motion.div variants={itemVariants}>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
+                      <Shield className="h-4 w-4 text-orange-500" />
+                    </div>
+                    Données &amp; Confidentialité
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 space-y-3">
+                  <ExportDataButton />
+                  <Separator />
+                  <PrivacyLink />
+                  <Separator />
+                  <DeleteAccountButton />
+                </CardContent>
+              </Card>
+            </motion.div>
+
             {/* -─ Infos ------------------------- */}
             <motion.div variants={itemVariants}>
               <Card>
@@ -567,6 +636,128 @@ function SettingsSkeleton() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+// -─ RGPD Sub-components ──────────────────────────────
+
+function ExportDataButton() {
+  const [loading, setLoading] = useState(false)
+
+  const handleExport = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/player/export')
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: 'Erreur réseau' }))
+        throw new Error(body.error || 'Erreur lors de l\'export')
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = res.headers.get('content-disposition')?.split('filename=')[1]?.replace(/"/g, '') || 'courtvision-export.json'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success('Données exportées avec succès')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur lors de l\'export')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Button
+      variant="ghost"
+      className="w-full justify-start h-auto py-3 px-3"
+      onClick={handleExport}
+      disabled={loading}
+    >
+      <Download className="h-4 w-4 text-muted-foreground mr-3 shrink-0" />
+      <div className="text-left">
+        <div className="text-sm font-medium">Exporter mes données (RGPD)</div>
+        <div className="text-xs text-muted-foreground">Télécharger toutes vos données au format JSON</div>
+      </div>
+      {loading && <Loader2 className="h-4 w-4 animate-spin ml-auto shrink-0" />}
+    </Button>
+  )
+}
+
+function PrivacyLink() {
+  const handleOpen = async () => {
+    try {
+      const res = await fetch('/api/privacy')
+      const text = await res.text()
+      // Open in a new window/tab
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      window.open(url, '_blank')
+    } catch {
+      toast.error('Impossible de charger la politique de confidentialité')
+    }
+  }
+
+  return (
+    <Button
+      variant="ghost"
+      className="w-full justify-start h-auto py-3 px-3"
+      onClick={handleOpen}
+    >
+      <Shield className="h-4 w-4 text-muted-foreground mr-3 shrink-0" />
+      <div className="text-left">
+        <div className="text-sm font-medium">Politique de confidentialité</div>
+        <div className="text-xs text-muted-foreground">Consultez notre politique RGPD</div>
+      </div>
+    </Button>
+  )
+}
+
+function DeleteAccountButton() {
+  const [confirmStep, setConfirmStep] = useState(0)
+
+  const handleDelete = async () => {
+    if (confirmStep < 2) {
+      setConfirmStep(confirmStep + 1)
+      return
+    }
+
+    try {
+      await apiFetch('/api/player/delete', { method: 'DELETE' })
+      toast.success('Compte supprimé. Vous allez être déconnecté.')
+      // Force sign out
+      window.location.href = '/api/auth/signout'
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur lors de la suppression')
+      setConfirmStep(0)
+    }
+  }
+
+  const labels = [
+    { text: 'Supprimer mon compte', sub: 'Cette action est irréversible' },
+    { text: 'Êtes-vous sûr ?', sub: 'Toutes vos données seront perdues' },
+    { text: 'Confirmer la suppression', sub: 'Dernière chance — cliquez pour supprimer' },
+  ]
+
+  const current = labels[confirmStep]
+
+  return (
+    <Button
+      variant="ghost"
+      className={cn(
+        'w-full justify-start h-auto py-3 px-3',
+        confirmStep > 0 && 'text-red-500 hover:text-red-600 hover:bg-red-500/10',
+      )}
+      onClick={handleDelete}
+    >
+      <Trash2 className={cn('h-4 w-4 mr-3 shrink-0', confirmStep > 0 ? 'text-red-500' : 'text-muted-foreground')} />
+      <div className="text-left">
+        <div className="text-sm font-medium">{current.text}</div>
+        <div className="text-xs text-muted-foreground">{current.sub}</div>
+      </div>
+    </Button>
   )
 }
 

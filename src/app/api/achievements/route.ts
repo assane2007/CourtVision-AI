@@ -2,8 +2,11 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { getAchievementXp, getLevelFromXp } from '@/lib/xp'
+import { trackError } from '@/lib/monitoring'
 
 const ACHIEVEMENTS = [
+  // Existing
   { type: 'first_login', title: 'Premier Pas', description: 'Vous avez créé votre compte', icon: '🏀' },
   { type: 'first_workout', title: 'Première Séance', description: 'Complétez votre premier entraînement', icon: '🔥' },
   { type: 'five_sessions', title: 'Régulier', description: 'Complétez 5 séances', icon: '💪' },
@@ -20,6 +23,17 @@ const ACHIEVEMENTS = [
   { type: 'master', title: 'Maître', description: 'Essayez toutes les catégories', icon: '🎓' },
   { type: 'night_owl', title: 'Oiseau de Nuit', description: 'Entraînez-vous après 22h', icon: '🦉' },
   { type: 'early_bird', title: 'Lève-tôt', description: 'Entraînez-vous avant 8h', icon: '🐦' },
+  // New achievements
+  { type: 'score_50', title: 'En progression', description: 'Score moyen de 50+', icon: '📊' },
+  { type: 'score_70', title: 'En feu', description: 'Score moyen de 70+', icon: '🔥' },
+  { type: 'plan_creator', title: 'Planificateur', description: 'Créer un plan d\'entraînement', icon: '📋' },
+  { type: 'reaction_fast', title: 'Éclair', description: 'Temps de réaction moyen < 300ms', icon: '⚡' },
+  { type: 'coach_user', title: 'Élève du Coach', description: 'Utiliser le coach IA 5 fois', icon: '🤖' },
+  { type: 'perfect_drill', title: 'Diamant', description: 'Un exercice avec score 100', icon: '💎' },
+  { type: 'weekend_warrior', title: 'Guerrier du Weekend', description: 'S\'entraîner le weekend', icon: '🏋️' },
+  { type: 'marathon', title: 'Marathonien', description: '3 séances en un jour', icon: '🏃' },
+  { type: 'streak_7', title: 'Série de 7', description: '7 jours consécutifs', icon: '🔥' },
+  { type: 'streak_30', title: 'Roi de la Série', description: '30 jours consécutifs', icon: '👑' },
 ] as const
 
 export async function GET() {
@@ -32,7 +46,18 @@ export async function GET() {
     const playerId = session.user.id
 
     // Gather stats in parallel
-    const [totalSessions, totalRepsResult, avgScoreResult, weekSessions, sessionDrills, sessions] = await Promise.all([
+    const [
+      totalSessions,
+      totalRepsResult,
+      avgScoreResult,
+      weekSessions,
+      sessionDrills,
+      sessions,
+      trainingPlanCount,
+      avgReactionResult,
+      aiMessageCount,
+      perfectDrillCount,
+    ] = await Promise.all([
       db.workoutSession.count({ where: { playerId } }),
       db.workoutSession.aggregate({ where: { playerId }, _sum: { totalReps: true } }),
       db.workoutSession.aggregate({ where: { playerId }, _avg: { totalScore: true } }),
@@ -50,11 +75,23 @@ export async function GET() {
         select: { startedAt: true },
         orderBy: { startedAt: 'desc' },
       }),
+      db.trainingPlan.count({ where: { playerId } }),
+      db.reactionScore.aggregate({
+        where: { playerId, correct: true },
+        _avg: { reactionMs: true },
+      }),
+      db.aiChatMessage.count({
+        where: { playerId, role: 'user' },
+      }),
+      db.workoutSessionDrill.count({
+        where: { session: { playerId }, score: 100 },
+      }),
     ])
 
     const totalReps = totalRepsResult._sum.totalReps || 0
     const avgScore = avgScoreResult._avg.totalScore || 0
     const categoriesTried = new Set(sessionDrills.map(sd => sd.drill.category))
+    const avgReaction = avgReactionResult._avg.reactionMs ?? Infinity
 
     const hasNightSession = sessions.some(s => {
       const h = new Date(s.startedAt).getHours()
@@ -64,6 +101,41 @@ export async function GET() {
       const h = new Date(s.startedAt).getHours()
       return h >= 5 && h < 8
     })
+
+    // ── Streak calculation ─────────────────────────────────────────────
+    const trainingDays = new Set(
+      sessions.map(s => new Date(s.startedAt).toISOString().split('T')[0])
+    )
+    let currentStreak = 0
+    const today = new Date()
+    today.setHours(23, 59, 59, 999)
+    const checkDate = new Date(today)
+    for (let i = 0; i < 365; i++) {
+      const dayStr = checkDate.toISOString().split('T')[0]
+      if (trainingDays.has(dayStr)) {
+        currentStreak++
+        checkDate.setDate(checkDate.getDate() - 1)
+      } else if (i === 0) {
+        checkDate.setDate(checkDate.getDate() - 1)
+        continue
+      } else {
+        break
+      }
+    }
+
+    // ── Weekend warrior: at least one session on Sat or Sun ────────────
+    const hasWeekendSession = sessions.some(s => {
+      const day = new Date(s.startedAt).getDay()
+      return day === 0 || day === 6
+    })
+
+    // ── Marathon: 3 sessions in a single day ───────────────────────────
+    const sessionsPerDay = new Map<string, number>()
+    for (const s of sessions) {
+      const day = new Date(s.startedAt).toISOString().split('T')[0]
+      sessionsPerDay.set(day, (sessionsPerDay.get(day) ?? 0) + 1)
+    }
+    const hasMarathon = Array.from(sessionsPerDay.values()).some(count => count >= 3)
 
     // Determine conditions
     const conditions: Record<string, boolean> = {
@@ -83,6 +155,17 @@ export async function GET() {
       master: categoriesTried.size >= 9,
       night_owl: hasNightSession,
       early_bird: hasEarlySession,
+      // New achievements
+      score_50: avgScore >= 50,
+      score_70: avgScore >= 70,
+      plan_creator: trainingPlanCount >= 1,
+      reaction_fast: avgReaction < 300,
+      coach_user: aiMessageCount >= 5,
+      perfect_drill: perfectDrillCount >= 1,
+      weekend_warrior: hasWeekendSession,
+      marathon: hasMarathon,
+      streak_7: currentStreak >= 7,
+      streak_30: currentStreak >= 30,
     }
 
     // Get already unlocked
@@ -111,6 +194,44 @@ export async function GET() {
           icon: n.icon,
         })),
       })
+
+      // Award XP for each new achievement
+      const xpReward = getAchievementXp()
+      const totalXpToAward = xpReward.amount * newUnlocks.length
+
+      await Promise.all([
+        // Create XP log entries for each achievement
+        db.xpLog.createMany({
+          data: newUnlocks.map(n => ({
+            playerId,
+            amount: xpReward.amount,
+            source: 'achievement',
+            description: `Succès débloqué : ${n.title} 🏅`,
+          })),
+        }),
+        // Update player XP
+        db.player.update({
+          where: { id: playerId },
+          data: {
+            xp: { increment: totalXpToAward },
+          },
+        }),
+      ])
+
+      // Recalculate level from new total XP
+      const updatedPlayer = await db.player.findUnique({
+        where: { id: playerId },
+        select: { xp: true, xpLevel: true },
+      })
+      if (updatedPlayer) {
+        const newLevel = getLevelFromXp(updatedPlayer.xp)
+        if (newLevel !== updatedPlayer.xpLevel) {
+          await db.player.update({
+            where: { id: playerId },
+            data: { xpLevel: newLevel },
+          })
+        }
+      }
     }
 
     const allAchievements = ACHIEVEMENTS.map(a => ({
@@ -124,9 +245,10 @@ export async function GET() {
       newUnlocks: newUnlocks.map(n => n.type),
       totalUnlocked: allAchievements.filter(a => a.unlocked).length,
       totalAchievements: allAchievements.length,
+      xpAwarded: newUnlocks.length > 0 ? getAchievementXp().amount * newUnlocks.length : 0,
     })
   } catch (error) {
-    console.error('[GET /api/achievements]', error)
+    trackError('GET /api/achievements', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

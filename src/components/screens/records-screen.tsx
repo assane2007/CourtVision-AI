@@ -324,14 +324,14 @@ export function RecordsScreen() {
     return (
       <div className="min-h-screen bg-background pb-24">
         <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b">
-          <div className="max-w-lg mx-auto flex items-center h-14 px-4 gap-3">
+          <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto flex items-center h-14 px-4 gap-3">
             <Skeleton className="h-5 w-5 rounded" />
             <Skeleton className="h-5 w-48" />
           </div>
         </header>
-        <div className="max-w-lg mx-auto px-4 pt-5 space-y-4">
+        <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto px-4 pt-5 space-y-4">
           <Skeleton className="h-10 rounded-xl" />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[...Array(4)].map((_, i) => (
               <Skeleton key={i} className="h-24 rounded-xl" />
             ))}
@@ -358,13 +358,13 @@ export function RecordsScreen() {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="max-w-lg mx-auto"
+          className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto"
         >
           <motion.header
             variants={itemVariants}
             className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b"
           >
-            <div className="max-w-lg mx-auto flex items-center h-14 px-4 gap-3">
+            <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto flex items-center h-14 px-4 gap-3">
               <button
                 type="button"
                 onClick={goBack}
@@ -390,14 +390,14 @@ export function RecordsScreen() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="max-w-lg mx-auto"
+        className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto"
       >
         {/* ── Header ─────────────────────────────────────────────────── */}
         <motion.header
           variants={itemVariants}
           className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b"
         >
-          <div className="max-w-lg mx-auto flex items-center h-14 px-4 gap-3">
+          <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto flex items-center h-14 px-4 gap-3">
             <button
               type="button"
               onClick={goBack}
@@ -426,7 +426,7 @@ export function RecordsScreen() {
 
           {/* ── Summary Cards ────────────────────────────────────────── */}
           {summary && (
-            <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3">
+            <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <SummaryCard
                 icon={<Dumbbell className="h-5 w-5 text-orange-500" />}
                 value={summary.totalDrills}

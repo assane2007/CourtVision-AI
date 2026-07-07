@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import { db } from '@/lib/db'
 import { signupSchema, getZodErrorMessage } from '@/lib/validations'
 import { rateLimit } from '@/lib/rate-limit'
+import { trackError } from '@/lib/monitoring'
 
 export async function POST(req: NextRequest) {
   try {
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest) {
       onboarding: player.onboarding,
     }, { status: 201 })
   } catch (error) {
-    console.error('[POST /api/auth/signup]', error)
+    trackError('POST /api/auth/signup', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

@@ -1,0 +1,80 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Button } from '@/components/ui/button'
+import { Shield } from 'lucide-react'
+
+const CONSENT_KEY = 'courtvision-cookie-consent'
+
+export function CookieConsent() {
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const consent = localStorage.getItem(CONSENT_KEY)
+    if (!consent) {
+      // Small delay to avoid flash on page load
+      const timer = setTimeout(() => setVisible(true), 800)
+      return () => clearTimeout(timer)
+    }
+  }, [])
+
+  const handleAccept = () => {
+    localStorage.setItem(CONSENT_KEY, 'accepted')
+    setVisible(false)
+  }
+
+  const handleMoreInfo = async () => {
+    try {
+      const res = await fetch('/api/privacy')
+      const text = await res.text()
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      window.open(url, '_blank')
+    } catch {
+      // Silently fail
+    }
+  }
+
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 100, opacity: 0 }}
+          transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="fixed bottom-0 left-0 right-0 z-50 p-4"
+        >
+          <div className="max-w-lg mx-auto bg-card border border-border rounded-2xl shadow-xl p-4 flex items-start gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10 shrink-0 mt-0.5">
+              <Shield className="h-4 w-4 text-orange-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-foreground">
+                Nous utilisons des cookies essentiels pour le fonctionnement de l&apos;application.
+              </p>
+              <div className="flex items-center gap-2 mt-3">
+                <Button
+                  size="sm"
+                  onClick={handleAccept}
+                  className="bg-orange-500 hover:bg-orange-600 text-white text-xs px-4"
+                >
+                  Accepter
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleMoreInfo}
+                  className="text-xs px-3"
+                >
+                  En savoir plus
+                </Button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}

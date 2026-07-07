@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { createSessionSchema, getZodErrorMessage } from '@/lib/validations'
 import { rateLimit } from '@/lib/rate-limit'
+import { cacheInvalidatePattern } from '@/lib/cache'
+import { trackError } from '@/lib/monitoring'
 
 // POST /api/sessions — Create a new workout session with drill results
 export async function POST(req: NextRequest) {
@@ -89,9 +91,15 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    // Invalidate caches that depend on session data
+    cacheInvalidatePattern('stats:')
+    cacheInvalidatePattern('records:')
+    cacheInvalidatePattern('recommendations:')
+    cacheInvalidatePattern('achievements:')
+
     return NextResponse.json(workoutSession, { status: 201 })
   } catch (error) {
-    console.error('[POST /api/sessions]', error)
+    trackError('POST /api/sessions', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -107,6 +115,38 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '20'), 1), 100)
     const cursor = searchParams.get('cursor')
+    const page = parseInt(searchParams.get('page') || '0', 10)
+
+    // Support both cursor-based and page-based pagination
+    // If ?page=1&limit=20 is used, convert to offset-based query
+    if (page > 0 && !cursor) {
+      const skip = (page - 1) * limit
+      const [sessions, total] = await Promise.all([
+        db.workoutSession.findMany({
+          where: { playerId: session.user.id },
+          include: {
+            drills: {
+              include: {
+                drill: { select: { id: true, nameFr: true, icon: true, category: true } },
+              },
+            },
+          },
+          orderBy: { startedAt: 'desc' },
+          take: limit,
+          skip,
+        }),
+        db.workoutSession.count({ where: { playerId: session.user.id } }),
+      ])
+
+      return NextResponse.json({
+        sessions,
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasMore: page * limit < total,
+      })
+    }
 
     const sessions = await db.workoutSession.findMany({
       where: { playerId: session.user.id },
@@ -130,7 +170,7 @@ export async function GET(req: NextRequest) {
       count: sessions.length,
     })
   } catch (error) {
-    console.error('[GET /api/sessions]', error)
+    trackError('GET /api/sessions', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

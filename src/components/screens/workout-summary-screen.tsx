@@ -6,11 +6,13 @@ import { useAppStore, type WorkoutResult, type WorkoutDrillResult } from '@/stor
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Clock, Target, Flame, Trophy, RotateCcw, Home, Share2, Star, Crown } from 'lucide-react'
+import { Clock, Target, Flame, Trophy, RotateCcw, Home, Share2, Star, Crown, Play } from 'lucide-react'
 import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { CATEGORY_META } from '@/lib/constants'
 import { apiFetch } from '@/lib/utils'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { ScoreReplay } from '@/components/workout/score-replay'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -399,15 +401,44 @@ function DrillBreakdownCard({ drill, delay }: { drill: WorkoutDrillResult; delay
 // ─── Share Function ───────────────────────────────────────────────────────────
 
 async function shareWorkout(result: WorkoutResult) {
-  const bestDrill = result.drills.reduce(
-    (best, d) => (d.score > best.score ? d : best),
-    result.drills[0],
-  )
-  const text = [
-    `🏀 CourtVision AI — Score: ${result.totalScore}%`,
-    `| ${result.totalReps} rép. en ${formatDuration(result.totalDurationSec)}`,
-    `| Exercice: ${bestDrill?.drillNameFr ?? 'N/A'}`,
-  ].join(' ')
+  const sessionId = result.sessionId
+  let text: string
+
+  try {
+    // Try to get richer share text from API
+    if (sessionId) {
+      const res = await apiFetch<{ shareText: string; shareUrl: string }>('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, includeScreenshot: false }),
+      })
+      text = res.shareText
+    } else {
+      // Fallback: build locally
+      const bestDrill = result.drills.reduce(
+        (best, d) => (d.score > best.score ? d : best),
+        result.drills[0],
+      )
+      text = [
+        `🏀 CourtVision AI`,
+        `Score: ${result.totalScore}%`,
+        `Reps: ${result.totalReps}`,
+        `Exercices: ${result.drills.length}`,
+      ].join('\n')
+    }
+  } catch {
+    // Fallback if API fails
+    const bestDrill = result.drills.reduce(
+      (best, d) => (d.score > best.score ? d : best),
+      result.drills[0],
+    )
+    text = [
+      `🏀 CourtVision AI`,
+      `Score: ${result.totalScore}%`,
+      `Reps: ${result.totalReps}`,
+      `Exercice: ${bestDrill?.drillNameFr ?? 'N/A'}`,
+    ].join('\n')
+  }
 
   if (typeof navigator !== 'undefined' && navigator.share) {
     try {
@@ -419,12 +450,12 @@ async function shareWorkout(result: WorkoutResult) {
       // User cancelled or error — fallback to clipboard
       if ((err as DOMException).name !== 'AbortError') {
         await navigator.clipboard.writeText(text)
-        toast.success('Copié dans le presse-papiers !', { description: text })
+        toast.success('Copié dans le presse-papiers !')
       }
     }
   } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
     await navigator.clipboard.writeText(text)
-    toast.success('Copié dans le presse-papiers !', { description: text })
+    toast.success('Copié dans le presse-papiers !')
   }
 }
 
@@ -476,6 +507,7 @@ function PRBanner({ drillNames }: { drillNames: string[] }) {
 export default function WorkoutSummaryScreen() {
   const { workoutResult, navigate, setWorkoutResult, selectDrill } = useAppStore()
   const prefersReducedMotion = useReducedMotion()
+  const [replayOpen, setReplayOpen] = useState(false)
 
   const grade = useMemo(() => getGrade(workoutResult?.totalScore ?? 0), [workoutResult?.totalScore])
 
@@ -555,7 +587,7 @@ export default function WorkoutSummaryScreen() {
         <ConfettiExplosion />
 
         {/* Content */}
-        <div className="relative z-20 px-4 pt-8 pb-32 pb-safe max-w-lg mx-auto">
+        <div className="relative z-20 px-4 pt-8 pb-32 pb-safe max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto">
           {/* ── PR Celebration Banner ───────────────────────────────── */}
           {newPRDrillNames.length > 0 && <PRBanner drillNames={newPRDrillNames} />}
 
@@ -689,13 +721,22 @@ export default function WorkoutSummaryScreen() {
           transition={{ delay: 1.5, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
           <div className="bg-gradient-to-t from-gray-950 via-gray-950/95 to-transparent pt-8 pb-4 px-4">
-            <div className="max-w-lg mx-auto space-y-2.5">
+            <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto space-y-2.5">
               <Button
                 onClick={handleRestart}
                 className="w-full h-12 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/25"
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Refaire l&apos;entraînement
+              </Button>
+              {/* Replay button */}
+              <Button
+                variant="outline"
+                onClick={() => setReplayOpen(true)}
+                className="w-full h-11 border-white/15 text-white hover:bg-white/10 rounded-xl"
+              >
+                <Play className="h-4 w-4 mr-2" />
+                Rejouer 🎬
               </Button>
               <div className="grid grid-cols-2 gap-2.5">
                 <Button
@@ -718,6 +759,27 @@ export default function WorkoutSummaryScreen() {
             </div>
           </div>
         </motion.div>
+
+        {/* ── Replay Sheet ──────────────────────────────────── */}
+        <Sheet open={replayOpen} onOpenChange={setReplayOpen}>
+          <SheetContent side="bottom" className="max-h-[85vh] rounded-t-2xl bg-gray-950 border-white/10 p-0">
+            <SheetHeader className="pt-3 pb-0 px-5">
+              <SheetTitle className="text-white text-sm font-semibold text-center">
+                🎬 Rejouer l&apos;entraînement
+              </SheetTitle>
+            </SheetHeader>
+            <div className="h-[calc(85vh-52px)] overflow-hidden">
+              {workoutResult && (
+                <ScoreReplay
+                  drills={workoutResult.drills}
+                  totalScore={workoutResult.totalScore}
+                  totalReps={workoutResult.totalReps}
+                  totalDurationSec={workoutResult.totalDurationSec}
+                />
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </div>
   )
