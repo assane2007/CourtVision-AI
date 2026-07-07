@@ -1,0 +1,154 @@
+'use client'
+
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  type ReactNode,
+} from 'react'
+import {
+  translations,
+  detectBrowserLanguage,
+  type AppLanguage,
+  type TranslationKey,
+} from '@/lib/i18n'
+
+// ── Context shape ────────────────────────────────────────────────────────────
+interface LanguageContextValue {
+  language: AppLanguage
+  setLanguage: (lang: AppLanguage) => Promise<void>
+  /** Translate a key using the current language */
+  t: (key: TranslationKey) => string
+  /** Translate a category key */
+  tc: (category: string) => string
+  /** Translate a difficulty key */
+  td: (difficulty: string) => string
+  /** Whether the language has been loaded from the server */
+  isLoaded: boolean
+}
+
+const LanguageContext = createContext<LanguageContextValue | null>(null)
+
+const STORAGE_KEY = 'courtvision-lang'
+
+// ── Provider ─────────────────────────────────────────────────────────────────
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const [language, setLanguageState] = useState<AppLanguage>(() => {
+    // Initial state: try localStorage, then browser language
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored === 'fr' || stored === 'en') return stored
+    }
+    return detectBrowserLanguage()
+  })
+  const [isLoaded, setIsLoaded] = useState(false)
+  const isMountedRef = useRef(false)
+
+  // ── Fetch player language preference on mount ────────────────────────────
+  useEffect(() => {
+    isMountedRef.current = true
+
+    async function fetchLanguage() {
+      try {
+        const res = await fetch('/api/settings')
+        if (res.ok) {
+          const data = await res.json()
+          const playerLang = data?.settings?.language
+          if (playerLang === 'fr' || playerLang === 'en') {
+            setLanguageState(playerLang)
+            localStorage.setItem(STORAGE_KEY, playerLang)
+          }
+        }
+      } catch {
+        // Silently fall back to current state (localStorage / browser lang)
+      } finally {
+        if (isMountedRef.current) {
+          setIsLoaded(true)
+        }
+      }
+    }
+
+    fetchLanguage()
+
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
+  // ── Persist language to localStorage when it changes ─────────────────────
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, language)
+  }, [language])
+
+  // ── setLanguage: update state + persist to server ────────────────────────
+  const setLanguage = useCallback(async (lang: AppLanguage) => {
+    setLanguageState(lang)
+    localStorage.setItem(STORAGE_KEY, lang)
+
+    // Best-effort server sync (don't block UI)
+    try {
+      await fetch('/api/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ language: lang }),
+      })
+    } catch {
+      // The local state is already correct; server will catch up later
+    }
+  }, [])
+
+  // ── Translation function ─────────────────────────────────────────────────
+  const t = useCallback(
+    (key: TranslationKey): string => {
+      return translations[language]?.[key] ?? translations.fr[key] ?? key
+    },
+    [language],
+  )
+
+  // ── Category translation ─────────────────────────────────────────────────
+  const tc = useCallback(
+    (category: string): string => {
+      const key = `category.${category}` as TranslationKey
+      const val = translations[language]?.[key]
+      if (val && val !== key) return val
+      const frVal = translations.fr[key]
+      if (frVal && frVal !== key) return frVal
+      return category
+    },
+    [language],
+  )
+
+  // ── Difficulty translation ───────────────────────────────────────────────
+  const td = useCallback(
+    (difficulty: string): string => {
+      const key = `difficulty.${difficulty}` as TranslationKey
+      const val = translations[language]?.[key]
+      if (val && val !== key) return val
+      return difficulty
+    },
+    [language],
+  )
+
+  return (
+    <LanguageContext.Provider
+      value={{ language, setLanguage, t, tc, td, isLoaded }}
+    >
+      {children}
+    </LanguageContext.Provider>
+  )
+}
+
+// ── Hook ─────────────────────────────────────────────────────────────────────
+export function useTranslation() {
+  const ctx = useContext(LanguageContext)
+  if (!ctx) {
+    throw new Error('useTranslation must be used within a <LanguageProvider>')
+  }
+  return ctx
+}
+
+// ── Convenience: re-export server-side t from i18n.ts for use in server code
+export { type AppLanguage, type TranslationKey } from '@/lib/i18n'

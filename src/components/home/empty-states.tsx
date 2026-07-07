@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { Camera } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useTranslation } from '@/components/providers/language-provider'
 
 // ---------------------------------------------------------------------------
 // Animated bouncing basketball SVG
@@ -71,6 +72,8 @@ function BouncingBasketball() {
 // Empty state for recommendations
 // ---------------------------------------------------------------------------
 export function EmptyRecommendations({ onStart }: { onStart: () => void }) {
+  const { t } = useTranslation()
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -80,10 +83,10 @@ export function EmptyRecommendations({ onStart }: { onStart: () => void }) {
     >
       <BouncingBasketball />
       <h3 className="mt-4 text-sm font-semibold text-foreground/80">
-        Pr&ecirc;t &agrave; commencer ?
+        {t('empty.readyToStart')}
       </h3>
       <p className="mt-1 mb-5 max-w-[220px] text-xs text-muted-foreground leading-relaxed">
-        Commencez votre premier entra&icirc;nement et l&apos;IA vous recommandera les meilleurs exercices.
+        {t('empty.startFirstDesc')}
       </p>
       <Button
         size="sm"
@@ -91,7 +94,7 @@ export function EmptyRecommendations({ onStart }: { onStart: () => void }) {
         className="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-600 hover:to-amber-600 shadow-md shadow-orange-500/20"
       >
         <Camera className="mr-1.5 h-3.5 w-3.5" />
-        D&eacute;marrer l&apos;entra&icirc;nement
+        {t('empty.startTraining')}
       </Button>
     </motion.div>
   )
@@ -101,6 +104,8 @@ export function EmptyRecommendations({ onStart }: { onStart: () => void }) {
 // Empty state for recent activity
 // ---------------------------------------------------------------------------
 export function EmptyActivity() {
+  const { t } = useTranslation()
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -110,10 +115,10 @@ export function EmptyActivity() {
     >
       <BouncingBasketball />
       <h3 className="mt-4 text-sm font-semibold text-foreground/80">
-        Aucune activit&eacute; r&eacute;cente
+        {t('empty.noRecentActivity')}
       </h3>
       <p className="mt-1 max-w-[220px] text-xs text-muted-foreground leading-relaxed">
-        Vos s&eacute;ances appara&icirc;tront ici une fois que vous aurez commenc&eacute; &agrave; vous entra&icirc;ner.
+        {t('empty.noRecentDesc')}
       </p>
     </motion.div>
   )

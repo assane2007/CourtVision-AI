@@ -4,17 +4,20 @@ import { motion } from 'framer-motion'
 import { Home, ClipboardList, Dumbbell, BarChart3, User } from 'lucide-react'
 import { useAppStore, type Screen } from '@/stores/app'
 import { hapticLight } from '@/lib/haptics'
+import { useTranslation } from '@/components/providers/language-provider'
+import type { TranslationKey } from '@/lib/i18n'
 
-const tabs: { icon: typeof Home; label: string; screen: Screen }[] = [
-  { icon: Home, label: 'Accueil', screen: 'home' },
-  { icon: ClipboardList, label: 'Plans', screen: 'plans' },
-  { icon: Dumbbell, label: 'Entraînement', screen: 'train-hub' },
-  { icon: BarChart3, label: 'Stats', screen: 'stats' },
-  { icon: User, label: 'Profil', screen: 'profile' },
+const tabs: { icon: typeof Home; labelKey: TranslationKey; screen: Screen }[] = [
+  { icon: Home, labelKey: 'nav.home', screen: 'home' },
+  { icon: ClipboardList, labelKey: 'nav.plans', screen: 'plans' },
+  { icon: Dumbbell, labelKey: 'nav.training', screen: 'train-hub' },
+  { icon: BarChart3, labelKey: 'nav.stats', screen: 'stats' },
+  { icon: User, labelKey: 'nav.profile', screen: 'profile' },
 ]
 
 export function BottomNav() {
   const { currentScreen, navigate } = useAppStore()
+  const { t } = useTranslation()
 
   return (
     <nav aria-label="Navigation principale" className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-lg supports-[backdrop-filter]:bg-background/80 pb-safe">
@@ -43,7 +46,7 @@ export function BottomNav() {
                   />
                 )}
               </div>
-              <span>{tab.label}</span>
+              <span>{t(tab.labelKey)}</span>
             </button>
           )
         })}

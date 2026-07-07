@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useRef } from 'react'
 import { useAppStore } from '@/stores/app'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent } from '@/components/ui/card'
@@ -42,6 +42,7 @@ import {
   Filter,
   Plus,
   Loader2,
+  X,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -93,6 +94,20 @@ const difficultyDotColor: Record<string, string> = {
   advanced: 'bg-red-500',
 }
 
+const DIFFICULTY_LABELS: Record<string, string> = {
+  beginner: 'Débutant',
+  intermediate: 'Intermédiaire',
+  advanced: 'Avancé',
+}
+
+// ─── Accent normalization for fuzzy search ─────────────────────────────
+function normalize(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function TrainHubScreen() {
@@ -120,21 +135,36 @@ export default function TrainHubScreen() {
 
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState('all')
-  const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([])
-  const [showDifficultyFilter, setShowDifficultyFilter] = useState(false)
+  const [selectedDifficulty, setSelectedDifficulty] = useState('')
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
 
-  // ── Data Fetching ────────────────────────────────────────────────────────
+  // ── Data Fetching (cursor-based pagination) ─────────────────────────────
+
+  const [allDrills, setAllDrills] = useState<Drill[]>([])
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [totalDrills, setTotalDrills] = useState<number>(0)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
 
   const { data, isLoading } = useQuery<{
     drills: Drill[]
     favoriteIds: string[]
+    nextCursor: string | null
+    total?: number
   }>({
     queryKey: ['drills'],
-    queryFn: () => apiFetch('/api/drills'),
+    queryFn: () => apiFetch('/api/drills?limit=20'),
   })
 
-  const drills: Drill[] = data?.drills ?? []
+  // Sync first page data into local state
+  useMemo(() => {
+    if (data) {
+      setAllDrills(data.drills)
+      setNextCursor(data.nextCursor)
+      setTotalDrills(data.total ?? 0)
+    }
+  }, [data])
+
+  const drills = allDrills
   const favoriteIds: string[] = data?.favoriteIds ?? []
 
   // ── Drill count per category ────────────────────────────────────────────
@@ -146,6 +176,24 @@ export default function TrainHubScreen() {
     }
     return counts
   }, [drills])
+
+  // ── Load More ───────────────────────────────────────────────────────────
+  const loadMore = useCallback(async () => {
+    if (!nextCursor || isLoadingMore) return
+    setIsLoadingMore(true)
+    try {
+      const res = await apiFetch<{
+        drills: Drill[]
+        nextCursor: string | null
+      }>(`/api/drills?limit=20&cursor=${encodeURIComponent(nextCursor)}`)
+      setAllDrills((prev) => [...prev, ...res.drills])
+      setNextCursor(res.nextCursor)
+    } catch {
+      // silently fail — user can retry
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }, [nextCursor, isLoadingMore])
 
   // ── Favorite Mutation ────────────────────────────────────────────────────
 
@@ -234,8 +282,8 @@ export default function TrainHubScreen() {
       result = result.filter((d) => d.category === activeCategory)
     }
 
-    if (selectedDifficulties.length > 0) {
-      result = result.filter((d) => selectedDifficulties.includes(d.difficulty))
+    if (selectedDifficulty) {
+      result = result.filter((d) => d.difficulty === selectedDifficulty)
     }
 
     if (showFavoritesOnly) {
@@ -243,17 +291,26 @@ export default function TrainHubScreen() {
     }
 
     if (search.trim()) {
-      const q = search.toLowerCase().trim()
-      result = result.filter(
-        (d) =>
-          d.nameFr.toLowerCase().includes(q) ||
-          d.name.toLowerCase().includes(q) ||
-          d.category.toLowerCase().includes(q),
-      )
+      const q = normalize(search.trim())
+      const words = q.split(/\s+/)
+      result = result.filter((d) => {
+        const searchable = [
+          d.nameFr,
+          d.name,
+          getCategoryLabel(d.category),
+          d.category,
+          d.descriptionFr,
+          d.description,
+          DIFFICULTY_LABELS[d.difficulty] ?? d.difficulty,
+        ]
+          .map(normalize)
+          .join(' ')
+        return words.every((w) => searchable.includes(w))
+      })
     }
 
     return result
-  }, [drills, activeCategory, selectedDifficulties, search, showFavoritesOnly, favoriteIds])
+  }, [drills, activeCategory, selectedDifficulty, search, showFavoritesOnly, favoriteIds])
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
@@ -267,11 +324,21 @@ export default function TrainHubScreen() {
     favoriteMutation.mutate(drillId)
   }
 
-  const toggleDifficulty = (key: string) => {
-    setSelectedDifficulties((prev) =>
-      prev.includes(key) ? prev.filter((d) => d !== key) : [...prev, key],
-    )
-  }
+  // Active filter count (excluding search text)
+  const activeFilterCount = useMemo(() => {
+    let count = 0
+    if (activeCategory !== 'all') count++
+    if (selectedDifficulty) count++
+    if (showFavoritesOnly) count++
+    return count
+  }, [activeCategory, selectedDifficulty, showFavoritesOnly])
+
+  const clearAllFilters = useCallback(() => {
+    setSearch('')
+    setActiveCategory('all')
+    setSelectedDifficulty('')
+    setShowFavoritesOnly(false)
+  }, [])
 
   const isCreateFormValid =
     createForm.nameFr.trim() !== '' &&
@@ -511,7 +578,7 @@ export default function TrainHubScreen() {
         </div>
 
         {/* Search + Filter row */}
-        <div className="max-w-4xl lg:max-w-6xl mx-auto px-4 pb-3 flex items-center gap-2">
+        <div className="max-w-4xl lg:max-w-6xl mx-auto px-4 pb-2 flex items-center gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -534,56 +601,66 @@ export default function TrainHubScreen() {
           >
             <Heart className={`h-4 w-4 ${showFavoritesOnly ? 'fill-current' : ''}`} />
           </Button>
-          <Button
-            variant={showDifficultyFilter ? 'default' : 'outline'}
-            size="icon"
-            className="h-10 w-10 rounded-full shrink-0"
-            onClick={() => setShowDifficultyFilter((v) => !v)}
-          >
-            <Filter className="h-4 w-4" />
-          </Button>
+          {activeFilterCount > 0 && (
+            <Badge className="h-6 min-w-[24px] flex items-center justify-center rounded-full bg-orange-500 text-white text-[11px] font-bold px-1.5">
+              {activeFilterCount}
+            </Badge>
+          )}
+          {activeFilterCount > 0 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-full shrink-0 text-muted-foreground hover:text-foreground"
+              onClick={clearAllFilters}
+              aria-label="Réinitialiser les filtres"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
 
-        {/* Difficulty filter (collapsible) */}
-        <AnimatePresence>
-          {showDifficultyFilter && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden"
+        {/* Difficulty filter buttons */}
+        <div className="max-w-4xl lg:max-w-6xl mx-auto px-4 pb-2">
+          <div className="flex gap-1.5 overflow-x-auto scrollbar-none -mx-1 px-1">
+            <button
+              onClick={() => setSelectedDifficulty('')}
+              className={`
+                inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium
+                whitespace-nowrap transition-all duration-200 shrink-0 border
+                ${
+                  !selectedDifficulty
+                    ? 'bg-foreground text-background border-foreground'
+                    : 'bg-card text-muted-foreground border-border hover:border-foreground/30'
+                }
+              `}
             >
-              <div className="max-w-4xl lg:max-w-6xl mx-auto px-4 pb-3 flex items-center gap-2">
-                {DIFFICULTIES.map((diff) => {
-                  const isActive = selectedDifficulties.includes(diff.key)
-                  return (
-                    <button
-                      key={diff.key}
-                      onClick={() => toggleDifficulty(diff.key)}
-                      className={`
-                        inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium
-                        transition-colors border
-                        ${
-                          isActive
-                            ? 'bg-foreground text-background border-foreground'
-                            : 'bg-card text-muted-foreground border-border hover:border-foreground/30'
-                        }
-                      `}
-                    >
-                      <span
-                        className={`h-2 w-2 rounded-full ${diff.color} ${
-                          isActive ? 'ring-2 ring-background/40' : ''
-                        }`}
-                      />
-                      {diff.label}
-                    </button>
+              <Filter className="h-3.5 w-3.5" />
+              Tous
+            </button>
+            {DIFFICULTIES.map((diff) => (
+              <button
+                key={diff.key}
+                onClick={() =>
+                  setSelectedDifficulty((prev) =>
+                    prev === diff.key ? '' : diff.key,
                   )
-                })}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                }
+                className={`
+                  inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium
+                  whitespace-nowrap transition-all duration-200 shrink-0 border
+                  ${
+                    selectedDifficulty === diff.key
+                      ? 'bg-foreground text-background border-foreground'
+                      : 'bg-card text-muted-foreground border-border hover:border-foreground/30'
+                  }
+                `}
+              >
+                <span className={`h-2 w-2 rounded-full ${diff.color}`} />
+                {diff.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Category pills */}
         <div className="max-w-4xl lg:max-w-6xl mx-auto px-4 pb-3">
@@ -670,11 +747,7 @@ export default function TrainHubScreen() {
             <Button
               variant="outline"
               className="mt-4 rounded-full"
-              onClick={() => {
-                setSearch('')
-                setActiveCategory('all')
-                setSelectedDifficulties([])
-              }}
+              onClick={clearAllFilters}
             >
               Réinitialiser les filtres
             </Button>
@@ -684,7 +757,7 @@ export default function TrainHubScreen() {
         {/* Drill grid */}
         {!isLoading && filteredDrills.length > 0 && (
           <motion.div
-            key={`${activeCategory}-${selectedDifficulties.join()}-${search}`}
+            key={`${activeCategory}-${selectedDifficulty}-${search}`}
             variants={containerVariants}
             initial="hidden"
             animate="visible"
@@ -796,6 +869,23 @@ export default function TrainHubScreen() {
               })}
             </AnimatePresence>
           </motion.div>
+        )}
+
+        {/* Load More button */}
+        {!isLoading && filteredDrills.length > 0 && nextCursor && (
+          <div className="flex justify-center pt-6 pb-2">
+            <Button
+              variant="outline"
+              onClick={loadMore}
+              disabled={isLoadingMore}
+              className="rounded-full px-6 gap-2"
+            >
+              {isLoadingMore ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : null}
+              Charger plus
+            </Button>
+          </div>
         )}
       </main>
 

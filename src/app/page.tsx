@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { FeatureGate } from '@/components/feature-gate'
 
+const LandingPage = dynamic(() => import('@/components/landing/landing-page'), { ssr: false })
 const AuthScreen = dynamic(() => import('@/components/screens/auth-screen'), { ssr: false })
 const OnboardingScreen = dynamic(() => import('@/components/screens/onboarding-screen'), { ssr: false })
 const HomeScreen = dynamic(() => import('@/components/screens/home-screen'), { ssr: false })
@@ -21,6 +22,7 @@ const SettingsScreen = dynamic(() => import('@/components/screens/settings-scree
 const ScoutingScreen = dynamic(() => import('@/components/screens/scouting-screen'), { ssr: false })
 const AICoachScreen = dynamic(() => import('@/components/screens/ai-coach-screen'), { ssr: false })
 const ReactionTrainerScreen = dynamic(() => import('@/components/screens/reaction-trainer-screen'), { ssr: false })
+const PricingScreen = dynamic(() => import('@/components/screens/pricing-screen'), { ssr: false })
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false }
@@ -113,7 +115,7 @@ export default function Home() {
   const prefersReducedMotion = useReducedMotion()
 
   useEffect(() => {
-    if (status === 'unauthenticated' && currentScreen !== 'auth') navigate('auth')
+    if (status === 'unauthenticated' && currentScreen !== 'auth' && currentScreen !== 'landing') navigate('landing')
   }, [status, currentScreen, navigate])
 
   // Simple direction heuristic: tab screens go right (1), detail screens go left (-1)
@@ -133,6 +135,15 @@ export default function Home() {
           <p className="text-muted-foreground text-sm">Chargement...</p>
         </motion.div>
       </div>
+    )
+  }
+
+  // Landing page: render outside the AnimatePresence wrapper (full-width marketing page)
+  if (!session && currentScreen === 'landing') {
+    return (
+      <ErrorBoundary>
+        <LandingPage onNavigate={navigate} />
+      </ErrorBoundary>
     )
   }
 
@@ -177,7 +188,8 @@ export default function Home() {
               {currentScreen === 'reaction-trainer' && session && (
                 <FeatureGate flag="reaction_trainer"><ReactionTrainerScreen /></FeatureGate>
               )}
-              {!session && currentScreen !== 'auth' && <AuthScreen />}
+              {currentScreen === 'pricing' && session && <PricingScreen />}
+              {!session && currentScreen !== 'auth' && currentScreen !== 'landing' && <AuthScreen />}
             </StaggerChildren>
           </motion.div>
         </AnimatePresence>

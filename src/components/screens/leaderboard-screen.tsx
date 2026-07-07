@@ -99,7 +99,7 @@ export function LeaderboardScreen() {
     <SwipeToGoBack className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b">
-        <div className="max-w-lg mx-auto flex items-center gap-3 px-4 py-3">
+        <div className="max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto flex items-center gap-3 px-4 py-3">
           <Button
             variant="ghost"
             size="icon"
@@ -120,7 +120,7 @@ export function LeaderboardScreen() {
         </div>
 
         {/* Period Tabs */}
-        <div className="max-w-lg mx-auto px-4 pb-3">
+        <div className="max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto px-4 pb-3">
           <div className="flex gap-1 bg-muted rounded-xl p-1">
             {PERIOD_TABS.map((tab) => (
               <button
@@ -139,7 +139,7 @@ export function LeaderboardScreen() {
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 pt-4 pb-8">
+      <main className="max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto px-4 pt-4 pb-8">
         {isLoading ? (
           <LeaderboardSkeleton />
         ) : isError ? (

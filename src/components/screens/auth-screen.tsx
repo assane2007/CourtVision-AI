@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo } from 'react'
 import { signIn } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Loader2, Eye, EyeOff, Dribbble } from 'lucide-react'
+import { Loader2, Eye, EyeOff, Dribbble, KeyRound, CheckCircle2, Copy, ArrowLeft } from 'lucide-react'
 
 import { useAppStore } from '@/stores/app'
 import { apiFetch } from '@/lib/utils'
@@ -12,6 +12,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { toast } from 'sonner'
 
 /* ── Floating basketball config ──────────────────────────────────── */
@@ -180,6 +187,17 @@ export default function AuthScreen() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [pendingNavigation, setPendingNavigation] = useState(false)
 
+  // ── Password reset dialog state ───────────────────────────────────
+  const [resetOpen, setResetOpen] = useState(false)
+  const [resetStep, setResetStep] = useState<'email' | 'token' | 'new-password' | 'success'>('email')
+  const [resetEmail, setResetEmail] = useState('')
+  const [resetToken, setResetToken] = useState('')
+  const [resetNewPassword, setResetNewPassword] = useState('')
+  const [resetConfirmPassword, setResetConfirmPassword] = useState('')
+  const [resetLoading, setResetLoading] = useState(false)
+  const [resetError, setResetError] = useState('')
+  const [resetShowToken, setResetShowToken] = useState(false)
+
   // ── Handlers ─────────────────────────────────────────────────────
   const handleLogin = useCallback(
     async (e: React.FormEvent) => {
@@ -255,6 +273,88 @@ export default function AuthScreen() {
     }
   }, [pendingNavigation, navigate])
 
+  // ── Password reset handlers ────────────────────────────────────────
+  const handleResetOpen = useCallback(() => {
+    setResetStep('email')
+    setResetEmail('')
+    setResetToken('')
+    setResetNewPassword('')
+    setResetConfirmPassword('')
+    setResetError('')
+    setResetShowToken(false)
+    setResetOpen(true)
+  }, [])
+
+  const handleResetEmail = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault()
+      setResetError('')
+      setResetLoading(true)
+      try {
+        const data = await apiFetch<{ message: string; resetToken?: string }>(
+          '/api/auth/reset-password',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: resetEmail }),
+          },
+        )
+        if (data.resetToken) {
+          setResetToken(data.resetToken)
+          setResetStep('token')
+        } else {
+          // Account not found but we still show success per security best practice
+          toast.success(data.message)
+          setResetOpen(false)
+        }
+      } catch (err) {
+        setResetError(err instanceof Error ? err.message : 'Une erreur est survenue.')
+      } finally {
+        setResetLoading(false)
+      }
+    },
+    [resetEmail],
+  )
+
+  const handleResetConfirm = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault()
+      setResetError('')
+      if (resetNewPassword.length < 8) {
+        setResetError('Le mot de passe doit contenir au moins 8 caractères.')
+        return
+      }
+      if (resetNewPassword !== resetConfirmPassword) {
+        setResetError('Les mots de passe ne correspondent pas.')
+        return
+      }
+      setResetLoading(true)
+      try {
+        await apiFetch('/api/auth/reset-password/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: resetToken, newPassword: resetNewPassword }),
+        })
+        setResetStep('success')
+      } catch (err) {
+        setResetError(err instanceof Error ? err.message : 'Une erreur est survenue.')
+      } finally {
+        setResetLoading(false)
+      }
+    },
+    [resetToken, resetNewPassword, resetConfirmPassword],
+  )
+
+  const handleResetSuccess = useCallback(() => {
+    setResetOpen(false)
+  }, [])
+
+  const handleCopyToken = useCallback(() => {
+    navigator.clipboard.writeText(resetToken).then(() => {
+      toast.success('Token copié !')
+    })
+  }, [resetToken])
+
   // ── Shared password field builder ────────────────────────────────
   const renderPasswordField = (
     id: string,
@@ -296,7 +396,7 @@ export default function AuthScreen() {
           <button
             type="button"
             className="text-xs text-orange-400/60 hover:text-orange-400/90 transition-colors cursor-pointer"
-            onClick={() => toast.info('Fonctionnalité à venir')}
+            onClick={handleResetOpen}
           >
             Mot de passe oublié ?
           </button>
@@ -548,6 +648,213 @@ export default function AuthScreen() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* ── Password Reset Dialog ──────────────────────────────────── */}
+      <Dialog open={resetOpen} onOpenChange={(open) => { if (!open) setResetOpen(false) }}>
+        <DialogContent className="bg-[#1a1a2e] border-white/15 text-white sm:max-w-md">
+          <AnimatePresence mode="wait">
+            {/* Step 1: Email input */}
+            {resetStep === 'email' && (
+              <motion.div
+                key="email"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-white">
+                    <KeyRound className="h-5 w-5 text-orange-400" />
+                    Réinitialiser le mot de passe
+                  </DialogTitle>
+                  <DialogDescription className="text-white/50">
+                    Entre ton email pour recevoir un token de réinitialisation.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleResetEmail} className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email" className="text-white/80">
+                      Email
+                    </Label>
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      value={resetEmail}
+                      onChange={(e) => {
+                        setResetEmail(e.target.value)
+                        setResetError('')
+                      }}
+                      placeholder="vous@exemple.com"
+                      disabled={resetLoading}
+                      required
+                      autoComplete="email"
+                      className="h-11 bg-white/5 border-white/15 text-white placeholder:text-white/40 focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
+                    />
+                  </div>
+                  {resetError && (
+                    <p className="text-sm text-red-400">{resetError}</p>
+                  )}
+                  <Button
+                    type="submit"
+                    disabled={resetLoading || !resetEmail}
+                    className="w-full h-11 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold transition-all cursor-pointer"
+                  >
+                    {resetLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'Envoyer le token'
+                    )}
+                  </Button>
+                </form>
+              </motion.div>
+            )}
+
+            {/* Step 2: Show token + new password */}
+            {resetStep === 'token' && (
+              <motion.div
+                key="token"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-white">
+                    <KeyRound className="h-5 w-5 text-orange-400" />
+                    Token de réinitialisation
+                  </DialogTitle>
+                  <DialogDescription className="text-white/50">
+                    En production, ce token serait envoyé par email.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 mt-4">
+                  {/* Token display */}
+                  <div className="space-y-2">
+                    <Label className="text-white/80">Token de réinitialisation</Label>
+                    <div className="relative">
+                      <div className="h-11 bg-amber-500/10 border border-amber-500/30 rounded-md px-3 pr-10 flex items-center">
+                        <code className="text-sm text-amber-300 font-mono break-all select-all">
+                          {resetShowToken ? resetToken : resetToken.slice(0, 4) + '••••••••••••••••••••••••••' + resetToken.slice(-4)}
+                        </code>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setResetShowToken((v) => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-400/60 hover:text-amber-400 transition-colors"
+                        tabIndex={-1}
+                        aria-label={resetShowToken ? 'Masquer le token' : 'Afficher le token'}
+                      >
+                        {resetShowToken ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCopyToken}
+                      className="flex items-center gap-1.5 text-xs text-amber-400/70 hover:text-amber-400 transition-colors cursor-pointer"
+                    >
+                      <Copy className="size-3" />
+                      Copier le token
+                    </button>
+                  </div>
+
+                  <div className="border-t border-white/10 pt-4">
+                    <form onSubmit={handleResetConfirm} className="space-y-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="reset-new-pw" className="text-white/80">
+                          Nouveau mot de passe
+                        </Label>
+                        <Input
+                          id="reset-new-pw"
+                          type="password"
+                          value={resetNewPassword}
+                          onChange={(e) => {
+                            setResetNewPassword(e.target.value)
+                            setResetError('')
+                          }}
+                          placeholder="Min. 8 caractères"
+                          disabled={resetLoading}
+                          required
+                          className="h-11 bg-white/5 border-white/15 text-white placeholder:text-white/40 focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="reset-confirm-pw" className="text-white/80">
+                          Confirmer le mot de passe
+                        </Label>
+                        <Input
+                          id="reset-confirm-pw"
+                          type="password"
+                          value={resetConfirmPassword}
+                          onChange={(e) => {
+                            setResetConfirmPassword(e.target.value)
+                            setResetError('')
+                          }}
+                          placeholder="Confirmer"
+                          disabled={resetLoading}
+                          required
+                          className="h-11 bg-white/5 border-white/15 text-white placeholder:text-white/40 focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
+                        />
+                      </div>
+                      {resetError && (
+                        <p className="text-sm text-red-400">{resetError}</p>
+                      )}
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => setResetStep('email')}
+                          className="h-11 text-white/60 hover:text-white hover:bg-white/5 cursor-pointer"
+                        >
+                          <ArrowLeft className="size-4 mr-1.5" />
+                          Retour
+                        </Button>
+                        <Button
+                          type="submit"
+                          disabled={resetLoading || !resetNewPassword || !resetConfirmPassword}
+                          className="flex-1 h-11 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold transition-all cursor-pointer"
+                        >
+                          {resetLoading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            'Réinitialiser'
+                          )}
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step 3: Success */}
+            {resetStep === 'success' && (
+              <motion.div
+                key="success"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+                className="py-4 text-center space-y-4"
+              >
+                <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                  <CheckCircle2 className="h-8 w-8 text-emerald-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Mot de passe mis à jour !</h3>
+                  <p className="text-sm text-white/50 mt-1">
+                    Tu peux maintenant te connecter avec ton nouveau mot de passe.
+                  </p>
+                </div>
+                <Button
+                  onClick={handleResetSuccess}
+                  className="h-11 px-8 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold transition-all cursor-pointer"
+                >
+                  Retour à la connexion
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

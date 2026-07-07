@@ -10,7 +10,7 @@ import { create } from 'zustand'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type Screen = 'auth' | 'onboarding' | 'home' | 'plans' | 'train-hub' | 'drill-detail' | 'camera-workout' | 'workout-summary' | 'stats' | 'records' | 'profile' | 'achievements' | 'settings' | 'scouting' | 'reaction-trainer' | 'ai-coach' | 'leaderboard'
+export type Screen = 'landing' | 'auth' | 'onboarding' | 'home' | 'plans' | 'train-hub' | 'drill-detail' | 'camera-workout' | 'workout-summary' | 'stats' | 'records' | 'profile' | 'achievements' | 'settings' | 'scouting' | 'reaction-trainer' | 'ai-coach' | 'leaderboard' | 'pricing'
 
 export interface WorkoutDrillResult {
   drillId: string
@@ -82,7 +82,7 @@ interface AppState {
 // ── Store ─────────────────────────────────────────────────────────────────────
 
 export const useAppStore = create<AppState>((set) => ({
-  currentScreen: 'auth',
+  currentScreen: 'landing',
   selectedDrillId: null,
   screenHistory: [],
   sidebarOpen: false,

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { withCache } from '@/lib/cache'
+import { calculateStreak } from '@/lib/streak'
 import { trackError } from '@/lib/monitoring'
 
 // GET /api/stats — Comprehensive player stats with optimized queries
@@ -125,51 +126,9 @@ export async function GET(request: Request) {
       }))
 
       // ── Streak calculation ─────────────────────────────────────────────
-
-      let currentStreak = 0
-      let bestStreak = 0
-      let tempStreak = 0
-      const today = new Date()
-      today.setHours(23, 59, 59, 999)
-
-      // Get unique training days (sorted desc for streak)
-      const trainingDays = new Set(
-        allSessions.map(s => new Date(s.startedAt).toISOString().split('T')[0])
+      const { current: currentStreak, best: bestStreak } = calculateStreak(
+        allSessions.map((s) => s.startedAt),
       )
-      const sortedDays = Array.from(trainingDays).sort().reverse() // newest first
-
-      // Current streak: check consecutive days from today/yesterday
-      const checkDate = new Date(today)
-      for (let i = 0; i < 365; i++) {
-        const dayStr = checkDate.toISOString().split('T')[0]
-        if (trainingDays.has(dayStr)) {
-          currentStreak++
-          checkDate.setDate(checkDate.getDate() - 1)
-        } else if (i === 0) {
-          // Today might not have a session yet — check from yesterday
-          checkDate.setDate(checkDate.getDate() - 1)
-          continue
-        } else {
-          break
-        }
-      }
-
-      // Best streak: check all consecutive days
-      for (let i = 0; i < sortedDays.length; i++) {
-        if (i === 0) {
-          tempStreak = 1
-        } else {
-          const prev = new Date(sortedDays[i - 1])
-          const curr = new Date(sortedDays[i])
-          const diffDays = Math.round((prev.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24))
-          if (diffDays === 1) {
-            tempStreak++
-          } else {
-            tempStreak = 1
-          }
-        }
-        bestStreak = Math.max(bestStreak, tempStreak)
-      }
 
       // ── Achievements (lightweight) ─────────────────────────────────────
 

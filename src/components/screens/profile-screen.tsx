@@ -20,6 +20,8 @@ import {
   Shield,
   History,
   Target,
+  Trash2,
+  Loader2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -28,6 +30,16 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Progress } from '@/components/ui/progress'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog'
 import {
   Select,
   SelectContent,
@@ -173,6 +185,36 @@ export function ProfileScreen() {
     },
   })
 
+  // ── Delete account state ────────────────────────────────────────
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+
+  // ── Delete account mutation ─────────────────────────────────────
+  const deleteAccount = useMutation({
+    mutationFn: async () => {
+      const res = await fetch('/api/account', { method: 'DELETE' })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: 'Erreur réseau' }))
+        throw new Error(body.error || 'Erreur lors de la suppression')
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      toast.success('Compte supprimé', {
+        description: 'Toutes vos données ont été supprimées.',
+      })
+      setDeleteDialogOpen(false)
+      signOut({ redirect: false }).then(() => navigate('auth'))
+    },
+    onError: (err: Error) => {
+      toast.error('Erreur', { description: err.message })
+    },
+  })
+
+  const handleDeleteAccount = (e: React.MouseEvent) => {
+    e.preventDefault()
+    deleteAccount.mutate()
+  }
+
   // ── Sign out handler ────────────────────────────────────────────
   const handleSignOut = async () => {
     await signOut({ redirect: false })
@@ -184,11 +226,11 @@ export function ProfileScreen() {
     return (
       <div className="min-h-screen bg-background pb-24">
         <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b">
-          <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto flex items-center h-14 px-4">
+          <div className="max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto flex items-center h-14 px-4">
             <Skeleton className="h-5 w-28" />
           </div>
         </header>
-        <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto px-4 pt-5 space-y-4">
+        <div className="max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto px-4 pt-5 space-y-4">
           <Skeleton className="h-44 rounded-2xl" />
           <Skeleton className="h-28 rounded-xl" />
           <Skeleton className="h-24 rounded-xl" />
@@ -212,14 +254,14 @@ export function ProfileScreen() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto"
+        className="max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto"
       >
         {/* ── Header ─────────────────────────────────────────────── */}
         <motion.header
           variants={itemVariants}
           className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b"
         >
-          <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto flex items-center justify-between h-14 px-4">
+          <div className="max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto flex items-center justify-between h-14 px-4">
             <div className="flex items-center gap-2.5">
               <User className="h-5 w-5 text-orange-500" />
               <h1 className="text-base font-semibold">Mon Profil</h1>
@@ -693,6 +735,84 @@ export function ProfileScreen() {
               </CardContent>
             </Card>
           </motion.div>
+
+          {/* ── Delete Account ─────────────────────────────────────── */}
+          <motion.div variants={itemVariants}>
+            <Card className="border-0 dark:border-border/50 shadow-md overflow-hidden">
+              <CardContent className="p-0">
+                <button
+                  onClick={() => setDeleteDialogOpen(true)}
+                  disabled={deleteAccount.isPending}
+                  className="w-full flex items-center gap-3 px-5 py-4 hover:bg-red-500/5 transition-colors text-left group disabled:opacity-50"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                    {deleteAccount.isPending ? (
+                      <Loader2 className="h-4 w-4 text-red-500 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-red-600 dark:text-red-400 group-hover:text-red-700 dark:group-hover:text-red-300">
+                      Supprimer mon compte
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Suppression d&eacute;finitive de toutes vos donn&eacute;es
+                    </p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-red-600 dark:text-red-400">
+                  Supprimer mon compte ?
+                </AlertDialogTitle>
+                <AlertDialogDescription asChild>
+                  <div className="space-y-3">
+                    <p>
+                      Cette action est <strong>irr&eacute;versible</strong>. Toutes vos donn&eacute;es seront d&eacute;finitivement supprim&eacute;es conform&eacute;ment au RGPD (Article 17) :
+                    </p>
+                    <ul className="list-disc pl-5 text-sm space-y-1">
+                      <li>Profil et pr&eacute;f&eacute;rences</li>
+                      <li>Historique complet des s&eacute;ances</li>
+                      <li>Messages du coach IA</li>
+                      <li>Exercices personnalis&eacute;s</li>
+                      <li>Plans d&rsquo;entra&icirc;nement</li>
+                      <li>Succ&egrave;s et progression XP</li>
+                      <li>Scores de r&eacute;action</li>
+                    </ul>
+                    <p className="font-medium">
+                      Vous serez automatiquement d&eacute;connect&eacute; apr&egrave;s la suppression.
+                    </p>
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deleteAccount.isPending}>
+                  Annuler
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteAccount}
+                  disabled={deleteAccount.isPending}
+                  className="bg-red-600 hover:bg-red-700 text-white focus:ring-red-600"
+                >
+                  {deleteAccount.isPending ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Suppression&hellip;
+                    </span>
+                  ) : (
+                    'Supprimer d&eacute;finitivement'
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {/* ── App Info ──────────────────────────────────────────── */}
           <motion.div variants={itemVariants}>

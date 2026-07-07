@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
+import { trackError } from '@/lib/monitoring'
 import { getLevelFromXp } from '@/lib/xp'
 
 type Period = 'all' | 'month' | 'week'
@@ -52,7 +53,7 @@ export async function GET(request: Request) {
             totalDrills: true,
             startedAt: true,
           },
-          where: dateFilter.startedAt ? { startedAt: { gte: dateFilter.startedAt } } : undefined,
+          where: dateFilter.startedAt ? { startedAt: dateFilter.startedAt } : undefined,
         },
       },
     })

@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
@@ -41,6 +42,7 @@ import { useAppStore } from '@/stores/app'
 import { useState } from 'react'
 import { SwipeToGoBack } from '@/components/shared/swipe-back'
 import { apiFetch, cn } from '@/lib/utils'
+import { useTranslation } from '@/components/providers/language-provider'
 import { containerVariants, itemVariants } from '@/lib/animations'
 import {
   ALL_FLAGS,
@@ -171,9 +173,13 @@ export function SettingsScreen() {
     saveMutation.mutate({ hapticsEnabled: checked })
   }
 
+  const { setLanguage: setI18nLanguage } = useTranslation()
+
   const handleLanguageChange = (val: string) => {
     if (val !== settings.language) {
       saveMutation.mutate({ language: val as 'fr' | 'en' })
+      // Immediately sync the i18n provider so UI updates without refetch
+      setI18nLanguage(val as 'fr' | 'en')
     }
   }
 
@@ -189,7 +195,7 @@ export function SettingsScreen() {
     <SwipeToGoBack className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b">
-        <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto flex items-center gap-3 px-4 py-3">
+        <div className="max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto flex items-center gap-3 px-4 py-3">
           <Button
             variant="ghost"
             size="icon"
@@ -202,7 +208,7 @@ export function SettingsScreen() {
         </div>
       </header>
 
-      <main className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto px-4 pt-4 pb-8">
+      <main className="max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto px-4 pt-4 pb-8">
         {settingsLoading ? (
           <SettingsSkeleton />
         ) : (
@@ -512,6 +518,36 @@ export function SettingsScreen() {
                       />
                     </div>
                   ))}
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* -─ Abonnement & Facturation ------------------------- */}
+            <motion.div variants={itemVariants}>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
+                      <Flame className="h-4 w-4 text-orange-500" />
+                    </div>
+                    Abonnement &amp; Facturation
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Plan actuel</p>
+                      <p className="text-xs text-muted-foreground">Gratuit</p>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">Gratuit</Badge>
+                  </div>
+                  <Button
+                    className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold"
+                    onClick={() => useAppStore.getState().navigate('pricing')}
+                  >
+                    <Flame className="h-4 w-4 mr-2" />
+                    Voir les offres
+                  </Button>
                 </CardContent>
               </Card>
             </motion.div>

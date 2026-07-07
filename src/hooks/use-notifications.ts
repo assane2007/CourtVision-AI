@@ -34,7 +34,7 @@ function getNotificationSupport(): { supported: boolean; permission: Notificatio
 
 export function useNotifications() {
   const initialSupport = getNotificationSupport()
-  const [supported] = useState(initialSupport)
+  const [supported] = useState(initialSupport.supported)
   const [permission, setPermission] = useState<NotificationPermission>(initialSupport.permission)
   const [subscribed, setSubscribed] = useState(false)
   const [loading, setLoading] = useState(initialSupport.supported)
@@ -63,7 +63,7 @@ export function useNotifications() {
 
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey,
+        applicationServerKey: applicationServerKey as unknown as ArrayBuffer,
       })
 
       // Send subscription to server

@@ -66,6 +66,16 @@ export async function GET() {
       return NextResponse.json({ error: 'Joueur introuvable' }, { status: 404 })
     }
 
+    // ── Compute level average for comparison (needed early for estimates) ──
+    const levelBenchmarks: Record<number, number> = {
+      1: 25, 2: 30, 3: 35, 4: 40, 5: 45,
+      6: 50, 7: 55, 8: 60, 9: 65, 10: 68,
+      11: 71, 12: 74, 13: 77, 14: 80, 15: 83,
+      16: 85, 17: 88, 18: 90, 19: 92, 20: 95,
+    }
+    const levelAvg =
+      levelBenchmarks[player.xpLevel] ?? Math.min(25 + player.xpLevel * 3, 95)
+
     // Fetch all session drills with their category
     const sessionDrills = await db.workoutSessionDrill.findMany({
       where: { session: { playerId } },
@@ -96,13 +106,14 @@ export async function GET() {
       totalSessions: number
       trend: 'up' | 'down' | 'stable'
       lastScores: number[]
+      estimated: boolean
     }[] = []
 
     let totalAllReps = 0
 
     for (const axis of RADAR_AXES) {
       const matchingDrills = sessionDrills.filter((sd) =>
-        axis.dbCategories.includes(sd.drill.category),
+        (axis.dbCategories as readonly string[]).includes(sd.drill.category),
       )
 
       const totalScore = matchingDrills.reduce((sum, sd) => sum + sd.score, 0)
@@ -120,59 +131,39 @@ export async function GET() {
 
       const trend = getTrend(lastScores)
 
+      // For new users with no data, use level-based benchmark estimate
+      const isEstimated = matchingDrills.length === 0
+      const displayScore = isEstimated
+        ? Math.round(levelAvg * 0.6 * 10) / 10
+        : avgScore
+
       categories.push({
         name: axis.label,
         key: axis.key,
-        avgScore,
+        avgScore: displayScore,
         totalReps,
         totalSessions,
         trend,
         lastScores,
+        estimated: isEstimated,
       })
 
       totalAllReps += totalReps
     }
 
-    // ── Overall score: average of all category scores ─────────────────
-    const filledCategories = categories.filter((c) => c.avgScore > 0)
+    // ── Overall score: average of all category scores (real only) ─────
+    const realCategories = categories.filter((c) => !c.estimated)
     const overallScore =
-      filledCategories.length > 0
+      realCategories.length > 0
         ? Math.round(
-            (filledCategories.reduce((s, c) => s + c.avgScore, 0) /
-              filledCategories.length) *
+            (realCategories.reduce((s, c) => s + c.avgScore, 0) /
+              realCategories.length) *
               10,
           ) / 10
         : 0
     const overallGrade = getGrade(overallScore)
 
-    // ── Compute level average for comparison ──────────────────────────
-    // We use the player's own level as a benchmark.
-    // For a simple approach: we look at all players at this level and compute their average per category.
-    // Since we may have very few players, we provide a reasonable default based on level.
-    const levelBenchmarks: Record<number, number> = {
-      1: 25,
-      2: 30,
-      3: 35,
-      4: 40,
-      5: 45,
-      6: 50,
-      7: 55,
-      8: 60,
-      9: 65,
-      10: 68,
-      11: 71,
-      12: 74,
-      13: 77,
-      14: 80,
-      15: 83,
-      16: 85,
-      17: 88,
-      18: 90,
-      19: 92,
-      20: 95,
-    }
-    const levelAvg =
-      levelBenchmarks[player.xpLevel] ?? Math.min(25 + player.xpLevel * 3, 95)
+    const hasEstimatedCategories = categories.some((c) => c.estimated)
 
     return NextResponse.json({
       player: {
@@ -188,6 +179,7 @@ export async function GET() {
       totalReps: totalAllReps,
       lastActive: lastSession?.startedAt?.toISOString() ?? null,
       levelAvg,
+      hasEstimatedCategories,
     })
   } catch (error) {
     trackError('GET /api/scouting', error)

@@ -5,14 +5,17 @@ import { db } from '@/lib/db'
 import { withCache } from '@/lib/cache'
 import { trackError } from '@/lib/monitoring'
 
-// GET /api/drills — List all drills (seed + user's own custom)
-// Query params: ?category=shooting&difficulty=beginner&search=dribble&favoritesOnly=true
+// GET /api/drills — List drills with cursor-based pagination (seed + user's own custom)
+// Query params: ?cursor=xxx&limit=20&category=shooting&difficulty=beginner&search=dribble&favoritesOnly=true
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     const playerId = session?.user?.id ?? null
 
     const { searchParams } = new URL(req.url)
+    const cursor = searchParams.get('cursor')
+    const rawLimit = parseInt(searchParams.get('limit') ?? '20', 10)
+    const limit = Math.min(Math.max(rawLimit, 1), 100)
     const category = searchParams.get('category')
     const difficulty = searchParams.get('difficulty')
     const search = searchParams.get('search')?.trim()
@@ -20,7 +23,7 @@ export async function GET(req: NextRequest) {
     const customOnly = searchParams.get('customOnly') === 'true'
 
     // Build a cache key from query params + playerId
-    const cacheKey = `drills:${playerId || 'anon'}:${category || 'all'}:${difficulty || 'all'}:${search || ''}:${favoritesOnly}:${customOnly}`
+    const cacheKey = `drills:${playerId || 'anon'}:${cursor || ''}:${limit}:${category || 'all'}:${difficulty || 'all'}:${search || ''}:${favoritesOnly}:${customOnly}`
 
     const result = await withCache(cacheKey, 5 * 60 * 1000, async () => {
       // Base filter: seed drills (no owner) + user's custom drills
@@ -55,16 +58,35 @@ export async function GET(req: NextRequest) {
         ;(baseWhere.AND as unknown[]).push({ isCustom: true })
       }
 
+      const orderBy = [{ isCustom: 'asc' as const }, { category: 'asc' as const }, { difficulty: 'asc' as const }]
+
+      // Cursor: use id-based cursor (lexicographic for SQLite)
+      const cursorWhere = cursor
+        ? { ...baseWhere, AND: [...(baseWhere.AND as unknown[]), { id: { gt: cursor } }] }
+        : baseWhere
+
+      // Fetch one extra to know if there's a next page
       const drills = await db.drill.findMany({
-        where: baseWhere as any,
-        orderBy: [{ isCustom: 'asc' }, { category: 'asc' }, { difficulty: 'asc' }],
+        where: cursorWhere as any,
+        orderBy,
+        take: limit + 1,
       })
+
+      const hasMore = drills.length > limit
+      const pageDrills = hasMore ? drills.slice(0, limit) : drills
+      const nextCursor = hasMore ? pageDrills[pageDrills.length - 1].id : null
+
+      // Total count (only on first page to avoid redundant queries on subsequent pages)
+      let total: number | undefined
+      if (!cursor) {
+        total = await db.drill.count({ where: baseWhere as any })
+      }
 
       // Fetch user's favorites in one query
       const favorites = playerId
         ? favoritesOnly
           ? await db.drillFavorite.findMany({
-              where: { playerId, drillId: { in: drills.map(d => d.id) } },
+              where: { playerId, drillId: { in: pageDrills.map(d => d.id) } },
               select: { drillId: true },
             })
           : await db.drillFavorite.findMany({
@@ -77,13 +99,14 @@ export async function GET(req: NextRequest) {
 
       // If favoritesOnly, filter drills server-side
       const filteredDrills = favoritesOnly
-        ? drills.filter(d => favoriteIds.has(d.id))
-        : drills
+        ? pageDrills.filter(d => favoriteIds.has(d.id))
+        : pageDrills
 
       return {
         drills: filteredDrills,
         favoriteIds: [...favoriteIds],
-        total: filteredDrills.length,
+        nextCursor,
+        total,
       }
     })
 

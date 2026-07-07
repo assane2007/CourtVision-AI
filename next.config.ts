@@ -2,11 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  /* config options here */
+  /* Type safety: catch errors at build time */
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
-  reactStrictMode: false,
+  /* React strict mode: catch side-effect bugs in development */
+  reactStrictMode: true,
   allowedDevOrigins: [
     "preview-chat-c57e525c-9404-49d2-b3ca-8cf4027e7546.space-z.ai",
   ],
@@ -32,12 +33,17 @@ const nextConfig: NextConfig = {
             value: "nosniff",
           },
           {
+            /* Replaced deprecated ALLOW-FROM with CSP frame-ancestors */
             key: "X-Frame-Options",
-            value: "ALLOW-FROM https://*.space-z.ai",
+            value: "DENY",
           },
           {
             key: "Referrer-Policy",
             value: "strict-origin-when-cross-origin",
+          },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(self), microphone=(self), geolocation=()",
           },
         ],
       },

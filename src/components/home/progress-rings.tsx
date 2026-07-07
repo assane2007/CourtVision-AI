@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
+import { useTranslation } from '@/components/providers/language-provider'
 
 // ---------------------------------------------------------------------------
 // Animated circular progress ring with gradient stroke
@@ -11,7 +12,7 @@ interface ProgressRingProps {
   size?: number
   strokeWidth?: number
   centerText: string
-  label: string
+  labelKey: 'stats.averageScore' | 'stats.streakDays' | 'stats.weekGoalLabel'
   delay?: number
   gradientId: string
 }
@@ -21,11 +22,12 @@ export function ProgressRing({
   size = 88,
   strokeWidth = 7,
   centerText,
-  label,
+  labelKey,
   delay = 0,
   gradientId,
 }: ProgressRingProps) {
   const [animatedValue, setAnimatedValue] = useState(0)
+  const { t } = useTranslation()
   const radius = (size - strokeWidth) / 2
   const circumference = 2 * Math.PI * radius
   const offset = circumference - (animatedValue / 100) * circumference
@@ -36,6 +38,8 @@ export function ProgressRing({
     }, delay * 1000)
     return () => clearTimeout(timer)
   }, [value, delay])
+
+  const label = t(labelKey)
 
   return (
     <div className="flex flex-col items-center gap-1">
@@ -92,14 +96,12 @@ interface ProgressRingsProps {
   weeklyGoalProgress: number // 0–100
   avgScore: number // 0–100
   currentStreak: number
-  weekGoalLabel: string
 }
 
 export function ProgressRings({
   weeklyGoalProgress,
   avgScore,
   currentStreak,
-  weekGoalLabel,
 }: ProgressRingsProps) {
   return (
     <motion.div
@@ -112,21 +114,21 @@ export function ProgressRings({
         <ProgressRing
           value={weeklyGoalProgress}
           centerText={`${Math.round(weeklyGoalProgress)}%`}
-          label={weekGoalLabel}
+          labelKey="stats.weekGoalLabel"
           gradientId="ring-weekly"
           delay={0.2}
         />
         <ProgressRing
           value={avgScore}
           centerText={`${Math.round(avgScore)}`}
-          label="Score Moyen"
+          labelKey="stats.averageScore"
           gradientId="ring-score"
           delay={0.4}
         />
         <ProgressRing
           value={Math.min(currentStreak * 20, 100)} // cap visual at 100%
           centerText={`${currentStreak}`}
-          label="Série (jours)"
+          labelKey="stats.streakDays"
           gradientId="ring-streak"
           delay={0.6}
         />

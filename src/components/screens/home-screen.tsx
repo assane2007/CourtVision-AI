@@ -21,6 +21,7 @@ import { useAppStore } from '@/stores/app'
 import { cn, apiFetch } from '@/lib/utils'
 import { containerVariants, itemVariants } from '@/lib/animations'
 import { getLevelInfo, getLevelColor, getLevelBgColor } from '@/lib/xp'
+import { useTranslation } from '@/components/providers/language-provider'
 import { BottomNav } from '@/components/shared/bottom-nav'
 import { PullToRefresh } from '@/components/shared/pull-to-refresh'
 
@@ -252,8 +253,9 @@ function XpGainPopup({
 // Session list item
 // ---------------------------------------------------------------------------
 function SessionItem({ session }: { session: Session }) {
+  const { t, language } = useTranslation()
   const date = new Date(session.startedAt)
-  const formattedDate = date.toLocaleDateString('fr-FR', {
+  const formattedDate = date.toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
@@ -278,8 +280,8 @@ function SessionItem({ session }: { session: Session }) {
       <div className="min-w-0 flex-1 space-y-0.5">
         <p className="truncate text-sm font-medium">{formattedDate}</p>
         <p className="text-xs text-muted-foreground">
-          {session.totalDrills} exercice{session.totalDrills > 1 ? 's' : ''} &middot;{' '}
-          {session.totalReps} r&eacute;p.
+          {session.totalDrills} {t('home.exercises')}{session.totalDrills > 1 ? 's' : ''} &middot;{' '}
+          {session.totalReps} {t('home.reps')}
         </p>
       </div>
 
@@ -295,7 +297,7 @@ function SessionItem({ session }: { session: Session }) {
         >
           {Math.round(session.totalScore)}
         </span>
-        <span className="text-xs font-normal text-muted-foreground">pts</span>
+        <span className="text-xs font-normal text-muted-foreground">{t('home.points')}</span>
       </div>
     </motion.div>
   )
@@ -309,8 +311,9 @@ export default function HomeScreen() {
   const { navigate, selectDrill, workoutResult, setWorkoutResult } = useAppStore()
   const queryClient = useQueryClient()
   const hasAwardedRef = useRef(false)
+  const { t, language } = useTranslation()
 
-  const userName = session?.user?.name ?? 'Joueur'
+  const userName = session?.user?.name ?? (language === 'en' ? 'Player' : 'Joueur')
   const userInitial = userName.charAt(0).toUpperCase()
 
   // ---- Data fetching ----
@@ -484,7 +487,7 @@ export default function HomeScreen() {
 
       <PullToRefresh
         queryKeys={[['stats'], ['sessions'], ['recommendations'], ['stats', 'calendar'], ['player-xp']]}
-        className="mx-auto max-w-lg md:max-w-3xl lg:max-w-5xl px-4 pb-24 pt-6"
+        className="mx-auto max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl px-4 pb-24 pt-6"
       >
       <motion.div
         variants={containerVariants}
@@ -623,10 +626,10 @@ export default function HomeScreen() {
             <div className="mb-2 flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-orange-100">
-                  Aujourd&apos;hui
+                  {language === 'en' ? 'Today' : "Aujourd\u2019hui"}
                 </p>
                 <p className="text-xl font-bold">
-                  {new Date().toLocaleDateString('fr-FR', {
+                  {new Date().toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
                     weekday: 'long',
                     day: 'numeric',
                     month: 'long',
@@ -639,8 +642,12 @@ export default function HomeScreen() {
             </div>
             <p className="text-sm text-orange-100">
               {stats?.weekSessions && stats.weekSessions > 0
-                ? `${stats.weekSessions} séance${stats.weekSessions > 1 ? 's' : ''} cette semaine — continuez !`
-                : 'Aucune séance cette semaine — commencez maintenant !'}
+                ? language === 'en'
+                  ? `${stats.weekSessions} session${stats.weekSessions > 1 ? 's' : ''} this week — keep going!`
+                  : `${stats.weekSessions} séance${stats.weekSessions > 1 ? 's' : ''} cette semaine — continuez !`
+                : language === 'en'
+                  ? 'No sessions this week — start now!'
+                  : 'Aucune séance cette semaine — commencez maintenant !'}
             </p>
           </div>
         </motion.div>
@@ -656,7 +663,6 @@ export default function HomeScreen() {
               weeklyGoalProgress={weeklyGoalProgress}
               avgScore={stats?.avgScore ?? 0}
               currentStreak={stats?.currentStreak ?? 0}
-              weekGoalLabel={`${stats?.weekSessions ?? 0}/${weeklyGoal} séances`}
             />
           )}
         </section>
@@ -704,8 +710,8 @@ export default function HomeScreen() {
                 <Trophy className="h-7 w-7 text-amber-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-base font-bold">Classement</h3>
-                <p className="text-sm text-muted-foreground truncate">Compare ton niveau aux autres joueurs</p>
+                <h3 className="text-base font-bold">{t('home.leaderboard')}</h3>
+                <p className="text-sm text-muted-foreground truncate">{t('home.leaderboardDesc')}</p>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
             </div>
@@ -731,8 +737,8 @@ export default function HomeScreen() {
                 <Zap className="h-7 w-7 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-base font-bold text-white">Entraînement Cognitif</h3>
-                <p className="text-sm text-orange-100 truncate">Teste tes réflexes de basketteur</p>
+                <h3 className="text-base font-bold text-white">{t('home.cognitiveTraining')}</h3>
+                <p className="text-sm text-orange-100 truncate">{t('home.cognitiveTrainingDesc')}</p>
               </div>
               <ChevronRight className="h-5 w-5 text-white/70 shrink-0" />
             </div>
@@ -749,7 +755,7 @@ export default function HomeScreen() {
         {/* ---------------------------------------------------------------- */}
         {/* AI Recommendations (Quick Start Carousel)                       */}
         {/* ---------------------------------------------------------------- */}
-        <section aria-label="Recommandations IA" className="mb-8">
+        <section aria-label={t('home.recommendationsAI')} className="mb-8">
           {recsLoading ? (
             <CarouselSkeleton />
           ) : enrichedRecommendations.length > 0 ? (
@@ -772,7 +778,7 @@ export default function HomeScreen() {
           >
             <Clock className="h-5 w-5 text-muted-foreground" />
             <h2 className="text-lg font-semibold tracking-tight">
-              Activit&eacute; R&eacute;cente
+              {t('home.recentActivity')}
             </h2>
           </motion.div>
 

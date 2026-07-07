@@ -9,6 +9,7 @@ const CONSENT_KEY = 'courtvision-cookie-consent'
 
 export function CookieConsent() {
   const [visible, setVisible] = useState(false)
+  const [analyticsChecked, setAnalyticsChecked] = useState(false)
 
   useEffect(() => {
     const consent = localStorage.getItem(CONSENT_KEY)
@@ -20,17 +21,23 @@ export function CookieConsent() {
   }, [])
 
   const handleAccept = () => {
-    localStorage.setItem(CONSENT_KEY, 'accepted')
+    localStorage.setItem(CONSENT_KEY, JSON.stringify({ essential: true, analytics: analyticsChecked }))
+    setVisible(false)
+  }
+
+  const handleReject = () => {
+    localStorage.setItem(CONSENT_KEY, 'rejected')
     setVisible(false)
   }
 
   const handleMoreInfo = async () => {
     try {
       const res = await fetch('/api/privacy')
-      const text = await res.text()
-      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+      const html = await res.text()
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
       const url = URL.createObjectURL(blob)
       window.open(url, '_blank')
+      URL.revokeObjectURL(url)
     } catch {
       // Silently fail
     }
@@ -54,13 +61,39 @@ export function CookieConsent() {
               <p className="text-sm text-foreground">
                 Nous utilisons des cookies essentiels pour le fonctionnement de l&apos;application.
               </p>
-              <div className="flex items-center gap-2 mt-3">
+
+              <p className="text-xs text-muted-foreground mt-1.5 mb-2">
+                Vos préférences : seuls les cookies strictement nécessaires sont activés. Aucun cookie
+                de suivi ou d&apos;analyse n&apos;est utilisé.
+              </p>
+
+              {/* Analytics option — disabled for future use */}
+              <label className="flex items-center gap-2 mb-3 cursor-not-allowed opacity-50">
+                <input
+                  type="checkbox"
+                  checked={analyticsChecked}
+                  onChange={(e) => setAnalyticsChecked(e.target.checked)}
+                  disabled
+                  className="h-3.5 w-3.5 rounded border-muted-foreground/30 text-orange-500 focus:ring-orange-500/30"
+                />
+                <span className="text-xs text-muted-foreground">Analytics (bientôt disponible)</span>
+              </label>
+
+              <div className="flex items-center gap-2">
                 <Button
                   size="sm"
                   onClick={handleAccept}
                   className="bg-orange-500 hover:bg-orange-600 text-white text-xs px-4"
                 >
                   Accepter
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReject}
+                  className="text-xs px-4"
+                >
+                  Refuser
                 </Button>
                 <Button
                   variant="ghost"

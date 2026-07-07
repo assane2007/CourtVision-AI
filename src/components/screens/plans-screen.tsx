@@ -148,7 +148,7 @@ export default function PlansScreen() {
     <div className="min-h-screen bg-background pb-24">
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b">
-        <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto flex items-center justify-between h-14 px-4">
+        <div className="max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto flex items-center justify-between h-14 px-4">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-orange-500/15 flex items-center justify-center">
               <ClipboardList className="h-5 w-5 text-orange-500" />
@@ -159,7 +159,7 @@ export default function PlansScreen() {
       </header>
 
       {/* ── Content ────────────────────────────────────────────────────── */}
-      <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto px-4 pt-4 space-y-4">
+      <div className="max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto px-4 pt-4 space-y-4">
         {isLoading ? (
           // Skeleton loading
           <div className="space-y-3">

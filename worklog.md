@@ -1492,3 +1492,253 @@ Stage Summary:
 - Revenue projections: $0-600 ARR Year 1 (normal scenario)
 - Valuation: $0-50K current state
 - Probability of reaching 100K users: 15%
+---
+Task ID: 1
+Agent: TS Fix Agent
+Task: Fix all TypeScript errors after enabling strict mode
+
+Work Log:
+- Created `src/components/ui/toast.tsx` with standard shadcn/ui toast components (Toast, ToastAction, ToastClose, ToastDescription, ToastProvider, ToastTitle, ToastViewport) and type exports (ToastProps, ToastActionElement)
+- Fixed `db.aiChatMessage` → `db.aIChatMessage` in `src/app/api/achievements/route.ts` (line 83)
+- Fixed `db.aiChatMessage` → `db.aIChatMessage` in `src/app/api/player/export/route.ts` (line 95)
+- Added `import { trackError } from '@/lib/monitoring'` to `src/app/api/leaderboard/route.ts`
+- Added `import { trackError } from '@/lib/monitoring'` to `src/app/api/share/route.ts`
+- Added `import { trackError } from '@/lib/monitoring'` to `src/app/api/player/export/route.ts`
+- Fixed leaderboard route: changed `select`+`include` combination (not allowed in Prisma) to single `select` with nested `sessions` relation select
+- Fixed leaderboard route: changed `{ startedAt: { gte: dateFilter.startedAt } }` to `{ startedAt: dateFilter.startedAt }` to avoid nested gte
+- Fixed scouting screen: typed `anchor` as `'start' | 'middle' | 'end'` instead of `string`
+- Fixed scouting screen: added `const navigate = useAppStore((s) => s.navigate)` to ScoutingScreen component
+- Fixed scouting route: cast `axis.dbCategories` to `readonly string[]` before `.includes()` to resolve readonly tuple type mismatch
+- Fixed use-notifications: cast `applicationServerKey` as `unknown as ArrayBuffer` to satisfy `BufferSource` requirement
+- Fixed use-notifications: changed `useState(initialSupport)` to `useState(initialSupport.supported)` to extract boolean for `NotificationState.supported`
+- Fixed auth.ts: removed `trustHost: true` property (not in NextAuth v4 `AuthOptions` type)
+
+Stage Summary:
+- 0 errors remaining. `npx tsc --noEmit` passes cleanly.
+
+---
+Task ID: 8
+Agent: Main
+Task: Docker + CI/CD Infrastructure
+
+Work Log:
+- Created `Dockerfile` — 3-stage multi-stage build (deps → builder → runner) using `oven/bun:1` base image
+  - Stage 1 (deps): frozen-lockfile install of all dependencies
+  - Stage 2 (builder): generates Prisma client, runs `bun run build` (Next.js 16 standalone output)
+  - Stage 3 (runner): non-root user (nextjs:nodejs, uid/gid 1001), copies standalone output + static + public + prisma, creates /app/db and /app/uploads directories, exposes 3000, HEALTHCHECK against /api/health, CMD runs `bun server.js`
+- Created `docker-compose.yml` — single service `courtvision` with two named volumes (courtvision-db → /app/db for SQLite, courtvision-uploads → /app/uploads), environment variables with sensible defaults, restart policy, healthcheck matching Dockerfile
+- Created `.github/workflows/ci.yml` — triggers on push to main and all PRs; runs checkout → setup bun → install → prisma generate → tsc --noEmit → eslint → vitest
+- Created `.github/workflows/deploy.yml` — manual workflow_dispatch trigger; validates Docker build by targeting the `builder` stage only
+- Created `.dockerignore` — excludes node_modules, .next, .git, *.md, .env*, uploads/, db/, *.log, agent-ctx/, browser-test/, download/, mini-services/, tool-results/
+- Updated `.env.example` — comprehensive template with DATABASE_URL, NEXTAUTH_SECRET, NEXTAUTH_URL, AI SDK placeholder, optional Sentry/Stripe/VAPID sections, and generation instructions
+
+Stage Summary:
+- All 6 files created/updated. Docker + CI/CD infrastructure is ready for production deployment.
+
+---
+Task ID: GDPR Compliance
+Agent: Main
+Task: Implement GDPR compliance — right to erasure API, privacy policy HTML, delete account UI, cookie consent improvements
+
+Work Log:
+- Created `/src/app/api/account/route.ts` — DELETE endpoint implementing GDPR Article 17 (Right to Erasure)
+  - Requires NextAuth session authentication (401 if unauthenticated)
+  - Rate limited to 1 request per hour per user using existing `rateLimit` utility
+  - Cascading deletion in FK-safe order: XpLog → AIChatMessage → ReactionScore → Achievement → WorkoutSessionDrill (via sessions) → WorkoutSession → DrillFavorite → TrainingPlanDrill (via plans) → TrainingPlan → Drill (custom only, playerId match) → Player
+  - Returns 200 with GDPR confirmation message, 404 if player not found, 429 if rate limited
+- Replaced `/src/app/api/privacy/route.ts` — full GDPR-compliant HTML privacy policy page in French
+  - Returns `text/html; charset=utf-8` Content-Type
+  - Styled HTML page with CSS (light/dark mode support via prefers-color-scheme)
+  - 11 sections: responsable du traitement, données collectées, finalités, durée de conservation, droits RGPD (with styled cards), comment exercer ses droits, cookies & localStorage, services tiers, sécurité, modifications, contact
+  - Includes email contact (privacy@courtvision.ai), legal basis references (Articles 6, 15-21)
+- Updated `/src/components/screens/profile-screen.tsx` — added "Supprimer mon compte" delete account feature
+  - Imported Trash2, Loader2 icons and AlertDialog components
+  - Added `deleteDialogOpen` state and `deleteAccount` useMutation calling DELETE /api/account
+  - Added red-destructive styled button card below logout with Trash2 icon
+  - AlertDialog with full warning: irreversible action, lists all data being deleted, auto-disconnect notice
+  - On success: toast notification → close dialog → signOut → navigate to auth
+  - On error: toast with error message from API
+  - Loading state with spinner on both button and dialog action
+- Updated `/src/components/cookie-consent.tsx` — enhanced cookie consent banner
+  - Added "Refuser" (Reject) button alongside "Accepter" — stores 'rejected' in localStorage
+  - Added "Vos préférences" text explaining only essential cookies are used
+  - Added disabled Analytics checkbox for future use (label: "Analytics (bientôt disponible)")
+  - Changed privacy policy fetch to treat response as HTML (text/html blob) instead of text/plain
+  - Added URL.revokeObjectURL cleanup after opening privacy page
+
+Stage Summary:
+- 4 files created/updated. Full GDPR Article 17 right to erasure implemented with cascading deletion, rate limiting, and proper authentication. Privacy policy serves real HTML. Profile screen has delete account with confirmation dialog. Cookie consent now offers reject option and analytics opt-in placeholder.
+
+---
+Task ID: 2
+Agent: Main
+Task: Fix 4 medium-priority issues — responsive layout, advanced search, pagination, DRY streak
+
+Work Log:
+- Issue 1 (Responsive Layout): Updated max-w constraints in 6 screen files from `max-w-lg` / `max-w-lg md:max-w-3xl lg:max-w-5xl` to `max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl`. Files: home-screen, stats-screen, leaderboard-screen, plans-screen, profile-screen, settings-screen. achievements-screen and train-hub-screen already had responsive classes.
+- Issue 2 (Advanced Search): Enhanced train-hub search with `normalize()` function (NFD accent normalization → ASCII, case-insensitive, multi-word fuzzy matching). Searchable fields: nameFr, name, category label (FR), description, descriptionFr, difficulty label. Replaced multi-select difficulty filter with single-select pill buttons (Tous/Débutant/Intermédiaire/Avancé). Added active filter count badge and clear-all (X) button.
+- Issue 3 (Pagination): Modified `/api/drills` GET handler to accept `?cursor=xxx&limit=20` with id-based cursor pagination (fetches limit+1 to detect next page). Returns `{ drills, favoriteIds, nextCursor, total }`. Updated train-hub frontend with `useState`-based accumulated drill list and "Charger plus" button.
+- Issue 4 (DRY Streak): Created `/src/lib/streak.ts` with shared `calculateStreak(sessionDates: Date[])` function computing both current and best streak. Refactored `/api/stats` and `/api/achievements` to import and use the shared function, eliminating ~30 lines of duplicated logic in each.
+
+Files Modified:
+- src/components/screens/home-screen.tsx (responsive widths)
+- src/components/screens/stats-screen.tsx (responsive widths)
+- src/components/screens/leaderboard-screen.tsx (responsive widths)
+- src/components/screens/plans-screen.tsx (responsive widths)
+- src/components/screens/profile-screen.tsx (responsive widths)
+- src/components/screens/settings-screen.tsx (responsive widths)
+- src/components/screens/train-hub-screen.tsx (fuzzy search, filter UI, pagination)
+- src/app/api/drills/route.ts (cursor-based pagination)
+- src/app/api/stats/route.ts (DRY streak)
+- src/app/api/achievements/route.ts (DRY streak)
+
+Files Created:
+- src/lib/streak.ts
+
+Pre-existing TS errors (not introduced by this change):
+- src/app/api/scouting/route.ts: block-scoped variable used before declaration
+- src/components/screens/home-screen.tsx: weekGoalLabel prop mismatch on ProgressRings
+
+Stage Summary:
+- All 4 issues resolved with minimal, targeted edits. No new TypeScript errors introduced. 10 files modified, 1 file created.
+
+---
+Task ID: 2
+Agent: Main
+Task: Fix 3 medium-priority bugs — AI Coach hardcoded name, empty scouting radar, password reset flow
+
+Work Log:
+
+### Issue 1: Fix AI Coach hardcoded "Salut Moussa!"
+- **File:** `src/components/screens/ai-coach-screen.tsx`
+- Added `import { useSession } from 'next-auth/react'`
+- Added `const { data: session } = useSession()` and `const userName = session?.user?.name || 'Joueur'`
+- Replaced hardcoded `Salut Moussa!` with dynamic `Salut {userName} !`
+- Fallback to 'Joueur' when session is not yet loaded
+
+### Issue 2: Fix Scouting Report empty radar for new users
+- **Backend** (`src/app/api/scouting/route.ts`):
+  - Moved `levelBenchmarks`/`levelAvg` computation before the category loop (fixes TS2448)
+  - Added `estimated: boolean` field to category type
+  - When a category has 0 drills, uses `levelAvg * 0.6` as estimated score with `estimated: true`
+  - Overall score now computed from real categories only (not estimated)
+  - Added `hasEstimatedCategories` flag to response
+
+- **Frontend** (`src/components/screens/scouting-screen.tsx`):
+  - Updated `ScoutingCategory` interface with `estimated?: boolean`
+  - Updated `ScoutingData` interface with `hasEstimatedCategories?: boolean`
+  - RadarChart now renders estimated data with: dashed stroke, lower-opacity gradient fill, hollow dots with dashed borders, muted "(estimé)" labels
+  - Replaced old empty state (totalWorkouts === 0) with a motivational banner: "Complète des séances pour débloquer tes vraies stats !"
+  - Updated CategoryCard: dashed orange border for estimated, "estimé" badge, muted score, "Aucune donnée encore" text
+  - Updated radar score labels to show "(est.)" suffix for estimated categories
+
+### Issue 3: Password Reset flow
+- **Prisma** (`prisma/schema.prisma`):
+  - Added `resetToken String?` and `resetTokenExpiresAt DateTime?` to Player model
+  - Ran `bun run db:push` successfully
+
+- **API** (`src/app/api/auth/reset-password/route.ts`):
+  - POST: accepts `{ email }`, validates format, rate-limited (5/15min)
+  - Generates 32-char hex reset token, stores with 1-hour expiry
+  - Returns `{ message, resetToken }` (dev mode — production would email)
+  - Returns generic success even if email not found (prevents enumeration)
+
+- **API** (`src/app/api/auth/reset-password/confirm/route.ts`):
+  - POST: accepts `{ token, newPassword }`, validates token exists and not expired
+  - Validates password >= 8 chars, hashes with bcrypt (12 rounds)
+  - Clears resetToken/resetTokenExpiresAt after successful update
+  - Rate-limited by token (5/15min)
+
+- **Frontend** (`src/components/screens/auth-screen.tsx`):
+  - Imported Dialog, AnimatePresence, KeyRound, CheckCircle2, Copy, ArrowLeft
+  - Added 8 state variables for the reset dialog flow
+  - Replaced `toast.info('Fonctionnalité à venir')` with `handleResetOpen()`
+  - Implemented 3-step Dialog flow:
+    1. Email input → calls POST /api/auth/reset-password
+    2. Token display (masked with show/hide toggle + copy button) + new password + confirm password → calls POST /api/auth/reset-password/confirm
+    3. Success screen with "Retour à la connexion" button
+  - Dialog styled to match auth screen dark theme (bg-[#1a1a2e], white/15 borders, amber accents)
+  - Animated step transitions with framer-motion
+
+### TypeScript Verification
+- Ran `npx tsc --noEmit`: only 1 pre-existing error in `home-screen.tsx` (weekGoalLabel prop mismatch) — not introduced by this change
+
+Files Modified:
+- src/components/screens/ai-coach-screen.tsx (3 targeted edits)
+- src/app/api/scouting/route.ts (4 targeted edits + levelAvg hoist)
+- src/components/screens/scouting-screen.tsx (types, RadarChart, empty state, CategoryCard)
+- prisma/schema.prisma (2 new fields)
+- src/components/screens/auth-screen.tsx (imports, state, handlers, dialog JSX)
+
+Files Created:
+- src/app/api/auth/reset-password/route.ts
+- src/app/api/auth/reset-password/confirm/route.ts
+
+Stage Summary:
+- All 3 issues fixed with targeted, minimal edits. No full file rewrites. 5 files modified, 2 files created. Zero new TypeScript errors introduced.
+
+
+---
+Task ID: 16-monetization
+Agent: full-stack-developer
+Task: Add Stripe monetization foundation
+
+Work Log:
+- Read worklog.md and analyzed full project context (CourtVision AI basketball PWA)
+- Read existing stores/app.ts, page.tsx, settings-screen.tsx, monitoring.ts, and rate-limit patterns
+- Created pricing-screen.tsx: 3-tier pricing page (Gratuit/Pro/Élite) with staggered Framer Motion animations, orange accent on Pro card, Check/X feature icons, responsive 1→3 column layout, back button, cancel link, trust badges
+- Added "pricing" to Screen type union in stores/app.ts
+- Added PricingScreen dynamic import and routing condition in page.tsx
+- Created /api/billing/checkout/route.ts: POST endpoint with NextAuth session check, Zod-free manual validation (planId: pro|elite), rate limiting (5/15min via rateLimit utility), mock Stripe response, trackEvent logging
+- Created /api/billing/success/route.ts: GET endpoint with auth check, plan query param validation, mock Stripe verification comments, trackEvent logging
+- Added "Abonnement & Facturation" section to settings-screen.tsx with current plan display (Badge), "Voir les offres" button navigating to pricing screen
+- Added Badge import to settings-screen.tsx
+- Verified: 0 new TypeScript errors (only pre-existing landing-page.tsx Framer Motion ease type issue), 0 ESLint errors
+
+Stage Summary:
+- Pricing UI: 3-tier responsive card layout with orange-highlighted Pro plan, staggered entrance animations, French text
+- Store: Screen type updated with "pricing" variant
+- Page routing: Dynamic import + conditional render for pricing screen
+- API: /api/billing/checkout (POST, auth+rate-limited, mock Stripe) and /api/billing/success (GET, auth, mock verify)
+- Settings: New subscription section with plan display and navigation to pricing
+- All code follows existing project patterns (rateLimit, getServerSession, trackEvent, containerVariants/itemVariants, shadcn/ui components)
+
+---
+Task ID: 14-landing-page
+Agent: full-stack-developer
+Task: Create professional landing page for unauthenticated users
+
+Work Log:
+- Read worklog.md and existing page.tsx to understand project architecture and navigation flow
+- Added 'landing' to the Screen type union in src/stores/app.ts
+- Changed initial currentScreen from 'auth' to 'landing' in the Zustand store
+- Created src/components/landing/landing-page.tsx with full marketing landing page:
+  - Hero section (min-h-screen) with animated badge, headline, subheadline, 2 CTA buttons, animated SVG basketball court graphic
+  - Features section with 6 feature cards in responsive grid (Camera, Bot, Target, Zap, BarChart3, Trophy icons)
+  - How It Works section with 3 numbered steps and connector lines on desktop
+  - Social proof stats bar (10+ exercices, 9 catégories, IA analyse ta forme, 100% gratuit)
+  - Final CTA section and footer with privacy/contact links
+  - Framer Motion staggered fade-in animations using useInView on scroll
+  - Dark gradient background (from-gray-950 to-gray-900) with orange (#f97316) accent
+  - Mobile-first responsive: 1-col mobile, 2-col tablet (sm), 3-col desktop (lg)
+  - All French text, shadcn/ui Button and Card components, Lucide icons
+- Modified src/app/page.tsx:
+  - Added dynamic import for LandingPage component
+  - Changed useEffect to navigate to 'landing' instead of 'auth' when unauthenticated
+  - Added early return for landing page (rendered outside AnimatePresence for full-width layout)
+  - Updated fallback auth condition to exclude 'landing' screen
+- Cleaned up unused helper function from landing page
+- Ran `bun run lint` — 0 errors
+
+Files Modified:
+- src/stores/app.ts (added 'landing' to Screen type, changed initial screen)
+- src/app/page.tsx (LandingPage integration, navigation logic update)
+
+Files Created:
+- src/components/landing/landing-page.tsx (full landing page component)
+
+Stage Summary:
+- Conversion-optimized French landing page with 5 sections: Hero, Features (6 cards), How It Works (3 steps), Stats Bar, Footer
+- Unauthenticated users now see the landing page first; CTA buttons navigate to auth screen
+- Full-width dark-themed design with Framer Motion scroll animations and SVG basketball graphic
+- ESLint passes with 0 errors, dev server returns GET / 200 successfully

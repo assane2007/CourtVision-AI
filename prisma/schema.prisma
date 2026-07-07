@@ -37,6 +37,10 @@ model Player {
   notifChallenge     Boolean @default(true)
   notifAchievement   Boolean @default(true)
 
+  // Password reset
+  resetToken         String?
+  resetTokenExpiresAt DateTime?
+
   sessions      WorkoutSession[]
   favorites     DrillFavorite[]
   customDrills  Drill[]

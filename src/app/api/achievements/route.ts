@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { getAchievementXp, getLevelFromXp } from '@/lib/xp'
+import { calculateStreak } from '@/lib/streak'
 import { trackError } from '@/lib/monitoring'
 
 const ACHIEVEMENTS = [
@@ -80,7 +81,7 @@ export async function GET() {
         where: { playerId, correct: true },
         _avg: { reactionMs: true },
       }),
-      db.aiChatMessage.count({
+      db.aIChatMessage.count({
         where: { playerId, role: 'user' },
       }),
       db.workoutSessionDrill.count({
@@ -103,25 +104,9 @@ export async function GET() {
     })
 
     // ── Streak calculation ─────────────────────────────────────────────
-    const trainingDays = new Set(
-      sessions.map(s => new Date(s.startedAt).toISOString().split('T')[0])
+    const { current: currentStreak } = calculateStreak(
+      sessions.map((s) => s.startedAt),
     )
-    let currentStreak = 0
-    const today = new Date()
-    today.setHours(23, 59, 59, 999)
-    const checkDate = new Date(today)
-    for (let i = 0; i < 365; i++) {
-      const dayStr = checkDate.toISOString().split('T')[0]
-      if (trainingDays.has(dayStr)) {
-        currentStreak++
-        checkDate.setDate(checkDate.getDate() - 1)
-      } else if (i === 0) {
-        checkDate.setDate(checkDate.getDate() - 1)
-        continue
-      } else {
-        break
-      }
-    }
 
     // ── Weekend warrior: at least one session on Sat or Sun ────────────
     const hasWeekendSession = sessions.some(s => {

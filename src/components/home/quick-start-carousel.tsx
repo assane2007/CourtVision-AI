@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { getCategoryMeta } from '@/lib/constants'
 import { cn } from '@/lib/utils'
-import { DIFFICULTY_CONFIG } from '@/lib/constants'
+import { useTranslation } from '@/components/providers/language-provider'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -38,7 +38,8 @@ function CarouselCard({
   onSelect: (drillId: string) => void
 }) {
   const meta = getCategoryMeta(drill.category)
-  const diffConfig = DIFFICULTY_CONFIG[drill.difficulty]
+  const { t, td, tc } = useTranslation()
+  const diffLabel = td(drill.difficulty)
 
   return (
     <button
@@ -63,12 +64,12 @@ function CarouselCard({
           <div className="flex flex-col gap-1 items-end">
             {drill.bestScore == null && (
               <Badge className="bg-white/25 text-white border-white/30 backdrop-blur-sm text-[10px] px-1.5 py-0">
-                Nouveau
+                {t('home.new')}
               </Badge>
             )}
-            {diffConfig && (
+            {diffLabel && (
               <Badge className="bg-white/25 text-white border-white/30 backdrop-blur-sm text-[10px] px-1.5 py-0">
-                {diffConfig.label}
+                {diffLabel}
               </Badge>
             )}
           </div>
@@ -83,7 +84,7 @@ function CarouselCard({
           {drill.bestScore != null && (
             <div className="flex items-center gap-1">
               <span className="text-white/90 text-xs font-semibold tabular-nums">
-                Meilleur score : {drill.bestScore}%
+                {t('home.bestScore')} : {drill.bestScore}%
               </span>
             </div>
           )}
@@ -101,6 +102,7 @@ export function QuickStartCarousel({ drills, onSelect }: QuickStartCarouselProps
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
+  const { t } = useTranslation()
 
   const checkScroll = useCallback(() => {
     const el = scrollRef.current
@@ -147,7 +149,7 @@ export function QuickStartCarousel({ drills, onSelect }: QuickStartCarouselProps
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-orange-500" />
-          <h2 className="text-lg font-semibold tracking-tight">Recommandations IA</h2>
+          <h2 className="text-lg font-semibold tracking-tight">{t('home.recommendationsAI')}</h2>
         </div>
       </div>
 
@@ -159,7 +161,7 @@ export function QuickStartCarousel({ drills, onSelect }: QuickStartCarouselProps
             type="button"
             onClick={() => scroll('left')}
             className="absolute left-1 top-1/2 z-20 -translate-y-1/2 hidden lg:flex h-8 w-8 items-center justify-center rounded-full bg-card/90 border shadow-md opacity-0 group-hover/carousel:opacity-100 transition-opacity focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Défiler à gauche"
+            aria-label="Scroll left"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -171,7 +173,7 @@ export function QuickStartCarousel({ drills, onSelect }: QuickStartCarouselProps
             type="button"
             onClick={() => scroll('right')}
             className="absolute right-1 top-1/2 z-20 -translate-y-1/2 hidden lg:flex h-8 w-8 items-center justify-center rounded-full bg-card/90 border shadow-md opacity-0 group-hover/carousel:opacity-100 transition-opacity focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Défiler à droite"
+            aria-label="Scroll right"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -209,7 +211,7 @@ export function QuickStartCarousel({ drills, onSelect }: QuickStartCarouselProps
                     ? 'w-4 bg-orange-500'
                     : 'w-1.5 bg-muted-foreground/30',
                 )}
-                aria-label={`Aller à l'élément ${i + 1}`}
+                aria-label={`Go to item ${i + 1}`}
               />
             ))}
           </div>

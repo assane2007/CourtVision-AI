@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useSession } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, ArrowUp, Trash2, Bot } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -41,6 +42,8 @@ const SUGGESTED_ACTIONS = [
 // Component
 // ---------------------------------------------------------------------------
 export default function AICoachScreen() {
+  const { data: session } = useSession()
+  const userName = session?.user?.name || 'Joueur'
   const goBack = useAppStore((s) => s.goBack)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
@@ -263,7 +266,7 @@ export default function AICoachScreen() {
             {/* Welcome message */}
             <div className="w-full bg-muted rounded-2xl rounded-tl-sm p-4 mb-6 text-left">
               <p className="text-sm leading-relaxed">
-                Salut Moussa! 👋 Je suis ton coach IA. Je connais tes stats et je peux
+                Salut {userName} ! 👋 Je suis ton coach IA. Je connais tes stats et je peux
                 t&apos;aider à t&apos;améliorer. Pose-moi n&apos;importe quelle question sur le
                 basket!
               </p>

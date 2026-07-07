@@ -36,6 +36,11 @@ yarn-error.log*
 
 # Database
 db/
+*.db
+*.db-journal
+
+# Upload artifacts (legacy code, images, DB exports — not part of source)
+/upload/
 
 # Tool results
 tool-results/
@@ -59,3 +64,8 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/

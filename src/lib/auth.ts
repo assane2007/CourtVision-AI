@@ -5,8 +5,6 @@ import { db } from './db'
 import { rateLimit } from './rate-limit'
 
 export const authOptions: NextAuthOptions = {
-  // Required behind Caddy reverse proxy for correct callback URL resolution
-  trustHost: true,
   providers: [
     CredentialsProvider({
       name: 'credentials',

@@ -1,0 +1,41 @@
+# ============================================
+# CourtVision AI — Docker Compose
+# ============================================
+# Usage:
+#   docker compose up -d          # Start in background
+#   docker compose logs -f        # Follow logs
+#   docker compose down           # Stop and remove containers
+#   docker compose up --build     # Rebuild and start
+
+services:
+  courtvision:
+    build: .
+    container_name: courtvision-ai
+    ports:
+      - "3000:3000"
+    volumes:
+      # SQLite database persists across container restarts
+      - courtvision-db:/app/db
+      # User uploads (AI form-check images, exports, etc.)
+      - courtvision-uploads:/app/uploads
+    environment:
+      # Database — SQLite file inside the mounted volume
+      - DATABASE_URL=file:/app/db/courtvision.db
+      # NextAuth
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-change-me-in-production}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      # Optional: uncomment if using Sentry
+      # - SENTRY_DSN=${SENTRY_DSN}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
+
+volumes:
+  courtvision-db:
+    driver: local
+  courtvision-uploads:
+    driver: local

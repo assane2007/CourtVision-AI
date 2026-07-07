@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { Toaster } from '@/components/ui/sonner'
 import { PWAInstallPrompt } from '@/components/pwa-install-prompt'
 import { CookieConsent } from '@/components/cookie-consent'
+import { LanguageProvider } from '@/components/providers/language-provider'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
@@ -23,23 +24,25 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider
       attribute="class"
-      defaultTheme="dark"
-      enableSystem={false}
+      defaultTheme="system"
+      enableSystem={true}
       disableTransitionOnChange={false}
     >
       <NextAuthSessionProvider>
-        <QueryClientProvider client={queryClient}>
-          {children}
-          <Toaster
-            position="top-center"
-            richColors
-            toastOptions={{
-              duration: 3500,
-            }}
-          />
-          <PWAInstallPrompt />
-          <CookieConsent />
-        </QueryClientProvider>
+        <LanguageProvider>
+          <QueryClientProvider client={queryClient}>
+            {children}
+            <Toaster
+              position="top-center"
+              richColors
+              toastOptions={{
+                duration: 3500,
+              }}
+            />
+            <PWAInstallPrompt />
+            <CookieConsent />
+          </QueryClientProvider>
+        </LanguageProvider>
       </NextAuthSessionProvider>
     </ThemeProvider>
   )

@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+*.md
+.env*
+!.env.example
+uploads/
+db/
+*.log
+agent-ctx/
+browser-test/
+download/
+mini-services/
+tool-results/

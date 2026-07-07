@@ -40,6 +40,7 @@ interface ScoutingCategory {
   totalSessions: number
   trend: 'up' | 'down' | 'stable'
   lastScores: number[]
+  estimated?: boolean
 }
 
 interface ScoutingData {
@@ -56,6 +57,7 @@ interface ScoutingData {
   totalReps: number
   lastActive: string | null
   levelAvg: number
+  hasEstimatedCategories?: boolean
 }
 
 // ── Category icons & colors ────────────────────────────────────────────────
@@ -106,9 +108,12 @@ const MAX_RADIUS = 120
 const LABEL_RADIUS = MAX_RADIUS + 28
 
 function RadarChart({ categories }: { categories: ScoutingCategory[] }) {
+  const hasEstimated = categories.some((c) => c.estimated)
+
   const axes = categories.map((c) => ({
     label: c.name,
     value: Math.min(100, Math.max(0, c.avgScore)),
+    estimated: !!c.estimated,
   }))
 
   const angleStep = (2 * Math.PI) / axes.length
@@ -124,7 +129,7 @@ function RadarChart({ categories }: { categories: ScoutingCategory[] }) {
   // Grid rings (20%, 40%, 60%, 80%, 100%)
   const gridRings = [0.2, 0.4, 0.6, 0.8, 1.0]
 
-  // Data polygon points
+  // Full data polygon points (real + estimated)
   const dataPoints = axes.map((axis, i) => {
     const r = (axis.value / 100) * MAX_RADIUS
     const pt = getPoint(i, r)
@@ -140,7 +145,7 @@ function RadarChart({ categories }: { categories: ScoutingCategory[] }) {
   // Label positions
   const labelPositions = axes.map((axis, i) => {
     const pt = getPoint(i, LABEL_RADIUS)
-    return { ...pt, label: axis.label, value: axis.value }
+    return { ...pt, label: axis.label, value: axis.value, estimated: axis.estimated }
   })
 
   return (
@@ -154,6 +159,10 @@ function RadarChart({ categories }: { categories: ScoutingCategory[] }) {
         <linearGradient id="radarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="rgb(249, 115, 22)" stopOpacity="0.35" />
           <stop offset="100%" stopColor="rgb(251, 191, 36)" stopOpacity="0.25" />
+        </linearGradient>
+        <linearGradient id="radarGradientEstimated" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="rgb(249, 115, 22)" stopOpacity="0.12" />
+          <stop offset="100%" stopColor="rgb(251, 191, 36)" stopOpacity="0.08" />
         </linearGradient>
         <linearGradient id="radarStroke" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="rgb(249, 115, 22)" />
@@ -197,9 +206,10 @@ function RadarChart({ categories }: { categories: ScoutingCategory[] }) {
       {dataPoints.join(' ') && (
         <polygon
           points={dataPoints.join(' ')}
-          fill="url(#radarGradient)"
+          fill={hasEstimated ? 'url(#radarGradientEstimated)' : 'url(#radarGradient)'}
           stroke="url(#radarStroke)"
-          strokeWidth={2.5}
+          strokeWidth={hasEstimated ? 2 : 2.5}
+          strokeDasharray={hasEstimated ? '6 4' : undefined}
           strokeLinejoin="round"
         />
       )}
@@ -214,9 +224,10 @@ function RadarChart({ categories }: { categories: ScoutingCategory[] }) {
             cx={pt.x}
             cy={pt.y}
             r={4}
-            fill="rgb(249, 115, 22)"
-            stroke="white"
-            strokeWidth={2}
+            fill={axis.estimated ? 'transparent' : 'rgb(249, 115, 22)'}
+            stroke="rgb(249, 115, 22)"
+            strokeWidth={axis.estimated ? 2 : 2}
+            strokeDasharray={axis.estimated ? '3 2' : undefined}
           />
         )
       })}
@@ -228,30 +239,50 @@ function RadarChart({ categories }: { categories: ScoutingCategory[] }) {
         const isRight = i > 0 && i < Math.floor(axes.length / 2)
         const isLeft = i > Math.floor(axes.length / 2) && i < axes.length
 
-        let anchor: string = 'middle'
+        let anchor: 'start' | 'middle' | 'end' = 'middle'
         let dy = 0
+        let estDy = 0
         if (isTop) {
           dy = -6
+          estDy = -16
         } else if (isBottom) {
           dy = 14
+          estDy = 24
         } else if (isRight) {
           anchor = 'start'
           dy = 5
+          estDy = 15
         } else if (isLeft) {
           anchor = 'end'
           dy = 5
+          estDy = 15
         }
 
         return (
-          <text
-            key={`label-${i}`}
-            x={lp.x}
-            y={lp.y + dy}
-            textAnchor={anchor}
-            className="fill-foreground text-[11px] font-semibold"
-          >
-            {lp.label}
-          </text>
+          <g key={`label-group-${i}`}>
+            <text
+              x={lp.x}
+              y={lp.y + dy}
+              textAnchor={anchor}
+              className={cn(
+                'text-[11px] font-semibold',
+                lp.estimated ? 'fill-muted-foreground' : 'fill-foreground',
+              )}
+            >
+              {lp.label}
+            </text>
+            {lp.estimated && (
+              <text
+                x={lp.x}
+                y={lp.y + estDy}
+                textAnchor={anchor}
+                className="fill-muted-foreground/60 text-[9px]"
+                fontStyle="italic"
+              >
+                (estimé)
+              </text>
+            )}
+          </g>
         )
       })}
     </svg>
@@ -375,6 +406,7 @@ function generateScoutingText(
 
 export function ScoutingScreen() {
   const goBack = useAppStore((s) => s.goBack)
+  const navigate = useAppStore((s) => s.navigate)
 
   const { data, isLoading, isError } = useQuery<ScoutingData>({
     queryKey: ['scouting'],
@@ -503,45 +535,34 @@ export function ScoutingScreen() {
               </Card>
             </motion.div>
 
-            {/* ── Empty state when no workout data ──────────────────── */}
-            {data.totalWorkouts === 0 ? (
+            {/* ── Motivational banner for new users ──────────────────── */}
+            {data.hasEstimatedCategories && (
               <motion.div variants={itemVariants}>
-                <Card className="border-0 shadow-lg">
-                  <CardContent className="p-8 flex flex-col items-center text-center gap-5">
-                    <div className="relative">
-                      <div className="w-24 h-24 rounded-full bg-orange-500/10 flex items-center justify-center">
-                        <Target className="h-12 w-12 text-orange-500" />
-                      </div>
-                      <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-amber-400 flex items-center justify-center text-lg shadow-lg">
-                        🏀
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="text-lg font-bold">Aucune donnée disponible</h3>
-                      <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
-                        Ton ADN de Joueur se construit avec tes séances d&apos;entraînement.
-                        Complète au moins une séance pour voir ton profil de scout évoluer !
-                      </p>
-                    </div>
+                <div className="rounded-xl bg-orange-500/10 border border-orange-500/20 p-4 flex items-center gap-3">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                    <Sparkles className="h-5 w-5 text-orange-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-orange-700 dark:text-orange-400">
+                      Profil estimé
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                      Complète des séances pour débloquer tes vraies stats !
+                    </p>
+                  </div>
+                  {data.totalWorkouts === 0 && (
                     <button
                       onClick={() => navigate('train-hub')}
-                      className="px-6 py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition-colors shadow-md shadow-orange-500/25 flex items-center gap-2"
+                      className="flex-shrink-0 px-3 py-1.5 bg-orange-500 text-white text-xs font-semibold rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-1.5"
                     >
-                      <Dumbbell className="h-4 w-4" />
-                      Commencer un entraînement
+                      <Dumbbell className="h-3.5 w-3.5" />
+                      S&apos;entraîner
                     </button>
-                    <div className="grid grid-cols-3 gap-4 mt-2 w-full max-w-xs">
-                      {['🎯 Tir', '🛡️ Défense', '⚡ Vitesse'].map((label) => (
-                        <div key={label} className="text-center p-3 rounded-xl bg-muted/50 border border-border/50">
-                          <p className="text-xs text-muted-foreground">{label}</p>
-                          <p className="text-lg font-bold text-muted-foreground/30 mt-1">—</p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                  )}
+                </div>
               </motion.div>
-            ) : (
+            )}
+
             <div className="contents">
             {/* ── Section 2: Radar Chart — ADN Basketteur ──────────── */}
             <motion.div variants={itemVariants}>
@@ -561,12 +582,21 @@ export function ScoutingScreen() {
                     {data.categories.map((cat) => (
                       <span
                         key={cat.key}
-                        className="text-xs text-muted-foreground"
+                        className={cn(
+                          'text-xs',
+                          cat.estimated ? 'text-muted-foreground/70' : 'text-muted-foreground',
+                        )}
                       >
                         {cat.name}:{' '}
-                        <span className="font-semibold text-foreground">
-                          {cat.avgScore > 0 ? cat.avgScore : '—'}
+                        <span className={cn(
+                          'font-semibold',
+                          cat.estimated ? 'text-muted-foreground' : 'text-foreground',
+                        )}>
+                          {cat.avgScore}
                         </span>
+                        {cat.estimated && (
+                          <span className="italic text-muted-foreground/50 ml-0.5">(est.)</span>
+                        )}
                       </span>
                     ))}
                   </div>
@@ -738,7 +768,6 @@ export function ScoutingScreen() {
               </div>
             </motion.div>
             </div>
-            )}
           </motion.div>
         )}
       </div>
@@ -766,39 +795,54 @@ function CategoryCard({ category }: { category: ScoutingCategory }) {
         : 'text-muted-foreground'
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card p-3.5 space-y-2.5">
-      {/* Header: emoji + name + trend */}
+    <div className={cn(
+      'rounded-xl border bg-card p-3.5 space-y-2.5',
+      category.estimated
+        ? 'border-dashed border-orange-500/30 bg-orange-500/[0.03]'
+        : 'border-border/60',
+    )}>
+      {/* Header: emoji + name + trend + estimated badge */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <span className="text-base">{emoji}</span>
           <span className="text-xs font-semibold truncate">
             {CATEGORY_FR[category.key] ?? category.name}
           </span>
+          {category.estimated && (
+            <span className="text-[9px] italic text-orange-500/70 bg-orange-500/10 px-1.5 py-0.5 rounded-md">
+              estimé
+            </span>
+          )}
         </div>
         <TrendIcon className={cn('h-3.5 w-3.5', trendColor)} />
       </div>
 
       {/* Score */}
       <div className="flex items-baseline gap-1">
-        <span className="text-2xl font-black tabular-nums">
-          {category.avgScore > 0 ? Math.round(category.avgScore) : '—'}
+        <span className={cn(
+          'text-2xl font-black tabular-nums',
+          category.estimated && 'text-muted-foreground',
+        )}>
+          {Math.round(category.avgScore)}
         </span>
-        {category.avgScore > 0 && (
-          <span className="text-xs text-muted-foreground">/100</span>
-        )}
+        <span className="text-xs text-muted-foreground">/100</span>
       </div>
 
       {/* Mini progress bar */}
-      {category.avgScore > 0 && (
-        <Progress value={category.avgScore} className="h-1" />
-      )}
+      <Progress value={category.avgScore} className="h-1" />
 
       {/* Stats line */}
-      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-        <span>{category.totalReps} reps</span>
-        <span className="w-0.5 h-0.5 rounded-full bg-current" />
-        <span>{category.totalSessions} sessions</span>
-      </div>
+      {category.totalReps > 0 ? (
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+          <span>{category.totalReps} reps</span>
+          <span className="w-0.5 h-0.5 rounded-full bg-current" />
+          <span>{category.totalSessions} sessions</span>
+        </div>
+      ) : (
+        <p className="text-[10px] text-muted-foreground/50 italic">
+          Aucune donnée encore
+        </p>
+      )}
     </div>
   )
 }
