@@ -51,22 +51,18 @@ export function cacheGet<T>(key: string): T | null {
 
   // Touch for LRU
   entry.lastAccessed = Date.now()
+  // Move to end of Map (most recently used)
+  store.delete(key)
+  store.set(key, entry)
   return entry.value as T
 }
 
 export function cacheSet(key: string, value: unknown, ttlMs: number): void {
   // Evict oldest entries if at capacity
   while (store.size >= MAX_ENTRIES) {
-    // Find the least-recently-used entry
-    let oldestKey: string | null = null
-    let oldestTime = Infinity
-    for (const [k, entry] of store) {
-      if (entry.lastAccessed < oldestTime) {
-        oldestTime = entry.lastAccessed
-        oldestKey = k
-      }
-    }
-    if (oldestKey) {
+    // Map iterates in insertion order — first key is the oldest
+    const oldestKey = store.keys().next().value
+    if (oldestKey !== undefined) {
       store.delete(oldestKey)
     } else {
       break

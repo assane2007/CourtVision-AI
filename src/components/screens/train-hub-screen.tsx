@@ -45,6 +45,7 @@ import {
   X,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from '@/components/providers/language-provider'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -113,6 +114,7 @@ function normalize(s: string): string {
 export default function TrainHubScreen() {
   const navigate = useAppStore((s) => s.navigate)
   const selectDrill = useAppStore((s) => s.selectDrill)
+  const { t, tc, td } = useTranslation()
 
   const queryClient = useQueryClient()
 
@@ -559,7 +561,7 @@ export default function TrainHubScreen() {
                     onClick={() => setCreateOpen(false)}
                     className="rounded-full"
                   >
-                    Annuler
+                    {t('action.cancel')}
                   </Button>
                   <Button
                     onClick={() => createMutation.mutate()}
@@ -635,7 +637,7 @@ export default function TrainHubScreen() {
               `}
             >
               <Filter className="h-3.5 w-3.5" />
-              Tous
+              {tc('all')}
             </button>
             {DIFFICULTIES.map((diff) => (
               <button
@@ -656,7 +658,7 @@ export default function TrainHubScreen() {
                 `}
               >
                 <span className={`h-2 w-2 rounded-full ${diff.color}`} />
-                {diff.label}
+                {td(diff.key)}
               </button>
             ))}
           </div>
@@ -686,7 +688,7 @@ export default function TrainHubScreen() {
                   `}
                 >
                   <span className="text-base leading-none">{cat.icon}</span>
-                  <span>{cat.label}</span>
+                  <span>{tc(cat.key)}</span>
                   <span
                     className={`
                       ml-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold leading-none px-1
@@ -834,7 +836,7 @@ export default function TrainHubScreen() {
                             variant="secondary"
                             className="text-[11px] px-2 py-0 h-5 font-medium"
                           >
-                            {getCategoryLabel(drill.category)}
+                            {tc(drill.category)}
                           </Badge>
                           <Badge
                             variant="outline"
@@ -843,11 +845,7 @@ export default function TrainHubScreen() {
                             <span
                               className={`h-1.5 w-1.5 rounded-full ${dotColor} mr-1.5 shrink-0`}
                             />
-                            {drill.difficulty === 'beginner'
-                              ? 'Débutant'
-                              : drill.difficulty === 'intermediate'
-                                ? 'Intermédiaire'
-                                : 'Avancé'}
+                            {td(drill.difficulty)}
                           </Badge>
                         </div>
 
@@ -883,7 +881,7 @@ export default function TrainHubScreen() {
               {isLoadingMore ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : null}
-              Charger plus
+              {t('action.loadMore')}
             </Button>
           </div>
         )}

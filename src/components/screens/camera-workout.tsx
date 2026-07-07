@@ -59,6 +59,7 @@ import {
   ActiveOverlay,
   CompletionOverlay,
 } from '@/components/workout/score-display'
+import { BottomNav } from '@/components/shared/bottom-nav'
 import { BottomPanel } from '@/components/workout/control-bar'
 import {
   ReadyOverlay,
@@ -1006,6 +1007,7 @@ export default function CameraWorkoutScreen() {
         onStop={handleStop}
         onAICheck={handleAIFormCheck}
       />
+      {(phase !== 'active' && phase !== 'countdown' && phase !== 'rest') && <BottomNav />}
     </div>
   )
 }

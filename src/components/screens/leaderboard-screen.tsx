@@ -11,6 +11,8 @@ import { useAppStore } from '@/stores/app'
 import { SwipeToGoBack } from '@/components/shared/swipe-back'
 import { apiFetch } from '@/lib/utils'
 import { containerVariants, itemVariants } from '@/lib/animations'
+import { BottomNav } from '@/components/shared/bottom-nav'
+import { useTranslation } from '@/components/providers/language-provider'
 import { getLevelColor, getLevelBgColor, getLevelInfo } from '@/lib/xp'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -42,12 +44,6 @@ const PERIOD_TABS: { value: Period; label: string }[] = [
   { value: 'month', label: 'Ce mois' },
   { value: 'week', label: 'Cette semaine' },
 ]
-
-const POSITION_LABELS: Record<string, string> = {
-  guard: 'Meneur',
-  forward: 'Ailier',
-  center: 'Pivot',
-}
 
 function getPodiumStyle(rank: number) {
   switch (rank) {
@@ -84,6 +80,7 @@ function getPodiumEmoji(rank: number) {
 
 export function LeaderboardScreen() {
   const goBack = useAppStore((s) => s.goBack)
+  const { t } = useTranslation()
   const [period, setPeriod] = useState<Period>('all')
 
   const { data, isLoading, isError, refetch } = useQuery<LeaderboardResponse>({
@@ -110,7 +107,7 @@ export function LeaderboardScreen() {
           </Button>
           <div className="flex items-center gap-2 flex-1">
             <Trophy className="h-5 w-5 text-orange-500" />
-            <h1 className="text-lg font-bold">Classement</h1>
+            <h1 className="text-lg font-bold">{t('screen.leaderboard')}</h1>
           </div>
           {data && (
             <span className="text-xs text-muted-foreground">
@@ -139,7 +136,7 @@ export function LeaderboardScreen() {
         </div>
       </header>
 
-      <main className="max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto px-4 pt-4 pb-8">
+      <main className="max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto px-4 pt-4 pb-24">
         {isLoading ? (
           <LeaderboardSkeleton />
         ) : isError ? (
@@ -147,7 +144,7 @@ export function LeaderboardScreen() {
             <div className="text-4xl">:(</div>
             <p className="text-muted-foreground">Impossible de charger le classement</p>
             <Button variant="outline" onClick={() => refetch()}>
-              Réessayer
+              {t('action.retry')}
             </Button>
           </div>
         ) : (
@@ -304,7 +301,7 @@ export function LeaderboardScreen() {
                           Niv. {entry.xpLevel}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
-                          {POSITION_LABELS[entry.position] ?? entry.position}
+                          {entry.position === 'guard' ? t('position.guard') : entry.position === 'forward' ? t('position.forward') : entry.position === 'center' ? t('position.center') : entry.position}
                         </span>
                       </div>
                     </div>
@@ -333,6 +330,7 @@ export function LeaderboardScreen() {
           </motion.div>
         )}
       </main>
+      <BottomNav />
     </SwipeToGoBack>
   )
 }

@@ -11,6 +11,7 @@ import { BottomNav } from '@/components/shared/bottom-nav'
 import { SwipeToGoBack } from '@/components/shared/swipe-back'
 import { apiFetch, cn } from '@/lib/utils'
 import { containerVariants, itemVariants } from '@/lib/animations'
+import { useTranslation } from '@/components/providers/language-provider'
 
 interface Achievement {
   type: string
@@ -23,6 +24,7 @@ interface Achievement {
 
 export function AchievementsScreen() {
   const { navigate } = useAppStore()
+  const { t } = useTranslation()
 
   const { data, isLoading } = useQuery<{
     achievements: Achievement[]
@@ -55,7 +57,7 @@ export function AchievementsScreen() {
           </Button>
           <div className="flex items-center gap-2 flex-1">
             <Trophy className="h-5 w-5 text-orange-500" />
-            <h1 className="text-lg font-bold">Succès & Badges</h1>
+            <h1 className="text-lg font-bold">{t('screen.achievements')}</h1>
           </div>
           <Badge variant="secondary" className="bg-orange-500/10 text-orange-500 border-orange-500/20">
             {totalUnlocked}/{totalAchievements}

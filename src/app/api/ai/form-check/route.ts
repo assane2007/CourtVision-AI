@@ -6,6 +6,19 @@ import { formCheckSchema, getZodErrorMessage } from '@/lib/validations'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
 
+/** Strip potential prompt injection from user-provided strings */
+function sanitize(str: string): string {
+  return str
+    .replace(/ignore (all )?(previous|above)/gi, '[filtered]')
+    .replace(/system prompt/gi, '[filtered]')
+    .replace(/you are/gi, '[filtered]')
+    .replace(/act as/gi, '[filtered]')
+    .replace(/pretend/gi, '[filtered]')
+    .replace(/forget/gi, '[filtered]')
+    .replace(/instructions/gi, '[filtered]')
+    .slice(0, 500) // Truncate long inputs
+}
+
 // POST /api/ai/form-check — AI form verification during camera workout
 export async function POST(req: NextRequest) {
   try {
@@ -62,9 +75,9 @@ export async function POST(req: NextRequest) {
 
     const prompt = `Tu es un coach de basketball expert en analyse de mouvement. Analyse cette image d'une caméra.
 
-EXERCICE DEMANDÉ: ${drillName}
-Catégorie: ${category}
-${drillInstructions ? `Instructions: ${drillInstructions}` : ''}
+EXERCICE DEMANDÉ: ${sanitize(drillName)}
+Catégorie: ${sanitize(category)}
+${drillInstructions ? `Instructions: ${sanitize(drillInstructions)}` : ''}
 
 RÈGLES D'ÉVALUATION IMPORTANTES:
 1. Vérifie d'ABORD si une balle de basketball est visible dans l'image.

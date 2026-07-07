@@ -1,4 +1,14 @@
 /**
+ * Format a Date as a YYYY-MM-DD string in local timezone.
+ */
+function toLocalDateString(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+/**
  * Calculate current and best training streaks from a set of session dates.
  *
  * @param sessionDates - Array of Date objects (e.g. session.startedAt).
@@ -6,19 +16,17 @@
  * @returns {{ current: number; best: number }}
  */
 export function calculateStreak(sessionDates: Date[]): { current: number; best: number } {
-  // Unique training day strings (YYYY-MM-DD)
+  // Unique training day strings (YYYY-MM-DD) — local time
   const trainingDays = new Set(
-    sessionDates.map((d) => new Date(d).toISOString().split('T')[0]),
+    sessionDates.map((d) => toLocalDateString(new Date(d))),
   )
 
   // ── Current streak: consecutive days ending at today or yesterday ──
   let currentStreak = 0
-  const today = new Date()
-  today.setHours(23, 59, 59, 999)
-  const checkDate = new Date(today)
+  const checkDate = new Date()
 
   for (let i = 0; i < 365; i++) {
-    const dayStr = checkDate.toISOString().split('T')[0]
+    const dayStr = toLocalDateString(checkDate)
     if (trainingDays.has(dayStr)) {
       currentStreak++
       checkDate.setDate(checkDate.getDate() - 1)

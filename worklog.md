@@ -1773,3 +1773,172 @@ Stage Summary:
 - Monetization foundation ready for Stripe integration
 - E2E test framework in place with CI pipeline coverage
 - Full commit history pushed to GitHub with comprehensive commit message
+---
+Task ID: p1-6
+Agent: general-purpose
+Task: Add BottomNav to 6 screens missing it
+
+Work Log:
+- Audited all screen files for BottomNav presence — found records-screen.tsx already had it
+- Added `import { BottomNav } from '@/components/shared/bottom-nav'` + `<BottomNav />` to 6 screens:
+  1. leaderboard-screen.tsx — added import, changed main `pb-8` → `pb-24`, placed BottomNav before closing `</SwipeToGoBack>`
+  2. scouting-screen.tsx — added import, already had `pb-24`, placed BottomNav before closing `</SwipeToGoBack>`
+  3. ai-coach-screen.tsx — added import, added `pb-24` to outermost div, placed BottomNav before closing `</div>`
+  4. reaction-trainer-screen.tsx — added import, added `pb-24` to inner content div, placed BottomNav before closing `</SwipeToGoBack>`
+  5. camera-workout.tsx — added import, placed conditional BottomNav (hidden during 'active', 'countdown', 'rest' phases, shown during 'loading', 'paused', 'completed', 'plan-next')
+  6. workout-summary-screen.tsx — added import, added `pb-24` to gradient container div, placed BottomNav before closing outermost `</div>`
+- Verified TypeScript compilation: 0 new errors (pre-existing errors in xp/route.ts unrelated)
+
+Stage Summary:
+- All 14 screen files now have shared BottomNav component — no navigation dead-ends remain
+- camera-workout uses conditional rendering to hide nav during active workout phases
+- `pb-24` padding added to all screens that were missing it
+---
+Task ID: p2-infra
+Agent: general-purpose
+Task: Fix rate limiter, cache O(N), Docker, CI
+
+Work Log:
+- Added periodic cleanup setInterval (every 5 min) to rate-limit.ts to delete expired entries from the attempts Map
+- Added safety valve in rateLimit(): if attempts.size > 10000, clear the entire Map
+- Replaced O(N) LRU eviction in cache.ts with O(1) using Map insertion order (store.keys().next().value)
+- Added re-insert (delete+set) in cacheGet to move accessed entries to end of Map for correct LRU ordering
+- Replaced Docker HEALTHCHECK curl (not in oven/bun image) with wget -qO-
+- Pinned base image from oven/bun:1 to oven/bun:1.2.8 in all 3 Dockerfile stages
+- Pinned bun-version from latest to "1.2.8" in ci.yml and deploy.yml
+- Added actions/cache@v4 step for ~/.bun/install/cache and node_modules in both workflows
+- Ran tsc --noEmit: passed with zero errors
+
+Stage Summary:
+- Rate limiter: no more unbounded memory growth; periodic GC + safety valve at 10k entries
+- Cache: LRU eviction reduced from O(N) scan to O(1) via Map insertion-order trick
+- Docker: HEALTHCHECK now uses wget (available in oven/bun), base image pinned to 1.2.8
+- CI/CD: Bun version pinned to 1.2.8, dependency caching added via actions/cache@v4
+- All changes type-check cleanly
+---
+Task ID: p2-security
+Agent: general-purpose
+Task: Security hardening — HSTS, middleware, LLM sanitization, trackError
+
+Work Log:
+- Added Strict-Transport-Security header (max-age=31536000; includeSubDomains) to next.config.ts after Permissions-Policy
+- Created /src/middleware.ts with global auth enforcement: public paths whitelist, session cookie check for API routes, static file bypass
+- Added sanitize() function to /src/app/api/ai/form-check/route.ts — wraps drillName, category, drillInstructions in prompt
+- Added sanitize() function to /src/app/api/ai-coach/route.ts — wraps playerName, position, goals in system prompt
+- Replaced console.error with trackError in /src/app/api/auth/reset-password/confirm/route.ts
+- Added trackError import and call in /src/app/api/billing/success/route.ts catch block
+- Replaced console.error with trackError in /src/app/api/account/route.ts
+- Ran tsc --noEmit: passed with zero errors
+
+Stage Summary:
+- HSTS header enforced on all routes (1-year max-age, includeSubDomains)
+- Middleware blocks unauthenticated API access at edge before route handlers run
+- LLM prompt injection mitigated via regex-based sanitization + 500-char truncation on user inputs
+- All error logging now goes through trackError (no remaining console.error in API routes)
+- All changes type-check cleanly
+---
+Task ID: p3-i18n-2
+Agent: general-purpose
+Task: i18n adoption for 8 screens (part 2)
+
+Work Log:
+- Audited all 8 target files for French strings matching existing i18n keys
+- home-screen.tsx: already had useTranslation; translated 2 remaining aria-labels (Statistiques → t('nav.stats'), Activité récente → t('home.recentActivity'))
+- profile-screen.tsx: added useTranslation import + hook; translated 6 strings: "Mon Profil" → t('nav.profile'), 2x "Annuler" → t('action.cancel'), "Enregistrer" → t('action.save'), "Mes Succès" → t('screen.achievements'), "Paramètres" → t('screen.settings')
+- drill-detail-screen.tsx: added useTranslation import + hook (t, tc, td); replaced getCategoryLabel() with tc() for category labels; replaced diff.label with td() for difficulty labels in 2 locations; translated "Retour" → t('action.back') on empty state
+- auth-screen.tsx: added useTranslation import + hook; translated tab labels "Connexion" → t('action.signIn'), "Inscription" → t('action.signUp'); translated button text "Se connecter" → t('action.logIn'), "Créer un compte" → t('action.createAccount'); translated "Retour" → t('action.back') in password reset dialog
+- onboarding-screen.tsx: added useTranslation import + hook (t, td); translated "Retour" (aria-label + visible text) → t('action.back'), "Commencer" → t('action.start'); left position/level option titles as-is (defined outside component)
+- landing-page.tsx: added useTranslation import + hook; translated "Créer un compte" CTA → t('action.createAccount'); left marketing copy as-is (no matching keys)
+- bottom-nav.tsx: already fully translated in previous work — no changes needed
+- cookie-consent.tsx: "Accepter", "Refuser", "En savoir plus" have no matching i18n keys — no changes made
+
+Stage Summary:
+- 6 of 8 files modified with i18n integration (bottom-nav already done, cookie-consent has no matching keys)
+- 18 French string replacements across 6 files
+- TypeScript compiles cleanly (tsc --noEmit passes with zero errors)
+- No new i18n keys added
+---
+Task ID: p3-validation
+Agent: general-purpose
+Task: Add Zod schemas + rate limits to all unprotected routes
+
+Work Log:
+- Added 7 new Zod schemas to src/lib/validations.ts: resetPasswordSchema, resetPasswordConfirmSchema, aiCoachSchema, checkoutSchema, reactionSchema (+ reactionRoundSchema), settingsPatchSchema, shareSchema, notificationSubscribeSchema
+- Replaced manual validation with Zod safeParse in 8 route files: auth/reset-password, auth/reset-password/confirm, ai-coach, billing/checkout, reaction, settings, share, notifications/subscribe
+- Added rate limiting to 12 GET endpoints: achievements, recommendations, records, drills (IP-based), drills/[id] (GET + DELETE), plans, plans/[id], sessions, sessions/[id], player, xp
+- Added GET rate limit to reaction route (POST already had one)
+- Used user-ID-based rate limits for authed routes (30 req/15min), IP-based for optional-auth drills (60 req/15min)
+- Billing checkout rate limit changed from 5 to 10 per instructions, settings PATCH from 20 to 10
+
+Stage Summary:
+- 7 new Zod validation schemas covering reset-password, ai-coach, billing, reaction, settings, share, and notification-subscribe
+- 8 route files migrated from manual validation to Zod safeParse with getZodErrorMessage
+- 13 new rate limits added across GET-only or GET-heavy endpoints
+- TypeScript compiles cleanly (tsc --noEmit: zero errors)
+---
+Task ID: p3-i18n-1
+Agent: general-purpose
+Task: i18n adoption for 8 screens (part 1)
+
+Work Log:
+- stats-screen.tsx: added useTranslation import + hook; translated 9 strings — Séances Totales, Répétitions, Score Moyen, Séances/Semaine, Activité Hebdomadaire, Performance par Catégorie, Séances Récentes, Charger plus, Aucune donnée
+- achievements-screen.tsx: added useTranslation import + hook; translated "Succès & Badges" → t('screen.achievements')
+- plans-screen.tsx: added useTranslation import + hook; translated "Annuler" → t('action.cancel'), "Supprimer" → t('action.delete')
+- records-screen.tsx: added useTranslation import + hook; translated "Records Personnels" → t('screen.records') (2x), "Retour" aria-label → t('action.back') (2x)
+- leaderboard-screen.tsx: added useTranslation import + hook; translated "Classement" → t('screen.leaderboard'), "Réessayer" → t('action.retry'); replaced POSITION_LABELS mapping with ternary using t('position.guard/forward/center'); removed now-unused POSITION_LABELS constant
+- pricing-screen.tsx: audited — no French strings have matching i18n keys (all strings are pricing-specific). No changes needed.
+- settings-screen.tsx: already had useTranslation imported; extended destructuring to include t(); translated 8 strings — Paramètres → t('screen.settings'), Entraînement → t('settings.training'), Sons → t('settings.sound'), Vibrations → t('settings.haptics'), Langue → t('settings.language'), Français → t('language.fr'), English → t('language.en'), Notifications → t('settings.notifications')
+- train-hub-screen.tsx: added useTranslation import + hook (t, tc, td); translated 9 strings/expressions — Tous → tc('all'), Annuler → t('action.cancel'), Charger plus → t('action.loadMore'), Débutant/Intermédiaire/Avancé → td(drill.difficulty), getCategoryLabel() → tc(), cat.label → tc(cat.key), diff.label → td(diff.key)
+
+Stage Summary:
+- 7 of 8 files modified (pricing-screen skipped: no matching i18n keys)
+- ~35 French string replacements across 7 files
+- TypeScript compiles cleanly (tsc --noEmit: zero errors)
+- No new i18n keys added — only existing keys used
+- Internal search logic in train-hub (DIFFICULTY_LABELS, getCategoryLabel) left untouched to preserve search matching behavior
+---
+Task ID: p4-perf
+Agent: general-purpose
+Task: Optimize leaderboard, fix streak, add cache, fix validation
+
+Work Log:
+- Replaced leaderboard `db.player.findMany()` (O(N×M) loading all players + all sessions) with `take: 20, orderBy: xp desc` + `sessions take: 100` per player — only 20 players fetched, capped sessions
+- Player rank for non-top-20 users now uses `db.player.count({ where: { xp: { gt } } }) + 1` instead of loading entire leaderboard
+- Added `toLocalDateString()` helper to streak.ts using `getFullYear/getMonth/getDate` instead of `toISOString().split('T')[0]` (which converts to UTC)
+- Replaced all `toISOString().split('T')[0]` in streak.ts with `toLocalDateString()` calls
+- Removed `today.setHours(23, 59, 59, 999)` — now uses `new Date()` directly with `toLocalDateString()`
+- Added `withCache` wrapper to achievements GET (2 min TTL, key: `achievements:${userId}`)
+- Added `withCache` wrapper to scouting GET (3 min TTL, key: `scouting:${userId}`)
+- Added `withCache` wrapper to leaderboard GET (5 min TTL, key: `leaderboard:${period}`)
+- Added `.max(10 * 1024 * 1024, 'Image trop volumineuse (max 10 Mo).')` to `formCheckSchema.imageBase64`
+- Removed unused `getLevelFromXp` import from leaderboard route
+
+Stage Summary:
+- Leaderboard: O(N×M) → O(20×100) max, player rank uses COUNT instead of full scan
+- Streak: timezone-safe local date formatting throughout
+- 3 endpoints cached: achievements (2min), scouting (3min), leaderboard (5min)
+- formCheckSchema now rejects base64 images > 10MB
+- TypeScript compiles cleanly (tsc --noEmit: zero errors)
+---
+Task ID: p5-polish
+Agent: general-purpose
+Task: Production polish — deps, responsive auth, shadcn, PWA
+
+Work Log:
+- Removed unused `jsonwebtoken` dependency from package.json (reduces attack surface)
+- Ran `bun install` to update lockfile (1 package removed)
+- Added responsive breakpoints to auth-screen: `max-w-md md:max-w-lg lg:max-w-xl` on outer container
+- Added responsive padding to auth CardContent: `px-6 md:px-8`
+- Added `text-sm md:text-base` to both TabsTrigger labels (Connexion/Inscription)
+- Replaced 2 raw `<motion.button>` in onboarding-screen with shadcn `<Button>` wrapped in `<motion.div>`:
+  - Back button: `variant="ghost"` `size="sm"` with custom dark-theme classes
+  - Next/Start button: `size="lg"` (default variant) with shadcn built-in styling
+- Added content-length guard (10KB limit) to settings PATCH route, returns 413 if exceeded
+- Added `screenshots` entry (narrow form_factor, 512x512) to PWA manifest.json
+- Added proper 192x192 icon entry (`/icon-192.png`) to PWA manifest icons array
+
+Stage Summary:
+- `tsc --noEmit`: zero errors
+- `bun run lint`: zero warnings
+- 5 files changed across deps, components, API route, and PWA manifest
+- All changes are additive/non-breaking — no functionality removed

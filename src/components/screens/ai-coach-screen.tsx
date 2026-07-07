@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAppStore } from '@/stores/app'
 import { apiFetch } from '@/lib/utils'
+import { BottomNav } from '@/components/shared/bottom-nav'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -172,7 +173,7 @@ export default function AICoachScreen() {
   const hasMessages = messages.length > 0
 
   return (
-    <div className="min-h-screen flex flex-col bg-background max-w-lg md:max-w-3xl lg:max-w-4xl mx-auto relative">
+    <div className="min-h-screen flex flex-col bg-background max-w-lg md:max-w-3xl lg:max-w-4xl mx-auto relative pb-24">
       {/* ── Header ──────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="flex items-center justify-between px-4 py-3">
@@ -398,6 +399,7 @@ export default function AICoachScreen() {
           </Button>
         </form>
       </div>
+      <BottomNav />
     </div>
   )
 }

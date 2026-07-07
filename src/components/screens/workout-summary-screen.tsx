@@ -12,6 +12,7 @@ import { useQuery } from '@tanstack/react-query'
 import { CATEGORY_META } from '@/lib/constants'
 import { apiFetch } from '@/lib/utils'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { BottomNav } from '@/components/shared/bottom-nav'
 import { ScoreReplay } from '@/components/workout/score-replay'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -580,7 +581,7 @@ export default function WorkoutSummaryScreen() {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Background */}
-      <div className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 relative">
+      <div className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 relative pb-24">
         <CourtLinesSVG />
 
         {/* Confetti */}
@@ -781,6 +782,7 @@ export default function WorkoutSummaryScreen() {
           </SheetContent>
         </Sheet>
       </div>
+      <BottomNav />
     </div>
   )
 }

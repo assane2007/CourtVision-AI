@@ -20,6 +20,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
+import { useTranslation } from '@/components/providers/language-provider'
 
 /* ── Floating basketball config ──────────────────────────────────── */
 const floatingBasketballs = [
@@ -166,6 +167,7 @@ function ConfettiBurst({ onDone }: { onDone: () => void }) {
 
 /* ── Main Auth Screen ────────────────────────────────────────────── */
 export default function AuthScreen() {
+  const { t } = useTranslation()
   const navigate = useAppStore((s) => s.navigate)
 
   // ── Login state ──────────────────────────────────────────────────
@@ -447,7 +449,7 @@ export default function AuthScreen() {
         initial={{ opacity: 0, y: 24, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="relative z-10 w-full max-w-md"
+        className="relative z-10 w-full max-w-md md:max-w-lg lg:max-w-xl"
       >
         <Card className="relative bg-white/[0.08] backdrop-blur-xl border-white/20 shadow-2xl shadow-black/30 py-0 gap-0 overflow-hidden shadow-[0_0_80px_rgba(249,115,22,0.15)]">
           {/* ── Orange gradient top line ──────────────────────────── */}
@@ -471,21 +473,21 @@ export default function AuthScreen() {
             </div>
           </CardHeader>
 
-          <CardContent className="px-6 pb-8 pt-2">
+          <CardContent className="px-6 md:px-8 pb-8 pt-2">
             <Tabs defaultValue="login" className="w-full">
               {/* ── Tab bar ───────────────────────────────────────── */}
               <TabsList className="w-full h-11 bg-white/[0.06] p-1 mb-6 rounded-lg">
                 <TabsTrigger
                   value="login"
-                  className="flex-1 h-full rounded-md text-sm font-medium data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-amber-500/20 text-white/60 transition-all"
+                  className="flex-1 h-full rounded-md text-sm md:text-base font-medium data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-amber-500/20 text-white/60 transition-all"
                 >
-                  Connexion
+                  {t('action.signIn')}
                 </TabsTrigger>
                 <TabsTrigger
                   value="signup"
-                  className="flex-1 h-full rounded-md text-sm font-medium data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-amber-500/20 text-white/60 transition-all"
+                  className="flex-1 h-full rounded-md text-sm md:text-base font-medium data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-amber-500/20 text-white/60 transition-all"
                 >
-                  Inscription
+                  {t('action.signUp')}
                 </TabsTrigger>
               </TabsList>
 
@@ -548,7 +550,7 @@ export default function AuthScreen() {
                         Connexion en cours…
                       </>
                     ) : (
-                      'Se connecter'
+                      t('action.logIn')
                     )}
                   </Button>
                 </form>
@@ -632,7 +634,7 @@ export default function AuthScreen() {
                         Création du compte…
                       </>
                     ) : (
-                      'Créer un compte'
+                      t('action.createAccount')
                     )}
                   </Button>
                 </form>
@@ -806,7 +808,7 @@ export default function AuthScreen() {
                           className="h-11 text-white/60 hover:text-white hover:bg-white/5 cursor-pointer"
                         >
                           <ArrowLeft className="size-4 mr-1.5" />
-                          Retour
+                          {t('action.back')}
                         </Button>
                         <Button
                           type="submit"

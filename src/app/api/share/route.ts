@@ -1,11 +1,12 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
+import { shareSchema, getZodErrorMessage } from '@/lib/validations'
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
@@ -18,8 +19,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 })
     }
 
-    const body = await request.json() as { sessionId?: string; includeScreenshot?: boolean }
-    const { sessionId } = body
+    const body = await request.json()
+    const parsed = shareSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: getZodErrorMessage(parsed.error) }, { status: 400 })
+    }
+
+    const { sessionId } = parsed.data
 
     let sessionData: {
       startedAt: Date

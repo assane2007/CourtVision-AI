@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { trackEvent } from '@/lib/monitoring'
+import { trackEvent, trackError } from '@/lib/monitoring'
 
 const VALID_PLANS = ['pro', 'elite'] as const
 
@@ -40,6 +40,7 @@ export async function GET(req: NextRequest) {
       plan,
     })
   } catch (err) {
+    trackError('GET /api/billing/success', err)
     return NextResponse.json(
       { error: 'Erreur interne du serveur' },
       { status: 500 },

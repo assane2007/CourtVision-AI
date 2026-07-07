@@ -14,6 +14,11 @@ export async function GET() {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
+    const rl = rateLimit(`plans:get:${session.user.id}`, 30, 15 * 60 * 1000)
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Trop de requêtes. Réessayez plus tard.' }, { status: 429 })
+    }
+
     const plans = await db.trainingPlan.findMany({
       where: { playerId: session.user.id },
       include: {

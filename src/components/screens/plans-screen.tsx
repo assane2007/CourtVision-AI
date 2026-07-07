@@ -22,6 +22,7 @@ import {
   Dumbbell,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useTranslation } from '@/components/providers/language-provider'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -81,6 +82,7 @@ function estimateTotalTime(drills: PlanDrill[]): number {
 export default function PlansScreen() {
   const { navigate, selectDrill, startPlanExecution } = useAppStore()
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
 
   const [createOpen, setCreateOpen] = useState(false)
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null)
@@ -347,13 +349,13 @@ export default function PlansScreen() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogCancel>{t('action.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
               disabled={deleteMutation.isPending}
               className="bg-red-500 hover:bg-red-600 text-white"
             >
-              {deleteMutation.isPending ? 'Suppression...' : 'Supprimer'}
+              {deleteMutation.isPending ? 'Suppression...' : t('action.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

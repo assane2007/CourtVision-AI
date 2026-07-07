@@ -173,7 +173,7 @@ export function SettingsScreen() {
     saveMutation.mutate({ hapticsEnabled: checked })
   }
 
-  const { setLanguage: setI18nLanguage } = useTranslation()
+  const { t, setLanguage: setI18nLanguage } = useTranslation()
 
   const handleLanguageChange = (val: string) => {
     if (val !== settings.language) {
@@ -204,7 +204,7 @@ export function SettingsScreen() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-lg font-bold">Paramètres</h1>
+          <h1 className="text-lg font-bold">{t('screen.settings')}</h1>
         </div>
       </header>
 
@@ -311,7 +311,7 @@ export function SettingsScreen() {
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
                       <Dumbbell className="h-4 w-4 text-orange-500" />
                     </div>
-                    Entraînement
+                    {t('settings.training')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
@@ -358,7 +358,7 @@ export function SettingsScreen() {
                     <div className="flex items-center gap-3">
                       <Volume2 className="h-4 w-4 text-muted-foreground" />
                       <Label htmlFor="sound-toggle" className="text-sm font-medium cursor-pointer">
-                        Sons
+                        {t('settings.sound')}
                       </Label>
                     </div>
                     <Switch
@@ -377,7 +377,7 @@ export function SettingsScreen() {
                     <div className="flex items-center gap-3">
                       <Vibrate className="h-4 w-4 text-muted-foreground" />
                       <Label htmlFor="haptics-toggle" className="text-sm font-medium cursor-pointer">
-                        Vibrations
+                        {t('settings.haptics')}
                       </Label>
                     </div>
                     <Switch
@@ -396,7 +396,7 @@ export function SettingsScreen() {
                     <div className="flex items-center gap-3">
                       <Languages className="h-4 w-4 text-muted-foreground" />
                       <Label className="text-sm font-medium">
-                        Langue
+                        {t('settings.language')}
                       </Label>
                     </div>
                     <Select
@@ -408,8 +408,8 @@ export function SettingsScreen() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="fr">Français</SelectItem>
-                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="fr">{t('language.fr')}</SelectItem>
+                        <SelectItem value="en">{t('language.en')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -425,7 +425,7 @@ export function SettingsScreen() {
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
                       <Bell className="h-4 w-4 text-orange-500" />
                     </div>
-                    Notifications
+                    {t('settings.notifications')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0 space-y-5">

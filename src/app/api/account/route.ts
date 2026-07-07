@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
+import { trackError } from '@/lib/monitoring'
 
 // Rate limit: 1 deletion per hour per user
 const deleteRateLimit = (identifier: string) => rateLimit(identifier, 1, 60 * 60 * 1000)
@@ -107,7 +108,7 @@ export async function DELETE() {
       { status: 200 }
     )
   } catch (error) {
-    console.error('[DELETE /api/account] Error:', error)
+    trackError('[DELETE /api/account]', error)
     return NextResponse.json(
       { error: 'Erreur interne du serveur' },
       { status: 500 }

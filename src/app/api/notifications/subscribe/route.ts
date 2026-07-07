@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { rateLimit } from '@/lib/rate-limit'
+import { notificationSubscribeSchema, getZodErrorMessage } from '@/lib/validations'
 import { trackError } from '@/lib/monitoring'
 
 // In-memory store for push subscriptions (keyed by player ID)
@@ -25,18 +26,21 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-
-    if (!body.endpoint || !body.keys) {
+    const parsed = notificationSubscribeSchema.safeParse(body)
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Abonnement invalide' },
+        { error: getZodErrorMessage(parsed.error) },
         { status: 400 }
       )
     }
 
+    const { endpoint, keys } = parsed.data
+    const expirationTime = (body as Record<string, unknown>).expirationTime ?? null
+
     pushSubscriptions.set(session.user.id, {
-      endpoint: body.endpoint,
-      keys: body.keys,
-      expirationTime: body.expirationTime ?? null,
+      endpoint,
+      keys,
+      expirationTime: expirationTime as number | null,
     })
 
     return NextResponse.json({ success: true })

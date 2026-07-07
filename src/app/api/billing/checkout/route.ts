@@ -3,8 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackEvent, trackError } from '@/lib/monitoring'
-
-const VALID_PLANS = ['pro', 'elite'] as const
+import { checkoutSchema, getZodErrorMessage } from '@/lib/validations'
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,8 +12,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
-    // Rate limit: 5 attempts per 15 minutes
-    const rl = rateLimit(`billing:checkout:${session.user.id}`, 5, 15 * 60 * 1000)
+    // Rate limit: 10 req / 15 min
+    const rl = rateLimit(`billing:checkout:${session.user.id}`, 10, 15 * 60 * 1000)
     if (!rl.success) {
       return NextResponse.json(
         { error: 'Trop de tentatives. Réessayez dans quelques minutes.' },
@@ -30,20 +29,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Corps de requête invalide' }, { status: 400 })
     }
 
-    if (
-      typeof body !== 'object' ||
-      body === null ||
-      !('planId' in body) ||
-      typeof (body as Record<string, unknown>).planId !== 'string' ||
-      !(VALID_PLANS as readonly string[]).includes((body as Record<string, unknown>).planId as string)
-    ) {
+    const parsed = checkoutSchema.safeParse(body)
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'planId invalide. Valeurs acceptées: pro, elite' },
+        { error: getZodErrorMessage(parsed.error) },
         { status: 400 },
       )
     }
 
-    const planId = (body as { planId: string }).planId
+    const { planId } = parsed.data
 
     // Log the checkout attempt
     trackEvent('billing:checkout_initiated', {

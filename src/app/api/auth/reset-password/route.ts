@@ -1,20 +1,22 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
+import { trackError } from '@/lib/monitoring'
+import { resetPasswordSchema, getZodErrorMessage } from '@/lib/validations'
 import crypto from 'crypto'
 
 // POST /api/auth/reset-password
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { email } = body as { email?: string }
-
-    if (!email || typeof email !== 'string' || !email.includes('@')) {
+    const result = resetPasswordSchema.safeParse(body)
+    if (!result.success) {
       return NextResponse.json(
-        { error: 'Email invalide.' },
+        { error: getZodErrorMessage(result.error) },
         { status: 400 },
       )
     }
+    const { email } = result.data
 
     // Rate limit by email
     const rateResult = rateLimit(`reset-password:${email}`, 5, 15 * 60 * 1000)
@@ -52,15 +54,18 @@ export async function POST(request: Request) {
       },
     })
 
-    // In production, this would be emailed. For dev, return the token.
-    return NextResponse.json({
+    // Build response — token is NEVER returned in production.
+    // In development, include it for testing convenience.
+    const response: { message: string; resetToken?: string } = {
       message:
-        "Si un compte existe avec cet email, un lien de réinitialisation a été généré.",
-      // Dev mode: return token directly
-      resetToken,
-    })
+        'Si un compte existe avec cet email, un lien de réinitialisation a été envoyé.',
+    }
+    if (process.env.NODE_ENV === 'development') {
+      response.resetToken = resetToken
+    }
+    return NextResponse.json(response)
   } catch (error) {
-    console.error('POST /api/auth/reset-password error:', error)
+    trackError('POST /api/auth/reset-password', error)
     return NextResponse.json(
       { error: 'Erreur serveur.' },
       { status: 500 },

@@ -1,20 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
+import { db } from '@/lib/db'
 import {
   calculateWorkoutXp,
   calculateStreakXp,
-  getAchievementXp,
-  getChallengeXp,
-  getTotalXp,
-  getLevelFromXp,
   type XpReward,
 } from '@/lib/xp'
+import { awardXp } from '@/lib/award-xp'
 
-// POST /api/xp — Award XP to the current user
+// POST /api/xp — Award workout or streak XP to the current user.
+// Achievement and challenge XP are awarded server-side via awardXp() directly.
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
@@ -28,91 +26,43 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
+    const { source } = body as { source?: string }
 
-    // Validate source type
-    const validSources = ['workout', 'streak', 'achievement', 'challenge', 'bonus']
-    if (!body.source || !validSources.includes(body.source)) {
+    // Only workout and streak are allowed from the client.
+    // Achievement and challenge XP must be awarded server-side.
+    const allowedSources = ['workout', 'streak'] as const
+    if (!source || !allowedSources.includes(source as (typeof allowedSources)[number])) {
       return NextResponse.json({ error: 'Source de XP invalide' }, { status: 400 })
     }
 
     const playerId = session.user.id
     let rewards: XpReward[] = []
 
-    switch (body.source) {
-      case 'workout': {
-        const { score, reps, durationSec, isPersonalBest } = body
-        if (typeof score !== 'number' || typeof reps !== 'number') {
-          return NextResponse.json({ error: 'Paramètres manquants: score, reps' }, { status: 400 })
-        }
-        rewards = calculateWorkoutXp(
-          score,
-          Math.max(0, Math.min(999, Math.round(reps))),
-          Math.max(0, Math.round(durationSec || 0)),
-          !!isPersonalBest,
-        )
-        break
+    if (source === 'workout') {
+      const { score, reps, durationSec, isPersonalBest } = body
+      if (typeof score !== 'number' || typeof reps !== 'number') {
+        return NextResponse.json({ error: 'Paramètres manquants: score, reps' }, { status: 400 })
       }
-      case 'streak': {
-        const { streakDays } = body
-        if (typeof streakDays !== 'number' || streakDays < 1) {
-          return NextResponse.json({ error: 'streakDays invalide' }, { status: 400 })
-        }
-        rewards = [calculateStreakXp(Math.min(streakDays, 30))]
-        break
+      rewards = calculateWorkoutXp(
+        score,
+        Math.max(0, Math.min(999, Math.round(reps))),
+        Math.max(0, Math.round(durationSec || 0)),
+        !!isPersonalBest,
+      )
+    } else if (source === 'streak') {
+      const { streakDays } = body
+      if (typeof streakDays !== 'number' || streakDays < 1) {
+        return NextResponse.json({ error: 'streakDays invalide' }, { status: 400 })
       }
-      case 'achievement':
-        rewards = [getAchievementXp()]
-        break
-      case 'challenge':
-        rewards = [getChallengeXp()]
-        break
-      default:
-        return NextResponse.json({ error: 'Source non supportée' }, { status: 400 })
+      rewards = [calculateStreakXp(Math.min(streakDays, 30))]
     }
 
-    const totalXp = getTotalXp(rewards)
-    if (totalXp <= 0) {
-      return NextResponse.json({ error: 'Aucun XP à accorder' }, { status: 400 })
+    const result = await awardXp(playerId, rewards)
+    if (!result) {
+      return NextResponse.json({ error: 'Impossible d\'accorder le XP' }, { status: 500 })
     }
 
-    // Get current player
-    const player = await db.player.findUnique({ where: { id: playerId } })
-    if (!player) {
-      return NextResponse.json({ error: 'Joueur introuvable' }, { status: 404 })
-    }
-
-    const oldLevel = getLevelFromXp(player.xp)
-    const newXp = player.xp + totalXp
-    const newLevel = getLevelFromXp(newXp)
-
-    // Create XP log entries and update player in a transaction
-    await db.$transaction([
-      // Update player XP and level
-      db.player.update({
-        where: { id: playerId },
-        data: { xp: newXp, xpLevel: newLevel },
-      }),
-      // Create XP log entries
-      ...rewards.map((reward) =>
-        db.xpLog.create({
-          data: {
-            playerId,
-            amount: reward.amount,
-            source: reward.source,
-            description: reward.description,
-          },
-        }),
-      ),
-    ])
-
-    return NextResponse.json({
-      xpGained: totalXp,
-      newTotalXp: newXp,
-      oldLevel,
-      newLevel,
-      leveledUp: newLevel > oldLevel,
-      rewards,
-    })
+    return NextResponse.json(result)
   } catch (error) {
     trackError('POST /api/xp', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
@@ -124,6 +74,11 @@ export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+
+  const rl = rateLimit(`xp:get:${session.user.id}`, 30, 15 * 60 * 1000)
+  if (!rl.success) {
+    return NextResponse.json({ error: 'Trop de requêtes. Réessayez plus tard.' }, { status: 429 })
   }
 
   try {

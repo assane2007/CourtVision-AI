@@ -23,6 +23,7 @@ import { BottomNav } from '@/components/shared/bottom-nav'
 import { CATEGORIES_LIST, CATEGORY_META, getCategoryMeta } from '@/lib/constants'
 import { apiFetch, formatDuration } from '@/lib/utils'
 import { containerVariants, itemVariants } from '@/lib/animations'
+import { useTranslation } from '@/components/providers/language-provider'
 
 interface DrillRecord {
   drillId: string
@@ -291,6 +292,7 @@ function EmptyState() {
 
 export function RecordsScreen() {
   const { goBack } = useAppStore()
+  const { t } = useTranslation()
   const [activeCategory, setActiveCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -369,12 +371,12 @@ export function RecordsScreen() {
                 type="button"
                 onClick={goBack}
                 className="p-1 -ml-1 rounded-lg hover:bg-muted transition-colors"
-                aria-label="Retour"
+                aria-label={t('action.back')}
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>
               <Trophy className="h-5 w-5 text-orange-500" />
-              <h1 className="text-base font-semibold">Records Personnels</h1>
+              <h1 className="text-base font-semibold">{t('screen.records')}</h1>
             </div>
           </motion.header>
           <EmptyState />
@@ -402,12 +404,12 @@ export function RecordsScreen() {
               type="button"
               onClick={goBack}
               className="p-1 -ml-1 rounded-lg hover:bg-muted transition-colors"
-              aria-label="Retour"
+              aria-label={t('action.back')}
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
             <Trophy className="h-5 w-5 text-orange-500" />
-            <h1 className="text-base font-semibold">Records Personnels</h1>
+            <h1 className="text-base font-semibold">{t('screen.records')}</h1>
           </div>
         </motion.header>
 

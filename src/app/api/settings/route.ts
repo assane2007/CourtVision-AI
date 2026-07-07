@@ -3,9 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
+import { settingsPatchSchema, getZodErrorMessage } from '@/lib/validations'
 import { trackError } from '@/lib/monitoring'
-
-const VALID_LANGUAGES = ['fr', 'en']
 
 // GET /api/settings — Get user preferences
 export async function GET() {
@@ -48,70 +47,25 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   }
 
-  const rateResult = rateLimit(`settings:patch:${session.user.email}`, 20, 15 * 60 * 1000)
+  // Prevent oversized request bodies
+  const contentLength = req.headers.get('content-length')
+  if (contentLength && parseInt(contentLength) > 10_000) {
+    return NextResponse.json({ error: 'Requête trop volumineuse.' }, { status: 413 })
+  }
+
+  const rateResult = rateLimit(`settings:patch:${session.user.email}`, 10, 15 * 60 * 1000)
   if (!rateResult.success) {
     return NextResponse.json({ error: 'Trop de requêtes. Réessayez dans 15 minutes.' }, { status: 429 })
   }
 
   try {
     const body = await req.json()
-    const updateData: Record<string, unknown> = {}
-
-    // Validate and collect update fields
-    if (body.weeklyGoalSessions !== undefined) {
-      const val = Math.round(Number(body.weeklyGoalSessions))
-      if (val < 1 || val > 14 || isNaN(val)) {
-        return NextResponse.json({ error: 'Objectif hebdomadaire invalide (1-14)' }, { status: 400 })
-      }
-      updateData.weeklyGoalSessions = val
+    const parsed = settingsPatchSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: getZodErrorMessage(parsed.error) }, { status: 400 })
     }
 
-    if (body.weeklyGoalReps !== undefined) {
-      const val = Math.round(Number(body.weeklyGoalReps))
-      if (val < 10 || val > 500 || isNaN(val)) {
-        return NextResponse.json({ error: 'Objectif de répétitions invalide (10-500)' }, { status: 400 })
-      }
-      updateData.weeklyGoalReps = val
-    }
-
-    if (body.preferredRestSec !== undefined) {
-      const val = Math.round(Number(body.preferredRestSec))
-      if (![10, 15, 30, 45, 60, 90, 120].includes(val)) {
-        return NextResponse.json({ error: 'Durée de repos invalide' }, { status: 400 })
-      }
-      updateData.preferredRestSec = val
-    }
-
-    if (body.soundEnabled !== undefined) {
-      updateData.soundEnabled = !!body.soundEnabled
-    }
-
-    if (body.hapticsEnabled !== undefined) {
-      updateData.hapticsEnabled = !!body.hapticsEnabled
-    }
-
-    if (body.language !== undefined) {
-      if (!VALID_LANGUAGES.includes(body.language)) {
-        return NextResponse.json({ error: 'Langue invalide' }, { status: 400 })
-      }
-      updateData.language = body.language
-    }
-
-    if (body.notifStreak !== undefined) {
-      updateData.notifStreak = !!body.notifStreak
-    }
-
-    if (body.notifChallenge !== undefined) {
-      updateData.notifChallenge = !!body.notifChallenge
-    }
-
-    if (body.notifAchievement !== undefined) {
-      updateData.notifAchievement = !!body.notifAchievement
-    }
-
-    if (Object.keys(updateData).length === 0) {
-      return NextResponse.json({ error: 'Aucun champ à mettre à jour' }, { status: 400 })
-    }
+    const updateData: Record<string, unknown> = { ...parsed.data }
 
     const player = await db.player.update({
       where: { id: session.user.id },

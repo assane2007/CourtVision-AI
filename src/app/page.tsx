@@ -23,6 +23,8 @@ const ScoutingScreen = dynamic(() => import('@/components/screens/scouting-scree
 const AICoachScreen = dynamic(() => import('@/components/screens/ai-coach-screen'), { ssr: false })
 const ReactionTrainerScreen = dynamic(() => import('@/components/screens/reaction-trainer-screen'), { ssr: false })
 const PricingScreen = dynamic(() => import('@/components/screens/pricing-screen'), { ssr: false })
+const LeaderboardScreen = dynamic(() => import('@/components/screens/leaderboard-screen'), { ssr: false })
+const RecordsScreen = dynamic(() => import('@/components/screens/records-screen'), { ssr: false })
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false }
@@ -189,6 +191,8 @@ export default function Home() {
                 <FeatureGate flag="reaction_trainer"><ReactionTrainerScreen /></FeatureGate>
               )}
               {currentScreen === 'pricing' && session && <PricingScreen />}
+              {currentScreen === 'leaderboard' && session && <LeaderboardScreen />}
+              {currentScreen === 'records' && session && <RecordsScreen />}
               {!session && currentScreen !== 'auth' && currentScreen !== 'landing' && <AuthScreen />}
             </StaggerChildren>
           </motion.div>

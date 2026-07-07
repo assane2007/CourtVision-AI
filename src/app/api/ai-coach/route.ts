@@ -3,8 +3,22 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
+import { aiCoachSchema, getZodErrorMessage } from '@/lib/validations'
 import ZAI from 'z-ai-web-dev-sdk'
 import { trackError } from '@/lib/monitoring'
+
+/** Strip potential prompt injection from user-provided strings */
+function sanitize(str: string): string {
+  return str
+    .replace(/ignore (all )?(previous|above)/gi, '[filtered]')
+    .replace(/system prompt/gi, '[filtered]')
+    .replace(/you are/gi, '[filtered]')
+    .replace(/act as/gi, '[filtered]')
+    .replace(/pretend/gi, '[filtered]')
+    .replace(/forget/gi, '[filtered]')
+    .replace(/instructions/gi, '[filtered]')
+    .slice(0, 500) // Truncate long inputs
+}
 
 const CATEGORY_LABELS: Record<string, string> = {
   pocket_ball: 'Poche de balle',
@@ -72,11 +86,12 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const userMessage = typeof body.message === 'string' ? body.message.trim() : ''
-
-    if (!userMessage || userMessage.length > 1000) {
-      return NextResponse.json({ error: 'Message invalide (1-1000 caractères)' }, { status: 400 })
+    const parsed = aiCoachSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: getZodErrorMessage(parsed.error) }, { status: 400 })
     }
+
+    const userMessage = parsed.data.message
 
     const playerId = session.user.id
 
@@ -160,10 +175,10 @@ export async function POST(req: NextRequest) {
       .join('\n') || 'Aucune donnée de catégorie'
 
     const systemPrompt = `Tu es un coach de basket professionnel francophone. Tu connais bien ce joueur:
-- Nom: ${playerName}
+- Nom: ${sanitize(playerName)}
 - Niveau: ${playerLevel} (XP Level ${xpLevel})
-- Position: ${position}
-- Objectif: ${goals}
+- Position: ${sanitize(position)}
+- Objectif: ${sanitize(goals)}
 - Dernières séances:
 ${sessionsSummary}
 - Stats par catégorie:

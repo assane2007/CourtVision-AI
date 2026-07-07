@@ -25,6 +25,7 @@ import { Badge } from '@/components/ui/badge'
 import { SwipeToGoBack } from '@/components/shared/swipe-back'
 import { useAppStore } from '@/stores/app'
 import { apiFetch } from '@/lib/utils'
+import { BottomNav } from '@/components/shared/bottom-nav'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -579,7 +580,7 @@ export default function ReactionTrainerScreen() {
 
   return (
     <SwipeToGoBack>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background pb-24">
         {/* Header */}
         <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-border/50 px-4 py-3">
           <div className="flex items-center gap-3 max-w-lg md:max-w-3xl lg:max-w-4xl mx-auto">
@@ -1176,6 +1177,7 @@ export default function ReactionTrainerScreen() {
           <div className="h-4" />
         </div>
       </div>
+      <BottomNav />
     </SwipeToGoBack>
   )
 }

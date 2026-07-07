@@ -53,6 +53,7 @@ import { cn, apiFetch } from '@/lib/utils'
 import { containerVariants, itemVariants } from '@/lib/animations'
 import { getLevelInfo, getLevelColor, getLevelBgColor } from '@/lib/xp'
 import { toast } from 'sonner'
+import { useTranslation } from '@/components/providers/language-provider'
 
 interface PlayerData {
   id?: string
@@ -122,6 +123,7 @@ const goalsLabels: Record<string, string> = {
 
 // ── Component ───────────────────────────────────────────────────────
 export function ProfileScreen() {
+  const { t } = useTranslation()
   const { navigate } = useAppStore()
   const queryClient = useQueryClient()
   // ── Fetch player ────────────────────────────────────────────────
@@ -264,7 +266,7 @@ export function ProfileScreen() {
           <div className="max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto flex items-center justify-between h-14 px-4">
             <div className="flex items-center gap-2.5">
               <User className="h-5 w-5 text-orange-500" />
-              <h1 className="text-base font-semibold">Mon Profil</h1>
+              <h1 className="text-base font-semibold">{t('nav.profile')}</h1>
             </div>
             <Button
               variant="ghost"
@@ -282,7 +284,7 @@ export function ProfileScreen() {
               {isEditing ? (
                 <>
                   <X className="h-3.5 w-3.5" />
-                  Annuler
+                  {t('action.cancel')}
                 </>
               ) : (
                 <>
@@ -548,7 +550,7 @@ export function ProfileScreen() {
                       disabled={updateMutation.isPending}
                       className="w-full h-11 bg-orange-500 hover:bg-orange-600 shadow-md shadow-orange-500/20"
                     >
-                      {updateMutation.isPending ? 'Enregistrement...' : 'Enregistrer'}
+                      {updateMutation.isPending ? t('action.save') + '...' : t('action.save')}
                     </Button>
                   </CardContent>
                 </Card>
@@ -674,7 +676,7 @@ export function ProfileScreen() {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium group-hover:text-orange-600 transition-colors">
-                      Mes Succès
+                      {t('screen.achievements')}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       Voir vos badges et accomplissements
@@ -699,7 +701,7 @@ export function ProfileScreen() {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium group-hover:text-orange-600 transition-colors">
-                      Paramètres
+                      {t('screen.settings')}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       Notifications, son, préférences
@@ -794,7 +796,7 @@ export function ProfileScreen() {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel disabled={deleteAccount.isPending}>
-                  Annuler
+                  {t('action.cancel')}
                 </AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleDeleteAccount}

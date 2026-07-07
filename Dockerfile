@@ -4,13 +4,13 @@
 # Builds a minimal production image for Next.js 16 + Bun + SQLite
 
 # ---- Stage 1: Dependencies ----
-FROM oven/bun:1 AS deps
+FROM oven/bun:1.2.8 AS deps
 WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production=false
 
 # ---- Stage 2: Builder ----
-FROM oven/bun:1 AS builder
+FROM oven/bun:1.2.8 AS builder
 WORKDIR /app
 
 # Copy installed node_modules from deps stage
@@ -28,7 +28,7 @@ RUN bunx prisma generate
 RUN bun run build
 
 # ---- Stage 3: Runner (production) ----
-FROM oven/bun:1 AS runner
+FROM oven/bun:1.2.8 AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
@@ -59,7 +59,7 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Health check (matches docker-compose.yml and /api/health endpoint)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-  CMD curl -f http://localhost:3000/api/health || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:3000/api/health || exit 1
 
 CMD ["bun", "server.js"]

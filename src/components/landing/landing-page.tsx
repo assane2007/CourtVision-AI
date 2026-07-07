@@ -16,6 +16,7 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import type { Screen } from '@/stores/app'
+import { useTranslation } from '@/components/providers/language-provider'
 
 // ── Props ───────────────────────────────────────────────────────────────────────
 
@@ -208,6 +209,7 @@ const stats = [
 // ── Main Component ──────────────────────────────────────────────────────────────
 
 export default function LandingPage({ onNavigate }: LandingPageProps) {
+  const { t } = useTranslation()
   const heroRef = useRef<HTMLDivElement>(null)
   const featuresRef = useRef<HTMLDivElement>(null)
   const stepsRef = useRef<HTMLDivElement>(null)
@@ -470,7 +472,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             size="lg"
             className="h-13 px-8 text-base font-semibold bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-lg shadow-orange-500/25 transition-all hover:shadow-orange-500/40 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
           >
-            Créer un compte
+            {t('action.createAccount')}
             <ArrowRight className="size-5" />
           </Button>
         </motion.div>

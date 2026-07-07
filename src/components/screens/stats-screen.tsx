@@ -41,6 +41,7 @@ import { AnimatedNumber } from '@/components/shared/animated-number'
 import { CATEGORY_META, getCategoryLabel } from '@/lib/constants'
 import { apiFetch } from '@/lib/utils'
 import { containerVariants, itemVariants } from '@/lib/animations'
+import { useTranslation } from '@/components/providers/language-provider'
 
 // ── Day name mapping ────────────────────────────────────────────────
 const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
@@ -110,6 +111,7 @@ interface StatsResponse {
 
 export function StatsScreen() {
   const { navigate } = useAppStore()
+  const { t } = useTranslation()
 
   // ── Fetch stats ─────────────────────────────────────────────────
   const { data: stats, isLoading: statsLoading } = useQuery<StatsResponse>({
@@ -188,25 +190,25 @@ export function StatsScreen() {
             <StatCard
               icon={<Flame className="h-5 w-5 text-orange-500" />}
               value={stats?.totalSessions ?? 0}
-              label="Séances Totales"
+              label={t('stats.totalSessions')}
               color="orange"
             />
             <StatCard
               icon={<Activity className="h-5 w-5 text-emerald-500" />}
               value={stats?.totalReps ?? 0}
-              label="Répétitions"
+              label={t('stats.repetitions')}
               color="emerald"
             />
             <StatCard
               icon={<TrendingUp className="h-5 w-5 text-sky-500" />}
               value={stats?.avgScore ? `${stats.avgScore}` : '0'}
-              label="Score Moyen"
+              label={t('stats.averageScore')}
               color="sky"
             />
             <StatCard
               icon={<Calendar className="h-5 w-5 text-violet-500" />}
               value={stats?.weekSessions ?? 0}
-              label="Séances / Semaine"
+              label={t('stats.sessionsPerWeek')}
               color="violet"
             />
           </motion.div>
@@ -238,7 +240,7 @@ export function StatsScreen() {
               <CardHeader className="pb-2 px-5 pt-5">
                 <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
                   <BarChart3 className="h-4 w-4 text-orange-500" />
-                  Activité Hebdomadaire
+                  {t('stats.weeklyActivity')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-3 pb-5">
@@ -287,7 +289,7 @@ export function StatsScreen() {
                 <CardHeader className="pb-2 px-5 pt-5">
                   <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
                     <Trophy className="h-4 w-4 text-orange-500" />
-                    Performance par Catégorie
+                    {t('stats.categoryPerformance')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-5 pb-5 space-y-4">
@@ -347,7 +349,7 @@ export function StatsScreen() {
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-orange-500" />
-                      Séances Récentes
+                      {t('stats.recentSessions')}
                     </CardTitle>
                     {totalSessionsCount !== undefined && (
                       <span className="text-xs text-muted-foreground">
@@ -414,7 +416,7 @@ export function StatsScreen() {
                         className="w-full"
                       >
                         <ChevronDown className="h-4 w-4 mr-1" />
-                        Charger plus
+                        {t('action.loadMore')}
                       </Button>
                     </div>
                   )}
@@ -461,7 +463,7 @@ export function StatsScreen() {
                   🏀
                 </motion.div>
               </div>
-              <h3 className="font-semibold text-lg mb-1">Aucune donnée</h3>
+              <h3 className="font-semibold text-lg mb-1">{t('empty.noData')}</h3>
               <p className="text-sm text-muted-foreground mb-6 max-w-[260px]">
                 Commencez votre premier entraînement pour suivre votre progression et voir vos statistiques.
               </p>

@@ -3,20 +3,25 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
+import { reactionSchema, getZodErrorMessage } from '@/lib/validations'
 import { trackError } from '@/lib/monitoring'
+import { awardXp } from '@/lib/award-xp'
 
 // ─── GET /api/reaction ─────────────────────────────────────────────────────────
 // Returns player's reaction history (last 20 sessions) + personal bests per type
-
-interface RoundInput {
-  reactionMs: number
-  correct: boolean
-}
 
 export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+
+  const rl = rateLimit(`reaction:get:${session.user.id}`, 30, 15 * 60 * 1000)
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: 'Trop de requêtes. Réessayez plus tard.' },
+      { status: 429 },
+    )
   }
 
   try {
@@ -122,16 +127,12 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { type, rounds }: { type: string; rounds: RoundInput[] } = body
-
-    if (!type || !Array.isArray(rounds) || rounds.length === 0) {
-      return NextResponse.json({ error: 'Données invalides' }, { status: 400 })
+    const parsed = reactionSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: getZodErrorMessage(parsed.error) }, { status: 400 })
     }
 
-    const validTypes = ['direction', 'color', 'shot_clock', 'reflex']
-    if (!validTypes.includes(type)) {
-      return NextResponse.json({ error: 'Type de jeu invalide' }, { status: 400 })
-    }
+    const { type, rounds } = parsed.data
 
     // Calculate aggregate stats
     const totalMs = rounds.reduce((s, r) => s + r.reactionMs, 0)
@@ -153,19 +154,14 @@ export async function POST(req: NextRequest) {
     let xpAwarded = 0
     if (avgMs < 400 && accuracy >= 70) {
       xpAwarded = avgMs < 250 ? 30 : avgMs < 300 ? 20 : 10
-      try {
-        await fetch(`${process.env.NEXTAUTH_URL || ''}/api/xp`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            source: 'challenge',
-            description: `Reaction Trainer: ${type} — ${avgMs}ms moyen`,
-            amount: xpAwarded,
-          }),
-        })
-      } catch {
-        // Non-blocking: XP award failure doesn't break the response
-      }
+      const result = await awardXp(session.user.id, [
+        {
+          amount: xpAwarded,
+          source: 'challenge' as const,
+          description: `Reaction Trainer: ${type} — ${avgMs}ms moyen`,
+        },
+      ])
+      xpAwarded = result?.xpGained ?? 0
     }
 
     return NextResponse.json({

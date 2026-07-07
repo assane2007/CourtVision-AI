@@ -655,7 +655,7 @@ export default function HomeScreen() {
         {/* ---------------------------------------------------------------- */}
         {/* Progress Rings                                                  */}
         {/* ---------------------------------------------------------------- */}
-        <section aria-label="Statistiques" className="mb-6">
+        <section aria-label={t('nav.stats')} className="mb-6">
           {statsLoading ? (
             <RingsSkeleton />
           ) : (
@@ -771,7 +771,7 @@ export default function HomeScreen() {
         {/* ---------------------------------------------------------------- */}
         {/* Recent Activity                                                 */}
         {/* ---------------------------------------------------------------- */}
-        <section aria-label="Activité récente" className="mb-8">
+        <section aria-label={t('home.recentActivity')} className="mb-8">
           <motion.div
             variants={itemVariants}
             className="mb-3 flex items-center gap-2"

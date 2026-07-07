@@ -17,9 +17,11 @@ import {
   Star,
   CircleDot,
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/stores/app'
 import { apiFetch } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useTranslation } from '@/components/providers/language-provider'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -174,6 +176,7 @@ const dotVariants: Variants = {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function OnboardingScreen() {
+  const { t, td } = useTranslation()
   const navigate = useAppStore((s) => s.navigate)
   const [step, setStep] = useState(0)
   const [direction, setDirection] = useState(1)
@@ -405,18 +408,23 @@ export default function OnboardingScreen() {
           {/* Back button (hidden on step 0) */}
           <AnimatePresence>
             {step > 0 && (
-              <motion.button
+              <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
-                onClick={goBack}
-                className="flex h-11 items-center gap-2 rounded-xl bg-white/5 px-4 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-                aria-label="Retour"
               >
-                <ArrowLeft className="h-4 w-4" />
-                <span className="hidden sm:inline">Retour</span>
-              </motion.button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={goBack}
+                  className="text-white/70 hover:text-white hover:bg-white/10"
+                  aria-label={t('action.back')}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('action.back')}</span>
+                </Button>
+              </motion.div>
             )}
           </AnimatePresence>
 
@@ -424,36 +432,32 @@ export default function OnboardingScreen() {
           {step === 0 && <div />}
 
           {/* Next / Start button */}
-          <motion.button
+          <motion.div
             whileHover={canProceed() ? { scale: 1.03 } : {}}
             whileTap={canProceed() ? { scale: 0.97 } : {}}
-            onClick={step < 2 ? goNext : handleComplete}
-            disabled={!canProceed() || isSubmitting}
-            className={`
-              ml-auto flex h-11 items-center gap-2 rounded-xl px-6 text-sm font-semibold
-              transition-all duration-200
-              ${
-                canProceed() && !isSubmitting
-                  ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25 hover:bg-orange-400'
-                  : 'bg-white/5 text-white/30 cursor-not-allowed'
-              }
-            `}
           >
-            {isSubmitting ? (
-              <motion.div
-                className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
-              />
-            ) : step < 2 ? (
-              <>
-                Suivant
-                <ChevronRight className="h-4 w-4" />
-              </>
-            ) : (
-              'Commencer'
-            )}
-          </motion.button>
+            <Button
+              size="lg"
+              onClick={step < 2 ? goNext : handleComplete}
+              disabled={!canProceed() || isSubmitting}
+              className="ml-auto"
+            >
+              {isSubmitting ? (
+                <motion.div
+                  className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+                />
+              ) : step < 2 ? (
+                <>
+                  Suivant
+                  <ChevronRight className="h-4 w-4" />
+                </>
+              ) : (
+                t('action.start')
+              )}
+            </Button>
+          </motion.div>
         </div>
       </div>
     </div>

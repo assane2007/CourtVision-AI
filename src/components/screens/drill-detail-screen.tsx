@@ -25,9 +25,11 @@ import { DrillDemoAnimation } from '@/components/drill-demo-animation'
 import { apiFetch } from '@/lib/utils'
 import { containerVariants, itemVariants } from '@/lib/animations'
 import { toast } from 'sonner'
+import { useTranslation } from '@/components/providers/language-provider'
 
 // ── Component ───────────────────────────────────────────────────────
 export function DrillDetailScreen() {
+  const { t, tc, td } = useTranslation()
   const { selectedDrillId, goBack, navigate } = useAppStore()
   const queryClient = useQueryClient()
 
@@ -92,7 +94,7 @@ export function DrillDetailScreen() {
           <p className="text-muted-foreground">Exercice introuvable</p>
           <Button variant="outline" onClick={goBack}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Retour
+            {t('action.back')}
           </Button>
         </div>
         <BottomNav />
@@ -101,7 +103,7 @@ export function DrillDetailScreen() {
   }
 
   const diff = DIFFICULTY_CONFIG[drill.difficulty] ?? DIFFICULTY_CONFIG.beginner
-  const categoryLabel = getCategoryLabel(drill.category)
+  const categoryLabel = tc(drill.category)
   const instructions: string[] = drill.instructionsFr
     ? drill.instructionsFr.split('\n').filter((s: string) => s.trim())
     : []
@@ -180,7 +182,7 @@ export function DrillDetailScreen() {
                         variant="outline"
                         className={`text-xs font-medium ${diff.className}`}
                       >
-                        {diff.label}
+                        {td(drill.difficulty)}
                       </Badge>
                     </div>
                   </div>
@@ -216,7 +218,7 @@ export function DrillDetailScreen() {
                       <Zap className="h-4 w-4 text-orange-500" />
                     </div>
                     <div>
-                      <p className="font-semibold capitalize">{diff.label}</p>
+                      <p className="font-semibold capitalize">{td(drill.difficulty)}</p>
                       <p className="text-xs text-muted-foreground">Niveau</p>
                     </div>
                   </div>

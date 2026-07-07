@@ -29,6 +29,7 @@ import { apiFetch } from '@/lib/utils'
 import { containerVariants, itemVariants } from '@/lib/animations'
 import { getLevelInfo, getLevelColor } from '@/lib/xp'
 import { cn } from '@/lib/utils'
+import { BottomNav } from '@/components/shared/bottom-nav'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -771,6 +772,7 @@ export function ScoutingScreen() {
           </motion.div>
         )}
       </div>
+      <BottomNav />
     </SwipeToGoBack>
   )
 }

@@ -112,6 +112,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
+    const rl = rateLimit(`sessions:get:${session.user.id}`, 30, 15 * 60 * 1000)
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Trop de requêtes. Réessayez plus tard.' }, { status: 429 })
+    }
+
     const { searchParams } = new URL(req.url)
     const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '20'), 1), 100)
     const cursor = searchParams.get('cursor')

@@ -18,7 +18,7 @@ interface NavigationState {
 }
 
 export const useNavigation = create<NavigationState>((set) => ({
-  currentScreen: 'auth',
+  currentScreen: 'landing' as Screen,
   selectedDrillId: null,
   screenHistory: [],
   sidebarOpen: false,

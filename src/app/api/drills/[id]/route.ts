@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { rateLimit } from '@/lib/rate-limit'
 import { cacheInvalidatePattern } from '@/lib/cache'
 import { trackError } from '@/lib/monitoring'
 
@@ -14,6 +15,11 @@ export async function GET(
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
+    const rl = rateLimit(`drills:get:${session.user.id}`, 30, 15 * 60 * 1000)
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Trop de requêtes. Réessayez plus tard.' }, { status: 429 })
     }
 
     const { id } = await params
@@ -54,6 +60,11 @@ export async function DELETE(
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
+    const rl = rateLimit(`drills:delete:${session.user.id}`, 20, 15 * 60 * 1000)
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Trop de requêtes. Réessayez plus tard.' }, { status: 429 })
     }
 
     const { id } = await params

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { rateLimit } from '@/lib/rate-limit'
 import { withCache } from '@/lib/cache'
 import { trackError } from '@/lib/monitoring'
 
@@ -14,6 +15,11 @@ export async function GET() {
     }
 
     const playerId = session.user.id
+
+    const rl = rateLimit(`recommendations:get:${playerId}`, 30, 15 * 60 * 1000)
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Trop de requêtes. Réessayez plus tard.' }, { status: 429 })
+    }
 
     const result = await withCache(`recommendations:${playerId}`, 3 * 60 * 1000, async () => {
       const [player, allDrills, pastDrills] = await Promise.all([
