@@ -21,6 +21,7 @@ import {
   Trash2,
   Loader2,
   FlaskConical,
+  RefreshCw,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -106,6 +107,8 @@ export function SettingsScreen() {
   const {
     data: settingsData,
     isLoading: settingsLoading,
+    isError: settingsError,
+    refetch: refetchSettings,
   } = useQuery<{ settings: UserSettings }>({
     queryKey: ['settings'],
     queryFn: () => apiFetch('/api/settings'),
@@ -210,6 +213,15 @@ export function SettingsScreen() {
       </header>
 
       <main className="max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto px-4 pt-4 pb-24">
+        {settingsError && !settingsLoading ? (
+          <div className="flex items-center justify-between rounded-xl border border-destructive/50 bg-destructive/5 px-4 py-3 mb-4">
+            <p className="text-sm text-destructive">Erreur de chargement des paramètres</p>
+            <Button variant="outline" size="sm" onClick={() => refetchSettings()}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Réessayer
+            </Button>
+          </div>
+        ) : null}
         {settingsLoading ? (
           <SettingsSkeleton />
         ) : (

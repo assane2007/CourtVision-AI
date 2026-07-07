@@ -411,7 +411,7 @@ export default function AuthScreen() {
   const floatingBalls = useMemo(() => floatingBasketballs, [])
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3d0f] p-4">
+    <div className="dark min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3d0f] p-4">
       {/* ── Basketball court lines SVG background ──────────────── */}
       <div className="absolute inset-0 pointer-events-none z-0">
         <CourtLinesSVG />
@@ -451,18 +451,18 @@ export default function AuthScreen() {
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         className="relative z-10 w-full max-w-md md:max-w-lg lg:max-w-xl"
       >
-        <Card className="relative bg-white/[0.08] backdrop-blur-xl border-white/20 shadow-2xl shadow-black/30 py-0 gap-0 overflow-hidden shadow-[0_0_80px_rgba(249,115,22,0.15)]">
+        <Card className="relative bg-card/80 backdrop-blur-xl border-border shadow-lg py-0 gap-0 overflow-hidden shadow-[0_0_80px_rgba(249,115,22,0.15)]">
           {/* ── Orange gradient top line ──────────────────────────── */}
           <div className="h-1 w-full bg-gradient-to-r from-orange-500 to-amber-400" />
 
           {/* ── Logo / Header ─────────────────────────────────────── */}
           <CardHeader className="flex flex-col items-center gap-3 pt-8 pb-2 px-6">
             <div className="flex items-center justify-center size-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/25">
-              <Dribbble className="size-7 text-white" strokeWidth={1.8} />
+              <Dribbble className="size-7 dark:text-white text-foreground" strokeWidth={1.8} />
             </div>
             <div className="text-center space-y-1">
               <h1 className="text-2xl font-bold tracking-tight">
-                <span className="text-white">🏀 CourtVision </span>
+                <span className="dark:text-white text-foreground">🏀 CourtVision </span>
                 <span className="bg-gradient-to-r from-orange-400 to-amber-300 bg-clip-text text-transparent">
                   AI
                 </span>
@@ -510,7 +510,7 @@ export default function AuthScreen() {
                       disabled={loginLoading}
                       required
                       autoComplete="email"
-                      className="h-11 bg-white/5 border-white/15 text-white placeholder:text-white/40 focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
+                      className="h-11 bg-card/5 border-border/15 dark:text-white text-foreground placeholder:text-muted-foreground focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
                     />
                   </div>
 
@@ -542,7 +542,7 @@ export default function AuthScreen() {
                   <Button
                     type="submit"
                     disabled={loginLoading}
-                    className="w-full h-11 text-sm font-semibold bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
+                    className="w-full h-11 text-sm font-semibold bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 dark:text-white text-foreground shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
                   >
                     {loginLoading ? (
                       <>
@@ -575,7 +575,7 @@ export default function AuthScreen() {
                       disabled={signupLoading}
                       required
                       autoComplete="name"
-                      className="h-11 bg-white/5 border-white/15 text-white placeholder:text-white/40 focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
+                      className="h-11 bg-card/5 border-border/15 dark:text-white text-foreground placeholder:text-muted-foreground focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
                     />
                   </div>
 
@@ -595,7 +595,7 @@ export default function AuthScreen() {
                       disabled={signupLoading}
                       required
                       autoComplete="email"
-                      className="h-11 bg-white/5 border-white/15 text-white placeholder:text-white/40 focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
+                      className="h-11 bg-card/5 border-border/15 dark:text-white text-foreground placeholder:text-muted-foreground focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
                     />
                   </div>
 
@@ -626,7 +626,7 @@ export default function AuthScreen() {
                   <Button
                     type="submit"
                     disabled={signupLoading}
-                    className="w-full h-11 text-sm font-semibold bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
+                    className="w-full h-11 text-sm font-semibold bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 dark:text-white text-foreground shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
                   >
                     {signupLoading ? (
                       <>
@@ -653,7 +653,7 @@ export default function AuthScreen() {
 
       {/* ── Password Reset Dialog ──────────────────────────────────── */}
       <Dialog open={resetOpen} onOpenChange={(open) => { if (!open) setResetOpen(false) }}>
-        <DialogContent className="bg-[#1a1a2e] border-white/15 text-white sm:max-w-md">
+        <DialogContent className="bg-[#1a1a2e] border-border/15 dark:text-white text-foreground sm:max-w-md">
           <AnimatePresence mode="wait">
             {/* Step 1: Email input */}
             {resetStep === 'email' && (
@@ -665,7 +665,7 @@ export default function AuthScreen() {
                 transition={{ duration: 0.2 }}
               >
                 <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2 text-white">
+                  <DialogTitle className="flex items-center gap-2 dark:text-white text-foreground">
                     <KeyRound className="h-5 w-5 text-orange-400" />
                     Réinitialiser le mot de passe
                   </DialogTitle>
@@ -690,7 +690,7 @@ export default function AuthScreen() {
                       disabled={resetLoading}
                       required
                       autoComplete="email"
-                      className="h-11 bg-white/5 border-white/15 text-white placeholder:text-white/40 focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
+                      className="h-11 bg-card/5 border-border/15 dark:text-white text-foreground placeholder:text-muted-foreground focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
                     />
                   </div>
                   {resetError && (
@@ -699,7 +699,7 @@ export default function AuthScreen() {
                   <Button
                     type="submit"
                     disabled={resetLoading || !resetEmail}
-                    className="w-full h-11 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold transition-all cursor-pointer"
+                    className="w-full h-11 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 dark:text-white text-foreground font-semibold transition-all cursor-pointer"
                   >
                     {resetLoading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -721,7 +721,7 @@ export default function AuthScreen() {
                 transition={{ duration: 0.2 }}
               >
                 <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2 text-white">
+                  <DialogTitle className="flex items-center gap-2 dark:text-white text-foreground">
                     <KeyRound className="h-5 w-5 text-orange-400" />
                     Token de réinitialisation
                   </DialogTitle>
@@ -776,7 +776,7 @@ export default function AuthScreen() {
                           placeholder="Min. 8 caractères"
                           disabled={resetLoading}
                           required
-                          className="h-11 bg-white/5 border-white/15 text-white placeholder:text-white/40 focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
+                          className="h-11 bg-card/5 border-border/15 dark:text-white text-foreground placeholder:text-muted-foreground focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
                         />
                       </div>
                       <div className="space-y-2">
@@ -794,7 +794,7 @@ export default function AuthScreen() {
                           placeholder="Confirmer"
                           disabled={resetLoading}
                           required
-                          className="h-11 bg-white/5 border-white/15 text-white placeholder:text-white/40 focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
+                          className="h-11 bg-card/5 border-border/15 dark:text-white text-foreground placeholder:text-muted-foreground focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
                         />
                       </div>
                       {resetError && (
@@ -805,7 +805,7 @@ export default function AuthScreen() {
                           type="button"
                           variant="ghost"
                           onClick={() => setResetStep('email')}
-                          className="h-11 text-white/60 hover:text-white hover:bg-white/5 cursor-pointer"
+                          className="h-11 dark:text-white/60 text-foreground/60 hover:dark:text-white hover:text-foreground hover:bg-card/5 cursor-pointer"
                         >
                           <ArrowLeft className="size-4 mr-1.5" />
                           {t('action.back')}
@@ -813,7 +813,7 @@ export default function AuthScreen() {
                         <Button
                           type="submit"
                           disabled={resetLoading || !resetNewPassword || !resetConfirmPassword}
-                          className="flex-1 h-11 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold transition-all cursor-pointer"
+                          className="flex-1 h-11 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 dark:text-white text-foreground font-semibold transition-all cursor-pointer"
                         >
                           {resetLoading ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -841,14 +841,14 @@ export default function AuthScreen() {
                   <CheckCircle2 className="h-8 w-8 text-emerald-400" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">Mot de passe mis à jour !</h3>
+                  <h3 className="text-lg font-bold dark:text-white text-foreground">Mot de passe mis à jour !</h3>
                   <p className="text-sm text-white/50 mt-1">
                     Tu peux maintenant te connecter avec ton nouveau mot de passe.
                   </p>
                 </div>
                 <Button
                   onClick={handleResetSuccess}
-                  className="h-11 px-8 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold transition-all cursor-pointer"
+                  className="h-11 px-8 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 dark:text-white text-foreground font-semibold transition-all cursor-pointer"
                 >
                   Retour à la connexion
                 </Button>

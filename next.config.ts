@@ -33,9 +33,9 @@ const nextConfig: NextConfig = {
             value: "nosniff",
           },
           {
-            /* Replaced deprecated ALLOW-FROM with CSP frame-ancestors */
+            /* Aligned with CSP frame-ancestors 'self' */
             key: "X-Frame-Options",
-            value: "DENY",
+            value: "SAMEORIGIN",
           },
           {
             key: "Referrer-Policy",

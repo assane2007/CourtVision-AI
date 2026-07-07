@@ -25,7 +25,7 @@ import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppStore } from '@/stores/app'
 import { SwipeToGoBack } from '@/components/shared/swipe-back'
-import { apiFetch } from '@/lib/utils'
+import { apiFetch, formatLocaleDate } from '@/lib/utils'
 import { containerVariants, itemVariants } from '@/lib/animations'
 import { getLevelInfo, getLevelColor } from '@/lib/xp'
 import { cn } from '@/lib/utils'
@@ -432,7 +432,7 @@ export function ScoutingScreen() {
   const levelInfo = data ? getLevelInfo(data.player.xp) : null
 
   const lastActiveFormatted = data?.lastActive
-    ? new Date(data.lastActive).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
+    ? formatLocaleDate(data.lastActive, language, {
         day: 'numeric',
         month: 'long',
         year: 'numeric',

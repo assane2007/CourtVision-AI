@@ -11,6 +11,7 @@ import {
   Zap,
   ChevronRight,
   ListOrdered,
+  RefreshCw,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -34,7 +35,7 @@ export function DrillDetailScreen() {
   const queryClient = useQueryClient()
 
   // ── Fetch single drill ────────────────────────────────────────────
-  const { data, isLoading } = useQuery<{
+  const { data, isLoading, isError, refetch: refetchDrill } = useQuery<{
     drill: { id: string; name: string; nameFr: string; category: string; difficulty: string; description: string; descriptionFr: string; instructions: string; instructionsFr: string; durationSec: number; targetReps: number; icon: string }
     isFavorited: boolean
   }>({
@@ -86,6 +87,28 @@ export function DrillDetailScreen() {
     )
   }
 
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center pb-24">
+        <div className="text-center space-y-3 px-4">
+          <div className="text-4xl">⚠️</div>
+          <p className="text-muted-foreground">Erreur lors du chargement de l&apos;exercice</p>
+          <Button variant="outline" size="sm" onClick={() => refetchDrill()}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Réessayer
+          </Button>
+          <div className="pt-2">
+            <Button variant="ghost" size="sm" onClick={goBack}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {t('action.back')}
+            </Button>
+          </div>
+        </div>
+        <BottomNav />
+      </div>
+    )
+  }
+
   if (!drill) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center pb-24">
@@ -127,6 +150,7 @@ export function DrillDetailScreen() {
               size="icon"
               onClick={goBack}
               className="rounded-lg -ml-2"
+              aria-label={t('action.back')}
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>

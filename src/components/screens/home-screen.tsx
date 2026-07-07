@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSession } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -19,7 +19,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppStore } from '@/stores/app'
-import { cn, apiFetch } from '@/lib/utils'
+import { cn, apiFetch, formatLocaleDate } from '@/lib/utils'
 import { containerVariants, itemVariants } from '@/lib/animations'
 import { getLevelInfo, getLevelColor, getLevelBgColor } from '@/lib/xp'
 import { useTranslation } from '@/components/providers/language-provider'
@@ -90,14 +90,6 @@ interface FullPlayerData {
   xp?: number
   xpLevel?: number
   [key: string]: unknown
-}
-
-interface XpAwardResponse {
-  xpGained: number
-  newTotalXp: number
-  oldLevel: number
-  newLevel: number
-  leveledUp: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -256,7 +248,7 @@ function XpGainPopup({
 function SessionItem({ session }: { session: Session }) {
   const { t, language } = useTranslation()
   const date = new Date(session.startedAt)
-  const formattedDate = date.toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
+  const formattedDate = formatLocaleDate(date, language, {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
@@ -309,7 +301,7 @@ function SessionItem({ session }: { session: Session }) {
 // ---------------------------------------------------------------------------
 export default function HomeScreen() {
   const { data: session } = useSession()
-  const { navigate, selectDrill, workoutResult, setWorkoutResult } = useAppStore()
+  const { navigate, selectDrill, workoutResult, xpAwarded, clearWorkoutState, setWorkoutResult } = useAppStore()
   const queryClient = useQueryClient()
   const hasAwardedRef = useRef(false)
   const { t, language } = useTranslation()
@@ -318,7 +310,7 @@ export default function HomeScreen() {
   const userInitial = userName.charAt(0).toUpperCase()
 
   // ---- Data fetching ----
-  const { data: playerXp, isLoading: playerXpLoading } = useQuery({
+  const { data: playerXp, isLoading: playerXpLoading, isError: playerXpError } = useQuery({
     queryKey: ['player-xp'],
     queryFn: () => apiFetch<FullPlayerData>('/api/player'),
     staleTime: 1000 * 60 * 2,
@@ -337,7 +329,7 @@ export default function HomeScreen() {
   })
 
   // 28-day stats for streak calendar
-  const { data: calendarStats, isLoading: calendarLoading } = useQuery<{
+  const { data: calendarStats, isLoading: calendarLoading, isError: calendarError } = useQuery<{
     dailyStats: DailyStat[]
   }>({
     queryKey: ['stats', 'calendar'],
@@ -345,7 +337,7 @@ export default function HomeScreen() {
     staleTime: 1000 * 60 * 5,
   })
 
-  const { data: recommendations, isLoading: recsLoading } = useQuery<
+  const { data: recommendations, isLoading: recsLoading, isError: recsError } = useQuery<
     RecommendationDrill[]
   >({
     queryKey: ['recommendations'],
@@ -353,7 +345,7 @@ export default function HomeScreen() {
     staleTime: 1000 * 60 * 5,
   })
 
-  const { data: sessionsData, isLoading: sessionsLoading } = useQuery<{
+  const { data: sessionsData, isLoading: sessionsLoading, isError: sessionsError } = useQuery<{
     sessions: Session[]
   }>({
     queryKey: ['sessions'],
@@ -363,43 +355,35 @@ export default function HomeScreen() {
 
   const sessions = sessionsData?.sessions
 
-  // ---- XP Award Mutation ----
+  // ---- XP Popup (server-awarded, read from store) ----
+  // XP is now awarded server-side in POST /api/sessions.
+  // camera-workout stores the result in xpAwarded via setXpAwarded().
   const [xpPopup, setXpPopup] = useState<{
     xpGained: number
     leveledUp: boolean
   } | null>(null)
 
-  const awardXpMutation = useMutation<XpAwardResponse, Error, { source: string; [key: string]: unknown }>({
-    mutationFn: (data) =>
-      apiFetch<XpAwardResponse>('/api/xp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      }),
-    onSuccess: (data) => {
-      setXpPopup({ xpGained: data.xpGained, leveledUp: data.leveledUp })
-      queryClient.invalidateQueries({ queryKey: ['player-xp'] })
-    },
-  })
-
-  // Detect workout result and award XP
   useEffect(() => {
-    if (workoutResult && !hasAwardedRef.current) {
+    if (xpAwarded && !hasAwardedRef.current) {
       hasAwardedRef.current = true
-      const bestDrill = workoutResult.drills.reduce(
-        (best, d) => (d.score > best.score ? d : best),
-        workoutResult.drills[0],
-      )
-      awardXpMutation.mutate({
-        source: 'workout',
-        score: workoutResult.totalScore,
-        reps: workoutResult.totalReps,
-        durationSec: workoutResult.totalDurationSec,
-        isPersonalBest: bestDrill?.isPersonalBest ?? false,
+      // Use microtask to avoid synchronous setState lint error
+      queueMicrotask(() => {
+        setXpPopup({ xpGained: xpAwarded.xpGained, leveledUp: xpAwarded.leveledUp })
+        queryClient.invalidateQueries({ queryKey: ['player-xp'] })
+        clearWorkoutState()
       })
-      setWorkoutResult(null)
     }
-  }, [workoutResult, awardXpMutation, setWorkoutResult])
+  }, [xpAwarded, clearWorkoutState, queryClient])
+
+  // Clear stale workout result without XP (e.g. if session save failed)
+  useEffect(() => {
+    if (workoutResult && !xpAwarded) {
+      const timer = setTimeout(() => {
+        setWorkoutResult(null)
+      }, 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [workoutResult, xpAwarded, setWorkoutResult])
 
   const dismissXpPopup = useCallback(() => {
     setXpPopup(null)
@@ -522,7 +506,7 @@ export default function HomeScreen() {
             {/* Level Badge */}
             {playerXpLoading ? (
               <LevelBadgeSkeleton />
-            ) : levelInfo ? (
+            ) : playerXpError ? null : levelInfo ? (
               <div className="mt-2 flex flex-col gap-1">
                 <div
                   className={cn(
@@ -642,7 +626,7 @@ export default function HomeScreen() {
                   {language === 'en' ? 'Today' : "Aujourd\u2019hui"}
                 </p>
                 <p className="text-xl font-bold">
-                  {new Date().toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
+                  {formatLocaleDate(new Date(), language, {
                     weekday: 'long',
                     day: 'numeric',
                     month: 'long',
@@ -684,7 +668,7 @@ export default function HomeScreen() {
         {/* Streak Calendar                                                 */}
         {/* ---------------------------------------------------------------- */}
         <section aria-label="Calendrier" className="mb-5">
-          {calendarLoading ? (
+          {calendarError ? null : calendarLoading ? (
             <CalendarSkeleton />
           ) : (
             <StreakCalendar dailyStats={calendarStats?.dailyStats ?? []} />
@@ -769,7 +753,7 @@ export default function HomeScreen() {
         {/* AI Recommendations (Quick Start Carousel)                       */}
         {/* ---------------------------------------------------------------- */}
         <section aria-label={t('home.recommendationsAI')} className="mb-8">
-          {recsLoading ? (
+          {recsError ? null : recsLoading ? (
             <CarouselSkeleton />
           ) : enrichedRecommendations.length > 0 ? (
             <QuickStartCarousel
@@ -797,6 +781,8 @@ export default function HomeScreen() {
 
           {sessionsLoading ? (
             <SessionsSkeleton />
+          ) : sessionsError ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Impossible de charger les sessions</p>
           ) : recentSessions.length > 0 ? (
             <motion.div
               variants={containerVariants}

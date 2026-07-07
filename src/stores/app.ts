@@ -25,6 +25,12 @@ export interface WorkoutDrillResult {
   isPersonalBest?: boolean
 }
 
+export interface XpAwardResult {
+  xpGained: number
+  leveledUp: boolean
+  newLevel?: number
+}
+
 export interface WorkoutResult {
   drills: WorkoutDrillResult[]
   totalReps: number
@@ -56,6 +62,7 @@ interface AppState {
 
   // Workout
   workoutResult: WorkoutResult | null
+  xpAwarded: XpAwardResult | null
 
   // Plan execution
   planDrillQueue: PlanDrillQueueItem[]
@@ -72,6 +79,8 @@ interface AppState {
 
   // Workout actions
   setWorkoutResult: (result: WorkoutResult | null) => void
+  setXpAwarded: (result: XpAwardResult | null) => void
+  clearWorkoutState: () => void
 
   // Plan execution actions
   startPlanExecution: (planId: string, drills: PlanDrillQueueItem[]) => void
@@ -87,6 +96,7 @@ export const useAppStore = create<AppState>((set) => ({
   screenHistory: [],
   sidebarOpen: false,
   workoutResult: null,
+  xpAwarded: null,
 
   // Plan execution
   planDrillQueue: [],
@@ -111,6 +121,8 @@ export const useAppStore = create<AppState>((set) => ({
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
   setWorkoutResult: (result) => set({ workoutResult: result }),
+  setXpAwarded: (result) => set({ xpAwarded: result }),
+  clearWorkoutState: () => set({ workoutResult: null, xpAwarded: null }),
 
   // Plan execution
   startPlanExecution: (planId, drills) => set({

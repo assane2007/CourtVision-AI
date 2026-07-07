@@ -11,8 +11,7 @@ const inter = Inter({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
   viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
@@ -35,15 +34,27 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/icon-512.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/icon-512.png", sizes: "180x180", type: "image/png" },
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
   },
   formatDetection: {
     telephone: false,
+  },
+  openGraph: {
+    title: 'CourtVision AI — Entraînement Basketball Intelligent',
+    description: 'Ton coach IA personnel pour progresser au basketball. Analyse de posture, programmes personnalisés, suivi de progression.',
+    type: 'website',
+    locale: 'fr_FR',
+    alternateLocale: 'en_US',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'CourtVision AI — Entraînement Basketball Intelligent',
+    description: 'Ton coach IA personnel pour progresser au basketball.',
   },
 };
 
@@ -55,7 +66,7 @@ export default function RootLayout({
   return (
     <html lang="fr" suppressHydrationWarning>
       <head>
-        <link rel="apple-touch-icon" href="/icon-512.png" sizes="180x180" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>

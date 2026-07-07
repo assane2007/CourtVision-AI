@@ -226,7 +226,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-950 to-gray-900 text-gray-100">
+    <div className="dark min-h-screen bg-gradient-to-b from-gray-950 via-gray-950 to-gray-900 dark:text-gray-100 text-foreground">
       {/* ── HERO SECTION ──────────────────────────────────────────────────────── */}
       <section className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         {/* Background decoration */}
@@ -269,7 +269,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed"
+            className="text-lg sm:text-xl dark:text-gray-400 text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed"
           >
             Analyse ta posture en temps réel, suit tes progrès et reçois des
             conseils personnalisés — le tout gratuitement depuis ton téléphone.
@@ -294,7 +294,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
               onClick={scrollToFeatures}
               variant="outline"
               size="lg"
-              className="h-13 px-8 text-base font-semibold rounded-xl border-gray-700 text-gray-300 hover:bg-gray-800/60 hover:text-gray-100 transition-all cursor-pointer"
+              className="h-13 px-8 text-base font-semibold rounded-xl border-border dark:text-gray-300 text-foreground/80 hover:bg-accent/60 dark:hover:text-gray-100 hover:text-foreground transition-all cursor-pointer"
             >
               Voir les fonctionnalités
               <ChevronRight className="size-5" />
@@ -323,7 +323,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                 besoin
               </span>
             </h2>
-            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+            <p className="dark:text-gray-400 text-muted-foreground text-lg max-w-2xl mx-auto">
               Une suite complète d&apos;outils pour améliorer ton jeu, guidée par
               l&apos;intelligence artificielle.
             </p>
@@ -341,15 +341,15 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                   custom={i + 1}
                   variants={fadeUp}
                 >
-                  <Card className="bg-gray-900/60 border-gray-800 hover:border-orange-500/30 transition-colors duration-300 group h-full">
+                  <Card className="bg-card/60 border-border hover:border-orange-500/30 transition-colors duration-300 group h-full">
                     <CardContent className="p-6 flex flex-col gap-4">
                       <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center shrink-0 group-hover:bg-orange-500/20 transition-colors">
                         <Icon className="size-6 text-orange-400" />
                       </div>
-                      <h3 className="text-lg font-semibold text-gray-100">
+                      <h3 className="text-lg font-semibold dark:text-gray-100 text-foreground">
                         {feature.title}
                       </h3>
-                      <p className="text-sm text-gray-400 leading-relaxed">
+                      <p className="text-sm dark:text-gray-400 text-muted-foreground leading-relaxed">
                         {feature.description}
                       </p>
                     </CardContent>
@@ -364,7 +364,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
       {/* ── HOW IT WORKS SECTION ──────────────────────────────────────────────── */}
       <section ref={stepsRef} className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 relative">
         {/* Subtle separator */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
         <div className="max-w-5xl mx-auto">
           {/* Section Header */}
@@ -382,7 +382,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
               </span>
               ?
             </h2>
-            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+            <p className="dark:text-gray-400 text-muted-foreground text-lg max-w-2xl mx-auto">
               Trois étapes simples pour commencer à t&apos;améliorer.
             </p>
           </motion.div>
@@ -408,10 +408,10 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                   <span className="text-2xl font-bold text-orange-400">{step.number}</span>
                 </div>
 
-                <h3 className="text-lg font-semibold text-gray-100 mb-3">
+                <h3 className="text-lg font-semibold dark:text-gray-100 text-foreground mb-3">
                   {step.title}
                 </h3>
-                <p className="text-sm text-gray-400 leading-relaxed max-w-xs mx-auto">
+                <p className="text-sm dark:text-gray-400 text-muted-foreground leading-relaxed max-w-xs mx-auto">
                   {step.description}
                 </p>
               </motion.div>
@@ -433,12 +433,12 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                 key={stat.label}
                 custom={i}
                 variants={fadeUp}
-                className="text-center p-6 rounded-2xl bg-gray-900/40 border border-gray-800/60"
+                className="text-center p-6 rounded-2xl bg-muted/40 border border-border/60"
               >
                 <div className="text-3xl sm:text-4xl font-extrabold text-orange-400 mb-2">
                   {stat.value}
                 </div>
-                <div className="text-sm text-gray-400 font-medium">{stat.label}</div>
+                <div className="text-sm dark:text-gray-400 text-muted-foreground font-medium">{stat.label}</div>
               </motion.div>
             ))}
           </motion.div>
@@ -447,7 +447,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
 
       {/* ── CTA SECTION ───────────────────────────────────────────────────────── */}
       <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 relative">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
         <motion.div
           initial="hidden"
@@ -463,7 +463,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             </span>
             ?
           </h2>
-          <p className="text-gray-400 text-lg max-w-xl mx-auto mb-10">
+          <p className="dark:text-gray-400 text-muted-foreground text-lg max-w-xl mx-auto mb-10">
             Rejoins des milliers de joueurs qui s&apos;entraînent plus
             intelligemment avec CourtVision AI.
           </p>
@@ -479,7 +479,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
       </section>
 
       {/* ── FOOTER ────────────────────────────────────────────────────────────── */}
-      <footer ref={footerRef} className="border-t border-gray-800/60 py-10 px-4 sm:px-6 lg:px-8">
+      <footer ref={footerRef} className="border-t border-border/60 py-10 px-4 sm:px-6 lg:px-8">
         <motion.div
           initial="hidden"
           animate={footerInView ? 'visible' : 'hidden'}
@@ -491,20 +491,20 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center">
               <span className="text-white font-bold text-sm">CV</span>
             </div>
-            <span className="text-sm text-gray-400">
+            <span className="text-sm dark:text-gray-400 text-muted-foreground">
               &copy; {new Date().getFullYear()} CourtVision AI. Tous droits réservés.
             </span>
           </div>
           <div className="flex items-center gap-6">
             <a
               href="/api/privacy"
-              className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
+              className="text-sm dark:text-gray-500 text-muted-foreground hover:dark:text-gray-300 hover:text-foreground/80 transition-colors"
             >
               Politique de confidentialité
             </a>
             <a
               href="mailto:privacy@courtvision.ai"
-              className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
+              className="text-sm dark:text-gray-500 text-muted-foreground hover:dark:text-gray-300 hover:text-foreground/80 transition-colors"
             >
               Contact
             </a>

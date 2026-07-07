@@ -4,71 +4,16 @@ import { authOptions } from '@/lib/auth'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
 import { db } from '@/lib/db'
-import { z } from 'zod'
-import { getZodErrorMessage } from '@/lib/validations'
-import {
-  calculateWorkoutXp,
-  calculateStreakXp,
-  type XpReward,
-} from '@/lib/xp'
-import { awardXp } from '@/lib/award-xp'
 
-// Zod schemas for XP POST body
-const workoutXpSchema = z.object({
-  source: z.literal('workout'),
-  score: z.number().min(0).max(100),
-  reps: z.number().int().min(0).max(999),
-  durationSec: z.number().min(0).max(3600).optional(),
-  isPersonalBest: z.boolean().optional(),
-})
-
-const streakXpSchema = z.object({
-  source: z.literal('streak'),
-  streakDays: z.number().int().min(1).max(30),
-})
-
-const xpPostSchema = z.discriminatedUnion('source', [workoutXpSchema, streakXpSchema])
-
-// POST /api/xp — Award workout or streak XP to the current user.
-// Achievement and challenge XP are awarded server-side via awardXp() directly.
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  }
-
-  const rateResult = rateLimit(`xp:post:${session.user.email}`, 20, 15 * 60 * 1000)
-  if (!rateResult.success) {
-    return NextResponse.json({ error: 'Trop de requêtes. Réessayez dans 15 minutes.' }, { status: 429 })
-  }
-
-  try {
-    const body = await req.json()
-    const parsed = xpPostSchema.safeParse(body)
-    if (!parsed.success) {
-      return NextResponse.json({ error: getZodErrorMessage(parsed.error) }, { status: 400 })
-    }
-
-    const playerId = session.user.id
-    let rewards: XpReward[] = []
-
-    if (parsed.data.source === 'workout') {
-      const { score, reps, durationSec, isPersonalBest } = parsed.data
-      rewards = calculateWorkoutXp(score, reps, Math.max(0, Math.round(durationSec || 0)), !!isPersonalBest)
-    } else if (parsed.data.source === 'streak') {
-      rewards = [calculateStreakXp(parsed.data.streakDays)]
-    }
-
-    const result = await awardXp(playerId, rewards)
-    if (!result) {
-      return NextResponse.json({ error: 'Impossible d\'accorder le XP' }, { status: 500 })
-    }
-
-    return NextResponse.json(result)
-  } catch (error) {
-    trackError('POST /api/xp', error)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
-  }
+// POST /api/xp — REMOVED for security.
+// XP is now awarded server-side inside POST /api/sessions based on
+// validated drill scores. Client-controlled score/reps are no longer
+// accepted to prevent XP manipulation.
+export async function POST() {
+  return NextResponse.json(
+    { error: 'Endpoint désactivé. L\'XP est accordé automatiquement lors de la sauvegarde de la séance.' },
+    { status: 410 },
+  )
 }
 
 // GET /api/xp — Get XP history for the current user

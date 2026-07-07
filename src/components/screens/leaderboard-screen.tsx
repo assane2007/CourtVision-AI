@@ -102,6 +102,7 @@ export function LeaderboardScreen() {
             size="icon"
             onClick={goBack}
             className="shrink-0"
+            aria-label={t('action.back')}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>

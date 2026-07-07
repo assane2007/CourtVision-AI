@@ -4,6 +4,7 @@ import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
 import { resetPasswordSchema, getZodErrorMessage } from '@/lib/validations'
 import crypto from 'crypto'
+import bcrypt from 'bcryptjs'
 
 // POST /api/auth/reset-password
 export async function POST(request: Request) {
@@ -44,11 +45,12 @@ export async function POST(request: Request) {
     const resetToken = crypto.randomBytes(16).toString('hex') // 32-char hex
     const resetTokenExpiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
 
-    // Store token in DB
+    // Store hashed token in DB
+    const hashedToken = await bcrypt.hash(resetToken, 10)
     await db.player.update({
       where: { id: player.id },
       data: {
-        resetToken,
+        resetToken: hashedToken,
         resetTokenExpiresAt,
       },
     })

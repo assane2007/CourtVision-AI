@@ -159,7 +159,8 @@ export async function GET() {
     }
 
     const jsonStr = JSON.stringify(exportData, null, 2)
-    const fileName = `courtvision-export-${player.name.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.json`
+    const safeName = player.name.replace(/[^a-zA-Z0-9À-ÿ\s\-_]/g, '').trim()
+    const fileName = `courtvision-export-${safeName.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.json`
 
     return new NextResponse(jsonStr, {
       status: 200,

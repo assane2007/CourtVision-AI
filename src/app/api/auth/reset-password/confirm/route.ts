@@ -27,17 +27,40 @@ export async function POST(request: Request) {
       )
     }
 
-    // Find player with valid (non-expired) reset token
-    const player = await db.player.findFirst({
+    // Find players with a valid (non-expired) reset token and compare hashes
+    const candidates = await db.player.findMany({
       where: {
-        resetToken: token,
+        resetToken: { not: null },
         resetTokenExpiresAt: { gt: new Date() },
       },
+      select: {
+        id: true,
+        resetToken: true,
+      },
+    })
+
+    let matchedPlayer: typeof candidates[number] | null = null
+    for (const candidate of candidates) {
+      if (await bcrypt.compare(token, candidate.resetToken!)) {
+        matchedPlayer = candidate
+        break
+      }
+    }
+
+    if (!matchedPlayer) {
+      return NextResponse.json(
+        { error: 'Token invalide ou expiré.' },
+        { status: 400 },
+      )
+    }
+
+    const player = await db.player.findUnique({
+      where: { id: matchedPlayer.id },
     })
 
     if (!player) {
       return NextResponse.json(
-        { error: 'Token invalide ou expiré.' },
+        { error: 'Joueur introuvable.' },
         { status: 400 },
       )
     }

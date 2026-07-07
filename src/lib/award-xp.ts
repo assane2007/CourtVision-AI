@@ -17,9 +17,10 @@ export interface AwardXpResult {
 }
 
 /**
- * Award XP to a player. This is the SINGLE authoritative function
- * for XP changes — do NOT expose achievement/challenge sources via
- * the public API.
+ * Award XP to a player atomically using `increment` to prevent
+ * lost-update race conditions under concurrency.
+ *
+ * This is the SINGLE authoritative function for XP changes.
  */
 export async function awardXp(
   playerId: string,
@@ -29,17 +30,20 @@ export async function awardXp(
     const totalXp = getTotalXp(rewards)
     if (totalXp <= 0) return null
 
-    const player = await db.player.findUnique({ where: { id: playerId } })
+    // Read current player for old level calculation
+    const player = await db.player.findUnique({
+      where: { id: playerId },
+      select: { xp: true, xpLevel: true },
+    })
     if (!player) return null
 
     const oldLevel = getLevelFromXp(player.xp)
-    const newXp = player.xp + totalXp
-    const newLevel = getLevelFromXp(newXp)
 
+    // Atomic increment + create XP logs in a single transaction
     await db.$transaction([
       db.player.update({
         where: { id: playerId },
-        data: { xp: newXp, xpLevel: newLevel },
+        data: { xp: { increment: totalXp } },
       }),
       ...rewards.map((reward) =>
         db.xpLog.create({
@@ -53,9 +57,26 @@ export async function awardXp(
       ),
     ])
 
+    // Re-read to get the new total (after atomic increment)
+    const updated = await db.player.findUnique({
+      where: { id: playerId },
+      select: { xp: true },
+    })
+    if (!updated) return null
+
+    const newLevel = getLevelFromXp(updated.xp)
+
+    // Update level if it changed (separate write, acceptable — level is derived)
+    if (newLevel !== oldLevel) {
+      await db.player.update({
+        where: { id: playerId },
+        data: { xpLevel: newLevel },
+      })
+    }
+
     return {
       xpGained: totalXp,
-      newTotalXp: newXp,
+      newTotalXp: updated.xp,
       oldLevel,
       newLevel,
       leveledUp: newLevel > oldLevel,

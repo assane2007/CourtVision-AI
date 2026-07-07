@@ -50,12 +50,12 @@ export async function POST(request: NextRequest) {
     const dateStr = sessionData
       ? new Date(sessionData.startedAt).toLocaleDateString('fr-FR', {
           day: 'numeric',
-          month: 'long',
+          month: 'short',
           year: 'numeric',
         })
       : new Date().toLocaleDateString('fr-FR', {
           day: 'numeric',
-          month: 'long',
+          month: 'short',
           year: 'numeric',
         })
 

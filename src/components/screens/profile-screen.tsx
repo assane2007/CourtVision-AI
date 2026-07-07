@@ -49,7 +49,7 @@ import {
 } from '@/components/ui/select'
 import { useAppStore } from '@/stores/app'
 import { BottomNav } from '@/components/shared/bottom-nav'
-import { cn, apiFetch } from '@/lib/utils'
+import { cn, apiFetch, formatLocaleDate } from '@/lib/utils'
 import { containerVariants, itemVariants } from '@/lib/animations'
 import { getLevelInfo, getLevelColor, getLevelBgColor } from '@/lib/xp'
 import { toast } from 'sonner'
@@ -339,7 +339,7 @@ export function ProfileScreen() {
                     <Calendar className="h-3.5 w-3.5" />
                     <span>
                       Membre depuis{' '}
-                      {new Date(player.createdAt).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
+                      {formatLocaleDate(player.createdAt, language, {
                         month: 'long',
                         year: 'numeric',
                       })}
@@ -595,7 +595,7 @@ export function ProfileScreen() {
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{log.description}</p>
                             <p className="text-[11px] text-muted-foreground">
-                              {new Date(log.createdAt).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
+                              {formatLocaleDate(log.createdAt, language, {
                                 day: 'numeric',
                                 month: 'short',
                                 hour: '2-digit',

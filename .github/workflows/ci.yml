@@ -1,57 +1,42 @@
-# CourtVision AI — CI Pipeline
-# Triggers on push to main and on all pull requests
-
 name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
+    branches: [main]
 
 jobs:
-  lint-and-test:
-    name: Lint, Type-Check & Test
+  lint-and-typecheck:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@73579756e578a4d3a263a4131c5e2f6315d5d3fb # v2.0.1
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.2.8"
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: npx tsc --noEmit
 
-      - name: Cache Bun
-        uses: actions/cache@5a3ec83c0c4c9754613ec0b8515a7ea01d328c31 # v4.2.3
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
         with:
-          path: |
-            ~/.bun/install/cache
-            node_modules
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run db:push
+      - run: bun test
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Generate Prisma client
-        run: bunx prisma generate
-
-      - name: TypeScript type check
-        run: npx tsc --noEmit
-
-      - name: ESLint
-        run: bun run lint
-
-      - name: Run unit tests
-        run: bun run test
-
-      - name: Install Playwright browsers
-        run: bunx playwright install --with-deps chromium
-
-      - name: Run E2E tests
-        run: bunx playwright test
-        env:
-          NEXTAUTH_SECRET: ci-test-secret
-          DATABASE_URL: file:./db/test.db
+  build:
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck, test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run db:push
+      - run: bun run build

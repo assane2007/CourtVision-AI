@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, ArrowUp, Trash2, Bot } from 'lucide-react'
+import { ArrowLeft, ArrowUp, Trash2, Bot, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAppStore } from '@/stores/app'
@@ -52,32 +52,36 @@ export default function AICoachScreen() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
+  const [historyError, setHistoryError] = useState(false)
 
   const chatEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
+  const cancelledRef = useRef(false)
 
-  // ── Load chat history on mount ────────────────────────────────────────
-  useEffect(() => {
-    let cancelled = false
-
-    async function loadHistory() {
-      try {
-        const data = await apiFetch<{ messages: ChatMessage[] }>('/api/ai-coach')
-        if (!cancelled) {
-          setMessages(data.messages)
-          setInitialLoading(false)
-        }
-      } catch {
-        if (!cancelled) setInitialLoading(false)
+  // ── Load chat history ──────────────────────────────────────────────────
+  const loadHistory = useCallback(async () => {
+    setHistoryError(false)
+    try {
+      const data = await apiFetch<{ messages: ChatMessage[] }>('/api/ai-coach')
+      if (!cancelledRef.current) {
+        setMessages(data.messages)
+        setInitialLoading(false)
+      }
+    } catch {
+      if (!cancelledRef.current) {
+        setHistoryError(true)
+        setInitialLoading(false)
       }
     }
+  }, [])
 
+  useEffect(() => {
     loadHistory()
     return () => {
-      cancelled = true
+      cancelledRef.current = true
     }
-  }, [])
+  }, [loadHistory])
 
   // ── Auto-scroll to bottom ────────────────────────────────────────────
   useEffect(() => {
@@ -236,12 +240,20 @@ export default function AICoachScreen() {
       {/* ── Chat Area ──────────────────────────────────────────────── */}
       <div
         ref={chatContainerRef}
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-4 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
-        style={{ paddingBottom: '160px' }}
+        className="flex-1 overflow-y-auto px-4 py-4 pb-20 space-y-4 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
       >
         {initialLoading ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-8 h-8 rounded-full border-3 border-orange-500 border-t-transparent animate-spin" />
+          </div>
+        ) : historyError && !hasMessages ? (
+          /* ── Error State ────────────────────────────────────────────── */
+          <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
+            <p className="text-sm text-muted-foreground">Impossible de charger l&apos;historique</p>
+            <Button variant="outline" size="sm" onClick={loadHistory}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Réessayer
+            </Button>
           </div>
         ) : !hasMessages ? (
           /* ── Empty State ────────────────────────────────────────────── */
@@ -376,7 +388,7 @@ export default function AICoachScreen() {
       )}
 
       {/* ── Input Area ────────────────────────────────────────────── */}
-      <div className="fixed bottom-0 left-0 right-0 z-20 bg-background/90 backdrop-blur-xl border-t border-border/50 pb-20">
+      <div className="fixed bottom-16 left-0 right-0 z-20 bg-background/90 backdrop-blur-xl border-t border-border/50 pb-4">
         <form
           onSubmit={handleSubmit}
           className="max-w-lg md:max-w-3xl lg:max-w-4xl mx-auto flex items-center gap-2 px-4 py-3"

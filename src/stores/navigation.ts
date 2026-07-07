@@ -1,41 +1,38 @@
-import { create } from 'zustand'
+/**
+ * Navigation store — delegates to useAppStore to ensure a single source of truth.
+ * All navigation state lives in useAppStore. This module provides convenience
+ * selectors for components that only need navigation state.
+ */
+import { useAppStore, type Screen } from '@/stores/app'
 
-// ── Re-export shared types from app.ts ─────────────────────────────────────────
-import type { Screen } from '@/stores/app'
+// Re-export the Screen type
+export type { Screen }
 
-// ── Navigation Store ───────────────────────────────────────────────────────────
+/**
+ * Navigation-focused selectors that read from the canonical useAppStore.
+ * Using these instead of useAppStore() gives finer-grained reactivity
+ * (components only re-render when navigation state changes, not workout state).
+ */
+export function useNavigation() {
+  const currentScreen = useAppStore((s) => s.currentScreen)
+  const selectedDrillId = useAppStore((s) => s.selectedDrillId)
+  const screenHistory = useAppStore((s) => s.screenHistory)
+  const sidebarOpen = useAppStore((s) => s.sidebarOpen)
+  const navigate = useAppStore((s) => s.navigate)
+  const goBack = useAppStore((s) => s.goBack)
+  const selectDrill = useAppStore((s) => s.selectDrill)
+  const toggleSidebar = useAppStore((s) => s.toggleSidebar)
+  const setSidebarOpen = useAppStore((s) => s.setSidebarOpen)
 
-interface NavigationState {
-  currentScreen: Screen
-  selectedDrillId: string | null
-  screenHistory: Screen[]
-  sidebarOpen: boolean
-  navigate: (screen: Screen) => void
-  goBack: () => void
-  selectDrill: (drillId: string) => void
-  toggleSidebar: () => void
-  setSidebarOpen: (open: boolean) => void
+  return {
+    currentScreen,
+    selectedDrillId,
+    screenHistory,
+    sidebarOpen,
+    navigate,
+    goBack,
+    selectDrill,
+    toggleSidebar,
+    setSidebarOpen,
+  }
 }
-
-export const useNavigation = create<NavigationState>((set) => ({
-  currentScreen: 'landing' as Screen,
-  selectedDrillId: null,
-  screenHistory: [],
-  sidebarOpen: false,
-
-  navigate: (screen) => set((state) => ({
-    currentScreen: screen,
-    screenHistory: [...state.screenHistory.slice(-20), state.currentScreen],
-  })),
-
-  goBack: () => set((state) => {
-    const newHistory = [...state.screenHistory]
-    const prevScreen = newHistory.pop() || 'home'
-    return { currentScreen: prevScreen, screenHistory: newHistory }
-  }),
-
-  selectDrill: (drillId) => set({ selectedDrillId: drillId }),
-
-  toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
-  setSidebarOpen: (open) => set({ sidebarOpen: open }),
-}))

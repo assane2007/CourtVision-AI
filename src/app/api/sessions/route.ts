@@ -6,8 +6,12 @@ import { createSessionSchema, getZodErrorMessage } from '@/lib/validations'
 import { rateLimit } from '@/lib/rate-limit'
 import { cacheInvalidatePattern } from '@/lib/cache'
 import { trackError } from '@/lib/monitoring'
+import { awardXp } from '@/lib/award-xp'
+import { calculateWorkoutXp, calculateStreakXp } from '@/lib/xp'
+import { calculateStreak } from '@/lib/streak'
 
 // POST /api/sessions — Create a new workout session with drill results
+// XP is awarded SERVER-SIDE based on validated drill scores.
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -40,6 +44,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { drillScores, notes } = parsed.data
+    const playerId = session.user.id
 
     // Verify all drill IDs exist and are accessible
     const drillIds = drillScores.map(d => d.drillId)
@@ -49,7 +54,7 @@ export async function POST(req: NextRequest) {
         isActive: true,
         OR: [
           { playerId: null },
-          { playerId: session.user.id },
+          { playerId },
         ],
       },
       select: { id: true },
@@ -64,13 +69,33 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // ── Compute totals from SERVER-VALIDATED drill scores ────────────────
     const totalScore = drillScores.reduce((sum, d) => sum + d.score, 0)
     const totalReps = drillScores.reduce((sum, d) => sum + d.reps, 0)
     const totalDurationMs = drillScores.reduce((sum, d) => sum + d.durationMs, 0)
+    const avgScore = Math.round((totalScore / drillScores.length) * 10) / 10
 
+    // ── Check for personal bests (server-side, using DB records) ────────
+    let isPersonalBest = false
+    for (const ds of drillScores) {
+      const prevBest = await db.workoutSessionDrill.findFirst({
+        where: {
+          drillId: ds.drillId,
+          session: { playerId },
+        },
+        orderBy: { score: 'desc' },
+        select: { score: true },
+      })
+      if (!prevBest || ds.score > prevBest.score) {
+        isPersonalBest = true
+        break // At least one drill is a personal best
+      }
+    }
+
+    // ── Create the workout session ───────────────────────────────────────
     const workoutSession = await db.workoutSession.create({
       data: {
-        playerId: session.user.id,
+        playerId,
         totalScore: Math.round(totalScore * 10) / 10,
         totalReps,
         totalDrills: drillScores.length,
@@ -91,13 +116,37 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    // ── Award XP SERVER-SIDE from validated scores ───────────────────────
+    const durationSec = Math.round(totalDurationMs / 1000)
+    const workoutRewards = calculateWorkoutXp(avgScore, totalReps, durationSec, isPersonalBest)
+    const allRewards = [...workoutRewards]
+
+    // Check streak and award streak XP
+    const allPlayerSessions = await db.workoutSession.findMany({
+      where: { playerId },
+      select: { startedAt: true },
+      orderBy: { startedAt: 'asc' },
+    })
+    const streakData = calculateStreak(allPlayerSessions.map(s => s.startedAt))
+    if (streakData.current > 1) {
+      allRewards.push(calculateStreakXp(streakData.current))
+    }
+
+    const xpResult = await awardXp(playerId, allRewards)
+
     // Invalidate caches that depend on session data
     cacheInvalidatePattern('stats:')
     cacheInvalidatePattern('records:')
     cacheInvalidatePattern('recommendations:')
     cacheInvalidatePattern('achievements:')
+    cacheInvalidatePattern('leaderboard:')
 
-    return NextResponse.json(workoutSession, { status: 201 })
+    return NextResponse.json({
+      session: workoutSession,
+      xpAwarded: xpResult
+        ? { xpGained: xpResult.xpGained, leveledUp: xpResult.leveledUp, newLevel: xpResult.newLevel }
+        : null,
+    }, { status: 201 })
   } catch (error) {
     trackError('POST /api/sessions', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

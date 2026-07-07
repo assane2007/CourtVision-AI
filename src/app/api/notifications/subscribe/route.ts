@@ -34,13 +34,12 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { endpoint, keys } = parsed.data
-    const expirationTime = (body as Record<string, unknown>).expirationTime ?? null
+    const { endpoint, keys, expirationTime } = parsed.data
 
     pushSubscriptions.set(session.user.id, {
       endpoint,
       keys,
-      expirationTime: expirationTime as number | null,
+      expirationTime: expirationTime ?? null,
     })
 
     return NextResponse.json({ success: true })

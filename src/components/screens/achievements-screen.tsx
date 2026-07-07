@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useAppStore } from '@/stores/app'
 import { BottomNav } from '@/components/shared/bottom-nav'
 import { SwipeToGoBack } from '@/components/shared/swipe-back'
-import { apiFetch, cn } from '@/lib/utils'
+import { apiFetch, cn, formatLocaleDate } from '@/lib/utils'
 import { containerVariants, itemVariants } from '@/lib/animations'
 import { useTranslation } from '@/components/providers/language-provider'
 
@@ -64,6 +64,7 @@ export function AchievementsScreen() {
             size="icon"
             onClick={() => navigate('profile')}
             className="shrink-0"
+            aria-label={t('action.back')}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -182,7 +183,7 @@ export function AchievementsScreen() {
 
                 {achievement.unlocked ? (
                   <Badge variant="secondary" className="text-[9px] bg-orange-500/15 text-orange-400 border-orange-500/20 relative z-10">
-                    {new Date(achievement.unlockedAt ?? '').toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
+                    {formatLocaleDate(achievement.unlockedAt ?? '', language, {
                       day: 'numeric',
                       month: 'short',
                     })}

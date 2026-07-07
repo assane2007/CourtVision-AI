@@ -58,20 +58,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Exercice non trouvé' }, { status: 404 })
     }
 
-    const existing = await db.drillFavorite.findUnique({
-      where: { playerId_drillId: { playerId: session.user.id, drillId } }
-    })
-
-    if (existing) {
-      await db.drillFavorite.delete({ where: { id: existing.id } })
-      cacheInvalidatePattern('drills:')
-      return NextResponse.json({ favorited: false })
-    } else {
-      await db.drillFavorite.create({
-        data: { playerId: session.user.id, drillId }
+    // Atomic toggle: try to delete first; if not found, create.
+    // This avoids the check-then-act race condition.
+    try {
+      await db.drillFavorite.delete({
+        where: { playerId_drillId: { playerId: session.user.id, drillId } },
       })
       cacheInvalidatePattern('drills:')
-      return NextResponse.json({ favorited: true })
+      return NextResponse.json({ favorited: false })
+    } catch (error: unknown) {
+      // P2025 = RecordNotFound → the favorite doesn't exist yet, so create it
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error as { code: string }).code === 'P2025'
+      ) {
+        await db.drillFavorite.create({
+          data: { playerId: session.user.id, drillId },
+        })
+        cacheInvalidatePattern('drills:')
+        return NextResponse.json({ favorited: true })
+      }
+      throw error // re-throw unexpected errors
     }
   } catch (error) {
     trackError('POST /api/drills/favorite', error)

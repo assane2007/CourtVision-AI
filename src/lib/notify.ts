@@ -29,9 +29,11 @@ export function scheduleStreakReminder(playerId: string, streakCount: number): v
     scheduledAt: tomorrow,
   })
 
-  console.log(
-    `[notify] Streak reminder scheduled for player ${playerId} — ${streakCount} day streak, fires at ${tomorrow.toISOString()}`
-  )
+  if (process.env.NODE_ENV === 'development') {
+    console.log(
+      `[notify] Streak reminder scheduled for player ${playerId} — ${streakCount} day streak, fires at ${tomorrow.toISOString()}`
+    )
+  }
 }
 
 /**
@@ -48,7 +50,9 @@ export function notifyAchievement(playerId: string, title: string): void {
     scheduledAt: new Date(), // immediate
   })
 
-  console.log(`[notify] Achievement notification queued for player ${playerId}: ${title}`)
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[notify] Achievement notification queued for player ${playerId}: ${title}`)
+  }
 }
 
 /**
@@ -65,7 +69,9 @@ export function notifyChallenge(playerId: string, description: string): void {
     scheduledAt: new Date(), // immediate
   })
 
-  console.log(`[notify] Challenge notification queued for player ${playerId}: ${description}`)
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[notify] Challenge notification queued for player ${playerId}: ${description}`)
+  }
 }
 
 /**
@@ -111,9 +117,11 @@ export async function processDueNotifications(): Promise<void> {
 
         if (prefKey) {
           // In production: send via web-push API
-          console.log(
-            `[notify] Would send notification to player ${notif.playerId}: [${notif.title}] ${notif.body}`
-          )
+          if (process.env.NODE_ENV === 'development') {
+            console.log(
+              `[notify] Would send notification to player ${notif.playerId}: [${notif.title}] ${notif.body}`
+            )
+          }
         }
 
         // Remove from queue (processed)

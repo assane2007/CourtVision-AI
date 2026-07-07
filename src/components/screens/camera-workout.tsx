@@ -82,6 +82,7 @@ export default function CameraWorkoutScreen() {
     planResults,
     advancePlanDrill,
     setWorkoutResult,
+    setXpAwarded,
     clearPlanExecution,
     selectDrill,
   } = useAppStore()
@@ -182,21 +183,37 @@ export default function CameraWorkoutScreen() {
   const totalDuration = drill?.durationSec ?? 60
 
   // ── Save session mutation ─────────────────────────────────────────────
+  // XP is awarded server-side from validated drill scores.
   const saveMutation = useMutation({
     mutationFn: (payload: {
       drillId: string
       reps: number
       score: number
       durationSec: number
-    }) =>
-      apiFetch('/api/sessions', {
+    }) => {
+      // Wrap single drill in drillScores array as expected by the API
+      const body = {
+        drillScores: [{
+          drillId: payload.drillId,
+          reps: payload.reps,
+          score: payload.score,
+          durationMs: payload.durationSec * 1000,
+        }],
+      }
+      return apiFetch<{ session: unknown; xpAwarded: { xpGained: number; leveledUp: boolean; newLevel?: number } | null }>('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      }),
-    onSuccess: () => {
+        body: JSON.stringify(body),
+      })
+    },
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] })
       queryClient.invalidateQueries({ queryKey: ['stats'] })
+      queryClient.invalidateQueries({ queryKey: ['player-xp'] })
+      // Store server-awarded XP result
+      if (data?.xpAwarded) {
+        setXpAwarded(data.xpAwarded)
+      }
       toast.success('Session sauvegardée! 🎉', {
         description: `${reps} répétitions enregistrées`,
       })

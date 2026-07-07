@@ -40,7 +40,7 @@ import { BottomNav } from '@/components/shared/bottom-nav'
 import { PullToRefresh } from '@/components/shared/pull-to-refresh'
 import { AnimatedNumber } from '@/components/shared/animated-number'
 import { CATEGORY_META, getCategoryLabel } from '@/lib/constants'
-import { apiFetch } from '@/lib/utils'
+import { apiFetch, formatLocaleDate } from '@/lib/utils'
 import { containerVariants, itemVariants } from '@/lib/animations'
 import { useTranslation } from '@/components/providers/language-provider'
 
@@ -385,7 +385,7 @@ export function StatsScreen() {
                       <TableBody>
                         {allSessions.map((session: SessionEntry) => {
                           const date = new Date(session.startedAt)
-                          const dateStr = date.toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
+                          const dateStr = formatLocaleDate(date, language, {
                             day: 'numeric',
                             month: 'short',
                           })

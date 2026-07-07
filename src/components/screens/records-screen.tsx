@@ -22,7 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useAppStore } from '@/stores/app'
 import { BottomNav } from '@/components/shared/bottom-nav'
 import { CATEGORIES_LIST, CATEGORY_META, getCategoryMeta } from '@/lib/constants'
-import { apiFetch, formatDuration } from '@/lib/utils'
+import { apiFetch, formatDuration, formatLocaleDate } from '@/lib/utils'
 import { containerVariants, itemVariants } from '@/lib/animations'
 import { useTranslation } from '@/components/providers/language-provider'
 
@@ -56,12 +56,6 @@ interface RecordsResponse {
   summary: RecordsSummary
 }
 
-function formatDate(dateStr: string, language: string): string {
-  return new Date(dateStr).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
-    day: 'numeric',
-    month: 'short',
-  })
-}
 
 function getCategoryColor(category: string): string {
   const meta = CATEGORY_META[category]
@@ -229,7 +223,7 @@ function RecordCard({ record, index }: { record: DrillRecord; index: number }) {
 
           {/* Last completed */}
           <div className="mt-2 text-[11px] text-muted-foreground/70">
-            Dernière fois : {formatDate(record.lastCompleted, language)}
+            Dernière fois : {formatLocaleDate(record.lastCompleted, language, { day: 'numeric', month: 'short' })}
           </div>
         </CardContent>
       </Card>

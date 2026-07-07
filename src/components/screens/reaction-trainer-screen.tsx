@@ -24,7 +24,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { SwipeToGoBack } from '@/components/shared/swipe-back'
 import { useAppStore } from '@/stores/app'
-import { apiFetch } from '@/lib/utils'
+import { apiFetch, formatLocaleDate } from '@/lib/utils'
 import { useTranslation } from '@/components/providers/language-provider'
 import { BottomNav } from '@/components/shared/bottom-nav'
 
@@ -1156,7 +1156,7 @@ export default function ReactionTrainerScreen() {
                           <Badge variant="secondary" className="text-xs">{entry.rounds} tours</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(entry.createdAt).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
+                          {formatLocaleDate(entry.createdAt, language, {
                             day: 'numeric',
                             month: 'short',
                             hour: '2-digit',

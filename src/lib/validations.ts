@@ -92,8 +92,8 @@ export const toggleFavoriteSchema = z.object({
 
 export const formCheckSchema = z.object({
   imageBase64: z.string().min(100, 'Image requise').max(10 * 1024 * 1024, 'Image trop volumineuse (max 10 Mo).'),
-  drillName: z.string().min(1, 'Nom de l\'exercice requis'),
-  category: z.string().min(1, 'Catégorie requise'),
+  drillName: z.string().min(1, 'Nom de l\'exercice requis').max(200),
+  category: z.string().min(1, 'Catégorie requise').max(100),
   drillInstructions: z.string().optional(),
 })
 
@@ -184,6 +184,7 @@ export const notificationSubscribeSchema = z.object({
     p256dh: z.string().min(1),
     auth: z.string().min(1),
   }),
+  expirationTime: z.number().nullable().optional(),
 })
 
 // ── Helper: Extract error message from ZodError ───────────────────────────

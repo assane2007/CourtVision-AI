@@ -48,6 +48,7 @@ model Player {
   xpLogs        XpLog[]
   reactionScores ReactionScore[]
   aiChatMessages AIChatMessage[]
+  achievements  Achievement[]
 
   @@index([resetToken])
   @@index([email])
@@ -168,6 +169,8 @@ model Achievement {
   description String
   icon        String
   unlockedAt  DateTime @default(now())
+
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@unique([playerId, type])
   @@index([playerId])
