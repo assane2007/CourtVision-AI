@@ -3071,3 +3071,26 @@ Stage Summary:
 - 3 form label fixes
 - 3 ARIA live regions added
 - HTML lang validation tightened
+---
+Task ID: sentry-verify
+Agent: Main
+Task: Verify Sentry integration by triggering test errors
+
+Work Log:
+- Temporarily enabled Sentry in development mode (all 3 configs: instrumentation-client, server, edge)
+- Created /api/sentry-test route for server-side verification
+- Dev server OOM'd during page compilation (SPA too large for 4GB RAM)
+- Used standalone Node.js script with @sentry/nextjs to bypass Next.js server
+- First attempt failed: DSN not loaded (standalone Node doesn't read .env)
+- Loaded .env via `source .env`, SDK initialized with DSN: SET
+- Captured 2 test errors: event IDs a63c6dcedc214ef5b55163863c68f355, 6ec7bf1cf28d407f89c2606e66bd2ad5
+- Verified beforeSend hook fires and returns event (not filtered)
+- Verified TCP connectivity to o4510847796772864.ingest.us.sentry.io:443 — SUCCESS
+- Verified HTTPS reachability to Sentry ingest — SUCCESS
+- Reverted all 3 configs back to enabled: process.env.NODE_ENV === 'production'
+- Deleted test route and scripts, lint clean
+
+Stage Summary:
+- Sentry SDK correctly initializes and transmits events to the configured DSN
+- Events should appear in Sentry Issues dashboard within ~30 seconds
+- All temporary changes reverted, no test artifacts remaining
