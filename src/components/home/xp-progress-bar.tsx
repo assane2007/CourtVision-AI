@@ -201,7 +201,7 @@ export function XPProgressBar() {
 
             {/* Total XP */}
             <p className="text-xs text-muted-foreground mb-2.5">
-              <span className="font-semibold text-foreground">
+              <span className="font-semibold text-foreground" aria-live="polite">
                 {totalXP.toLocaleString("fr-FR")}
               </span>{" "}
               XP au total

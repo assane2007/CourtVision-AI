@@ -619,7 +619,7 @@ export default function VideoCompareScreen() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="min-h-[44px] min-w-[44px]"
                     onClick={() => {
                       if (videoARef.current) videoARef.current.currentTime = 0
                       if (videoBRef.current) videoBRef.current.currentTime = 0
@@ -634,7 +634,7 @@ export default function VideoCompareScreen() {
                   >
                     {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" fill="currentColor" />}
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsMuted(!isMuted)}>
+                  <Button variant="ghost" size="icon" className="min-h-[44px] min-w-[44px]" onClick={() => setIsMuted(!isMuted)}>
                     {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
                   </Button>
                 </div>

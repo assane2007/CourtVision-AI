@@ -1,82 +1,103 @@
-import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { trackError } from '@/lib/monitoring'
-import { rateLimit } from '@/lib/rate-limit'
+import { NextResponse } from 'next/server'
+import type { Session } from 'next-auth'
 
-type AuthenticatedHandler = (
-  req: NextRequest,
-  context: { playerId: string; session: Awaited<ReturnType<typeof getServerSession>> },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ...extra: any[]
-) => Promise<NextResponse> | NextResponse
+/**
+ * Handler that receives an authenticated session.
+ * TCtx is the Next.js route context (e.g. { params: Promise<{ id: string }> })
+ * and defaults to void for routes without dynamic segments.
+ */
+type AuthenticatedHandler<TCtx = void> = (
+  req: Request,
+  session: Session,
+  context: TCtx,
+) => Promise<NextResponse>
 
-interface WithAuthOptions {
-  /** Rate limit key prefix (default: route-based from URL) */
-  rateLimitKey?: string
-  /** Max requests in window (default: no rate limit) */
-  rateLimitMax?: number
-  /** Rate limit window in ms (default: 60000) */
-  rateLimitWindow?: number
-  /** Allow unauthenticated access (default: false) */
-  public?: boolean
-  /** Require admin role (default: false) */
-  adminOnly?: boolean
-}
+/**
+ * Handler that receives an optional session (may be null).
+ */
+type OptionalAuthHandler<TCtx = void> = (
+  req: Request,
+  session: Session | null,
+  context: TCtx,
+) => Promise<NextResponse>
 
-export function withAuth(
-  handler: AuthenticatedHandler,
-  options: WithAuthOptions = {}
-) {
-  return async function authenticatedHandler(
-    req: NextRequest,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ...extra: any[]
-  ): Promise<NextResponse> {
-    try {
-      const session = await getServerSession(authOptions)
-
-      if (options.public) {
-        // For public routes, pass null playerId
-        const playerId = session?.user?.id ?? ''
-        return handler(req, { playerId, session }, ...extra)
-      }
-
-      if (!session?.user?.id) {
-        return NextResponse.json({ error: 'Authentification requise' }, { status: 401 })
-      }
-
-      const playerId = session.user.id
-
-      // Rate limiting
-      if (options.rateLimitMax) {
-        const key = options.rateLimitKey || `auth:${playerId}`
-        const rl = rateLimit(key, options.rateLimitMax, options.rateLimitWindow || 60000)
-        if (!rl.success) {
-          return NextResponse.json({ error: 'Trop de requêtes. Réessayez plus tard.' }, { status: 429 })
-        }
-      }
-
-      return handler(req, { playerId, session }, ...extra)
-    } catch (error) {
-      trackError(`withAuth error: ${req.method} ${req.nextUrl.pathname}`, error)
-      return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+/**
+ * Wraps a route handler with authentication.
+ * Requires `session.user.id` to be present — returns 401 otherwise.
+ *
+ * @example
+ * // Simple route
+ * export const GET = withAuth(async (req, session) => {
+ *   return NextResponse.json({ id: session.user.id })
+ * })
+ *
+ * @example
+ * // Dynamic route
+ * export const GET = withAuth<{ params: Promise<{ id: string }> }>(
+ *   async (req, session, { params }) => {
+ *     const { id } = await params
+ *     // ...
+ *   }
+ * )
+ */
+export function withAuth<TCtx = void>(
+  handler: AuthenticatedHandler<TCtx>,
+): (req: Request, context?: TCtx) => Promise<NextResponse> {
+  return async (req, context) => {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
+    return handler(req, session, context as TCtx)
   }
 }
 
-/** Shorthand for GET with auth */
-export function authGet(
-  handler: AuthenticatedHandler,
-  options?: WithAuthOptions
-) {
-  return withAuth(handler, options)
+/**
+ * Wraps a route handler with admin authentication.
+ * Requires `session.user.id` AND player role to be 'admin'.
+ * Returns 401 if not authenticated, 403 if not admin.
+ */
+export function withAdmin<TCtx = void>(
+  handler: AuthenticatedHandler<TCtx>,
+): (req: Request, context?: TCtx) => Promise<NextResponse> {
+  return async (req, context) => {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
+    const { db } = await import('@/lib/db')
+    const player = await db.player.findUnique({
+      where: { id: session.user.id },
+      select: { role: true },
+    })
+    if (!player || player.role !== 'admin') {
+      return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
+    }
+
+    return handler(req, session, context as TCtx)
+  }
 }
 
-/** Shorthand for POST with auth */
-export function authPost(
-  handler: AuthenticatedHandler,
-  options?: WithAuthOptions
-) {
-  return withAuth(handler, options)
+/**
+ * Wraps a route handler with optional authentication.
+ * The handler always runs — session is `Session` if logged in, `null` otherwise.
+ *
+ * @example
+ * export const GET = withOptionalAuth(async (req, session) => {
+ *   if (session) {
+ *     return NextResponse.json({ name: session.user.name })
+ *   }
+ *   return NextResponse.json({ name: 'Anonymous' })
+ * })
+ */
+export function withOptionalAuth<TCtx = void>(
+  handler: OptionalAuthHandler<TCtx>,
+): (req: Request, context?: TCtx) => Promise<NextResponse> {
+  return async (req, context) => {
+    const session = (await getServerSession(authOptions)) ?? null
+    return handler(req, session, context as TCtx)
+  }
 }

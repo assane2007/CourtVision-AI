@@ -87,7 +87,7 @@ export default function TeamDetailScreen() {
             {team && <p className="text-xs text-muted-foreground">{team.memberCount} {td('membres', 'members')}</p>}
           </div>
           {team && (
-            <Button size="sm" variant="ghost" className="text-destructive h-8 text-xs" onClick={() => setLeaveConfirm(true)}>
+            <Button size="sm" variant="ghost" className="text-destructive min-h-[44px] text-xs" onClick={() => setLeaveConfirm(true)}>
               <LogOut className="h-3.5 w-3.5 mr-1" />{td('Quitter', 'Leave')}
             </Button>
           )}

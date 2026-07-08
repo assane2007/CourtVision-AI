@@ -82,15 +82,15 @@ export default function TeamsScreen() {
           <h1 className="text-lg font-bold flex-1">{td('Équipes', 'Teams')}</h1>
           <Dialog open={showCreate} onOpenChange={setShowCreate}>
             <DialogTrigger asChild>
-              <Button size="sm" className="h-8">
+              <Button size="sm" className="min-h-[44px]">
                 <Plus className="h-4 w-4 mr-1" />{td('Créer', 'Create')}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>{td('Nouvelle équipe', 'New team')}</DialogTitle></DialogHeader>
               <div className="space-y-4 pt-2">
-                <div><Label>{td('Nom', 'Name')}</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder={td("Nom de l'équipe", 'Team name')} /></div>
-                <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder={td('Description (optionnel)', 'Description (optional)')} rows={3} /></div>
+                <div><Label htmlFor="team-name">{td('Nom', 'Name')}</Label><Input id="team-name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder={td("Nom de l'équipe", 'Team name')} /></div>
+                <div><Label htmlFor="team-desc">{td('Description', 'Description')}</Label><Textarea id="team-desc" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder={td('Description (optionnel)', 'Description (optional)')} rows={3} /></div>
                 <Button className="w-full" onClick={() => createTeam.mutate()} disabled={createTeam.isPending || !form.name.trim()}>
                   {createTeam.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : td("Créer l'équipe", 'Create team')}
                 </Button>

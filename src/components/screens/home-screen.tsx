@@ -543,7 +543,7 @@ export default function HomeScreen() {
             {playerXpLoading ? (
               <LevelBadgeSkeleton />
             ) : playerXpError ? null : levelInfo ? (
-              <div className="mt-2 flex flex-col gap-1">
+              <div className="mt-2 flex flex-col gap-1" aria-live="polite">
                 <div
                   className={cn(
                     'inline-flex items-center gap-1.5 self-start rounded-full border px-2.5 py-1',
@@ -577,7 +577,7 @@ export default function HomeScreen() {
             <button
               type="button"
               onClick={() => navigate('profile')}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-xs font-bold text-white shadow-md transition-shadow hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-xs font-bold text-white shadow-md transition-shadow hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={t('home.viewProfile')}
             >
               {userInitial}

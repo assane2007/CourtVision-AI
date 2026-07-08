@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { withAuth } from '@/lib/with-auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { awardXp } from '@/lib/award-xp'
@@ -14,12 +13,7 @@ function generateReferralCode(name: string): string {
   return `${clean}${random}`
 }
 
-export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  }
-
+export const GET = withAuth(async (_req, session) => {
   const rl = rateLimit(session.user.id, 20, 60_000)
   if (!rl.success) {
     return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 })
@@ -46,14 +40,9 @@ export async function GET() {
       ? `https://courtvision.ai/ref/${player.referralCode}`
       : null,
   })
-}
+})
 
-export async function POST(req: Request) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  }
-
+export const POST = withAuth(async (req, session) => {
   const rl = rateLimit(session.user.id, 10, 60_000)
   if (!rl.success) {
     return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 })
@@ -119,4 +108,4 @@ export async function POST(req: Request) {
     referralLink: `https://courtvision.ai/ref/${player.referralCode}`,
     referredCount,
   })
-}
+})

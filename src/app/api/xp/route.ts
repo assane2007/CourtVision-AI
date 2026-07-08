@@ -1,6 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
+import { withAuth } from '@/lib/with-auth'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
 import { db } from '@/lib/db'
@@ -17,12 +16,7 @@ export async function POST() {
 }
 
 // GET /api/xp — Get XP history for the current user
-export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  }
-
+export const GET = withAuth(async (req, session) => {
   const rl = rateLimit(`xp:get:${session.user.id}`, 30, 15 * 60 * 1000)
   if (!rl.success) {
     return NextResponse.json({ error: 'Trop de requêtes. Réessayez plus tard.' }, { status: 429 })
@@ -59,4 +53,4 @@ export async function GET(req: NextRequest) {
     trackError('GET /api/xp', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

@@ -812,7 +812,7 @@ export default function TrainHubScreen() {
                       {/* Favorite button */}
                       <button
                         onClick={(e) => handleToggleFavorite(e, drill.id)}
-                        className="absolute top-3 right-3 z-10 h-8 w-8 flex items-center justify-center rounded-full bg-background/80 dark:bg-background/60 backdrop-blur-sm border border-border dark:border-border/50 shadow-sm hover:scale-110 active:scale-95 transition-transform"
+                        className="absolute top-3 right-3 z-10 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-background/80 dark:bg-background/60 backdrop-blur-sm border border-border dark:border-border/50 shadow-sm hover:scale-110 active:scale-95 transition-transform"
                         aria-label={
                           isFav
                             ? t('train.removeFavorite')

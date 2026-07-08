@@ -1,8 +1,8 @@
 import { withSentryConfig } from '@sentry/nextjs'
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  output: 'standalone',
   /* Type safety: catch errors at build time */
   typescript: {
     ignoreBuildErrors: false,
@@ -10,58 +10,65 @@ const nextConfig: NextConfig = {
   /* React strict mode: catch side-effect bugs in development */
   reactStrictMode: true,
   allowedDevOrigins: [
-    "preview-chat-c57e525c-9404-49d2-b3ca-8cf4027e7546.space-z.ai",
+    'preview-chat-c57e525c-9404-49d2-b3ca-8cf4027e7546.space-z.ai',
   ],
   async headers() {
     return [
       {
-        source: "/(.*)",
+        source: '/(.*)',
         headers: [
           {
-            key: "Content-Security-Policy",
+            key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob:",
-              "connect-src 'self' https://*.space-z.ai https://cdn.jsdelivr.net https://storage.googleapis.com",
+              "connect-src 'self' https://*.space-z.ai https://cdn.jsdelivr.net https://storage.googleapis.com https://*.ingest.us.sentry.io",
               "font-src 'self'",
               "frame-ancestors 'self' https://*.space-z.ai",
-            ].join("; "),
+            ].join('; '),
           },
           {
-            key: "X-Content-Type-Options",
-            value: "nosniff",
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
           },
           {
-            key: "X-Frame-Options",
-            value: "SAMEORIGIN",
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN',
           },
           {
-            key: "Referrer-Policy",
-            value: "strict-origin-when-cross-origin",
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
           },
           {
-            key: "Permissions-Policy",
-            value: "camera=(self), microphone=(self), geolocation=()",
+            key: 'Permissions-Policy',
+            value: 'camera=(self), microphone=(self), geolocation=()',
           },
           {
-            key: "Strict-Transport-Security",
-            value: "max-age=31536000; includeSubDomains",
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains',
           },
         ],
       },
-    ];
+    ]
   },
-};
+}
 
 export default withSentryConfig(nextConfig, {
-  // Suppress source map uploading during build in CI
+  // Sentry org and project slugs (for source map upload)
+  org: 'o4510847796772864',
+  project: 'court-vision-ai',
+
+  // Source map upload auth token
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+
+  // Upload wider set of client source files for better stack trace resolution
+  widenClientFileUpload: true,
+
+  // Create a proxy API route to bypass ad-blockers
+  tunnelRoute: '/monitoring',
+
+  // Suppress non-CI output
   silent: !process.env.CI,
-
-  // Disable source maps during build
-  sourcemaps: { disable: true },
-
-  // Disable automatic instrumentation of Bun/Node built-ins
-  disableLogger: true,
-});
+})

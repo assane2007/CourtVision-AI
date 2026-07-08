@@ -102,7 +102,7 @@ export default function NotificationsScreen() {
           <Bell className="h-5 w-5 text-orange-500" />
           <h1 className="text-lg font-bold flex-1">Notifications</h1>
           {unreadCount > 0 && (
-            <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => markAllRead.mutate()}>
+            <Button size="sm" variant="ghost" className="min-h-[44px] text-xs" onClick={() => markAllRead.mutate()}>
               <CheckCheck className="h-3.5 w-3.5 mr-1" />{td('Tout lire', 'Mark all read')}
             </Button>
           )}

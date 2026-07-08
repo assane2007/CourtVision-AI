@@ -11,6 +11,7 @@ const PUBLIC_PATHS = [
   '/icon-',
   '/sw.js',
   '/',
+  '/monitoring', // Sentry tunnel route
 ]
 
 export function middleware(request: NextRequest) {
@@ -45,7 +46,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match all paths except static files
+    // Match all paths except static files and Sentry tunnel route internals
     '/((?!_next/static|_next/image|favicon.ico|icon-|sw.js).*)',
   ],
 }

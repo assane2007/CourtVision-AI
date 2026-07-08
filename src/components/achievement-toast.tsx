@@ -36,6 +36,8 @@ function AchievementToastContent({
   return (
     <div
       className={`flex items-start gap-3 rounded-xl border p-3.5 min-w-[280px] max-w-[340px] ${TIER_BG[achievement.tier]} ${TIER_BORDER[achievement.tier]}`}
+      role="status"
+      aria-live="assertive"
     >
       {/* Achievement icon */}
       <motion.div

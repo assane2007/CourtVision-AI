@@ -124,7 +124,7 @@ export default function LiveWorkoutScreen() {
             <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
             <h1 className="text-lg font-bold flex-1 truncate">{session?.title || td('Session live', 'Live Session')}</h1>
             {session?.isHost && session.status !== 'ended' && (
-              <Button size="sm" variant="destructive" className="h-8 text-xs" onClick={() => endSession.mutate(viewingSession)}>
+              <Button size="sm" variant="destructive" className="min-h-[44px] text-xs" onClick={() => endSession.mutate(viewingSession)}>
                 <Square className="h-3 w-3 mr-1" />{td('Terminer', 'End')}
               </Button>
             )}
@@ -229,7 +229,7 @@ export default function LiveWorkoutScreen() {
           <h1 className="text-lg font-bold flex-1">Live Workout</h1>
           <Dialog open={showCreate} onOpenChange={setShowCreate}>
             <DialogTrigger asChild>
-              <Button size="sm" className="h-8 bg-red-500 hover:bg-red-600"><Play className="h-4 w-4 mr-1" />{td('Héberger', 'Host')}</Button>
+              <Button size="sm" className="min-h-[44px] bg-red-500 hover:bg-red-600"><Play className="h-4 w-4 mr-1" />{td('Héberger', 'Host')}</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>{td('Nouvelle session live', 'New Live Session')}</DialogTitle></DialogHeader>
@@ -276,9 +276,9 @@ export default function LiveWorkoutScreen() {
                   <h3 className="font-semibold text-sm mb-3">{s.title}</h3>
                   <div className="flex gap-2">
                     {s.isHost ? (
-                      <Button size="sm" className="flex-1 h-8" onClick={() => setViewingSession(s.id)}>{td('Gérer', 'Manage')}</Button>
+                      <Button size="sm" className="flex-1 min-h-[44px]" onClick={() => setViewingSession(s.id)}>{td('Gérer', 'Manage')}</Button>
                     ) : (
-                      <Button size="sm" className="flex-1 h-8 bg-red-500 hover:bg-red-600" onClick={() => joinSession.mutate(s.id)} disabled={joinSession.isPending}>
+                      <Button size="sm" className="flex-1 min-h-[44px] bg-red-500 hover:bg-red-600" onClick={() => joinSession.mutate(s.id)} disabled={joinSession.isPending}>
                         {joinSession.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Play className="h-3.5 w-3.5 mr-1" />{td('Rejoindre', 'Join')}</>}
                       </Button>
                     )}

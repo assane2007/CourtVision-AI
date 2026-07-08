@@ -1,6 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
+import { withAuth } from '@/lib/with-auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { cacheInvalidate } from '@/lib/cache'
@@ -9,13 +8,8 @@ import ZAI from 'z-ai-web-dev-sdk'
 import { sanitize } from '@/lib/sanitize'
 
 // GET /api/recommendations — Smart drill recommendations (rule-based)
-export async function GET() {
+export const GET = withAuth(async (_req, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
-
     const playerId = session.user.id
 
     const rl = rateLimit(`recommendations:get:${playerId}`, 30, 15 * 60 * 1000)
@@ -121,16 +115,11 @@ export async function GET() {
     trackError('GET /api/recommendations', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
 // POST /api/recommendations — AI-powered personalized recommendations
-export async function POST(_req: NextRequest) {
+export const POST = withAuth(async (_req, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
-
     const playerId = session.user.id
 
     const rl = rateLimit(`recommendations:ai:${playerId}`, 5, 15 * 60 * 1000)
@@ -249,4 +238,4 @@ Réponds UNIQUEMENT en JSON:
     trackError('POST /api/recommendations', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

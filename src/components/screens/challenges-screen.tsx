@@ -100,7 +100,7 @@ export default function ChallengesScreen() {
           <h1 className="text-lg font-bold flex-1">{td('Défis', 'Challenges')}</h1>
           <Dialog open={showCreate} onOpenChange={setShowCreate}>
             <DialogTrigger asChild>
-              <Button size="sm" className="h-8"><Plus className="h-4 w-4 mr-1" />{td('Créer', 'Create')}</Button>
+              <Button size="sm" className="min-h-[44px]"><Plus className="h-4 w-4 mr-1" />{td('Créer', 'Create')}</Button>
             </DialogTrigger>
             <DialogContent className="max-h-[85vh] overflow-y-auto">
               <DialogHeader><DialogTitle>{td('Nouveau défi', 'New Challenge')}</DialogTitle></DialogHeader>
@@ -110,7 +110,7 @@ export default function ChallengesScreen() {
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label htmlFor="challenge-type">{td('Type', 'Type')}</Label>
                     <Select value={form.type} onValueChange={v => setForm({ ...form, type: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger id="challenge-type"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="total_reps">{td('Répétitions', 'Total Reps')}</SelectItem>
                         <SelectItem value="drill_score">{td('Score drill', 'Drill Score')}</SelectItem>

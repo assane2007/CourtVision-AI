@@ -1,6 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
+import { withAuth } from '@/lib/with-auth'
 import { db } from '@/lib/db'
 import { toggleFavoriteSchema, getZodErrorMessage } from '@/lib/validations'
 import { rateLimit } from '@/lib/rate-limit'
@@ -8,13 +7,8 @@ import { cacheInvalidatePattern } from '@/lib/cache'
 import { trackError } from '@/lib/monitoring'
 
 // POST /api/drills/favorite — Toggle favorite on/off
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
-
     const rateResult = rateLimit(`drills:favorite:${session.user.email}`, 20, 15 * 60 * 1000)
     if (!rateResult.success) {
       return NextResponse.json(
@@ -86,4 +80,4 @@ export async function POST(req: NextRequest) {
     trackError('POST /api/drills/favorite', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

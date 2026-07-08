@@ -1,17 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
+import { withAuth } from '@/lib/with-auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
-
     const rl = rateLimit(`follow:${session.user.id}`, 60, 15 * 60 * 1000)
     if (!rl.success) {
       return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 })
@@ -59,15 +53,10 @@ export async function POST(request: NextRequest) {
     trackError('POST /api/follow', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
-export async function GET(request: Request) {
+export const GET = withAuth(async (request, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
-
     const { searchParams } = new URL(request.url)
     const followingId = searchParams.get('playerId')
 
@@ -84,4 +73,4 @@ export async function GET(request: Request) {
     trackError('GET /api/follow', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

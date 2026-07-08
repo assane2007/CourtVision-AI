@@ -78,7 +78,7 @@ export default function MessagesScreen() {
               {totalUnread}
             </span>
           )}
-          <Button size="sm" variant="ghost" className="h-8" onClick={() => setShowNew(!showNew)}>
+          <Button size="sm" variant="ghost" className="min-h-[44px]" onClick={() => setShowNew(!showNew)} aria-label={td('Nouveau message', 'New message')}>
             <Pencil className="h-4 w-4" />
           </Button>
         </div>
@@ -90,11 +90,12 @@ export default function MessagesScreen() {
               onChange={e => setRecipientId(e.target.value)}
               placeholder={td('ID du joueur...', 'Player ID...')}
               className="flex-1"
+              aria-label={td('ID du joueur destinataire', 'Recipient player ID')}
             />
-            <Button size="sm" onClick={() => createConvo.mutate()} disabled={createConvo.isPending || !recipientId.trim()}>
+            <Button size="sm" className="min-h-[44px]" onClick={() => createConvo.mutate()} disabled={createConvo.isPending || !recipientId.trim()}>
               {createConvo.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setShowNew(false)}><X className="h-4 w-4" /></Button>
+            <Button size="sm" variant="ghost" className="min-h-[44px]" onClick={() => setShowNew(false)} aria-label={td('Annuler', 'Cancel')}><X className="h-4 w-4" /></Button>
           </div>
         )}
       </header>

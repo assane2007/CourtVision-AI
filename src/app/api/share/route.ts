@@ -1,18 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
+import { withAuth } from '@/lib/with-auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
 import { formatDate } from '@/lib/date-utils'
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
-
     const rl = rateLimit(`share:${session.user.id}`, 10, 15 * 60 * 1000)
     if (!rl.success) {
       return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 })
@@ -86,4 +80,4 @@ export async function POST(request: NextRequest) {
     trackError('POST /api/share', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

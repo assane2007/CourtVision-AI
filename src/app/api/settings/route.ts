@@ -1,18 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
+import { withAuth } from '@/lib/with-auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { settingsPatchSchema, getZodErrorMessage } from '@/lib/validations'
 import { trackError } from '@/lib/monitoring'
 
 // GET /api/settings — Get user preferences
-export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  }
-
+export const GET = withAuth(async (_req, session) => {
   try {
     const player = await db.player.findUnique({
       where: { id: session.user.id },
@@ -38,15 +32,10 @@ export async function GET() {
     trackError('GET /api/settings', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
 // PATCH /api/settings — Update user preferences
-export async function PATCH(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  }
-
+export const PATCH = withAuth(async (req, session) => {
   // Prevent oversized request bodies
   const contentLength = req.headers.get('content-length')
   if (contentLength && parseInt(contentLength) > 10_000) {
@@ -88,4 +77,4 @@ export async function PATCH(req: NextRequest) {
     trackError('PATCH /api/settings', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

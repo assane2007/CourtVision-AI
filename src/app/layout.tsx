@@ -66,7 +66,7 @@ export default function RootLayout({
   return (
     <html lang="fr" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `try { document.documentElement.lang = localStorage.getItem('courtvision-lang') || navigator.language.split('-')[0] || 'fr' } catch(e) {}` }} />
+        <script dangerouslySetInnerHTML={{ __html: `try{var l=localStorage.getItem('courtvision-lang');var b=navigator.language.split('-')[0];document.documentElement.lang=(l==='fr'||l==='en')?l:((b==='fr'||b==='en')?b:'fr')}catch(e){}` }} />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

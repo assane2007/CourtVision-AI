@@ -226,6 +226,7 @@ model WorkoutSession {
   @@index([playerId])
   @@index([startedAt])
   @@index([playerId, startedAt])
+  @@index([videoId])
 }
 
 model WorkoutSessionDrill {
@@ -457,6 +458,7 @@ model TeamChallenge {
 
   @@unique([teamId, challengeId])
   @@index([teamId])
+  @@index([challengeId])
 }
 
 model FeedPost {
@@ -481,6 +483,8 @@ model FeedPost {
   @@index([createdAt])
   @@index([playerId, createdAt])
   @@index([type])
+  @@index([sessionId])
+  @@index([videoId])
 }
 
 model FeedPostLike {
@@ -515,6 +519,7 @@ model Comment {
   @@index([postId])
   @@index([sessionId])
   @@index([createdAt])
+  @@index([postId, createdAt])
 }
 
 model CommentReply {
@@ -610,6 +615,7 @@ model LiveSession {
 
   @@index([hostId])
   @@index([status])
+  @@index([drillId])
 }
 
 model LiveParticipant {
@@ -726,6 +732,7 @@ model VideoExport {
 
   @@index([videoId])
   @@index([playerId])
+  @@index([playerId, videoId])
 }
 
 model SessionComment {
@@ -761,6 +768,8 @@ model PoseData {
 
   @@index([playerId])
   @@index([sessionId])
+  @@index([drillId])
+  @@index([sessionId, drillId])
 }
 
 model ShotDetection {
@@ -780,6 +789,8 @@ model ShotDetection {
 
   @@index([playerId])
   @@index([sessionId])
+  @@index([videoId])
+  @@index([playerId, sessionId])
 }
 
 model FormAnalysis {
@@ -804,6 +815,8 @@ model FormAnalysis {
 
   @@index([playerId])
   @@index([sessionId])
+  @@index([drillId])
+  @@index([poseDataId])
 }
 
 model PlayerInsight {
@@ -851,6 +864,7 @@ model VoiceSession {
   player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@index([playerId])
+  @@index([sessionId])
 }
 
 model Prediction {
@@ -963,4 +977,6 @@ model OfflineAction {
   @@index([playerId])
   @@index([status])
   @@index([createdAt])
+  @@index([deviceId])
+  @@index([playerId, status])
 }

@@ -111,7 +111,7 @@ export default function FeedScreen() {
           <h1 className="text-lg font-bold flex-1">{td("Fil d'actualité", 'News Feed')}</h1>
           <Dialog open={showCreate} onOpenChange={setShowCreate}>
             <DialogTrigger asChild>
-              <Button size="sm" className="h-8"><Plus className="h-4 w-4 mr-1" />{td('Publier', 'Post')}</Button>
+              <Button size="sm" className="min-h-[44px]"><Plus className="h-4 w-4 mr-1" />{td('Publier', 'Post')}</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>{td('Nouveau post', 'New post')}</DialogTitle></DialogHeader>
@@ -122,7 +122,7 @@ export default function FeedScreen() {
                     const Icon = TYPE_ICONS[type] || Trophy
                     return (
                       <button key={type} onClick={() => setNewPost({ ...newPost, type })}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${newPost.type === type ? 'bg-orange-500 text-white' : 'bg-muted text-muted-foreground'}`}>
+                        className={`flex items-center gap-1.5 px-3 min-h-[44px] rounded-full text-xs font-medium transition-colors ${newPost.type === type ? 'bg-orange-500 text-white' : 'bg-muted text-muted-foreground'}`}>
                         <Icon className="h-3.5 w-3.5" />{type === 'text' ? td('Texte', 'Text') : type === 'workout' ? td('Séance', 'Workout') : type === 'achievement' ? td('Succès', 'Achievement') : td('Défi', 'Challenge')}
                       </button>
                     )

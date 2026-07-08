@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { withAuth } from '@/lib/with-auth'
 import { db } from '@/lib/db'
 import { withCache } from '@/lib/cache'
 import { rateLimit } from '@/lib/rate-limit'
@@ -9,13 +8,8 @@ import { trackError } from '@/lib/monitoring'
 
 // GET /api/stats — Comprehensive player stats with optimized queries
 // Query params: ?days=7 (default 7, max 30) — controls dailyStats range
-export async function GET(request: Request) {
+export const GET = withAuth(async (request, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
-
     const rl = rateLimit(`stats:get:${session.user.id}`, 30, 15 * 60 * 1000)
     if (!rl.success) {
       return NextResponse.json({ error: 'Trop de requêtes. Réessayez plus tard.' }, { status: 429 })
@@ -161,4 +155,4 @@ export async function GET(request: Request) {
     trackError('GET /api/stats', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

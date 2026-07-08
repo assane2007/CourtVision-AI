@@ -2970,3 +2970,104 @@ Stage Summary:
 - Tests: 79 new unit tests
 - CI/CD: GitHub Actions pipeline
 - Score estimate: 56 → ~82 (security +10, architecture +8, performance +4, tests +4, DevOps +8, accessibility +4, monetization +4)
+---
+Task ID: sentry-setup
+Agent: Main
+Task: Sentry Next.js SDK full integration following skills.sentry.dev/sentry-nextjs-sdk/SKILL.md
+
+Work Log:
+- Phase 1 (Detect): Next.js 16.1.1, App Router, @sentry/nextjs@10.64.0 already installed but misconfigured
+- Found critical issues: DSN env var empty, old sentry.client.config.ts pattern, no global-error.tsx, no tunnel route, sentry.io missing from CSP
+- Set DSN in .env: NEXT_PUBLIC_SENTRY_DSN and SENTRY_DSN (server-only)
+- Rewrote src/instrumentation-client.ts: proper client init with Replay, onRouterTransitionStart export
+- Rewrote sentry.server.config.ts: uses SENTRY_DSN (not public), includeLocalVariables, prismaIntegration, tracesSampler
+- Rewrote sentry.edge.config.ts: uses SENTRY_DSN, clean config
+- Rewrote src/instrumentation.ts: imports server/edge configs via NEXT_RUNTIME, exports onRequestError
+- Deleted sentry.client.config.ts (old pattern replaced by instrumentation-client.ts)
+- Created src/app/global-error.tsx: App Router error boundary with Sentry.captureException + styled error page
+- Rewrote next.config.ts: added org, project, widenClientFileUpload, tunnelRoute "/monitoring", removed sourcemaps.disable, added sentry.io to CSP connect-src
+- Updated src/middleware.ts: added "/monitoring" to PUBLIC_PATHS for tunnel route exclusion
+- Updated .env.example: documented NEXT_PUBLIC_SENTRY_DSN, SENTRY_DSN, SENTRY_AUTH_TOKEN
+- Verified: server compiles, GET / returns 200, lint clean
+
+Stage Summary:
+- Full Sentry SDK integration across all 3 runtimes (browser, Node.js, Edge)
+- Error Monitoring + Tracing + Session Replay (core coverage)
+- Tunnel route bypasses ad-blockers
+- CSP allows Sentry ingest
+- Global error boundary catches root layout errors
+- Server auto-captures request errors via onRequestError
+---
+Task ID: s7a
+Agent: Sub-agent (general-purpose)
+Task: Delete dead/unused code files
+
+Work Log:
+- Checked all 4 candidate files: api-client.ts, player/store.ts, stores/workout.ts, _lib/validate.ts
+- All 4 were already deleted in prior sessions
+- validations.ts confirmed as heavily used (14 imports) — correctly kept
+
+Stage Summary:
+- No changes needed — dead code already cleaned in prior sessions
+---
+Task ID: s7b
+Agent: Sub-agent (general-purpose)
+Task: Extract sanitize() to shared utility
+
+Work Log:
+- Searched all AI route files for sanitize() definitions
+- Found 0 inline copies — already extracted to src/lib/sanitize.ts in prior session
+- 8 AI routes already import from shared utility
+- Verified lint clean
+
+Stage Summary:
+- No changes needed — sanitize() already extracted in prior sessions
+---
+Task ID: s7c
+Agent: Sub-agent (general-purpose)
+Task: Add Prisma indexes on foreign keys
+
+Work Log:
+- Analyzed all 45 models in prisma/schema.prisma
+- Identified 11 models missing indexes on foreign keys
+- Added 15 indexes: 11 single-field + 4 composite
+- Models indexed: WorkoutSession, TeamChallenge, FeedPost, LiveSession, PoseData, ShotDetection, FormAnalysis, VoiceSession, VideoExport, Comment, OfflineAction
+- Composite indexes: PoseData[playerId, sessionId], ShotDetection[playerId, sessionId], VideoExport[playerId, videoId], Comment[postId, createdAt], OfflineAction[playerId, status]
+- Ran db:push — synced in 82ms, Prisma Client regenerated
+- Lint clean
+
+Stage Summary:
+- 15 new database indexes added for query performance
+---
+Task ID: s7d
+Agent: Sub-agent (full-stack-developer)
+Task: Create withAuth() HOF to eliminate auth boilerplate
+
+Work Log:
+- Created src/lib/with-auth.ts with 3 exported functions: withAuth, withAdmin, withOptionalAuth
+- Generic TypeScript types support dynamic route params (TCtx generic)
+- Applied to 15 API route files covering 21 handler functions
+- Files: reaction, achievements, xp, records, referral, settings, daily-reward, stats, share, leaderboard, recommendations, drills/[id], drills/favorite, follow, follow/[id]
+- Preserved exact error messages and behavior
+- Lint clean
+
+Stage Summary:
+- ~99 lines of auth boilerplate eliminated across 15 files
+- withAuth/withAdmin/withOptionalAuth available for future routes
+---
+Task ID: a11y
+Agent: Sub-agent (full-stack-developer)
+Task: Accessibility improvements
+
+Work Log:
+- HTML lang reactivity: Tightened validation in layout.tsx inline script to validate fr/en against supported languages
+- Form labels: Added aria-label to messages screen input, linked Label htmlFor in teams-screen, added id to challenges-screen SelectTrigger
+- Touch targets (16 elements across 11 files): Header action buttons (h-8 → min-h-[44px]), card overlay buttons (h-8 w-8 → min-h-[44px] min-w-[44px]), theme toggle (h-9 w-9 → min-h-[44px] min-w-[44px]), dialog controls
+- ARIA live regions: Home screen level badge (aria-live="polite"), XP progress bar (aria-live="polite"), achievement toast (role="status" + aria-live="assertive")
+- Lint clean on all 14 modified files
+
+Stage Summary:
+- 16 touch targets expanded to ≥44px
+- 3 form label fixes
+- 3 ARIA live regions added
+- HTML lang validation tightened
