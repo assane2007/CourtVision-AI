@@ -125,7 +125,7 @@ const goalsLabels: Record<string, string> = {
 // ── Component ───────────────────────────────────────────────────────
 export function ProfileScreen() {
   const { t, td, language } = useTranslation()
-  const { navigate } = useAppStore()
+  const navigate = useAppStore(s => s.navigate)
   const queryClient = useQueryClient()
   // ── Fetch player ────────────────────────────────────────────────
   const { data: player, isLoading } = useQuery<PlayerData>({

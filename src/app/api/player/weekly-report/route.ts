@@ -10,10 +10,7 @@ function dateRange(offsetDays: number) {
   const end = new Date(now);
   const start = new Date(now);
   start.setDate(start.getDate() - offsetDays);
-  return {
-    start: start.toISOString().slice(0, 10),
-    end: end.toISOString().slice(0, 10),
-  };
+  return { start, end };
 }
 
 export async function GET() {
@@ -28,111 +25,59 @@ export async function GET() {
 
     const thisWeek = dateRange(7);
     const prevWeek = dateRange(14);
-    prevWeek.end = thisWeek.start;
+    prevWeek.end = new Date(thisWeek.start);
 
-    // Fetch this week data
-    const [thisWeekWorkouts, thisWeekMatches] = await Promise.all([
-      db.workoutLog.findMany({
-        where: {
-          playerId: player.id,
-          date: { gte: thisWeek.start, lte: thisWeek.end },
-        },
-        orderBy: { date: "desc" },
-      }),
-      db.matchLog.findMany({
-        where: {
-          playerId: player.id,
-          date: { gte: thisWeek.start, lte: thisWeek.end },
-        },
-        orderBy: { date: "desc" },
-      }),
-    ]);
+    // Fetch this week workout sessions
+    const thisWeekWorkouts = await db.workoutSession.findMany({
+      where: {
+        playerId: player.id,
+        startedAt: { gte: thisWeek.start, lte: thisWeek.end },
+      },
+      orderBy: { startedAt: "desc" },
+    });
 
-    // Fetch previous week data for comparison
-    const [prevWeekWorkouts, prevWeekMatches] = await Promise.all([
-      db.workoutLog.findMany({
-        where: {
-          playerId: player.id,
-          date: { gte: prevWeek.start, lt: prevWeek.end },
-        },
-      }),
-      db.matchLog.findMany({
-        where: {
-          playerId: player.id,
-          date: { gte: prevWeek.start, lt: prevWeek.end },
-        },
-      }),
-    ]);
+    // Fetch previous week workout sessions for comparison
+    const prevWeekWorkouts = await db.workoutSession.findMany({
+      where: {
+        playerId: player.id,
+        startedAt: { gte: prevWeek.start, lt: prevWeek.end },
+      },
+    });
 
     // Aggregate this week
     const thisTotalWorkouts = thisWeekWorkouts.length;
-    const thisTotalMinutes = thisWeekWorkouts.reduce((s, w) => s + w.durationMin, 0);
-    const thisTotalXP = thisWeekWorkouts.reduce((s, w) => s + w.xpEarned, 0)
-      + thisWeekMatches.reduce((s, m) => s + m.xpEarned, 0);
-    const thisAvgIntensity = thisTotalWorkouts > 0
-      ? Math.round((thisWeekWorkouts.reduce((s, w) => s + w.intensity, 0) / thisTotalWorkouts) * 10) / 10
+    const thisTotalSeconds = thisWeekWorkouts.reduce((s, w) => s + w.totalDurationSec, 0);
+    const thisTotalMinutes = Math.round(thisTotalSeconds / 60);
+    const thisAvgScore = thisTotalWorkouts > 0
+      ? Math.round((thisWeekWorkouts.reduce((s, w) => s + w.avgScore, 0) / thisTotalWorkouts) * 10) / 10
       : 0;
 
-    // Match results
-    const thisWins = thisWeekMatches.filter((m) => m.result === "W").length;
-    const thisLosses = thisWeekMatches.filter((m) => m.result === "L").length;
-    const thisTotalMatches = thisWeekMatches.length;
-    const avgPoints = thisTotalMatches > 0
-      ? Math.round(thisWeekMatches.reduce((s, m) => s + m.points, 0) / thisTotalMatches)
-      : 0;
-    const avgRebounds = thisTotalMatches > 0
-      ? Math.round(thisWeekMatches.reduce((s, m) => s + m.rebounds, 0) / thisTotalMatches)
-      : 0;
-    const avgAssists = thisTotalMatches > 0
-      ? Math.round(thisWeekMatches.reduce((s, m) => s + m.assists, 0) / thisTotalMatches)
-      : 0;
-
-    // Skill gains breakdown (top 5)
-    const skillGainsMap: Record<string, number> = {};
-    for (const w of thisWeekWorkouts) {
-      let gains: Record<string, number> = {};
-      try {
-        gains = typeof w.skillGains === "string" ? JSON.parse(w.skillGains) : (w.skillGains as Record<string, number>);
-      } catch {
-        // skip malformed
-      }
-      for (const [skill, val] of Object.entries(gains)) {
-        if (typeof val === "number") {
-          skillGainsMap[skill] = (skillGainsMap[skill] ?? 0) + val;
-        }
-      }
-    }
-    const skillGains = Object.entries(skillGainsMap)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([skill, gain]) => ({ skill, gain: Math.round(gain * 100) / 100 }));
-
-    // Previous week aggregates for comparison
+    // Aggregate previous week
     const prevTotalWorkouts = prevWeekWorkouts.length;
-    const prevTotalMinutes = prevWeekWorkouts.reduce((s, w) => s + w.durationMin, 0);
-    const prevTotalXP = prevWeekWorkouts.reduce((s, w) => s + w.xpEarned, 0)
-      + prevWeekMatches.reduce((s, m) => s + m.xpEarned, 0);
+    const prevTotalSeconds = prevWeekWorkouts.reduce((s, w) => s + w.totalDurationSec, 0);
+    const prevTotalMinutes = Math.round(prevTotalSeconds / 60);
 
     return NextResponse.json({
-      weekStart: thisWeek.start,
-      weekEnd: thisWeek.end,
+      weekStart: thisWeek.start.toISOString().slice(0, 10),
+      weekEnd: thisWeek.end.toISOString().slice(0, 10),
       thisWeek: {
         totalWorkouts: thisTotalWorkouts,
         totalMinutes: thisTotalMinutes,
-        totalXP: thisTotalXP,
-        avgIntensity: thisAvgIntensity,
-        totalMatches: thisTotalMatches,
-        wins: thisWins,
-        losses: thisLosses,
-        avgPoints,
-        avgRebounds,
-        avgAssists,
-        skillGains,
+        totalXP: 0,
+        avgIntensity: 0,
+        totalMatches: 0,
+        wins: 0,
+        losses: 0,
+        avgPoints: 0,
+        avgRebounds: 0,
+        avgAssists: 0,
+        skillGains: [],
+        avgScore: thisAvgScore,
       },
       prevWeek: {
         totalWorkouts: prevTotalWorkouts,
         totalMinutes: prevTotalMinutes,
-        totalXP: prevTotalXP,
+        totalXP: 0,
       },
     });
   } catch (err: unknown) {

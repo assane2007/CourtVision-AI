@@ -30,14 +30,14 @@ export async function GET(
       })
 
       if (type === 'followers') {
-        const enriched = followers.map(f => ({
+        const enriched = await Promise.all(followers.map(async (f) => ({
           playerId: f.followerId,
           ...f.follower,
           isFollowing: f.followerId === session.user.id ? false : !!(await db.follow.findUnique({
             where: { followerId_followingId: { followerId: session.user.id, followingId: f.followerId } },
           })),
           followedAt: f.createdAt,
-        }))
+        })))
 
         return NextResponse.json({ followers: enriched })
       }

@@ -27,7 +27,7 @@ export default function ConversationScreen() {
   const queryClient = useQueryClient()
   const [text, setText] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
-  const pollRef = useRef<ReturnType<typeof setInterval>>()
+  const pollRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
 
   const { data: convData } = useQuery<{
     conversation: { id: string; type: string; name: string | null; avatar: string | null; otherPlayer: { id: string; name: string; avatar: string | null } | null }
@@ -129,7 +129,7 @@ export default function ConversationScreen() {
                   {msg.type === 'workout' && msg.metadata?.workout ? (
                     <div className="text-center">
                       <p className="text-xs font-medium mb-1">🏀 {td('Séance partagée', 'Shared workout')}</p>
-                      <p className="text-[10px] opacity-80">Score: {(msg.metadata.workout as Record<string, unknown>).score}</p>
+                      <p className="text-[10px] opacity-80">Score: {String((msg.metadata.workout as Record<string, unknown>)?.score ?? '')}</p>
                     </div>
                   ) : (
                     <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>

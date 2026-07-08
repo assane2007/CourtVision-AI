@@ -18,9 +18,8 @@ Sentry.init({
   integrations: [
     Sentry.httpIntegration({
       // Trace outgoing HTTP requests to external services
-      traceFetch: false,
-      traceXHR: false,
-    }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any),
     Sentry.prismaIntegration(),
   ],
 

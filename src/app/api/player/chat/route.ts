@@ -23,12 +23,11 @@ export async function POST(req: NextRequest) {
     const parsed = chatSchema.parse(body);
     const player = await requirePlayer(playerId);
 
-    const message = await db.chatMessage.create({
+    const message = await db.aIChatMessage.create({
       data: {
         playerId: player.id,
         role: parsed.role,
         content: parsed.content,
-        timestamp: new Date().toISOString(),
       },
     });
 
@@ -38,7 +37,6 @@ export async function POST(req: NextRequest) {
         playerId: message.playerId,
         role: message.role,
         content: message.content,
-        timestamp: message.timestamp,
         createdAt: message.createdAt,
       },
     }, { status: 201 });
@@ -64,9 +62,9 @@ export async function GET() {
 
     const player = await requirePlayer(playerId);
 
-    const messages = await db.chatMessage.findMany({
+    const messages = await db.aIChatMessage.findMany({
       where: { playerId: player.id },
-      orderBy: { timestamp: "asc" },
+      orderBy: { createdAt: "asc" },
     });
 
     return NextResponse.json({
@@ -74,7 +72,6 @@ export async function GET() {
         id: m.id,
         role: m.role,
         content: m.content,
-        timestamp: m.timestamp,
         createdAt: m.createdAt,
       })),
     });

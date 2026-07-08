@@ -235,8 +235,8 @@ function RecordCard({ record, index: _index }: { record: DrillRecord; index: num
 // ── Empty State ─────────────────────────────────────────────────────────────
 
 function EmptyState() {
-  const { navigate } = useAppStore()
-  const { t } = useTranslation()
+  const navigate = useAppStore(s => s.navigate)
+  const { t, td } = useTranslation()
 
   return (
     <motion.div
@@ -289,7 +289,7 @@ function EmptyState() {
 // ── Main Component ──────────────────────────────────────────────────────────
 
 export function RecordsScreen() {
-  const { goBack } = useAppStore()
+  const goBack = useAppStore(s => s.goBack)
   const { t, td } = useTranslation()
   const [activeCategory, setActiveCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')

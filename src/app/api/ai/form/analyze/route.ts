@@ -92,14 +92,13 @@ Réponds UNIQUEMENT en JSON:
     const response = isVision
       ? await zai.chat.completions.createVision({
           model: 'gpt-4o',
-          messages: messages as Parameters<typeof zai.chat.completions.createVision>[0]['messages'],
-          response_format: { type: 'json_object' },
+          messages: messages as unknown as Parameters<typeof zai.chat.completions.createVision>[0]['messages'],
           thinking: { type: 'disabled' },
         })
       : await zai.chat.completions.create({
           model: 'gpt-4o-mini',
-          messages: messages as Parameters<typeof zai.chat.completions.create>[0]['messages'],
-          response_format: { type: 'json_object' },
+          messages: messages as unknown as Parameters<typeof zai.chat.completions.create>[0]['messages'],
+          ...({ response_format: { type: 'json_object' } } as Record<string, unknown>),
           thinking: { type: 'disabled' },
         })
 

@@ -31,7 +31,9 @@ import { useTranslation } from '@/components/providers/language-provider'
 // ── Component ───────────────────────────────────────────────────────
 export function DrillDetailScreen() {
   const { t, tc, td } = useTranslation()
-  const { selectedDrillId, goBack, navigate } = useAppStore()
+  const selectedDrillId = useAppStore(s => s.selectedDrillId)
+  const goBack = useAppStore(s => s.goBack)
+  const navigate = useAppStore(s => s.navigate)
   const queryClient = useQueryClient()
 
   // ── Fetch single drill ────────────────────────────────────────────

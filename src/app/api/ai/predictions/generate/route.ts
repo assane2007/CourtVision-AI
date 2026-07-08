@@ -55,9 +55,8 @@ export async function POST(req: NextRequest) {
         orderBy: { createdAt: 'desc' },
         take: 50,
       }),
-      db.achievementUnlock.findMany({
+      db.achievement.findMany({
         where: { playerId },
-        include: { achievement: true },
       }),
     ])
 
@@ -141,7 +140,7 @@ Réponds en JSON: {"predictedAt": "YYYY-MM-DD ou null si pas de plateau", "predi
 
           if (predType === 'next_level' && parsed.predictedAt) {
             // Validate date format
-            const d = new Date(parsed.predictedAt)
+            const d = new Date(parsed.predictedAt as string)
             if (isNaN(d.getTime())) parsed.predictedAt = null
           }
           if (parsed.predictedValue !== undefined) {
@@ -153,11 +152,11 @@ Réponds en JSON: {"predictedAt": "YYYY-MM-DD ou null si pas de plateau", "predi
             data: {
               playerId,
               type: predType,
-              predictedAt: parsed.predictedAt ? new Date(parsed.predictedAt) : new Date(),
-              predictedValue: parsed.predictedValue ?? null,
-              confidence: parsed.confidence,
+              predictedAt: parsed.predictedAt ? new Date(parsed.predictedAt as string) : new Date(),
+              predictedValue: (parsed.predictedValue as number) ?? null,
+              confidence: parsed.confidence as number,
               factors: JSON.stringify(parsed.factors),
-              recommendation: parsed.recommendation,
+              recommendation: parsed.recommendation as string,
             },
           })
 

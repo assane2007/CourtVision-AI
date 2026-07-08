@@ -9,17 +9,19 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  let poseId: string | undefined
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
-    const { id } = await params
+    const resolvedParams = await params
+    poseId = resolvedParams.id
     const playerId = session.user.id
 
     const poseData = await db.poseData.findFirst({
-      where: { id, playerId },
+      where: { id: poseId, playerId },
     })
 
     if (!poseData) {
@@ -41,7 +43,7 @@ export async function GET(
       createdAt: poseData.createdAt,
     })
   } catch (error) {
-    trackError(`GET /api/ai/pose/${id}`, error)
+    trackError(`GET /api/ai/pose/${poseId ?? 'unknown'}`, error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -51,25 +53,27 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  let poseId: string | undefined
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
-    const { id } = await params
+    const resolvedParams = await params
+    poseId = resolvedParams.id
     const playerId = session.user.id
 
-    const poseData = await db.poseData.findFirst({ where: { id, playerId } })
+    const poseData = await db.poseData.findFirst({ where: { id: poseId, playerId } })
     if (!poseData) {
       return NextResponse.json({ error: 'Données non trouvées' }, { status: 404 })
     }
 
-    await db.poseData.delete({ where: { id } })
+    await db.poseData.delete({ where: { id: poseId } })
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    trackError(`DELETE /api/ai/pose/${id}`, error)
+    trackError(`DELETE /api/ai/pose/${poseId ?? 'unknown'}`, error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

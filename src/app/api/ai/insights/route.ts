@@ -7,6 +7,8 @@ import { trackError } from '@/lib/monitoring'
 import ZAI from 'z-ai-web-dev-sdk'
 import { sanitize } from '@/lib/sanitize'
 
+type _ChatMessage = { role: string; content: string }
+
 // GET /api/ai/insights — Consolidated AI insights dashboard
 export async function GET(req: NextRequest) {
   try {
@@ -51,10 +53,9 @@ export async function GET(req: NextRequest) {
         orderBy: { createdAt: 'desc' },
         take: 10,
       }),
-      db.achievementUnlock.findMany({
+      db.achievement.findMany({
         where: { playerId },
-        include: { achievement: { select: { nameFr: true, icon: true, descriptionFr: true } } },
-        orderBy: { unlockedAt: 'desc' },
+        orderBy: { unlockedAt: 'desc' as const },
         take: 5,
       }),
       db.playerDocument.findMany({
@@ -157,8 +158,8 @@ Règles:
 
         const response = await zai.chat.completions.create({
           model: 'gpt-4o-mini',
-          messages,
-          response_format: { type: 'json_object' },
+          messages: messages as unknown as import('z-ai-web-dev-sdk').ChatMessage[],
+          ...({ response_format: { type: 'json_object' } } as Record<string, unknown>),
           thinking: { type: 'disabled' },
         })
 
@@ -259,8 +260,8 @@ Règles:
 
       // Recent achievements
       recentAchievements: achievements.map(a => ({
-        name: a.achievement.nameFr,
-        icon: a.achievement.icon,
+        name: a.title,
+        icon: a.icon,
         unlockedAt: a.unlockedAt,
       })),
 

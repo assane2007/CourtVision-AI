@@ -10,8 +10,8 @@ import {
   calcNewStreak,
   applySkillGains,
   checkNewAchievements,
-  calcTotalXP,
 } from "@/lib/player/xp-engine";
+import { ACHIEVEMENTS } from "@/lib/player/iq-engine";
 import type { PlanType } from "@/lib/player/iq-engine";
 import { trackError } from "@/lib/monitoring";
 
@@ -69,26 +69,50 @@ export async function POST(req: NextRequest) {
     // Apply skill gains to DNA
     const newDNA = applySkillGains(player, skillGains);
 
-    // Calculate new streak
-    const { streak, todayStr } = calcNewStreak(player.lastActivityDate, player.currentStreak);
+    // Calculate new streak (convert Date to string for the function)
+    const { streak } = calcNewStreak(
+      player.lastActivityDate?.toDateString() ?? null,
+      player.currentStreak
+    );
 
-    // Create workout log
-    const workout = await db.workoutLog.create({
+    // Compute drill summary stats for WorkoutSession
+    const totalReps = parsed.drillData.reduce(
+      (sum, d) => sum + d.sets.reduce((s, set) => s + set.reps, 0),
+      0
+    );
+    const madeShots = parsed.drillData.reduce(
+      (sum, d) => sum + d.sets.reduce((s, set) => s + (set.made ?? 0), 0),
+      0
+    );
+    const avgScore = totalReps > 0 ? Math.round((madeShots / totalReps) * 100) : 0;
+
+    // Store legacy fields in notes for backward compatibility
+    const sessionNotes = JSON.stringify({
+      planType: parsed.planType,
+      planTitle: parsed.planTitle,
+      planId: parsed.planId ?? null,
+      intensity: parsed.intensity,
+      skillGains,
+      drillData: parsed.drillData,
+      xpEarned,
+    });
+
+    // Create WorkoutSession
+    const workoutSession = await db.workoutSession.create({
       data: {
         playerId: player.id,
-        planId: parsed.planId ?? null,
-        planType: parsed.planType,
-        planTitle: parsed.planTitle,
-        date: parsed.date,
-        durationMin: parsed.durationMin,
-        drillData: JSON.stringify(parsed.drillData),
-        xpEarned,
-        intensity: parsed.intensity,
-        skillGains: JSON.stringify(skillGains),
+        startedAt: new Date(parsed.date),
+        endedAt: new Date(new Date(parsed.date).getTime() + parsed.durationMin * 60000),
+        totalDurationSec: parsed.durationMin * 60,
+        totalScore: madeShots,
+        totalReps,
+        totalDrills: parsed.drillData.length,
+        avgScore,
+        notes: sessionNotes,
       },
     });
 
-    // Update player DNA, streak, and lastActivityDate
+    // Update player DNA, streak, XP, and lastActivityDate
     await db.player.update({
       where: { id: player.id },
       data: {
@@ -98,35 +122,25 @@ export async function POST(req: NextRequest) {
         defense: newDNA.defense,
         iq: newDNA.iq,
         currentStreak: streak,
-        lastActivityDate: todayStr,
+        lastActivityDate: new Date(),
+        xp: { increment: xpEarned },
       },
     });
 
-    // Check achievements
-    const allWorkouts = await db.workoutLog.count({ where: { playerId: player.id } });
-    const allMatches = await db.matchLog.count({ where: { playerId: player.id } });
-    const allAchievements = await db.playerAchievement.findMany({
-      where: { playerId: player.id },
-      select: { achievementId: true },
-    });
-    const unlockedIds = allAchievements.map((a) => a.achievementId);
+    // Check achievements using WorkoutSession and Achievement models
+    const allWorkouts = await db.workoutSession.count({ where: { playerId: player.id } });
+    // MatchLog model removed — pass 0 for match count
+    const allMatches = 0;
 
-    const workoutsXP = await db.workoutLog.aggregate({
+    const existingAchievements = await db.achievement.findMany({
       where: { playerId: player.id },
-      _sum: { xpEarned: true },
+      select: { type: true },
     });
-    const matchesXP = await db.matchLog.aggregate({
-      where: { playerId: player.id },
-      _sum: { xpEarned: true },
-    });
+    const unlockedIds = existingAchievements.map((a) => a.type);
 
-    const totalXP = calcTotalXP(
-      workoutsXP._sum.xpEarned ?? 0,
-      matchesXP._sum.xpEarned ?? 0,
-      unlockedIds.length
-    );
+    const totalXP = player.xp + xpEarned;
 
-    const newAchivementIds = checkNewAchievements(
+    const newAchievementIds = checkNewAchievements(
       allWorkouts,
       allMatches,
       streak,
@@ -134,35 +148,46 @@ export async function POST(req: NextRequest) {
       unlockedIds
     );
 
-    if (newAchivementIds.length > 0) {
-      await db.playerAchievement.createMany({
-        data: newAchivementIds.map((achievementId) => ({
-          playerId: player.id,
-          achievementId,
-        })),
+    if (newAchievementIds.length > 0) {
+      await db.achievement.createMany({
+        data: newAchievementIds.map((id) => {
+          const def = ACHIEVEMENTS.find((a) => a.id === id);
+          return {
+            playerId: player.id,
+            type: id,
+            title: def?.name.en ?? id,
+            description: def?.description.en ?? "",
+            icon: def?.emoji ?? "\uD83C\uDFC6",
+          };
+        }),
       });
     }
 
-    return NextResponse.json({
-      workout: {
-        id: workout.id,
-        playerId: workout.playerId,
-        planId: workout.planId,
-        planType: workout.planType,
-        planTitle: workout.planTitle,
-        date: workout.date,
-        durationMin: workout.durationMin,
-        drillData: JSON.parse(workout.drillData),
-        xpEarned: workout.xpEarned,
-        intensity: workout.intensity,
-        skillGains: JSON.parse(workout.skillGains),
-        createdAt: workout.createdAt,
+    return NextResponse.json(
+      {
+        session: {
+          id: workoutSession.id,
+          playerId: workoutSession.playerId,
+          startedAt: workoutSession.startedAt,
+          endedAt: workoutSession.endedAt,
+          totalDurationSec: workoutSession.totalDurationSec,
+          totalScore: workoutSession.totalScore,
+          totalReps: workoutSession.totalReps,
+          totalDrills: workoutSession.totalDrills,
+          avgScore: workoutSession.avgScore,
+          notes: workoutSession.notes,
+          createdAt: workoutSession.createdAt,
+        },
+        newAchievements: newAchievementIds,
       },
-      newAchievements: newAchivementIds,
-    }, { status: 201 });
+      { status: 201 }
+    );
   } catch (err: unknown) {
     if (err && typeof err === "object" && "issues" in err) {
-      return NextResponse.json({ error: "Validation failed", details: (err as { issues: unknown }).issues }, { status: 400 });
+      return NextResponse.json(
+        { error: "Validation failed", details: (err as { issues: unknown }).issues },
+        { status: 400 }
+      );
     }
     if (err instanceof Error && err.message === "NO_PLAYER") {
       return NextResponse.json({ error: "No player found" }, { status: 404 });
@@ -184,30 +209,29 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const limit = parseInt(url.searchParams.get("limit") ?? "50", 10);
 
-    const totalCount = await db.workoutLog.count({
+    const totalCount = await db.workoutSession.count({
       where: { playerId: player.id },
     });
 
-    const workouts = await db.workoutLog.findMany({
+    const workouts = await db.workoutSession.findMany({
       where: { playerId: player.id },
-      orderBy: { date: "desc" },
+      orderBy: { startedAt: "desc" },
       take: Math.min(limit, 200),
     });
 
     return NextResponse.json({
       totalCount,
-      workouts: workouts.map((w) => ({
+      sessions: workouts.map((w) => ({
         id: w.id,
         playerId: w.playerId,
-        planId: w.planId,
-        planType: w.planType,
-        planTitle: w.planTitle,
-        date: w.date,
-        durationMin: w.durationMin,
-        drillData: JSON.parse(w.drillData),
-        xpEarned: w.xpEarned,
-        intensity: w.intensity,
-        skillGains: JSON.parse(w.skillGains),
+        startedAt: w.startedAt,
+        endedAt: w.endedAt,
+        totalDurationSec: w.totalDurationSec,
+        totalScore: w.totalScore,
+        totalReps: w.totalReps,
+        totalDrills: w.totalDrills,
+        avgScore: w.avgScore,
+        notes: w.notes,
         createdAt: w.createdAt,
       })),
     });

@@ -120,6 +120,39 @@ model Player {
   predictions           Prediction[]
   generatedWorkouts     GeneratedWorkout[]
 
+  // Subscription / Billing
+  subscriptionStatus    String    @default("free") // 'free' | 'pro' | 'elite'
+  subscriptionId        String?
+  subscriptionExpiresAt DateTime?
+  stripeCustomerId      String?
+
+  // Referral
+  referralCode          String?
+  referredBy            String?
+
+  // Player Stats (denormalized skill ratings)
+  shooting              Int       @default(0)
+  handling              Int       @default(0)
+  finishing             Int       @default(0)
+  defense               Int       @default(0)
+  iq                    Int       @default(0)
+
+  // Physical profile
+  age                   Int?
+  weightKg              Int?
+  heightCm              Int?
+  yearsExp              Int?
+
+  // Streak tracking
+  currentStreak         Int       @default(0)
+  lastActivityDate      DateTime?
+
+  // Active training plan
+  activePlanJson        String?
+
+  // Onboarding status
+  isOnboarded           Boolean   @default(false)
+
   // Relations — Core
   emailTokens           EmailVerificationToken[]
   twoFactorBackupCodes  TwoFactorBackupCode[]
@@ -129,6 +162,10 @@ model Player {
   @@index([resetToken])
   @@index([email])
   @@index([twoFactorSecret])
+  @@index([referralCode])
+  @@index([referredBy])
+  @@index([stripeCustomerId])
+  @@index([subscriptionStatus])
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -170,10 +207,14 @@ model WorkoutSession {
   totalScore  Float     @default(0)
   totalReps   Int       @default(0)
   totalDrills Int       @default(0)
+  totalDurationSec Int   @default(0)
+  avgScore    Float     @default(0)
   notes       String?
   isShared    Boolean   @default(false)
   sharedAt    DateTime?
   videoId     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   player      Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
   drills      WorkoutSessionDrill[]
@@ -326,6 +367,8 @@ model Friendship {
   @@index([requesterId])
   @@index([recipientId])
   @@index([status])
+  @@index([requesterId, status])
+  @@index([recipientId, status])
 }
 
 model Team {
@@ -436,6 +479,7 @@ model FeedPost {
 
   @@index([playerId])
   @@index([createdAt])
+  @@index([playerId, createdAt])
   @@index([type])
 }
 
@@ -744,9 +788,16 @@ model FormAnalysis {
   sessionId     String?
   drillId       String?
   overallScore  Float
+  rating        Float    @default(0)
+  kneeScore     Float?
+  elbowScore    Float?
+  trunkScore    Float?
+  balanceScore  Float?
+  alignmentScore Float?
   categories    String   // JSON: {stance: 0.8, release: 0.9, follow_through: 0.7}
   feedback      String   // JSON: {good: [...], issues: [...], tips: [...]}
   poseDataId    String?
+  date          DateTime @default(now())
   createdAt     DateTime @default(now())
 
   player        Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)

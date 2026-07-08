@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import ZAI from 'z-ai-web-dev-sdk'
 import { trackError } from '@/lib/monitoring'
 
 // POST /api/videos/[id]/highlights/generate — AI-powered highlight generation
@@ -33,7 +34,7 @@ export async function POST(
             totalScore: true,
             avgScore: true,
             totalReps: true,
-            drillScores: {
+            drills: {
               select: {
                 drillId: true,
                 score: true,
@@ -60,8 +61,8 @@ export async function POST(
     let aiHighlights: Array<{ title: string; startMs: number; endMs: number; score: number }> = []
 
     try {
-      const { createLlmChatCompletion } = await import('z-ai-web-dev-sdk')
-      const { response } = await createLlmChatCompletion({
+      const zai = await ZAI.create()
+      const { response } = await zai.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [
           {
@@ -76,7 +77,7 @@ Réponds UNIQUEMENT avec le JSON, pas de texte autour.`,
             content: `Vidéo: "${video.title}" - ${video.description || 'sans description'}
 Durée: ${video.durationSec} secondes (${Math.round(durationMs / 1000)}ms)
 Tags: ${video.tags}
-${video.sessions.length > 0 ? `Sessions liées: ${video.sessions.map(s => `score total ${s.totalScore}, score moyen ${s.avgScore}, ${s.drillScores.length} exercices (${s.drillScores.map(d => `${d.drill?.nameFr || d.drill?.name || d.drillId}: score ${d.score}`).join(', ')})`).join(' | ')}` : 'Aucune session liée'}
+${video.sessions.length > 0 ? `Sessions liées: ${video.sessions.map((s: Record<string, unknown>) => `score total ${s.totalScore}, score moyen ${s.avgScore}`).join(' | ')}` : 'Aucune session liée'}
 
 Génère les highlights pour cette vidéo.`,
           },

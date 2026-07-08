@@ -81,7 +81,9 @@ function estimateTotalTime(drills: PlanDrill[]): number {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function PlansScreen() {
-  const { navigate, selectDrill, startPlanExecution } = useAppStore()
+  const navigate = useAppStore(s => s.navigate)
+  const selectDrill = useAppStore(s => s.selectDrill)
+  const startPlanExecution = useAppStore(s => s.startPlanExecution)
   const queryClient = useQueryClient()
   const { t } = useTranslation()
 

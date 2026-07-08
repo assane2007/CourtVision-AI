@@ -33,8 +33,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Use ASR SDK
-    const asr = await ZAI.createASR()
-    const transcription = await asr.transcribe({ audio })
+    const zai = await ZAI.create()
+    const transcription = await zai.audio.asr.create({ file_base64: audio })
 
     const text = typeof transcription === 'string' ? transcription : (transcription as Record<string, unknown>)?.text || ''
 

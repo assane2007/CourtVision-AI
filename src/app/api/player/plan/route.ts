@@ -7,7 +7,7 @@ import { requirePlayer } from "@/lib/player/db-helpers";
 import { trackError } from "@/lib/monitoring";
 
 const planSchema = z.object({
-  plan: z.record(z.unknown()),
+  plan: z.record(z.string(), z.unknown()),
 });
 
 export async function POST(req: NextRequest) {

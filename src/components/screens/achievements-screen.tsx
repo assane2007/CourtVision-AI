@@ -24,7 +24,7 @@ interface Achievement {
 }
 
 export function AchievementsScreen() {
-  const { navigate } = useAppStore()
+  const navigate = useAppStore(s => s.navigate)
   const { t, language } = useTranslation()
 
   const { data, isLoading, isError, refetch } = useQuery<{

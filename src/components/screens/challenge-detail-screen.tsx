@@ -39,7 +39,7 @@ export default function ChallengeDetailScreen() {
   const selectedDrillId = useAppStore(s => s.selectedDrillId)
   const queryClient = useQueryClient()
 
-  const { data, isLoading } = useQuery<ChallengeData>({
+  const { data, isLoading, isError } = useQuery<ChallengeData>({
     queryKey: ['challenge-detail', selectedDrillId],
     queryFn: () => apiFetch(`/api/challenges/${selectedDrillId || 'none'}`),
     enabled: !!selectedDrillId,

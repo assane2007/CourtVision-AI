@@ -67,14 +67,15 @@ export async function POST(req: NextRequest) {
       data: {
         playerId: player.id,
         overallScore: parsed.overallScore,
-        rating: parsed.rating,
+        rating: parsed.rating === 'excellent' ? 4 : parsed.rating === 'good' ? 3 : parsed.rating === 'average' ? 2 : 1,
         elbowScore: parsed.elbowScore,
         kneeScore: parsed.kneeScore,
         alignmentScore: parsed.alignmentScore,
         balanceScore: parsed.balanceScore,
         trunkScore: parsed.trunkScore,
         feedback: parsed.feedback,
-        date: parsed.date,
+        categories: '{}',
+        date: new Date(parsed.date),
       },
     });
 
@@ -89,8 +90,15 @@ export async function POST(req: NextRequest) {
       });
 
       const updateData: Partial<Record<SkillKey, number>> = {};
+      const skillMap: Record<SkillKey, number> = {
+        shooting: player.shooting as number,
+        handling: player.handling as number,
+        finishing: player.finishing as number,
+        defense: player.defense as number,
+        iq: player.iq as number,
+      };
       for (const [sk, nudge] of Object.entries(nudges)) {
-        const current = player[sk as SkillKey];
+        const current = skillMap[sk as SkillKey];
         const clamped = Math.max(1, current + (nudge ?? 0));
         updateData[sk as SkillKey] = clamped;
       }

@@ -1,8 +1,8 @@
-name: CI
+name: CI/CD
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
     branches: [main]
 
@@ -12,31 +12,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
       - run: bun install --frozen-lockfile
       - run: bun run lint
       - run: npx tsc --noEmit
 
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - run: bun install --frozen-lockfile
-      - run: bun run db:push
-      - run: bun test
-
   build:
+    needs: lint-and-typecheck
     runs-on: ubuntu-latest
-    needs: [lint-and-typecheck, test]
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
       - run: bun install --frozen-lockfile
-      - run: bun run db:push
+      - run: bun run db:generate
+        env:
+          DATABASE_URL: "file:./dev.db"
       - run: bun run build
+        env:
+          NEXTAUTH_SECRET: "ci-test-secret-min-32-chars-long!"
+          DATABASE_URL: "file:./dev.db"

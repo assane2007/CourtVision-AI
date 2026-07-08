@@ -87,6 +87,7 @@ export async function GET(request: Request) {
         createdAt: true,
         xp: true,
         xpLevel: true,
+        subscriptionStatus: true,
         _count: {
           select: {
             sessions: true,

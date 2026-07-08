@@ -1,6 +1,13 @@
 // Coach Chat V2 — prompts and conversation style per archetype
 import { Archetype, SkillDNA, SkillKey, SKILL_META } from "./iq-engine";
-import { PlayerProfile } from "./store";
+interface PlayerProfile {
+  name: string;
+  age: number | null;
+  position: string | null;
+  heightCm: number | null;
+  weightKg: number | null;
+  yearsExperience: number | null;
+}
 
 export type CoachContext = {
   profile: PlayerProfile;

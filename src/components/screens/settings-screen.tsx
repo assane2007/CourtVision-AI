@@ -109,6 +109,21 @@ export function SettingsScreen() {
     staleTime: 60_000,
   })
 
+  // Fetch player for subscription status
+  const { data: playerData } = useQuery<{ subscriptionStatus: string }>({
+    queryKey: ['player'],
+    queryFn: () => apiFetch('/api/player'),
+    staleTime: 60_000,
+  })
+  const subscriptionStatus = playerData?.subscriptionStatus ?? 'free'
+
+  // Map subscription status to i18n key
+  const planLabel = (key: string) => {
+    if (key === 'pro') return t('pricing.pro')
+    if (key === 'elite') return t('pricing.elite')
+    return t('pricing.free')
+  }
+
   // Fetch weekly stats for progress display
   const { data: statsData } = useQuery<{
     weekSessions: number
@@ -241,7 +256,7 @@ export function SettingsScreen() {
                   {/* Séances par semaine */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">
+                      <Label htmlFor="weekly-goal-sessions" className="text-sm font-medium">
                         {t('settings.sessionsPerWeek')}
                       </Label>
                       <span className="text-sm font-bold text-orange-500 tabular-nums">
@@ -249,6 +264,7 @@ export function SettingsScreen() {
                       </span>
                     </div>
                     <Slider
+                      id="weekly-goal-sessions"
                       value={[settings.weeklyGoalSessions]}
                       onValueChange={handleWeeklyGoalSessions}
                       min={1}
@@ -277,7 +293,7 @@ export function SettingsScreen() {
                   {/* Répétitions par semaine */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">
+                      <Label htmlFor="weekly-goal-reps" className="text-sm font-medium">
                         {t('settings.repsPerWeek')}
                       </Label>
                       <span className="text-sm font-bold text-orange-500 tabular-nums">
@@ -285,6 +301,7 @@ export function SettingsScreen() {
                       </span>
                     </div>
                     <Slider
+                      id="weekly-goal-reps"
                       value={[settings.weeklyGoalReps]}
                       onValueChange={handleWeeklyGoalReps}
                       min={10}
@@ -324,7 +341,7 @@ export function SettingsScreen() {
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">
+                    <Label htmlFor="rest-duration-select" className="text-sm font-medium">
                       {t('settings.restDuration')}
                     </Label>
                     <Select
@@ -332,7 +349,7 @@ export function SettingsScreen() {
                       onValueChange={handleRestChange}
                       disabled={saveMutation.isPending}
                     >
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger id="rest-duration-select" className="w-full">
                         <Timer className="mr-2 h-4 w-4 text-muted-foreground" />
                         <SelectValue placeholder={t('settings.selectPlaceholder')} />
                       </SelectTrigger>
@@ -403,7 +420,7 @@ export function SettingsScreen() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <Languages className="h-4 w-4 text-muted-foreground" />
-                      <Label className="text-sm font-medium">
+                      <Label htmlFor="language-select" className="text-sm font-medium">
                         {t('settings.language')}
                       </Label>
                     </div>
@@ -412,7 +429,7 @@ export function SettingsScreen() {
                       onValueChange={handleLanguageChange}
                       disabled={saveMutation.isPending}
                     >
-                      <SelectTrigger className="w-[140px]">
+                      <SelectTrigger id="language-select" className="w-[140px]">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -525,17 +542,19 @@ export function SettingsScreen() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium">{t('settings.currentPlan')}</p>
-                      <p className="text-xs text-muted-foreground">{t('pricing.free')}</p>
+                      <p className="text-xs text-muted-foreground">{planLabel(subscriptionStatus)}</p>
                     </div>
-                    <Badge variant="secondary" className="text-xs">{t('pricing.free')}</Badge>
+                    <Badge variant={subscriptionStatus !== 'free' ? 'default' : 'secondary'} className="text-xs">{planLabel(subscriptionStatus)}</Badge>
                   </div>
-                  <Button
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold"
-                    onClick={() => useAppStore.getState().navigate('pricing')}
-                  >
-                    <Flame className="h-4 w-4 mr-2" />
-                    {t('settings.viewOffers')}
-                  </Button>
+                  {subscriptionStatus === 'free' && (
+                    <Button
+                      className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold"
+                      onClick={() => useAppStore.getState().navigate('pricing')}
+                    >
+                      <Flame className="h-4 w-4 mr-2" />
+                      {t('settings.viewOffers')}
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>

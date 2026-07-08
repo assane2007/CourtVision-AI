@@ -2,7 +2,7 @@
 
 import { Component, type ReactNode, type ErrorInfo } from "react";
 import { Circle } from "lucide-react";
-import { useI18n } from "@/lib/i18n/language-provider";
+import { useTranslation } from "@/components/providers/language-provider";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -14,7 +14,7 @@ interface ErrorBoundaryState {
 }
 
 function ErrorFallback() {
-  const { t } = useI18n();
+  const { td } = useTranslation();
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-cv-bg px-6">
@@ -26,12 +26,12 @@ function ErrorFallback() {
 
         {/* Title */}
         <h2 className="mb-1.5 text-lg font-semibold text-cv-text">
-          {t("error.title")}
+          {td("Une erreur est survenue", "An error occurred")}
         </h2>
 
         {/* Message */}
         <p className="mb-6 text-sm leading-relaxed text-cv-text-muted">
-          {t("error.message")}
+          {td("Quelque chose s'est mal passé. Veuillez réessayer.", "Something went wrong. Please try again.")}
         </p>
 
         {/* Actions */}
@@ -41,20 +41,20 @@ function ErrorFallback() {
             onClick={() => window.location.reload()}
             className="rounded-lg bg-cv-lime px-5 py-2.5 text-sm font-semibold text-black hover:bg-[#bef264] transition-colors"
           >
-            {t("error.reload")}
+            {td("Recharger la page", "Reload page")}
           </button>
           <button
             type="button"
             onClick={() => { window.location.href = "/"; }}
             className="rounded-lg bg-cv-subtle-hover px-5 py-2.5 text-sm font-medium text-cv-text hover:bg-white/[0.1] transition-colors"
           >
-            {t("error.home")}
+            {td("Retour à l'accueil", "Go home")}
           </button>
         </div>
 
         {/* Reported note */}
         <p className="mt-5 text-xs text-cv-text-muted/70">
-          {t("error.reported")}
+          {td("L'erreur a été signalée.", "Error reported.")}
         </p>
       </div>
     </div>

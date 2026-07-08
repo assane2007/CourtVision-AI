@@ -79,8 +79,7 @@ Réponds en français, de manière directe et utile pour un joueur en plein entr
     // Generate TTS audio
     let audioBase64 = ''
     try {
-      const tts = await zai.createTTS()
-      const audioResponse = await tts.generate({ text: replyText.slice(0, 500) })
+      const audioResponse = await zai.audio.tts.create({ input: replyText.slice(0, 500) })
       audioBase64 = typeof audioResponse === 'string' ? audioResponse : ''
     } catch {
       // TTS failure is non-critical, continue without audio

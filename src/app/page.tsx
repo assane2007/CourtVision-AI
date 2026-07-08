@@ -92,7 +92,9 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 export default function Home() {
   const { td } = useTranslation()
   const { data: session, status } = useSession()
-  const { currentScreen, navigate, selectDrill } = useAppStore()
+  const currentScreen = useAppStore(s => s.currentScreen)
+  const navigate = useAppStore(s => s.navigate)
+  const selectDrill = useAppStore(s => s.selectDrill)
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,

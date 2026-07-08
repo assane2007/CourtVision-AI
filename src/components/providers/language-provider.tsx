@@ -78,9 +78,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // ── Persist language to localStorage when it changes ─────────────────────
+  // ── Persist language to localStorage & sync <html lang> when it changes ──
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, language)
+    document.documentElement.lang = language
   }, [language])
 
   // ── setLanguage: update state + persist to server ────────────────────────

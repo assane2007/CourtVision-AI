@@ -113,7 +113,7 @@ interface StatsResponse {
 }
 
 export function StatsScreen() {
-  const { navigate } = useAppStore()
+  const navigate = useAppStore(s => s.navigate)
   const { t, td, language } = useTranslation()
 
   // ── Fetch stats ─────────────────────────────────────────────────

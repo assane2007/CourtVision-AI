@@ -17,7 +17,8 @@ const tabs: { icon: typeof Home; labelKey: TranslationKey; screen: Screen }[] = 
 ]
 
 export function BottomNav() {
-  const { currentScreen, navigate } = useAppStore()
+  const currentScreen = useAppStore(s => s.currentScreen)
+  const navigate = useAppStore(s => s.navigate)
   const { t } = useTranslation()
 
   return (
@@ -32,7 +33,7 @@ export function BottomNav() {
               role="tab"
               aria-selected={isActive}
               onClick={() => { hapticLight(); navigate(tab.screen) }}
-              className={`flex flex-col items-center gap-0.5 rounded-xl px-1.5 py-1.5 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              className={`flex flex-col items-center justify-center gap-0.5 rounded-xl min-h-[44px] min-w-[44px] px-1.5 py-1.5 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 isActive
                   ? 'text-orange-500'
                   : 'text-muted-foreground hover:text-foreground'

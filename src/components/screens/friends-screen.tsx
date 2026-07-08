@@ -28,9 +28,10 @@ interface FriendItem {
   avatar: string | null
   xpLevel: number
   position: string
-  status: string
-  isRequester: boolean
-  createdAt: string
+  status?: string
+  isRequester?: boolean
+  friendshipStatus?: string | null
+  createdAt?: string
 }
 
 interface FriendCounts {
@@ -41,7 +42,7 @@ interface FriendCounts {
 
 type Tab = 'all' | 'friends' | 'sent' | 'received' | 'blocked'
 
-const TABS: { value: Tab; label: string; icon: typeof Users }[] = [
+const TABS: { value: Tab; label: string; labelEn: string; icon: typeof Users }[] = [
   { value: 'all', label: 'Tous', labelEn: 'All', icon: Users },
   { value: 'friends', label: 'Amis', labelEn: 'Friends', icon: UserCheck },
   { value: 'sent', label: 'Envoyées', labelEn: 'Sent', icon: Send },
@@ -172,7 +173,7 @@ export default function FriendsScreen() {
                   }`}
                 >
                   <t.icon className="h-3.5 w-3.5" />
-                  {td(t.label, (t as { labelEn?: string }).labelEn || t.label)}
+                  {td(t.label, t.labelEn)}
                   {t.value === 'friends' && data?.counts && (
                     <span className="ml-0.5">{data.counts.friends}</span>
                   )}
@@ -214,29 +215,29 @@ export default function FriendsScreen() {
           </div>
         ) : (
           <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-2">
-            {displayItems.map((item: Record<string, unknown>) => {
+            {(displayItems as FriendItem[]).map((item) => {
               const isSearchResult = searchQuery && !('status' in item && (item.status === 'pending' || item.status === 'accepted'))
               return (
-                <motion.div key={item.id as string} variants={itemVariants}>
+                <motion.div key={item.id} variants={itemVariants}>
                   <div
                     className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card"
                     onClick={() => isSearchResult && navigate('profile-other')}
                   >
                     <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold shrink-0">
                       {item.avatar ? (
-                        <img src={item.avatar as string} alt={item.name} className="w-full h-full rounded-full object-cover" />
+                        <img src={item.avatar} alt={item.name} className="w-full h-full rounded-full object-cover" />
                       ) : (
-                        (item.name as string)?.charAt(0).toUpperCase()
+                        item.name?.charAt(0).toUpperCase()
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium truncate">{item.name as string}</span>
+                        <span className="text-sm font-medium truncate">{item.name}</span>
                         <Badge variant="outline" className="text-[10px] shrink-0">
-                          {td('Niv.', 'Lv.')}{item.xpLevel as number}
+                          {td('Niv.', 'Lv.')}{item.xpLevel}
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground capitalize">{item.position as string}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{item.position}</p>
                     </div>
 
                     {isSearchResult && !item.friendshipStatus && (

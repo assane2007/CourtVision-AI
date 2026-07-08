@@ -4,7 +4,7 @@ import { trackError } from '@/lib/monitoring'
 import Stripe from 'stripe'
 
 const stripe = process.env.STRIPE_SECRET_KEY
-  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' })
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-06-24.dahlia' })
   : null
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET

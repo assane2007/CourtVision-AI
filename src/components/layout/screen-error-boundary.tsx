@@ -2,7 +2,7 @@
 
 import { Component, type ReactNode, type ErrorInfo } from "react";
 import { AlertTriangle } from "lucide-react";
-import { useI18n } from "@/lib/i18n/language-provider";
+import { useTranslation } from "@/components/providers/language-provider";
 
 interface ScreenErrorBoundaryProps {
   children: ReactNode;
@@ -21,7 +21,7 @@ function ScreenErrorFallback({
   screenName: string;
   onRetry?: () => void;
 }) {
-  const { t } = useI18n();
+  const { td } = useTranslation();
 
   return (
     <div className="flex items-center justify-center p-8">
@@ -35,7 +35,7 @@ function ScreenErrorFallback({
         </h3>
 
         <p className="mb-5 text-xs leading-relaxed text-cv-text-secondary">
-          {t("common.error")}
+          {td("Une erreur est survenue", "An error occurred")}
         </p>
 
         <button
@@ -43,7 +43,7 @@ function ScreenErrorFallback({
           onClick={onRetry}
           className="rounded-lg bg-cv-lime px-5 py-2 text-sm font-semibold text-black hover:bg-[#bef264] transition-colors"
         >
-          {t("common.retry")}
+          {td("Réessayer", "Retry")}
         </button>
       </div>
     </div>

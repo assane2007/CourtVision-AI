@@ -4,7 +4,6 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { requirePlayer } from "@/lib/player/db-helpers";
 import { levelFromXP } from "@/lib/player/iq-engine";
-import { calcTotalXP } from "@/lib/player/xp-engine";
 import type { SkillKey } from "@/lib/player/iq-engine";
 import { trackError } from "@/lib/monitoring";
 
@@ -18,30 +17,13 @@ export async function GET() {
 
     const player = await requirePlayer(playerId);
 
-    // Aggregate XP (use Number() to convert BigInt from SQLite)
-    const [workoutXPResult, matchXPResult] = await Promise.all([
-      db.workoutLog.aggregate({
-        where: { playerId: player.id },
-        _sum: { xpEarned: true },
-      }),
-      db.matchLog.aggregate({
-        where: { playerId: player.id },
-        _sum: { xpEarned: true },
-      }),
+    const [totalWorkouts, _totalAchievements] = await Promise.all([
+      db.workoutSession.count({ where: { playerId: player.id } }),
+      db.achievement.count({ where: { playerId: player.id } }),
     ]);
 
-    const [totalWorkouts, totalMatches, totalAchievements, wins] = await Promise.all([
-      db.workoutLog.count({ where: { playerId: player.id } }),
-      db.matchLog.count({ where: { playerId: player.id } }),
-      db.playerAchievement.count({ where: { playerId: player.id } }),
-      db.matchLog.count({ where: { playerId: player.id, result: "W" } }),
-    ]);
-
-    const workoutXP = Number(workoutXPResult._sum.xpEarned ?? 0);
-    const matchXP = Number(matchXPResult._sum.xpEarned ?? 0);
-    const winRate = totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0;
-
-    const totalXP = calcTotalXP(workoutXP, matchXP, totalAchievements);
+    // XP is now stored directly on the Player model
+    const totalXP = player.xp;
     const levelInfo = levelFromXP(totalXP);
 
     const skillDNA: Record<SkillKey, number> = {
@@ -52,26 +34,31 @@ export async function GET() {
       iq: player.iq,
     };
 
-    // Recent activity
-    const [recentWorkouts, recentMatches] = await Promise.all([
-      db.workoutLog.findMany({
-        where: { playerId: player.id },
-        orderBy: { date: "desc" },
-        take: 5,
-        select: { id: true, planType: true, planTitle: true, date: true, xpEarned: true, durationMin: true },
-      }),
-      db.matchLog.findMany({
-        where: { playerId: player.id },
-        orderBy: { date: "desc" },
-        take: 5,
-        select: { id: true, date: true, opponent: true, result: true, points: true, xpEarned: true },
-      }),
-    ]);
+    // Recent activity (workout sessions only — MatchLog model removed)
+    const recentWorkouts = await db.workoutSession.findMany({
+      where: { playerId: player.id },
+      orderBy: { startedAt: "desc" },
+      take: 10,
+      select: {
+        id: true,
+        startedAt: true,
+        totalDurationSec: true,
+        totalScore: true,
+        avgScore: true,
+        totalDrills: true,
+        notes: true,
+      },
+    });
 
-    const recentActivity = [
-      ...recentWorkouts.map((w) => ({ type: "workout" as const, ...w })),
-      ...recentMatches.map((m) => ({ type: "match" as const, ...m })),
-    ].sort((a, b) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0)).slice(0, 10);
+    const recentActivity = recentWorkouts.map((w) => ({
+      type: "workout" as const,
+      id: w.id,
+      date: w.startedAt.toISOString(),
+      totalDurationSec: w.totalDurationSec,
+      totalScore: w.totalScore,
+      avgScore: w.avgScore,
+      totalDrills: w.totalDrills,
+    }));
 
     return NextResponse.json({
       totalXP,
@@ -79,8 +66,8 @@ export async function GET() {
       streak: player.currentStreak,
       skillDNA,
       totalWorkouts,
-      totalMatches,
-      winRate,
+      totalMatches: 0,
+      winRate: 0,
       recentActivity,
     });
   } catch (err: unknown) {

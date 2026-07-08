@@ -88,11 +88,14 @@ export default function FeedScreen() {
     mutationFn: (postId: string) => fetch(`/api/feed/${postId}/like`, { method: 'POST' })
       .then(r => r.json()),
     onSuccess: (_, postId) => {
-      queryClient.setQueriesData<ReturnType<typeof apiFetch<{ posts: FeedPost[] }>>>({ queryKey: ['feed'] }, (old) => {
+      queryClient.setQueriesData<{ pages: { posts: FeedPost[]; nextCursor: string | null }[] }>({ queryKey: ['feed'] }, (old) => {
         if (!old) return old
         return {
           ...old,
-          posts: old.posts.map(p => p.id === postId ? { ...p, isLiked: !p.isLiked, likesCount: p.isLiked ? p.likesCount - 1 : p.likesCount + 1 } : p),
+          pages: old.pages.map(page => ({
+            ...page,
+            posts: page.posts.map(p => p.id === postId ? { ...p, isLiked: !p.isLiked, likesCount: p.isLiked ? p.likesCount - 1 : p.likesCount + 1 } : p),
+          })),
         }
       })
     },

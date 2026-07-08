@@ -159,7 +159,7 @@ Règles:
         // Validate and sanitize
         parsed.title = String(parsed.title || 'Plan IA').slice(0, 100)
         parsed.description = String(parsed.description || '').slice(0, 500)
-        parsed.difficulty = ['beginner', 'intermediate', 'advanced'].includes(parsed.difficulty) ? parsed.difficulty : player.level
+        parsed.difficulty = ['beginner', 'intermediate', 'advanced'].includes(String(parsed.difficulty)) ? parsed.difficulty : player.level
         parsed.durationMin = duration
         parsed.focusAreas = Array.isArray(parsed.focusAreas) ? parsed.focusAreas.slice(0, 5) : []
         parsed.warmup = String(parsed.warmup || '').slice(0, 300)
@@ -178,7 +178,7 @@ Règles:
           : []
 
         // Find matching drill IDs from our DB
-        const matchedDrillIds = parsed.drills.map((d: { drillName: string }) => {
+        const matchedDrillIds = (parsed.drills as Array<{ drillName: string }>).map((d) => {
           const match = allDrills.find(ad =>
             ad.nameFr.toLowerCase().includes(d.drillName.toLowerCase()) ||
             d.drillName.toLowerCase().includes(ad.nameFr.toLowerCase())
@@ -190,10 +190,10 @@ Règles:
         const workout = await db.generatedWorkout.create({
           data: {
             playerId,
-            title: parsed.title,
-            description: parsed.description,
-            difficulty: parsed.difficulty,
-            durationMin: parsed.durationMin,
+            title: parsed.title as string,
+            description: parsed.description as string,
+            difficulty: parsed.difficulty as string,
+            durationMin: parsed.durationMin as number,
             focusAreas: JSON.stringify(parsed.focusAreas),
             drillIds: JSON.stringify(matchedDrillIds),
             aiReasoning: JSON.stringify({

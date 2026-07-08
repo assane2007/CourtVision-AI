@@ -29,18 +29,22 @@ export async function POST(req: NextRequest) {
     const parsed = videoAnalysisSchema.parse(body);
     const player = await requirePlayer(playerId);
 
-    const videoAnalysis = await db.videoAnalysis.create({
+    const videoAnalysis = await db.formAnalysis.create({
       data: {
         playerId: player.id,
-        phase: parsed.phase,
         overallScore: parsed.overallScore,
-        phaseBreakdown: parsed.phaseBreakdown,
-        aiSummary: parsed.aiSummary,
-        insights: parsed.insights,
-        recommendations: parsed.recommendations,
+        rating: 0,
+        feedback: JSON.stringify({
+          phase: parsed.phase,
+          phaseBreakdown: parsed.phaseBreakdown,
+          aiSummary: parsed.aiSummary,
+          insights: parsed.insights,
+          recommendations: parsed.recommendations,
+          durationSec: parsed.durationSec,
+        }),
         date: parsed.date,
-        durationSec: parsed.durationSec,
-      },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
     });
 
     return NextResponse.json(
@@ -48,14 +52,14 @@ export async function POST(req: NextRequest) {
         videoAnalysis: {
           id: videoAnalysis.id,
           playerId: videoAnalysis.playerId,
-          phase: videoAnalysis.phase,
+          phase: parsed.phase,
           overallScore: videoAnalysis.overallScore,
-          phaseBreakdown: videoAnalysis.phaseBreakdown,
-          aiSummary: videoAnalysis.aiSummary,
-          insights: videoAnalysis.insights,
-          recommendations: videoAnalysis.recommendations,
+          phaseBreakdown: parsed.phaseBreakdown,
+          aiSummary: parsed.aiSummary,
+          insights: parsed.insights,
+          recommendations: parsed.recommendations,
           date: videoAnalysis.date,
-          durationSec: videoAnalysis.durationSec,
+          durationSec: parsed.durationSec,
           createdAt: videoAnalysis.createdAt,
         },
       },
@@ -91,7 +95,7 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const limit = parseInt(url.searchParams.get("limit") ?? "20", 10);
 
-    const videoAnalyses = await db.videoAnalysis.findMany({
+    const videoAnalyses = await db.formAnalysis.findMany({
       where: { playerId: player.id },
       orderBy: { date: "desc" },
       take: Math.min(limit, 200),

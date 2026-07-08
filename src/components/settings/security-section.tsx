@@ -112,7 +112,7 @@ export function SecuritySection() {
         <div className="flex items-center gap-3">
           <Lock className="h-4 w-4 text-muted-foreground" />
           <div>
-            <p className="text-sm font-medium">{t('settings.twoFactor')}</p>
+            <Label htmlFor="2fa-toggle" className="text-sm font-medium">{t('settings.twoFactor')}</Label>
             <p className="text-xs text-muted-foreground">{t('settings.twoFactorDesc')}</p>
           </div>
         </div>

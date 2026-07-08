@@ -15,20 +15,22 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ type: string }> },
 ) {
+  let structType: string | undefined
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
-    const { type } = await params
-    if (!VALID_TYPES.includes(type as StructuredType)) {
+    const resolvedParams = await params
+    structType = resolvedParams.type
+    if (!VALID_TYPES.includes(structType as StructuredType)) {
       return NextResponse.json({ error: 'Type invalide. Choisissez: form_analysis, workout_plan, weakness_report' }, { status: 400 })
     }
 
     const playerId = session.user.id
 
-    const rl = rateLimit(`ai-structured:${playerId}:${type}`, 10, 15 * 60 * 1000)
+    const rl = rateLimit(`ai-structured:${playerId}:${structType}`, 10, 15 * 60 * 1000)
     if (!rl.success) {
       return NextResponse.json({ error: 'Trop de requêtes. Réessayez plus tard.' }, { status: 429 })
     }
@@ -66,7 +68,7 @@ export async function GET(
     let systemPrompt = ''
     let responseFormat = ''
 
-    switch (type as StructuredType) {
+    switch (structType as StructuredType) {
       case 'form_analysis':
         systemPrompt = `Tu es un analyste de forme basketball expert. Analyse les données du joueur.
 Joueur: ${player.name}, ${player.position}, niveau ${player.level}
@@ -120,16 +122,17 @@ ${responseFormat}`
       }
       if (parsed !== null) {
         // Validate and sanitize the structured output
-        if (type === 'form_analysis') {
+        if (structType === 'form_analysis') {
           parsed.overallScore = Math.max(0, Math.min(100, Math.round(Number(parsed.overallScore) || 50)))
           if (typeof parsed.categories === 'object' && parsed.categories) {
-            for (const key of Object.keys(parsed.categories)) {
-              parsed.categories[key] = Math.max(0, Math.min(100, Math.round(Number(parsed.categories[key]) || 50)))
+            const cats = parsed.categories as Record<string, unknown>
+            for (const key of Object.keys(cats)) {
+              cats[key] = Math.max(0, Math.min(100, Math.round(Number(cats[key]) || 50)))
             }
           }
           parsed.summary = String(parsed.summary || '').slice(0, 500)
           parsed.topImprovement = String(parsed.topImprovement || '').slice(0, 200)
-        } else if (type === 'workout_plan') {
+        } else if (structType === 'workout_plan') {
           parsed.title = String(parsed.title || 'Plan IA').slice(0, 100)
           parsed.durationMin = Math.max(10, Math.min(120, Math.round(Number(parsed.durationMin) || 30)))
           parsed.drills = Array.isArray(parsed.drills) ? parsed.drills.slice(0, 10).map((d: Record<string, unknown>) => ({
@@ -141,7 +144,7 @@ ${responseFormat}`
             reasoning: String(d.reasoning || '').slice(0, 300),
           })) : []
           parsed.expectedOutcome = String(parsed.expectedOutcome || '').slice(0, 500)
-        } else if (type === 'weakness_report') {
+        } else if (structType === 'weakness_report') {
           parsed.weaknesses = Array.isArray(parsed.weaknesses) ? parsed.weaknesses.slice(0, 5).map((w: Record<string, unknown>) => ({
             area: String(w.area || '').slice(0, 100),
             severity: ['low', 'medium', 'high'].includes(String(w.severity)) ? String(w.severity) : 'medium',
@@ -162,7 +165,7 @@ ${responseFormat}`
 
     return NextResponse.json({ error: 'Erreur d\'analyse IA' }, { status: 500 })
   } catch (error) {
-    trackError(`GET /api/ai/structured/${type}`, error)
+    trackError(`GET /api/ai/structured/${structType ?? 'unknown'}`, error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

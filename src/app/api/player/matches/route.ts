@@ -11,8 +11,8 @@ import {
   calcNewStreak,
   applySkillGains,
   checkNewAchievements,
-  calcTotalXP,
 } from "@/lib/player/xp-engine";
+import { ACHIEVEMENTS } from "@/lib/player/iq-engine";
 
 const matchSchema = z.object({
   date: z.string().min(1),
@@ -71,35 +71,50 @@ export async function POST(req: NextRequest) {
     // Apply skill gains to DNA
     const newDNA = applySkillGains(player, skillGains);
 
-    // Calculate new streak
-    const { streak, todayStr } = calcNewStreak(player.lastActivityDate, player.currentStreak);
+    // Calculate new streak (convert Date to string for the function)
+    const { streak } = calcNewStreak(
+      player.lastActivityDate?.toDateString() ?? null,
+      player.currentStreak
+    );
 
-    // Create match log
-    const match = await db.matchLog.create({
+    // Store match data in notes JSON since MatchLog model was removed
+    const matchNotes = JSON.stringify({
+      isMatch: true,
+      opponent: parsed.opponent,
+      result: parsed.result,
+      teamScore: parsed.teamScore,
+      oppScore: parsed.oppScore,
+      minutes: parsed.minutes,
+      points: parsed.points,
+      rebounds: parsed.rebounds,
+      assists: parsed.assists,
+      steals: parsed.steals,
+      blocks: parsed.blocks,
+      turnovers: parsed.turnovers,
+      fgMade: parsed.fgMade,
+      fgAttempts: parsed.fgAttempts,
+      tpMade: parsed.tpMade,
+      tpAttempts: parsed.tpAttempts,
+      userNotes: parsed.notes,
+      xpEarned,
+      skillGains,
+    });
+
+    // Create as WorkoutSession (MatchLog model removed)
+    const matchSession = await db.workoutSession.create({
       data: {
         playerId: player.id,
-        date: parsed.date,
-        opponent: parsed.opponent,
-        result: parsed.result,
-        teamScore: parsed.teamScore,
-        oppScore: parsed.oppScore,
-        minutes: parsed.minutes,
-        points: parsed.points,
-        rebounds: parsed.rebounds,
-        assists: parsed.assists,
-        steals: parsed.steals,
-        blocks: parsed.blocks,
-        turnovers: parsed.turnovers,
-        fgMade: parsed.fgMade,
-        fgAttempts: parsed.fgAttempts,
-        tpMade: parsed.tpMade,
-        tpAttempts: parsed.tpAttempts,
-        notes: parsed.notes,
-        xpEarned,
+        startedAt: new Date(parsed.date),
+        totalDurationSec: parsed.minutes * 60,
+        totalScore: parsed.points,
+        totalReps: parsed.fgAttempts,
+        totalDrills: 1,
+        avgScore: parsed.fgAttempts > 0 ? Math.round((parsed.fgMade / parsed.fgAttempts) * 100) : 0,
+        notes: matchNotes,
       },
     });
 
-    // Update player DNA, streak, and lastActivityDate
+    // Update player DNA, streak, XP, and lastActivityDate
     await db.player.update({
       where: { id: player.id },
       data: {
@@ -109,35 +124,24 @@ export async function POST(req: NextRequest) {
         defense: newDNA.defense,
         iq: newDNA.iq,
         currentStreak: streak,
-        lastActivityDate: todayStr,
+        lastActivityDate: new Date(),
+        xp: { increment: xpEarned },
       },
     });
 
-    // Check achievements
-    const allWorkouts = await db.workoutLog.count({ where: { playerId: player.id } });
-    const allMatches = await db.matchLog.count({ where: { playerId: player.id } });
-    const allAchievements = await db.playerAchievement.findMany({
-      where: { playerId: player.id },
-      select: { achievementId: true },
-    });
-    const unlockedIds = allAchievements.map((a) => a.achievementId);
+    // Check achievements using WorkoutSession and Achievement models
+    const allWorkouts = await db.workoutSession.count({ where: { playerId: player.id } });
+    const allMatches = 0; // MatchLog model removed
 
-    const workoutsXP = await db.workoutLog.aggregate({
+    const existingAchievements = await db.achievement.findMany({
       where: { playerId: player.id },
-      _sum: { xpEarned: true },
+      select: { type: true },
     });
-    const matchesXP = await db.matchLog.aggregate({
-      where: { playerId: player.id },
-      _sum: { xpEarned: true },
-    });
+    const unlockedIds = existingAchievements.map((a) => a.type);
 
-    const totalXP = calcTotalXP(
-      workoutsXP._sum.xpEarned ?? 0,
-      matchesXP._sum.xpEarned ?? 0,
-      unlockedIds.length
-    );
+    const totalXP = player.xp + xpEarned;
 
-    const newAchivementIds = checkNewAchievements(
+    const newAchievementIds = checkNewAchievements(
       allWorkouts,
       allMatches,
       streak,
@@ -145,44 +149,43 @@ export async function POST(req: NextRequest) {
       unlockedIds
     );
 
-    if (newAchivementIds.length > 0) {
-      await db.playerAchievement.createMany({
-        data: newAchivementIds.map((achievementId) => ({
-          playerId: player.id,
-          achievementId,
-        })),
+    if (newAchievementIds.length > 0) {
+      await db.achievement.createMany({
+        data: newAchievementIds.map((id) => {
+          const def = ACHIEVEMENTS.find((a) => a.id === id);
+          return {
+            playerId: player.id,
+            type: id,
+            title: def?.name.en ?? id,
+            description: def?.description.en ?? "",
+            icon: def?.emoji ?? "\uD83C\uDFC6",
+          };
+        }),
       });
     }
 
-    return NextResponse.json({
-      match: {
-        id: match.id,
-        playerId: match.playerId,
-        date: match.date,
-        opponent: match.opponent,
-        result: match.result,
-        teamScore: match.teamScore,
-        oppScore: match.oppScore,
-        minutes: match.minutes,
-        points: match.points,
-        rebounds: match.rebounds,
-        assists: match.assists,
-        steals: match.steals,
-        blocks: match.blocks,
-        turnovers: match.turnovers,
-        fgMade: match.fgMade,
-        fgAttempts: match.fgAttempts,
-        tpMade: match.tpMade,
-        tpAttempts: match.tpAttempts,
-        notes: match.notes,
-        xpEarned: match.xpEarned,
-        createdAt: match.createdAt,
+    return NextResponse.json(
+      {
+        session: {
+          id: matchSession.id,
+          playerId: matchSession.playerId,
+          startedAt: matchSession.startedAt,
+          totalDurationSec: matchSession.totalDurationSec,
+          totalScore: matchSession.totalScore,
+          avgScore: matchSession.avgScore,
+          notes: matchSession.notes,
+          createdAt: matchSession.createdAt,
+        },
+        newAchievements: newAchievementIds,
       },
-      newAchievements: newAchivementIds,
-    }, { status: 201 });
+      { status: 201 }
+    );
   } catch (err: unknown) {
     if (err && typeof err === "object" && "issues" in err) {
-      return NextResponse.json({ error: "Validation failed", details: (err as { issues: unknown }).issues }, { status: 400 });
+      return NextResponse.json(
+        { error: "Validation failed", details: (err as { issues: unknown }).issues },
+        { status: 400 }
+      );
     }
     if (err instanceof Error && err.message === "NO_PLAYER") {
       return NextResponse.json({ error: "No player found" }, { status: 404 });
@@ -204,17 +207,19 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const limit = parseInt(url.searchParams.get("limit") ?? "50", 10);
 
-    const totalCount = await db.matchLog.count({
+    const totalCount = await db.workoutSession.count({
       where: { playerId: player.id },
     });
 
-    const matches = await db.matchLog.findMany({
+    // MatchLog model removed — return all workout sessions
+    // Clients can filter by checking notes for isMatch: true
+    const sessions = await db.workoutSession.findMany({
       where: { playerId: player.id },
-      orderBy: { date: "desc" },
+      orderBy: { startedAt: "desc" },
       take: Math.min(limit, 200),
     });
 
-    return NextResponse.json({ totalCount, matches });
+    return NextResponse.json({ totalCount, sessions });
   } catch (err: unknown) {
     if (err instanceof Error && err.message === "NO_PLAYER") {
       return NextResponse.json({ error: "No player found" }, { status: 404 });
