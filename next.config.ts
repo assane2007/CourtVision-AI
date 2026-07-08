@@ -1,3 +1,4 @@
+import { withSentryConfig } from '@sentry/nextjs'
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -33,7 +34,6 @@ const nextConfig: NextConfig = {
             value: "nosniff",
           },
           {
-            /* Aligned with CSP frame-ancestors 'self' */
             key: "X-Frame-Options",
             value: "SAMEORIGIN",
           },
@@ -55,4 +55,34 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  // Suppress source map uploading during build in CI
+  silent: !process.env.CI,
+
+  // Hide all logs from Sentry during build
+  hideSourceMaps: true,
+
+  // Disable automatic instrumentation of Bun/Node built-ins
+  disableLogger: true,
+
+  // Route handlers to trace
+  routeHandlers: [
+    {
+      method: 'GET',
+      path: '/api/health',
+    },
+  ],
+
+  // In-app include/exclude for better grouping
+  inAppInclude: [
+    { filepath: 'src/app/api/**', family: 'API' },
+    { filepath: 'src/components/screens/**', family: 'Screens' },
+    { filepath: 'src/components/shared/**', family: 'Shared' },
+    { filepath: 'src/lib/**', family: 'Libraries' },
+    { filepath: 'src/stores/**', family: 'State' },
+  ],
+
+  // Performance monitoring
+  tracesSampleRate: 0.1,
+  profilesSampleRate: 0.1,
+});
