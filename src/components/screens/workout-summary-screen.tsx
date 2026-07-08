@@ -209,7 +209,7 @@ function useCountUp(target: number, enabled: boolean): number {
   return value
 }
 
-function ScoreCircle({ score, grade }: { score: number; grade: GradeInfo }) {
+function ScoreCircle({ score, grade: _grade }: { score: number; grade: GradeInfo }) {
   const prefersReducedMotion = useReducedMotion()
   const displayScore = useCountUp(score, !prefersReducedMotion)
   const radius = 70
@@ -417,16 +417,10 @@ async function shareWorkout(result: WorkoutResult, t: (key: TranslationKey) => s
       })
       text = res.shareText
     } else {
-      // Fallback: build locally
-      const bestDrill = result.drills.reduce(
-        (best, d) => (d.score > best.score ? d : best),
-        result.drills[0],
-      )
       text = [
         `🏀 CourtVision AI`,
         `Score: ${result.totalScore}%`,
         `Reps: ${result.totalReps}`,
-        `Exercices: ${result.drills.length}`,
       ].join('\n')
     }
   } catch {
@@ -545,7 +539,7 @@ export default function WorkoutSummaryScreen() {
 
   const handleShare = useCallback(() => {
     if (workoutResult) shareWorkout(workoutResult, t)
-  }, [workoutResult])
+  }, [workoutResult, t])
 
   // ── PR Detection: fetch existing records and compare ──────────────
   const { data: recordsData } = useQuery<RecordsResponse>({

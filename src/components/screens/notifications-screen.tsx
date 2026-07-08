@@ -1,14 +1,13 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
+import { useRef, useEffect } from 'react'
+import { useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft, Bell, UserPlus, Heart, MessageCircle, Trophy, CheckCheck,
   Loader2, Zap, Users, Target,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useNavigation } from '@/stores/navigation'
 import { SwipeToGoBack } from '@/components/shared/swipe-back'
@@ -44,8 +43,8 @@ function formatNotifTime(date: string): string {
 }
 
 export default function NotificationsScreen() {
-  const { t } = useTranslation()
-  const { goBack, navigate } = useNavigation()
+  const { t, td } = useTranslation()
+  const { goBack, navigate: _navigate } = useNavigation()
   const queryClient = useQueryClient()
   const sentinelRef = useRef<HTMLDivElement>(null)
 
@@ -80,7 +79,7 @@ export default function NotificationsScreen() {
     }).then(r => r.json()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
-      toast.success('Toutes les notifications marquées comme lues')
+      toast.success(td('Toutes les notifications marquées comme lues', 'All notifications marked as read'))
     },
   })
 

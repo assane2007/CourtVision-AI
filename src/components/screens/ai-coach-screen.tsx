@@ -135,7 +135,7 @@ export default function AICoachScreen() {
         inputRef.current?.focus()
       }
     },
-    [isLoading],
+    [isLoading, t],
   )
 
   // ── Handle submit ────────────────────────────────────────────────────

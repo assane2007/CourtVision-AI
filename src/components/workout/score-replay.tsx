@@ -6,7 +6,7 @@ import { Play, Pause, RotateCcw, ChevronLeft, ChevronRight, Sparkles, Trophy, Cl
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { WorkoutDrillResult } from '@/stores/app'
-import { getGaugeColor, getGaugeTrackColor, getStarCount, formatTime } from './scoring'
+import { getGaugeColor, getGaugeTrackColor, getStarCount } from './scoring'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -122,17 +122,6 @@ function MiniScoreGauge({ score, size = 120 }: { score: number; size?: number })
 }
 
 // ─── Celebration Particles ─────────────────────────────────────────────────────
-
-interface Particle {
-  id: number
-  x: number
-  y: number
-  size: number
-  color: string
-  rotation: number
-  vx: number
-  vy: number
-}
 
 function CelebrationBurst() {
   const particles = useMemo(() => {

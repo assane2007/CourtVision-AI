@@ -7,36 +7,26 @@ import {
   ArrowLeft,
   Play,
   Pause,
-  SkipBack,
-  SkipForward,
   Maximize,
   Minimize,
   Volume2,
   VolumeX,
-  Settings,
   PenTool,
   Sparkles,
   Download,
   Share2,
   Trash2,
   Loader2,
-  X,
   ChevronLeft,
   ChevronRight,
   Eye,
-  EyeOff,
-  GripVertical,
   CircleDot,
-  Copy,
   Link2,
   FileOutput,
   Star,
-  Highlighter,
   Type,
   Minus,
   Plus,
-  RotateCcw,
-  ChevronDown,
   MessageSquare,
   Check,
   AlertCircle,
@@ -46,15 +36,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Progress } from '@/components/ui/progress'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import {
   Select,
   SelectContent,
@@ -68,13 +56,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import { useNavigation } from '@/stores/navigation'
 import { useTranslation } from '@/components/providers/language-provider'
 import { apiFetch, cn, formatLocaleDate } from '@/lib/utils'
 import { toast } from 'sonner'
-import { containerVariants, itemVariants } from '@/lib/animations'
+import { itemVariants } from '@/lib/animations'
 import { BottomNav } from '@/components/shared/bottom-nav'
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -162,8 +149,8 @@ function formatFileSize(bytes: number): string {
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function VideoPlayerScreen() {
-  const { t } = useTranslation()
-  const { goBack, navigate } = useNavigation()
+  const { td } = useTranslation()
+  const { goBack } = useNavigation()
   const queryClient = useQueryClient()
 
   const videoId = useMemo(() => sessionStorage.getItem('lastVideoId') || '', [])
@@ -177,7 +164,6 @@ export default function VideoPlayerScreen() {
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [playbackRate, setPlaybackRate] = useState(1)
-  const [volume, setVolume] = useState(1)
   const [isMuted, setIsMuted] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showControls, setShowControls] = useState(true)
@@ -214,7 +200,7 @@ export default function VideoPlayerScreen() {
   const [exportType, setExportType] = useState('gif')
 
   // ── Share Dialog ───────────────────────────────────────────────────────
-  const [shareDialogOpen, setShareDialogOpen] = useState(false)
+  const [, setShareDialogOpen] = useState(false)
 
   // ── Fetch video ────────────────────────────────────────────────────────
   const {
@@ -240,15 +226,15 @@ export default function VideoPlayerScreen() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['video', videoId] })
-      toast.success('Annotation ajoutée')
+      toast.success(td('Annotation ajoutée', 'Annotation added'))
     },
-    onError: (err) => toast.error(err instanceof Error ? err.message : 'Erreur'),
+    onError: (err) => toast.error(err instanceof Error ? err.message : td('Erreur', 'Error')),
   })
 
   const deleteAnnotation = useMutation({
     mutationFn: (id: string) =>
       fetch(`/api/videos/${videoId}/annotations/${id}`, { method: 'DELETE' }).then((r) => {
-        if (!r.ok) throw new Error('Erreur')
+        if (!r.ok) throw new Error(td('Erreur', 'Error'))
         return r.json()
       }),
     onSuccess: () => {
@@ -265,7 +251,7 @@ export default function VideoPlayerScreen() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['video', videoId] })
-      toast.success('Highlight créé')
+      toast.success(td('Highlight créé', 'Highlight created'))
       setHighlightDialogOpen(false)
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : 'Erreur'),
@@ -278,7 +264,7 @@ export default function VideoPlayerScreen() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['video', videoId] })
-      toast.success('Highlights générés !')
+      toast.success(td('Highlights générés !', 'Highlights generated!'))
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : 'Erreur'),
   })
@@ -292,7 +278,7 @@ export default function VideoPlayerScreen() {
       }),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['video', videoId] })
-      toast.success('Export démarré !')
+      toast.success(td('Export démarré !', 'Export started!'))
       setExportDialogOpen(false)
       // Start polling for export status
       pollExportStatus(data.export.id)
@@ -310,11 +296,11 @@ export default function VideoPlayerScreen() {
     onSuccess: (data, action) => {
       if (action === 'generate-link' && data.url) {
         navigator.clipboard.writeText(data.url).then(
-          () => toast.success('Lien copié !'),
+          () => toast.success(td('Lien copié !', 'Link copied!')),
           () => toast.success(data.url!)
         )
       } else if (action === 'share-to-feed') {
-        toast.success('Partagé dans le fil d\'actualité !')
+      toast.success(td("Partagé dans le fil d'actualité !", 'Shared in feed!'))
       }
       setShareDialogOpen(false)
       queryClient.invalidateQueries({ queryKey: ['video', videoId] })
@@ -329,10 +315,10 @@ export default function VideoPlayerScreen() {
         return r.json()
       }),
     onSuccess: () => {
-      toast.success('Vidéo supprimée')
+      toast.success(td('Vidéo supprimée', 'Video deleted'))
       goBack()
     },
-    onError: () => toast.error('Erreur lors de la suppression'),
+    onError: () => toast.error(td('Erreur lors de la suppression', 'Delete error')),
   })
 
   // Poll export status
@@ -343,10 +329,10 @@ export default function VideoPlayerScreen() {
           const data = await apiFetch<{ export: VideoExport }>(`/api/videos/${videoId}/export/${exportId}`)
           if (data.export.status === 'completed') {
             queryClient.invalidateQueries({ queryKey: ['video', videoId] })
-            toast.success('Export terminé !')
+            toast.success(td('Export terminé !', 'Export complete!'))
             clearInterval(interval)
           } else if (data.export.status === 'failed') {
-            toast.error('Export échoué')
+            toast.error(td('Export échoué', 'Export failed'))
             clearInterval(interval)
           }
         } catch {
@@ -356,7 +342,7 @@ export default function VideoPlayerScreen() {
       // Auto-stop after 5 minutes
       setTimeout(() => clearInterval(interval), 300000)
     },
-    [videoId, queryClient]
+    [videoId, queryClient, td]
   )
 
   // ── Video Events ───────────────────────────────────────────────────────
@@ -414,19 +400,19 @@ export default function VideoPlayerScreen() {
       toast.success(`Point A: ${formatTime(time)}`)
     } else {
       if (loopA !== null && time <= loopA) {
-        toast.error('Le point B doit être après le point A')
+        toast.error(td('Le point B doit être après le point A', 'Point B must be after Point A'))
         return
       }
       setLoopB(time)
       toast.success(`Point B: ${formatTime(time)}`)
     }
-  }, [loopA])
+  }, [loopA, td])
 
   const clearLoop = useCallback(() => {
     setLoopA(null)
     setLoopB(null)
-    toast.success('Boucle A-B supprimée')
-  }, [])
+    toast.success(td('Boucle A-B supprimée', 'A-B loop removed'))
+  }, [td])
 
   const toggleFullscreen = useCallback(() => {
     const el = containerRef.current

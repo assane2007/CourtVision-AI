@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
+import { useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import {
   ArrowLeft,
   Search,
@@ -18,7 +18,6 @@ import {
   Share2,
   Clock,
   HardDrive,
-  Tag,
   Film,
   MoreVertical,
   Loader2,
@@ -55,7 +54,6 @@ import {
   AlertDialogAction,
 } from '@/components/ui/alert-dialog'
 import { useNavigation } from '@/stores/navigation'
-import { useTranslation } from '@/components/providers/language-provider'
 import { apiFetch, cn, formatLocaleDate } from '@/lib/utils'
 import { toast } from 'sonner'
 import { containerVariants, itemVariants } from '@/lib/animations'
@@ -103,7 +101,6 @@ function parseTags(tagsStr: string): string[] {
 }
 
 export default function VideoLibraryScreen() {
-  const { t } = useTranslation()
   const { goBack, navigate } = useNavigation()
   const queryClient = useQueryClient()
 
@@ -156,7 +153,7 @@ export default function VideoLibraryScreen() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['videos'] })
-      toast.success('Vidéo supprimée')
+      toast.success(td('Vidéo supprimée', 'Video deleted'))
       setDeleteTarget(null)
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : 'Erreur'),
@@ -178,9 +175,9 @@ export default function VideoLibraryScreen() {
         body: JSON.stringify({ action: 'generate-link' }),
       })
       await navigator.clipboard.writeText(result.url)
-      toast.success('Lien copié !')
+      toast.success(td('Lien copié !', 'Link copied!'))
     } catch {
-      toast.error('Erreur lors du partage')
+      toast.error(td('Erreur lors du partage', 'Share error'))
     }
   }, [])
 

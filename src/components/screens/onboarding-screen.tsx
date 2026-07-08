@@ -112,7 +112,7 @@ const dotVariants: Variants = {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function OnboardingScreen() {
-  const { t, td } = useTranslation()
+  const { t } = useTranslation()
   const navigate = useAppStore((s) => s.navigate)
   const [step, setStep] = useState(0)
   const [direction, setDirection] = useState(1)

@@ -1,15 +1,13 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useRef, useCallback } from 'react'
+import { motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import {
   ArrowLeft,
   Play,
   Pause,
   SkipBack,
-  SkipForward,
-  Maximize,
   Volume2,
   VolumeX,
   Columns2,
@@ -18,7 +16,6 @@ import {
   X,
   Check,
   Search,
-  Loader2,
   AlertCircle,
   ChevronRight,
 } from 'lucide-react'
@@ -30,19 +27,10 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Separator } from '@/components/ui/separator'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+
 import { useNavigation } from '@/stores/navigation'
-import { useTranslation } from '@/components/providers/language-provider'
 import { apiFetch, cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { containerVariants, itemVariants } from '@/lib/animations'
@@ -84,9 +72,7 @@ function formatTime(sec: number): string {
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function VideoCompareScreen() {
-  const { t } = useTranslation()
-  const { goBack, navigate } = useNavigation()
-  const queryClient = useQueryClient()
+  const { goBack } = useNavigation()
 
   const videoARef = useRef<HTMLVideoElement>(null)
   const videoBRef = useRef<HTMLVideoElement>(null)
@@ -101,7 +87,7 @@ export default function VideoCompareScreen() {
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [playbackRate, setPlaybackRate] = useState(1)
-  const [volume, setVolume] = useState(1)
+  const [_volume, _setVolume] = useState(1)
   const [isMuted, setIsMuted] = useState(false)
   const [syncEnabled, setSyncEnabled] = useState(true)
   const [overlayOpacity, setOverlayOpacity] = useState(50)
@@ -201,7 +187,7 @@ export default function VideoCompareScreen() {
   // ── Start comparison ──────────────────────────────────────────────────
   const startCompare = useCallback(() => {
     if (!selectedA || !selectedB || selectedA === selectedB) {
-      toast.error('Sélectionnez deux vidéos différentes')
+      toast.error(td('Sélectionnez deux vidéos différentes', 'Select two different videos'))
       return
     }
     setIsComparing(true)
@@ -684,7 +670,7 @@ export default function VideoCompareScreen() {
                       onClick={() => {
                         if (videoBRef.current && videoARef.current) {
                           videoBRef.current.currentTime = videoARef.current.currentTime
-                          toast.success('Vidéos synchronisées')
+                          toast.success(td('Vidéos synchronisées', 'Videos synchronized'))
                         }
                       }}
                     >

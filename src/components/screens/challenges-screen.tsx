@@ -53,7 +53,7 @@ function getStatusBadge(ch: Challenge) {
 }
 
 export default function ChallengesScreen() {
-  const { t } = useTranslation()
+  const { t, td } = useTranslation()
   const { goBack, navigate } = useNavigation()
   const queryClient = useQueryClient()
   const [tab, setTab] = useState<Tab>('active')
@@ -76,7 +76,7 @@ export default function ChallengesScreen() {
       queryClient.invalidateQueries({ queryKey: ['challenges'] })
       setShowCreate(false)
       setForm({ title: '', description: '', type: 'total_reps', targetValue: '100', unit: 'reps', startDate: '', endDate: '' })
-      toast.success('Défi créé')
+      toast.success(td('Défi créé', 'Challenge created'))
     },
     onError: (e: Error) => toast.error(e.message),
   })
@@ -84,7 +84,7 @@ export default function ChallengesScreen() {
   const joinChallenge = useMutation({
     mutationFn: (id: string) => fetch(`/api/challenges/${id}/join`, { method: 'POST' })
       .then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error) }); return r.json() }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['challenges'] }); toast.success('Défi rejoint!') },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['challenges'] }); toast.success(td('Défi rejoint!', 'Challenge joined!')) },
     onError: (e: Error) => toast.error(e.message),
   })
 

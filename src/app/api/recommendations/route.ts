@@ -127,7 +127,7 @@ export async function GET() {
 }
 
 // POST /api/recommendations — AI-powered personalized recommendations
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {

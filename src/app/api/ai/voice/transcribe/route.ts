@@ -6,10 +6,6 @@ import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
 import ZAI from 'z-ai-web-dev-sdk'
 
-function sanitize(str: string): string {
-  return str.replace(/[\x00-\x1F\x7F]/g, '').slice(0, 1000)
-}
-
 // POST /api/ai/voice/transcribe — Transcribe audio using ASR
 export async function POST(req: NextRequest) {
   try {

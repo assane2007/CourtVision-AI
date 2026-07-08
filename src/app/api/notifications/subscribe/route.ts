@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
 }
 
 // DELETE /api/notifications/subscribe — Remove push subscription
-export async function DELETE(req: NextRequest) {
+export async function DELETE(_req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })

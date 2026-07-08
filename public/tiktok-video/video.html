@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>THE SHADOW — CourtVision AI</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&display=swap');
+
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;overflow:hidden;background:#000}
+  body{display:flex;justify-content:center;align-items:center;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}
+
+  .c{width:360px;height:640px;position:relative;overflow:hidden;background:#000}
+
+  /* ===== GRAIN ===== */
+  .grain{position:absolute;inset:0;z-index:200;pointer-events:none;opacity:0.045;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size:256px 256px;mix-blend-mode:overlay;
+    animation:gr 0.15s steps(4) infinite}
+  @keyframes gr{0%{transform:translate(0)}25%{transform:translate(-1px,2px)}50%{transform:translate(2px,-1px)}75%{transform:translate(-2px,-2px)}100%{transform:translate(1px,1px)}}
+
+  /* ===== VIGNETTE ===== */
+  .vig{position:absolute;inset:0;z-index:190;pointer-events:none;
+    background:radial-gradient(ellipse 70% 70% at 50% 50%,transparent 30%,rgba(0,0,0,0.85) 100%)}
+
+  /* ===== LETTERBOX — BREATHING ===== */
+  .lb{position:absolute;left:0;right:0;background:#000;z-index:195;pointer-events:none;transition:height 1.5s cubic-bezier(.4,0,.2,1)}
+  .lb-t{top:0;height:36px}
+  .lb-b{bottom:0;height:36px}
+
+  /* ===== SCENE BASE ===== */
+  .sc{position:absolute;inset:0;opacity:0;z-index:1;will-change:opacity,transform}
+
+  /* ===== BG ===== */
+  .bg{position:absolute;inset:-60px -30px;background-size:cover;background-position:center;will-change:transform;
+    transition:filter 1.5s ease}
+
+  /* Ken Burns */
+  .kb-in .bg{animation:kbi 10s ease-in-out forwards}
+  .kb-out .bg{animation:kbo 10s ease-in-out forwards}
+  .kb-r .bg{animation:kbr 10s ease-in-out forwards}
+  .kb-l .bg{animation:kbl 10s ease-in-out forwards}
+  .kb-s .bg{animation:kbs 10s ease-in-out forwards}
+  .kb-hold .bg{animation:kbh 10s ease-in-out forwards}
+  @keyframes kbi{0%{transform:scale(1.2)}100%{transform:scale(1.05)}}
+  @keyframes kbo{0%{transform:scale(1.05)}100%{transform:scale(1.25)}}
+  @keyframes kbr{0%{transform:scale(1.15) translate(-3%,1%)}100%{transform:scale(1.08) translate(2%,-1%)}}
+  @keyframes kbl{0%{transform:scale(1.15) translate(2%,-1%)}100%{transform:scale(1.08) translate(-3%,1%)}}
+  @keyframes kbs{0%{transform:scale(1.08)}100%{transform:scale(1.12) translate(-1%,0.5%)}}
+  @keyframes kbh{0%{transform:scale(1.1)}100%{transform:scale(1.1)}}
+
+  /* ===== COLOR GRADES ===== */
+  .g-rain .bg{filter:saturate(0.4) contrast(1.25) brightness(0.65) sepia(0.1) hue-rotate(190deg)}
+  .g-ghost .bg{filter:saturate(0.3) contrast(1.3) brightness(0.55) hue-rotate(180deg) brightness(0.6)}
+  .g-zone .bg{filter:saturate(1.2) contrast(1.3) brightness(0.75) hue-rotate(-5deg)}
+  .g-tunnel .bg{filter:saturate(0.5) contrast(1.2) brightness(0.7)}
+  .g-dunk .bg{filter:saturate(0.2) contrast(1.4) brightness(0.85)}
+  .g-pass .bg{filter:saturate(0.6) contrast(1.15) brightness(0.75) sepia(0.1) hue-rotate(175deg)}
+  .g-eye .bg{filter:saturate(0.35) contrast(1.3) brightness(0.6)}
+  .g-dark .bg{filter:saturate(0.1) contrast(1.1) brightness(0.4)}
+
+  /* ===== OVERLAY ===== */
+  .ov{position:absolute;inset:0;z-index:5}
+
+  /* ===== FILM BURN ===== */
+  .burn{position:absolute;inset:0;z-index:150;pointer-events:none;opacity:0}
+  .burn.on{animation:filmBurn 1.2s ease-out forwards}
+  @keyframes filmBurn{
+    0%{opacity:0;background:radial-gradient(ellipse at 30% 50%,rgba(255,140,50,0.9) 0%,transparent 70%)}
+    30%{opacity:0.7;background:radial-gradient(ellipse at 50% 40%,rgba(255,100,30,0.7) 0%,transparent 60%)}
+    100%{opacity:0;background:transparent}}
+
+  /* ===== FLASH ===== */
+  .flash{position:absolute;inset:0;background:#fff;z-index:160;pointer-events:none;opacity:0}
+  .flash.on{animation:fl .6s ease-out forwards}
+  @keyframes fl{0%{opacity:.95}100%{opacity:0}}
+
+  /* ===== LIGHT LEAK ===== */
+  .leak{position:absolute;inset:0;z-index:140;pointer-events:none;opacity:0;
+    background:radial-gradient(ellipse at 70% 30%,rgba(255,180,80,0.25) 0%,transparent 60%)}
+  .leak.on{animation:lk 3s ease-in-out forwards}
+  @keyframes lk{0%{opacity:0;transform:translateX(-10%)}30%{opacity:1}100%{opacity:0;transform:translateX(10%)}}
+
+  /* ===== TEXT ===== */
+  .tl{position:absolute;inset:0;z-index:100;display:flex;flex-direction:column;justify-content:flex-end;padding:80px 30px 60px}
+  .tl.ct{justify-content:center;align-items:center;text-align:center;padding:60px 30px}
+  .tl.tc{justify-content:flex-start;align-items:center;text-align:center;padding-top:80px}
+
+  /* Nike slam — scale from 200% to 100% */
+  .slam{opacity:0;transform:scale(1.8);transition:none}
+  .sc.on .slam{animation:slamIn 1s cubic-bezier(.16,1,.3,1) forwards}
+  @keyframes slamIn{0%{opacity:0;transform:scale(1.8)}100%{opacity:1;transform:scale(1)}}
+
+  /* Apple fade up */
+  .afu{opacity:0;transform:translateY(20px)}
+  .sc.on .afu{animation:fadeUp 1.2s ease forwards}
+  @keyframes fadeUp{0%{opacity:0;transform:translateY(20px)}100%{opacity:1;transform:translateY(0)}}
+
+  /* Nike one-word — massive */
+  .nike{font-family:'Inter',sans-serif;font-weight:900;font-size:56px;color:#fff;
+    letter-spacing:-2px;line-height:.95;text-shadow:0 2px 40px rgba(0,0,0,.9),0 0 80px rgba(0,0,0,.5)}
+
+  /* Nike subtitle */
+  .nike-sub{font-family:'Inter',sans-serif;font-weight:300;font-size:16px;color:rgba(255,255,255,.75);
+    letter-spacing:1px;line-height:1.6;text-shadow:0 1px 10px rgba(0,0,0,.9);margin-top:16px}
+
+  /* Nike whisper */
+  .nike-w{font-family:'Inter',sans-serif;font-weight:200;font-size:13px;color:rgba(255,255,255,.45);
+    letter-spacing:8px;text-transform:uppercase;text-shadow:0 1px 8px rgba(0,0,0,.9)}
+
+  /* Italic emotional */
+  .italic{font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:24px;
+    color:rgba(255,255,255,.9);line-height:1.4;text-shadow:0 2px 20px rgba(0,0,0,.9)}
+
+  /* Bold statement */
+  .bold-st{font-family:'Inter',sans-serif;font-weight:800;font-size:28px;color:#fff;
+    line-height:1.15;text-shadow:0 2px 30px rgba(0,0,0,.9);letter-spacing:-0.5px}
+
+  /* Glowing accent */
+  .glow{color:#A3E635;text-shadow:0 0 40px rgba(163,230,53,.5),0 0 80px rgba(163,230,53,.2)}
+
+  /* ===== STAGGER ===== */
+  .d1{animation-delay:.4s !important}
+  .d2{animation-delay:1.2s !important}
+  .d3{animation-delay:2s !important}
+  .d4{animation-delay:2.8s !important}
+  .d5{animation-delay:3.6s !important}
+  .d6{animation-delay:4.4s !important}
+
+  /* ===== DUST ===== */
+  .dust{position:absolute;inset:0;z-index:50;pointer-events:none;overflow:hidden}
+  .dp{position:absolute;width:2px;height:2px;background:rgba(255,255,255,.12);border-radius:50%}
+  .sc.on .dp{animation:df linear infinite}
+  @keyframes df{0%{opacity:0;transform:translateY(0)}15%{opacity:1}85%{opacity:1}100%{opacity:0;transform:translateY(-200px) translateX(20px)}}
+
+  /* ===== HORIZONTAL LINE ===== */
+  .hline{width:50px;height:1px;background:rgba(255,255,255,.2);margin:20px 0;opacity:0}
+  .sc.on .hline{animation:fadeUp 1s ease forwards}
+
+  /* ===== END CARD ===== */
+  .end-logo{font-family:'Inter',sans-serif;font-weight:900;font-size:52px;color:#fff;letter-spacing:-2px;
+    text-shadow:0 0 60px rgba(163,230,53,.3);opacity:0;transform:scale(.9)}
+  .sc.on .end-logo{animation:logoIn 2.5s cubic-bezier(.16,1,.3,1) forwards;animation-delay:.3s}
+  @keyframes logoIn{0%{opacity:0;transform:scale(.9)}100%{opacity:1;transform:scale(1)}}
+
+  .end-ai{font-family:'Inter',sans-serif;font-weight:200;font-size:52px;color:rgba(163,230,53,.7);
+    letter-spacing:-2px;opacity:0}
+  .sc.on .end-ai{animation:fadeUp 2s ease forwards;animation-delay:1s}
+
+  .end-tag{font-family:'Inter',sans-serif;font-weight:300;font-size:12px;color:rgba(255,255,255,.3);
+    letter-spacing:8px;text-transform:uppercase;opacity:0;margin-top:24px}
+  .sc.on .end-tag{animation:fadeUp 1.5s ease forwards;animation-delay:2s}
+
+  /* ===== PROGRESS ===== */
+  .prog{position:absolute;bottom:0;left:0;height:2px;background:rgba(255,255,255,.15);z-index:210;transition:width .05s linear}
+
+  /* ===== CONTROLS ===== */
+  .ctrls{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:999}
+  .cb{padding:7px 16px;border:none;border-radius:50px;font-family:'Inter',sans-serif;font-weight:600;font-size:12px;cursor:pointer;transition:all .2s;letter-spacing:.3px}
+  .cb:hover{transform:scale(1.05)}
+  .cb-p{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(10px)}
+  .cb-r{background:transparent;color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.06)}
+</style>
+</head>
+<body>
+
+<div class="c" id="c">
+
+  <!-- S1: RAIN — INVISIBLE -->
+  <div class="sc on kb-r g-rain" data-s="0" data-e="4500">
+    <div class="bg" style="background-image:url('/tiktok-video/s1.png')"></div>
+    <div class="ov" style="background:linear-gradient(to top,rgba(0,0,0,.85) 0%,rgba(0,0,0,.2) 40%,rgba(0,0,0,.5) 100%)"></div>
+    <div class="dust">
+      <div class="dp" style="left:20%;bottom:10%;animation-duration:7s;animation-delay:0s"></div>
+      <div class="dp" style="left:45%;bottom:5%;animation-duration:9s;animation-delay:1s"></div>
+      <div class="dp" style="left:70%;bottom:15%;animation-duration:8s;animation-delay:2s"></div>
+    </div>
+    <div class="tl">
+      <div class="slam nike">INVISIBLE.</div>
+    </div>
+  </div>
+
+  <!-- S2: PHANTOM — THE SHADOW -->
+  <div class="sc kb-s g-ghost" data-s="4500" data-e="8500">
+    <div class="bg" style="background-image:url('/tiktok-video/s2.png')"></div>
+    <div class="ov" style="background:linear-gradient(to top,rgba(0,0,0,.9) 0%,rgba(0,10,30,.15) 45%,rgba(0,0,0,.6) 100%)"></div>
+    <div class="burn"></div>
+    <div class="leak"></div>
+    <div class="dust">
+      <div class="dp" style="left:30%;bottom:20%;animation-duration:10s;animation-delay:0s"></div>
+      <div class="dp" style="left:60%;bottom:10%;animation-duration:12s;animation-delay:2s"></div>
+    </div>
+    <div class="tl">
+      <div class="slam d1 nike" style="font-size:48px">THE SHADOW.</div>
+      <div class="nike-sub afu d3">The one nobody notices.</div>
+    </div>
+  </div>
+
+  <!-- S3: ZONE — BUT EVERY LEGEND -->
+  <div class="sc kb-out g-zone" data-s="8500" data-e="12500">
+    <div class="bg" style="background-image:url('/tiktok-video/s3.png')"></div>
+    <div class="ov" style="background:radial-gradient(ellipse at 50% 40%,transparent 10%,rgba(0,0,0,.4) 50%,rgba(0,0,0,.8) 100%)"></div>
+    <div class="flash"></div>
+    <div class="leak"></div>
+    <div class="tl ct">
+      <div class="italic afu d1" style="font-size:22px">But every legend...</div>
+      <div class="italic afu d2" style="font-size:28px;margin-top:12px">was once <span style="font-weight:900;color:#fff">unseen.</span></div>
+    </div>
+  </div>
+
+  <!-- S4: TUNNEL — ENTER THE ZONE -->
+  <div class="sc kb-in g-tunnel" data-s="12500" data-e="16500">
+    <div class="bg" style="background-image:url('/tiktok-video/s4.png')"></div>
+    <div class="ov" style="background:linear-gradient(to top,rgba(0,0,0,.8) 0%,transparent 35%,rgba(0,0,0,.3) 100%)"></div>
+    <div class="burn"></div>
+    <div class="leak"></div>
+    <div class="dust">
+      <div class="dp" style="left:15%;bottom:30%;animation-duration:11s;animation-delay:0s"></div>
+      <div class="dp" style="left:50%;bottom:5%;animation-duration:9s;animation-delay:1.5s"></div>
+      <div class="dp" style="left:80%;bottom:20%;animation-duration:13s;animation-delay:3s"></div>
+    </div>
+    <div class="tl">
+      <div class="slam d1 nike" style="font-size:44px">ENTER THE</div>
+      <div class="slam d2 nike glow" style="font-size:44px;margin-top:4px">ZONE.</div>
+    </div>
+  </div>
+
+  <!-- S5: DUNK — THE PHANTOM BECOMES -->
+  <div class="sc kb-hold g-dunk" data-s="16500" data-e="20500">
+    <div class="bg" style="background-image:url('/tiktok-video/s5.png')"></div>
+    <div class="ov" style="background:linear-gradient(to top,rgba(0,0,0,.75) 0%,transparent 25%,rgba(0,0,0,.35) 100%)"></div>
+    <div class="flash"></div>
+    <div class="tl">
+      <div class="bold-st afu d1">The phantom</div>
+      <div class="bold-st afu d2" style="margin-top:8px">becomes the <span style="color:#A3E635">threat.</span></div>
+    </div>
+  </div>
+
+  <!-- S6: PASS — WHAT IF SOMEONE SAW -->
+  <div class="sc kb-l g-pass" data-s="20500" data-e="25000">
+    <div class="bg" style="background-image:url('/tiktok-video/s6.png')"></div>
+    <div class="ov" style="background:linear-gradient(to top,rgba(0,0,0,.85) 0%,rgba(0,20,20,.1) 40%,rgba(0,0,0,.5) 100%)"></div>
+    <div class="burn"></div>
+    <div class="tl">
+      <div class="italic afu d1" style="font-size:20px">What if someone saw</div>
+      <div class="italic afu d2" style="font-size:20px">your <span style="font-weight:900;font-size:24px">fire</span>...</div>
+      <div class="italic afu d4" style="font-size:20px;margin-top:12px">before the world did?</div>
+    </div>
+  </div>
+
+  <!-- S7: EYE — SEE WHAT THEY CAN'T -->
+  <div class="sc kb-in g-eye" data-s="25000" data-e="29500">
+    <div class="bg" style="background-image:url('/tiktok-video/s7.png')"></div>
+    <div class="ov" style="background:radial-gradient(ellipse at 50% 50%,transparent 20%,rgba(0,0,0,.7) 100%)"></div>
+    <div class="leak"></div>
+    <div class="tl ct">
+      <div class="slam nike" style="font-size:36px;letter-spacing:-1px">See what they</div>
+      <div class="slam d1 nike glow" style="font-size:36px;margin-top:4px;letter-spacing:-1px">can't.</div>
+    </div>
+  </div>
+
+  <!-- S8: END — COURTVISION AI -->
+  <div class="sc kb-hold g-dark" data-s="29500" data-e="36000">
+    <div class="bg" style="background:#000"></div>
+    <div class="dust">
+      <div class="dp" style="left:10%;bottom:40%;animation-duration:14s;animation-delay:0s"></div>
+      <div class="dp" style="left:30%;bottom:10%;animation-duration:11s;animation-delay:2s"></div>
+      <div class="dp" style="left:55%;bottom:50%;animation-duration:12s;animation-delay:4s"></div>
+      <div class="dp" style="left:75%;bottom:20%;animation-duration:10s;animation-delay:1s"></div>
+      <div class="dp" style="left:90%;bottom:35%;animation-duration:13s;animation-delay:3s"></div>
+    </div>
+    <div class="tl ct">
+      <div class="end-logo">CourtVision</div>
+      <div class="end-ai">AI</div>
+      <div class="hline" style="margin:24px auto 0"></div>
+      <div class="end-tag">Coming Soon</div>
+    </div>
+  </div>
+
+  <!-- GLOBAL -->
+  <div class="grain"></div>
+  <div class="vig"></div>
+  <div class="lb lb-t" id="lbt"></div>
+  <div class="lb lb-b" id="lbb"></div>
+  <div class="prog" id="prog"></div>
+</div>
+
+<audio id="au" src="/tiktok-video/voiceover.wav" preload="auto"></audio>
+
+<div class="ctrls">
+  <button class="cb cb-p" id="pb" onclick="tp()">▶</button>
+  <button class="cb cb-r" onclick="re()">↻</button>
+</div>
+
+<script>
+const S=[
+  {el:null,s:0,e:4500,fx:['burn']},
+  {el:null,s:4500,e:8500,fx:['burn','leak']},
+  {el:null,s:8500,e:12500,fx:['flash','leak']},
+  {el:null,s:12500,e:16500,fx:['burn','leak']},
+  {el:null,s:16500,e:20500,fx:['flash']},
+  {el:null,s:20500,e:25000,fx:['burn']},
+  {el:null,s:25000,e:29500,fx:['leak']},
+  {el:null,s:29500,e:36000,fx:[]},
+];
+document.querySelectorAll('.sc').forEach((el,i)=>S[i].el=el);
+
+const au=document.getElementById('au'),prog=document.getElementById('prog'),pb=document.getElementById('pb');
+const lbt=document.getElementById('lbt'),lbb=document.getElementById('lbb');
+let on=false,t0=0,raf=null,T=36000,cur=-1;
+
+function fx(sc,i){
+  sc.fx.forEach(f=>{
+    const el=sc.el.querySelector('.'+f);
+    if(!el)return;
+    el.classList.remove('on');
+    void el.offsetWidth;
+    el.classList.add('on');
+  });
+  // Breathing letterbox
+  if(i===2||i===6){lbt.style.height='24px';lbb.style.height='24px'}
+  else if(i===7){lbt.style.height='48px';lbb.style.height='48px'}
+  else{lbt.style.height='36px';lbb.style.height='36px'}
+}
+
+function tick(){
+  if(!on)return;
+  const el=Date.now()-t0,pct=Math.min(el/T*100,100);
+  prog.style.width=pct+'%';
+  for(let i=0;i<S.length;i++){
+    if(el>=S[i].s&&el<S[i].e){
+      if(cur!==i){cur=i;S.forEach(s=>s.el.classList.remove('on'));S[i].el.classList.add('on');fx(S[i],i)}
+      break;
+    }
+    if(i===S.length-1&&el>=S[i].e){stop();return}
+  }
+  raf=requestAnimationFrame(tick);
+}
+
+function play(){on=true;pb.textContent='⏸';t0=Date.now();au.play().catch(()=>{});raf=requestAnimationFrame(tick)}
+function stop(){on=false;pb.textContent='▶';cancelAnimationFrame(raf);au.pause()}
+function tp(){on?stop():play()}
+
+function re(){
+  stop();
+  cur=-1;
+  S.forEach(s=>s.el.classList.remove('on'));
+  S[0].el.classList.add('on');
+  au.currentTime=0;prog.style.width='0%';
+  lbt.style.height='36px';lbb.style.height='36px';
+  document.querySelectorAll('.burn,.flash,.leak').forEach(e=>e.classList.remove('on'));
+  setTimeout(play,400);
+}
+
+let fc=true;
+document.addEventListener('click',()=>{if(fc){fc=false;play()}},{once:true});
+</script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { rateLimit } from '@/lib/rate-limit'
+import Stripe from 'stripe'
+
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' })
+  : null
+
+export async function POST() {
+  // Auth check
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+
+  // Rate limit
+  const rl = rateLimit(session.user.id, 5, 60_000)
+  if (!rl.success) {
+    return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 })
+  }
+
+  // If Stripe is not configured, return a demo URL
+  if (!stripe) {
+    return NextResponse.json({
+      url: `${process.env.NEXTAUTH_URL || ''}/?demo_portal=1`,
+    })
+  }
+
+  // Fetch player
+  const player = await db.player.findUnique({ where: { id: session.user.id } })
+  if (!player || !player.stripeCustomerId) {
+    return NextResponse.json(
+      { error: 'Aucun abonnement trouvé' },
+      { status: 404 },
+    )
+  }
+
+  const portalSession = await stripe.billingPortal.sessions.create({
+    customer: player.stripeCustomerId,
+    return_url: `${process.env.NEXTAUTH_URL || ''}/?portal_return=1`,
+  })
+
+  return NextResponse.json({ url: portalSession.url })
+}

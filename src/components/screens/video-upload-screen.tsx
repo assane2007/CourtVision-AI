@@ -25,7 +25,6 @@ import { Switch } from '@/components/ui/switch'
 import { Progress } from '@/components/ui/progress'
 import { Card, CardContent } from '@/components/ui/card'
 import { useNavigation } from '@/stores/navigation'
-import { useTranslation } from '@/components/providers/language-provider'
 import { apiFetch, cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { containerVariants, itemVariants } from '@/lib/animations'
@@ -34,7 +33,6 @@ const MAX_FILE_SIZE = 500 * 1024 * 1024 // 500 MB
 const ALLOWED_EXTENSIONS = ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.ogv']
 
 export default function VideoUploadScreen() {
-  const { t } = useTranslation()
   const { goBack, navigate } = useNavigation()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const thumbInputRef = useRef<HTMLInputElement>(null)
@@ -107,7 +105,7 @@ export default function VideoUploadScreen() {
     if (!selected) return
 
     if (selected.size > MAX_FILE_SIZE) {
-      toast.error('Fichier trop volumineux (max 500 Mo)')
+      toast.error(td('Fichier trop volumineux (max 500 Mo)', 'File too large (max 500 MB)'))
       return
     }
 
@@ -146,11 +144,11 @@ export default function VideoUploadScreen() {
 
   const handleSubmit = useCallback(async () => {
     if (!file) {
-      toast.error('Veuillez sélectionner une vidéo')
+      toast.error(td('Veuillez sélectionner une vidéo', 'Please select a video'))
       return
     }
     if (!title.trim()) {
-      toast.error('Titre requis')
+      toast.error(td('Titre requis', 'Title required'))
       return
     }
 
@@ -173,7 +171,7 @@ export default function VideoUploadScreen() {
         isPublic,
       })
 
-      toast.success('Vidéo ajoutée avec succès !')
+      toast.success(td('Vidéo ajoutée avec succès !', 'Video added successfully!'))
       navigate('video-player')
       // Store the video ID for the player screen to use
       sessionStorage.setItem('lastVideoId', videoResult.video.id)
@@ -183,7 +181,6 @@ export default function VideoUploadScreen() {
   }, [file, title, description, thumbnail, tags, isPublic, uploadMutation, createMutation, navigate])
 
   const isSubmitting = uploadMutation.isPending || createMutation.isPending
-  const isDragging = false // Could implement drag-and-drop
 
   return (
     <div className="min-h-screen bg-background pb-20">

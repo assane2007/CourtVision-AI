@@ -1,11 +1,10 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
-  ArrowLeft, Plus, Users, Trophy, ChevronRight, Loader2, X,
-  Search, Shield, Crown, UserMinus, LogOut,
+  ArrowLeft, Plus, Users, ChevronRight, Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,7 +31,7 @@ interface Team {
 }
 
 export default function TeamsScreen() {
-  const { t } = useTranslation()
+  const { t, td } = useTranslation()
   const { goBack, navigate } = useNavigation()
   const queryClient = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
@@ -55,12 +54,12 @@ export default function TeamsScreen() {
       queryClient.invalidateQueries({ queryKey: ['teams'] })
       setShowCreate(false)
       setForm({ name: '', description: '' })
-      toast.success('Équipe créée')
+      toast.success(td('Équipe créée', 'Team created'))
     },
     onError: (e: Error) => toast.error(e.message),
   })
 
-  const joinTeam = useMutation({
+  const _joinTeam = useMutation({
     mutationFn: (teamId: string) => fetch(`/api/teams/${teamId}/members`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -68,7 +67,7 @@ export default function TeamsScreen() {
     }).then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error) }); return r.json() }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teams'] })
-      toast.success('Vous avez rejoint l\'équipe')
+      toast.success(td("Vous avez rejoint l'équipe", 'You joined the team'))
     },
     onError: (e: Error) => toast.error(e.message),
   })

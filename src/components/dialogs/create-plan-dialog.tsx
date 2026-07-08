@@ -32,7 +32,6 @@ import {
   Check,
   Clock,
   Target,
-  Plus,
   Search,
   X,
 } from 'lucide-react'
@@ -152,7 +151,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan }: CreatePlanDia
     enabled: open,
   })
 
-  const allDrills = drillsData?.drills ?? []
+  const allDrills = useMemo(() => drillsData?.drills ?? [], [drillsData])
 
   // ── Filtered drills for selection ─────────────────────────────────────
   const filteredDrills = useMemo(() => {

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0618"/>
+      <stop offset="100%" stop-color="#1a0a35"/>
+    </linearGradient>
+    <linearGradient id="logo" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22e9ff"/>
+      <stop offset="50%" stop-color="#ff2bd6"/>
+      <stop offset="100%" stop-color="#b6ff3c"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <g stroke="#22e9ff" stroke-width="2" fill="none" opacity="0.3">
+    <rect x="96" y="96" width="320" height="320"/>
+    <line x1="256" y1="96" x2="256" y2="416"/>
+    <circle cx="256" cy="256" r="60"/>
+  </g>
+  <text x="256" y="290" font-family="Arial, sans-serif" font-size="180" font-weight="900" text-anchor="middle" fill="url(#logo)" filter="url(#glow)">CV</text>
+  <circle cx="256" cy="80" r="6" fill="#22e9ff" filter="url(#glow)"/>
+  <circle cx="256" cy="432" r="6" fill="#ff2bd6" filter="url(#glow)"/>
+</svg>

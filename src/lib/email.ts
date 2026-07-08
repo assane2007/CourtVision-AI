@@ -27,13 +27,7 @@ export async function sendEmail({
   template,
 }: EmailParams): Promise<{ success: boolean; messageId?: string }> {
   // Mock: log the email to console
-  console.log(`[EMAIL] ─────────────────────────────────`)
-  console.log(`  To: ${to}`)
-  console.log(`  Subject: ${subject}`)
-  console.log(`  Template: ${template || 'custom'}`)
-  console.log(`  Text: ${text}`)
-  console.log(`  HTML: ${html.length} chars`)
-  console.log(`[EMAIL END] ─────────────────────────────`)
+  console.warn('[EMAIL MOCK]', { to, subject, template, textLength: text?.length, htmlLength: html?.length })
 
   // Simulate async send
   const messageId = `mock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`

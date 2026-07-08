@@ -158,7 +158,7 @@ function TrendIndicator({ scores }: { scores: number[] }) {
 
 // ── Record Card ─────────────────────────────────────────────────────────────
 
-function RecordCard({ record, index }: { record: DrillRecord; index: number }) {
+function RecordCard({ record, index: _index }: { record: DrillRecord; index: number }) {
   const { t, language } = useTranslation()
   const catMeta = getCategoryMeta(record.drillCategory)
   if (!catMeta) return null
@@ -300,7 +300,7 @@ export function RecordsScreen() {
     queryFn: () => apiFetch<RecordsResponse>('/api/records'),
   })
 
-  const records = data?.records ?? []
+  const records = useMemo(() => data?.records ?? [], [data])
   const summary = data?.summary
 
   // ── Filter records ────────────────────────────────────────────────────

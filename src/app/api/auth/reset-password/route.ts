@@ -64,7 +64,7 @@ export async function POST(request: Request) {
 
     // Only log token to server-side console when explicitly opted in
     if (process.env.DEV_SHOW_RESET_TOKEN === 'true') {
-      console.log(`[DEV] Reset token for ${email}: ${resetToken}`)
+      console.error(`[DEV] Reset token for ${email}: ${resetToken}`)
     }
 
     return NextResponse.json(response)

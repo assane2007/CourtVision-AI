@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback, useRef } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useAppStore } from '@/stores/app'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent } from '@/components/ui/card'
@@ -145,7 +145,7 @@ export default function TrainHubScreen() {
 
   const [allDrills, setAllDrills] = useState<Drill[]>([])
   const [nextCursor, setNextCursor] = useState<string | null>(null)
-  const [totalDrills, setTotalDrills] = useState<number>(0)
+  const [_totalDrills, setTotalDrills] = useState<number>(0)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
 
   const { data, isLoading, isError, refetch } = useQuery<{
@@ -168,7 +168,7 @@ export default function TrainHubScreen() {
   }, [data])
 
   const drills = allDrills
-  const favoriteIds: string[] = data?.favoriteIds ?? []
+  const favoriteIds = useMemo(() => data?.favoriteIds ?? [] as string[], [data])
 
   // ── Drill count per category ────────────────────────────────────────────
 

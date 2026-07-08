@@ -4,14 +4,13 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
-  ArrowLeft, UserPlus, UserCheck, MessageCircle, Award, Flame, Trophy,
-  Dumbbell, MapPin, Calendar,
+  ArrowLeft, UserPlus, UserCheck, MessageCircle,
+  MapPin,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useNavigation } from '@/stores/navigation'
 import { useAppStore } from '@/stores/app'
 import { SwipeToGoBack } from '@/components/shared/swipe-back'
@@ -35,7 +34,7 @@ interface FollowData {
 interface FriendStatus { friendshipId: string | null; status: string; isRequester: boolean; createdAt: string | null }
 
 export default function ProfileOtherScreen() {
-  const { t } = useTranslation()
+  const { t, td } = useTranslation()
   const { goBack, navigate } = useNavigation()
   const selectedDrillId = useAppStore(s => s.selectedDrillId)
   const queryClient = useQueryClient()
@@ -87,7 +86,7 @@ export default function ProfileOtherScreen() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ recipientId: selectedDrillId }),
     }).then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error) }); return r.json() }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['friend-status'] }); toast.success('Demande envoyée') },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['friend-status'] }); toast.success(td('Demande envoyée', 'Request sent')) },
     onError: (e: Error) => toast.error(e.message),
   })
 

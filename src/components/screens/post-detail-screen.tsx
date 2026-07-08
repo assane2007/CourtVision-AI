@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
-  ArrowLeft, Heart, Send, Loader2, MessageCircle, Reply, ThumbsUp,
+  ArrowLeft, Heart, Send, Loader2, MessageCircle, Reply,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -49,7 +49,7 @@ export default function PostDetailScreen() {
     enabled: !!selectedDrillId,
   })
 
-  const { data: commentsData, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery<{
+  const { data: commentsData, fetchNextPage: _fetchNextPage, hasNextPage: _hasNextPage, isFetchingNextPage } = useInfiniteQuery<{
     comments: CommentItem[]; nextCursor: string | null
   }>({
     queryKey: ['post-comments', selectedDrillId],

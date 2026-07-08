@@ -517,10 +517,11 @@ export default function CameraWorkoutScreen() {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
-  }, [phase, drill?.category])
+  }, [phase, drill?.category, poseLandmarkerRef])
 
   // ── Cleanup on unmount ────────────────────────────────────────────────
   useEffect(() => {
+    const currentPoseLandmarker = poseLandmarkerRef.current as { close?: () => void } | null
     return () => {
       stopCamera()
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
@@ -531,8 +532,7 @@ export default function CameraWorkoutScreen() {
       if (aiCooldownTimerRef.current) clearInterval(aiCooldownTimerRef.current)
       if (planNextTimerRef.current) clearInterval(planNextTimerRef.current)
       // Dispose MediaPipe PoseLandmarker to free GPU/WASM memory
-      const pl = poseLandmarkerRef.current as { close?: () => void } | null
-      pl?.close?.()
+      currentPoseLandmarker?.close?.()
       destroyAudio()
     }
   }, [stopCamera, poseLandmarkerRef])
@@ -796,7 +796,7 @@ export default function CameraWorkoutScreen() {
         })
       }, 1000)
     }
-  }, [aiLoading, aiCooldownRemaining, phase, drill])
+  }, [aiLoading, aiCooldownRemaining, phase, drill, t])
 
   // ── Derived values ────────────────────────────────────────────────────
   const progressPercent = totalDuration > 0

@@ -429,7 +429,7 @@ export function ScoutingScreen() {
       data.overallGrade,
       t,
     )
-  }, [data])
+  }, [data, t])
 
   const gradeColor = GRADE_COLORS[data?.overallGrade ?? 'F'] ?? GRADE_COLORS.F
 
@@ -786,7 +786,7 @@ export function ScoutingScreen() {
 // ── Category breakdown card ─────────────────────────────────────────────────
 
 function CategoryCard({ category }: { category: ScoutingCategory }) {
-  const Icon = CATEGORY_ICONS[category.key] ?? Activity
+  const _Icon = CATEGORY_ICONS[category.key] ?? Activity
   const emoji = CATEGORY_EMOJIS[category.key] ?? '🏀'
 
   const TrendIcon =

@@ -219,10 +219,11 @@ export default function ReactionTrainerScreen() {
 
   // Cleanup on unmount
   useEffect(() => {
+    const currentIntervals = allIntervalsRef.current
     return () => {
       gameActiveRef.current = false
       allTimersRef.current.forEach(clearTimeout)
-      allIntervalsRef.current.forEach(clearInterval)
+      currentIntervals.forEach(clearInterval)
       if (shotClockTimerRef.current) clearInterval(shotClockTimerRef.current)
       if (reflexTimerRef.current) clearInterval(reflexTimerRef.current)
       if (targetSpawnTimerRef.current) clearInterval(targetSpawnTimerRef.current)

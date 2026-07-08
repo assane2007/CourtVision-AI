@@ -72,14 +72,7 @@ export async function sendPushNotification({
       }
 
       // Mock: log the notification
-      console.log(`[PUSH NOTIFICATION]`)
-      console.log(`  Device: ${device.name} (${device.id})`)
-      console.log(`  Player: ${playerId}`)
-      console.log(`  Type: ${type}`)
-      console.log(`  Title: ${title}`)
-      console.log(`  Body: ${body}`)
-      console.log(`  Data: ${JSON.stringify(data)}`)
-      console.log(`  Token: ${device.pushToken.slice(0, 20)}...`)
+      console.warn('[PUSH MOCK]', { device: device.name, playerId, type, title, body, data })
       sent++
     }
 

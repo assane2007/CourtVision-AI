@@ -10,7 +10,7 @@ import {
 } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
-import { hapticMedium, hapticSuccess } from '@/lib/haptics'
+import { hapticSuccess } from '@/lib/haptics'
 import { cn } from '@/lib/utils'
 
 export interface PullToRefreshProps {

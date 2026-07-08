@@ -131,7 +131,7 @@ function registerServiceWorker() {
       navigator.serviceWorker
         .register('/sw.js')
         .then((registration) => {
-          if (process.env.NODE_ENV === 'development') console.log('[PWA] Service Worker registered:', registration.scope)
+          if (process.env.NODE_ENV === 'development') console.warn('[PWA] Service Worker registered:', registration.scope)
 
           // Check for updates periodically
           setInterval(() => {

@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft, Search, UserPlus, UserCheck, UserX, ShieldBan, Loader2,
-  Users, User, X, Send,
+  Users, X, Send,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -52,7 +52,7 @@ const TABS: { value: Tab; label: string; icon: typeof Users }[] = [
 // ─── Component ─────────────────────────────────────────────────────────────────
 
 export default function FriendsScreen() {
-  const { t } = useTranslation()
+  const { t, td } = useTranslation()
   const { goBack, navigate } = useNavigation()
   const queryClient = useQueryClient()
   const [tab, setTab] = useState<Tab>('all')
@@ -88,7 +88,7 @@ export default function FriendsScreen() {
       }).then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error) }); return r.json() }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['friends-search'] })
-      toast.success('Demande envoyée')
+      toast.success(td('Demande envoyée', 'Request sent'))
     },
     onError: (e: Error) => toast.error(e.message),
   })
@@ -101,21 +101,21 @@ export default function FriendsScreen() {
         body: JSON.stringify({ friendshipId, action }),
       }).then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error) }); return r.json() })
       queryClient.invalidateQueries({ queryKey: ['friends'] })
-      toast.success(action === 'accept' ? 'Ami ajouté' : action === 'block' ? 'Joueur bloqué' : 'Demande refusée')
+      toast.success(action === 'accept' ? td('Ami ajouté', 'Friend added') : action === 'block' ? td('Joueur bloqué', 'Player blocked') : td('Demande refusée', 'Request declined'))
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Erreur')
+      toast.error(e instanceof Error ? e.message : td('Erreur', 'Error'))
     }
-  }, [queryClient])
+  }, [queryClient, td])
 
   const removeFriend = useCallback(async (friendshipId: string) => {
     try {
       await fetch(`/api/friends/${friendshipId}`, { method: 'DELETE' })
       queryClient.invalidateQueries({ queryKey: ['friends'] })
-      toast.success('Ami retiré')
+      toast.success(td('Ami retiré', 'Friend removed'))
     } catch {
-      toast.error('Erreur')
+      toast.error(td('Erreur', 'Error'))
     }
-  }, [queryClient])
+  }, [queryClient, td])
 
   const doSearch = useCallback(() => {
     if (search.trim()) setSearchQuery(search.trim())

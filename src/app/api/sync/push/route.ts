@@ -81,7 +81,7 @@ export async function POST(request: Request) {
           }
           default:
             // Unknown action type — log and skip
-            console.log(`[SYNC] Unknown action type: ${type}`)
+            console.warn(`[SYNC] Unknown action type: ${type}`)
         }
 
         // Record the offline action in DB

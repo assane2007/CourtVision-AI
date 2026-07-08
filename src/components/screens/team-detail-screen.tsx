@@ -1,18 +1,18 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
-  ArrowLeft, Users, Crown, Shield, UserMinus, Trophy, Target,
-  ChevronRight, Loader2, LogOut, Plus,
+  ArrowLeft, Users, Crown, Shield, Target,
+  ChevronRight, LogOut,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Progress } from '@/components/ui/progress'
-import { Separator } from '@/components/ui/separator'
+
+
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
@@ -43,16 +43,14 @@ interface TeamData {
 }
 
 export default function TeamDetailScreen() {
-  const { t } = useTranslation()
-  const { goBack, navigate } = useNavigation()
+  const { t, td } = useTranslation()
+  const { goBack } = useNavigation()
   const selectedDrillId = useAppStore(s => s.selectedDrillId)
   const queryClient = useQueryClient()
   const [tab, setTab] = useState<'members' | 'leaderboard' | 'challenges'>('members')
-  const [inviteEmail, setInviteEmail] = useState('')
-  const [showInvite, setShowInvite] = useState(false)
   const [leaveConfirm, setLeaveConfirm] = useState(false)
 
-  const { data, isLoading, isError, refetch } = useQuery<TeamData>({
+  const { data, isLoading, isError } = useQuery<TeamData>({
     queryKey: ['team-detail', selectedDrillId],
     queryFn: () => apiFetch(`/api/teams/${selectedDrillId || 'none'}`),
     enabled: !!selectedDrillId,
@@ -64,14 +62,14 @@ export default function TeamDetailScreen() {
   const leaveTeam = useMutation({
     mutationFn: () => fetch(`/api/teams/${selectedDrillId}/members`, { method: 'DELETE' })
       .then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error) }); return r.json() }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['teams'] }); goBack(); toast.success('Vous avez quitté l\'équipe') },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['teams'] }); goBack(); toast.success(td("Vous avez quitté l'équipe", 'You left the team')) },
     onError: (e: Error) => toast.error(e.message),
   })
 
-  const removeMember = useMutation({
+  const _removeMember = useMutation({
     mutationFn: (playerId: string) => fetch(`/api/teams/${selectedDrillId}/members?playerId=${playerId}`, { method: 'DELETE' })
       .then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error) }); return r.json() }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['team-detail'] }); toast.success('Membre retiré') },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['team-detail'] }); toast.success(td('Membre retiré', 'Member removed')) },
     onError: (e: Error) => toast.error(e.message),
   })
 

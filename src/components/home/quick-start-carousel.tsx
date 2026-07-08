@@ -38,7 +38,7 @@ function CarouselCard({
   onSelect: (drillId: string) => void
 }) {
   const meta = getCategoryMeta(drill.category)
-  const { t, td, tc } = useTranslation()
+  const { t, td } = useTranslation()
   const diffLabel = td(drill.difficulty)
 
   return (

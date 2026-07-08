@@ -3,10 +3,10 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Pause, Play, Square, Loader2, Sparkles, Timer, Plus, SkipForward } from 'lucide-react'
+import { Pause, Play, Square, Loader2, Sparkles, Timer } from 'lucide-react'
 import type { WorkoutPhase, AIFormCheckResult } from './types'
-import { REST_OPTIONS, DEFAULT_SETS } from './types'
-import { getScoreColor, formatTime } from './scoring'
+import { REST_OPTIONS } from './types'
+import { getScoreColor } from './scoring'
 
 // ─── Pre-Workout Config (sets & rest) ────────────────────────────────────────
 

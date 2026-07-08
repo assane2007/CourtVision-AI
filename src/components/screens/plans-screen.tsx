@@ -133,7 +133,7 @@ export default function PlansScreen() {
     startPlanExecution(plan.id, queue)
     selectDrill(queue[0].drillId)
     navigate('camera-workout')
-  }, [startPlanExecution, selectDrill, navigate])
+  }, [startPlanExecution, selectDrill, navigate, t])
 
   // ── Edit plan ────────────────────────────────────────────────────────
   const handleEdit = useCallback((plan: Plan) => {

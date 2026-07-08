@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Trophy, Medal } from 'lucide-react'
+import { ArrowLeft, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -14,7 +14,7 @@ import { containerVariants, itemVariants } from '@/lib/animations'
 import { BottomNav } from '@/components/shared/bottom-nav'
 import { useTranslation } from '@/components/providers/language-provider'
 import type { TranslationKey } from '@/lib/i18n'
-import { getLevelColor, getLevelBgColor, getLevelInfo } from '@/lib/xp'
+import { getLevelColor, getLevelBgColor } from '@/lib/xp'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 

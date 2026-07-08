@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
-  ArrowLeft, Search, Send, Loader2, X, Pencil, MessageCircle,
+  ArrowLeft, Send, Loader2, X, Pencil, MessageCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -37,8 +37,6 @@ function formatMessageTime(date: string): string {
 export default function MessagesScreen() {
   const { t } = useTranslation()
   const { goBack, navigate } = useNavigation()
-  const queryClient = useQueryClient()
-  const [search, setSearch] = useState('')
   const [showNew, setShowNew] = useState(false)
   const [recipientId, setRecipientId] = useState('')
 

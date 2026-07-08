@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Brain, TrendingUp, TrendingDown, Minus, Target,
   AlertTriangle, CheckCircle2, Lightbulb, Activity, RefreshCw,
-  Trophy, ChevronRight, Loader2, Mic, Dumbbell,
+  Trophy, ChevronRight, Mic, Dumbbell,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'

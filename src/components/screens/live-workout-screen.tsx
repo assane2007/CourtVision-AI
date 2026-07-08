@@ -1,24 +1,21 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import {
-  ArrowLeft, Radio, Users, Trophy, Loader2, Play, Square,
-  ChevronDown, Crown, Medal, Zap,
+  ArrowLeft, Radio, Trophy, Loader2, Play, Square,
+  ChevronDown, Crown,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Progress } from '@/components/ui/progress'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog'
 import { useNavigation } from '@/stores/navigation'
-import { useAppStore } from '@/stores/app'
 import { SwipeToGoBack } from '@/components/shared/swipe-back'
 import { apiFetch } from '@/lib/utils'
 import { containerVariants, itemVariants } from '@/lib/animations'
@@ -43,17 +40,15 @@ interface LiveSessionDetail {
 }
 
 export default function LiveWorkoutScreen() {
-  const { t } = useTranslation()
-  const { goBack, navigate } = useNavigation()
-  const selectedDrillId = useAppStore(s => s.selectedDrillId)
+  const { t, td } = useTranslation()
+  const { goBack, navigate: _navigate } = useNavigation()
   const queryClient = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
   const [title, setTitle] = useState('')
   const [viewingSession, setViewingSession] = useState<string | null>(null)
-  const pollRef = useRef<ReturnType<typeof setInterval>>()
 
   // List active sessions
-  const { data: listData, isLoading, refetch } = useQuery<{ sessions: LiveSessionItem[] }>({
+  const { data: listData, isLoading, refetch: _refetch } = useQuery<{ sessions: LiveSessionItem[] }>({
     queryKey: ['live-sessions'],
     queryFn: () => apiFetch('/api/live?status=active'),
     staleTime: 10_000,
@@ -79,7 +74,7 @@ export default function LiveWorkoutScreen() {
       setShowCreate(false); setTitle('')
       setViewingSession(d.session.id)
       queryClient.invalidateQueries({ queryKey: ['live-sessions'] })
-      toast.success('Session live créée!')
+      toast.success(td('Session live créée!', 'Live session created!'))
     },
     onError: (e: Error) => toast.error(e.message),
   })
@@ -90,7 +85,7 @@ export default function LiveWorkoutScreen() {
     onSuccess: (_d, sessionId) => {
       setViewingSession(sessionId)
       queryClient.invalidateQueries({ queryKey: ['live-sessions'] })
-      toast.success('Vous avez rejoint la session!')
+      toast.success(td('Vous avez rejoint la session!', 'You joined the session!'))
     },
     onError: (e: Error) => toast.error(e.message),
   })
@@ -101,11 +96,11 @@ export default function LiveWorkoutScreen() {
     onSuccess: () => {
       setViewingSession(null)
       queryClient.invalidateQueries({ queryKey: ['live-sessions'] })
-      toast.success('Session terminée')
+      toast.success(td('Session terminée', 'Session ended'))
     },
   })
 
-  const submitScore = useMutation({
+  const _submitScore = useMutation({
     mutationFn: ({ sessionId, score, reps }: { sessionId: string; score: number; reps: number }) =>
       fetch(`/api/live/${sessionId}/score`, {
         method: 'PUT',

@@ -226,7 +226,7 @@ export default function AuthScreen() {
         setLoginLoading(false)
       }
     },
-    [loginEmail, loginPassword, navigate],
+    [loginEmail, loginPassword, t],
   )
 
   const handleSignup = useCallback(
@@ -265,7 +265,7 @@ export default function AuthScreen() {
         setSignupLoading(false)
       }
     },
-    [signupName, signupEmail, signupPassword, navigate],
+    [signupName, signupEmail, signupPassword, t],
   )
 
   const handleConfettiDone = useCallback(() => {
@@ -315,7 +315,7 @@ export default function AuthScreen() {
         setResetLoading(false)
       }
     },
-    [resetEmail],
+    [resetEmail, t],
   )
 
   const handleResetConfirm = useCallback(
@@ -344,7 +344,7 @@ export default function AuthScreen() {
         setResetLoading(false)
       }
     },
-    [resetToken, resetNewPassword, resetConfirmPassword],
+    [resetToken, resetNewPassword, resetConfirmPassword, t],
   )
 
   const handleResetSuccess = useCallback(() => {
@@ -355,7 +355,7 @@ export default function AuthScreen() {
     navigator.clipboard.writeText(resetToken).then(() => {
       toast.success(t('auth.tokenCopied'))
     })
-  }, [resetToken])
+  }, [resetToken, t])
 
   // ── Shared password field builder ────────────────────────────────
   const renderPasswordField = (

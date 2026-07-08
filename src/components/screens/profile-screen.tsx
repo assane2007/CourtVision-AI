@@ -124,7 +124,7 @@ const goalsLabels: Record<string, string> = {
 
 // ── Component ───────────────────────────────────────────────────────
 export function ProfileScreen() {
-  const { t, language } = useTranslation()
+  const { t, td, language } = useTranslation()
   const { navigate } = useAppStore()
   const queryClient = useQueryClient()
   // ── Fetch player ────────────────────────────────────────────────
@@ -209,7 +209,7 @@ export function ProfileScreen() {
       signOut({ redirect: false }).then(() => navigate('auth'))
     },
     onError: (err: Error) => {
-      toast.error('Erreur', { description: err.message })
+      toast.error(td('Erreur', 'Error'), { description: err.message })
     },
   })
 

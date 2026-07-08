@@ -37,7 +37,7 @@ export default function ConversationScreen() {
     enabled: !!selectedDrillId,
   })
 
-  const { data: msgsData, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery<{
+  const { data: msgsData, fetchNextPage: _fetchNextPage, hasNextPage: _hasNextPage, isFetchingNextPage } = useInfiniteQuery<{
     messages: MessageItem[]; nextCursor: string | null
   }>({
     queryKey: ['messages', selectedDrillId],

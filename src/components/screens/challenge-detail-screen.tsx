@@ -1,6 +1,5 @@
 'use client'
 
-import { useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
@@ -35,7 +34,7 @@ interface ChallengeData {
 }
 
 export default function ChallengeDetailScreen() {
-  const { t } = useTranslation()
+  const { t, td } = useTranslation()
   const { goBack } = useNavigation()
   const selectedDrillId = useAppStore(s => s.selectedDrillId)
   const queryClient = useQueryClient()
@@ -63,7 +62,7 @@ export default function ChallengeDetailScreen() {
   const joinChallenge = useMutation({
     mutationFn: () => fetch(`/api/challenges/${selectedDrillId}/join`, { method: 'POST' })
       .then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error) }); return r.json() }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['challenge-detail'] }); toast.success('Défi rejoint!') },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['challenge-detail'] }); toast.success(td('Défi rejoint!', 'Challenge joined!')) },
     onError: (e: Error) => toast.error(e.message),
   })
 

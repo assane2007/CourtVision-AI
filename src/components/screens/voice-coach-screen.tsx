@@ -3,12 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ArrowLeft, Mic, MicOff, Send, Volume2, RefreshCw, Trash2,
-  Bot, User, Clock,
+  ArrowLeft, Mic, MicOff, Send, Volume2,
+  Bot, Clock,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useNavigation } from '@/stores/navigation'
 import { useTranslation } from '@/components/providers/language-provider'

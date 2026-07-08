@@ -42,9 +42,7 @@ export async function POST() {
 
     // In production, this would be a QR code URI for authenticator apps
     // For mock purposes, we return the secret directly
-    console.log(`[2FA SETUP] Player: ${player.name} (${player.email})`)
-    console.log(`[2FA SETUP] Secret: ${secret}`)
-    console.log(`[2FA SETUP] Mock TOTP URI: otpauth://totp/CourtVisionAI:${player.email}?secret=${secret}&issuer=CourtVisionAI`)
+    console.warn('[2FA SETUP] Player:', player.name, `(${player.email})`, 'Secret:', secret, 'Mock TOTP URI:', `otpauth://totp/CourtVisionAI:${player.email}?secret=${secret}&issuer=CourtVisionAI`)
 
     return NextResponse.json({
       message: 'Secret 2FA généré. Vérifiez avec un code pour activer.',

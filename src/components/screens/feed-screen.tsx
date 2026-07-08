@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useRef, useEffect } from 'react'
+import { useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
+import { motion } from 'framer-motion'
 import {
-  ArrowLeft, Heart, MessageCircle, Share2, Plus, Loader2, Image as ImageIcon,
-  Trophy, Dumbbell, Video, Award, MoreVertical,
+  ArrowLeft, Heart, MessageCircle, Share2, Plus, Loader2,
+  Trophy, Dumbbell, Video, Award,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -40,7 +40,7 @@ const TYPE_ICONS: Record<string, typeof Trophy> = {
 }
 
 export default function FeedScreen() {
-  const { t } = useTranslation()
+  const { t, td } = useTranslation()
   const { goBack, navigate } = useNavigation()
   const queryClient = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
@@ -79,7 +79,7 @@ export default function FeedScreen() {
       queryClient.invalidateQueries({ queryKey: ['feed'] })
       setShowCreate(false)
       setNewPost({ content: '', type: 'text' })
-      toast.success('Post publié')
+      toast.success(td('Post publié', 'Post published'))
     },
     onError: (e: Error) => toast.error(e.message),
   })

@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Star, Save, RotateCcw, ArrowLeft, Loader2, ShieldCheck, Pause } from 'lucide-react'
-import type { Drill, WorkoutPhase, AIFormCheckResult } from './types'
+import type { Drill, WorkoutPhase } from './types'
 import { getGaugeColor, getGaugeTrackColor, getStarCount, getScoreColor, getScoreBgColor, formatTime } from './scoring'
 
 // ─── ScoreGauge ──────────────────────────────────────────────────────────────
