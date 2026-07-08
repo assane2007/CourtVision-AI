@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { aiCoachSchema, getZodErrorMessage } from '@/lib/validations'
 import { CATEGORY_LABELS } from '@/lib/constants'
+import { formatShortDate } from '@/lib/date-utils'
 import ZAI from 'z-ai-web-dev-sdk'
 import { trackError } from '@/lib/monitoring'
 
@@ -74,7 +75,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: getZodErrorMessage(parsed.error) }, { status: 400 })
     }
 
-    const userMessage = parsed.data.message
+    const userMessage = sanitize(parsed.data.message)
 
     const playerId = session.user.id
 
@@ -149,7 +150,7 @@ export async function POST(req: NextRequest) {
     const sessionsSummary = recentSessions
       .map(
         (s, i) =>
-          `Séance ${i + 1} (${new Date(s.startedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}): Score ${s.totalScore}, ${s.totalReps} reps, ${s.totalDrills} exercices`,
+          `Séance ${i + 1} (${formatShortDate(s.startedAt, 'fr')}): Score ${s.totalScore}, ${s.totalReps} reps, ${s.totalDrills} exercices`,
       )
       .join('\n') || 'Aucune séance récente'
 

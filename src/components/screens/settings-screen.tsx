@@ -139,11 +139,11 @@ export function SettingsScreen() {
         body: JSON.stringify(patch),
       }),
     onSuccess: () => {
-      toast.success('Paramètres sauvegardés')
+      toast.success(t('settings.saved'))
       queryClient.invalidateQueries({ queryKey: ['settings'] })
     },
     onError: (err) => {
-      toast.error(err.message || 'Erreur lors de la sauvegarde')
+      toast.error(err.message || t('settings.saveError'))
     },
   })
 
@@ -215,10 +215,10 @@ export function SettingsScreen() {
       <main className="max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto px-4 pt-4 pb-24">
         {settingsError && !settingsLoading ? (
           <div className="flex items-center justify-between rounded-xl border border-destructive/50 bg-destructive/5 px-4 py-3 mb-4">
-            <p className="text-sm text-destructive">Erreur de chargement des paramètres</p>
+            <p className="text-sm text-destructive">{t('settings.loadError')}</p>
             <Button variant="outline" size="sm" onClick={() => refetchSettings()}>
               <RefreshCw className="h-4 w-4 mr-2" />
-              Réessayer
+              {t('action.retry')}
             </Button>
           </div>
         ) : null}
@@ -239,7 +239,7 @@ export function SettingsScreen() {
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
                       <Target className="h-4 w-4 text-orange-500" />
                     </div>
-                    Objectifs Hebdomadaires
+                    {t('settings.weeklyGoals')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6 pt-0">
@@ -247,7 +247,7 @@ export function SettingsScreen() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <Label className="text-sm font-medium">
-                        Séances par semaine
+                        {t('settings.sessionsPerWeek')}
                       </Label>
                       <span className="text-sm font-bold text-orange-500 tabular-nums">
                         {settings.weeklyGoalSessions}
@@ -283,7 +283,7 @@ export function SettingsScreen() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <Label className="text-sm font-medium">
-                        Répétitions par semaine
+                        {t('settings.repsPerWeek')}
                       </Label>
                       <span className="text-sm font-bold text-orange-500 tabular-nums">
                         {settings.weeklyGoalReps}
@@ -330,7 +330,7 @@ export function SettingsScreen() {
                 <CardContent className="pt-0">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">
-                      Durée de repos entre les séries
+                      {t('settings.restDuration')}
                     </Label>
                     <Select
                       value={String(settings.preferredRestSec)}
@@ -339,7 +339,7 @@ export function SettingsScreen() {
                     >
                       <SelectTrigger className="w-full">
                         <Timer className="mr-2 h-4 w-4 text-muted-foreground" />
-                        <SelectValue placeholder="Sélectionner…" />
+                        <SelectValue placeholder={t('settings.selectPlaceholder')} />
                       </SelectTrigger>
                       <SelectContent>
                         {REST_OPTIONS.map((opt) => (
@@ -362,7 +362,7 @@ export function SettingsScreen() {
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
                       <Volume2 className="h-4 w-4 text-orange-500" />
                     </div>
-                    Préférences
+                    {t('settings.preferences')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0 space-y-5">
@@ -447,7 +447,7 @@ export function SettingsScreen() {
                     <div className="flex items-center gap-3">
                       <Flame className="h-4 w-4 text-muted-foreground" />
                       <Label htmlFor="notif-streak" className="text-sm font-medium cursor-pointer">
-                        Rappels de série
+                        {t('settings.streakReminders')}
                       </Label>
                     </div>
                     <Switch
@@ -466,7 +466,7 @@ export function SettingsScreen() {
                     <div className="flex items-center gap-3">
                       <Swords className="h-4 w-4 text-muted-foreground" />
                       <Label htmlFor="notif-challenge" className="text-sm font-medium cursor-pointer">
-                        Mises à jour des défis
+                        {t('settings.challengeUpdates')}
                       </Label>
                     </div>
                     <Switch
@@ -485,7 +485,7 @@ export function SettingsScreen() {
                     <div className="flex items-center gap-3">
                       <Trophy className="h-4 w-4 text-muted-foreground" />
                       <Label htmlFor="notif-achievement" className="text-sm font-medium cursor-pointer">
-                        Succès
+                        {t('settings.achievementsNotif')}
                       </Label>
                     </div>
                     <Switch
@@ -508,12 +508,12 @@ export function SettingsScreen() {
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
                       <FlaskConical className="h-4 w-4 text-orange-500" />
                     </div>
-                    Fonctionnalités expérimentales
+                    {t('settings.experimentalFeatures')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0 space-y-4">
                   <p className="text-xs text-muted-foreground">
-                    Activez ou désactivez les fonctionnalités en cours de développement. Ces paramètres sont sauvegardés localement.
+                    {t('settings.experimentalDesc')}
                   </p>
                   {ALL_FLAGS.map((flag: FeatureFlag) => (
                     <div key={flag} className="flex items-center justify-between">
@@ -525,7 +525,7 @@ export function SettingsScreen() {
                         checked={isFeatureEnabled(flag)}
                         onCheckedChange={(checked) => {
                           setFeatureOverride(flag, checked)
-                          toast.success(`${FEATURE_LABELS[flag]} ${checked ? 'activé' : 'désactivé'}`)
+                          toast.success(`${FEATURE_LABELS[flag]} ${checked ? t('settings.activated') : t('settings.disabled')}`)
                         }}
                         className="data-[state=checked]:bg-orange-500"
                       />
@@ -543,23 +543,23 @@ export function SettingsScreen() {
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
                       <Flame className="h-4 w-4 text-orange-500" />
                     </div>
-                    Abonnement &amp; Facturation
+                    {t('settings.billing')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0 space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium">Plan actuel</p>
-                      <p className="text-xs text-muted-foreground">Gratuit</p>
+                      <p className="text-sm font-medium">{t('settings.currentPlan')}</p>
+                      <p className="text-xs text-muted-foreground">{t('pricing.free')}</p>
                     </div>
-                    <Badge variant="secondary" className="text-xs">Gratuit</Badge>
+                    <Badge variant="secondary" className="text-xs">{t('pricing.free')}</Badge>
                   </div>
                   <Button
                     className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold"
                     onClick={() => useAppStore.getState().navigate('pricing')}
                   >
                     <Flame className="h-4 w-4 mr-2" />
-                    Voir les offres
+                    {t('settings.viewOffers')}
                   </Button>
                 </CardContent>
               </Card>
@@ -573,7 +573,7 @@ export function SettingsScreen() {
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
                       <Shield className="h-4 w-4 text-orange-500" />
                     </div>
-                    Données &amp; Confidentialité
+                    {t('settings.dataPrivacy')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0 space-y-3">
@@ -596,7 +596,7 @@ export function SettingsScreen() {
                     <span className="text-xs">v0.2.0</span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Développé avec ❤️ pour les passionnés de basket
+                    {t('settings.developedWith')}
                   </p>
                 </CardContent>
               </Card>
@@ -693,6 +693,7 @@ function SettingsSkeleton() {
 // -─ RGPD Sub-components ──────────────────────────────
 
 function ExportDataButton() {
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
 
   const handleExport = async () => {
@@ -700,8 +701,8 @@ function ExportDataButton() {
     try {
       const res = await fetch('/api/player/export')
       if (!res.ok) {
-        const body = await res.json().catch(() => ({ error: 'Erreur réseau' }))
-        throw new Error(body.error || 'Erreur lors de l\'export')
+        const body = await res.json().catch(() => ({ error: t('settings.exportNetworkError') }))
+        throw new Error(body.error || t('settings.exportError'))
       }
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
@@ -712,9 +713,9 @@ function ExportDataButton() {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-      toast.success('Données exportées avec succès')
+      toast.success(t('settings.exportSuccess'))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur lors de l\'export')
+      toast.error(err instanceof Error ? err.message : t('settings.exportError'))
     } finally {
       setLoading(false)
     }
@@ -729,8 +730,8 @@ function ExportDataButton() {
     >
       <Download className="h-4 w-4 text-muted-foreground mr-3 shrink-0" />
       <div className="text-left">
-        <div className="text-sm font-medium">Exporter mes données (RGPD)</div>
-        <div className="text-xs text-muted-foreground">Télécharger toutes vos données au format JSON</div>
+        <div className="text-sm font-medium">{t('settings.exportData')}</div>
+        <div className="text-xs text-muted-foreground">{t('settings.exportDataDesc')}</div>
       </div>
       {loading && <Loader2 className="h-4 w-4 animate-spin ml-auto shrink-0" />}
     </Button>
@@ -738,6 +739,7 @@ function ExportDataButton() {
 }
 
 function PrivacyLink() {
+  const { t } = useTranslation()
   const handleOpen = async () => {
     try {
       const res = await fetch('/api/privacy')
@@ -747,7 +749,7 @@ function PrivacyLink() {
       const url = URL.createObjectURL(blob)
       window.open(url, '_blank')
     } catch {
-      toast.error('Impossible de charger la politique de confidentialité')
+      toast.error(t('settings.privacyLoadError'))
     }
   }
 
@@ -759,14 +761,15 @@ function PrivacyLink() {
     >
       <Shield className="h-4 w-4 text-muted-foreground mr-3 shrink-0" />
       <div className="text-left">
-        <div className="text-sm font-medium">Politique de confidentialité</div>
-        <div className="text-xs text-muted-foreground">Consultez notre politique RGPD</div>
+        <div className="text-sm font-medium">{t('settings.privacyPolicy')}</div>
+        <div className="text-xs text-muted-foreground">{t('settings.privacyPolicyDesc')}</div>
       </div>
     </Button>
   )
 }
 
 function DeleteAccountButton() {
+  const { t } = useTranslation()
   const [confirmStep, setConfirmStep] = useState(0)
 
   const handleDelete = async () => {
@@ -777,19 +780,19 @@ function DeleteAccountButton() {
 
     try {
       await apiFetch('/api/player/delete', { method: 'DELETE' })
-      toast.success('Compte supprimé. Vous allez être déconnecté.')
+      toast.success(t('settings.deleteAccountSuccess'))
       // Force sign out
       window.location.href = '/api/auth/signout'
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur lors de la suppression')
+      toast.error(err instanceof Error ? err.message : t('settings.deleteAccountError'))
       setConfirmStep(0)
     }
   }
 
   const labels = [
-    { text: 'Supprimer mon compte', sub: 'Cette action est irréversible' },
-    { text: 'Êtes-vous sûr ?', sub: 'Toutes vos données seront perdues' },
-    { text: 'Confirmer la suppression', sub: 'Dernière chance — cliquez pour supprimer' },
+    { text: t('settings.deleteAccountButton'), sub: t('settings.deleteConfirm1') },
+    { text: t('settings.deleteConfirm2'), sub: t('settings.deleteConfirm3') },
+    { text: t('settings.deleteFinalButton'), sub: t('settings.deleteFinalDesc') },
   ]
 
   const current = labels[confirmStep]

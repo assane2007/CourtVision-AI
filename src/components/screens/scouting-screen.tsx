@@ -30,6 +30,7 @@ import { containerVariants, itemVariants } from '@/lib/animations'
 import { getLevelInfo, getLevelColor } from '@/lib/xp'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/components/providers/language-provider'
+import type { TranslationKey } from '@/lib/i18n'
 import { BottomNav } from '@/components/shared/bottom-nav'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -83,12 +84,12 @@ const CATEGORY_EMOJIS: Record<string, string> = {
 }
 
 const CATEGORY_FR: Record<string, string> = {
-  shooting: 'Tir',
-  dribble: 'Maniement de Balle',
-  vitesse: 'Vitesse',
-  defense: 'Défense',
-  placement: 'Placement Pieds',
-  endurance: 'Condition Physique',
+  shooting: 'scouting.shooting',
+  dribble: 'scouting.ballHandling',
+  vitesse: 'scouting.speed',
+  defense: 'scouting.defense',
+  placement: 'scouting.footwork',
+  endurance: 'scouting.conditioning',
 }
 
 // ── Grade config ───────────────────────────────────────────────────────────
@@ -110,6 +111,7 @@ const MAX_RADIUS = 120
 const LABEL_RADIUS = MAX_RADIUS + 28
 
 function RadarChart({ categories }: { categories: ScoutingCategory[] }) {
+  const { t } = useTranslation()
   const hasEstimated = categories.some((c) => c.estimated)
 
   const axes = categories.map((c) => ({
@@ -155,7 +157,7 @@ function RadarChart({ categories }: { categories: ScoutingCategory[] }) {
       viewBox={`0 0 ${RADAR_SIZE} ${RADAR_SIZE}`}
       className="w-full h-full max-w-[320px] max-h-[320px] mx-auto"
       role="img"
-      aria-label="Graphique radar ADN Basketteur"
+      aria-label={t('scouting.radarLabel')}
     >
       <defs>
         <linearGradient id="radarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -298,6 +300,7 @@ function generateScoutingText(
   categories: ScoutingCategory[],
   overallScore: number,
   overallGrade: string,
+  t: (key: TranslationKey) => string,
 ): {
   strengths: string
   improvements: string
@@ -312,10 +315,10 @@ function generateScoutingText(
   // If no data at all
   if (sorted.every((c) => c.avgScore === 0)) {
     return {
-      strengths: 'Aucune donnée suffisante pour évaluer les points forts.',
-      improvements: 'Commencez vos premiers entraînements pour recevoir une analyse complète.',
+      strengths: t('scouting.insufficientData'),
+      improvements: t('scouting.startTrainingForAnalysis'),
       profile: `${playerName} est un nouveau joueur sur CourtVision AI. Aucune session d\'entraînement n\'a encore été complétée, ce qui ne permet pas de générer un profil détaillé.`,
-      recommendation: 'Recommandé : complétez au moins 3 sessions d\'entraînement dans différentes catégories pour activer votre premier rapport de scout IA complet.',
+      recommendation: t('scouting.recommendationMinSessions'),
     }
   }
 
@@ -334,7 +337,7 @@ function generateScoutingText(
   const strengths =
     strengthLines.length > 0
       ? strengthLines.join(' ')
-      : 'Aucune donnée suffisante pour évaluer les points forts.'
+      : t('scouting.insufficientData')
 
   // ── Improvements ────────────────────────────────────────────────────
   const improvementLines = bottomCategories.map((cat) => {
@@ -351,7 +354,7 @@ function generateScoutingText(
   const improvements =
     improvementLines.length > 0
       ? improvementLines.join(' ')
-      : 'Toutes les catégories montrent un bon niveau.'
+      : t('scouting.goodLevel')
 
   // ── Drill recommendations per weak category ─────────────────────────
   const drillRecs: Record<string, string> = {
@@ -394,7 +397,7 @@ function generateScoutingText(
   } else if (bottomCategories.length > 0) {
     recommendation = `Continuez à travailler ${weakFr.toLowerCase()} pour élever votre plancher (${weakScore}/100 → objectif 70+). ${rec} sont de bons choix pour progresser.`
   } else {
-    recommendation = 'Maintenez votre régime d\'entraînement actuel et poussez vers des drills de difficulté supérieure pour continuer à progresser.'
+    recommendation = t('scouting.maintainTraining')
   }
 
   if (overallScore >= 70) {
@@ -424,6 +427,7 @@ export function ScoutingScreen() {
       data.categories,
       data.overallScore,
       data.overallGrade,
+      t,
     )
   }, [data])
 
@@ -456,13 +460,13 @@ export function ScoutingScreen() {
           <button
             onClick={goBack}
             className="flex h-10 w-10 items-center justify-center rounded-xl bg-card border border-border hover:bg-muted transition-colors"
-            aria-label="Retour"
+            aria-label={t('scouting.back')}
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-orange-500" />
-            <h1 className="text-lg font-bold">Rapport de Scout IA</h1>
+            <h1 className="text-lg font-bold">{t('scouting.title')}</h1>
           </div>
         </div>
 
@@ -629,7 +633,7 @@ export function ScoutingScreen() {
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-bold">{data.overallScore}</p>
-                    <p className="text-xs text-muted-foreground">Score global / 100</p>
+                    <p className="text-xs text-muted-foreground">{t('scouting.scoreOutOf100')}</p>
                   </div>
                 </div>
               </div>
@@ -723,7 +727,7 @@ export function ScoutingScreen() {
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex justify-between text-xs mb-1">
-                        <span className="text-muted-foreground">Moyenne niveau</span>
+                        <span className="text-muted-foreground">{t('scouting.averageLevel')}</span>
                         <span className="font-semibold">{data.levelAvg}</span>
                       </div>
                       <Progress value={data.levelAvg} className="h-2" />
@@ -733,7 +737,7 @@ export function ScoutingScreen() {
                   <div className="flex items-center justify-between gap-4 mt-3">
                     <div className="flex-1">
                       <div className="flex justify-between text-xs mb-1">
-                        <span className="text-muted-foreground">Votre score</span>
+                        <span className="text-muted-foreground">{t('scouting.yourScore')}</span>
                         <span className="font-bold text-orange-500">
                           {data.overallScore}
                         </span>

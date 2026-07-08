@@ -104,18 +104,18 @@ export default function PlansScreen() {
       apiFetch<{ success: boolean }>(`/api/plans/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plans'] })
-      toast.success('Plan supprimé', { description: 'Le plan a été supprimé avec succès.' })
+      toast.success(t('plans.planDeleted'), { description: t('plans.planDeletedDesc') })
       setDeleteTarget(null)
     },
     onError: (err) => {
-      toast.error('Erreur', { description: (err as Error).message })
+      toast.error(t('plans.error'), { description: (err as Error).message })
     },
   })
 
   // ── Play plan ────────────────────────────────────────────────────────
   const handlePlay = useCallback((plan: Plan) => {
     if (!plan.drills.length) {
-      toast.error('Plan vide', { description: 'Ce plan ne contient aucun exercice.' })
+      toast.error(t('plans.emptyPlan'), { description: t('plans.emptyPlanDesc') })
       return
     }
 
@@ -150,10 +150,10 @@ export default function PlansScreen() {
   if (isError) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20 px-4">
-        <p className="text-sm text-muted-foreground">Impossible de charger les données</p>
+        <p className="text-sm text-muted-foreground">{t('common.loadFailed')}</p>
         <Button variant="outline" size="sm" onClick={() => refetch()}>
           <RefreshCw className="h-4 w-4 mr-2" />
-          Réessayer
+          {t('action.retry')}
         </Button>
       </div>
     )
@@ -168,7 +168,7 @@ export default function PlansScreen() {
             <div className="w-9 h-9 rounded-xl bg-orange-500/15 flex items-center justify-center">
               <ClipboardList className="h-5 w-5 text-orange-500" />
             </div>
-            <h1 className="text-lg font-bold">Mes Plans</h1>
+            <h1 className="text-lg font-bold">{t('plans.myPlans')}</h1>
           </div>
         </div>
       </header>
@@ -201,16 +201,16 @@ export default function PlansScreen() {
             <div className="w-20 h-20 rounded-2xl bg-orange-500/10 flex items-center justify-center mb-5">
               <ClipboardList className="h-10 w-10 text-orange-500/60" />
             </div>
-            <h2 className="text-lg font-semibold mb-2">Aucun plan</h2>
+            <h2 className="text-lg font-semibold mb-2">{t('plans.noPlans')}</h2>
             <p className="text-sm text-muted-foreground max-w-[260px] mb-6">
-              Créez votre premier plan d&apos;entraînement pour combiner plusieurs exercices en une seule session.
+              {t('plans.noPlansDesc')}
             </p>
             <Button
               onClick={() => { setDialogKey((k) => k + 1); setCreateOpen(true) }}
               className="bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl px-6"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Créer un plan
+              {t('plans.createPlan')}
             </Button>
           </motion.div>
         ) : (
@@ -245,7 +245,7 @@ export default function PlansScreen() {
                         </div>
                         {plan.isPublic && (
                           <Badge variant="outline" className="text-[10px] shrink-0 bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
-                            Public
+                            {t('plans.publicBadge')}
                           </Badge>
                         )}
                       </div>
@@ -254,7 +254,7 @@ export default function PlansScreen() {
                       <div className="flex items-center gap-3 mb-4">
                         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                           <Dumbbell className="h-3.5 w-3.5" />
-                          <span>{plan.drills.length} exercice{plan.drills.length > 1 ? 's' : ''}</span>
+                          <span>{plan.drills.length} {t('plans.exercises')}{plan.drills.length > 1 ? 's' : ''}</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                           <Clock className="h-3.5 w-3.5" />
@@ -262,7 +262,7 @@ export default function PlansScreen() {
                         </div>
                         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                           <Target className="h-3.5 w-3.5" />
-                          <span>{totalReps} rép.</span>
+                          <span>{totalReps} {t('plans.repsShort')}</span>
                         </div>
                       </div>
 
@@ -295,14 +295,14 @@ export default function PlansScreen() {
                           disabled={plan.drills.length === 0}
                         >
                           <Play className="h-4 w-4 mr-1.5" />
-                          Lancer
+                          {t('plans.launchPlan')}
                         </Button>
                         <Button
                           variant="outline"
                           size="icon"
                           className="h-10 w-10 rounded-xl"
                           onClick={() => handleEdit(plan)}
-                          aria-label="Modifier le plan"
+                          aria-label={t('plans.editPlanAria')}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -311,7 +311,7 @@ export default function PlansScreen() {
                           size="icon"
                           className="h-10 w-10 rounded-xl text-red-500 hover:text-red-600 hover:bg-red-500/10 border-red-500/20"
                           onClick={() => setDeleteTarget(plan)}
-                          aria-label="Supprimer le plan"
+                          aria-label={t('plans.deletePlanAria')}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -337,7 +337,7 @@ export default function PlansScreen() {
             onClick={() => { setDialogKey((k) => k + 1); setCreateOpen(true) }}
             className="h-14 w-14 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/30"
             size="icon"
-            aria-label="Créer un plan"
+            aria-label={t('plans.createPlanAria')}
           >
             <Plus className="h-6 w-6" />
           </Button>
@@ -356,9 +356,9 @@ export default function PlansScreen() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer ce plan ?</AlertDialogTitle>
+            <AlertDialogTitle>{t('plans.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Le plan &quot;{deleteTarget?.name}&quot; sera définitivement supprimé. Cette action est irréversible.
+              {t('plans.deleteDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -368,7 +368,7 @@ export default function PlansScreen() {
               disabled={deleteMutation.isPending}
               className="bg-red-500 hover:bg-red-600 text-white"
             >
-              {deleteMutation.isPending ? 'Suppression...' : t('action.delete')}
+              {deleteMutation.isPending ? t('plans.deleting') : t('action.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -45,10 +45,10 @@ export function AchievementsScreen() {
   if (isError) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20 px-4">
-        <p className="text-sm text-muted-foreground">Impossible de charger les données</p>
+        <p className="text-sm text-muted-foreground">{t('error.loadFailed')}</p>
         <Button variant="outline" size="sm" onClick={() => refetch()}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Réessayer
+          <RefreshCw className="h-4 w-4 mr-2" aria-hidden="true" />
+          {t('action.retry')}
         </Button>
       </div>
     )
@@ -88,7 +88,7 @@ export function AchievementsScreen() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Medal className="h-5 w-5 text-orange-500" />
-              <span className="font-semibold text-sm">Progression</span>
+              <span className="font-semibold text-sm">{t('achievements.progression')}</span>
             </div>
             <span className="text-2xl font-bold text-orange-500 dark:text-orange-400">
               {Math.round(progress)}%
@@ -104,8 +104,8 @@ export function AchievementsScreen() {
           </div>
           <p className="text-xs text-muted-foreground mt-2">
             {totalUnlocked === totalAchievements
-              ? '🎉 Tous les succès déverrouillés !'
-              : `${totalAchievements - totalUnlocked} succès restants`}
+              ? t('achievements.allUnlocked')
+              : t('achievements.remaining').replace('{count}', String(totalAchievements - totalUnlocked))}
           </p>
         </motion.div>
 
@@ -118,9 +118,9 @@ export function AchievementsScreen() {
           >
             <span className="text-2xl">🎉</span>
             <div>
-              <p className="font-semibold text-green-400 text-sm">Nouveau(x) succès !</p>
+              <p className="font-semibold text-green-400 text-sm">{t('achievements.newUnlocks')}</p>
               <p className="text-xs text-muted-foreground">
-                {data.newUnlocks.length} succès viennent d'être déverrouillés
+                {t('achievements.newUnlocksDesc').replace('{count}', String(data.newUnlocks.length))}
               </p>
             </div>
           </motion.div>
@@ -133,6 +133,40 @@ export function AchievementsScreen() {
               <Skeleton key={i} className="h-36 rounded-2xl" />
             ))}
           </div>
+        ) : achievements.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="py-16 flex flex-col items-center text-center"
+          >
+            <div className="relative w-48 h-36 mb-6">
+              <svg viewBox="0 0 200 140" className="w-full h-full drop-shadow-lg" aria-hidden="true">
+                <circle cx="100" cy="50" r="30" fill="none" stroke="#f97316" strokeWidth="1.5" opacity="0.25" />
+                <circle cx="100" cy="50" r="18" fill="none" stroke="#f97316" strokeWidth="1" opacity="0.2" />
+                <path d="M 100 20 L 105 40 L 125 40 L 109 50 L 115 70 L 100 58 L 85 70 L 91 50 L 75 40 L 95 40 Z" fill="#f97316" opacity="0.15" />
+                <rect x="60" y="80" width="80" height="40" rx="6" fill="none" stroke="#f97316" strokeWidth="1" opacity="0.15" />
+                <rect x="80" y="120" width="40" height="8" rx="2" fill="none" stroke="#f97316" strokeWidth="1" opacity="0.12" />
+              </svg>
+              <motion.div
+                animate={{ y: [0, -6, 0] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' as const }}
+                className="absolute -top-2 left-1/2 -translate-x-1/2 text-4xl"
+                aria-hidden="true"
+              >
+                🏅
+              </motion.div>
+            </div>
+            <h3 className="font-semibold text-lg mb-1">{t('empty.noAchievements')}</h3>
+            <p className="text-sm text-muted-foreground max-w-[280px] mb-6">
+              {t('empty.noAchievementsDesc')}
+            </p>
+            <Button
+              onClick={() => navigate('train-hub')}
+              className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold px-6 shadow-lg shadow-orange-500/25 rounded-full"
+            >
+              {t('empty.startTraining')}
+            </Button>
+          </motion.div>
         ) : (
           <motion.div
             variants={containerVariants}
@@ -191,7 +225,7 @@ export function AchievementsScreen() {
                 ) : (
                   <div className="flex items-center gap-1 text-muted-foreground/50 relative z-10">
                     <Lock className="h-3 w-3" />
-                    <span className="text-[9px]">Verrouillé</span>
+                    <span className="text-[9px]">{t('achievements.locked')}</span>
                   </div>
                 )}
               </motion.div>

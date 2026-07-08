@@ -3,6 +3,13 @@ import type { WorkoutDrillResult, WorkoutResult, PlanDrillQueueItem } from '@/st
 
 // ── Workout Store ─────────────────────────────────────────────────────────────
 
+interface WorkoutActions {
+  setWorkoutResult: (result: WorkoutResult | null) => void
+  startPlanExecution: (planId: string, drills: PlanDrillQueueItem[]) => void
+  advancePlanDrill: (result: WorkoutDrillResult) => void
+  clearPlanExecution: () => void
+}
+
 interface WorkoutState {
   workoutResult: WorkoutResult | null
 
@@ -11,15 +18,9 @@ interface WorkoutState {
   planCurrentIndex: number
   planResults: WorkoutDrillResult[]
   planId: string | null
-
-  // Actions
-  setWorkoutResult: (result: WorkoutResult | null) => void
-  startPlanExecution: (planId: string, drills: PlanDrillQueueItem[]) => void
-  advancePlanDrill: (result: WorkoutDrillResult) => void
-  clearPlanExecution: () => void
 }
 
-export const useWorkout = create<WorkoutState>((set) => ({
+export const useWorkout = create<WorkoutState & WorkoutActions>((set) => ({
   workoutResult: null,
 
   // Plan execution

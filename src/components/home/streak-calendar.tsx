@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Flame } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { formatDate } from '@/lib/date-utils'
 import { useTranslation } from '@/components/providers/language-provider'
 
 // ---------------------------------------------------------------------------
@@ -130,7 +131,7 @@ export function StreakCalendar({ dailyStats }: StreakCalendarProps) {
                     key={cell.date}
                     className="flex-1 flex items-center justify-center"
                     title={`${cell.date} — ${cell.sessions} séance${cell.sessions > 1 ? 's' : ''}`}
-                    aria-label={`${new Date(cell.date + 'T00:00:00').toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'long' })}: ${cell.sessions} séance${cell.sessions > 1 ? 's' : ''}`}
+                    aria-label={`${formatDate(cell.date + 'T00:00:00', language, { day: 'numeric', month: 'long' })}: ${cell.sessions} séance${cell.sessions > 1 ? 's' : ''}`}
                   >
                     <motion.div
                       initial={{ scale: 0 }}

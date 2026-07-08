@@ -13,6 +13,7 @@ import { apiFetch } from '@/lib/utils'
 import { containerVariants, itemVariants } from '@/lib/animations'
 import { BottomNav } from '@/components/shared/bottom-nav'
 import { useTranslation } from '@/components/providers/language-provider'
+import type { TranslationKey } from '@/lib/i18n'
 import { getLevelColor, getLevelBgColor, getLevelInfo } from '@/lib/xp'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -39,10 +40,10 @@ interface LeaderboardResponse {
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
-const PERIOD_TABS: { value: Period; label: string }[] = [
-  { value: 'all', label: 'Global' },
-  { value: 'month', label: 'Ce mois' },
-  { value: 'week', label: 'Cette semaine' },
+const PERIOD_TABS: { value: Period; labelKey: TranslationKey }[] = [
+  { value: 'all', labelKey: 'leaderboard.global' },
+  { value: 'month', labelKey: 'leaderboard.thisMonth' },
+  { value: 'week', labelKey: 'leaderboard.thisWeek' },
 ]
 
 function getPodiumStyle(rank: number) {
@@ -119,7 +120,7 @@ export function LeaderboardScreen() {
 
         {/* Period Tabs */}
         <div className="max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto px-4 pb-3">
-          <div className="flex gap-1 bg-muted rounded-xl p-1" role="tablist" aria-label="Période du classement">
+          <div className="flex gap-1 bg-muted rounded-xl p-1" role="tablist" aria-label={t('leaderboard.periodLabel')}>
             {PERIOD_TABS.map((tab) => (
               <button
                 key={tab.value}
@@ -133,7 +134,7 @@ export function LeaderboardScreen() {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {tab.label}
+            {tab.labelKey && t(tab.labelKey)}
               </button>
             ))}
           </div>
@@ -145,8 +146,8 @@ export function LeaderboardScreen() {
           <LeaderboardSkeleton />
         ) : isError ? (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
-            <div className="text-4xl">:(</div>
-            <p className="text-muted-foreground">Impossible de charger le classement</p>
+            <div className="text-4xl" aria-hidden="true">:(</div>
+            <p className="text-muted-foreground">{t('error.loadFailed')}</p>
             <Button variant="outline" onClick={() => refetch()}>
               {t('action.retry')}
             </Button>
@@ -197,7 +198,7 @@ export function LeaderboardScreen() {
                         {top3[0].name}
                         {top3[0].isCurrentUser && (
                           <Badge className="ml-1.5 bg-orange-500 text-white text-[10px] px-1.5 py-0">
-                            VOUS
+                            {t('leaderboard.you')}
                           </Badge>
                         )}
                       </span>
@@ -248,13 +249,13 @@ export function LeaderboardScreen() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold truncate">Votre position</span>
+                      <span className="font-semibold truncate">{t('leaderboard.yourPosition')}</span>
                       <Badge className="bg-orange-500 text-white text-[10px] px-1.5 py-0">
-                        VOUS
+                        {t('leaderboard.you')}
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Continuez à vous entraîner pour monter !
+                      {t('leaderboard.keepTraining')}
                     </p>
                   </div>
                 </div>
@@ -293,7 +294,7 @@ export function LeaderboardScreen() {
                         </span>
                         {entry.isCurrentUser && (
                           <Badge className="bg-orange-500 text-white text-[10px] px-1.5 py-0 shrink-0">
-                            VOUS
+                            {t('leaderboard.you')}
                           </Badge>
                         )}
                       </div>
@@ -302,7 +303,7 @@ export function LeaderboardScreen() {
                           variant="outline"
                           className={`text-[10px] px-1.5 py-0 ${getLevelBgColor(entry.xpLevel)} ${getLevelColor(entry.xpLevel)}`}
                         >
-                          Niv. {entry.xpLevel}
+                          {t('leaderboard.level')} {entry.xpLevel}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
                           {entry.position === 'guard' ? t('position.guard') : entry.position === 'forward' ? t('position.forward') : entry.position === 'center' ? t('position.center') : entry.position}
@@ -327,7 +328,7 @@ export function LeaderboardScreen() {
               <div className="flex flex-col items-center gap-3 py-16 text-center">
                 <Trophy className="h-12 w-12 text-muted-foreground/50" />
                 <p className="text-muted-foreground">
-                  Aucun classement disponible pour cette période
+                  {t('empty.noLeaderboard')}
                 </p>
               </div>
             )}

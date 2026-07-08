@@ -218,10 +218,10 @@ export default function AuthScreen() {
           setPendingNavigation(true)
           setShowConfetti(true)
         } else {
-          setLoginError('Email ou mot de passe incorrect.')
+          setLoginError(t('auth.loginError'))
         }
       } catch {
-        setLoginError('Une erreur réseau est survenue. Veuillez réessayer.')
+        setLoginError(t('auth.networkError'))
       } finally {
         setLoginLoading(false)
       }
@@ -257,10 +257,10 @@ export default function AuthScreen() {
           setPendingNavigation(true)
           setShowConfetti(true)
         } else {
-          setSignupError('Compte créé mais la connexion a échoué. Veuillez vous connecter manuellement.')
+          setSignupError(t('auth.signupCreatedError'))
         }
       } catch (err) {
-        setSignupError(err instanceof Error ? err.message : 'Une erreur est survenue.')
+        setSignupError(err instanceof Error ? err.message : t('auth.genericError'))
       } finally {
         setSignupLoading(false)
       }
@@ -310,7 +310,7 @@ export default function AuthScreen() {
           setResetOpen(false)
         }
       } catch (err) {
-        setResetError(err instanceof Error ? err.message : 'Une erreur est survenue.')
+        setResetError(err instanceof Error ? err.message : t('auth.genericError'))
       } finally {
         setResetLoading(false)
       }
@@ -323,11 +323,11 @@ export default function AuthScreen() {
       e.preventDefault()
       setResetError('')
       if (resetNewPassword.length < 8) {
-        setResetError('Le mot de passe doit contenir au moins 8 caractères.')
+        setResetError(t('auth.passwordMinLength'))
         return
       }
       if (resetNewPassword !== resetConfirmPassword) {
-        setResetError('Les mots de passe ne correspondent pas.')
+        setResetError(t('auth.passwordMismatch'))
         return
       }
       setResetLoading(true)
@@ -339,7 +339,7 @@ export default function AuthScreen() {
         })
         setResetStep('success')
       } catch (err) {
-        setResetError(err instanceof Error ? err.message : 'Une erreur est survenue.')
+        setResetError(err instanceof Error ? err.message : t('auth.genericError'))
       } finally {
         setResetLoading(false)
       }
@@ -353,7 +353,7 @@ export default function AuthScreen() {
 
   const handleCopyToken = useCallback(() => {
     navigator.clipboard.writeText(resetToken).then(() => {
-      toast.success('Token copié !')
+      toast.success(t('auth.tokenCopied'))
     })
   }, [resetToken])
 
@@ -369,8 +369,8 @@ export default function AuthScreen() {
     showForgotLink = false,
   ) => (
     <div className="space-y-2">
-      <Label htmlFor={id} className="text-white/80">
-        Mot de passe
+      <Label htmlFor={id} className="text-foreground">
+        {t('auth.password')}
       </Label>
       <div className="relative">
         <Input
@@ -381,14 +381,14 @@ export default function AuthScreen() {
           placeholder={placeholder}
           disabled={disabled}
           required
-          className="h-11 bg-white/5 border-white/15 text-white placeholder:text-white/40 pr-10 focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
+          className="h-11 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground pr-10 focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
         />
         <button
           type="button"
           onClick={toggle}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80 transition-colors"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
           tabIndex={-1}
-          aria-label={show ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+          aria-label={show ? t('auth.hidePassword') : t('auth.showPassword')}
         >
           {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
         </button>
@@ -397,10 +397,10 @@ export default function AuthScreen() {
         <div className="text-right pt-1">
           <button
             type="button"
-            className="text-xs text-orange-400/60 hover:text-orange-400/90 transition-colors cursor-pointer"
+            className="text-xs text-orange-500/70 hover:text-orange-500 transition-colors cursor-pointer"
             onClick={handleResetOpen}
           >
-            Mot de passe oublié ?
+            {t('auth.forgotPassword')}
           </button>
         </div>
       )}
@@ -411,7 +411,7 @@ export default function AuthScreen() {
   const floatingBalls = useMemo(() => floatingBasketballs, [])
 
   return (
-    <div className="dark min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3d0f] p-4">
+    <div className="dark min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3d0f] dark:from-background dark:via-background dark:to-background p-4">
       {/* ── Basketball court lines SVG background ──────────────── */}
       <div className="absolute inset-0 pointer-events-none z-0">
         <CourtLinesSVG />
@@ -467,8 +467,8 @@ export default function AuthScreen() {
                   AI
                 </span>
               </h1>
-              <p className="text-sm text-white/50 font-medium">
-                Entraînement Basketball Intelligent
+              <p className="text-sm text-muted-foreground font-medium">
+                {t('auth.subtitle')}
               </p>
             </div>
           </CardHeader>
@@ -476,16 +476,16 @@ export default function AuthScreen() {
           <CardContent className="px-6 md:px-8 pb-8 pt-2">
             <Tabs defaultValue="login" className="w-full">
               {/* ── Tab bar ───────────────────────────────────────── */}
-              <TabsList className="w-full h-11 bg-white/[0.06] p-1 mb-6 rounded-lg">
+              <TabsList className="w-full h-11 bg-muted/50 p-1 mb-6 rounded-lg">
                 <TabsTrigger
                   value="login"
-                  className="flex-1 h-full rounded-md text-sm md:text-base font-medium data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-amber-500/20 text-white/60 transition-all"
+                  className="flex-1 h-full rounded-md text-sm md:text-base font-medium data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-amber-500/20 text-muted-foreground transition-all"
                 >
                   {t('action.signIn')}
                 </TabsTrigger>
                 <TabsTrigger
                   value="signup"
-                  className="flex-1 h-full rounded-md text-sm md:text-base font-medium data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-amber-500/20 text-white/60 transition-all"
+                  className="flex-1 h-full rounded-md text-sm md:text-base font-medium data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-amber-500/20 text-muted-foreground transition-all"
                 >
                   {t('action.signUp')}
                 </TabsTrigger>
@@ -495,8 +495,8 @@ export default function AuthScreen() {
               <TabsContent value="login">
                 <form onSubmit={handleLogin} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="login-email" className="text-white/80">
-                      Email
+                    <Label htmlFor="login-email" className="text-foreground">
+                      {t('auth.email')}
                     </Label>
                     <Input
                       id="login-email"
@@ -506,11 +506,11 @@ export default function AuthScreen() {
                         setLoginEmail(e.target.value)
                         setLoginError('')
                       }}
-                      placeholder="vous@exemple.com"
+                      placeholder={t('auth.emailPlaceholder')}
                       disabled={loginLoading}
                       required
                       autoComplete="email"
-                      className="h-11 bg-card/5 border-border/15 dark:text-white text-foreground placeholder:text-muted-foreground focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
+                      className="h-11 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
                     />
                   </div>
 
@@ -524,7 +524,7 @@ export default function AuthScreen() {
                     showLoginPassword,
                     () => setShowLoginPassword((p) => !p),
                     loginLoading,
-                    'Votre mot de passe',
+                    t('auth.passwordPlaceholder'),
                     true,
                   )}
 
@@ -532,7 +532,7 @@ export default function AuthScreen() {
                     <motion.p
                       initial={{ opacity: 0, y: -4 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="text-sm text-red-400 font-medium"
+                      className="text-sm text-red-500 dark:text-red-400 font-medium"
                       role="alert"
                     >
                       {loginError}
@@ -542,12 +542,12 @@ export default function AuthScreen() {
                   <Button
                     type="submit"
                     disabled={loginLoading}
-                    className="w-full h-11 text-sm font-semibold bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 dark:text-white text-foreground shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
+                    className="w-full h-11 text-sm font-semibold bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
                   >
                     {loginLoading ? (
                       <>
                         <Loader2 className="size-4 animate-spin" />
-                        Connexion en cours…
+                        {t('auth.loginLoading')}
                       </>
                     ) : (
                       t('action.logIn')
@@ -560,8 +560,8 @@ export default function AuthScreen() {
               <TabsContent value="signup">
                 <form onSubmit={handleSignup} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name" className="text-white/80">
-                      Nom complet
+                    <Label htmlFor="signup-name" className="text-foreground">
+                      {t('auth.fullName')}
                     </Label>
                     <Input
                       id="signup-name"
@@ -571,17 +571,17 @@ export default function AuthScreen() {
                         setSignupName(e.target.value)
                         setSignupError('')
                       }}
-                      placeholder="Jean Dupont"
+                      placeholder={t('auth.namePlaceholder')}
                       disabled={signupLoading}
                       required
                       autoComplete="name"
-                      className="h-11 bg-card/5 border-border/15 dark:text-white text-foreground placeholder:text-muted-foreground focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
+                      className="h-11 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email" className="text-white/80">
-                      Email
+                    <Label htmlFor="signup-email" className="text-foreground">
+                      {t('auth.email')}
                     </Label>
                     <Input
                       id="signup-email"
@@ -591,11 +591,11 @@ export default function AuthScreen() {
                         setSignupEmail(e.target.value)
                         setSignupError('')
                       }}
-                      placeholder="vous@exemple.com"
+                      placeholder={t('auth.emailPlaceholder')}
                       disabled={signupLoading}
                       required
                       autoComplete="email"
-                      className="h-11 bg-card/5 border-border/15 dark:text-white text-foreground placeholder:text-muted-foreground focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
+                      className="h-11 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
                     />
                   </div>
 
@@ -609,14 +609,14 @@ export default function AuthScreen() {
                     showSignupPassword,
                     () => setShowSignupPassword((p) => !p),
                     signupLoading,
-                    'Choisir un mot de passe',
+                    t('auth.signupPasswordPlaceholder'),
                   )}
 
                   {signupError && (
                     <motion.p
                       initial={{ opacity: 0, y: -4 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="text-sm text-red-400 font-medium"
+                      className="text-sm text-red-500 dark:text-red-400 font-medium"
                       role="alert"
                     >
                       {signupError}
@@ -626,12 +626,12 @@ export default function AuthScreen() {
                   <Button
                     type="submit"
                     disabled={signupLoading}
-                    className="w-full h-11 text-sm font-semibold bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 dark:text-white text-foreground shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
+                    className="w-full h-11 text-sm font-semibold bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
                   >
                     {signupLoading ? (
                       <>
                         <Loader2 className="size-4 animate-spin" />
-                        Création du compte…
+                        {t('auth.signupLoading')}
                       </>
                     ) : (
                       t('action.createAccount')
@@ -642,10 +642,8 @@ export default function AuthScreen() {
             </Tabs>
 
             {/* ── Footer note ──────────────────────────────────────── */}
-            <p className="mt-6 text-center text-xs text-white/30 leading-relaxed">
-              En continuant, vous acceptez nos conditions d&apos;utilisation
-              <br />
-              et notre politique de confidentialité.
+            <p className="mt-6 text-center text-xs text-muted-foreground/70 leading-relaxed">
+              {t('auth.termsText')}
             </p>
           </CardContent>
         </Card>
@@ -653,7 +651,7 @@ export default function AuthScreen() {
 
       {/* ── Password Reset Dialog ──────────────────────────────────── */}
       <Dialog open={resetOpen} onOpenChange={(open) => { if (!open) setResetOpen(false) }}>
-        <DialogContent className="bg-[#1a1a2e] border-border/15 dark:text-white text-foreground sm:max-w-md">
+        <DialogContent className="bg-background border-border sm:max-w-md">
           <AnimatePresence mode="wait">
             {/* Step 1: Email input */}
             {resetStep === 'email' && (
@@ -665,18 +663,18 @@ export default function AuthScreen() {
                 transition={{ duration: 0.2 }}
               >
                 <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2 dark:text-white text-foreground">
+                  <DialogTitle className="flex items-center gap-2 text-foreground">
                     <KeyRound className="h-5 w-5 text-orange-400" />
-                    Réinitialiser le mot de passe
+                    {t('auth.resetTitle')}
                   </DialogTitle>
-                  <DialogDescription className="text-white/50">
-                    Entre ton email pour recevoir un token de réinitialisation.
+                  <DialogDescription className="text-muted-foreground">
+                    {t('auth.resetDesc')}
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleResetEmail} className="space-y-4 mt-4">
                   <div className="space-y-2">
-                    <Label htmlFor="reset-email" className="text-white/80">
-                      Email
+                    <Label htmlFor="reset-email" className="text-foreground">
+                      {t('auth.email')}
                     </Label>
                     <Input
                       id="reset-email"
@@ -686,25 +684,25 @@ export default function AuthScreen() {
                         setResetEmail(e.target.value)
                         setResetError('')
                       }}
-                      placeholder="vous@exemple.com"
+                      placeholder={t('auth.emailPlaceholder')}
                       disabled={resetLoading}
                       required
                       autoComplete="email"
-                      className="h-11 bg-card/5 border-border/15 dark:text-white text-foreground placeholder:text-muted-foreground focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
+                      className="h-11 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
                     />
                   </div>
                   {resetError && (
-                    <p className="text-sm text-red-400">{resetError}</p>
+                    <p className="text-sm text-red-500 dark:text-red-400">{resetError}</p>
                   )}
                   <Button
                     type="submit"
                     disabled={resetLoading || !resetEmail}
-                    className="w-full h-11 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 dark:text-white text-foreground font-semibold transition-all cursor-pointer"
+                    className="w-full h-11 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold transition-all cursor-pointer"
                   >
                     {resetLoading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      'Envoyer le token'
+                      t('auth.sendToken')
                     )}
                   </Button>
                 </form>
@@ -721,30 +719,30 @@ export default function AuthScreen() {
                 transition={{ duration: 0.2 }}
               >
                 <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2 dark:text-white text-foreground">
+                  <DialogTitle className="flex items-center gap-2 text-foreground">
                     <KeyRound className="h-5 w-5 text-orange-400" />
-                    Token de réinitialisation
+                    {t('auth.resetTokenTitle')}
                   </DialogTitle>
-                  <DialogDescription className="text-white/50">
-                    En production, ce token serait envoyé par email.
+                  <DialogDescription className="text-muted-foreground">
+                    {t('auth.resetTokenDesc')}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 mt-4">
                   {/* Token display */}
                   <div className="space-y-2">
-                    <Label className="text-white/80">Token de réinitialisation</Label>
+                    <Label className="text-foreground">{t('auth.resetTokenLabel')}</Label>
                     <div className="relative">
                       <div className="h-11 bg-amber-500/10 border border-amber-500/30 rounded-md px-3 pr-10 flex items-center">
-                        <code className="text-sm text-amber-300 font-mono break-all select-all">
+                        <code className="text-sm text-amber-500 dark:text-amber-300 font-mono break-all select-all">
                           {resetShowToken ? resetToken : resetToken.slice(0, 4) + '••••••••••••••••••••••••••' + resetToken.slice(-4)}
                         </code>
                       </div>
                       <button
                         type="button"
                         onClick={() => setResetShowToken((v) => !v)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-400/60 hover:text-amber-400 transition-colors"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-500/70 hover:text-amber-500 transition-colors"
                         tabIndex={-1}
-                        aria-label={resetShowToken ? 'Masquer le token' : 'Afficher le token'}
+                        aria-label={resetShowToken ? t('auth.hideToken') : t('auth.showToken')}
                       >
                         {resetShowToken ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                       </button>
@@ -752,18 +750,18 @@ export default function AuthScreen() {
                     <button
                       type="button"
                       onClick={handleCopyToken}
-                      className="flex items-center gap-1.5 text-xs text-amber-400/70 hover:text-amber-400 transition-colors cursor-pointer"
+                      className="flex items-center gap-1.5 text-xs text-amber-500/70 hover:text-amber-500 transition-colors cursor-pointer"
                     >
                       <Copy className="size-3" />
-                      Copier le token
+                      {t('auth.copyToken')}
                     </button>
                   </div>
 
-                  <div className="border-t border-white/10 pt-4">
+                  <div className="border-t border-border pt-4">
                     <form onSubmit={handleResetConfirm} className="space-y-3">
                       <div className="space-y-2">
-                        <Label htmlFor="reset-new-pw" className="text-white/80">
-                          Nouveau mot de passe
+                        <Label htmlFor="reset-new-pw" className="text-foreground">
+                          {t('auth.newPassword')}
                         </Label>
                         <Input
                           id="reset-new-pw"
@@ -773,15 +771,15 @@ export default function AuthScreen() {
                             setResetNewPassword(e.target.value)
                             setResetError('')
                           }}
-                          placeholder="Min. 8 caractères"
+                          placeholder={t('auth.minCharsPlaceholder')}
                           disabled={resetLoading}
                           required
-                          className="h-11 bg-card/5 border-border/15 dark:text-white text-foreground placeholder:text-muted-foreground focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
+                          className="h-11 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="reset-confirm-pw" className="text-white/80">
-                          Confirmer le mot de passe
+                        <Label htmlFor="reset-confirm-pw" className="text-foreground">
+                          {t('auth.confirmPassword')}
                         </Label>
                         <Input
                           id="reset-confirm-pw"
@@ -791,21 +789,21 @@ export default function AuthScreen() {
                             setResetConfirmPassword(e.target.value)
                             setResetError('')
                           }}
-                          placeholder="Confirmer"
+                          placeholder={t('auth.confirmPlaceholder')}
                           disabled={resetLoading}
                           required
-                          className="h-11 bg-card/5 border-border/15 dark:text-white text-foreground placeholder:text-muted-foreground focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
+                          className="h-11 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
                         />
                       </div>
                       {resetError && (
-                        <p className="text-sm text-red-400">{resetError}</p>
+                        <p className="text-sm text-red-500 dark:text-red-400">{resetError}</p>
                       )}
                       <div className="flex gap-2">
                         <Button
                           type="button"
                           variant="ghost"
                           onClick={() => setResetStep('email')}
-                          className="h-11 dark:text-white/60 text-foreground/60 hover:dark:text-white hover:text-foreground hover:bg-card/5 cursor-pointer"
+                          className="h-11 text-muted-foreground hover:text-foreground hover:bg-muted/50 cursor-pointer"
                         >
                           <ArrowLeft className="size-4 mr-1.5" />
                           {t('action.back')}
@@ -818,7 +816,7 @@ export default function AuthScreen() {
                           {resetLoading ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            'Réinitialiser'
+                            t('auth.resetButton')
                           )}
                         </Button>
                       </div>
@@ -841,16 +839,16 @@ export default function AuthScreen() {
                   <CheckCircle2 className="h-8 w-8 text-emerald-400" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold dark:text-white text-foreground">Mot de passe mis à jour !</h3>
-                  <p className="text-sm text-white/50 mt-1">
-                    Tu peux maintenant te connecter avec ton nouveau mot de passe.
+                  <h3 className="text-lg font-bold text-foreground">{t('auth.resetSuccess')}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {t('auth.resetSuccessDesc')}
                   </p>
                 </div>
                 <Button
                   onClick={handleResetSuccess}
                   className="h-11 px-8 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 dark:text-white text-foreground font-semibold transition-all cursor-pointer"
                 >
-                  Retour à la connexion
+                  {t('auth.backToLogin')}
                 </Button>
               </motion.div>
             )}

@@ -51,6 +51,22 @@ export interface PlanDrillQueueItem {
   durationSec: number
 }
 
+// ── Action types (separate from state to avoid unused-param lint on interface) ──
+
+export interface AppActions {
+  navigate: (screen: Screen) => void
+  goBack: () => void
+  selectDrill: (drillId: string) => void
+  toggleSidebar: () => void
+  setSidebarOpen: (open: boolean) => void
+  setWorkoutResult: (result: WorkoutResult | null) => void
+  setXpAwarded: (result: XpAwardResult | null) => void
+  clearWorkoutState: () => void
+  startPlanExecution: (planId: string, drills: PlanDrillQueueItem[]) => void
+  advancePlanDrill: (result: WorkoutDrillResult) => void
+  clearPlanExecution: () => void
+}
+
 // ── Combined State (backward compatible) ──────────────────────────────────────
 
 interface AppState {
@@ -69,28 +85,11 @@ interface AppState {
   planCurrentIndex: number
   planResults: WorkoutDrillResult[]
   planId: string | null
-
-  // Navigation actions
-  navigate: (screen: Screen) => void
-  goBack: () => void
-  selectDrill: (drillId: string) => void
-  toggleSidebar: () => void
-  setSidebarOpen: (open: boolean) => void
-
-  // Workout actions
-  setWorkoutResult: (result: WorkoutResult | null) => void
-  setXpAwarded: (result: XpAwardResult | null) => void
-  clearWorkoutState: () => void
-
-  // Plan execution actions
-  startPlanExecution: (planId: string, drills: PlanDrillQueueItem[]) => void
-  advancePlanDrill: (result: WorkoutDrillResult) => void
-  clearPlanExecution: () => void
 }
 
 // ── Store ─────────────────────────────────────────────────────────────────────
 
-export const useAppStore = create<AppState>((set) => ({
+export const useAppStore = create<AppState & AppActions>((set) => ({
   currentScreen: 'landing',
   selectedDrillId: null,
   screenHistory: [],

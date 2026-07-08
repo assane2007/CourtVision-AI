@@ -22,6 +22,7 @@ import { useAppStore } from '@/stores/app'
 import { apiFetch } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useTranslation } from '@/components/providers/language-provider'
+import type { TranslationKey } from '@/lib/i18n'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -31,112 +32,47 @@ type Goal = 'shooting' | 'ball_handling' | 'defense' | 'conditioning' | 'general
 
 interface OptionCard<T extends string> {
   value: T
-  title: string
-  description: string
+  titleKey: TranslationKey
+  descKey: TranslationKey
   icon: React.ReactNode
 }
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 const positionOptions: OptionCard<Position>[] = [
-  {
-    value: 'guard',
-    title: 'Meneur',
-    description: 'Meneur de jeu, passes et vision du terrain',
-    icon: <Target className="h-6 w-6" />,
-  },
-  {
-    value: 'forward',
-    title: 'Ailier',
-    description: 'Polyvalent, scoring et création depuis l\'aile',
-    icon: <Zap className="h-6 w-6" />,
-  },
-  {
-    value: 'center',
-    title: 'Pivot',
-    description: 'Poste bas, rebonds et protection du cercle',
-    icon: <Shield className="h-6 w-6" />,
-  },
-  {
-    value: 'all_around',
-    title: 'Polyvalent',
-    description: 'Capable de jouer à tous les postes',
-    icon: <Star className="h-6 w-6" />,
-  },
+  { value: 'guard', titleKey: 'position.guard', descKey: 'onboarding.posGuardDesc', icon: <Target className="h-6 w-6" /> },
+  { value: 'forward', titleKey: 'position.forward', descKey: 'onboarding.posForwardDesc', icon: <Zap className="h-6 w-6" /> },
+  { value: 'center', titleKey: 'position.center', descKey: 'onboarding.posCenterDesc', icon: <Shield className="h-6 w-6" /> },
+  { value: 'all_around', titleKey: 'position.all_around', descKey: 'onboarding.posAllAroundDesc', icon: <Star className="h-6 w-6" /> },
 ]
 
 const levelOptions: OptionCard<Level>[] = [
-  {
-    value: 'beginner',
-    title: 'Débutant',
-    description: 'Je découvre le basketball',
-    icon: <CircleDot className="h-6 w-6" />,
-  },
-  {
-    value: 'intermediate',
-    title: 'Intermédiaire',
-    description: 'J\'ai quelques années d\'expérience',
-    icon: <Activity className="h-6 w-6" />,
-  },
-  {
-    value: 'advanced',
-    title: 'Avancé',
-    description: 'Compétitif avec de solides fondamentaux',
-    icon: <Trophy className="h-6 w-6" />,
-  },
-  {
-    value: 'elite',
-    title: 'Élite',
-    description: 'Niveau académique ou professionnel',
-    icon: <Star className="h-6 w-6" />,
-  },
+  { value: 'beginner', titleKey: 'difficulty.beginner', descKey: 'onboarding.lvlBeginnerDesc', icon: <CircleDot className="h-6 w-6" /> },
+  { value: 'intermediate', titleKey: 'difficulty.intermediate', descKey: 'onboarding.lvlIntermediateDesc', icon: <Activity className="h-6 w-6" /> },
+  { value: 'advanced', titleKey: 'difficulty.advanced', descKey: 'onboarding.lvlAdvancedDesc', icon: <Trophy className="h-6 w-6" /> },
+  { value: 'elite', titleKey: 'difficulty.elite', descKey: 'onboarding.lvlEliteDesc', icon: <Star className="h-6 w-6" /> },
 ]
 
 const goalOptions: OptionCard<Goal>[] = [
-  {
-    value: 'shooting',
-    title: 'Tir',
-    description: 'Précision et routine de tir',
-    icon: <Crosshair className="h-6 w-6" />,
-  },
-  {
-    value: 'ball_handling',
-    title: 'Dribble',
-    description: 'Contrôle de balle et déplacements',
-    icon: <Hand className="h-6 w-6" />,
-  },
-  {
-    value: 'defense',
-    title: 'Défense',
-    description: 'Placement, anticipation et intensité',
-    icon: <Shield className="h-6 w-6" />,
-  },
-  {
-    value: 'conditioning',
-    title: 'Condition Physique',
-    description: 'Endurance, explosivité et agilité',
-    icon: <Dumbbell className="h-6 w-6" />,
-  },
-  {
-    value: 'general',
-    title: 'Global',
-    description: 'Développement complet de toutes les compétences',
-    icon: <User className="h-6 w-6" />,
-  },
+  { value: 'shooting', titleKey: 'profile.goalShooting', descKey: 'onboarding.goalShootingDesc', icon: <Crosshair className="h-6 w-6" /> },
+  { value: 'ball_handling', titleKey: 'profile.goalBallHandling', descKey: 'onboarding.goalBallHandlingDesc', icon: <Hand className="h-6 w-6" /> },
+  { value: 'defense', titleKey: 'profile.goalDefense', descKey: 'onboarding.goalDefenseDesc', icon: <Shield className="h-6 w-6" /> },
+  { value: 'conditioning', titleKey: 'profile.goalConditioning', descKey: 'onboarding.goalConditioningDesc', icon: <Dumbbell className="h-6 w-6" /> },
+  { value: 'general', titleKey: 'profile.goalGeneral', descKey: 'onboarding.goalGeneralDesc', icon: <User className="h-6 w-6" /> },
 ]
 
 // ─── Step metadata ───────────────────────────────────────────────────────────
 
-const stepTitles = [
-  'Quel est ton poste ?',
-  'Quel est ton niveau ?',
-  'Quel est ton objectif principal ?',
+const stepTitleKeys: TranslationKey[] = [
+  'onboarding.positionQuestion',
+  'onboarding.levelQuestion',
+  'onboarding.goalQuestion',
 ]
 
-const stepSubtitles = [
-  'Sélectionne le poste qui correspond le mieux à ton style de jeu',
-  'Sois honnête pour qu\'on puisse adapter ton programme',
-  'Choisis la compétence sur laquelle tu veux progresser',
+const stepSubtitleKeys: TranslationKey[] = [
+  'onboarding.positionDesc',
+  'onboarding.levelDesc',
+  'onboarding.goalDesc',
 ]
 
 // ─── Animation variants ──────────────────────────────────────────────────────
@@ -224,7 +160,7 @@ export default function OnboardingScreen() {
       })
     } catch {
       // Notify user that preferences weren't saved, but still proceed
-      toast.error('Erreur de sauvegarde. Vos préférences seront sauvegardées plus tard.')
+      toast.error(t('onboarding.saveError'))
     } finally {
       setIsSubmitting(false)
       navigate('home')
@@ -240,7 +176,7 @@ export default function OnboardingScreen() {
         role="radio"
         aria-checked={isSelected}
         tabIndex={0}
-        aria-label={option.title}
+        aria-label={t(option.titleKey)}
         onClick={() => onSelect(option.value)}
         whileHover={{ scale: 1.03, y: -2 }}
         whileTap={{ scale: 0.97 }}
@@ -283,11 +219,11 @@ export default function OnboardingScreen() {
 
         {/* Title */}
         <h3 className="text-sm font-semibold transition-colors duration-200 text-foreground">
-          {option.title}
+          {t(option.titleKey)}
         </h3>
 
         {/* Description */}
-        <p className="text-xs leading-relaxed text-muted-foreground">{option.description}</p>
+        <p className="text-xs leading-relaxed text-muted-foreground">{t(option.descKey)}</p>
       </motion.button>
     )
   }
@@ -296,19 +232,19 @@ export default function OnboardingScreen() {
     switch (step) {
       case 0:
         return (
-          <div role="radiogroup" aria-label="Poste" className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div role="radiogroup" aria-label={t('onboarding.ariaPosition')} className="grid grid-cols-2 gap-3 sm:gap-4">
             {positionOptions.map((opt) => renderCard(opt, position, setPosition))}
           </div>
         )
       case 1:
         return (
-          <div role="radiogroup" aria-label="Niveau" className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div role="radiogroup" aria-label={t('onboarding.ariaLevel')} className="grid grid-cols-2 gap-3 sm:gap-4">
             {levelOptions.map((opt) => renderCard(opt, level, setLevel))}
           </div>
         )
       case 2:
         return (
-          <div role="radiogroup" aria-label="Objectif principal" className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+          <div role="radiogroup" aria-label={t('onboarding.ariaGoal')} className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
             {goalOptions.map((opt) => renderCard(opt, goal, setGoal))}
           </div>
         )
@@ -340,7 +276,7 @@ export default function OnboardingScreen() {
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-muted-foreground uppercase tracking-widest">
-              Étape {step + 1} sur 3
+              {`${t('onboarding.step')} ${step + 1}/3`}
             </span>
             <div className="flex items-center gap-2">
               {[0, 1, 2].map((i) => (
@@ -368,10 +304,10 @@ export default function OnboardingScreen() {
             className="text-center"
           >
             <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              {stepTitles[step]}
+              {t(stepTitleKeys[step])}
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              {stepSubtitles[step]}
+              {t(stepSubtitleKeys[step])}
             </p>
           </motion.div>
         </AnimatePresence>
@@ -446,7 +382,7 @@ export default function OnboardingScreen() {
                 />
               ) : step < 2 ? (
                 <>
-                  Suivant
+                  {t('onboarding.next')}
                   <ChevronRight className="h-4 w-4" />
                 </>
               ) : (

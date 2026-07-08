@@ -12,6 +12,7 @@ import { useQuery } from '@tanstack/react-query'
 import { CATEGORY_META } from '@/lib/constants'
 import { apiFetch } from '@/lib/utils'
 import { useTranslation } from '@/components/providers/language-provider'
+import type { TranslationKey } from '@/lib/i18n'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { BottomNav } from '@/components/shared/bottom-nav'
 import { ScoreReplay } from '@/components/workout/score-replay'
@@ -311,7 +312,7 @@ function StatsCard({
 
 // ─── Mini Bar Chart (score per drill) ─────────────────────────────────────────
 
-function DrillScoreChart({ drills }: { drills: WorkoutDrillResult[] }) {
+function DrillScoreChart({ drills, t }: { drills: WorkoutDrillResult[]; t: (key: TranslationKey) => string }) {
   const prefersReducedMotion = useReducedMotion()
   const maxScore = Math.max(...drills.map((d) => d.score), 1)
 
@@ -325,7 +326,7 @@ function DrillScoreChart({ drills }: { drills: WorkoutDrillResult[] }) {
         <CardContent className="p-4">
           <div className="flex items-center gap-2 mb-3">
             <Target className="h-4 w-4 text-orange-400" />
-            <p className="text-xs text-white/40 uppercase tracking-wider">Score par exercice</p>
+            <p className="text-xs text-white/40 uppercase tracking-wider">{t('summary.scorePerExercise')}</p>
           </div>
           <div className="flex items-end gap-2 h-20">
             {drills.map((drill, i) => (
@@ -402,7 +403,7 @@ function DrillBreakdownCard({ drill, delay }: { drill: WorkoutDrillResult; delay
 
 // ─── Share Function ───────────────────────────────────────────────────────────
 
-async function shareWorkout(result: WorkoutResult) {
+async function shareWorkout(result: WorkoutResult, t: (key: TranslationKey) => string) {
   const sessionId = result.sessionId
   let text: string
 
@@ -445,19 +446,19 @@ async function shareWorkout(result: WorkoutResult) {
   if (typeof navigator !== 'undefined' && navigator.share) {
     try {
       await navigator.share({
-        title: 'CourtVision AI — Résultat d\'entraînement',
+        title: t('summary.shareTitle'),
         text,
       })
     } catch (err) {
       // User cancelled or error — fallback to clipboard
       if ((err as DOMException).name !== 'AbortError') {
         await navigator.clipboard.writeText(text)
-        toast.success('Copié dans le presse-papiers !')
+        toast.success(t('summary.copySuccess'))
       }
     }
   } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
     await navigator.clipboard.writeText(text)
-    toast.success('Copié dans le presse-papiers !')
+    toast.success(t('summary.copySuccess'))
   }
 }
 
@@ -543,7 +544,7 @@ export default function WorkoutSummaryScreen() {
   }, [setWorkoutResult, navigate])
 
   const handleShare = useCallback(() => {
-    if (workoutResult) shareWorkout(workoutResult)
+    if (workoutResult) shareWorkout(workoutResult, t)
   }, [workoutResult])
 
   // ── PR Detection: fetch existing records and compare ──────────────
@@ -672,20 +673,20 @@ export default function WorkoutSummaryScreen() {
               delay={0.4}
             />
             {drills.length > 1 && (
-              <DrillScoreChart drills={drills} />
+              <DrillScoreChart drills={drills} t={t} />
             )}
             {bestDrill && (
               <StatsCard
                 icon={<Trophy className="h-5 w-5 text-amber-400" />}
-                label="Meilleur exercice"
+                label={t('summary.bestExercise')}
                 value={bestDrill.drillNameFr}
-                subValue={`Score: ${bestDrill.score} — ${bestDrill.reps} rép.`}
+                subValue={`${t('workout.score')}: ${bestDrill.score} — ${bestDrill.reps} ${t('common.reps')}`}
                 delay={drills.length > 1 ? 0.65 : 0.5}
               />
             )}
             <StatsCard
               icon={<Flame className="h-5 w-5 text-red-400" />}
-              label="Calories estimées"
+              label={t('summary.estimatedCalories')}
               value={`${calories} kcal`}
               subValue={`${workoutResult.totalReps} rép × 8 + ${formatDuration(workoutResult.totalDurationSec)} × 0.5`}
               delay={drills.length > 1 ? 0.75 : 0.6}

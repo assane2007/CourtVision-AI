@@ -147,33 +147,33 @@ function BasketballCourtGraphic() {
 const features = [
   {
     icon: Camera,
-    title: 'Détection de Posture IA',
-    description: 'Ta caméra analyse tes mouvements en temps réel grâce à MediaPipe pour corriger ta forme.',
+    titleKey: 'landing.feature1.title' as const,
+    descKey: 'landing.feature1.description' as const,
   },
   {
     icon: Bot,
-    title: 'Coach IA Personnalisé',
-    description: 'Un assistant intelligent qui adapte les conseils et les exercices à ton niveau.',
+    titleKey: 'landing.feature2.title' as const,
+    descKey: 'landing.feature2.description' as const,
   },
   {
     icon: Target,
-    title: 'Rapport de Scouting',
-    description: 'Analyse détaillée de tes performances avec des rapports visuels complets.',
+    titleKey: 'landing.feature3.title' as const,
+    descKey: 'landing.feature3.description' as const,
   },
   {
     icon: Zap,
-    title: 'Entraînement de Réaction',
-    description: 'Améliore tes temps de réaction avec des exercices stimulants et progressifs.',
+    titleKey: 'landing.feature4.title' as const,
+    descKey: 'landing.feature4.description' as const,
   },
   {
     icon: BarChart3,
-    title: 'Statistiques Avancées',
-    description: 'Suivi détaillé de ta progression avec graphiques et métriques claires.',
+    titleKey: 'landing.feature5.title' as const,
+    descKey: 'landing.feature5.description' as const,
   },
   {
     icon: Trophy,
-    title: 'Classement & Communauté',
-    description: 'Compare-toi aux autres joueurs et défie la communauté.',
+    titleKey: 'landing.feature6.title' as const,
+    descKey: 'landing.feature6.description' as const,
   },
 ]
 
@@ -182,28 +182,28 @@ const features = [
 const steps = [
   {
     number: '01',
-    title: 'Enregistre-toi en 30 secondes',
-    description: 'Crée ton compte gratuitement et configure ton profil de joueur.',
+    titleKey: 'landing.step1.title' as const,
+    descKey: 'landing.step1.description' as const,
   },
   {
     number: '02',
-    title: 'Choisis ton entraînement',
-    description: 'Parcours les exercices par catégorie ou suis un plan personnalisé.',
+    titleKey: 'landing.step2.title' as const,
+    descKey: 'landing.step2.description' as const,
   },
-  {
+ {
     number: '03',
-    title: 'Suit tes progrès en temps réel',
-    description: "L'IA analyse ta forme et te donne des retours instantanés pour t'améliorer.",
+    titleKey: 'landing.step3.title' as const,
+    descKey: 'landing.step3.description' as const,
   },
 ]
 
 // ── Stats Data ──────────────────────────────────────────────────────────────────
 
 const stats = [
-  { value: '10+', label: 'Exercices' },
-  { value: '9', label: 'Catégories' },
-  { value: 'IA', label: 'Analyse ta forme' },
-  { value: '100%', label: 'Gratuit' },
+  { value: '10+', labelKey: 'landing.stat1' as const },
+  { value: '9', labelKey: 'landing.stat2' as const },
+  { value: 'IA', labelKey: 'landing.stat3' as const },
+  { value: '100%', labelKey: 'landing.stat4' as const },
 ]
 
 // ── Main Component ──────────────────────────────────────────────────────────────
@@ -226,13 +226,13 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
   }
 
   return (
-    <div className="dark min-h-screen bg-gradient-to-b from-gray-950 via-gray-950 to-gray-900 dark:text-gray-100 text-foreground">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-card text-foreground">
       {/* ── HERO SECTION ──────────────────────────────────────────────────────── */}
       <section className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         {/* Background decoration */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-orange-500/5 blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-gray-900 to-transparent" />
+          <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-card to-transparent" />
         </div>
 
         <div ref={heroRef} className="relative z-10 max-w-4xl mx-auto text-center pt-16 pb-20">
@@ -247,7 +247,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500" />
             </span>
-            Nouveau — Entraînement IA révolutionnaire
+            {t('landing.badge')}
           </motion.div>
 
           {/* Headline */}
@@ -257,11 +257,11 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-4xl sm:text-5xl lg:text-7xl font-extrabold tracking-tight leading-[1.1] mb-6"
           >
-            Ton Coach{' '}
+            {t('landing.heroTitle1')}{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">
-              IA de Basketball
+              {t('landing.heroTitleHighlight')}
             </span>{' '}
-            Personnel
+            {t('landing.heroTitle2')}
           </motion.h1>
 
           {/* Subheadline */}
@@ -271,8 +271,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-lg sm:text-xl dark:text-gray-400 text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed"
           >
-            Analyse ta posture en temps réel, suit tes progrès et reçois des
-            conseils personnalisés — le tout gratuitement depuis ton téléphone.
+            {t('landing.heroSubtitle')}
           </motion.p>
 
           {/* CTA Buttons */}
@@ -288,7 +287,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
               className="h-13 px-8 text-base font-semibold bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-lg shadow-orange-500/25 transition-all hover:shadow-orange-500/40 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
             >
               <UserPlus className="size-5" />
-              Commencer gratuitement
+              {t('landing.ctaPrimary')}
             </Button>
             <Button
               onClick={scrollToFeatures}
@@ -296,7 +295,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
               size="lg"
               className="h-13 px-8 text-base font-semibold rounded-xl border-border dark:text-gray-300 text-foreground/80 hover:bg-accent/60 dark:hover:text-gray-100 hover:text-foreground transition-all cursor-pointer"
             >
-              Voir les fonctionnalités
+              {t('landing.ctaSecondary')}
               <ChevronRight className="size-5" />
             </Button>
           </motion.div>
@@ -318,14 +317,13 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             className="text-center mb-14 sm:mb-16"
           >
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
-              Tout ce dont tu as{' '}
+              {t('landing.featuresTitle1')}{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">
-                besoin
+                {t('landing.featuresTitleHighlight')}
               </span>
             </h2>
             <p className="dark:text-gray-400 text-muted-foreground text-lg max-w-2xl mx-auto">
-              Une suite complète d&apos;outils pour améliorer ton jeu, guidée par
-              l&apos;intelligence artificielle.
+              {t('landing.featuresSubtitle')}
             </p>
           </motion.div>
 
@@ -335,7 +333,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
               const Icon = feature.icon
               return (
                 <motion.div
-                  key={feature.title}
+                  key={feature.titleKey}
                   initial="hidden"
                   animate={featuresInView ? 'visible' : 'hidden'}
                   custom={i + 1}
@@ -347,10 +345,10 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                         <Icon className="size-6 text-orange-400" />
                       </div>
                       <h3 className="text-lg font-semibold dark:text-gray-100 text-foreground">
-                        {feature.title}
+                        {t(feature.titleKey)}
                       </h3>
                       <p className="text-sm dark:text-gray-400 text-muted-foreground leading-relaxed">
-                        {feature.description}
+                        {t(feature.descKey)}
                       </p>
                     </CardContent>
                   </Card>
@@ -376,14 +374,14 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             className="text-center mb-14 sm:mb-16"
           >
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
-              Comment ça{' '}
+              {t('landing.stepsTitle1')}{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">
-                marche
+                {t('landing.stepsTitleHighlight')}
               </span>
               ?
             </h2>
             <p className="dark:text-gray-400 text-muted-foreground text-lg max-w-2xl mx-auto">
-              Trois étapes simples pour commencer à t&apos;améliorer.
+              {t('landing.stepsSubtitle')}
             </p>
           </motion.div>
 
@@ -409,10 +407,10 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                 </div>
 
                 <h3 className="text-lg font-semibold dark:text-gray-100 text-foreground mb-3">
-                  {step.title}
+                  {t(step.titleKey)}
                 </h3>
                 <p className="text-sm dark:text-gray-400 text-muted-foreground leading-relaxed max-w-xs mx-auto">
-                  {step.description}
+                  {t(step.descKey)}
                 </p>
               </motion.div>
             ))}
@@ -430,7 +428,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           >
             {stats.map((stat, i) => (
               <motion.div
-                key={stat.label}
+                key={stat.labelKey}
                 custom={i}
                 variants={fadeUp}
                 className="text-center p-6 rounded-2xl bg-muted/40 border border-border/60"
@@ -438,7 +436,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                 <div className="text-3xl sm:text-4xl font-extrabold text-orange-400 mb-2">
                   {stat.value}
                 </div>
-                <div className="text-sm dark:text-gray-400 text-muted-foreground font-medium">{stat.label}</div>
+                <div className="text-sm dark:text-gray-400 text-muted-foreground font-medium">{t(stat.labelKey)}</div>
               </motion.div>
             ))}
           </motion.div>
@@ -457,15 +455,14 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           className="max-w-3xl mx-auto text-center"
         >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
-            Prêt à monter{' '}
+            {t('landing.ctaTitle1')}{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">
-              ton niveau
+              {t('landing.ctaTitleHighlight')}
             </span>
             ?
           </h2>
           <p className="dark:text-gray-400 text-muted-foreground text-lg max-w-xl mx-auto mb-10">
-            Rejoins des milliers de joueurs qui s&apos;entraînent plus
-            intelligemment avec CourtVision AI.
+            {t('landing.ctaSubtitle')}
           </p>
           <Button
             onClick={() => onNavigate('auth')}
@@ -492,7 +489,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
               <span className="text-white font-bold text-sm">CV</span>
             </div>
             <span className="text-sm dark:text-gray-400 text-muted-foreground">
-              &copy; {new Date().getFullYear()} CourtVision AI. Tous droits réservés.
+              &copy; {new Date().getFullYear()} CourtVision AI. {t('landing.copyright')}
             </span>
           </div>
           <div className="flex items-center gap-6">
@@ -500,13 +497,13 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
               href="/api/privacy"
               className="text-sm dark:text-gray-500 text-muted-foreground hover:dark:text-gray-300 hover:text-foreground/80 transition-colors"
             >
-              Politique de confidentialité
+              {t('landing.privacy')}
             </a>
             <a
               href="mailto:privacy@courtvision.ai"
               className="text-sm dark:text-gray-500 text-muted-foreground hover:dark:text-gray-300 hover:text-foreground/80 transition-colors"
             >
-              Contact
+              {t('landing.contact')}
             </a>
           </div>
         </motion.div>

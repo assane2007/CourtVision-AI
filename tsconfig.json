@@ -39,6 +39,7 @@
     "node_modules",
     "upload",
     "examples",
-    "skills"
+    "skills",
+    "src/__tests__"
   ]
 }

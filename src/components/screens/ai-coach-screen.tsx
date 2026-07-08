@@ -32,12 +32,12 @@ interface ChatMessage {
 }
 
 const SUGGESTED_ACTIONS = [
-  'Créer un programme',
-  'Conseil tir',
-  'Améliorer mon dribble',
-  'Comment me défendre?',
-  'Mon point faible',
-  'Motivation',
+  'coach.createPlan',
+  'coach.shootingAdvice',
+  'coach.ballHandlingAdvice',
+  'coach.defenseAdvice',
+  'coach.conditioningAdvice',
+  'coach.motivation',
 ]
 
 // ---------------------------------------------------------------------------
@@ -126,7 +126,7 @@ export default function AICoachScreen() {
       } catch {
         const errMsg: ChatMessage = {
           role: 'assistant',
-          content: 'Oups, une erreur est survenue 😕 Réessaie dans un instant.',
+          content: t('coach.errorGeneric'),
           createdAt: new Date().toISOString(),
         }
         setMessages((prev) => [...prev, errMsg])
@@ -189,6 +189,7 @@ export default function AICoachScreen() {
               size="icon"
               className="h-9 w-9 -ml-1 rounded-full"
               onClick={goBack}
+              aria-label={t('action.back')}
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -212,15 +213,16 @@ export default function AICoachScreen() {
                 variant="ghost"
                 size="icon"
                 className="h-9 w-9 text-muted-foreground hover:text-destructive rounded-full"
+                aria-label={t('action.delete')}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Effacer la conversation?</AlertDialogTitle>
+                <AlertDialogTitle>{t('coach.clearChat')}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Toutes tes messages seront supprimés. Cette action est irréversible.
+                  {t('coach.clearChatDesc')}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -229,7 +231,7 @@ export default function AICoachScreen() {
                   onClick={handleClearChat}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
-                  Supprimer
+                  {t('action.delete')}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -240,7 +242,7 @@ export default function AICoachScreen() {
       {/* ── Chat Area ──────────────────────────────────────────────── */}
       <div
         ref={chatContainerRef}
-        className="flex-1 overflow-y-auto px-4 py-4 pb-20 space-y-4 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
+        className={`flex-1 overflow-y-auto px-4 py-4 space-y-4 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent ${hasMessages && !isLoading ? 'pb-40' : 'pb-20'}`}
       >
         {initialLoading ? (
           <div className="flex items-center justify-center py-20">
@@ -249,10 +251,10 @@ export default function AICoachScreen() {
         ) : historyError && !hasMessages ? (
           /* ── Error State ────────────────────────────────────────────── */
           <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
-            <p className="text-sm text-muted-foreground">Impossible de charger l&apos;historique</p>
+            <p className="text-sm text-muted-foreground">{t('error.loadFailed')}</p>
             <Button variant="outline" size="sm" onClick={loadHistory}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Réessayer
+              <RefreshCw className="h-4 w-4 mr-2" aria-hidden="true" />
+              {t('action.retry')}
             </Button>
           </div>
         ) : !hasMessages ? (
@@ -275,15 +277,13 @@ export default function AICoachScreen() {
 
             <h2 className="text-lg font-bold mb-1">{t('coach.personalCoach')}</h2>
             <p className="text-sm text-muted-foreground max-w-[280px] mb-8 leading-relaxed">
-              Disponible 24h/24 pour t&apos;aider à progresser sur le terrain.
+              {t('coach.available247')}
             </p>
 
             {/* Welcome message */}
             <div className="w-full bg-muted rounded-2xl rounded-tl-sm p-4 mb-6 text-left">
               <p className="text-sm leading-relaxed">
-                Salut {userName} ! 👋 Je suis ton coach IA. Je connais tes stats et je peux
-                t&apos;aider à t&apos;améliorer. Pose-moi n&apos;importe quelle question sur le
-                basket!
+                {t('coach.welcomeMessage').replace('{name}', userName)}
               </p>
             </div>
 
@@ -370,7 +370,7 @@ export default function AICoachScreen() {
 
       {/* ── Suggested Actions (above input, only when chat exists) ── */}
       {hasMessages && !isLoading && (
-        <div className="absolute bottom-[76px] left-0 right-0 z-20">
+        <div className="absolute bottom-[148px] left-0 right-0 z-20">
           <div className="px-4 pb-2">
             <div className="flex gap-2 overflow-x-auto scrollbar-none py-1">
               {SUGGESTED_ACTIONS.map((action) => (
@@ -408,6 +408,7 @@ export default function AICoachScreen() {
             disabled={!input.trim() || isLoading}
             size="icon"
             className="h-11 w-11 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-md shadow-orange-500/25 disabled:opacity-40 disabled:shadow-none flex-shrink-0"
+            aria-label={t('coach.send')}
           >
             <ArrowUp className="h-5 w-5" />
           </Button>

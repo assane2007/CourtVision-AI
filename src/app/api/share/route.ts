@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
 import { shareSchema, getZodErrorMessage } from '@/lib/validations'
+import { formatDate } from '@/lib/date-utils'
 
 export async function POST(request: NextRequest) {
   try {
@@ -47,17 +48,10 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    const dateOptions: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }
     const dateStr = sessionData
-      ? new Date(sessionData.startedAt).toLocaleDateString('fr-FR', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-        })
-      : new Date().toLocaleDateString('fr-FR', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-        })
+      ? formatDate(sessionData.startedAt, 'fr', dateOptions)
+      : formatDate(new Date(), 'fr', dateOptions)
 
     const score = sessionData ? Math.round(sessionData.totalScore) : 0
     const reps = sessionData?.totalReps ?? 0

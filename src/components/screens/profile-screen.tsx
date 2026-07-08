@@ -54,6 +54,7 @@ import { containerVariants, itemVariants } from '@/lib/animations'
 import { getLevelInfo, getLevelColor, getLevelBgColor } from '@/lib/xp'
 import { toast } from 'sonner'
 import { useTranslation } from '@/components/providers/language-provider'
+import type { TranslationKey } from '@/lib/i18n'
 
 interface PlayerData {
   id?: string
@@ -100,25 +101,25 @@ const SOURCE_ICONS: Record<string, string> = {
 
 // ── Profile-specific labels (extends shared constants) ──────────────
 const positionLabels: Record<string, string> = {
-  guard: 'Meneur / Arrière',
-  forward: 'Ailier',
-  center: 'Pivot',
-  all_around: 'Polyvalent',
+  guard: 'profile.positionGuard',
+  forward: 'profile.positionForward',
+  center: 'profile.positionCenter',
+  all_around: 'profile.positionAllAround',
 }
 
 const levelLabels: Record<string, string> = {
-  beginner: 'Débutant',
-  intermediate: 'Intermédiaire',
-  advanced: 'Avancé',
-  elite: 'Élite',
+  beginner: 'profile.levelBeginner',
+  intermediate: 'profile.levelIntermediate',
+  advanced: 'profile.levelAdvanced',
+  elite: 'profile.levelElite',
 }
 
 const goalsLabels: Record<string, string> = {
-  shooting: 'Tir',
-  ball_handling: 'Maniement de Balle',
-  defense: 'Défense',
-  conditioning: 'Condition Physique',
-  general: 'Général',
+  shooting: 'profile.goalShooting',
+  ball_handling: 'profile.goalBallHandling',
+  defense: 'profile.goalDefense',
+  conditioning: 'profile.goalConditioning',
+  general: 'profile.goalGeneral',
 }
 
 // ── Component ───────────────────────────────────────────────────────
@@ -178,12 +179,12 @@ export function ProfileScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['player'] })
       setIsEditing(false)
-      toast.success('Profil mis à jour', {
-        description: 'Vos informations ont été enregistrées.',
+      toast.success(t('profile.profileUpdated'), {
+        description: t('profile.profileUpdatedDesc'),
       })
     },
     onError: () => {
-      toast.error('Erreur', { description: 'Impossible de mettre à jour le profil.' })
+      toast.error(t('profile.updateError'))
     },
   })
 
@@ -195,14 +196,14 @@ export function ProfileScreen() {
     mutationFn: async () => {
       const res = await fetch('/api/account', { method: 'DELETE' })
       if (!res.ok) {
-        const body = await res.json().catch(() => ({ error: 'Erreur réseau' }))
-        throw new Error(body.error || 'Erreur lors de la suppression')
+        const body = await res.json().catch(() => ({ error: t('settings.exportNetworkError') }))
+        throw new Error(body.error || t('settings.deleteAccountError'))
       }
       return res.json()
     },
     onSuccess: () => {
-      toast.success('Compte supprimé', {
-        description: 'Toutes vos données ont été supprimées.',
+      toast.success(t('profile.accountDeleted'), {
+        description: t('profile.accountDeletedDesc'),
       })
       setDeleteDialogOpen(false)
       signOut({ redirect: false }).then(() => navigate('auth'))
@@ -326,9 +327,9 @@ export function ProfileScreen() {
                 {player?.goals && (
                   <div className="mt-4 flex items-center gap-2 text-sm">
                     <Sparkles className="h-4 w-4 text-orange-500" />
-                    <span className="text-muted-foreground">Objectif :</span>
+                    <span className="text-muted-foreground">{t('profile.goal')}</span>
                     <span className="font-medium">
-                      {goalsLabels[player.goals] ?? player.goals}
+                      {t(goalsLabels[player.goals] as TranslationKey ?? player.goals)}
                     </span>
                   </div>
                 )}
@@ -469,13 +470,13 @@ export function ProfileScreen() {
                     {/* Name */}
                     <div className="space-y-1.5">
                       <Label htmlFor="name" className="text-xs font-medium">
-                        Nom complet
+                        {t('profile.fullName')}
                       </Label>
                       <Input
                         id="name"
                         value={formData.name}
                         onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
-                        placeholder="Votre nom"
+                        placeholder={t('profile.namePlaceholder')}
                         className="h-10"
                       />
                     </div>
@@ -483,20 +484,20 @@ export function ProfileScreen() {
                     {/* Position */}
                     <div className="space-y-1.5">
                       <Label htmlFor="position" className="text-xs font-medium">
-                        Position
+                        {t('profile.position')}
                       </Label>
                       <Select
                         value={formData.position}
                         onValueChange={(v) => setFormData((p) => ({ ...p, position: v }))}
                       >
                         <SelectTrigger id="position" className="h-10">
-                          <SelectValue placeholder="Choisir une position" />
+                          <SelectValue placeholder={t('profile.choosePosition')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="guard">Meneur / Arrière</SelectItem>
-                          <SelectItem value="forward">Ailier</SelectItem>
-                          <SelectItem value="center">Pivot</SelectItem>
-                          <SelectItem value="all_around">Polyvalent</SelectItem>
+                          <SelectItem value="guard">{t('profile.positionGuard')}</SelectItem>
+                          <SelectItem value="forward">{t('profile.positionForward')}</SelectItem>
+                          <SelectItem value="center">{t('profile.positionCenter')}</SelectItem>
+                          <SelectItem value="all_around">{t('profile.positionAllAround')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -504,20 +505,20 @@ export function ProfileScreen() {
                     {/* Level */}
                     <div className="space-y-1.5">
                       <Label htmlFor="level" className="text-xs font-medium">
-                        Niveau
+                        {t('profile.level')}
                       </Label>
                       <Select
                         value={formData.level}
                         onValueChange={(v) => setFormData((p) => ({ ...p, level: v }))}
                       >
                         <SelectTrigger id="level" className="h-10">
-                          <SelectValue placeholder="Choisir un niveau" />
+                          <SelectValue placeholder={t('profile.chooseLevel')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="beginner">Débutant</SelectItem>
-                          <SelectItem value="intermediate">Intermédiaire</SelectItem>
-                          <SelectItem value="advanced">Avancé</SelectItem>
-                          <SelectItem value="elite">Élite</SelectItem>
+                          <SelectItem value="beginner">{t('profile.levelBeginner')}</SelectItem>
+                          <SelectItem value="intermediate">{t('profile.levelIntermediate')}</SelectItem>
+                          <SelectItem value="advanced">{t('profile.levelAdvanced')}</SelectItem>
+                          <SelectItem value="elite">{t('profile.levelElite')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -525,21 +526,21 @@ export function ProfileScreen() {
                     {/* Goals */}
                     <div className="space-y-1.5">
                       <Label htmlFor="goals" className="text-xs font-medium">
-                        Objectif d&apos;entraînement
+                        {t('profile.trainingGoal')}
                       </Label>
                       <Select
                         value={formData.goals}
                         onValueChange={(v) => setFormData((p) => ({ ...p, goals: v }))}
                       >
                         <SelectTrigger id="goals" className="h-10">
-                          <SelectValue placeholder="Choisir un objectif" />
+                          <SelectValue placeholder={t('profile.chooseGoal')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="general">Général</SelectItem>
-                          <SelectItem value="shooting">Tir</SelectItem>
-                          <SelectItem value="ball_handling">Maniement de Balle</SelectItem>
-                          <SelectItem value="defense">Défense</SelectItem>
-                          <SelectItem value="conditioning">Condition Physique</SelectItem>
+                          <SelectItem value="general">{t('profile.goalGeneral')}</SelectItem>
+                          <SelectItem value="shooting">{t('profile.goalShooting')}</SelectItem>
+                          <SelectItem value="ball_handling">{t('profile.goalBallHandling')}</SelectItem>
+                          <SelectItem value="defense">{t('profile.goalDefense')}</SelectItem>
+                          <SelectItem value="conditioning">{t('profile.goalConditioning')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -564,7 +565,7 @@ export function ProfileScreen() {
               <CardHeader className="pb-2 px-5 pt-5">
                 <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
                   <History className="h-4 w-4 text-orange-500" />
-                  Historique XP
+                  {t('profile.xpHistory')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-5 pb-4">
@@ -613,7 +614,7 @@ export function ProfileScreen() {
                       onClick={() => navigate('settings')}
                       className="w-full flex items-center justify-center gap-1.5 pt-2 text-xs text-orange-500 font-medium hover:text-orange-600 transition-colors"
                     >
-                      <span>Voir tout</span>
+                      <span>{t('profile.viewAll')}</span>
                       <ChevronRight className="h-3.5 w-3.5" />
                     </button>
                   </div>
@@ -621,10 +622,10 @@ export function ProfileScreen() {
                   <div className="py-6 text-center">
                     <Sparkles className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
                     <p className="text-sm text-muted-foreground">
-                      Aucun gain d&apos;XP pour le moment
+                      {t('profile.noXpYet')}
                     </p>
                     <p className="text-xs text-muted-foreground/70 mt-0.5">
-                      Complétez des exercices pour gagner de l&apos;XP !
+                      {t('profile.completeDrillsForXp')}
                     </p>
                   </div>
                 )}
@@ -638,7 +639,7 @@ export function ProfileScreen() {
               <CardHeader className="pb-2 px-5 pt-5">
                 <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-orange-500" />
-                  Résumé Rapide
+                  {t('profile.quickSummary')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-5 pb-5">
@@ -646,17 +647,17 @@ export function ProfileScreen() {
                   <div className="text-center p-3 rounded-xl bg-orange-500/10 dark:bg-orange-500/15">
                     <Flame className="h-5 w-5 text-orange-500 mx-auto mb-1" />
                     <p className="text-lg font-bold">{stats?.totalSessions ?? 0}</p>
-                    <p className="text-[11px] text-muted-foreground">Séances</p>
+                    <p className="text-[11px] text-muted-foreground">{t('stats.sessionsLabel')}</p>
                   </div>
                   <div className="text-center p-3 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15">
                     <Activity className="h-5 w-5 text-emerald-500 mx-auto mb-1" />
                     <p className="text-lg font-bold">{stats?.totalReps ?? 0}</p>
-                    <p className="text-[11px] text-muted-foreground">Répétitions</p>
+                    <p className="text-[11px] text-muted-foreground">{t('stats.repetitions')}</p>
                   </div>
                   <div className="text-center p-3 rounded-xl bg-sky-500/10 dark:bg-sky-500/15">
                     <TrendingUp className="h-5 w-5 text-sky-500 mx-auto mb-1" />
                     <p className="text-lg font-bold">{stats?.avgScore ? `${stats.avgScore}` : '—'}</p>
-                    <p className="text-[11px] text-muted-foreground">Score Moy.</p>
+                    <p className="text-[11px] text-muted-foreground">{t('stats.averageScore')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -772,24 +773,24 @@ export function ProfileScreen() {
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle className="text-red-600 dark:text-red-400">
-                  Supprimer mon compte ?
+                  {t('profile.deleteTitle')}
                 </AlertDialogTitle>
                 <AlertDialogDescription asChild>
                   <div className="space-y-3">
                     <p>
-                      Cette action est <strong>irr&eacute;versible</strong>. Toutes vos donn&eacute;es seront d&eacute;finitivement supprim&eacute;es conform&eacute;ment au RGPD (Article 17) :
+                      {t('profile.deleteDataDesc')}
                     </p>
                     <ul className="list-disc pl-5 text-sm space-y-1">
-                      <li>Profil et pr&eacute;f&eacute;rences</li>
-                      <li>Historique complet des s&eacute;ances</li>
-                      <li>Messages du coach IA</li>
-                      <li>Exercices personnalis&eacute;s</li>
-                      <li>Plans d&rsquo;entra&icirc;nement</li>
-                      <li>Succ&egrave;s et progression XP</li>
-                      <li>Scores de r&eacute;action</li>
+                      <li>{t('profile.deleteDataItem1')}</li>
+                      <li>{t('profile.deleteDataItem2')}</li>
+                      <li>{t('profile.deleteDataItem3')}</li>
+                      <li>{t('profile.deleteDataItem4')}</li>
+                      <li>{t('profile.deleteDataItem5')}</li>
+                      <li>{t('profile.deleteDataItem6')}</li>
+                      <li>{t('profile.deleteDataItem7')}</li>
                     </ul>
                     <p className="font-medium">
-                      Vous serez automatiquement d&eacute;connect&eacute; apr&egrave;s la suppression.
+                      {t('profile.deleteAutoLogout')}
                     </p>
                   </div>
                 </AlertDialogDescription>
@@ -806,10 +807,10 @@ export function ProfileScreen() {
                   {deleteAccount.isPending ? (
                     <span className="flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Suppression&hellip;
+                      {t('action.delete')}…
                     </span>
                   ) : (
-                    'Supprimer d&eacute;finitivement'
+                    t('action.delete')
                   )}
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -826,7 +827,7 @@ export function ProfileScreen() {
                 <span className="text-sm font-semibold">CourtVision AI</span>
               </div>
               <p className="text-xs text-muted-foreground">
-                Entraînement Basketball Intelligent
+                {t('auth.subtitle')}
               </p>
               <Badge variant="outline" className="text-[10px] font-normal">
                 Version 1.0.0

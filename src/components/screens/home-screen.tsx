@@ -460,10 +460,10 @@ export default function HomeScreen() {
   if (statsError) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20 px-4">
-        <p className="text-sm text-muted-foreground">Impossible de charger les données</p>
+        <p className="text-sm text-muted-foreground">{t('error.loadFailed')}</p>
         <Button variant="outline" size="sm" onClick={() => refetchStats()}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Réessayer
+          <RefreshCw className="h-4 w-4 mr-2" aria-hidden="true" />
+          {t('action.retry')}
         </Button>
       </div>
     )
@@ -542,7 +542,7 @@ export default function HomeScreen() {
               type="button"
               onClick={() => navigate('profile')}
               className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-xs font-bold text-white shadow-md transition-shadow hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label="Voir le profil"
+              aria-label={t('home.viewProfile')}
             >
               {userInitial}
             </button>
@@ -561,6 +561,7 @@ export default function HomeScreen() {
             className="absolute inset-0 h-full w-full opacity-10"
             viewBox="0 0 400 200"
             preserveAspectRatio="xMidYMid slice"
+            aria-hidden="true"
           >
             <rect
               x="5"
@@ -623,7 +624,7 @@ export default function HomeScreen() {
             <div className="mb-2 flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-orange-100">
-                  {language === 'en' ? 'Today' : "Aujourd\u2019hui"}
+                  {language === 'en' ? 'Today' : t('home.today')}
                 </p>
                 <p className="text-xl font-bold">
                   {formatLocaleDate(new Date(), language, {
@@ -643,8 +644,8 @@ export default function HomeScreen() {
                   ? `${stats.weekSessions} session${stats.weekSessions > 1 ? 's' : ''} this week — keep going!`
                   : `${stats.weekSessions} séance${stats.weekSessions > 1 ? 's' : ''} cette semaine — continuez !`
                 : language === 'en'
-                  ? 'No sessions this week — start now!'
-                  : 'Aucune séance cette semaine — commencez maintenant !'}
+                  ? t('home.noSessionsWeek')
+                  : t('home.noSessionsWeek')}
             </p>
           </div>
         </motion.div>
@@ -667,7 +668,7 @@ export default function HomeScreen() {
         {/* ---------------------------------------------------------------- */}
         {/* Streak Calendar                                                 */}
         {/* ---------------------------------------------------------------- */}
-        <section aria-label="Calendrier" className="mb-5">
+        <section aria-label={t('home.calendarSection')} className="mb-5">
           {calendarError ? null : calendarLoading ? (
             <CalendarSkeleton />
           ) : (
@@ -678,7 +679,7 @@ export default function HomeScreen() {
         {/* ---------------------------------------------------------------- */}
         {/* Weekly Challenge                                                */}
         {/* ---------------------------------------------------------------- */}
-        <section aria-label="Défi de la semaine" className="mb-5">
+        <section aria-label={t('home.weeklyChallengeSection')} className="mb-5">
           {statsLoading ? (
             <ChallengeSkeleton />
           ) : (
@@ -782,7 +783,7 @@ export default function HomeScreen() {
           {sessionsLoading ? (
             <SessionsSkeleton />
           ) : sessionsError ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Impossible de charger les sessions</p>
+            <p className="text-sm text-muted-foreground text-center py-4">{t('home.loadSessionsError')}</p>
           ) : recentSessions.length > 0 ? (
             <motion.div
               variants={containerVariants}

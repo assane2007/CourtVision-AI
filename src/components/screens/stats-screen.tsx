@@ -163,10 +163,10 @@ export function StatsScreen() {
   if (statsError || sessionsError) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20 px-4">
-        <p className="text-sm text-muted-foreground">Impossible de charger les données</p>
+        <p className="text-sm text-muted-foreground">{t('error.loadFailed')}</p>
         <Button variant="outline" size="sm" onClick={() => { refetchStats(); refetchSessions() }}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Réessayer
+          <RefreshCw className="h-4 w-4 mr-2" aria-hidden="true" />
+          {t('action.retry')}
         </Button>
       </div>
     )
@@ -190,7 +190,7 @@ export function StatsScreen() {
         >
           <div className="max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto flex items-center h-14 px-4">
             <TrendingUp className="h-5 w-5 text-orange-500 mr-2.5" />
-            <h1 className="text-base font-semibold">Statistiques &amp; Progression</h1>
+            <h1 className="text-base font-semibold">{t('stats.title')}</h1>
           </div>
         </motion.header>
 
@@ -237,9 +237,9 @@ export function StatsScreen() {
                   <Trophy className="h-6 w-6 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-semibold">Voir mes records personnels</h3>
+                  <h3 className="text-sm font-semibold">{t('stats.viewRecords')}</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Meilleurs scores, tendances et progrès
+                    {t('stats.recordsDesc')}
                   </p>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-orange-500 transition-colors shrink-0" />
@@ -376,10 +376,10 @@ export function StatsScreen() {
                     <Table>
                       <TableHeader>
                         <TableRow className="hover:bg-transparent">
-                          <TableHead className="text-xs font-semibold text-muted-foreground">Date</TableHead>
-                          <TableHead className="text-xs font-semibold text-muted-foreground">Exercices</TableHead>
-                          <TableHead className="text-xs font-semibold text-muted-foreground text-right">Score</TableHead>
-                          <TableHead className="text-xs font-semibold text-muted-foreground text-right">Rép.</TableHead>
+                          <TableHead className="text-xs font-semibold text-muted-foreground">{t('stats.dateLabel')}</TableHead>
+                          <TableHead className="text-xs font-semibold text-muted-foreground">{t('stats.exercisesLabel')}</TableHead>
+                          <TableHead className="text-xs font-semibold text-muted-foreground text-right">{t('workout.score')}</TableHead>
+                          <TableHead className="text-xs font-semibold text-muted-foreground text-right">{t('stats.repsLabel')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>

@@ -26,6 +26,7 @@ import { SwipeToGoBack } from '@/components/shared/swipe-back'
 import { useAppStore } from '@/stores/app'
 import { apiFetch, formatLocaleDate } from '@/lib/utils'
 import { useTranslation } from '@/components/providers/language-provider'
+import type { TranslationKey } from '@/lib/i18n'
 import { BottomNav } from '@/components/shared/bottom-nav'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -54,43 +55,23 @@ interface PersonalBests {
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
-const MODES: { id: GameMode; label: string; icon: React.ReactNode; description: string }[] = [
-  {
-    id: 'direction',
-    label: 'Direction Rapide',
-    icon: <Target className="h-4 w-4" />,
-    description: 'Suis la flèche le plus vite possible',
-  },
-  {
-    id: 'color',
-    label: 'Couleur & Action',
-    icon: <Brain className="h-4 w-4" />,
-    description: 'Vert = tape, Rouge = arrête !',
-  },
-  {
-    id: 'shot_clock',
-    label: 'Shot Clock',
-    icon: <Timer className="h-4 w-4" />,
-    description: 'Prends la bonne décision sous pression',
-  },
-  {
-    id: 'reflex',
-    label: 'Reflexe Joueur',
-    icon: <Zap className="h-4 w-4" />,
-    description: 'Attrape les cibles avant qu\'elles disparaissent',
-  },
-]
+const MODE_CONFIGS: Record<GameMode, { iconKey: string; descKey: string }> = {
+  direction: { iconKey: 'reaction.direction', descKey: 'reaction.directionDesc' },
+  color: { iconKey: 'reaction.color', descKey: 'reaction.colorDesc' },
+  shot_clock: { iconKey: 'reaction.shotClock', descKey: 'reaction.shotClockDesc' },
+  reflex: { iconKey: 'reaction.reflexPure', descKey: 'reaction.reflexDesc' },
+}
 
 const DIRECTIONS = ['up', 'down', 'left', 'right'] as const
 type Direction = (typeof DIRECTIONS)[number]
 
 const ACTIONS = ['TIR', 'DRIBBLE', 'PASSE', 'DÉFENSE'] as const
 
-const ARROW_ICONS: Record<Direction, React.ReactNode> = {
-  up: <ArrowUp className="h-20 w-20 sm:h-28 sm:w-28" />,
-  down: <ArrowDown className="h-20 w-20 sm:h-28 sm:w-28" />,
-  left: <ArrowLeft className="h-20 w-20 sm:h-28 sm:w-28" />,
-  right: <ArrowRight className="h-20 w-20 sm:h-28 sm:w-28" />,
+const MODE_ICONS: Record<GameMode, React.ReactNode> = {
+  direction: <Target className="h-4 w-4" />,
+  color: <Brain className="h-4 w-4" />,
+  shot_clock: <Timer className="h-4 w-4" />,
+  reflex: <Zap className="h-4 w-4" />,
 }
 
 const SHOT_CLOCK_SCENARIOS = [
@@ -144,20 +125,20 @@ const SHOT_CLOCK_SCENARIOS = [
   },
 ]
 
-function getRating(avgMs: number, accuracy: number): { label: string; emoji: string; color: string } {
+function getRating(avgMs: number, accuracy: number, t: (key: TranslationKey) => string): { label: string; emoji: string; color: string } {
   const score = avgMs * (accuracy / 100)
-  if (score < 300 && accuracy >= 80) return { label: 'Éclair', emoji: '⚡', color: 'text-orange-400' }
-  if (score < 450 && accuracy >= 65) return { label: 'Rapide', emoji: '🏃', color: 'text-green-400' }
-  if (score < 650) return { label: 'Moyen', emoji: '👍', color: 'text-yellow-400' }
-  return { label: 'Lent', emoji: '🐌', color: 'text-red-400' }
+  if (score < 300 && accuracy >= 80) return { label: t('reaction.ratingLightning'), emoji: '⚡', color: 'text-orange-400' }
+  if (score < 450 && accuracy >= 65) return { label: t('reaction.ratingFast'), emoji: '🏃', color: 'text-green-400' }
+  if (score < 650) return { label: t('reaction.ratingAverage'), emoji: '👍', color: 'text-yellow-400' }
+  return { label: t('reaction.ratingSlow'), emoji: '🐌', color: 'text-red-400' }
 }
 
-function formatType(type: string): string {
+function formatType(type: string, t: (key: TranslationKey) => string): string {
   const map: Record<string, string> = {
-    direction: 'Direction',
-    color: 'Couleur',
-    shot_clock: 'Shot Clock',
-    reflex: 'Reflexe',
+    direction: t('reaction.directionShort'),
+    color: t('reaction.colorShort'),
+    shot_clock: t('reaction.shotClockShort'),
+    reflex: t('reaction.reflexShort'),
   }
   return map[type] || type
 }
@@ -166,6 +147,12 @@ function formatType(type: string): string {
 
 export default function ReactionTrainerScreen() {
   const { t, language } = useTranslation()
+  const MODES = (Object.keys(MODE_CONFIGS) as GameMode[]).map((id) => ({
+    id,
+    label: t(MODE_CONFIGS[id].iconKey as TranslationKey),
+    icon: MODE_ICONS[id],
+    description: t(MODE_CONFIGS[id].descKey as TranslationKey),
+  }))
   const goBack = useAppStore((s) => s.goBack)
   const queryClient = useQueryClient()
 
@@ -574,7 +561,7 @@ export default function ReactionTrainerScreen() {
     ? Math.min(...rounds.map(r => r.reactionMs))
     : 0
 
-  const rating = getRating(avgMs, accuracy)
+  const rating = getRating(avgMs, accuracy, t)
   const history = historyData?.history ?? []
   const personalBests = historyData?.personalBests ?? {}
 
@@ -591,7 +578,7 @@ export default function ReactionTrainerScreen() {
               size="icon"
               className="shrink-0 h-9 w-9"
               onClick={goBack}
-              aria-label="Retour"
+              aria-label={t('action.back')}
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
@@ -613,10 +600,12 @@ export default function ReactionTrainerScreen() {
 
         <div className="max-w-lg md:max-w-3xl lg:max-w-4xl mx-auto px-4 py-4 space-y-4">
           {/* Mode Selector */}
-          <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide" role="tablist" aria-label={t('reaction.title')}>
             {MODES.map((m) => (
               <button
                 key={m.id}
+                role="tab"
+                aria-selected={mode === m.id}
                 onClick={() => { if (phase === 'idle') { setMode(m.id) } }}
                 disabled={phase !== 'idle'}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all shrink-0 ${
@@ -661,10 +650,10 @@ export default function ReactionTrainerScreen() {
                         {MODES.find(m => m.id === mode)?.label}
                       </h2>
                       <p className="text-sm text-zinc-400 mt-1">
-                        {mode === 'direction' && '10 rounds — Suis les flèches le plus vite possible'}
-                        {mode === 'color' && '10 rounds — Tape vert, arrête rouge'}
-                        {mode === 'shot_clock' && '8 situations — Décide en 3 secondes'}
-                        {mode === 'reflex' && '30 secondes — Tape le plus de cibles'}
+                        {mode === 'direction' && '10 ' + t('reaction.rounds') + ' — ' + t('reaction.directionDesc')}
+                        {mode === 'color' && '10 ' + t('reaction.rounds') + ' — ' + t('reaction.colorDesc')}
+                        {mode === 'shot_clock' && t('reaction.shotClockInfo')}
+                        {mode === 'reflex' && '30s — ' + t('reaction.reflexDesc')}
                       </p>
                     </div>
                     <Button
@@ -698,7 +687,7 @@ export default function ReactionTrainerScreen() {
                   <div className="flex flex-col items-center gap-4 p-6 w-full">
                     {/* Score bar */}
                     <div className="w-full flex items-center justify-between text-sm text-zinc-400">
-                      <span>Round {currentRound}/10</span>
+                      <span>{t('reaction.round').replace('{current}', String(currentRound)).replace('{total}', '10')}</span>
                       <div className="flex items-center gap-2">
                         {streak > 0 && (
                           <span className="text-orange-400 font-medium">
@@ -724,7 +713,10 @@ export default function ReactionTrainerScreen() {
                             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                             className="text-white"
                           >
-                            {ARROW_ICONS[activeDirection]}
+                            {activeDirection === 'up' && <ArrowUp className="h-12 w-12" />}
+                            {activeDirection === 'down' && <ArrowDown className="h-12 w-12" />}
+                            {activeDirection === 'left' && <ArrowLeft className="h-12 w-12" />}
+                            {activeDirection === 'right' && <ArrowRight className="h-12 w-12" />}
                           </motion.div>
                         ) : (
                           <motion.div
@@ -746,7 +738,7 @@ export default function ReactionTrainerScreen() {
                         whileTap={{ scale: 0.9 }}
                         onClick={() => handleDirectionResponse('up')}
                         className="flex items-center justify-center h-14 rounded-xl bg-white/10 hover:bg-white/20 active:bg-orange-500/50 transition-colors"
-                        aria-label="Haut"
+                        aria-label={t('reaction.up')}
                       >
                         <ArrowUp className="h-6 w-6 text-white" />
                       </motion.button>
@@ -755,7 +747,7 @@ export default function ReactionTrainerScreen() {
                         whileTap={{ scale: 0.9 }}
                         onClick={() => handleDirectionResponse('left')}
                         className="flex items-center justify-center h-14 rounded-xl bg-white/10 hover:bg-white/20 active:bg-orange-500/50 transition-colors"
-                        aria-label="Gauche"
+                        aria-label={t('reaction.left')}
                       >
                         <ArrowLeft className="h-6 w-6 text-white" />
                       </motion.button>
@@ -763,7 +755,7 @@ export default function ReactionTrainerScreen() {
                         whileTap={{ scale: 0.9 }}
                         onClick={() => handleDirectionResponse('down')}
                         className="flex items-center justify-center h-14 rounded-xl bg-white/10 hover:bg-white/20 active:bg-orange-500/50 transition-colors"
-                        aria-label="Bas"
+                        aria-label={t('reaction.down')}
                       >
                         <ArrowDown className="h-6 w-6 text-white" />
                       </motion.button>
@@ -771,7 +763,7 @@ export default function ReactionTrainerScreen() {
                         whileTap={{ scale: 0.9 }}
                         onClick={() => handleDirectionResponse('right')}
                         className="flex items-center justify-center h-14 rounded-xl bg-white/10 hover:bg-white/20 active:bg-orange-500/50 transition-colors"
-                        aria-label="Droite"
+                        aria-label={t('reaction.right')}
                       >
                         <ArrowRight className="h-6 w-6 text-white" />
                       </motion.button>
@@ -784,7 +776,7 @@ export default function ReactionTrainerScreen() {
                   <div className="flex flex-col items-center gap-4 p-6 w-full">
                     {/* Score bar */}
                     <div className="w-full flex items-center justify-between text-sm text-zinc-400">
-                      <span>Round {currentRound}/10</span>
+                      <span>{t('reaction.round').replace('{current}', String(currentRound)).replace('{total}', '10')}</span>
                       {streak > 0 && (
                         <span className="text-orange-400 font-medium">
                           <Flame className="inline h-3 w-3 mr-0.5" />
@@ -820,7 +812,7 @@ export default function ReactionTrainerScreen() {
                               {activeAction}
                             </span>
                             <p className="text-white/70 text-sm mt-2 font-medium">
-                              {actionColor === 'green' ? 'Tape !' : 'N\'APPUIE PAS !'}
+                              {actionColor === 'green' ? t('reaction.tap') : t('reaction.dontTap')}
                             </p>
                           </motion.div>
                         ) : (
@@ -871,7 +863,7 @@ export default function ReactionTrainerScreen() {
                   <div className="flex flex-col items-center gap-4 p-6 w-full">
                     {/* Score bar */}
                     <div className="w-full flex items-center justify-between text-sm text-zinc-400">
-                      <span>Situation {currentRound}/8</span>
+                      <span>{t('reaction.situation').replace('{current}', String(currentRound)).replace('{total}', '8')}</span>
                       {streak > 0 && (
                         <span className="text-orange-400 font-medium">
                           <Flame className="inline h-3 w-3 mr-0.5" />
@@ -1014,7 +1006,7 @@ export default function ReactionTrainerScreen() {
                           }}
                           onClick={() => handleTargetTap(target.id, target.appearedAt)}
                           className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-orange-400 to-red-500 shadow-lg shadow-orange-500/40 cursor-pointer hover:scale-110 active:scale-90 transition-transform flex items-center justify-center"
-                          aria-label="Cible"
+                          aria-label={t('reaction.target')}
                         >
                           <div className="w-4 h-4 rounded-full bg-white/80" />
                         </motion.button>
@@ -1034,15 +1026,15 @@ export default function ReactionTrainerScreen() {
               className="grid grid-cols-3 gap-3"
             >
               <div className="text-center bg-card rounded-xl p-3 border border-border/50">
-                <p className="text-xs text-muted-foreground">Temps moyen</p>
+                <p className="text-xs text-muted-foreground">{t('reaction.averageTime')}</p>
                 <p className="text-xl font-bold text-orange-500">{avgMs}<span className="text-xs text-muted-foreground ml-0.5">ms</span></p>
               </div>
               <div className="text-center bg-card rounded-xl p-3 border border-border/50">
-                <p className="text-xs text-muted-foreground">Précision</p>
+                <p className="text-xs text-muted-foreground">{t('reaction.accuracy')}</p>
                 <p className="text-xl font-bold text-white">{accuracy}<span className="text-xs text-muted-foreground ml-0.5">%</span></p>
               </div>
               <div className="text-center bg-card rounded-xl p-3 border border-border/50">
-                <p className="text-xs text-muted-foreground">Série</p>
+                <p className="text-xs text-muted-foreground">{t('reaction.streak')}</p>
                 <p className="text-xl font-bold text-amber-400">
                   <Flame className="inline h-4 w-4" />
                   {streak}
@@ -1091,18 +1083,18 @@ export default function ReactionTrainerScreen() {
                       <p className="text-2xl font-bold text-green-500">{bestMs}<span className="text-sm text-muted-foreground ml-1">ms</span></p>
                     </div>
                     <div className="text-center bg-muted/50 rounded-xl p-3">
-                      <p className="text-xs text-muted-foreground">Précision</p>
+                      <p className="text-xs text-muted-foreground">{t('reaction.accuracy')}</p>
                       <p className="text-2xl font-bold text-white">{accuracy}<span className="text-sm text-muted-foreground ml-1">%</span></p>
                     </div>
                     <div className="text-center bg-muted/50 rounded-xl p-3">
-                      <p className="text-xs text-muted-foreground">Meilleure série</p>
+                      <p className="text-xs text-muted-foreground">{t('reaction.bestStreak')}</p>
                       <p className="text-2xl font-bold text-amber-400">{bestStreak}</p>
                     </div>
                   </div>
 
                   {mode === 'reflex' && (
                     <div className="text-center bg-muted/50 rounded-xl p-3 mb-4">
-                      <p className="text-xs text-muted-foreground">Cibles touchées</p>
+                      <p className="text-xs text-muted-foreground">{t('reaction.targetsHit')}</p>
                       <p className="text-2xl font-bold text-orange-500">{reflexHits} <span className="text-sm text-muted-foreground">/ {reflexHits + reflexMisses}</span></p>
                     </div>
                   )}
@@ -1136,12 +1128,12 @@ export default function ReactionTrainerScreen() {
               transition={{ delay: 0.1 }}
             >
               <h3 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
-                <Timer className="h-4 w-4" />
-                Historique récent
+                <Timer className="h-4 w-4" aria-hidden="true" />
+                {t('reaction.history')}
               </h3>
               <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
                 {history.slice(0, 10).map((entry) => {
-                  const r = getRating(entry.avgMs, entry.accuracy)
+                  const r = getRating(entry.avgMs, entry.accuracy, t)
                   return (
                     <motion.div
                       key={entry.id}
@@ -1152,8 +1144,8 @@ export default function ReactionTrainerScreen() {
                       <span className="text-xl">{r.emoji}</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold">{formatType(entry.type)}</span>
-                          <Badge variant="secondary" className="text-xs">{entry.rounds} tours</Badge>
+                          <span className="text-sm font-semibold">{formatType(entry.type, t)}</span>
+                          <Badge variant="secondary" className="text-xs">{entry.rounds} {t('reaction.rounds')}</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">
                           {formatLocaleDate(entry.createdAt, language, {

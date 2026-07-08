@@ -214,13 +214,13 @@ export default function CameraWorkoutScreen() {
       if (data?.xpAwarded) {
         setXpAwarded(data.xpAwarded)
       }
-      toast.success('Session sauvegardée! 🎉', {
-        description: `${reps} répétitions enregistrées`,
+      toast.success(t('camera.saveSuccess'), {
+        description: `${reps} ${t('common.reps')} ${t('stats.recentSessions').toLowerCase()}`,
       })
     },
     onError: () => {
-      toast.error('Erreur de sauvegarde', {
-        description: 'Impossible de sauvegarder la session',
+      toast.error(t('camera.saveError'), {
+        description: t('camera.saveErrorDesc'),
       })
     },
   })
@@ -811,7 +811,7 @@ export default function CameraWorkoutScreen() {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-4">
         <Loader2 className="h-10 w-10 text-orange-500 animate-spin" />
-        <p className="text-foreground text-sm">Chargement de l&apos;exercice...</p>
+        <p className="text-foreground text-sm">{t('camera.loadingDrill')}</p>
         <Skeleton className="h-3 w-48" />
       </div>
     )
@@ -824,15 +824,15 @@ export default function CameraWorkoutScreen() {
         <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-2">
           <AlertTriangle className="h-8 w-8 text-red-400" />
         </div>
-        <h2 className="text-foreground text-lg font-semibold">Erreur</h2>
+        <h2 className="text-foreground text-lg font-semibold">{t('camera.errorTitle')}</h2>
         <p className="text-muted-foreground text-sm text-center max-w-xs">{cameraError}</p>
         <div className="flex gap-3 mt-4">
           <Button variant="outline" onClick={goBack} className="text-foreground">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Retour
+            {t('camera.back')}
           </Button>
           <Button onClick={setupCameraAndStart} className="bg-orange-500 hover:bg-orange-600 text-white">
-            Réessayer
+            {t('action.retry')}
           </Button>
         </div>
       </div>
@@ -856,7 +856,7 @@ export default function CameraWorkoutScreen() {
             goBack()
           }}
           className="text-white/80 hover:text-white hover:bg-white/10 -ml-1 rounded-lg"
-          aria-label="Retour"
+          aria-label={t('camera.back')}
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
@@ -886,7 +886,7 @@ export default function CameraWorkoutScreen() {
           <button
             onClick={handleMuteToggle}
             className="text-white/60 hover:text-white ml-1 p-1.5 rounded-lg hover:bg-white/10 transition-colors"
-            aria-label={isMuted ? 'Activer le son' : 'Couper le son'}
+            aria-label={isMuted ? t('camera.unmuteSound') : t('camera.muteSound')}
           >
             {isMuted ? (
               <VolumeX className="h-4 w-4" />
@@ -907,7 +907,7 @@ export default function CameraWorkoutScreen() {
             style={{ transform: 'scaleX(-1)' }}
             playsInline
             muted
-            aria-label="Flux de la caméra"
+            aria-label={t('camera.cameraStream')}
           />
 
           {/* Skeleton Canvas */}
@@ -917,7 +917,7 @@ export default function CameraWorkoutScreen() {
           {!isModelLoaded && (phase as string) !== 'error' && (
             <div className="absolute top-3 left-3 z-20 flex items-center gap-2 rounded-full bg-black/60 backdrop-blur-sm px-3 py-1.5">
               <Loader2 className="h-3.5 w-3.5 text-orange-400 animate-spin" />
-              <span className="text-[11px] text-white/80">Modèle IA en cours...</span>
+              <span className="text-[11px] text-white/80">{t('camera.loadingModel')}</span>
             </div>
           )}
 
@@ -1001,7 +1001,7 @@ export default function CameraWorkoutScreen() {
         {!streamRef.current && phase === 'loading' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-white/40 gap-3">
             <Camera className="h-12 w-12" />
-            <p className="text-sm">Initialisation de la caméra...</p>
+            <p className="text-sm">{t('camera.initCamera')}</p>
           </div>
         )}
       </div>

@@ -30,7 +30,7 @@ export function scheduleStreakReminder(playerId: string, streakCount: number): v
   })
 
   if (process.env.NODE_ENV === 'development') {
-    console.log(
+    console.warn(
       `[notify] Streak reminder scheduled for player ${playerId} — ${streakCount} day streak, fires at ${tomorrow.toISOString()}`
     )
   }
@@ -51,7 +51,7 @@ export function notifyAchievement(playerId: string, title: string): void {
   })
 
   if (process.env.NODE_ENV === 'development') {
-    console.log(`[notify] Achievement notification queued for player ${playerId}: ${title}`)
+    console.warn(`[notify] Achievement notification queued for player ${playerId}: ${title}`)
   }
 }
 
@@ -70,7 +70,7 @@ export function notifyChallenge(playerId: string, description: string): void {
   })
 
   if (process.env.NODE_ENV === 'development') {
-    console.log(`[notify] Challenge notification queued for player ${playerId}: ${description}`)
+    console.warn(`[notify] Challenge notification queued for player ${playerId}: ${description}`)
   }
 }
 
@@ -118,7 +118,7 @@ export async function processDueNotifications(): Promise<void> {
         if (prefKey) {
           // In production: send via web-push API
           if (process.env.NODE_ENV === 'development') {
-            console.log(
+            console.warn(
               `[notify] Would send notification to player ${notif.playerId}: [${notif.title}] ${notif.body}`
             )
           }

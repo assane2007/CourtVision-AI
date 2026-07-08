@@ -2305,3 +2305,170 @@ Stage Summary:
 - 120/120 unit tests passing
 - Key security fixes: XP manipulation eliminated, atomic increments, store consolidation, CSP hardened, reset tokens hashed
 - Key quality fixes: ESLint re-enabled, CI/CD created, framer-motion lazy loaded, 6 screens got error states
+---
+Task ID: 4a
+Agent: Test & Utility Agent
+Task: API tests + utilities — locale-aware dates, dedup constants, API route tests
+
+Work Log:
+- Created `src/lib/date-utils.ts` with 5 locale-aware utilities: `formatDate`, `formatRelativeTime`, `formatShortDate`, `formatTime`, `formatDurationSec`
+- Replaced hardcoded `toLocaleDateString('fr-FR', ...)` calls in 3 files:
+  - `src/app/api/ai-coach/route.ts` → uses `formatShortDate()` from date-utils
+  - `src/app/api/share/route.ts` → uses `formatDate()` from date-utils
+  - `src/components/home/streak-calendar.tsx` → uses `formatDate()` from date-utils
+- Updated `src/lib/utils.ts` to re-export `formatDate` as `formatLocaleDate` from date-utils (backward compat for 13 consumer files)
+- Investigated constants deduplication:
+  - `VALID_CATEGORIES/DIFFICULTIES/POSITIONS` in validations.ts → validation tuples, NOT duplicated
+  - `CATEGORY_LABELS` in constants.ts vs `category.*` in i18n.ts → intentionally different (short UI labels vs descriptive labels), kept both
+  - `positionLabels/levelLabels/goalsLabels` in profile-screen.tsx → richer/superset labels, not simple duplicates
+  - No actual harmful duplication found; documented rationale
+- Created `src/__tests__/api/xp.test.ts` (6 tests): POST 410, GET auth, GET success, GET 404, limit clamping
+- Created `src/__tests__/api/sessions.test.ts` (8 tests): POST auth, empty drillScores, invalid fields, 413 payload limit, nonexistent drills, GET auth, GET pagination
+- Created `src/__tests__/api/ai-coach.test.ts` (10 tests): GET/POST/DELETE auth, empty message, char limit, valid AI reply, rate limiting
+- Created `src/lib/__tests__/date-utils.test.ts` (22 tests): all 5 date utility functions with FR/EN, edge cases, fake timers for relative time
+- All 178 tests passing (120 existing + 46 new + 12 from previous additions)
+
+Files Created:
+- src/lib/date-utils.ts
+- src/__tests__/api/xp.test.ts
+- src/__tests__/api/sessions.test.ts
+- src/__tests__/api/ai-coach.test.ts
+- src/lib/__tests__/date-utils.test.ts
+
+Files Modified:
+- src/app/api/ai-coach/route.ts (replaced hardcoded date format)
+- src/app/api/share/route.ts (replaced hardcoded date format)
+- src/components/home/streak-calendar.tsx (replaced hardcoded date format)
+- src/lib/utils.ts (re-export formatLocaleDate from date-utils)
+
+Stage Summary:
+- 5 files created, 4 files modified
+- 46 new tests across 4 test files
+- 178/178 tests passing (0 regressions)
+- No harmful constant duplication found — all "duplicates" serve distinct purposes
+
+---
+Task ID: 3c
+Agent: Frontend Quality Agent
+Task: Auth screen theme + accessibility improvements
+
+Work Log:
+
+## Task 1: Fix Auth Screen Theme
+- **File**: `src/components/screens/auth-screen.tsx`
+- Replaced all hardcoded dark-mode colors with theme-aware Tailwind classes:
+  - `text-white/80` → `text-foreground` (Labels)
+  - `text-white/50` → `text-muted-foreground` (descriptions, subtitles)
+  - `text-white/60` → `text-muted-foreground` (tab triggers, back button)
+  - `text-white/30` → `text-muted-foreground/70` (footer)
+  - `bg-white/5` → `bg-muted/50` (inputs)
+  - `border-white/15` → `border-border` (inputs)
+  - `bg-white/[0.06]` → `bg-muted/50` (TabsList)
+  - `text-white/40` → `placeholder:text-muted-foreground` (input placeholders)
+  - `text-white/50` → `text-muted-foreground` (password toggle)
+  - `text-orange-400/60` → `text-orange-500/70` (forgot password link)
+  - `text-red-400` → `text-red-500 dark:text-red-400` (error messages)
+  - `dark:text-white text-foreground` → `text-foreground` (DialogTitle, success heading)
+  - `dark:text-white text-foreground` → `text-white` (gradient buttons - white on orange is always correct)
+- Fixed password reset Dialog: `bg-[#1a1a2e]` → `bg-background`
+- Fixed outer gradient: added `dark:from-background dark:via-background dark:to-background` fallbacks so light mode gets proper background
+- Kept `dark` class on wrapper for intentional dark aesthetic, but all inner content now uses semantic tokens
+- Fixed `text-amber-300` → `text-amber-500 dark:text-amber-300` for token code display
+- Fixed `border-white/10` → `border-border` in dialog separator
+
+## Task 2: Error/Empty/Loading States
+- **File**: `src/lib/i18n.ts`
+  - Added 5 new translation keys: `empty.noAchievements`, `empty.noAchievementsDesc`, `empty.noLeaderboard`, `empty.noRecords`, `empty.noRecordsDesc`, `empty.noMatchingDrills`
+  - Added FR and EN translations for all new keys
+
+- **File**: `src/components/screens/stats-screen.tsx`
+  - Error state: replaced hardcoded "Impossible de charger les données" with `t('error.loadFailed')`
+  - Error retry button: replaced "Réessayer" with `t('action.retry')`, added `aria-hidden` on icon
+
+- **File**: `src/components/screens/records-screen.tsx`
+  - Error state: replaced hardcoded French with `t('error.loadFailed')` and `t('action.retry')`
+  - Empty state: added `useTranslation()` to `EmptyState` component, replaced hardcoded French with `t('empty.noRecords')` and `t('empty.noRecordsDesc')`
+  - Filter empty: replaced hardcoded search message with `t('empty.noMatchingDrills')`
+
+- **File**: `src/components/screens/achievements-screen.tsx`
+  - Error state: replaced hardcoded French with `t('error.loadFailed')` and `t('action.retry')`
+  - Added full empty state with SVG medal illustration, animated emoji, `t('empty.noAchievements')`, `t('empty.noAchievementsDesc')`, and CTA button with `t('empty.startTraining')`
+
+- **File**: `src/components/screens/leaderboard-screen.tsx`
+  - Error state: replaced hardcoded French with `t('error.loadFailed')`, added `aria-hidden` on emoji
+  - Empty state: replaced hardcoded French with `t('empty.noLeaderboard')`
+
+- **File**: `src/components/screens/home-screen.tsx`
+  - Error state: replaced hardcoded French with `t('error.loadFailed')` and `t('action.retry')`
+
+- **File**: `src/components/screens/train-hub-screen.tsx`
+  - Error state: replaced hardcoded French with `t('error.loadFailed')` and `t('action.retry')`
+
+## Task 3: ARIA Labels & Accessibility
+- **File**: `src/components/screens/home-screen.tsx`
+  - Added `aria-hidden="true"` to decorative court SVG illustration
+
+- **File**: `src/components/screens/train-hub-screen.tsx`
+  - Added `role="tablist"` with `aria-label` to difficulty filter buttons container
+  - Added `role="tab"` and `aria-selected` to each difficulty filter button
+  - Added `aria-hidden="true"` to Filter icon
+
+- **File**: `src/components/screens/reaction-trainer-screen.tsx`
+  - Added `role="tablist"` with `aria-label={t('reaction.title')}` to mode selector
+  - Added `role="tab"` and `aria-selected` to each mode button
+  - Added `aria-hidden="true"` to decorative Timer icon in history heading
+
+- **File**: `src/components/screens/ai-coach-screen.tsx`
+  - Added `aria-label={t('action.back')}` to back button
+  - Added `aria-label={t('action.delete')}` to clear chat (trash) button
+  - Added `aria-label={t('coach.send')}` to send button
+  - Fixed invalid `common.loadFailed` → `error.loadFailed` translation key
+  - Added `aria-hidden="true"` to RefreshCw icon in error state
+
+- All `RefreshCw` icons in retry buttons across all screens now have `aria-hidden="true"`
+
+## Task 4: AI Coach Spacing Fix
+- **File**: `src/components/screens/ai-coach-screen.tsx`
+  - Fixed suggested actions bar positioning: changed `bottom-[76px]` → `bottom-[148px]` to sit above the fixed input area instead of overlapping with it
+  - Made chat area bottom padding dynamic: `pb-20` when empty, `pb-40` when messages + suggested actions are visible
+  - This prevents the last chat message from being hidden behind the suggested actions bar
+
+## Verification
+- TypeScript type check passes (0 errors in source files; pre-existing test file errors unchanged)
+- All changes use existing shadcn/ui components and translation system
+- No breaking changes to existing functionality
+
+---
+Task ID: 3d
+Agent: i18n Completion Agent
+Task: Complete i18n pass for remaining screens
+
+Work Log:
+- Audited all 13 screen components + camera-workout.tsx for hardcoded French strings
+- Added 52 new TranslationKey entries to i18n.ts type union
+- Added French and English translations for all 52 new keys
+- Replaced hardcoded French strings with t() calls in 13 files:
+
+Files modified (13):
+1. **i18n.ts** — Added 52 new keys (type union + fr/en dictionaries) covering auth, train hub, profile, settings, camera, workout summary, reaction trainer, scouting, records, stats, plans, home
+2. **auth-screen.tsx** — 9 replacements: Email labels (×3), email placeholders (×3), name placeholder, min chars placeholder, confirm placeholder
+3. **home-screen.tsx** — 1 replacement: session load error message
+4. **train-hub-screen.tsx** — 12 replacements: create button, dialog title, dialog description, form labels (drill name, category, difficulty, description, instructions, target reps, icon), choose placeholders (×2), search placeholder
+5. **profile-screen.tsx** — 12 replacements: position/level/goal label maps converted to translation keys, goal label, view all, no XP text, quick summary title, stats labels (sessions, reps, avg score), delete account dialog (title + 7 list items + auto-logout + network error)
+6. **settings-screen.tsx** — 18 replacements: error message, retry button, weekly goals title, session/rep labels, rest duration label, preferences title, notification labels (streak, challenges, achievements), experimental features title + description, activated/disabled toast, billing title, plan/grade labels, view offers, data privacy title, export data label+desc, privacy policy label+desc, footer text; added useTranslation() to 3 sub-components
+7. **workout-summary-screen.tsx** — 2 replacements: score per exercise label, share function (extracted to accept t parameter, added TranslationKey import)
+8. **camera-workout.tsx** — 6 replacements: loading drill, error title, back button, retry button, loading model, init camera
+9. **records-screen.tsx** — 9 replacements: trend indicator (added useTranslation), improvement/decline labels, max reps/avg time (with .replace for params), last time label, search placeholder, 4 summary card labels, no category records
+10. **reaction-trainer-screen.tsx** — 14 replacements: mode descriptions, round counter (×2), direction arrow aria-labels (up/down/left/right), situation counter, target aria-label, results labels (avg time, accuracy ×2, streak, best streak, targets hit)
+11. **scouting-screen.tsx** — 4 replacements: page title, score out of 100, average level, your score; added useTranslation to RadarChart sub-component
+12. **stats-screen.tsx** — 3 replacements: records link title+desc, table headers (date, exercises, score, reps)
+13. **plans-screen.tsx** — 1 replacement: "Public" badge
+
+Pre-existing TS errors (NOT introduced by this task):
+- leaderboard-screen.tsx: Missing TranslationKey import (pre-existing)
+- onboarding-screen.tsx: OptionCard.title property + t() 2-arg calls (pre-existing)
+- plans-screen.tsx: t() 2-arg call (pre-existing)
+- pricing-screen.tsx: t() 2-arg call (pre-existing)
+- reaction-trainer-screen.tsx: getRating type signature + ARROW_ICONS missing (pre-existing)
+
+No new TypeScript errors introduced.

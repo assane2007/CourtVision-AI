@@ -135,6 +135,7 @@ function Sparkline({ scores }: { scores: number[] }) {
 // ── Trend Indicator ─────────────────────────────────────────────────────────
 
 function TrendIndicator({ scores }: { scores: number[] }) {
+  const { t } = useTranslation()
   if (scores.length < 2) return null
 
   const last = scores[scores.length - 1]
@@ -150,7 +151,7 @@ function TrendIndicator({ scores }: { scores: number[] }) {
       }`}
     >
       {improved ? '↑' : '↓'}{' '}
-      {improved ? 'Amélioration' : 'Baisse'}
+      {improved ? t('records.improvement') : t('records.decline')}
     </span>
   )
 }
@@ -158,7 +159,7 @@ function TrendIndicator({ scores }: { scores: number[] }) {
 // ── Record Card ─────────────────────────────────────────────────────────────
 
 function RecordCard({ record, index }: { record: DrillRecord; index: number }) {
-  const { language } = useTranslation()
+  const { t, language } = useTranslation()
   const catMeta = getCategoryMeta(record.drillCategory)
   if (!catMeta) return null
   const catColor = getCategoryColor(record.drillCategory)
@@ -209,21 +210,21 @@ function RecordCard({ record, index }: { record: DrillRecord; index: number }) {
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
               <Flame className="h-3.5 w-3.5 text-orange-500" />
-              <span>{record.totalSessions} séance{record.totalSessions > 1 ? 's' : ''}</span>
+              <span>{record.totalSessions} {t('common.sessions')}{record.totalSessions > 1 ? 's' : ''}</span>
             </div>
             <div className="flex items-center gap-1">
               <Target className="h-3.5 w-3.5 text-emerald-500" />
-              <span>Max {record.bestReps} rép.</span>
+              <span>{t('records.maxReps').replace('{reps}', String(record.bestReps))}</span>
             </div>
             <div className="flex items-center gap-1">
               <Clock className="h-3.5 w-3.5 text-sky-500" />
-              <span>Moy. {formatDuration(record.avgDurationMs)}</span>
+              <span>{t('records.avgTime').replace('{time}', formatDuration(record.avgDurationMs))}</span>
             </div>
           </div>
 
           {/* Last completed */}
           <div className="mt-2 text-[11px] text-muted-foreground/70">
-            Dernière fois : {formatLocaleDate(record.lastCompleted, language, { day: 'numeric', month: 'short' })}
+            {t('records.lastTime')} {formatLocaleDate(record.lastCompleted, language, { day: 'numeric', month: 'short' })}
           </div>
         </CardContent>
       </Card>
@@ -235,6 +236,7 @@ function RecordCard({ record, index }: { record: DrillRecord; index: number }) {
 
 function EmptyState() {
   const { navigate } = useAppStore()
+  const { t } = useTranslation()
 
   return (
     <motion.div
@@ -269,9 +271,9 @@ function EmptyState() {
           🏆
         </motion.div>
       </div>
-      <h3 className="font-semibold text-lg mb-1">Aucun record</h3>
+      <h3 className="font-semibold text-lg mb-1">{t('empty.noRecords')}</h3>
       <p className="text-sm text-muted-foreground mb-6 max-w-[280px] text-center">
-        Commencez votre premier entraînement pour voir vos records !
+        {t('empty.noRecordsDesc')}
       </p>
       <Button
         onClick={() => navigate('train-hub')}
@@ -351,10 +353,10 @@ export function RecordsScreen() {
   if (isError) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20 px-4">
-        <p className="text-sm text-muted-foreground">Impossible de charger les données</p>
+        <p className="text-sm text-muted-foreground">{t('error.loadFailed')}</p>
         <Button variant="outline" size="sm" onClick={() => refetch()}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Réessayer
+          <RefreshCw className="h-4 w-4 mr-2" aria-hidden="true" />
+          {t('action.retry')}
         </Button>
       </div>
     )
@@ -427,7 +429,7 @@ export function RecordsScreen() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Rechercher un exercice..."
+              placeholder={t('records.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 h-10 rounded-xl border-0 bg-muted/50 focus-visible:ring-1 focus-visible:ring-orange-500/50"
@@ -440,25 +442,25 @@ export function RecordsScreen() {
               <SummaryCard
                 icon={<Dumbbell className="h-5 w-5 text-orange-500" />}
                 value={summary.totalDrills}
-                label="Exercices tentés"
+                label={t('records.drillsTried')}
                 color="orange"
               />
               <SummaryCard
                 icon={<Trophy className="h-5 w-5 text-amber-500" />}
                 value={summary.avgPersonalBest}
-                label="Moy. des records"
+                label={t('records.avgRecords')}
                 color="amber"
               />
               <SummaryCard
                 icon={<TrendingUp className="h-5 w-5 text-emerald-500" />}
                 value={summary.mostImprovedDrill?.drillNameFr ?? '—'}
-                label="Plus grand progrès"
+                label={t('records.mostImproved')}
                 color="emerald"
               />
               <SummaryCard
                 icon={<Clock className="h-5 w-5 text-sky-500" />}
                 value={formatDuration(summary.totalTrainingMs)}
-                label="Temps d&apos;entraînement"
+                label={t('records.trainingTime')}
                 color="sky"
               />
             </motion.div>
@@ -499,8 +501,8 @@ export function RecordsScreen() {
             >
               <p className="text-sm text-muted-foreground">
                 {searchQuery
-                  ? 'Aucun exercice trouvé pour cette recherche.'
-                  : 'Aucun record dans cette catégorie.'}
+                  ? t('empty.noMatchingDrills')
+                  : t('records.noCategoryRecords')}
               </p>
             </motion.div>
           )}

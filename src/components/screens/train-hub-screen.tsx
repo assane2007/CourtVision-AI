@@ -353,10 +353,10 @@ export default function TrainHubScreen() {
   if (isError) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20 px-4">
-        <p className="text-sm text-muted-foreground">Impossible de charger les données</p>
+        <p className="text-sm text-muted-foreground">{t('error.loadFailed')}</p>
         <Button variant="outline" size="sm" onClick={() => refetch()}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Réessayer
+          <RefreshCw className="h-4 w-4 mr-2" aria-hidden="true" />
+          {t('action.retry')}
         </Button>
       </div>
     )
@@ -385,7 +385,7 @@ export default function TrainHubScreen() {
                   className="shrink-0 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-sm shadow-orange-500/25 gap-1.5"
                 >
                   <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline">Créer un exercice</span>
+                  <span className="hidden sm:inline">{t('train.createExercise')}</span>
                 </Button>
               </DialogTrigger>
 
@@ -393,10 +393,10 @@ export default function TrainHubScreen() {
                 <DialogHeader>
                   <DialogTitle className="text-foreground flex items-center gap-2">
                     <span className="text-xl">✨</span>
-                    Créer un exercice
+                    {t('train.createExercise')}
                   </DialogTitle>
                   <DialogDescription>
-                    Ajoutez un exercice personnalisé à votre bibliothèque d&apos;entraînement.
+                    {t('train.createDesc')}
                   </DialogDescription>
                 </DialogHeader>
 
@@ -411,10 +411,10 @@ export default function TrainHubScreen() {
                 <div className="grid gap-4 py-2">
                   {/* Name */}
                   <div className="grid gap-2">
-                    <Label htmlFor="drill-name">Nom de l&apos;exercice *</Label>
+                    <Label htmlFor="drill-name">{t('train.drillName')}</Label>
                     <Input
                       id="drill-name"
-                      placeholder="Ex: Crossover latéral rapide"
+                      placeholder={t('train.drillNamePlaceholder')}
                       value={createForm.nameFr}
                       onChange={(e) =>
                         setCreateForm((f) => ({ ...f, nameFr: e.target.value }))
@@ -425,7 +425,7 @@ export default function TrainHubScreen() {
                   {/* Category + Difficulty row */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="grid gap-2">
-                      <Label>Catégorie *</Label>
+                      <Label>{t('train.category')}</Label>
                       <Select
                         value={createForm.category}
                         onValueChange={(v) =>
@@ -433,7 +433,7 @@ export default function TrainHubScreen() {
                         }
                       >
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Choisir..." />
+                          <SelectValue placeholder={t('train.choose')} />
                         </SelectTrigger>
                         <SelectContent>
                           {CATEGORIES_LIST.filter((c) => c.key !== 'all').map(
@@ -451,7 +451,7 @@ export default function TrainHubScreen() {
                     </div>
 
                     <div className="grid gap-2">
-                      <Label>Difficulté *</Label>
+                      <Label>{t('train.difficulty')}</Label>
                       <Select
                         value={createForm.difficulty}
                         onValueChange={(v) =>
@@ -459,7 +459,7 @@ export default function TrainHubScreen() {
                         }
                       >
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Choisir..." />
+                          <SelectValue placeholder={t('train.choose')} />
                         </SelectTrigger>
                         <SelectContent>
                           {DIFFICULTIES.map((d) => (
@@ -479,10 +479,10 @@ export default function TrainHubScreen() {
 
                   {/* Description */}
                   <div className="grid gap-2">
-                    <Label htmlFor="drill-desc">Description</Label>
+                    <Label htmlFor="drill-desc">{t('train.description')}</Label>
                     <Input
                       id="drill-desc"
-                      placeholder="Brève description de l'exercice"
+                      placeholder={t('train.descriptionPlaceholder')}
                       value={createForm.descriptionFr}
                       onChange={(e) =>
                         setCreateForm((f) => ({
@@ -495,10 +495,10 @@ export default function TrainHubScreen() {
 
                   {/* Instructions */}
                   <div className="grid gap-2">
-                    <Label htmlFor="drill-instructions">Instructions</Label>
+                    <Label htmlFor="drill-instructions">{t('train.instructions')}</Label>
                     <Textarea
                       id="drill-instructions"
-                      placeholder="Étape par étape, décrivez comment réaliser l'exercice..."
+                      placeholder={t('train.instructionsPlaceholder')}
                       value={createForm.instructionsFr}
                       onChange={(e) =>
                         setCreateForm((f) => ({
@@ -532,7 +532,7 @@ export default function TrainHubScreen() {
                     </div>
 
                     <div className="grid gap-2">
-                      <Label htmlFor="drill-reps">Répétitions cible</Label>
+                      <Label htmlFor="drill-reps">{t('train.targetReps')}</Label>
                       <Input
                         id="drill-reps"
                         type="number"
@@ -551,7 +551,7 @@ export default function TrainHubScreen() {
 
                   {/* Icon picker */}
                   <div className="grid gap-2">
-                    <Label htmlFor="drill-icon">Icône (emoji)</Label>
+                    <Label htmlFor="drill-icon">{t('train.icon')}</Label>
                     <Input
                       id="drill-icon"
                       placeholder="🏀"
@@ -597,7 +597,7 @@ export default function TrainHubScreen() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Rechercher un exercice..."
+              placeholder={t('train.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 pr-4 h-10 rounded-full bg-muted/50 border-border/60 focus:bg-card transition-colors"
@@ -612,7 +612,7 @@ export default function TrainHubScreen() {
                 : ''
             }`}
             onClick={() => setShowFavoritesOnly((v) => !v)}
-            aria-label="Filtrer les favoris"
+            aria-label={t('train.filterFavorites')}
           >
             <Heart className={`h-4 w-4 ${showFavoritesOnly ? 'fill-current' : ''}`} />
           </Button>
@@ -627,7 +627,7 @@ export default function TrainHubScreen() {
               size="icon"
               className="h-10 w-10 rounded-full shrink-0 text-muted-foreground hover:text-foreground"
               onClick={clearAllFilters}
-              aria-label="Réinitialiser les filtres"
+              aria-label={t('train.resetFilters')}
             >
               <X className="h-4 w-4" />
             </Button>
@@ -636,9 +636,11 @@ export default function TrainHubScreen() {
 
         {/* Difficulty filter buttons */}
         <div className="max-w-4xl lg:max-w-6xl mx-auto px-4 pb-2">
-          <div className="flex gap-1.5 overflow-x-auto scrollbar-none -mx-1 px-1">
+          <div className="flex gap-1.5 overflow-x-auto scrollbar-none -mx-1 px-1" role="tablist" aria-label={t('train.filterByDifficulty')}>
             <button
               onClick={() => setSelectedDifficulty('')}
+              role="tab"
+              aria-selected={!selectedDifficulty}
               className={`
                 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium
                 whitespace-nowrap transition-all duration-200 shrink-0 border
@@ -649,12 +651,14 @@ export default function TrainHubScreen() {
                 }
               `}
             >
-              <Filter className="h-3.5 w-3.5" />
+              <Filter className="h-3.5 w-3.5" aria-hidden="true" />
               {tc('all')}
             </button>
             {DIFFICULTIES.map((diff) => (
               <button
                 key={diff.key}
+                role="tab"
+                aria-selected={selectedDifficulty === diff.key}
                 onClick={() =>
                   setSelectedDifficulty((prev) =>
                     prev === diff.key ? '' : diff.key,
@@ -764,7 +768,7 @@ export default function TrainHubScreen() {
               className="mt-4 rounded-full"
               onClick={clearAllFilters}
             >
-              Réinitialiser les filtres
+              {t('train.resetFilters')}
             </Button>
           </motion.div>
         )}
@@ -811,8 +815,8 @@ export default function TrainHubScreen() {
                         className="absolute top-3 right-3 z-10 h-8 w-8 flex items-center justify-center rounded-full bg-background/80 dark:bg-background/60 backdrop-blur-sm border border-border dark:border-border/50 shadow-sm hover:scale-110 active:scale-95 transition-transform"
                         aria-label={
                           isFav
-                            ? 'Retirer des favoris'
-                            : 'Ajouter aux favoris'
+                            ? t('train.removeFavorite')
+                            : t('train.addFavorite')
                         }
                       >
                         <Heart

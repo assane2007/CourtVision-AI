@@ -57,12 +57,12 @@ export function DrillDetailScreen() {
       }),
     onSuccess: (result: { favorited: boolean }) => {
       queryClient.invalidateQueries({ queryKey: ['drill', selectedDrillId] })
-      toast(result.favorited ? 'Ajouté aux favoris' : 'Retiré des favoris', {
-        description: result.favorited ? 'Exercice favori' : 'Exercice retiré',
+      toast(result.favorited ? t('drill.addedFavorite') : t('drill.removedFavorite'), {
+        description: result.favorited ? t('drill.favoriteDrill') : t('drill.removedFavorite'),
       })
     },
     onError: () => {
-      toast.error('Erreur', { description: 'Impossible de modifier le favori' })
+      toast.error(t('drill.favoriteError'))
     },
   })
 
@@ -92,10 +92,10 @@ export function DrillDetailScreen() {
       <div className="min-h-screen bg-background flex items-center justify-center pb-24">
         <div className="text-center space-y-3 px-4">
           <div className="text-4xl">⚠️</div>
-          <p className="text-muted-foreground">Erreur lors du chargement de l&apos;exercice</p>
+          <p className="text-muted-foreground">{t('drill.errorLoading')}</p>
           <Button variant="outline" size="sm" onClick={() => refetchDrill()}>
             <RefreshCw className="h-4 w-4 mr-2" />
-            Réessayer
+            {t('action.retry')}
           </Button>
           <div className="pt-2">
             <Button variant="ghost" size="sm" onClick={goBack}>
@@ -114,7 +114,7 @@ export function DrillDetailScreen() {
       <div className="min-h-screen bg-background flex items-center justify-center pb-24">
         <div className="text-center space-y-3 px-4">
           <div className="text-4xl">🏀</div>
-          <p className="text-muted-foreground">Exercice introuvable</p>
+          <p className="text-muted-foreground">{t('drill.notFound')}</p>
           <Button variant="outline" onClick={goBack}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             {t('action.back')}
@@ -168,7 +168,7 @@ export function DrillDetailScreen() {
               onClick={() => favoriteMutation.mutate()}
               disabled={favoriteMutation.isPending}
               className="rounded-lg -mr-2"
-              aria-label={isFavorited ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+              aria-label={isFavorited ? t('drill.removeFavorite') : t('drill.addFavorite')}
             >
               <Heart
                 className={`h-5 w-5 transition-colors ${
@@ -225,7 +225,7 @@ export function DrillDetailScreen() {
                     </div>
                     <div>
                       <p className="font-semibold">{drill.durationSec}s</p>
-                      <p className="text-xs text-muted-foreground">Durée</p>
+                      <p className="text-xs text-muted-foreground">{t('drill.duration')}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
@@ -234,7 +234,7 @@ export function DrillDetailScreen() {
                     </div>
                     <div>
                       <p className="font-semibold">{drill.targetReps}</p>
-                      <p className="text-xs text-muted-foreground">Répétitions</p>
+                      <p className="text-xs text-muted-foreground">{t('drill.repetitions')}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
@@ -243,7 +243,7 @@ export function DrillDetailScreen() {
                     </div>
                     <div>
                       <p className="font-semibold capitalize">{td(drill.difficulty)}</p>
-                      <p className="text-xs text-muted-foreground">Niveau</p>
+                      <p className="text-xs text-muted-foreground">{t('drill.level')}</p>
                     </div>
                   </div>
                 </div>
@@ -259,7 +259,7 @@ export function DrillDetailScreen() {
                   <div className="flex items-center gap-2">
                     <ListOrdered className="h-5 w-5 text-orange-500" />
                     <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">
-                      Instructions
+                      {t('drill.instructions')}
                     </h3>
                   </div>
 
@@ -293,7 +293,7 @@ export function DrillDetailScreen() {
                          transition-all duration-200 active:scale-[0.98]"
             >
               <Camera className="h-5 w-5 mr-2.5" />
-              Démarrer avec Caméra
+              {t('drill.startWithCamera')}
               <ChevronRight className="h-4 w-4 ml-1.5" />
             </Button>
           </motion.div>

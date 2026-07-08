@@ -16,19 +16,9 @@ export async function apiFetch<T>(url: string, options?: RequestInit): Promise<T
 
 /**
  * Format a date using the user's locale.
- * @param date - Date object or date string
- * @param language - 'fr' or 'en'
- * @param options - Intl.DateTimeFormat options (optional)
+ * Re-exported from date-utils.ts for backward compatibility.
  */
-export function formatLocaleDate(
-  date: Date | string,
-  language: 'fr' | 'en' = 'fr',
-  options?: Intl.DateTimeFormatOptions,
-): string {
-  const d = typeof date === 'string' ? new Date(date) : date
-  const locale = language === 'en' ? 'en-US' : 'fr-FR'
-  return d.toLocaleDateString(locale, options)
-}
+export { formatDate as formatLocaleDate } from '@/lib/date-utils'
 
 export function formatDuration(ms: number): string {
   if (!ms) return '—'

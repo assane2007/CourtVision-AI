@@ -12,6 +12,7 @@ import { useAppStore } from '@/stores/app'
 import { containerVariants, itemVariants } from '@/lib/animations'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/components/providers/language-provider'
+import type { TranslationKey } from '@/lib/i18n'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -29,67 +30,69 @@ interface PricingTier {
   elite?: boolean
 }
 
-// ── Tiers ──────────────────────────────────────────────────────────────────
+// ── Tiers (built inside component for i18n) ──────────────────────────────
 
-const TIERS: PricingTier[] = [
-  {
-    id: 'free',
-    name: 'Gratuit',
-    price: '0',
-    priceLabel: '/mois',
-    description: 'Pour découvrir CourtVision AI',
-    icon: <Zap className="h-5 w-5" />,
-    features: [
-      { text: '3 séances/semaine', included: true },
-      { text: 'Exercices de base', included: true },
-      { text: 'Statistiques simples', included: true },
-      { text: 'Coach IA (limité)', included: true },
-      { text: 'Scouting complet', included: false },
-      { text: 'Entraînement de réaction', included: false },
-      { text: 'Export de données', included: false },
-    ],
-    cta: "C'est ton plan actuel",
-    ctaVariant: 'disabled',
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    price: '9,99',
-    priceLabel: '/mois',
-    description: 'Pour les joueurs sérieux',
-    icon: <Star className="h-5 w-5" />,
-    popular: true,
-    features: [
-      { text: 'Séances illimitées', included: true },
-      { text: 'Tous les exercices', included: true },
-      { text: 'Scouting complet', included: true },
-      { text: 'Coach IA illimité', included: true },
-      { text: 'Entraînement de réaction', included: true },
-      { text: 'Export de données', included: true },
-      { text: 'Plans personnalisés IA', included: false },
-    ],
-    cta: "S'abonner",
-    ctaVariant: 'default',
-  },
-  {
-    id: 'elite',
-    name: 'Élite',
-    price: '19,99',
-    priceLabel: '/mois',
-    description: 'L\'expérience ultime',
-    icon: <Crown className="h-5 w-5" />,
-    elite: true,
-    features: [
-      { text: 'Tout dans Pro', included: true },
-      { text: 'Plans d\'entraînement personnalisés IA', included: true },
-      { text: 'Analyse vidéo avancée', included: true },
-      { text: 'Support prioritaire', included: true },
-      { text: 'Badge "Élite" sur le classement', included: true },
-    ],
-    cta: "S'abonner",
-    ctaVariant: 'outline',
-  },
-]
+function getTiers(t: (key: TranslationKey, params?: Record<string, string>) => string): PricingTier[] {
+  return [
+    {
+      id: 'free',
+      name: t('pricing.freeTierName'),
+      price: '0',
+      priceLabel: t('pricing.perMonth'),
+      description: t('pricing.freeTierDesc'),
+      icon: <Zap className="h-5 w-5" />,
+      features: [
+        { text: '3 ' + t('common.sessions') + '/' + t('common.weekly'), included: true },
+        { text: t('pricing.feature.basicExercises'), included: true },
+        { text: t('pricing.feature.simpleStats'), included: true },
+        { text: t('pricing.feature.limitedCoach'), included: true },
+        { text: t('pricing.feature.fullScouting'), included: false },
+        { text: t('pricing.feature.reactionTraining'), included: false },
+        { text: t('pricing.feature.dataExport'), included: false },
+      ],
+      cta: t('pricing.currentPlan'),
+      ctaVariant: 'disabled',
+    },
+    {
+      id: 'pro',
+      name: t('pricing.pro'),
+      price: '9,99',
+      priceLabel: t('pricing.perMonth'),
+      description: t('pricing.proTierDesc'),
+      icon: <Star className="h-5 w-5" />,
+      popular: true,
+      features: [
+        { text: t('pricing.feature.unlimitedSessions'), included: true },
+        { text: t('pricing.feature.allExercises'), included: true },
+        { text: t('pricing.feature.fullScouting'), included: true },
+        { text: t('pricing.feature.unlimitedCoach'), included: true },
+        { text: t('pricing.feature.reactionTraining'), included: true },
+        { text: t('pricing.feature.dataExport'), included: true },
+        { text: t('pricing.feature.customPlans'), included: false },
+      ],
+      cta: t('pricing.subscribe'),
+      ctaVariant: 'default',
+    },
+    {
+      id: 'elite',
+      name: t('pricing.elite'),
+      price: '19,99',
+      priceLabel: t('pricing.perMonth'),
+      description: t('pricing.eliteTierDesc'),
+      icon: <Crown className="h-5 w-5" />,
+      elite: true,
+      features: [
+        { text: t('pricing.feature.allInPro'), included: true },
+        { text: t('pricing.feature.customPlans'), included: true },
+        { text: t('pricing.feature.advancedVideo'), included: true },
+        { text: t('pricing.feature.prioritySupport'), included: true },
+        { text: t('pricing.feature.eliteBadge'), included: true },
+      ],
+      cta: t('pricing.subscribe'),
+      ctaVariant: 'outline',
+    },
+  ]
+}
 
 // ── Component ──────────────────────────────────────────────────────────────
 
@@ -97,6 +100,7 @@ export default function PricingScreen() {
   const { t } = useTranslation()
   const goBack = useAppStore((s) => s.goBack)
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
+  const TIERS = getTiers(t)
 
   const handleSubscribe = async (planId: string) => {
     if (planId === 'free') return
@@ -110,22 +114,22 @@ export default function PricingScreen() {
       })
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({ error: 'Erreur réseau' }))
-        throw new Error(body.error || 'Erreur lors de la création de la session')
+        const body = await res.json().catch(() => ({ error: t('settings.exportNetworkError') }))
+        throw new Error(body.error || t('pricing.sessionError'))
       }
 
       const data = await res.json()
 
       // In production, this would redirect to Stripe Checkout
       // For now, show success toast
-      toast.success(`Redirection vers le paiement ${planId === 'pro' ? 'Pro' : 'Élite'}…`)
+      toast.success(t('pricing.redirectingToast'))
 
       // Mock: simulate redirect to success
       if (data.url) {
         window.location.href = data.url
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur lors du paiement')
+      toast.error(err instanceof Error ? err.message : t('pricing.paymentError'))
     } finally {
       setLoadingPlan(null)
     }
@@ -192,7 +196,7 @@ export default function PricingScreen() {
                   {/* Popular Badge */}
                   {tier.popular && (
                     <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-orange-500 text-white border-orange-500 px-3 py-0.5 text-xs font-bold">
-                      POPULAIRE
+                      {t('pricing.popular')}
                     </Badge>
                   )}
 
@@ -287,13 +291,13 @@ export default function PricingScreen() {
           {/* Cancel link for already subscribed users */}
           <motion.div variants={itemVariants} className="text-center pt-4">
             <p className="text-sm text-muted-foreground">
-              Déjà abonné ?{' '}
+              {t('pricing.alreadySubscribed')}{' '}
               <button
                 type="button"
                 className="text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
-                onClick={() => toast.info('La gestion de l\'abonnement sera bientôt disponible.')}
+                onClick={() => toast.info(t('pricing.subscriptionSoon'))}
               >
-                Annuler ou gérer mon abonnement
+                {t('pricing.manageSubscription')}
               </button>
             </p>
           </motion.div>
