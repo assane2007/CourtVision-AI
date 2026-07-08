@@ -7,16 +7,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// PLAYER — Core user model
+// ═══════════════════════════════════════════════════════════════════════════════
+
 model Player {
   id          String   @id @default(cuid())
   email       String   @unique
   password    String
   name        String
-  position    String   @default("guard") // guard, forward, center
-  level       String   @default("beginner") // beginner, intermediate, advanced, elite
-  goals       String   @default("general") // shooting, ball_handling, defense, conditioning, general
+  bio         String   @default("")
+  position    String   @default("guard")
+  level       String   @default("beginner")
+  goals       String   @default("general")
   onboarding  Boolean  @default(false)
   avatar      String?
+  coverPhoto  String?
+  city        String?
+  country     String   @default("")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -30,47 +38,113 @@ model Player {
   preferredRestSec   Int @default(15)
   soundEnabled       Boolean @default(true)
   hapticsEnabled     Boolean @default(true)
-  language           String  @default("fr") // fr, en
+  language           String  @default("fr")
 
   // Notification preferences
   notifStreak        Boolean @default(true)
   notifChallenge     Boolean @default(true)
   notifAchievement   Boolean @default(true)
+  notifSocial        Boolean @default(true)
+  notifMessage       Boolean @default(true)
 
-  // Password reset
+  // Auth & Security
   resetToken         String?
   resetTokenExpiresAt DateTime?
+  emailVerified      Boolean @default(false)
+  twoFactorEnabled   Boolean @default(false)
+  twoFactorSecret    String?
+  accountDeleted     Boolean @default(false)
+  deletedAt          DateTime?
 
-  sessions      WorkoutSession[]
-  favorites     DrillFavorite[]
-  customDrills  Drill[]
-  trainingPlans TrainingPlan[]
-  xpLogs        XpLog[]
-  reactionScores ReactionScore[]
-  aiChatMessages AIChatMessage[]
-  achievements  Achievement[]
+  // Privacy
+  profilePublic      Boolean @default(true)
+  showOnLeaderboard  Boolean @default(true)
+  showActivity       Boolean @default(true)
+
+  // Counts (denormalized for performance)
+  friendsCount       Int      @default(0)
+  followersCount     Int      @default(0)
+  followingCount     Int      @default(0)
+  postsCount         Int      @default(0)
+  videosCount        Int      @default(0)
+
+  // Relations — Core
+  sessions            WorkoutSession[]
+  favorites           DrillFavorite[]
+  customDrills        Drill[]
+  trainingPlans       TrainingPlan[]
+  xpLogs              XpLog[]
+  reactionScores      ReactionScore[]
+  aiChatMessages      AIChatMessage[]
+  achievements        Achievement[]
+
+  // Relations — Social
+  sentFriendRequests     Friendship[]          @relation("SentRequests")
+  receivedFriendRequests Friendship[]          @relation("ReceivedRequests")
+  teamMemberships        TeamMember[]
+  ownedTeams             Team[]                @relation("TeamOwner")
+  createdChallenges      Challenge[]
+  challengeParticipants  ChallengeParticipant[]
+  feedPosts              FeedPost[]
+  postLikes              FeedPostLike[]
+  comments               Comment[]
+  commentReplies         CommentReply[]
+  sentMessages           Message[]             @relation("SentMessages")
+  conversations          ConversationMember[]
+  following              Follow[]              @relation("Following")
+  followers              Follow[]              @relation("Followers")
+  liveSessions           LiveSession[]
+  liveParticipations     LiveParticipant[]
+  notifications          Notification[]
+
+  // Relations — Video
+  sessionComments       SessionComment[]
+  videos                Video[]
+  videoAnnotations      VideoAnnotation[]
+  videoExports          VideoExport[]
+
+  // Relations — AI
+  poseData              PoseData[]
+  shotDetections        ShotDetection[]
+  formAnalyses          FormAnalysis[]
+  playerInsights        PlayerInsight[]
+  playerDocuments       PlayerDocument[]
+  voiceSessions         VoiceSession[]
+  predictions           Prediction[]
+  generatedWorkouts     GeneratedWorkout[]
+
+  // Relations — Core
+  emailTokens           EmailVerificationToken[]
+  twoFactorBackupCodes  TwoFactorBackupCode[]
+  devices               Device[]
+  offlineActions        OfflineAction[]
 
   @@index([resetToken])
   @@index([email])
+  @@index([twoFactorSecret])
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// DRILLS & TRAINING — Core workout system
+// ═══════════════════════════════════════════════════════════════════════════════
+
 model Drill {
-  id          String   @id @default(cuid())
-  playerId    String?   // nullable — only set for custom drills; seed drills have no owner
-  name        String
-  nameFr      String
-  category    String   // pocket_ball, shifty, ball_handling, speed_change, defense, shooting, footwork, finishing, conditioning
-  difficulty  String   @default("beginner") // beginner, intermediate, advanced
-  description String
+  id            String   @id @default(cuid())
+  playerId      String?
+  name          String
+  nameFr        String
+  category      String
+  difficulty    String   @default("beginner")
+  description   String
   descriptionFr String
-  instructions String
+  instructions  String
   instructionsFr String
-  durationSec Int      @default(30)
-  targetReps  Int      @default(10)
-  icon        String   @default("🎯")
-  isActive    Boolean  @default(true)
-  isCustom    Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  durationSec   Int      @default(30)
+  targetReps    Int      @default(10)
+  icon          String   @default("🎯")
+  isActive      Boolean  @default(true)
+  isCustom      Boolean  @default(false)
+  createdAt     DateTime @default(now())
 
   player              Player?  @relation(fields: [playerId], references: [id], onDelete: Cascade)
   favorites           DrillFavorite[]
@@ -81,31 +155,38 @@ model Drill {
 }
 
 model WorkoutSession {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   playerId    String
-  startedAt   DateTime @default(now())
+  startedAt   DateTime  @default(now())
   endedAt     DateTime?
-  totalScore  Float    @default(0)
-  totalReps   Int      @default(0)
-  totalDrills Int      @default(0)
+  totalScore  Float     @default(0)
+  totalReps   Int       @default(0)
+  totalDrills Int       @default(0)
   notes       String?
+  isShared    Boolean   @default(false)
+  sharedAt    DateTime?
+  videoId     String?
 
-  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  player      Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
   drills      WorkoutSessionDrill[]
+  sessionComments SessionComment[]
+  feedPosts   FeedPost[]   @relation("PostSession")
+  postComments Comment[]  @relation("SessionComment")
+  video       Video?    @relation(fields: [videoId], references: [id])
 
   @@index([playerId])
   @@index([startedAt])
 }
 
 model WorkoutSessionDrill {
-  id          String   @id @default(cuid())
-  sessionId   String
-  drillId     String
-  reps        Int      @default(0)
-  score       Float    @default(0)
-  durationMs  Int      @default(0)
-  formFeedback String  @default("{}")
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  sessionId     String
+  drillId       String
+  reps          Int      @default(0)
+  score         Float    @default(0)
+  durationMs    Int      @default(0)
+  formFeedback  String   @default("{}")
+  createdAt     DateTime @default(now())
 
   session     WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   drill       Drill         @relation(fields: [drillId], references: [id])
@@ -128,16 +209,16 @@ model DrillFavorite {
 }
 
 model TrainingPlan {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   playerId    String
   name        String
   description String?
-  isPublic    Boolean  @default(false)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isPublic    Boolean   @default(false)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  player      Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
   drills      TrainingPlanDrill[]
 
   @@index([playerId])
@@ -164,7 +245,7 @@ model TrainingPlanDrill {
 model Achievement {
   id          String   @id @default(cuid())
   playerId    String
-  type        String   // first_workout, drills_mastered, streak, score_milestone, etc.
+  type        String
   title       String
   description String
   icon        String
@@ -179,7 +260,7 @@ model Achievement {
 model ReactionScore {
   id          String   @id @default(cuid())
   playerId    String
-  type        String   // direction, color, decision, shot_clock
+  type        String
   reactionMs  Int
   correct     Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -193,7 +274,7 @@ model ReactionScore {
 model AIChatMessage {
   id        String   @id @default(cuid())
   playerId  String
-  role      String   // user, assistant
+  role      String
   content   String
   createdAt DateTime @default(now())
 
@@ -207,12 +288,605 @@ model XpLog {
   id          String   @id @default(cuid())
   playerId    String
   amount      Int
-  source      String   // workout, streak, achievement, challenge, bonus
+  source      String
   description String
   createdAt   DateTime @default(now())
 
   player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@index([playerId])
+  @@index([createdAt])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SOCIAL — Friends, Teams, Challenges, Feed, Messaging, Comments, Follow, Live
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Friendship {
+  id            String   @id @default(cuid())
+  requesterId   String
+  recipientId   String
+  status        String   @default("pending") // pending, accepted, declined, blocked
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  requester     Player   @relation("SentRequests", fields: [requesterId], references: [id], onDelete: Cascade)
+  recipient     Player   @relation("ReceivedRequests", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, recipientId])
+  @@index([requesterId])
+  @@index([recipientId])
+  @@index([status])
+}
+
+model Team {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  logo        String?
+  sport       String    @default("basketball")
+  isPublic    Boolean   @default(true)
+  maxMembers  Int       @default(15)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  owner       Player    @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId     String
+  members     TeamMember[]
+  challenges  TeamChallenge[]
+
+  @@index([ownerId])
+}
+
+model TeamMember {
+  id          String   @id @default(cuid())
+  teamId      String
+  playerId    String
+  role        String   @default("member") // owner, admin, member
+  joinedAt    DateTime @default(now())
+
+  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, playerId])
+  @@index([teamId])
+  @@index([playerId])
+}
+
+model Challenge {
+  id            String    @id @default(cuid())
+  title         String
+  description   String
+  type          String    // drill_score, total_reps, streak, speed, custom
+  targetValue   Int
+  unit          String    @default("reps") // reps, points, ms, days
+  startDate     DateTime
+  endDate       DateTime
+  isPublic      Boolean   @default(true)
+  xpReward      Int       @default(100)
+  creatorId     String
+  createdAt     DateTime  @default(now())
+
+  creator       Player    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  participants  ChallengeParticipant[]
+  teamChallenges TeamChallenge[]
+
+  @@index([creatorId])
+  @@index([startDate])
+  @@index([type])
+}
+
+model ChallengeParticipant {
+  id             String   @id @default(cuid())
+  challengeId    String
+  playerId       String
+  currentValue   Int      @default(0)
+  completed      Boolean  @default(false)
+  completedAt    DateTime?
+  rank           Int?
+  joinedAt       DateTime @default(now())
+
+  challenge      Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  player         Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, playerId])
+  @@index([challengeId])
+  @@index([playerId])
+}
+
+model TeamChallenge {
+  id           String   @id @default(cuid())
+  teamId       String
+  challengeId  String
+  createdAt    DateTime @default(now())
+
+  team         Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  challenge    Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, challengeId])
+  @@index([teamId])
+}
+
+model FeedPost {
+  id          String   @id @default(cuid())
+  playerId    String
+  content     String
+  type        String   @default("text") // text, workout, achievement, challenge, video
+  sessionId   String?
+  videoId     String?
+  imageUrls   String   @default("[]") // JSON array of URLs
+  likesCount  Int      @default(0)
+  commentsCount Int    @default(0)
+  createdAt   DateTime @default(now())
+
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  likes       FeedPostLike[]
+  comments    Comment[]
+  session     WorkoutSession? @relation("PostSession", fields: [sessionId], references: [id])
+  video       Video?           @relation(fields: [videoId], references: [id])
+
+  @@index([playerId])
+  @@index([createdAt])
+}
+
+model FeedPostLike {
+  id          String   @id @default(cuid())
+  postId      String
+  playerId    String
+  createdAt   DateTime @default(now())
+
+  post        FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, playerId])
+  @@index([postId])
+  @@index([playerId])
+}
+
+model Comment {
+  id          String   @id @default(cuid())
+  playerId    String
+  postId      String?
+  sessionId   String?
+  content     String
+  likesCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  post        FeedPost?       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  session     WorkoutSession? @relation("SessionComment", fields: [sessionId], references: [id], onDelete: Cascade)
+  replies     CommentReply[]
+
+  @@index([playerId])
+  @@index([postId])
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
+model CommentReply {
+  id          String   @id @default(cuid())
+  commentId   String
+  playerId    String
+  content     String
+  createdAt   DateTime @default(now())
+
+  comment     Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([commentId])
+  @@index([playerId])
+}
+
+model Conversation {
+  id          String   @id @default(cuid())
+  type        String   @default("dm") // dm, group
+  name        String?  // for group conversations
+  avatar      String?
+  lastMessageAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  members     ConversationMember[]
+  messages    Message[]
+
+  @@index([lastMessageAt])
+}
+
+model ConversationMember {
+  id             String   @id @default(cuid())
+  conversationId String
+  playerId       String
+  lastReadAt     DateTime @default(now())
+  joinedAt       DateTime @default(now())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  player         Player       @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, playerId])
+  @@index([conversationId])
+  @@index([playerId])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+  type           String   @default("text") // text, image, video, workout, system
+  metadata       String   @default("{}") // JSON for rich content
+  isRead         Boolean  @default(false)
+  readAt         DateTime?
+  createdAt      DateTime @default(now())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         Player       @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower    Player   @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  following   Player   @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model LiveSession {
+  id          String    @id @default(cuid())
+  hostId      String
+  title       String
+  drillId     String?
+  status      String    @default("waiting") // waiting, active, ended
+  maxViewers  Int       @default(10)
+  startedAt   DateTime?
+  endedAt     DateTime?
+  createdAt   DateTime  @default(now())
+
+  host            Player           @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  participants    LiveParticipant[]
+
+  @@index([hostId])
+  @@index([status])
+}
+
+model LiveParticipant {
+  id            String   @id @default(cuid())
+  liveSessionId String
+  playerId      String
+  joinedAt      DateTime @default(now())
+  score         Float    @default(0)
+  reps          Int      @default(0)
+
+  liveSession   LiveSession @relation(fields: [liveSessionId], references: [id], onDelete: Cascade)
+  player        Player      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([liveSessionId, playerId])
+  @@index([liveSessionId])
+  @@index([playerId])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  playerId    String
+  type        String   // friend_request, challenge_invite, like, comment, follow, live_start, achievement, system
+  title       String
+  body        String
+  data        String   @default("{}") // JSON metadata
+  isRead      Boolean  @default(false)
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId, isRead])
+  @@index([playerId, createdAt])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// VIDEO — Upload, Annotations, Highlights, Comparison, Library, Export, Share
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Video {
+  id            String   @id @default(cuid())
+  playerId      String
+  title         String
+  description   String   @default("")
+  url           String   // storage path/URL
+  thumbnailUrl  String?
+  durationSec   Int      @default(0)
+  fileSize      Int      @default(0) // bytes
+  mimeType      String   @default("video/mp4")
+  width         Int      @default(0)
+  height        Int      @default(0)
+  isPublic      Boolean  @default(false)
+  viewCount     Int      @default(0)
+  tags          String   @default("[]") // JSON array
+  createdAt     DateTime @default(now())
+
+  player        Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  annotations   VideoAnnotation[]
+  highlights    VideoHighlight[]
+  exports       VideoExport[]
+  posts         FeedPost[]
+  sessions      WorkoutSession[]
+
+  @@index([playerId])
+  @@index([createdAt])
+}
+
+model VideoAnnotation {
+  id          String   @id @default(cuid())
+  videoId     String
+  playerId    String
+  type        String   @default("drawing") // drawing, text, arrow, circle
+  data        String   // JSON: {points, color, text, ...}
+  timestampMs Int      // position in video (ms)
+  durationMs  Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  video       Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
+  @@index([playerId])
+}
+
+model VideoHighlight {
+  id          String   @id @default(cuid())
+  videoId     String
+  title       String
+  startMs     Int
+  endMs       Int
+  type        String   @default("auto") // auto, manual
+  score       Float?
+  createdAt   DateTime @default(now())
+
+  video       Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
+}
+
+model VideoExport {
+  id          String   @id @default(cuid())
+  videoId     String
+  playerId    String
+  type        String   // gif, mp4, webm
+  format      String   @default("gif")
+  url         String?
+  status      String   @default("pending") // pending, processing, completed, failed
+  fileSize    Int      @default(0)
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+
+  video       Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
+  @@index([playerId])
+}
+
+model SessionComment {
+  id          String   @id @default(cuid())
+  sessionId   String
+  playerId    String
+  content     String
+  timestampMs Int?
+  createdAt   DateTime @default(now())
+
+  session     WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([playerId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AI — Pose tracking, Shot detection, Form scoring, RAG, Voice, Predictions
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model PoseData {
+  id              String   @id @default(cuid())
+  playerId        String
+  sessionId       String?
+  drillId         String?
+  landmarks       String   // JSON: MediaPipe landmarks
+  frameTimestamp  Int      // ms
+  confidence      Float    @default(0)
+  createdAt       DateTime @default(now())
+
+  player          Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([sessionId])
+}
+
+model ShotDetection {
+  id            String   @id @default(cuid())
+  playerId      String
+  sessionId     String?
+  videoId       String?
+  type          String   // made, missed, airball, bank
+  x             Float
+  y             Float
+  confidence    Float
+  timestampMs   Int
+  formScore     Float?
+  createdAt     DateTime @default(now())
+
+  player        Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([sessionId])
+}
+
+model FormAnalysis {
+  id            String   @id @default(cuid())
+  playerId      String
+  sessionId     String?
+  drillId       String?
+  overallScore  Float
+  categories    String   // JSON: {stance: 0.8, release: 0.9, follow_through: 0.7}
+  feedback      String   // JSON: {good: [...], issues: [...], tips: [...]}
+  poseDataId    String?
+  createdAt     DateTime @default(now())
+
+  player        Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([sessionId])
+}
+
+model PlayerInsight {
+  id            String   @id @default(cuid())
+  playerId      String
+  category      String   // strength, weakness, trend, recommendation
+  title         String
+  description   String
+  confidence    Float
+  data          String   @default("{}") // JSON supporting data
+  period        String   @default("week") // day, week, month, all
+  createdAt     DateTime @default(now())
+
+  player        Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([category])
+}
+
+model PlayerDocument {
+  id          String   @id @default(cuid())
+  playerId    String
+  type        String   // session_summary, stats_snapshot, achievement_record, form_report
+  content     String   // text content for RAG
+  metadata    String   @default("{}") // JSON metadata
+  embedding   String?  // vector embedding (stored as base64 for SQLite)
+  createdAt   DateTime @default(now())
+
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([type])
+}
+
+model VoiceSession {
+  id          String   @id @default(cuid())
+  playerId    String
+  sessionId   String?
+  audioUrl    String?
+  transcript  String   @default("")
+  language    String   @default("fr")
+  durationSec Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+}
+
+model Prediction {
+  id            String   @id @default(cuid())
+  playerId      String
+  type          String   // next_level, injury_risk, performance, plateau
+  predictedAt   DateTime
+  predictedValue Float?
+  confidence    Float
+  factors       String   @default("[]") // JSON array of factors
+  recommendation String
+  createdAt     DateTime @default(now())
+
+  player        Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([type])
+}
+
+model GeneratedWorkout {
+  id            String   @id @default(cuid())
+  playerId      String
+  title         String
+  description   String
+  difficulty    String   @default("intermediate")
+  durationMin   Int      @default(30)
+  focusAreas    String   @default("[]") // JSON: ["shooting", "ball_handling"]
+  drillIds      String   @default("[]") // JSON: [drillId, ...]
+  aiReasoning   String   @default("")
+  isUsed        Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  player        Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CORE — Email verification, 2FA, Devices, Offline sync
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  playerId  String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([playerId])
+}
+
+model TwoFactorBackupCode {
+  id        String   @id @default(cuid())
+  playerId  String
+  code      String
+  used      Boolean  @default(false)
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([code])
+}
+
+model Device {
+  id          String   @id @default(cuid())
+  playerId    String
+  name        String   // e.g. "iPhone 15", "Chrome Desktop"
+  type        String   // mobile, tablet, desktop
+  os          String   @default("")
+  appVersion  String   @default("")
+  pushToken   String?  // for push notifications
+  lastActive  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+}
+
+model OfflineAction {
+  id          String   @id @default(cuid())
+  playerId    String
+  deviceId    String
+  type        String   // session_save, drill_favorite, post_create, etc.
+  payload     String   // JSON payload
+  status      String   @default("pending") // pending, synced, failed
+  createdAt   DateTime @default(now())
+  syncedAt    DateTime?
+
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([status])
   @@index([createdAt])
 }

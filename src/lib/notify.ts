@@ -1,134 +1,119 @@
-import { db } from '@/lib/db'
+// ── CourtVision AI — Notification Helper ────────────────────────────────────
+// Mock push notification system. Logs to console. Replace with real provider
+// (e.g. web-push, Firebase FCM) in production.
 
-// In-memory notification queue for scheduled reminders
-// In production, this would use a proper job queue (BullMQ, etc.)
-const notificationQueue: Array<{
+import { db } from './db'
+
+export type NotificationType =
+  | 'streak_reminder'
+  | 'challenge_invite'
+  | 'friend_request'
+  | 'achievement'
+  | 'live_start'
+  | 'comment'
+  | 'like'
+
+interface SendNotificationParams {
   playerId: string
-  type: 'streak' | 'achievement' | 'challenge'
+  type: NotificationType
   title: string
   body: string
-  tag: string
-  scheduledAt: Date
-}> = []
-
-/**
- * Schedule a streak reminder notification for the next day.
- * Stores the intent in the in-memory queue for later dispatch.
- */
-export function scheduleStreakReminder(playerId: string, streakCount: number): void {
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  tomorrow.setHours(9, 0, 0, 0) // 9:00 AM
-
-  notificationQueue.push({
-    playerId,
-    type: 'streak',
-    title: 'CourtVision AI',
-    body: `Ta série est à ${streakCount} jour(s) ! Ne la perd pas — entraîne-toi aujourd'hui.`,
-    tag: `streak-reminder-${playerId}`,
-    scheduledAt: tomorrow,
-  })
-
-  if (process.env.NODE_ENV === 'development') {
-    console.warn(
-      `[notify] Streak reminder scheduled for player ${playerId} — ${streakCount} day streak, fires at ${tomorrow.toISOString()}`
-    )
-  }
+  data?: Record<string, string>
 }
 
 /**
- * Trigger an achievement notification immediately.
- * In production, this would send via web-push.
+ * Send a push notification to a player's registered devices.
+ * In production, this would use web-push or FCM. For now, logs to console.
  */
-export function notifyAchievement(playerId: string, title: string): void {
-  notificationQueue.push({
-    playerId,
-    type: 'achievement',
-    title: '🏆 Succès débloqué !',
-    body: title,
-    tag: `achievement-${playerId}-${Date.now()}`,
-    scheduledAt: new Date(), // immediate
-  })
+export async function sendPushNotification({
+  playerId,
+  type,
+  title,
+  body,
+  data = {},
+}: SendNotificationParams): Promise<{ sent: number; skipped: number }> {
+  try {
+    // Check player notification preferences
+    const player = await db.player.findUnique({
+      where: { id: playerId },
+      select: {
+        notifStreak: true,
+        notifChallenge: true,
+        notifAchievement: true,
+        notifSocial: true,
+        notifMessage: true,
+      },
+    })
 
-  if (process.env.NODE_ENV === 'development') {
-    console.warn(`[notify] Achievement notification queued for player ${playerId}: ${title}`)
-  }
-}
+    if (!player) return { sent: 0, skipped: 0 }
 
-/**
- * Trigger a challenge update notification immediately.
- * In production, this would send via web-push.
- */
-export function notifyChallenge(playerId: string, description: string): void {
-  notificationQueue.push({
-    playerId,
-    type: 'challenge',
-    title: 'CourtVision AI — Défi',
-    body: description,
-    tag: `challenge-${playerId}-${Date.now()}`,
-    scheduledAt: new Date(), // immediate
-  })
-
-  if (process.env.NODE_ENV === 'development') {
-    console.warn(`[notify] Challenge notification queued for player ${playerId}: ${description}`)
-  }
-}
-
-/**
- * Get the notification queue (for debugging / future processing).
- */
-export function getNotificationQueue() {
-  return notificationQueue
-}
-
-/**
- * Process due notifications.
- * Checks player preferences before sending.
- * In production, this would be called by a cron job or worker.
- */
-export async function processDueNotifications(): Promise<void> {
-  const now = new Date()
-
-  for (let i = notificationQueue.length - 1; i >= 0; i--) {
-    const notif = notificationQueue[i]
-
-    if (notif.scheduledAt <= now) {
-      // Check player preferences
-      try {
-        const player = await db.player.findUnique({
-          where: { id: notif.playerId },
-          select: {
-            notifStreak: true,
-            notifChallenge: true,
-            notifAchievement: true,
-          },
-        })
-
-        if (!player) {
-          notificationQueue.splice(i, 1)
-          continue
-        }
-
-        const prefKey = {
-          streak: player.notifStreak,
-          achievement: player.notifAchievement,
-          challenge: player.notifChallenge,
-        }[notif.type]
-
-        if (prefKey) {
-          // In production: send via web-push API
-          if (process.env.NODE_ENV === 'development') {
-            console.warn(
-              `[notify] Would send notification to player ${notif.playerId}: [${notif.title}] ${notif.body}`
-            )
-          }
-        }
-
-        // Remove from queue (processed)
-        notificationQueue.splice(i, 1)
-      } catch (error) {
-        console.error(`[notify] Error processing notification for player ${notif.playerId}:`, error)
-      }
+    // Check if this notification type is enabled
+    const typeEnabled = isNotificationEnabled(player, type)
+    if (!typeEnabled) {
+      return { sent: 0, skipped: 0 }
     }
+
+    // Find devices with push tokens
+    const devices = await db.device.findMany({
+      where: {
+        playerId,
+        pushToken: { not: null },
+      },
+      select: { id: true, pushToken: true, name: true },
+    })
+
+    let sent = 0
+    let skipped = 0
+
+    for (const device of devices) {
+      if (!device.pushToken) {
+        skipped++
+        continue
+      }
+
+      // Mock: log the notification
+      console.log(`[PUSH NOTIFICATION]`)
+      console.log(`  Device: ${device.name} (${device.id})`)
+      console.log(`  Player: ${playerId}`)
+      console.log(`  Type: ${type}`)
+      console.log(`  Title: ${title}`)
+      console.log(`  Body: ${body}`)
+      console.log(`  Data: ${JSON.stringify(data)}`)
+      console.log(`  Token: ${device.pushToken.slice(0, 20)}...`)
+      sent++
+    }
+
+    return { sent, skipped }
+  } catch (error) {
+    console.error('[sendPushNotification] Error:', error)
+    return { sent: 0, skipped: 0 }
+  }
+}
+
+function isNotificationEnabled(
+  player: {
+    notifStreak: boolean
+    notifChallenge: boolean
+    notifAchievement: boolean
+    notifSocial: boolean
+    notifMessage: boolean
+  },
+  type: NotificationType,
+): boolean {
+  switch (type) {
+    case 'streak_reminder':
+      return player.notifStreak
+    case 'challenge_invite':
+      return player.notifChallenge
+    case 'achievement':
+      return player.notifAchievement
+    case 'friend_request':
+    case 'comment':
+    case 'like':
+      return player.notifSocial
+    case 'live_start':
+      return player.notifMessage
+    default:
+      return true
   }
 }

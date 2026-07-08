@@ -1,0 +1,233 @@
+'use client'
+
+import { useState, useCallback, useRef, useEffect } from 'react'
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  ArrowLeft, Heart, MessageCircle, Share2, Plus, Loader2, Image as ImageIcon,
+  Trophy, Dumbbell, Video, Award, MoreVertical,
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+} from '@/components/ui/dialog'
+import { useNavigation } from '@/stores/navigation'
+import { SwipeToGoBack } from '@/components/shared/swipe-back'
+import { apiFetch } from '@/lib/utils'
+import { containerVariants, itemVariants } from '@/lib/animations'
+import { BottomNav } from '@/components/shared/bottom-nav'
+import { useTranslation } from '@/components/providers/language-provider'
+import { toast } from 'sonner'
+
+interface PostPlayer {
+  id: string; name: string; avatar: string | null; xpLevel: number
+}
+interface PostSession {
+  id: string; totalScore: number; totalReps: number; totalDrills: number; totalDurationSec: number
+}
+interface FeedPost {
+  id: string; content: string; type: string; imageUrls: string[]
+  likesCount: number; commentsCount: number; isLiked: boolean
+  createdAt: string; player: PostPlayer; session?: PostSession
+}
+
+const TYPE_ICONS: Record<string, typeof Trophy> = {
+  workout: Dumbbell, achievement: Award, challenge: Trophy, video: Video,
+}
+
+export default function FeedScreen() {
+  const { t } = useTranslation()
+  const { goBack, navigate } = useNavigation()
+  const queryClient = useQueryClient()
+  const [showCreate, setShowCreate] = useState(false)
+  const [newPost, setNewPost] = useState({ content: '', type: 'text' })
+  const sentinelRef = useRef<HTMLDivElement>(null)
+
+  const { data, isLoading, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery<{
+    posts: FeedPost[]; nextCursor: string | null
+  }>({
+    queryKey: ['feed'],
+    queryFn: ({ pageParam }) => apiFetch(`/api/feed?limit=15${pageParam ? `&cursor=${pageParam}` : ''}`),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor || undefined,
+    staleTime: 15_000,
+  })
+
+  const allPosts = data?.pages.flatMap(p => p.posts) || []
+
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) fetchNextPage()
+    }, { rootMargin: '200px' })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+
+  const createPost = useMutation({
+    mutationFn: () => fetch('/api/feed', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newPost),
+    }).then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error) }); return r.json() }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['feed'] })
+      setShowCreate(false)
+      setNewPost({ content: '', type: 'text' })
+      toast.success('Post publié')
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const toggleLike = useMutation({
+    mutationFn: (postId: string) => fetch(`/api/feed/${postId}/like`, { method: 'POST' })
+      .then(r => r.json()),
+    onSuccess: (_, postId) => {
+      queryClient.setQueriesData<ReturnType<typeof apiFetch<{ posts: FeedPost[] }>>>({ queryKey: ['feed'] }, (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          posts: old.posts.map(p => p.id === postId ? { ...p, isLiked: !p.isLiked, likesCount: p.isLiked ? p.likesCount - 1 : p.likesCount + 1 } : p),
+        }
+      })
+    },
+  })
+
+  return (
+    <SwipeToGoBack className="min-h-screen bg-background">
+      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b">
+        <div className="max-w-lg mx-auto flex items-center gap-3 px-4 py-3">
+          <Button variant="ghost" size="icon" onClick={goBack} className="shrink-0" aria-label={t('action.back')}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-lg font-bold flex-1">Fil d'actualité</h1>
+          <Dialog open={showCreate} onOpenChange={setShowCreate}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="h-8"><Plus className="h-4 w-4 mr-1" />Publier</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Nouveau post</DialogTitle></DialogHeader>
+              <div className="space-y-4 pt-2">
+                <Textarea value={newPost.content} onChange={e => setNewPost({ ...newPost, content: e.target.value })} placeholder="Quoi de neuf?" rows={4} />
+                <div className="flex gap-2">
+                  {(['text', 'workout', 'achievement', 'challenge'] as const).map(type => {
+                    const Icon = TYPE_ICONS[type] || Trophy
+                    return (
+                      <button key={type} onClick={() => setNewPost({ ...newPost, type })}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${newPost.type === type ? 'bg-orange-500 text-white' : 'bg-muted text-muted-foreground'}`}>
+                        <Icon className="h-3.5 w-3.5" />{type === 'text' ? 'Texte' : type === 'workout' ? 'Séance' : type === 'achievement' ? 'Succès' : 'Défi'}
+                      </button>
+                    )
+                  })}
+                </div>
+                <Button className="w-full" onClick={() => createPost.mutate()} disabled={createPost.isPending || !newPost.content.trim()}>
+                  {createPost.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Publier'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </header>
+
+      <main className="max-w-lg mx-auto px-4 pt-4 pb-24">
+        {isLoading ? (
+          <div className="space-y-4">{Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="p-4 rounded-xl border"><div className="flex items-center gap-3 mb-3"><Skeleton className="h-10 w-10 rounded-full" /><Skeleton className="h-4 w-24" /></div><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-2/3 mt-2" /></div>
+          ))}</div>
+        ) : isError ? (
+          <div className="flex flex-col items-center gap-4 py-16 text-center">
+            <p className="text-muted-foreground">{t('error.loadFailed')}</p>
+            <Button variant="outline" onClick={() => refetch()}>{t('action.retry')}</Button>
+          </div>
+        ) : allPosts.length === 0 ? (
+          <div className="flex flex-col items-center gap-4 py-16 text-center">
+            <MessageCircle className="h-12 w-12 text-muted-foreground/50" />
+            <p className="text-muted-foreground">Aucun post pour le moment</p>
+            <p className="text-xs text-muted-foreground">Soyez le premier à publier!</p>
+          </div>
+        ) : (
+          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
+            {allPosts.map(post => {
+              const TypeIcon = TYPE_ICONS[post.type] || Trophy
+              return (
+                <motion.div key={post.id} variants={itemVariants}>
+                  <div className="p-4 rounded-xl border border-border/50 bg-card">
+                    {/* Header */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <Avatar className="h-10 w-10 cursor-pointer" onClick={() => navigate('profile-other')}>
+                        <AvatarImage src={post.player.avatar || undefined} />
+                        <AvatarFallback className="text-xs font-bold">{post.player.name.charAt(0).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{post.player.name}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>Niv.{post.player.xpLevel}</span>
+                          <span>•</span>
+                          <time>{new Date(post.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</time>
+                        </div>
+                      </div>
+                      {post.type !== 'text' && (
+                        <Badge variant="outline" className="text-[10px] shrink-0">
+                          <TypeIcon className="h-3 w-3 mr-1" />{post.type}
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <p className="text-sm whitespace-pre-wrap mb-3">{post.content}</p>
+
+                    {/* Workout stats */}
+                    {post.session && (
+                      <div className="grid grid-cols-3 gap-2 mb-3 p-3 rounded-lg bg-muted/50">
+                        <div className="text-center"><p className="text-lg font-bold">{post.session.totalScore}</p><p className="text-[10px] text-muted-foreground">Score</p></div>
+                        <div className="text-center"><p className="text-lg font-bold">{post.session.totalReps}</p><p className="text-[10px] text-muted-foreground">Reps</p></div>
+                        <div className="text-center"><p className="text-lg font-bold">{post.session.totalDrills}</p><p className="text-[10px] text-muted-foreground">Exercices</p></div>
+                      </div>
+                    )}
+
+                    {/* Images */}
+                    {post.imageUrls.length > 0 && (
+                      <div className="grid grid-cols-2 gap-2 mb-3 rounded-lg overflow-hidden">
+                        {post.imageUrls.slice(0, 4).map((url, i) => (
+                          <div key={i} className={`${post.imageUrls.length === 1 ? 'col-span-2' : ''} aspect-square bg-muted`}>
+                            <img src={url} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-4 pt-2 border-t">
+                      <button onClick={() => toggleLike.mutate(post.id)} className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${post.isLiked ? 'text-red-500' : 'text-muted-foreground hover:text-foreground'}`}>
+                        <Heart className={`h-4 w-4 ${post.isLiked ? 'fill-current' : ''}`} />
+                        {post.likesCount > 0 && <span>{post.likesCount}</span>}
+                      </button>
+                      <button onClick={() => navigate('post-detail')} className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
+                        <MessageCircle className="h-4 w-4" />
+                        {post.commentsCount > 0 && <span>{post.commentsCount}</span>}
+                      </button>
+                      <button className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
+                        <Share2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )
+            })}
+
+            {/* Infinite scroll sentinel */}
+            <div ref={sentinelRef} className="py-4 text-center">
+              {isFetchingNextPage && <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />}
+            </div>
+          </motion.div>
+        )}
+      </main>
+      <BottomNav />
+    </SwipeToGoBack>
+  )
+}

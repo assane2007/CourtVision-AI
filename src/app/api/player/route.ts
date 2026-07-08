@@ -6,14 +6,55 @@ import { updateProfileSchema, getZodErrorMessage } from '@/lib/validations'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
 
-// GET /api/player — Get current user's profile
-export async function GET() {
+// GET /api/player — Get current user's profile, or another player's public profile via ?id=xxx
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
+    const { searchParams } = new URL(request.url)
+    const targetId = searchParams.get('id')
+
+    // If an ID is provided, fetch that player's public profile
+    if (targetId) {
+      const rl = rateLimit(`player:get:${session.user.id}`, 30, 15 * 60 * 1000)
+      if (!rl.success) {
+        return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429 })
+      }
+
+      const player = await db.player.findUnique({
+        where: { id: targetId },
+        select: {
+          id: true,
+          name: true,
+          bio: true,
+          position: true,
+          level: true,
+          avatar: true,
+          coverPhoto: true,
+          xp: true,
+          xpLevel: true,
+          city: true,
+          country: true,
+          createdAt: true,
+          sessions: {
+            select: { id: true, totalScore: true, totalReps: true, totalDrills: true, startedAt: true },
+            take: 20,
+            orderBy: { startedAt: 'desc' },
+          },
+        },
+      })
+
+      if (!player) {
+        return NextResponse.json({ error: 'Joueur non trouvé' }, { status: 404 })
+      }
+
+      return NextResponse.json(player)
+    }
+
+    // Default: fetch current user's profile
     const rl = rateLimit(`player:get:${session.user.id}`, 30, 15 * 60 * 1000)
     if (!rl.success) {
       return NextResponse.json({ error: 'Trop de requêtes. Réessayez plus tard.' }, { status: 429 })

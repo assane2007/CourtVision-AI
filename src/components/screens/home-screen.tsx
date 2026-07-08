@@ -13,6 +13,11 @@ import {
   Shield,
   Sparkles,
   Trophy,
+  Users,
+  Video,
+  Mic,
+  Brain,
+  Target,
   Zap,
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -715,6 +720,42 @@ export default function HomeScreen() {
             </div>
           </motion.div>
         </motion.div>
+
+        {/* ---------------------------------------------------------------- */}
+        {/* Feature Hub — Quick Access to All Features                       */}
+        {/* ---------------------------------------------------------------- */}
+        <motion.section variants={itemVariants} className="mb-5">
+          <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-orange-500" />
+            Explorer
+          </h2>
+          <div className="grid grid-cols-3 gap-2.5">
+            {[
+              { icon: Users, label: 'Amis', screen: 'friends' as const, color: 'bg-sky-500/10 text-sky-500' },
+              { icon: Trophy, label: 'Défis', screen: 'challenges' as const, color: 'bg-amber-500/10 text-amber-500' },
+              { icon: Users, label: 'Équipes', screen: 'teams' as const, color: 'bg-emerald-500/10 text-emerald-500' },
+              { icon: Video, label: 'Vidéos', screen: 'video-library' as const, color: 'bg-rose-500/10 text-rose-500' },
+              { icon: Mic, label: 'Voice Coach', screen: 'voice-coach' as const, color: 'bg-violet-500/10 text-violet-500' },
+              { icon: Brain, label: 'IA Insights', screen: 'ai-insights' as const, color: 'bg-cyan-500/10 text-cyan-500' },
+              { icon: Target, label: 'Prédictions', screen: 'predictions' as const, color: 'bg-pink-500/10 text-pink-500' },
+              { icon: Sparkles, label: 'IA Workout', screen: 'ai-workout-gen' as const, color: 'bg-orange-500/10 text-orange-500' },
+              { icon: MessageCircle, label: 'Messages', screen: 'messages' as const, color: 'bg-teal-500/10 text-teal-500' },
+            ].map((feature) => (
+              <motion.button
+                key={feature.screen}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => navigate(feature.screen)}
+                className="flex flex-col items-center gap-2 rounded-2xl border bg-card p-3 transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl', feature.color)}>
+                  <feature.icon className="h-5 w-5" />
+                </div>
+                <span className="text-[11px] font-medium text-foreground truncate w-full text-center">{feature.label}</span>
+              </motion.button>
+            ))}
+          </div>
+        </motion.section>
 
         {/* ---------------------------------------------------------------- */}
         {/* Reaction Trainer (Cognitive Training)                           */}

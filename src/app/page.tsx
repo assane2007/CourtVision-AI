@@ -1,9 +1,10 @@
 'use client'
 import { useSession } from 'next-auth/react'
-import { useAppStore } from '@/stores/app'
+import { useAppStore, type Screen } from '@/stores/app'
 import { useEffect, Component, type ReactNode, useSyncExternalStore } from 'react'
 import dynamic from 'next/dynamic'
 import { FeatureGate } from '@/components/feature-gate'
+import { toast } from 'sonner'
 
 // Lazy-load the animation wrapper so framer-motion is not in the main bundle.
 // All screen components are already dynamically imported with ssr: false.
@@ -35,6 +36,26 @@ const ReactionTrainerScreen = dynamic(() => import('@/components/screens/reactio
 const PricingScreen = dynamic(() => import('@/components/screens/pricing-screen'), { ssr: false })
 const LeaderboardScreen = dynamic(() => import('@/components/screens/leaderboard-screen'), { ssr: false })
 const RecordsScreen = dynamic(() => import('@/components/screens/records-screen'), { ssr: false })
+const FriendsScreen = dynamic(() => import('@/components/screens/friends-screen'), { ssr: false })
+const TeamsScreen = dynamic(() => import('@/components/screens/teams-screen'), { ssr: false })
+const TeamDetailScreen = dynamic(() => import('@/components/screens/team-detail-screen'), { ssr: false })
+const ChallengesScreen = dynamic(() => import('@/components/screens/challenges-screen'), { ssr: false })
+const ChallengeDetailScreen = dynamic(() => import('@/components/screens/challenge-detail-screen'), { ssr: false })
+const FeedScreen = dynamic(() => import('@/components/screens/feed-screen'), { ssr: false })
+const PostDetailScreen = dynamic(() => import('@/components/screens/post-detail-screen'), { ssr: false })
+const MessagesScreen = dynamic(() => import('@/components/screens/messages-screen'), { ssr: false })
+const ConversationScreen = dynamic(() => import('@/components/screens/conversation-screen'), { ssr: false })
+const ProfileOtherScreen = dynamic(() => import('@/components/screens/profile-other-screen'), { ssr: false })
+const LiveWorkoutScreen = dynamic(() => import('@/components/screens/live-workout-screen'), { ssr: false })
+const NotificationsScreen = dynamic(() => import('@/components/screens/notifications-screen'), { ssr: false })
+const VideoLibraryScreen = dynamic(() => import('@/components/screens/video-library-screen'), { ssr: false })
+const VideoPlayerScreen = dynamic(() => import('@/components/screens/video-player-screen'), { ssr: false })
+const VideoUploadScreen = dynamic(() => import('@/components/screens/video-upload-screen'), { ssr: false })
+const VideoCompareScreen = dynamic(() => import('@/components/screens/video-compare-screen'), { ssr: false })
+const AIInsightsScreen = dynamic(() => import('@/components/screens/ai-insights-screen'), { ssr: false })
+const VoiceCoachScreen = dynamic(() => import('@/components/screens/voice-coach-screen'), { ssr: false })
+const PredictionsScreen = dynamic(() => import('@/components/screens/predictions-screen'), { ssr: false })
+const AIWorkoutGenScreen = dynamic(() => import('@/components/screens/ai-workout-gen-screen'), { ssr: false })
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false }
@@ -67,7 +88,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 
 export default function Home() {
   const { data: session, status } = useSession()
-  const { currentScreen, navigate } = useAppStore()
+  const { currentScreen, navigate, selectDrill } = useAppStore()
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -77,6 +98,57 @@ export default function Home() {
   useEffect(() => {
     if (status === 'unauthenticated' && currentScreen !== 'auth' && currentScreen !== 'landing') navigate('landing')
   }, [status, currentScreen, navigate])
+
+  // ── Deep Linking ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (status !== 'authenticated') return
+
+    const params = new URLSearchParams(window.location.search)
+    const hash = window.location.hash.replace('#', '')
+    const deepParam = params.get('deep')
+    const verifyEmailParam = params.get('verify_email')
+    const drillId = params.get('drill') || hash.startsWith('drill/') ? hash.replace('drill/', '') : null
+
+    // Priority: verify_email > deep link > drill param
+    if (verifyEmailParam) {
+      // Auto-verify email token via API, then navigate
+      fetch(`/api/email/verify/${encodeURIComponent(verifyEmailParam)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.message) {
+            toast.success?.(data.message)
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          // Clean URL
+          window.history.replaceState({}, '', '/')
+        })
+    } else if (deepParam) {
+      const [type, id] = deepParam.split('/')
+      const screenMap: Record<string, Screen> = {
+        drill: 'drill-detail',
+        challenge: 'challenge-detail',
+        team: 'team-detail',
+        profile: 'profile-other',
+        video: 'video-player',
+      }
+      const targetScreen = screenMap[type]
+      if (targetScreen && id) {
+        if (type === 'drill') {
+          navigate('drill-detail')
+          selectDrill(id)
+        } else if (targetScreen) {
+          navigate(targetScreen)
+        }
+      }
+      window.history.replaceState({}, '', '/')
+    } else if (drillId) {
+      selectDrill(drillId)
+      navigate('drill-detail')
+      window.history.replaceState({}, '', '/')
+    }
+  }, [status, navigate, selectDrill])
 
   // Simple direction heuristic: tab screens go right (1), detail screens go left (-1)
   const getDirection = () => {
@@ -130,6 +202,26 @@ export default function Home() {
           {currentScreen === 'pricing' && session && <PricingScreen />}
           {currentScreen === 'leaderboard' && session && <LeaderboardScreen />}
           {currentScreen === 'records' && session && <RecordsScreen />}
+          {currentScreen === 'friends' && session && <FriendsScreen />}
+          {currentScreen === 'teams' && session && <TeamsScreen />}
+          {currentScreen === 'team-detail' && session && <TeamDetailScreen />}
+          {currentScreen === 'challenges' && session && <ChallengesScreen />}
+          {currentScreen === 'challenge-detail' && session && <ChallengeDetailScreen />}
+          {currentScreen === 'feed' && session && <FeedScreen />}
+          {currentScreen === 'post-detail' && session && <PostDetailScreen />}
+          {currentScreen === 'messages' && session && <MessagesScreen />}
+          {currentScreen === 'conversation' && session && <ConversationScreen />}
+          {currentScreen === 'profile-other' && session && <ProfileOtherScreen />}
+          {currentScreen === 'live-workout' && session && <LiveWorkoutScreen />}
+          {currentScreen === 'notifications' && session && <NotificationsScreen />}
+          {currentScreen === 'video-library' && session && <VideoLibraryScreen />}
+          {currentScreen === 'video-player' && session && <VideoPlayerScreen />}
+          {currentScreen === 'video-upload' && session && <VideoUploadScreen />}
+          {currentScreen === 'video-compare' && session && <VideoCompareScreen />}
+          {currentScreen === 'ai-insights' && session && <AIInsightsScreen />}
+          {currentScreen === 'voice-coach' && session && <VoiceCoachScreen />}
+          {currentScreen === 'predictions' && session && <PredictionsScreen />}
+          {currentScreen === 'ai-workout-gen' && session && <AIWorkoutGenScreen />}
           {!session && currentScreen !== 'auth' && currentScreen !== 'landing' && <AuthScreen />}
         </ScreenTransition>
       </main>

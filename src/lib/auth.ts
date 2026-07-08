@@ -69,9 +69,5 @@ export const authOptions: NextAuthOptions = {
       return session
     }
   },
-  secret: (() => {
-    const s = process.env.NEXTAUTH_SECRET
-    if (!s) throw new Error('FATAL: NEXTAUTH_SECRET environment variable is not set')
-    return s
-  })(),
+  secret: process.env.NEXTAUTH_SECRET || (process.env.NODE_ENV === 'development' ? 'cvai-dev-fallback-secret' : ''),
 }

@@ -636,6 +636,145 @@ export type TranslationKey =
   | 'scouting.yourScore'
   // Home - extended
   | 'home.loadSessionsError'
+  // Social features
+  | 'social.friends'
+  | 'social.teams'
+  | 'social.challenges'
+  | 'social.feed'
+  | 'social.messages'
+  | 'social.live'
+  | 'social.notifications'
+  | 'social.sendRequest'
+  | 'social.accept'
+  | 'social.decline'
+  | 'social.block'
+  | 'social.unblock'
+  | 'social.createTeam'
+  | 'social.joinTeam'
+  | 'social.leaveTeam'
+  | 'social.inviteMembers'
+  | 'social.createChallenge'
+  | 'social.joinChallenge'
+  | 'social.challengeProgress'
+  | 'social.createPost'
+  | 'social.likePost'
+  | 'social.comment'
+  | 'social.reply'
+  | 'social.follow'
+  | 'social.unfollow'
+  | 'social.followers'
+  | 'social.following'
+  | 'social.startLive'
+  | 'social.joinLive'
+  | 'social.liveScore'
+  | 'social.sendMessage'
+  | 'social.newConversation'
+  | 'social.searchPlayers'
+  // Video features
+  | 'video.library'
+  | 'video.upload'
+  | 'video.player'
+  | 'video.compare'
+  | 'video.annotations'
+  | 'video.highlights'
+  | 'video.export'
+  | 'video.share'
+  | 'video.slowMo'
+  | 'video.frameByFrame'
+  | 'video.speed'
+  | 'video.loop'
+  | 'video.drawTool'
+  | 'video.textTool'
+  | 'video.arrowTool'
+  | 'video.circleTool'
+  | 'video.generateHighlights'
+  | 'video.exportGif'
+  | 'video.sideBySide'
+  // AI features
+  | 'ai.insights'
+  | 'ai.voiceCoach'
+  | 'ai.predictions'
+  | 'ai.workoutGen'
+  | 'ai.ragQuery'
+  | 'ai.formAnalysis'
+  | 'ai.shotDetection'
+  | 'ai.poseTracking'
+  | 'ai.structuredOutput'
+  | 'ai.personalizedRecs'
+  | 'ai.generateWorkout'
+  | 'ai.saveWorkout'
+  | 'ai.workoutReasoning'
+  // Core features
+  | 'core.emailVerify'
+  | 'core.twoFactor'
+  | 'core.devices'
+  | 'core.offline'
+  | 'core.dataExport'
+  | 'core.accountDeletion'
+  | 'core.passwordReset'
+  | 'core.pushNotifications'
+  | 'core.deepLink'
+  | 'core.multiDevice'
+  | 'core.notifications'
+  | 'core.privacy'
+  | 'core.security'
+  | 'core.language'
+  | 'core.data'
+  // Settings - new sections
+  | 'settings.notifMessages'
+  | 'settings.notifSocial'
+  | 'settings.notifLive'
+  | 'settings.publicProfile'
+  | 'settings.publicProfileDesc'
+  | 'settings.showLeaderboard'
+  | 'settings.showLeaderboardDesc'
+  | 'settings.showActivity'
+  | 'settings.showActivityDesc'
+  | 'settings.twoFactor'
+  | 'settings.twoFactorDesc'
+  | 'settings.enable2fa'
+  | 'settings.disable2fa'
+  | 'settings.setup2fa'
+  | 'settings.twoFactorEnabled'
+  | 'settings.twoFactorDisabled'
+  | 'settings.backupCodes'
+  | 'settings.backupCodesDesc'
+  | 'settings.generateBackupCodes'
+  | 'settings.changePassword'
+  | 'settings.currentPassword'
+  | 'settings.newPassword'
+  | 'settings.confirmNewPassword'
+  | 'settings.passwordUpdated'
+  | 'settings.passwordError'
+  | 'settings.activeSessions'
+  | 'settings.activeSessionsDesc'
+  | 'settings.currentDevice'
+  | 'settings.lastActive'
+  | 'settings.revokeDevice'
+  | 'settings.deviceRevoked'
+  | 'settings.noDevices'
+  | 'settings.csvExport'
+  | 'settings.csvExportDesc'
+  | 'settings.softDelete'
+  | 'settings.softDeleteDesc'
+  | 'settings.gracePeriod'
+  | 'settings.reactivateAccount'
+  | 'settings.verified'
+  | 'settings.notVerified'
+  | 'settings.sendVerification'
+  | 'settings.verificationSent'
+  | 'settings.emailVerified'
+  | 'settings.verificationRequired'
+  | 'settings.offlineMode'
+  | 'settings.offlineModeDesc'
+  | 'settings.syncData'
+  | 'settings.syncSuccess'
+  | 'settings.syncError'
+  | 'settings.pendingActions'
+  | 'settings.pushEnabled'
+  | 'settings.pushDesc'
+  | 'settings.deepLinkInfo'
+  | 'settings.deepLinkInfoDesc'
 
 // ── Translation dictionaries ────────────────────────────────────────────────
 const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
@@ -1312,6 +1451,150 @@ const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
   'scouting.yourScore': 'Votre score',
   // Home - extended
   'home.loadSessionsError': 'Impossible de charger les sessions',
+
+    // Social features
+    'social.friends': 'Amis',
+    'social.teams': 'Équipes',
+    'social.challenges': 'Défis',
+    'social.feed': 'Fil d\'actualité',
+    'social.messages': 'Messages',
+    'social.live': 'En direct',
+    'social.notifications': 'Notifications',
+    'social.sendRequest': 'Envoyer une demande',
+    'social.accept': 'Accepter',
+    'social.decline': 'Refuser',
+    'social.block': 'Bloquer',
+    'social.unblock': 'Débloquer',
+    'social.createTeam': 'Créer une équipe',
+    'social.joinTeam': 'Rejoindre l\'équipe',
+    'social.leaveTeam': 'Quitter l\'équipe',
+    'social.inviteMembers': 'Inviter des membres',
+    'social.createChallenge': 'Créer un défi',
+    'social.joinChallenge': 'Rejoindre le défi',
+    'social.challengeProgress': 'Progression du défi',
+    'social.createPost': 'Créer une publication',
+    'social.likePost': 'J\'aime',
+    'social.comment': 'Commenter',
+    'social.reply': 'Répondre',
+    'social.follow': 'Suivre',
+    'social.unfollow': 'Ne plus suivre',
+    'social.followers': 'Abonnés',
+    'social.following': 'Abonnements',
+    'social.startLive': 'Démarrer en direct',
+    'social.joinLive': 'Rejoindre le direct',
+    'social.liveScore': 'Score en direct',
+    'social.sendMessage': 'Envoyer un message',
+    'social.newConversation': 'Nouvelle conversation',
+    'social.searchPlayers': 'Rechercher des joueurs',
+
+    // Video features
+    'video.library': 'Vidéothèque',
+    'video.upload': 'Téléverser',
+    'video.player': 'Lecteur vidéo',
+    'video.compare': 'Comparer',
+    'video.annotations': 'Annotations',
+    'video.highlights': 'Temps forts',
+    'video.export': 'Exporter',
+    'video.share': 'Partager',
+    'video.slowMo': 'Ralenti',
+    'video.frameByFrame': 'Image par image',
+    'video.speed': 'Vitesse',
+    'video.loop': 'Boucle',
+    'video.drawTool': 'Outil dessin',
+    'video.textTool': 'Outil texte',
+    'video.arrowTool': 'Outil flèche',
+    'video.circleTool': 'Outil cercle',
+    'video.generateHighlights': 'Générer les temps forts',
+    'video.exportGif': 'Exporter en GIF',
+    'video.sideBySide': 'Côte à côte',
+
+    // AI features
+    'ai.insights': 'Analyses IA',
+    'ai.voiceCoach': 'Coach vocal',
+    'ai.predictions': 'Prédictions',
+    'ai.workoutGen': 'Générateur d\'entraînement',
+    'ai.ragQuery': 'Recherche intelligente',
+    'ai.formAnalysis': 'Analyse de forme',
+    'ai.shotDetection': 'Détection de tir',
+    'ai.poseTracking': 'Suivi de posture',
+    'ai.structuredOutput': 'Résultats structurés',
+    'ai.personalizedRecs': 'Recommandations personnalisées',
+    'ai.generateWorkout': 'Générer un entraînement',
+    'ai.saveWorkout': 'Sauvegarder l\'entraînement',
+    'ai.workoutReasoning': 'Raisonnement de l\'IA',
+
+    // Core features
+    'core.emailVerify': 'Vérification d\'email',
+    'core.twoFactor': 'Authentification à deux facteurs',
+    'core.devices': 'Appareils',
+    'core.offline': 'Mode hors ligne',
+    'core.dataExport': 'Export de données',
+    'core.accountDeletion': 'Suppression de compte',
+    'core.passwordReset': 'Réinitialisation du mot de passe',
+    'core.pushNotifications': 'Notifications push',
+    'core.deepLink': 'Liens profonds',
+    'core.multiDevice': 'Multi-appareil',
+    'core.notifications': 'Notifications',
+    'core.privacy': 'Confidentialité',
+    'core.security': 'Sécurité',
+    'core.language': 'Langue',
+    'core.data': 'Données',
+
+    // Settings - new sections
+    'settings.notifMessages': 'Messages',
+    'settings.notifSocial': 'Activité sociale',
+    'settings.notifLive': 'Sessions en direct',
+    'settings.publicProfile': 'Profil public',
+    'settings.publicProfileDesc': 'Les autres joueurs peuvent voir votre profil',
+    'settings.showLeaderboard': 'Apparaître au classement',
+    'settings.showLeaderboardDesc': 'Votre score est visible sur le classement public',
+    'settings.showActivity': 'Afficher mon activité',
+    'settings.showActivityDesc': 'Les autres joueurs peuvent voir votre activité récente',
+    'settings.twoFactor': 'Authentification à deux facteurs',
+    'settings.twoFactorDesc': 'Protégez votre compte avec un code supplémentaire',
+    'settings.enable2fa': 'Activer la 2FA',
+    'settings.disable2fa': 'Désactiver la 2FA',
+    'settings.setup2fa': 'Configurer la 2FA',
+    'settings.twoFactorEnabled': '2FA activée',
+    'settings.twoFactorDisabled': '2FA désactivée',
+    'settings.backupCodes': 'Codes de secours',
+    'settings.backupCodesDesc': 'Utilisez ces codes si vous perdez accès à votre app d\'authentification',
+    'settings.generateBackupCodes': 'Générer des codes de secours',
+    'settings.changePassword': 'Changer le mot de passe',
+    'settings.currentPassword': 'Mot de passe actuel',
+    'settings.newPassword': 'Nouveau mot de passe',
+    'settings.confirmNewPassword': 'Confirmer le nouveau mot de passe',
+    'settings.passwordUpdated': 'Mot de passe mis à jour',
+    'settings.passwordError': 'Erreur lors du changement de mot de passe',
+    'settings.activeSessions': 'Sessions actives',
+    'settings.activeSessionsDesc': 'Appareils connectés à votre compte',
+    'settings.currentDevice': 'Cet appareil',
+    'settings.lastActive': 'Dernière activité',
+    'settings.revokeDevice': 'Révoquer',
+    'settings.deviceRevoked': 'Appareil révoqué',
+    'settings.noDevices': 'Aucun autre appareil',
+    'settings.csvExport': 'Exporter en CSV',
+    'settings.csvExportDesc': 'Télécharger vos données au format tableur',
+    'settings.softDelete': 'Désactiver temporairement',
+    'settings.softDeleteDesc': 'Votre compte sera masqué pendant 30 jours',
+    'settings.gracePeriod': 'Période de grâce : 30 jours',
+    'settings.reactivateAccount': 'Réactiver le compte',
+    'settings.verified': 'Vérifié',
+    'settings.notVerified': 'Non vérifié',
+    'settings.sendVerification': 'Envoyer la vérification',
+    'settings.verificationSent': 'Email de vérification envoyé',
+    'settings.emailVerified': 'Email vérifié avec succès',
+    'settings.verificationRequired': 'Vérification d\'email requise pour cette fonctionnalité',
+    'settings.offlineMode': 'Mode hors ligne',
+    'settings.offlineModeDesc': 'Vos actions sont sauvegardées localement et synchronisées',
+    'settings.syncData': 'Synchroniser les données',
+    'settings.syncSuccess': 'Données synchronisées avec succès',
+    'settings.syncError': 'Erreur lors de la synchronisation',
+    'settings.pendingActions': '{count} actions en attente',
+    'settings.pushEnabled': 'Notifications push activées',
+    'settings.pushDesc': 'Recevez des rappels d\'entraînement et des mises à jour',
+    'settings.deepLinkInfo': 'Liens profonds',
+    'settings.deepLinkInfoDesc': 'Les liens vers des exercices et défis s\'ouvrent directement dans l\'app',
   },
 
   en: {
@@ -1987,6 +2270,150 @@ const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
   'scouting.yourScore': 'Your score',
   // Home - extended
   'home.loadSessionsError': 'Unable to load sessions',
+
+    // Social features
+    'social.friends': 'Friends',
+    'social.teams': 'Teams',
+    'social.challenges': 'Challenges',
+    'social.feed': 'Feed',
+    'social.messages': 'Messages',
+    'social.live': 'Live',
+    'social.notifications': 'Notifications',
+    'social.sendRequest': 'Send request',
+    'social.accept': 'Accept',
+    'social.decline': 'Decline',
+    'social.block': 'Block',
+    'social.unblock': 'Unblock',
+    'social.createTeam': 'Create team',
+    'social.joinTeam': 'Join team',
+    'social.leaveTeam': 'Leave team',
+    'social.inviteMembers': 'Invite members',
+    'social.createChallenge': 'Create challenge',
+    'social.joinChallenge': 'Join challenge',
+    'social.challengeProgress': 'Challenge progress',
+    'social.createPost': 'Create post',
+    'social.likePost': 'Like',
+    'social.comment': 'Comment',
+    'social.reply': 'Reply',
+    'social.follow': 'Follow',
+    'social.unfollow': 'Unfollow',
+    'social.followers': 'Followers',
+    'social.following': 'Following',
+    'social.startLive': 'Go live',
+    'social.joinLive': 'Join live',
+    'social.liveScore': 'Live score',
+    'social.sendMessage': 'Send message',
+    'social.newConversation': 'New conversation',
+    'social.searchPlayers': 'Search players',
+
+    // Video features
+    'video.library': 'Video Library',
+    'video.upload': 'Upload',
+    'video.player': 'Video Player',
+    'video.compare': 'Compare',
+    'video.annotations': 'Annotations',
+    'video.highlights': 'Highlights',
+    'video.export': 'Export',
+    'video.share': 'Share',
+    'video.slowMo': 'Slow Motion',
+    'video.frameByFrame': 'Frame by Frame',
+    'video.speed': 'Speed',
+    'video.loop': 'Loop',
+    'video.drawTool': 'Draw Tool',
+    'video.textTool': 'Text Tool',
+    'video.arrowTool': 'Arrow Tool',
+    'video.circleTool': 'Circle Tool',
+    'video.generateHighlights': 'Generate Highlights',
+    'video.exportGif': 'Export as GIF',
+    'video.sideBySide': 'Side by Side',
+
+    // AI features
+    'ai.insights': 'AI Insights',
+    'ai.voiceCoach': 'Voice Coach',
+    'ai.predictions': 'Predictions',
+    'ai.workoutGen': 'Workout Generator',
+    'ai.ragQuery': 'Smart Search',
+    'ai.formAnalysis': 'Form Analysis',
+    'ai.shotDetection': 'Shot Detection',
+    'ai.poseTracking': 'Pose Tracking',
+    'ai.structuredOutput': 'Structured Output',
+    'ai.personalizedRecs': 'Personalized Recommendations',
+    'ai.generateWorkout': 'Generate Workout',
+    'ai.saveWorkout': 'Save Workout',
+    'ai.workoutReasoning': 'AI Reasoning',
+
+    // Core features
+    'core.emailVerify': 'Email Verification',
+    'core.twoFactor': 'Two-Factor Authentication',
+    'core.devices': 'Devices',
+    'core.offline': 'Offline Mode',
+    'core.dataExport': 'Data Export',
+    'core.accountDeletion': 'Account Deletion',
+    'core.passwordReset': 'Password Reset',
+    'core.pushNotifications': 'Push Notifications',
+    'core.deepLink': 'Deep Links',
+    'core.multiDevice': 'Multi-Device',
+    'core.notifications': 'Notifications',
+    'core.privacy': 'Privacy',
+    'core.security': 'Security',
+    'core.language': 'Language',
+    'core.data': 'Data',
+
+    // Settings - new sections
+    'settings.notifMessages': 'Messages',
+    'settings.notifSocial': 'Social activity',
+    'settings.notifLive': 'Live sessions',
+    'settings.publicProfile': 'Public profile',
+    'settings.publicProfileDesc': 'Other players can view your profile',
+    'settings.showLeaderboard': 'Show on leaderboard',
+    'settings.showLeaderboardDesc': 'Your score is visible on the public leaderboard',
+    'settings.showActivity': 'Show my activity',
+    'settings.showActivityDesc': 'Other players can see your recent activity',
+    'settings.twoFactor': 'Two-Factor Authentication',
+    'settings.twoFactorDesc': 'Protect your account with an extra code',
+    'settings.enable2fa': 'Enable 2FA',
+    'settings.disable2fa': 'Disable 2FA',
+    'settings.setup2fa': 'Set up 2FA',
+    'settings.twoFactorEnabled': '2FA enabled',
+    'settings.twoFactorDisabled': '2FA disabled',
+    'settings.backupCodes': 'Backup codes',
+    'settings.backupCodesDesc': 'Use these codes if you lose access to your authenticator app',
+    'settings.generateBackupCodes': 'Generate backup codes',
+    'settings.changePassword': 'Change password',
+    'settings.currentPassword': 'Current password',
+    'settings.newPassword': 'New password',
+    'settings.confirmNewPassword': 'Confirm new password',
+    'settings.passwordUpdated': 'Password updated',
+    'settings.passwordError': 'Error changing password',
+    'settings.activeSessions': 'Active sessions',
+    'settings.activeSessionsDesc': 'Devices connected to your account',
+    'settings.currentDevice': 'This device',
+    'settings.lastActive': 'Last active',
+    'settings.revokeDevice': 'Revoke',
+    'settings.deviceRevoked': 'Device revoked',
+    'settings.noDevices': 'No other devices',
+    'settings.csvExport': 'Export as CSV',
+    'settings.csvExportDesc': 'Download your data in spreadsheet format',
+    'settings.softDelete': 'Deactivate temporarily',
+    'settings.softDeleteDesc': 'Your account will be hidden for 30 days',
+    'settings.gracePeriod': 'Grace period: 30 days',
+    'settings.reactivateAccount': 'Reactivate account',
+    'settings.verified': 'Verified',
+    'settings.notVerified': 'Not verified',
+    'settings.sendVerification': 'Send verification',
+    'settings.verificationSent': 'Verification email sent',
+    'settings.emailVerified': 'Email verified successfully',
+    'settings.verificationRequired': 'Email verification required for this feature',
+    'settings.offlineMode': 'Offline mode',
+    'settings.offlineModeDesc': 'Your actions are saved locally and synced',
+    'settings.syncData': 'Sync data',
+    'settings.syncSuccess': 'Data synced successfully',
+    'settings.syncError': 'Error syncing data',
+    'settings.pendingActions': '{count} pending actions',
+    'settings.pushEnabled': 'Push notifications enabled',
+    'settings.pushDesc': 'Receive training reminders and updates',
+    'settings.deepLinkInfo': 'Deep links',
+    'settings.deepLinkInfoDesc': 'Links to drills and challenges open directly in the app',
   },
 } as const
 

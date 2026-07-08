@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Home, ClipboardList, Dumbbell, BarChart3, User } from 'lucide-react'
+import { Home, ClipboardList, Dumbbell, BarChart3, User, MessageCircle } from 'lucide-react'
 import { useAppStore, type Screen } from '@/stores/app'
 import { hapticLight } from '@/lib/haptics'
 import { useTranslation } from '@/components/providers/language-provider'
@@ -9,8 +9,9 @@ import type { TranslationKey } from '@/lib/i18n'
 
 const tabs: { icon: typeof Home; labelKey: TranslationKey; screen: Screen }[] = [
   { icon: Home, labelKey: 'nav.home', screen: 'home' },
-  { icon: ClipboardList, labelKey: 'nav.plans', screen: 'plans' },
   { icon: Dumbbell, labelKey: 'nav.training', screen: 'train-hub' },
+  { icon: ClipboardList, labelKey: 'nav.plans', screen: 'plans' },
+  { icon: MessageCircle, labelKey: 'social.feed', screen: 'feed' },
   { icon: BarChart3, labelKey: 'nav.stats', screen: 'stats' },
   { icon: User, labelKey: 'nav.profile', screen: 'profile' },
 ]
@@ -21,7 +22,7 @@ export function BottomNav() {
 
   return (
     <nav aria-label="Navigation principale" className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-lg supports-[backdrop-filter]:bg-background/80 pb-safe">
-      <div className="mx-auto flex h-16 max-w-lg md:max-w-3xl lg:max-w-4xl items-center justify-around px-2">
+      <div className="mx-auto flex h-16 max-w-lg md:max-w-3xl lg:max-w-4xl items-center justify-around px-1">
         {tabs.map((tab) => {
           const isActive = currentScreen === tab.screen
           return (
@@ -29,7 +30,7 @@ export function BottomNav() {
               key={tab.screen}
               type="button"
               onClick={() => { hapticLight(); navigate(tab.screen) }}
-              className={`flex flex-col items-center gap-0.5 rounded-xl px-2.5 py-1.5 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              className={`flex flex-col items-center gap-0.5 rounded-xl px-1.5 py-1.5 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 isActive
                   ? 'text-orange-500'
                   : 'text-muted-foreground hover:text-foreground'
@@ -46,7 +47,7 @@ export function BottomNav() {
                   />
                 )}
               </div>
-              <span>{t(tab.labelKey)}</span>
+              <span className="truncate max-w-[56px]">{t(tab.labelKey)}</span>
             </button>
           )
         })}

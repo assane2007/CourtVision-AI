@@ -1,0 +1,109 @@
+import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { trackError } from '@/lib/monitoring'
+
+// GET /api/sync/pull
+// Pull latest data from server for offline caching
+export async function GET(request: Request) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Authentification requise' }, { status: 401 })
+    }
+
+    const playerId = session.user.id
+    const url = new URL(request.url)
+    const sinceParam = url.searchParams.get('since')
+    const since = sinceParam ? new Date(sinceParam) : new Date(0)
+
+    // Fetch player profile
+    const player = await db.player.findUnique({
+      where: { id: playerId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        position: true,
+        level: true,
+        goals: true,
+        xp: true,
+        xpLevel: true,
+        avatar: true,
+        emailVerified: true,
+        twoFactorEnabled: true,
+        profilePublic: true,
+        showOnLeaderboard: true,
+        showActivity: true,
+        language: true,
+        soundEnabled: true,
+        hapticsEnabled: true,
+        weeklyGoalSessions: true,
+        weeklyGoalReps: true,
+        preferredRestSec: true,
+        notifStreak: true,
+        notifChallenge: true,
+        notifAchievement: true,
+        notifSocial: true,
+        notifMessage: true,
+        updatedAt: true,
+      },
+    })
+
+    if (!player) {
+      return NextResponse.json({ error: 'Joueur introuvable' }, { status: 404 })
+    }
+
+    // Fetch recent sessions (since the given date)
+    const sessions = await db.workoutSession.findMany({
+      where: {
+        playerId,
+        updatedAt: { gt: since },
+      },
+      include: {
+        drills: {
+          include: {
+            drill: {
+              select: { id: true, name: true, nameFr: true, category: true, icon: true },
+            },
+          },
+        },
+      },
+      orderBy: { startedAt: 'desc' },
+      take: 50,
+    })
+
+    // Fetch recent achievements
+    const achievements = await db.achievement.findMany({
+      where: {
+        playerId,
+        unlockedAt: { gt: since },
+      },
+      orderBy: { unlockedAt: 'desc' },
+    })
+
+    // Fetch favorite drills
+    const favorites = await db.drillFavorite.findMany({
+      where: { playerId },
+      select: { drillId: true, createdAt: true },
+    })
+
+    // Count pending offline actions
+    const pendingActions = await db.offlineAction.count({
+      where: { playerId, status: 'pending' },
+    })
+
+    return NextResponse.json({
+      player,
+      sessions,
+      achievements,
+      favorites: favorites.map((f) => f.drillId),
+      pendingActions,
+      serverTime: new Date().toISOString(),
+    })
+  } catch (error) {
+    trackError('GET /api/sync/pull', error)
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+  }
+}

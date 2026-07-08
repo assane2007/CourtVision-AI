@@ -4,7 +4,6 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
-import { shareSchema, getZodErrorMessage } from '@/lib/validations'
 import { formatDate } from '@/lib/date-utils'
 
 export async function POST(request: NextRequest) {
@@ -14,19 +13,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
-    // Rate limit: 10 req / 15 min
     const rl = rateLimit(`share:${session.user.id}`, 10, 15 * 60 * 1000)
     if (!rl.success) {
       return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 })
     }
 
     const body = await request.json()
-    const parsed = shareSchema.safeParse(body)
-    if (!parsed.success) {
-      return NextResponse.json({ error: getZodErrorMessage(parsed.error) }, { status: 400 })
-    }
-
-    const { sessionId } = parsed.data
+    const { sessionId, postToFeed, content } = body
 
     let sessionData: {
       startedAt: Date
@@ -36,7 +29,6 @@ export async function POST(request: NextRequest) {
     } | null = null
 
     if (sessionId) {
-      // Verify the session belongs to the user
       sessionData = await db.workoutSession.findFirst({
         where: { id: sessionId, playerId: session.user.id },
         select: {
@@ -68,9 +60,27 @@ export async function POST(request: NextRequest) {
 
     const shareUrl = 'https://courtvision.ai'
 
+    // Optionally post to feed
+    let feedPost = null
+    if (postToFeed) {
+      const postContent = content || `Séance du ${dateStr} — Score: ${score}/100, ${reps} reps, ${drills} exercices. 🏀`
+      feedPost = await db.feedPost.create({
+        data: {
+          playerId: session.user.id,
+          content: postContent,
+          type: 'workout',
+          sessionId: sessionId || null,
+        },
+        include: {
+          player: { select: { id: true, name: true, avatar: true } },
+        },
+      })
+    }
+
     return NextResponse.json({
       shareText,
       shareUrl,
+      feedPost,
     })
   } catch (error) {
     trackError('POST /api/share', error)

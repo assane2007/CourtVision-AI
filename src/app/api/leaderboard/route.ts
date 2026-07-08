@@ -19,6 +19,7 @@ export async function GET(request: Request) {
     const rawPeriod = searchParams.get('period') ?? 'all'
     const validPeriods: Period[] = ['all', 'month', 'week']
     const period: Period = validPeriods.includes(rawPeriod as Period) ? (rawPeriod as Period) : 'all'
+    const teamId = searchParams.get('teamId')
 
     // Rate limit: 30 req / 15 min
     const rl = rateLimit(`leaderboard:${session.user.id}`, 30, 15 * 60 * 1000)
@@ -40,9 +41,24 @@ export async function GET(request: Request) {
       periodFilter = oneMonthAgo
     }
 
+    // Team filter: if teamId is provided, only show team members
+    let teamMemberIds: string[] | null = null
+    if (teamId) {
+      const teamMembers = await db.teamMember.findMany({
+        where: { teamId },
+        select: { playerId: true },
+      })
+      teamMemberIds = teamMembers.map(m => m.playerId)
+      if (teamMemberIds.length === 0) {
+        return NextResponse.json({ leaderboard: [], friends: [], playerRank: null, totalPlayers: 0, teamName: null })
+      }
+    }
+
     // Cache ONLY global leaderboard data (no per-user fields inside closure)
-    const globalData = await withCache(`leaderboard:global:${period}`, 5 * 60 * 1000, async () => {
+    const cacheKey = teamId ? `leaderboard:team:${teamId}:${period}` : `leaderboard:global:${period}`
+    const globalData = await withCache(cacheKey, 5 * 60 * 1000, async () => {
       const players = await db.player.findMany({
+        where: teamMemberIds ? { id: { in: teamMemberIds } } : undefined,
         take: 20,
         orderBy: { xp: 'desc' },
         select: {
@@ -93,14 +109,21 @@ export async function GET(request: Request) {
         .sort((a, b) => b.sortXp - a.sortXp)
         .map((p, i) => ({ ...p, rank: i + 1 }))
 
-      const totalPlayers = await db.player.count()
+      const totalPlayers = teamMemberIds
+        ? teamMemberIds.length
+        : await db.player.count()
+
+      const teamInfo = teamId ? await db.team.findUnique({
+        where: { id: teamId },
+        select: { name: true },
+      }) : null
 
       // Return only global data — no per-user fields
-      return { leaderboard, totalPlayers }
+      return { leaderboard, totalPlayers, teamName: teamInfo?.name || null }
     })
 
     // Compute per-user fields OUTSIDE the cache
-    const { leaderboard: ranked, totalPlayers } = globalData
+    const { leaderboard: ranked, totalPlayers, teamName } = globalData
 
     let playerRank: number | null = null
     const currentPlayerRanked = ranked.find((p) => p.playerId === playerId)
@@ -143,6 +166,7 @@ export async function GET(request: Request) {
       friends,
       playerRank,
       totalPlayers,
+      ...(teamName && { teamName }),
     })
   } catch (error) {
     trackError('GET /api/leaderboard', error)
