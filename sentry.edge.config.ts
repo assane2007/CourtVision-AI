@@ -7,7 +7,8 @@ Sentry.init({
     // Keep default PII collection for debugging; tighten in production
   },
 
-  tracesSampleRate: process.env.NODE_ENV === 'development' ? 1.0 : 0.1,
+  // Capture 100% of transactions for performance monitoring
+  tracesSampleRate: 1.0,
 
   enableLogs: true,
 
@@ -17,7 +18,7 @@ Sentry.init({
 
   enabled: process.env.NODE_ENV === 'production',
 
-  // Filter out non-critical errors
+  // Ignore non-critical errors
   ignoreErrors: [
     'JWEDecryptionFailed',
     'NEXT_REDIRECT',

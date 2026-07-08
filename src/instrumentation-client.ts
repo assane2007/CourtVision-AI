@@ -7,8 +7,9 @@ Sentry.init({
     // Keep default PII collection for debugging; tighten in production
   },
 
-  // 100% in dev, 10% in production
-  tracesSampleRate: process.env.NODE_ENV === 'development' ? 1.0 : 0.1,
+  // Capture 100% of transactions for performance monitoring
+  // Adjust down in production if volume is too high
+  tracesSampleRate: 1.0,
 
   // Session Replay: 10% of all sessions, 100% of sessions with errors
   replaysSessionSampleRate: 0.1,
@@ -22,7 +23,14 @@ Sentry.init({
 
   enabled: process.env.NODE_ENV === 'production',
 
+  // Distributed tracing — define which outgoing requests get trace headers
+  tracePropagationTargets: [
+    'localhost',
+    /^https:\/\/.*\.space-z\.ai/,
+  ],
+
   integrations: [
+    Sentry.browserTracingIntegration(),
     Sentry.replayIntegration({
       maskAllText: true,
       blockAllMedia: true,

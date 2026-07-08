@@ -57,8 +57,8 @@ const nextConfig: NextConfig = {
 
 export default withSentryConfig(nextConfig, {
   // Sentry org and project slugs (for source map upload)
-  org: 'o4510847796772864',
-  project: 'court-vision-ai',
+  org: 'court-vision',
+  project: 'javascript-nextjs-xq',
 
   // Source map upload auth token
   authToken: process.env.SENTRY_AUTH_TOKEN,
