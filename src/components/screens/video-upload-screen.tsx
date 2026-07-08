@@ -28,11 +28,13 @@ import { useNavigation } from '@/stores/navigation'
 import { apiFetch, cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { containerVariants, itemVariants } from '@/lib/animations'
+import { useTranslation } from '@/components/providers/language-provider'
 
 const MAX_FILE_SIZE = 500 * 1024 * 1024 // 500 MB
 const ALLOWED_EXTENSIONS = ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.ogv']
 
 export default function VideoUploadScreen() {
+  const { td } = useTranslation()
   const { goBack, navigate } = useNavigation()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const thumbInputRef = useRef<HTMLInputElement>(null)
@@ -74,7 +76,7 @@ export default function VideoUploadScreen() {
               }
             }
           })
-          xhr.addEventListener('error', () => reject(new Error('Erreur réseau')))
+          xhr.addEventListener('error', () => reject(new Error(td('Erreur réseau', 'Network error'))))
           xhr.open('POST', '/api/videos/upload')
           xhr.send(formData)
         }
@@ -111,14 +113,14 @@ export default function VideoUploadScreen() {
 
     const ext = '.' + (selected.name.split('.').pop()?.toLowerCase() || '')
     if (!ALLOWED_EXTENSIONS.includes(ext)) {
-      toast.error(`Format non supporté. Formats: ${ALLOWED_EXTENSIONS.join(', ')}`)
+      toast.error(`${td('Format non supporté. Formats:', 'Unsupported format. Formats:')} ${ALLOWED_EXTENSIONS.join(', ')}`)
       return
     }
 
     setFile(selected)
     if (!title) setTitle(selected.name.replace(/\.[^/.]+$/, ''))
     setUploadProgress(0)
-  }, [title])
+  }, [title, td])
 
   const handleThumbnailSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0]
@@ -176,9 +178,9 @@ export default function VideoUploadScreen() {
       // Store the video ID for the player screen to use
       sessionStorage.setItem('lastVideoId', videoResult.video.id)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur lors du téléchargement')
+      toast.error(err instanceof Error ? err.message : td('Erreur lors du téléchargement', 'Upload error'))
     }
-  }, [file, title, description, thumbnail, tags, isPublic, uploadMutation, createMutation, navigate])
+  }, [file, title, description, thumbnail, tags, isPublic, uploadMutation, createMutation, navigate, td])
 
   const isSubmitting = uploadMutation.isPending || createMutation.isPending
 
@@ -187,10 +189,10 @@ export default function VideoUploadScreen() {
       {/* Header */}
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur-lg">
         <div className="mx-auto flex h-14 max-w-3xl items-center gap-3 px-4">
-          <Button variant="ghost" size="icon" onClick={goBack} className="shrink-0">
+          <Button variant="ghost" size="icon" onClick={goBack} aria-label={td('Retour', 'Back')} className="shrink-0">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-lg font-semibold truncate">Ajouter une vidéo</h1>
+          <h1 className="text-lg font-semibold truncate">{td('Ajouter une vidéo', 'Add a video')}</h1>
         </div>
       </header>
 
@@ -227,7 +229,7 @@ export default function VideoUploadScreen() {
                     <div className="text-center">
                       <p className="font-medium text-sm truncate max-w-xs">{file.name}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {(file.size / (1024 * 1024)).toFixed(1)} Mo · {file.type.split('/')[1]?.toUpperCase() || 'Vidéo'}
+                        ${(file.size / (1024 * 1024)).toFixed(1)} {td('Mo', 'MB')} · {file.type.split('/')[1]?.toUpperCase() || td('Vidéo', 'Video')}
                       </p>
                     </div>
                     <Button
@@ -248,7 +250,7 @@ export default function VideoUploadScreen() {
                       <Upload className="h-8 w-8 text-muted-foreground" />
                     </div>
                     <div className="text-center">
-                      <p className="font-medium text-sm">Sélectionner une vidéo</p>
+                      <p className="font-medium text-sm">{td('Sélectionner une vidéo', 'Select a video')}</p>
                       <p className="text-xs text-muted-foreground mt-1">
                         MP4, WebM, MOV, AVI — Max 500 Mo
                       </p>
@@ -272,7 +274,7 @@ export default function VideoUploadScreen() {
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3 mb-2">
                     <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
-                    <span className="text-sm font-medium">Téléchargement...</span>
+                    <span className="text-sm font-medium">{td('Téléchargement...', 'Uploading...')}</span>
                     <span className="text-sm text-muted-foreground ml-auto">{uploadProgress}%</span>
                   </div>
                   <Progress value={uploadProgress} className="h-2" />
@@ -320,7 +322,7 @@ export default function VideoUploadScreen() {
                   </Button>
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground">La première image sera utilisée par défaut</p>
+                <p className="text-xs text-muted-foreground">{td('La première image sera utilisée par défaut', 'First frame will be used by default')}</p>
               )}
             </CardContent>
           </Card>
@@ -337,7 +339,7 @@ export default function VideoUploadScreen() {
                 id="video-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ex: Entraînement tir 3pts - 15/03"
+                placeholder={td('Ex: Entraînement tir 3pts - 15/03', 'Ex: 3-point shooting drill - 03/15')}
                 maxLength={200}
                 className="bg-background"
               />
@@ -355,7 +357,7 @@ export default function VideoUploadScreen() {
                 id="video-desc"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Décrivez cette vidéo..."
+                placeholder={td('Décrivez cette vidéo...', 'Describe this video...')}
                 maxLength={2000}
                 rows={3}
                 className="bg-background resize-none"
@@ -400,7 +402,7 @@ export default function VideoUploadScreen() {
                   </Badge>
                 ))}
                 {tags.length === 0 && (
-                  <p className="text-xs text-muted-foreground">Aucun tag ajouté</p>
+                  <p className="text-xs text-muted-foreground">{td('Aucun tag ajouté', 'No tags added')}</p>
                 )}
               </div>
             </CardContent>
@@ -419,9 +421,9 @@ export default function VideoUploadScreen() {
                     <EyeOff className="h-5 w-5 text-muted-foreground" />
                   )}
                   <div>
-                    <p className="text-sm font-medium">{isPublic ? 'Vidéo publique' : 'Vidéo privée'}</p>
+                    <p className="text-sm font-medium">{isPublic ? td('Vidéo publique', 'Public video') : td('Vidéo privée', 'Private video')}</p>
                     <p className="text-xs text-muted-foreground">
-                      {isPublic ? 'Visible par tout le monde' : 'Uniquement pour vous'}
+                      {isPublic ? td('Visible par tout le monde', 'Visible to everyone') : td('Uniquement pour vous', 'Only for you')}
                     </p>
                   </div>
                 </div>
@@ -444,7 +446,7 @@ export default function VideoUploadScreen() {
             ) : (
               <Check className="h-5 w-5 mr-2" />
             )}
-            {isSubmitting ? 'Enregistrement...' : 'Enregistrer la vidéo'}
+            {isSubmitting ? td('Enregistrement...', 'Saving...') : td('Enregistrer la vidéo', 'Save video')}
           </Button>
         </motion.div>
       </motion.div>

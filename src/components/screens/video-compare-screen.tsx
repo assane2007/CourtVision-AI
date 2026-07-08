@@ -35,6 +35,7 @@ import { apiFetch, cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { containerVariants, itemVariants } from '@/lib/animations'
 import { BottomNav } from '@/components/shared/bottom-nav'
+import { useTranslation } from '@/components/providers/language-provider'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -72,6 +73,7 @@ function formatTime(sec: number): string {
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function VideoCompareScreen() {
+  const { td } = useTranslation()
   const { goBack } = useNavigation()
 
   const videoARef = useRef<HTMLVideoElement>(null)
@@ -191,7 +193,7 @@ export default function VideoCompareScreen() {
       return
     }
     setIsComparing(true)
-  }, [selectedA, selectedB])
+  }, [selectedA, selectedB, td])
 
   const resetCompare = useCallback(() => {
     setIsComparing(false)
@@ -209,10 +211,10 @@ export default function VideoCompareScreen() {
       <div className="min-h-screen bg-background pb-20">
         <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur-lg">
           <div className="mx-auto flex h-14 max-w-3xl items-center gap-3 px-4">
-            <Button variant="ghost" size="icon" onClick={goBack} className="shrink-0">
+            <Button variant="ghost" size="icon" onClick={goBack} aria-label={td('Retour', 'Back')} className="shrink-0">
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-lg font-semibold truncate">Comparer des vidéos</h1>
+            <h1 className="text-lg font-semibold truncate">{td('Comparer des vidéos', 'Compare Videos')}</h1>
           </div>
         </header>
 
@@ -225,9 +227,9 @@ export default function VideoCompareScreen() {
           {/* Video A selector */}
           <motion.div variants={itemVariants} className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-base font-semibold">Vidéo A</Label>
+              <Label className="text-base font-semibold">{td('Vidéo A', 'Video A')}</Label>
               <Badge variant={selectedA ? 'default' : 'outline'}>
-                {selectedA ? 'Sélectionnée' : 'Requis'}
+                {selectedA ? td('Sélectionnée', 'Selected') : td('Requis', 'Required')}
               </Badge>
             </div>
             <Card
@@ -244,7 +246,7 @@ export default function VideoCompareScreen() {
                       {listA.find((v) => v.id === selectedA)?.thumbnailUrl ? (
                         <img
                           src={listA.find((v) => v.id === selectedA)!.thumbnailUrl!}
-                          alt=""
+                          alt={listA.find((v) => v.id === selectedA)?.title || ''}
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -263,7 +265,7 @@ export default function VideoCompareScreen() {
                     <div className="h-12 w-20 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center shrink-0">
                       <Search className="h-4 w-4 text-muted-foreground" />
                     </div>
-                    <p className="text-sm text-muted-foreground">Sélectionner une vidéo</p>
+                    <p className="text-sm text-muted-foreground">{td('Sélectionner une vidéo', 'Select a video')}</p>
                     <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto shrink-0" />
                   </div>
                 )}
@@ -274,9 +276,9 @@ export default function VideoCompareScreen() {
           {/* Video B selector */}
           <motion.div variants={itemVariants} className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-base font-semibold">Vidéo B</Label>
+              <Label className="text-base font-semibold">{td('Vidéo B', 'Video B')}</Label>
               <Badge variant={selectedB ? 'default' : 'outline'}>
-                {selectedB ? 'Sélectionnée' : 'Requis'}
+                {selectedB ? td('Sélectionnée', 'Selected') : td('Requis', 'Required')}
               </Badge>
             </div>
             <Card
@@ -293,7 +295,7 @@ export default function VideoCompareScreen() {
                       {listA.find((v) => v.id === selectedB)?.thumbnailUrl || listB.find((v) => v.id === selectedB)?.thumbnailUrl ? (
                         <img
                           src={(listA.find((v) => v.id === selectedB) || listB.find((v) => v.id === selectedB))!.thumbnailUrl!}
-                          alt=""
+                          alt={(listA.find((v) => v.id === selectedB) || listB.find((v) => v.id === selectedB))?.title || ''}
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -312,7 +314,7 @@ export default function VideoCompareScreen() {
                     <div className="h-12 w-20 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center shrink-0">
                       <Search className="h-4 w-4 text-muted-foreground" />
                     </div>
-                    <p className="text-sm text-muted-foreground">Sélectionner une vidéo</p>
+                    <p className="text-sm text-muted-foreground">{td('Sélectionner une vidéo', 'Select a video')}</p>
                     <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto shrink-0" />
                   </div>
                 )}
@@ -322,12 +324,12 @@ export default function VideoCompareScreen() {
 
           {/* Compare Mode Selection */}
           <motion.div variants={itemVariants} className="space-y-3">
-            <Label className="text-base font-semibold">Mode de comparaison</Label>
+            <Label className="text-base font-semibold">{td('Mode de comparaison', 'Comparison Mode')}</Label>
             <div className="grid grid-cols-3 gap-3">
               {([
-                { mode: 'split' as const, icon: Columns2, label: 'Écran divisé', desc: 'Côte à côte' },
-                { mode: 'overlay' as const, icon: Layers, label: 'Superposé', desc: 'Semi-transparent' },
-                { mode: 'mirror' as const, icon: FlipHorizontal2, label: 'Miroir', desc: 'Retourné' },
+                { mode: 'split' as const, icon: Columns2, label: td('Écran divisé', 'Split Screen'), desc: td('Côte à côte', 'Side by side') },
+                { mode: 'overlay' as const, icon: Layers, label: td('Superposé', 'Overlay'), desc: td('Semi-transparent', 'Semi-transparent') },
+                { mode: 'mirror' as const, icon: FlipHorizontal2, label: td('Miroir', 'Mirror'), desc: td('Retourné', 'Flipped') },
               ]).map(({ mode, icon: Icon, label, desc }) => (
                 <Card
                   key={mode}
@@ -358,7 +360,7 @@ export default function VideoCompareScreen() {
               disabled={!selectedA || !selectedB || selectedA === selectedB}
             >
               <Layers className="h-5 w-5" />
-              Démarrer la comparaison
+              {td('Démarrer la comparaison', 'Start comparison')}
             </Button>
           </motion.div>
         </motion.div>
@@ -368,7 +370,7 @@ export default function VideoCompareScreen() {
           <SheetContent>
             <SheetHeader>
               <SheetTitle>
-                {showVideoPicker === 'A' ? 'Sélectionner vidéo A' : 'Sélectionner vidéo B'}
+                {showVideoPicker === 'A' ? td('Sélectionner vidéo A', 'Select video A') : td('Sélectionner vidéo B', 'Select video B')}
               </SheetTitle>
             </SheetHeader>
             <div className="mt-4 space-y-3">
@@ -403,7 +405,7 @@ export default function VideoCompareScreen() {
                           <CardContent className="p-3 flex items-center gap-3">
                             <div className="h-12 w-20 rounded bg-muted shrink-0 overflow-hidden">
                               {v.thumbnailUrl ? (
-                                <img src={v.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+                                <img src={v.thumbnailUrl} alt={v.title} className="w-full h-full object-cover" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
                                   {formatTime(v.durationSec)}

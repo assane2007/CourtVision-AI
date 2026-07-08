@@ -280,7 +280,7 @@ function EmptyState() {
         className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold px-6 shadow-lg shadow-orange-500/25 rounded-full"
       >
         <Dumbbell className="h-4 w-4 mr-2" />
-        Commencer l&apos;entraînement
+        {td("Commencer l'entraînement", 'Start training')}
       </Button>
     </motion.div>
   )
@@ -290,7 +290,7 @@ function EmptyState() {
 
 export function RecordsScreen() {
   const { goBack } = useAppStore()
-  const { t } = useTranslation()
+  const { t, td } = useTranslation()
   const [activeCategory, setActiveCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -467,7 +467,7 @@ export function RecordsScreen() {
           )}
 
           {/* ── Category Tabs ────────────────────────────────────────── */}
-          <motion.div variants={itemVariants} role="tablist" aria-label="Catégories" className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
+          <motion.div variants={itemVariants} role="tablist" aria-label={td('Catégories', 'Categories')} className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
             {CATEGORIES_LIST.map((cat) => (
               <button
                 key={cat.key}

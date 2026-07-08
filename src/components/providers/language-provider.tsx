@@ -24,8 +24,8 @@ interface LanguageContextValue {
   t: (key: TranslationKey) => string
   /** Translate a category key */
   tc: (category: string) => string
-  /** Translate a difficulty key */
-  td: (difficulty: string) => string
+  /** Translate inline bilingual string: td('French', 'English') or legacy difficulty key: td('facile') */
+  td: (fr: string, en?: string) => string
   /** Whether the language has been loaded from the server */
   isLoaded: boolean
 }
@@ -121,13 +121,19 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     [language],
   )
 
-  // ── Difficulty translation ───────────────────────────────────────────────
+  // ── Inline bilingual / difficulty translation ────────────────────────────
+  // td('Français', 'English') → returns the string matching current language
+  // td('facile')               → legacy difficulty key lookup
   const td = useCallback(
-    (difficulty: string): string => {
-      const key = `difficulty.${difficulty}` as TranslationKey
+    (fr: string, en?: string): string => {
+      if (en !== undefined) {
+        return language === 'en' ? en : fr
+      }
+      // Legacy single-arg: difficulty key lookup
+      const key = `difficulty.${fr}` as TranslationKey
       const val = translations[language]?.[key]
       if (val && val !== key) return val
-      return difficulty
+      return fr
     },
     [language],
   )

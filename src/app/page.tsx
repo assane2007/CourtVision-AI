@@ -56,6 +56,8 @@ const AIInsightsScreen = dynamic(() => import('@/components/screens/ai-insights-
 const VoiceCoachScreen = dynamic(() => import('@/components/screens/voice-coach-screen'), { ssr: false })
 const PredictionsScreen = dynamic(() => import('@/components/screens/predictions-screen'), { ssr: false })
 const AIWorkoutGenScreen = dynamic(() => import('@/components/screens/ai-workout-gen-screen'), { ssr: false })
+const TermsScreen = dynamic(() => import('@/components/screens/terms-screen'), { ssr: false })
+const PrivacyScreen = dynamic(() => import('@/components/screens/privacy-screen'), { ssr: false })
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false }
@@ -222,7 +224,9 @@ export default function Home() {
           {currentScreen === 'voice-coach' && session && <VoiceCoachScreen />}
           {currentScreen === 'predictions' && session && <PredictionsScreen />}
           {currentScreen === 'ai-workout-gen' && session && <AIWorkoutGenScreen />}
-          {!session && currentScreen !== 'auth' && currentScreen !== 'landing' && <AuthScreen />}
+          {currentScreen === 'terms' && <TermsScreen />}
+          {currentScreen === 'privacy' && <PrivacyScreen />}
+          {!session && currentScreen !== 'auth' && currentScreen !== 'landing' && currentScreen !== 'terms' && currentScreen !== 'privacy' && <AuthScreen />}
         </ScreenTransition>
       </main>
     </ErrorBoundary>

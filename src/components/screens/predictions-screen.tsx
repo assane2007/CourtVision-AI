@@ -47,7 +47,19 @@ const TYPE_CONFIG: Record<string, { label: string; icon: typeof Target; color: s
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export default function PredictionsScreen() {
-  const { t } = useTranslation()
+  const { t, td } = useTranslation()
+
+  const TYPE_LABEL_EN: Record<string, string> = {
+    next_level: 'Next Level',
+    injury_risk: 'Injury Risk',
+    performance: 'Performance',
+    plateau: 'Plateau',
+  }
+  const CONF_EN: Record<string, string> = {
+    'Élevée': 'High',
+    'Moyenne': 'Medium',
+    'Faible': 'Low',
+  }
   const { goBack } = useNavigation()
   const [data, setData] = useState<PredictionsData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -61,11 +73,11 @@ export default function PredictionsScreen() {
       setData(result)
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur de chargement')
+      setError(err instanceof Error ? err.message : td('Erreur de chargement', 'Loading error'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [td])
 
   useEffect(() => { fetchPredictions() }, [fetchPredictions])
 
@@ -80,11 +92,11 @@ export default function PredictionsScreen() {
       })
       await fetchPredictions()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur de génération')
+      setError(err instanceof Error ? err.message : td('Erreur de génération', 'Generation error'))
     } finally {
       setGenerating(false)
     }
-  }, [fetchPredictions])
+  }, [fetchPredictions, td])
 
   const toggleExpand = (id: string) => {
     setExpandedId(prev => prev === id ? null : id)
@@ -118,7 +130,7 @@ export default function PredictionsScreen() {
               <div className="h-8 w-8 rounded-full bg-orange-500 flex items-center justify-center">
                 <Target className="h-4 w-4 text-white" />
               </div>
-              <h1 className="text-lg font-bold">Prédictions IA</h1>
+              <h1 className="text-lg font-bold">{td('Prédictions IA', 'AI Predictions')}</h1>
             </div>
           </div>
           <Button
@@ -128,7 +140,7 @@ export default function PredictionsScreen() {
             className="bg-orange-500 hover:bg-orange-600 text-white"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${generating ? 'animate-spin' : ''}`} />
-            Générer
+            {td('Générer', 'Generate')}
           </Button>
         </div>
       </header>
@@ -160,7 +172,7 @@ export default function PredictionsScreen() {
             >
               <Info className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
               <p className="text-xs text-muted-foreground">
-                Les prédictions sont basées sur vos données d&apos;entraînement et mises à jour par IA. Cliquez sur &quot;Générer&quot; pour créer de nouvelles prédictions.
+                {td('Les prédictions sont basées sur vos données d\'entraînement et mises à jour par IA. Cliquez sur "Générer" pour créer de nouvelles prédictions.', 'Predictions are based on your training data and updated by AI. Click "Generate" to create new predictions.')}
               </p>
             </motion.div>
 
@@ -190,20 +202,20 @@ export default function PredictionsScreen() {
                               <config.icon className={`h-5 w-5 ${config.color}`} />
                             </div>
                             <div>
-                              <p className="text-sm font-semibold">{config.label}</p>
+                              <p className="text-sm font-semibold">{td(config.label, TYPE_LABEL_EN[type] || config.label)}</p>
                               {latest ? (
                                 <p className="text-xs text-muted-foreground">
-                                  {latest.predictedValue !== null ? `Valeur: ${latest.predictedValue}` : 'En attente'}
+                                  {latest.predictedValue !== null ? td(`Valeur: ${latest.predictedValue}`, `Value: ${latest.predictedValue}`) : td('En attente', 'Pending')}
                                 </p>
                               ) : (
-                                <p className="text-xs text-muted-foreground">Non généré</p>
+                                <p className="text-xs text-muted-foreground">{td('Non généré', 'Not generated')}</p>
                               )}
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
                             {conf && (
                               <Badge variant="outline" className={`text-[10px] ${conf.color}`}>
-                                {conf.label}
+                                {td(conf.label, CONF_EN[conf.label] || conf.label)}
                               </Badge>
                             )}
                             {isExpanded ? (
@@ -218,7 +230,7 @@ export default function PredictionsScreen() {
                         {latest && (
                           <div className="mt-3">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="text-[10px] text-muted-foreground">Confiance</span>
+                              <span className="text-[10px] text-muted-foreground">{td('Confiance', 'Confidence')}</span>
                               <span className="text-[10px] font-medium">{Math.round(latest.confidence * 100)}%</span>
                             </div>
                             <Progress value={latest.confidence * 100} className="h-1.5" />
@@ -241,14 +253,14 @@ export default function PredictionsScreen() {
                               <>
                                 {/* Recommendation */}
                                 <div>
-                                  <p className="text-xs font-semibold mb-1">Recommandation</p>
+                                  <p className="text-xs font-semibold mb-1">{td('Recommandation', 'Recommendation')}</p>
                                   <p className="text-sm text-muted-foreground">{latest.recommendation}</p>
                                 </div>
 
                                 {/* Factors */}
                                 {latest.factors.length > 0 && (
                                   <div>
-                                    <p className="text-xs font-semibold mb-1.5">Facteurs</p>
+                                    <p className="text-xs font-semibold mb-1.5">{td('Facteurs', 'Factors')}</p>
                                     <div className="flex flex-wrap gap-1.5">
                                       {latest.factors.map((f, i) => (
                                         <Badge key={i} variant="secondary" className="text-[10px]">
@@ -262,14 +274,14 @@ export default function PredictionsScreen() {
                                 {/* Predicted date */}
                                 {latest.predictedAt && (
                                   <p className="text-[10px] text-muted-foreground">
-                                    Prédit: {new Date(latest.predictedAt).toLocaleDateString('fr-FR')}
+                                    {td('Prédit:', 'Predicted:')} {new Date(latest.predictedAt).toLocaleDateString('fr-FR')}
                                   </p>
                                 )}
 
                                 {/* History chart (simple sparkline) */}
                                 {history.length >= 2 && (
                                   <div>
-                                    <p className="text-xs font-semibold mb-2">Historique des valeurs</p>
+                                    <p className="text-xs font-semibold mb-2">{td('Historique des valeurs', 'Value History')}</p>
                                     <div className="h-12 flex items-end gap-1">
                                       {history.slice(0, 10).reverse().map((h, i) => (
                                         <div key={h.id} className="flex-1 flex flex-col items-center gap-0.5">
@@ -288,7 +300,7 @@ export default function PredictionsScreen() {
                               </>
                             ) : (
                               <p className="text-sm text-muted-foreground text-center py-4">
-                                Cliquez sur &quot;Générer&quot; pour créer cette prédiction
+                                {td('Cliquez sur "Générer" pour créer cette prédiction', 'Click "Generate" to create this prediction')}
                               </p>
                             )}
                           </div>
@@ -315,13 +327,13 @@ export default function PredictionsScreen() {
                 className="text-center py-12"
               >
                 <Target className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                <h2 className="text-base font-bold mb-1">Aucune prédiction</h2>
+                <h2 className="text-base font-bold mb-1">{td('Aucune prédiction', 'No predictions')}</h2>
                 <p className="text-sm text-muted-foreground mb-6">
-                  Générez vos premières prédictions pour voir votre progression
+                  {td('Générez vos premières prédictions pour voir votre progression', 'Generate your first predictions to see your progress')}
                 </p>
                 <Button onClick={generatePredictions} disabled={generating} className="bg-orange-500 hover:bg-orange-600">
                   <RefreshCw className={`h-4 w-4 mr-2 ${generating ? 'animate-spin' : ''}`} />
-                  Générer les prédictions
+                  {td('Générer les prédictions', 'Generate predictions')}
                 </Button>
               </motion.div>
             )}

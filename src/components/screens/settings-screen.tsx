@@ -193,7 +193,7 @@ export function SettingsScreen() {
     saveMutation.mutate({ hapticsEnabled: checked })
   }
 
-  const { t, setLanguage: setI18nLanguage } = useTranslation()
+  const { t, td, setLanguage: setI18nLanguage } = useTranslation()
 
   const handleLanguageChange = (val: string) => {
     if (val !== settings.language) {
@@ -220,6 +220,7 @@ export function SettingsScreen() {
             variant="ghost"
             size="icon"
             onClick={goBack}
+            aria-label={td('Retour', 'Back')}
             className="shrink-0"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -1063,7 +1064,7 @@ function SecuritySection() {
 }
 
 function ChangePasswordForm({ onClose }: { onClose: () => void }) {
-  const { t } = useTranslation()
+  const { t, td } = useTranslation()
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -1121,7 +1122,7 @@ function ChangePasswordForm({ onClose }: { onClose: () => void }) {
           type="password"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
-          placeholder="Min. 8 caractères"
+          placeholder={td('Min. 8 caractères', 'Min. 8 characters')}
           required
         />
       </div>

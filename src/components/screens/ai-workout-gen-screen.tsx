@@ -74,7 +74,18 @@ const INTENSITY_OPTIONS = [
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export default function AIWorkoutGenScreen() {
-  const { t } = useTranslation()
+  const { t, td } = useTranslation()
+
+  const FOCUS_EN: Record<string, string> = {
+    shooting: 'Shooting', ball_handling: 'Ball Handling', defense: 'Defense',
+    footwork: 'Footwork', finishing: 'Finishing', conditioning: 'Conditioning',
+    agility: 'Agility', speed_change: 'Speed',
+  }
+  const EQUIP_EN: Record<string, string> = {
+    none: 'None', ball: 'Ball', cones: 'Cones', chair: 'Chair',
+    resistance_band: 'Resistance Band', ladder: 'Ladder',
+  }
+  const INTENSITY_EN: Record<string, string> = { low: 'Light', medium: 'Moderate', high: 'Intense' }
   const { goBack } = useNavigation()
   const [savedWorkouts, setSavedWorkouts] = useState<GeneratedWorkout[]>([])
   const [currentWorkout, setCurrentWorkout] = useState<GeneratedWorkout | null>(null)
@@ -97,11 +108,11 @@ export default function AIWorkoutGenScreen() {
       setSavedWorkouts(data.workouts)
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur de chargement')
+      setError(err instanceof Error ? err.message : td('Erreur de chargement', 'Loading error'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [td])
 
   useEffect(() => { fetchSaved() }, [fetchSaved])
 
@@ -136,7 +147,7 @@ export default function AIWorkoutGenScreen() {
       setCurrentWorkout(data)
       await fetchSaved()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur de génération')
+      setError(err instanceof Error ? err.message : td('Erreur de génération', 'Generation error'))
     } finally {
       setGenerating(false)
     }
@@ -189,7 +200,7 @@ export default function AIWorkoutGenScreen() {
               <div className="h-8 w-8 rounded-full bg-orange-500 flex items-center justify-center">
                 <Dumbbell className="h-4 w-4 text-white" />
               </div>
-              <h1 className="text-lg font-bold">Plan IA</h1>
+              <h1 className="text-lg font-bold">{td('Plan IA', 'AI Plan')}</h1>
             </div>
           </div>
           {/* Tab toggle */}
@@ -198,13 +209,13 @@ export default function AIWorkoutGenScreen() {
               onClick={() => setView('generator')}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${view === 'generator' ? 'bg-background shadow-sm' : 'text-muted-foreground'}`}
             >
-              Créer
+              {td('Créer', 'Create')}
             </button>
             <button
               onClick={() => setView('saved')}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${view === 'saved' ? 'bg-background shadow-sm' : 'text-muted-foreground'}`}
             >
-              Sauvegardés
+              {td('Sauvegardés', 'Saved')}
             </button>
           </div>
         </div>
@@ -220,10 +231,10 @@ export default function AIWorkoutGenScreen() {
           ) : savedWorkouts.length === 0 ? (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-12">
               <BookOpen className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-              <h2 className="text-base font-bold mb-1">Aucun plan sauvegardé</h2>
-              <p className="text-sm text-muted-foreground mb-6">Générez votre premier plan IA</p>
+              <h2 className="text-base font-bold mb-1">{td('Aucun plan sauvegardé', 'No saved plans')}</h2>
+              <p className="text-sm text-muted-foreground mb-6">{td('Générez votre premier plan IA', 'Generate your first AI plan')}</p>
               <Button onClick={() => setView('generator')} className="bg-orange-500 hover:bg-orange-600">
-                <Plus className="h-4 w-4 mr-2" /> Créer un plan
+                <Plus className="h-4 w-4 mr-2" /> {td('Créer un plan', 'Create a plan')}
               </Button>
             </motion.div>
           ) : (
@@ -286,7 +297,7 @@ export default function AIWorkoutGenScreen() {
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{currentWorkout.durationMin}min</span>
                         <Badge variant="outline" className="text-[10px] h-4">{currentWorkout.difficulty}</Badge>
-                        <span className="flex items-center gap-1"><Timer className="h-3 w-3" />~{Math.ceil(totalEstTime / 60)}min estimé</span>
+                        <span className="flex items-center gap-1"><Timer className="h-3 w-3" />~{Math.ceil(totalEstTime / 60)}{td('min estimé', 'min estimated')}</span>
                       </div>
                       {currentWorkout.focusAreas.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
@@ -304,7 +315,7 @@ export default function AIWorkoutGenScreen() {
                       <CardContent className="p-4">
                         <div className="flex items-center gap-2 mb-1">
                           <Zap className="h-4 w-4 text-orange-500" />
-                          <p className="text-sm font-semibold">Échauffement</p>
+                          <p className="text-sm font-semibold">{td('Échauffement', 'Warm-up')}</p>
                         </div>
                         <p className="text-sm text-muted-foreground">{currentWorkout.warmup}</p>
                       </CardContent>
@@ -313,7 +324,7 @@ export default function AIWorkoutGenScreen() {
 
                   {/* Drills */}
                   <div className="space-y-2">
-                    <h3 className="text-sm font-semibold px-1">Exercices ({currentWorkout.drills.length})</h3>
+                    <h3 className="text-sm font-semibold px-1">{td('Exercices', 'Exercises')} ({currentWorkout.drills.length})</h3>
                     {currentWorkout.drills.map((drill, i) => (
                       <motion.div
                         key={`${drill.drillName}-${i}`}
@@ -335,7 +346,7 @@ export default function AIWorkoutGenScreen() {
                                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                       <span>{drill.sets} × {drill.repsPerSet} reps</span>
                                       <span>•</span>
-                                      <span>Repos {drill.restSec}s</span>
+                                      <span>{td('Repos', 'Rest')} {drill.restSec}s</span>
                                     </div>
                                   </div>
                                 </div>
@@ -357,12 +368,12 @@ export default function AIWorkoutGenScreen() {
                               >
                                 <div className="border-t border-border/50 p-4 space-y-2 bg-muted/20">
                                   <div>
-                                    <p className="text-xs font-semibold text-orange-500 mb-0.5">Raison du choix</p>
+                                    <p className="text-xs font-semibold text-orange-500 mb-0.5">{td('Raison du choix', 'Reason for selection')}</p>
                                     <p className="text-xs text-muted-foreground">{drill.reasoning}</p>
                                   </div>
                                   {drill.coachingTip && (
                                     <div>
-                                      <p className="text-xs font-semibold mb-0.5">Conseil coaching</p>
+                                      <p className="text-xs font-semibold mb-0.5">{td('Conseil coaching', 'Coaching tip')}</p>
                                       <p className="text-xs text-muted-foreground">{drill.coachingTip}</p>
                                     </div>
                                   )}
@@ -381,7 +392,7 @@ export default function AIWorkoutGenScreen() {
                       <CardContent className="p-4">
                         <div className="flex items-center gap-2 mb-1">
                           <Target className="h-4 w-4 text-orange-500" />
-                          <p className="text-sm font-semibold">Retour au calme</p>
+                          <p className="text-sm font-semibold">{td('Retour au calme', 'Cool-down')}</p>
                         </div>
                         <p className="text-sm text-muted-foreground">{currentWorkout.cooldown}</p>
                       </CardContent>
@@ -392,7 +403,7 @@ export default function AIWorkoutGenScreen() {
                   {currentWorkout.expectedOutcome && (
                     <Card className="border-orange-500/20 bg-orange-500/5">
                       <CardContent className="p-4">
-                        <p className="text-xs font-semibold text-orange-500 mb-1">Résultat attendu</p>
+                        <p className="text-xs font-semibold text-orange-500 mb-1">{td('Résultat attendu', 'Expected Outcome')}</p>
                         <p className="text-sm">{currentWorkout.expectedOutcome}</p>
                       </CardContent>
                     </Card>
@@ -405,7 +416,7 @@ export default function AIWorkoutGenScreen() {
                       className="flex-1"
                       onClick={() => setCurrentWorkout(null)}
                     >
-                      Nouveau plan
+                      {td('Nouveau plan', 'New plan')}
                     </Button>
                     <Button
                       className="flex-1 bg-orange-500 hover:bg-orange-600"
@@ -413,9 +424,9 @@ export default function AIWorkoutGenScreen() {
                       disabled={currentWorkout.isUsed}
                     >
                       {currentWorkout.isUsed ? (
-                        <><CheckCircle2 className="h-4 w-4 mr-2" /> Complété</>
+                        <><CheckCircle2 className="h-4 w-4 mr-2" /> {td('Complété', 'Completed')}</>
                       ) : (
-                        <><CheckCircle2 className="h-4 w-4 mr-2" /> Marquer complété</>
+                        <><CheckCircle2 className="h-4 w-4 mr-2" /> {td('Marquer complété', 'Mark completed')}</>
                       )}
                     </Button>
                   </div>
@@ -434,7 +445,7 @@ export default function AIWorkoutGenScreen() {
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-orange-500" />
-                        <p className="text-sm font-semibold">Durée</p>
+                        <p className="text-sm font-semibold">{td('Durée', 'Duration')}</p>
                       </div>
                       <span className="text-lg font-bold text-orange-500">{duration[0]} min</span>
                     </div>
@@ -455,7 +466,7 @@ export default function AIWorkoutGenScreen() {
                 {/* Focus Areas */}
                 <Card>
                   <CardContent className="p-4">
-                    <p className="text-sm font-semibold mb-3">Zones de focus (max 3)</p>
+                    <p className="text-sm font-semibold mb-3">{td('Zones de focus (max 3)', 'Focus Areas (max 3)')}</p>
                     <div className="grid grid-cols-4 gap-2">
                       {FOCUS_AREAS.map(area => {
                         const isSelected = focusAreas.includes(area.id)
@@ -470,7 +481,7 @@ export default function AIWorkoutGenScreen() {
                             }`}
                           >
                             <span className="text-xl">{area.icon}</span>
-                            <span className="text-[10px] font-medium">{area.label}</span>
+                            <span className="text-[10px] font-medium">{td(area.label, FOCUS_EN[area.id] ?? area.label)}</span>
                           </button>
                         )
                       })}
@@ -481,7 +492,7 @@ export default function AIWorkoutGenScreen() {
                 {/* Equipment */}
                 <Card>
                   <CardContent className="p-4">
-                    <p className="text-sm font-semibold mb-3">Équipement disponible</p>
+                    <p className="text-sm font-semibold mb-3">{td('Équipement disponible', 'Available Equipment')}</p>
                     <div className="flex flex-wrap gap-2">
                       {EQUIPMENT_OPTIONS.map(eq => {
                         const isSelected = equipment.includes(eq.id)
@@ -495,7 +506,7 @@ export default function AIWorkoutGenScreen() {
                                 : 'border-border hover:border-orange-300'
                             }`}
                           >
-                            {eq.label}
+                            {td(eq.label, EQUIP_EN[eq.id] ?? eq.label)}
                           </button>
                         )
                       })}
@@ -506,7 +517,7 @@ export default function AIWorkoutGenScreen() {
                 {/* Intensity */}
                 <Card>
                   <CardContent className="p-4">
-                    <p className="text-sm font-semibold mb-3">Intensité</p>
+                    <p className="text-sm font-semibold mb-3">{td('Intensité', 'Intensity')}</p>
                     <div className="flex gap-2">
                       {INTENSITY_OPTIONS.map(opt => (
                         <button
@@ -518,7 +529,7 @@ export default function AIWorkoutGenScreen() {
                               : 'border-border hover:border-orange-300'
                           }`}
                         >
-                          {opt.label}
+                          {td(opt.label, INTENSITY_EN[opt.id] ?? opt.label)}
                         </button>
                       ))}
                     </div>
@@ -539,9 +550,9 @@ export default function AIWorkoutGenScreen() {
                   className="w-full bg-orange-500 hover:bg-orange-600 text-white h-12 text-sm font-semibold"
                 >
                   {generating ? (
-                    <><RefreshCw className="h-4 w-4 mr-2 animate-spin" /> Génération en cours...</>
+                    <><RefreshCw className="h-4 w-4 mr-2 animate-spin" /> {td('Génération en cours...', 'Generating...')}</>
                   ) : (
-                    <><Dumbbell className="h-4 w-4 mr-2" /> Générer le plan IA</>
+                    <><Dumbbell className="h-4 w-4 mr-2" /> {td('Générer le plan IA', 'Generate AI Plan')}</>
                   )}
                 </Button>
               </motion.div>

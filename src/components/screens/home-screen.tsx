@@ -309,7 +309,7 @@ export default function HomeScreen() {
   const { navigate, selectDrill, workoutResult, xpAwarded, clearWorkoutState, setWorkoutResult } = useAppStore()
   const queryClient = useQueryClient()
   const hasAwardedRef = useRef(false)
-  const { t, language } = useTranslation()
+  const { t, td, language } = useTranslation()
 
   const userName = session?.user?.name ?? (language === 'en' ? 'Player' : 'Joueur')
   const userInitial = userName.charAt(0).toUpperCase()
@@ -645,12 +645,11 @@ export default function HomeScreen() {
             </div>
             <p className="text-sm text-orange-100">
               {stats?.weekSessions && stats.weekSessions > 0
-                ? language === 'en'
-                  ? `${stats.weekSessions} session${stats.weekSessions > 1 ? 's' : ''} this week — keep going!`
-                  : `${stats.weekSessions} séance${stats.weekSessions > 1 ? 's' : ''} cette semaine — continuez !`
-                : language === 'en'
-                  ? t('home.noSessionsWeek')
-                  : t('home.noSessionsWeek')}
+                ? td(
+                    `${stats.weekSessions} séance${stats.weekSessions > 1 ? 's' : ''} cette semaine — continuez !`,
+                    `${stats.weekSessions} session${stats.weekSessions > 1 ? 's' : ''} this week — keep going!`
+                  )
+                : t('home.noSessionsWeek')}
             </p>
           </div>
         </motion.div>
@@ -727,17 +726,17 @@ export default function HomeScreen() {
         <motion.section variants={itemVariants} className="mb-5">
           <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-orange-500" />
-            Explorer
+            {td('Explorer', 'Explore')}
           </h2>
           <div className="grid grid-cols-3 gap-2.5">
             {[
-              { icon: Users, label: 'Amis', screen: 'friends' as const, color: 'bg-sky-500/10 text-sky-500' },
-              { icon: Trophy, label: 'Défis', screen: 'challenges' as const, color: 'bg-amber-500/10 text-amber-500' },
-              { icon: Users, label: 'Équipes', screen: 'teams' as const, color: 'bg-emerald-500/10 text-emerald-500' },
-              { icon: Video, label: 'Vidéos', screen: 'video-library' as const, color: 'bg-rose-500/10 text-rose-500' },
+              { icon: Users, label: td('Amis', 'Friends'), screen: 'friends' as const, color: 'bg-sky-500/10 text-sky-500' },
+              { icon: Trophy, label: td('Défis', 'Challenges'), screen: 'challenges' as const, color: 'bg-amber-500/10 text-amber-500' },
+              { icon: Users, label: td('Équipes', 'Teams'), screen: 'teams' as const, color: 'bg-emerald-500/10 text-emerald-500' },
+              { icon: Video, label: td('Vidéos', 'Videos'), screen: 'video-library' as const, color: 'bg-rose-500/10 text-rose-500' },
               { icon: Mic, label: 'Voice Coach', screen: 'voice-coach' as const, color: 'bg-violet-500/10 text-violet-500' },
               { icon: Brain, label: 'IA Insights', screen: 'ai-insights' as const, color: 'bg-cyan-500/10 text-cyan-500' },
-              { icon: Target, label: 'Prédictions', screen: 'predictions' as const, color: 'bg-pink-500/10 text-pink-500' },
+              { icon: Target, label: td('Prédictions', 'Predictions'), screen: 'predictions' as const, color: 'bg-pink-500/10 text-pink-500' },
               { icon: Sparkles, label: 'IA Workout', screen: 'ai-workout-gen' as const, color: 'bg-orange-500/10 text-orange-500' },
               { icon: MessageCircle, label: 'Messages', screen: 'messages' as const, color: 'bg-teal-500/10 text-teal-500' },
             ].map((feature) => (

@@ -35,7 +35,7 @@ interface VoiceSession {
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export default function VoiceCoachScreen() {
-  const { t } = useTranslation()
+  const { t, td } = useTranslation()
   const { goBack } = useNavigation()
   const [exchanges, setExchanges] = useState<VoiceExchange[]>([])
   const [input, setInput] = useState('')
@@ -133,12 +133,12 @@ export default function VoiceCoachScreen() {
         playAudio(data.audio)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur du coach vocal')
+      setError(err instanceof Error ? err.message : td('Erreur du coach vocal', 'Voice coach error'))
     } finally {
       setIsLoading(false)
       inputRef.current?.focus()
     }
-  }, [isLoading, playAudio])
+  }, [isLoading, playAudio, td])
 
   // ── Start/stop recording ──────────────────────────────────────────────
   const toggleRecording = useCallback(async () => {
@@ -180,7 +180,7 @@ export default function VoiceCoachScreen() {
                 sendQuestion(data.transcript)
               }
             } catch {
-              setError('Erreur de transcription')
+              setError(td('Erreur de transcription', 'Transcription error'))
               setIsLoading(false)
             }
           }
@@ -192,9 +192,9 @@ export default function VoiceCoachScreen() {
       mediaRecorder.start()
       setIsRecording(true)
     } catch {
-      setError('Impossible d\'accéder au microphone')
+      setError(td("Impossible d'accéder au microphone", 'Unable to access microphone'))
     }
-  }, [isRecording, sendQuestion])
+  }, [isRecording, sendQuestion, td])
 
   // ── Handle submit ─────────────────────────────────────────────────────
   const handleSubmit = (e: React.FormEvent) => {
@@ -218,8 +218,8 @@ export default function VoiceCoachScreen() {
                 <Mic className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="text-base font-bold leading-tight">Coach Vocal IA</h1>
-                <p className="text-[11px] text-muted-foreground">Parlez ou tapez votre question</p>
+                <h1 className="text-base font-bold leading-tight">{td('Coach Vocal IA', 'AI Voice Coach')}</h1>
+                <p className="text-[11px] text-muted-foreground">{td('Parlez ou tapez votre question', 'Speak or type your question')}</p>
               </div>
             </div>
           </div>
@@ -245,13 +245,13 @@ export default function VoiceCoachScreen() {
               {initialLoading ? (
                 <Skeleton className="h-10 rounded-lg" />
               ) : history.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-4">Aucun historique vocal</p>
+                <p className="text-xs text-muted-foreground text-center py-4">{td('Aucun historique vocal', 'No voice history')}</p>
               ) : (
                 history.map(s => (
                   <div key={s.id} className="flex items-center gap-3 p-2 rounded-lg bg-background">
                     <Mic className="h-4 w-4 text-orange-500 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm truncate">{s.transcript || '(session vide)'}</p>
+                      <p className="text-sm truncate">{s.transcript || td('(session vide)', '(empty session)')}</p>
                       <p className="text-[10px] text-muted-foreground">
                         {new Date(s.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                       </p>
@@ -275,16 +275,16 @@ export default function VoiceCoachScreen() {
             <div className="h-20 w-20 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-xl shadow-orange-500/30 mb-4">
               <Mic className="h-10 w-10 text-white" />
             </div>
-            <h2 className="text-lg font-bold mb-1">Coach Vocal IA</h2>
+            <h2 className="text-lg font-bold mb-1">{td('Coach Vocal IA', 'AI Voice Coach')}</h2>
             <p className="text-sm text-muted-foreground max-w-[280px] mb-8">
-              Posez une question pendant votre entraînement et recevez une réponse vocale instantanée
+              {td('Posez une question pendant votre entraînement et recevez une réponse vocale instantanée', 'Ask a question during your workout and get an instant voice response')}
             </p>
             <div className="space-y-2 w-full max-w-xs">
               {[
-                'Comment améliorer mon tir ?',
-                'Quels exercices pour la défense ?',
-                'Pourquoi je rate mes lancers francs ?',
-                'Comment éviter les blessures ?',
+                td('Comment améliorer mon tir ?', 'How to improve my shot?'),
+                td('Quels exercices pour la défense ?', 'What drills for defense?'),
+                td('Pourquoi je rate mes lancers francs ?', 'Why do I miss my free throws?'),
+                td('Comment éviter les blessures ?', 'How to avoid injuries?'),
               ].map((q) => (
                 <button
                   key={q}
@@ -328,7 +328,7 @@ export default function VoiceCoachScreen() {
                           className="mt-1 h-7 text-xs text-orange-500 hover:text-orange-600"
                         >
                           <Volume2 className="h-3 w-3 mr-1" />
-                          Réécouter
+                          {td('Réécouter', 'Replay')}
                         </Button>
                       )}
                     </div>
@@ -390,7 +390,7 @@ export default function VoiceCoachScreen() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendQuestion(input) } }}
-            placeholder="Tapez votre question..."
+            placeholder={td('Tapez votre question...', 'Type your question...')}
             disabled={isLoading}
             className="flex-1 h-11 rounded-full bg-muted border-0 px-4 text-sm focus-visible:ring-1 focus-visible:ring-orange-500/50"
             maxLength={500}
@@ -407,7 +407,7 @@ export default function VoiceCoachScreen() {
         {isRecording && (
           <div className="flex items-center justify-center gap-2 pb-2">
             <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-xs text-destructive font-medium">Enregistrement en cours...</span>
+            <span className="text-xs text-destructive font-medium">{td('Enregistrement en cours...', 'Recording...')}</span>
           </div>
         )}
       </div>

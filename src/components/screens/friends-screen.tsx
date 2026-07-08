@@ -44,8 +44,8 @@ type Tab = 'all' | 'friends' | 'sent' | 'received' | 'blocked'
 const TABS: { value: Tab; label: string; icon: typeof Users }[] = [
   { value: 'all', label: 'Tous', icon: Users },
   { value: 'friends', label: 'Amis', icon: UserCheck },
-  { value: 'sent', label: 'Envoyées', icon: Send },
-  { value: 'received', label: 'Reçues', icon: UserPlus },
+  { value: 'sent', label: 'Envoyées', labelEn: 'Sent', icon: Send },
+  { value: 'received', label: 'Reçues', labelEn: 'Received', icon: UserPlus },
   { value: 'blocked', label: 'Bloqués', icon: ShieldBan },
 ]
 
@@ -130,7 +130,7 @@ export default function FriendsScreen() {
           <Button variant="ghost" size="icon" onClick={goBack} className="shrink-0" aria-label={t('action.back')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-lg font-bold flex-1">Amis</h1>
+          <h1 className="text-lg font-bold flex-1">{td('Amis', 'Friends')}</h1>
           {data?.counts && data.counts.friends > 0 && (
             <Badge variant="secondary" className="text-xs">{data.counts.friends}</Badge>
           )}
@@ -145,7 +145,7 @@ export default function FriendsScreen() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && doSearch()}
-                placeholder="Rechercher un joueur..."
+                placeholder={td('Rechercher un joueur...', 'Search for a player...')}
                 className="pl-9"
               />
             </div>
@@ -170,7 +170,7 @@ export default function FriendsScreen() {
                   }`}
                 >
                   <t.icon className="h-3.5 w-3.5" />
-                  {t.label}
+                  {td(t.label, (t as { labelEn?: string }).labelEn || t.label)}
                   {t.value === 'friends' && data?.counts && (
                     <span className="ml-0.5">{data.counts.friends}</span>
                   )}
@@ -200,14 +200,14 @@ export default function FriendsScreen() {
         ) : isError ? (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
             <Users className="h-12 w-12 text-muted-foreground/50" />
-            <p className="text-muted-foreground">Erreur de chargement</p>
+            <p className="text-muted-foreground">{td('Erreur de chargement', 'Loading error')}</p>
             <Button variant="outline" onClick={() => refetch()}>{t('action.retry')}</Button>
           </div>
         ) : displayItems.length === 0 ? (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
             <Users className="h-12 w-12 text-muted-foreground/50" />
             <p className="text-muted-foreground">
-              {searchQuery ? 'Aucun résultat' : tab === 'friends' ? 'Aucun ami' : 'Aucune demande'}
+              {searchQuery ? td('Aucun résultat', 'No results') : tab === 'friends' ? td('Aucun ami', 'No friends') : td('Aucune demande', 'No requests')}
             </p>
           </div>
         ) : (
@@ -222,7 +222,7 @@ export default function FriendsScreen() {
                   >
                     <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold shrink-0">
                       {item.avatar ? (
-                        <img src={item.avatar as string} alt="" className="w-full h-full rounded-full object-cover" />
+                        <img src={item.avatar as string} alt={item.name} className="w-full h-full rounded-full object-cover" />
                       ) : (
                         (item.name as string)?.charAt(0).toUpperCase()
                       )}
@@ -240,14 +240,14 @@ export default function FriendsScreen() {
                     {isSearchResult && !item.friendshipStatus && (
                       <Button size="sm" className="h-8 text-xs" onClick={e => { e.stopPropagation(); sendRequest.mutate(item.id as string) }} disabled={sendRequest.isPending}>
                         {sendRequest.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <UserPlus className="h-3.5 w-3.5 mr-1" />}
-                        Ajouter
+                        {td('Ajouter', 'Add')}
                       </Button>
                     )}
 
                     {!isSearchResult && item.status === 'pending' && !item.isRequester && (
                       <div className="flex gap-1.5">
                         <Button size="sm" className="h-8 text-xs bg-green-600 hover:bg-green-700" onClick={() => handleAction(item.id as string, 'accept')}>
-                          <UserCheck className="h-3.5 w-3.5 mr-1" />Accepter
+                          <UserCheck className="h-3.5 w-3.5 mr-1" />{td('Accepter', 'Accept')}
                         </Button>
                         <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => handleAction(item.id as string, 'decline')}>
                           <UserX className="h-3.5 w-3.5" />
@@ -256,18 +256,18 @@ export default function FriendsScreen() {
                     )}
 
                     {!isSearchResult && item.status === 'pending' && item.isRequester && (
-                      <Badge variant="secondary" className="text-xs">En attente</Badge>
+                      <Badge variant="secondary" className="text-xs">{td('En attente', 'Pending')}</Badge>
                     )}
 
                     {!isSearchResult && item.status === 'accepted' && (
                       <Button size="sm" variant="ghost" className="h-8 text-xs text-destructive" onClick={() => removeFriend(item.id as string)}>
-                        Retirer
+                        {td('Retirer', 'Remove')}
                       </Button>
                     )}
 
                     {!isSearchResult && item.status === 'blocked' && (
                       <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => removeFriend(item.id as string)}>
-                        Débloquer
+                        {td('Débloquer', 'Unblock')}
                       </Button>
                     )}
                   </div>

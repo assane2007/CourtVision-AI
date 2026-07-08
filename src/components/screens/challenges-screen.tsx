@@ -37,18 +37,19 @@ interface Challenge {
 
 type Tab = 'active' | 'upcoming' | 'completed' | 'my'
 
-const TABS: { value: Tab; label: string }[] = [
-  { value: 'active', label: 'En cours' },
-  { value: 'upcoming', label: 'À venir' },
-  { value: 'completed', label: 'Terminés' },
-  { value: 'my', label: 'Mes défis' },
+const TABS: { value: Tab; label: string; labelEn: string }[] = [
+  { value: 'active', label: 'En cours', labelEn: 'Active' },
+  { value: 'upcoming', label: 'À venir', labelEn: 'Upcoming' },
+  { value: 'completed', label: 'Terminés', labelEn: 'Completed' },
+  { value: 'my', label: 'Mes défis', labelEn: 'My challenges' },
 ]
 
-function getStatusBadge(ch: Challenge) {
-  if (ch.isCompleted) return <Badge className="bg-green-600 text-white text-[10px]">Terminé</Badge>
-  if (ch.isJoined) return <Badge className="bg-orange-500 text-white text-[10px]">En cours</Badge>
+function StatusBadge({ challenge }: { challenge: Challenge }) {
+  const { td } = useTranslation()
+  if (challenge.isCompleted) return <Badge className="bg-green-600 text-white text-[10px]">{td('Terminé', 'Completed')}</Badge>
+  if (challenge.isJoined) return <Badge className="bg-orange-500 text-white text-[10px]">{td('En cours', 'Active')}</Badge>
   const now = Date.now()
-  if (new Date(ch.startDate) > new Date(now)) return <Badge variant="outline" className="text-[10px]">À venir</Badge>
+  if (new Date(challenge.startDate) > new Date(now)) return <Badge variant="outline" className="text-[10px]">{td('À venir', 'Upcoming')}</Badge>
   return null
 }
 
@@ -96,37 +97,37 @@ export default function ChallengesScreen() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <Target className="h-5 w-5 text-orange-500" />
-          <h1 className="text-lg font-bold flex-1">Défis</h1>
+          <h1 className="text-lg font-bold flex-1">{td('Défis', 'Challenges')}</h1>
           <Dialog open={showCreate} onOpenChange={setShowCreate}>
             <DialogTrigger asChild>
-              <Button size="sm" className="h-8"><Plus className="h-4 w-4 mr-1" />Créer</Button>
+              <Button size="sm" className="h-8"><Plus className="h-4 w-4 mr-1" />{td('Créer', 'Create')}</Button>
             </DialogTrigger>
             <DialogContent className="max-h-[85vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>Nouveau défi</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{td('Nouveau défi', 'New Challenge')}</DialogTitle></DialogHeader>
               <div className="space-y-4 pt-2">
-                <div><Label>Titre</Label><Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Ex: 100 tirs en une semaine" /></div>
-                <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Détails du défi" rows={2} /></div>
+                <div><Label>{td('Titre', 'Title')}</Label><Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder={td('Ex: 100 tirs en une semaine', 'Ex: 100 shots in one week')} /></div>
+                <div><Label>{td('Description', 'Description')}</Label><Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder={td('Détails du défi', 'Challenge details')} rows={2} /></div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Type</Label>
+                  <div><Label>{td('Type', 'Type')}</Label>
                     <Select value={form.type} onValueChange={v => setForm({ ...form, type: v })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="total_reps">Répétitions</SelectItem>
-                        <SelectItem value="drill_score">Score drill</SelectItem>
-                        <SelectItem value="streak">Série</SelectItem>
-                        <SelectItem value="speed">Vitesse</SelectItem>
-                        <SelectItem value="custom">Personnalisé</SelectItem>
+                        <SelectItem value="total_reps">{td('Répétitions', 'Total Reps')}</SelectItem>
+                        <SelectItem value="drill_score">{td('Score drill', 'Drill Score')}</SelectItem>
+                        <SelectItem value="streak">{td('Série', 'Streak')}</SelectItem>
+                        <SelectItem value="speed">{td('Vitesse', 'Speed')}</SelectItem>
+                        <SelectItem value="custom">{td('Personnalisé', 'Custom')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div><Label>Objectif</Label><Input type="number" value={form.targetValue} onChange={e => setForm({ ...form, targetValue: e.target.value })} /></div>
+                  <div><Label>{td('Objectif', 'Goal')}</Label><Input type="number" value={form.targetValue} onChange={e => setForm({ ...form, targetValue: e.target.value })} /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Début</Label><Input type="date" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })} /></div>
-                  <div><Label>Fin</Label><Input type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })} /></div>
+                  <div><Label>{td('Début', 'Start')}</Label><Input type="date" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })} /></div>
+                  <div><Label>{td('Fin', 'End')}</Label><Input type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })} /></div>
                 </div>
                 <Button className="w-full" onClick={() => createChallenge.mutate()} disabled={createChallenge.isPending || !form.title.trim()}>
-                  {createChallenge.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Créer le défi'}
+                  {createChallenge.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : td('Créer le défi', 'Create challenge')}
                 </Button>
               </div>
             </DialogContent>
@@ -138,7 +139,7 @@ export default function ChallengesScreen() {
             {TABS.map(t => (
               <button key={t.value} onClick={() => setTab(t.value)}
                 className={`flex-1 py-2 px-3 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${tab === t.value ? 'bg-orange-500 text-white' : 'bg-muted text-muted-foreground'}`}>
-                {t.label}
+                {td(t.label, t.labelEn)}
               </button>
             ))}
           </div>
@@ -159,7 +160,7 @@ export default function ChallengesScreen() {
         ) : !data?.challenges.length ? (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
             <Target className="h-12 w-12 text-muted-foreground/50" />
-            <p className="text-muted-foreground">Aucun défi</p>
+            <p className="text-muted-foreground">{td('Aucun défi', 'No challenges')}</p>
           </div>
         ) : (
           <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-3">
@@ -173,7 +174,7 @@ export default function ChallengesScreen() {
                         <Target className="h-5 w-5 text-orange-500 shrink-0" />
                         <h3 className="font-semibold text-sm truncate cursor-pointer hover:text-orange-500 transition-colors" onClick={() => navigate('challenge-detail')}>{ch.title}</h3>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">{getStatusBadge(ch)}</div>
+                      <div className="flex items-center gap-1.5 shrink-0"><StatusBadge challenge={ch} /></div>
                     </div>
                     <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{ch.description}</p>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
@@ -192,7 +193,7 @@ export default function ChallengesScreen() {
                     )}
                     {!ch.isJoined && tab === 'active' && (
                       <Button size="sm" className="w-full h-8 text-xs" onClick={() => joinChallenge.mutate(ch.id)} disabled={joinChallenge.isPending}>
-                        {joinChallenge.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Rejoindre le défi'}
+                        {joinChallenge.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : td('Rejoindre le défi', 'Join challenge')}
                       </Button>
                     )}
                   </div>

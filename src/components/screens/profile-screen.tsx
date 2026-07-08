@@ -705,7 +705,7 @@ export function ProfileScreen() {
                       {t('screen.settings')}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Notifications, son, préférences
+                      {td('Notifications, son, préférences', 'Notifications, sound, preferences')}
                     </p>
                   </div>
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -727,10 +727,10 @@ export function ProfileScreen() {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-red-600 dark:text-red-400 group-hover:text-red-700 dark:group-hover:text-red-300">
-                      Déconnexion
+                      {td('Déconnexion', 'Sign out')}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Se déconnecter de votre compte
+                      {td('Se déconnecter de votre compte', 'Sign out of your account')}
                     </p>
                   </div>
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />

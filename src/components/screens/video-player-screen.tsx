@@ -705,8 +705,8 @@ export default function VideoPlayerScreen() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-3">
           <AlertCircle className="h-10 w-10 text-muted-foreground mx-auto" />
-          <p className="text-sm text-muted-foreground">Aucune vidéo sélectionnée</p>
-          <Button onClick={goBack}>Retour</Button>
+          <p className="text-sm text-muted-foreground">{td('Aucune vidéo sélectionnée', 'No video selected')}</p>
+          <Button onClick={goBack}>{td('Retour', 'Back')}</Button>
         </div>
       </div>
     )
@@ -733,8 +733,8 @@ export default function VideoPlayerScreen() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-3 px-4">
           <AlertCircle className="h-10 w-10 text-destructive mx-auto" />
-          <p className="text-sm">Vidéo introuvable</p>
-          <Button onClick={goBack}>Retour</Button>
+          <p className="text-sm">{td('Vidéo introuvable', 'Video not found')}</p>
+          <Button onClick={goBack}>{td('Retour', 'Back')}</Button>
         </div>
       </div>
     )
@@ -753,7 +753,7 @@ export default function VideoPlayerScreen() {
       {/* Header */}
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur-lg">
         <div className="mx-auto flex h-14 max-w-3xl items-center gap-3 px-4">
-          <Button variant="ghost" size="icon" onClick={goBack} className="shrink-0">
+          <Button variant="ghost" size="icon" onClick={goBack} aria-label={td('Retour', 'Back')} className="shrink-0">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-lg font-semibold truncate flex-1">{video.title}</h1>
@@ -954,7 +954,7 @@ export default function VideoPlayerScreen() {
                   variant="outline"
                   className="h-7 px-2.5 text-xs shrink-0"
                   onClick={() => stepFrame(-1)}
-                  title="Image précédente (Shift+←)"
+                  title={td('Image précédente (Shift+←)', 'Previous frame (Shift+←)')}
                 >
                   <ChevronLeft className="h-3 w-3 mr-0.5" />1 frame
                 </Button>
@@ -963,7 +963,7 @@ export default function VideoPlayerScreen() {
                   variant="outline"
                   className="h-7 px-2.5 text-xs shrink-0"
                   onClick={() => stepFrame(1)}
-                  title="Image suivante (Shift+→)"
+                  title={td('Image suivante (Shift+→)', 'Next frame (Shift+→)')}
                 >
                   1 frame<ChevronRight className="h-3 w-3 ml-0.5" />
                 </Button>
@@ -1008,7 +1008,7 @@ export default function VideoPlayerScreen() {
               </TabsTrigger>
               <TabsTrigger value="share" className="flex-1 gap-1.5 text-xs">
                 <Share2 className="h-3.5 w-3.5" />
-                Partage
+                {td('Partage', 'Share')}
               </TabsTrigger>
             </TabsList>
 
@@ -1040,7 +1040,7 @@ export default function VideoPlayerScreen() {
                     }}
                     className="gap-1.5"
                   >
-                    <Plus className="h-3.5 w-3.5" /> Manuel
+                    <Plus className="h-3.5 w-3.5" /> {td('Manuel', 'Manual')}
                   </Button>
                 </div>
                 {(video.highlights || []).length > 0 && (
@@ -1061,8 +1061,8 @@ export default function VideoPlayerScreen() {
                   {(video.highlights || []).length === 0 ? (
                     <div className="text-center py-6">
                       <Star className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">Aucun highlight</p>
-                      <p className="text-xs text-muted-foreground mt-1">Générez avec l&apos;IA ou créez manuellement</p>
+                      <p className="text-sm text-muted-foreground">{td('Aucun highlight', 'No highlights')}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{td("Générez avec l'IA ou créez manuellement", 'Generate with AI or create manually')}</p>
                     </div>
                   ) : (
                     (video.highlights || []).map((hl) => (
@@ -1089,7 +1089,7 @@ export default function VideoPlayerScreen() {
                             </p>
                           </div>
                           <Badge variant="secondary" className="text-[10px] shrink-0">
-                            {hl.type === 'auto' ? 'IA' : 'Manuel'}
+                            {hl.type === 'auto' ? td('IA', 'AI') : td('Manuel', 'Manual')}
                           </Badge>
                         </CardContent>
                       </Card>
@@ -1139,11 +1139,11 @@ export default function VideoPlayerScreen() {
                         {/* Tool selection */}
                         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                           {([
-                            { tool: 'freehand' as const, icon: PenTool, label: 'Dessin' },
-                            { tool: 'line' as const, icon: Minus, label: 'Ligne' },
-                            { tool: 'arrow' as const, icon: ChevronRight, label: 'Flèche' },
-                            { tool: 'circle' as const, icon: CircleDot, label: 'Cercle' },
-                            { tool: 'text' as const, icon: Type, label: 'Texte' },
+                            { tool: 'freehand' as const, icon: PenTool, label: td('Dessin', 'Drawing') },
+                            { tool: 'line' as const, icon: Minus, label: td('Ligne', 'Line') },
+                            { tool: 'arrow' as const, icon: ChevronRight, label: td('Flèche', 'Arrow') },
+                            { tool: 'circle' as const, icon: CircleDot, label: td('Cercle', 'Circle') },
+                            { tool: 'text' as const, icon: Type, label: td('Texte', 'Text') },
                           ]).map(({ tool, icon: Icon, label }) => (
                             <Button
                               key={tool}
@@ -1180,7 +1180,7 @@ export default function VideoPlayerScreen() {
                             <Input
                               value={textAnnotation}
                               onChange={(e) => setTextAnnotation(e.target.value)}
-                              placeholder="Texte de l'annotation..."
+                              placeholder={td("Texte de l'annotation...", 'Annotation text...')}
                               onKeyDown={(e) => e.key === 'Enter' && handleTextAnnotation()}
                               className="h-9 text-sm"
                             />
@@ -1283,9 +1283,9 @@ export default function VideoPlayerScreen() {
                                 exp.status === 'processing' && 'text-orange-500',
                                 exp.status === 'pending' && 'text-muted-foreground',
                               )}>
-                                {exp.status === 'completed' ? 'Terminé' :
-                                 exp.status === 'processing' ? 'Traitement...' :
-                                 exp.status === 'failed' ? 'Échoué' : 'En attente'}
+                                {exp.status === 'completed' ? td('Terminé', 'Completed') :
+                                 exp.status === 'processing' ? td('Traitement...', 'Processing...') :
+                                 exp.status === 'failed' ? td('Échoué', 'Failed') : td('En attente', 'Pending')}
                               </span>
                             </div>
                             <p className="text-xs text-muted-foreground mt-0.5">
@@ -1326,9 +1326,9 @@ export default function VideoPlayerScreen() {
                     disabled={shareMutation.isPending}
                   >
                     <Link2 className="h-4 w-4 text-orange-500" />
-                    Copier le lien
+                    {td('Copier le lien', 'Copy link')}
                     <span className="ml-auto text-xs text-muted-foreground">
-                      {video.isPublic ? 'Public' : 'Rend public'}
+                      {video.isPublic ? td('Public', 'Public') : td('Rend public', 'Make public')}
                     </span>
                   </Button>
                   <Button
@@ -1338,7 +1338,7 @@ export default function VideoPlayerScreen() {
                     disabled={shareMutation.isPending}
                   >
                     <MessageSquare className="h-4 w-4 text-orange-500" />
-                    Partager dans le fil d&apos;actualité
+                    {td("Partager dans le fil d'actualité", 'Share in feed')}
                   </Button>
                 </CardContent>
               </Card>
@@ -1349,7 +1349,7 @@ export default function VideoPlayerScreen() {
                     variant="ghost"
                     className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 gap-2"
                     onClick={() => {
-                      if (confirm('Supprimer cette vidéo ? Cette action est irréversible.')) {
+                      if (confirm(td('Supprimer cette vidéo ? Cette action est irréversible.', 'Delete this video? This action is irreversible.'))) {
                         deleteVideo.mutate()
                       }
                     }}
@@ -1360,7 +1360,7 @@ export default function VideoPlayerScreen() {
                     ) : (
                       <Trash2 className="h-4 w-4" />
                     )}
-                    Supprimer la vidéo
+                    {td('Supprimer la vidéo', 'Delete video')}
                   </Button>
                 </CardContent>
               </Card>
@@ -1377,7 +1377,7 @@ export default function VideoPlayerScreen() {
                 <p className="text-sm text-muted-foreground">{video.description}</p>
               )}
               <div className="flex flex-wrap gap-3 text-xs text-muted-foreground pt-1">
-                <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{video.viewCount} vues</span>
+                <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{video.viewCount} {td('vues', 'views')}</span>
                 <span>{formatTime(video.durationSec)}</span>
                 <span>{formatFileSize(video.fileSize)}</span>
                 <span>{video.mimeType.split('/')[1]?.toUpperCase()}</span>
@@ -1392,20 +1392,20 @@ export default function VideoPlayerScreen() {
       <Dialog open={highlightDialogOpen} onOpenChange={setHighlightDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Créer un highlight</DialogTitle>
+            <DialogTitle>{td('Créer un highlight', 'Create highlight')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label>Titre</Label>
+              <Label>{td('Titre', 'Title')}</Label>
               <Input
                 value={hlTitle}
                 onChange={(e) => setHlTitle(e.target.value)}
-                placeholder="Ex: Super tir à 3 points"
+                placeholder={td('Ex: Super tir à 3 points', 'Ex: Great 3-point shot')}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Début (ms)</Label>
+                <Label>{td('Début (ms)', 'Start (ms)')}</Label>
                 <Input
                   type="number"
                   value={hlStart}
@@ -1413,7 +1413,7 @@ export default function VideoPlayerScreen() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Fin (ms)</Label>
+                <Label>{td('Fin (ms)', 'End (ms)')}</Label>
                 <Input
                   type="number"
                   value={hlEnd}
@@ -1423,13 +1423,13 @@ export default function VideoPlayerScreen() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setHighlightDialogOpen(false)}>Annuler</Button>
+            <Button variant="outline" onClick={() => setHighlightDialogOpen(false)}>{td('Annuler', 'Cancel')}</Button>
             <Button
               onClick={() => createHighlight.mutate({ title: hlTitle || 'Highlight', startMs: hlStart, endMs: hlEnd })}
               disabled={!hlTitle.trim() || hlEnd <= hlStart || createHighlight.isPending}
             >
               {createHighlight.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              Créer
+              {td('Créer', 'Create')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1439,12 +1439,12 @@ export default function VideoPlayerScreen() {
       <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Exporter</DialogTitle>
+            <DialogTitle>{td('Exporter', 'Export')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Format</Label>
+                <Label>{td('Format', 'Format')}</Label>
                 <Select value={exportType} onValueChange={setExportType}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -1455,20 +1455,20 @@ export default function VideoPlayerScreen() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Qualité</Label>
+                <Label>{td('Qualité', 'Quality')}</Label>
                 <Select value={exportQuality} onValueChange={setExportQuality}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="low">Basse</SelectItem>
-                    <SelectItem value="medium">Moyenne</SelectItem>
-                    <SelectItem value="high">Haute</SelectItem>
+                    <SelectItem value="low">{td('Basse', 'Low')}</SelectItem>
+                    <SelectItem value="medium">{td('Moyenne', 'Medium')}</SelectItem>
+                    <SelectItem value="high">{td('Haute', 'High')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Début (ms)</Label>
+                <Label>{td('Début (ms)', 'Start (ms)')}</Label>
                 <Input
                   type="number"
                   value={exportStart}
@@ -1476,7 +1476,7 @@ export default function VideoPlayerScreen() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Fin (ms)</Label>
+                <Label>{td('Fin (ms)', 'End (ms)')}</Label>
                 <Input
                   type="number"
                   value={exportEnd}
@@ -1485,17 +1485,17 @@ export default function VideoPlayerScreen() {
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              Durée: {formatTimeMs(exportEnd - exportStart)}
+              {td('Durée:', 'Duration:')} {formatTimeMs(exportEnd - exportStart)}
             </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setExportDialogOpen(false)}>Annuler</Button>
+            <Button variant="outline" onClick={() => setExportDialogOpen(false)}>{td('Annuler', 'Cancel')}</Button>
             <Button
               onClick={() => startExport.mutate({ type: exportType, startMs: exportStart, endMs: exportEnd, quality: exportQuality })}
               disabled={exportEnd <= exportStart || startExport.isPending}
             >
               {startExport.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              Exporter
+              {td('Exporter', 'Export')}
             </Button>
           </DialogFooter>
         </DialogContent>

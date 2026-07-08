@@ -81,7 +81,7 @@ export default function ChallengeDetailScreen() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <Target className="h-5 w-5 text-orange-500" />
-          <h1 className="text-lg font-bold flex-1 truncate">{challenge?.title || 'Chargement...'}</h1>
+          <h1 className="text-lg font-bold flex-1 truncate">{challenge?.title || td('Chargement...', 'Loading...')}</h1>
         </div>
       </header>
 
@@ -96,7 +96,7 @@ export default function ChallengeDetailScreen() {
         ) : isError || !challenge ? (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
             <Target className="h-12 w-12 text-muted-foreground/50" />
-            <p className="text-muted-foreground">Défi introuvable</p>
+            <p className="text-muted-foreground">{td('Défi introuvable', 'Challenge not found')}</p>
           </div>
         ) : (
           <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
@@ -110,15 +110,15 @@ export default function ChallengeDetailScreen() {
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Clock className="h-3.5 w-3.5" />
-                <span>{isStarted ? (isEnded ? 'Terminé' : 'En cours') : 'Commence bientôt'}</span>
+                <span>{isStarted ? (isEnded ? td('Terminé', 'Ended') : td('En cours', 'In progress')) : td('Commence bientôt', 'Starts soon')}</span>
                 <span>•</span>
-                <span>Créé par {challenge.creator.name}</span>
+                <span>{td('Créé par', 'Created by')} {challenge.creator.name}</span>
               </div>
             </motion.div>
 
             {/* My progress */}
             <motion.div variants={itemVariants} className="p-4 rounded-xl border bg-card">
-              <h3 className="font-semibold text-sm mb-3">Ma progression</h3>
+              <h3 className="font-semibold text-sm mb-3">{td('Ma progression', 'My Progress')}</h3>
               {challenge.myParticipation ? (
                 <>
                   <div className="flex justify-between text-sm mb-2">
@@ -128,15 +128,15 @@ export default function ChallengeDetailScreen() {
                   <Progress value={progress} className="h-3 mb-3" />
                   {challenge.myParticipation.completed && (
                     <div className="flex items-center gap-2 text-green-600">
-                      <Trophy className="h-4 w-4" /><span className="text-sm font-medium">Défi terminé!</span>
+                      <Trophy className="h-4 w-4" /><span className="text-sm font-medium">{td('Défi terminé!', 'Challenge completed!')}</span>
                     </div>
                   )}
                 </>
               ) : (
                 <div className="text-center py-4">
-                  <p className="text-sm text-muted-foreground mb-3">Rejoignez ce défi pour suivre votre progression</p>
+                  <p className="text-sm text-muted-foreground mb-3">{td('Rejoignez ce défi pour suivre votre progression', 'Join this challenge to track your progress')}</p>
                   <Button onClick={() => joinChallenge.mutate()} disabled={joinChallenge.isPending || !isStarted}>
-                    {joinChallenge.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Rejoindre le défi'}
+                    {joinChallenge.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : td('Rejoindre le défi', 'Join challenge')}
                   </Button>
                 </div>
               )}
@@ -146,10 +146,10 @@ export default function ChallengeDetailScreen() {
             <motion.div variants={itemVariants}>
               <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
                 <Trophy className="h-4 w-4 text-orange-500" />
-                Classement ({challenge.leaderboard.length})
+                {td('Classement', 'Rankings')} ({challenge.leaderboard.length})
               </h3>
               {challenge.leaderboard.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">Aucun participant</p>
+                <p className="text-sm text-muted-foreground text-center py-6">{td('Aucun participant', 'No participants')}</p>
               ) : (
                 <div className="space-y-2">
                   {challenge.leaderboard.map((entry, i) => (
@@ -164,7 +164,7 @@ export default function ChallengeDetailScreen() {
                            <span className="text-sm font-bold text-muted-foreground">{entry.rank}</span>}
                         </div>
                         <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-sm font-bold shrink-0">
-                          {entry.avatar ? <img src={entry.avatar} alt="" className="w-full h-full rounded-full object-cover" /> : entry.name.charAt(0).toUpperCase()}
+                          {entry.avatar ? <img src={entry.avatar} alt={entry.name} className="w-full h-full rounded-full object-cover" /> : entry.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
                           <span className="text-sm font-medium truncate">{entry.name}</span>

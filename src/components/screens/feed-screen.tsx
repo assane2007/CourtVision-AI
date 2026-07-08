@@ -40,7 +40,7 @@ const TYPE_ICONS: Record<string, typeof Trophy> = {
 }
 
 export default function FeedScreen() {
-  const { t, td } = useTranslation()
+  const { t, td, language } = useTranslation()
   const { goBack, navigate } = useNavigation()
   const queryClient = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
@@ -105,28 +105,28 @@ export default function FeedScreen() {
           <Button variant="ghost" size="icon" onClick={goBack} className="shrink-0" aria-label={t('action.back')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-lg font-bold flex-1">Fil d'actualité</h1>
+          <h1 className="text-lg font-bold flex-1">{td("Fil d'actualité", 'News Feed')}</h1>
           <Dialog open={showCreate} onOpenChange={setShowCreate}>
             <DialogTrigger asChild>
-              <Button size="sm" className="h-8"><Plus className="h-4 w-4 mr-1" />Publier</Button>
+              <Button size="sm" className="h-8"><Plus className="h-4 w-4 mr-1" />{td('Publier', 'Post')}</Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>Nouveau post</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{td('Nouveau post', 'New post')}</DialogTitle></DialogHeader>
               <div className="space-y-4 pt-2">
-                <Textarea value={newPost.content} onChange={e => setNewPost({ ...newPost, content: e.target.value })} placeholder="Quoi de neuf?" rows={4} />
+                <Textarea value={newPost.content} onChange={e => setNewPost({ ...newPost, content: e.target.value })} placeholder={td('Quoi de neuf?', 'What\'s new?')} rows={4} />
                 <div className="flex gap-2">
                   {(['text', 'workout', 'achievement', 'challenge'] as const).map(type => {
                     const Icon = TYPE_ICONS[type] || Trophy
                     return (
                       <button key={type} onClick={() => setNewPost({ ...newPost, type })}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${newPost.type === type ? 'bg-orange-500 text-white' : 'bg-muted text-muted-foreground'}`}>
-                        <Icon className="h-3.5 w-3.5" />{type === 'text' ? 'Texte' : type === 'workout' ? 'Séance' : type === 'achievement' ? 'Succès' : 'Défi'}
+                        <Icon className="h-3.5 w-3.5" />{type === 'text' ? td('Texte', 'Text') : type === 'workout' ? td('Séance', 'Workout') : type === 'achievement' ? td('Succès', 'Achievement') : td('Défi', 'Challenge')}
                       </button>
                     )
                   })}
                 </div>
                 <Button className="w-full" onClick={() => createPost.mutate()} disabled={createPost.isPending || !newPost.content.trim()}>
-                  {createPost.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Publier'}
+                  {createPost.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : td('Publier', 'Post')}
                 </Button>
               </div>
             </DialogContent>
@@ -147,8 +147,8 @@ export default function FeedScreen() {
         ) : allPosts.length === 0 ? (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
             <MessageCircle className="h-12 w-12 text-muted-foreground/50" />
-            <p className="text-muted-foreground">Aucun post pour le moment</p>
-            <p className="text-xs text-muted-foreground">Soyez le premier à publier!</p>
+            <p className="text-muted-foreground">{td('Aucun post pour le moment', 'No posts yet')}</p>
+            <p className="text-xs text-muted-foreground">{td('Soyez le premier à publier!', 'Be the first to post!')}</p>
           </div>
         ) : (
           <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
@@ -166,9 +166,9 @@ export default function FeedScreen() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{post.player.name}</p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>Niv.{post.player.xpLevel}</span>
+                          <span>{td('Niv.', 'Lv.')}{post.player.xpLevel}</span>
                           <span>•</span>
-                          <time>{new Date(post.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</time>
+                          <time>{new Date(post.createdAt).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', { day: '2-digit', month: '2-digit' })}</time>
                         </div>
                       </div>
                       {post.type !== 'text' && (
@@ -184,9 +184,9 @@ export default function FeedScreen() {
                     {/* Workout stats */}
                     {post.session && (
                       <div className="grid grid-cols-3 gap-2 mb-3 p-3 rounded-lg bg-muted/50">
-                        <div className="text-center"><p className="text-lg font-bold">{post.session.totalScore}</p><p className="text-[10px] text-muted-foreground">Score</p></div>
-                        <div className="text-center"><p className="text-lg font-bold">{post.session.totalReps}</p><p className="text-[10px] text-muted-foreground">Reps</p></div>
-                        <div className="text-center"><p className="text-lg font-bold">{post.session.totalDrills}</p><p className="text-[10px] text-muted-foreground">Exercices</p></div>
+                        <div className="text-center"><p className="text-lg font-bold">{post.session.totalScore}</p><p className="text-[10px] text-muted-foreground">{td('Score', 'Score')}</p></div>
+                        <div className="text-center"><p className="text-lg font-bold">{post.session.totalReps}</p><p className="text-[10px] text-muted-foreground">{td('Répétitions', 'Reps')}</p></div>
+                        <div className="text-center"><p className="text-lg font-bold">{post.session.totalDrills}</p><p className="text-[10px] text-muted-foreground">{td('Exercices', 'Exercises')}</p></div>
                       </div>
                     )}
 
@@ -203,15 +203,15 @@ export default function FeedScreen() {
 
                     {/* Actions */}
                     <div className="flex items-center gap-4 pt-2 border-t">
-                      <button onClick={() => toggleLike.mutate(post.id)} className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${post.isLiked ? 'text-red-500' : 'text-muted-foreground hover:text-foreground'}`}>
+                      <button onClick={() => toggleLike.mutate(post.id)} aria-label={td("J'aime", 'Like')} className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${post.isLiked ? 'text-red-500' : 'text-muted-foreground hover:text-foreground'}`}>
                         <Heart className={`h-4 w-4 ${post.isLiked ? 'fill-current' : ''}`} />
                         {post.likesCount > 0 && <span>{post.likesCount}</span>}
                       </button>
-                      <button onClick={() => navigate('post-detail')} className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
+                      <button onClick={() => navigate('post-detail')} aria-label={td('Commentaire', 'Comment')} className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
                         <MessageCircle className="h-4 w-4" />
                         {post.commentsCount > 0 && <span>{post.commentsCount}</span>}
                       </button>
-                      <button className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
+                      <button aria-label={td('Partager', 'Share')} className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
                         <Share2 className="h-4 w-4" />
                       </button>
                     </div>

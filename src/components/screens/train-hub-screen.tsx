@@ -370,10 +370,10 @@ export default function TrainHubScreen() {
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <h1 className="text-2xl font-bold tracking-tight text-foreground truncate">
-                Centre d&apos;Entraînement
+                {td("Centre d'Entraînement", 'Training Center')}
               </h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Explorez et maîtrisez chaque exercice
+                {td('Explorez et maîtrisez chaque exercice', 'Explore and master every drill')}
               </p>
             </div>
 
@@ -514,7 +514,7 @@ export default function TrainHubScreen() {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="grid gap-2">
                       <Label htmlFor="drill-duration">
-                        Durée (secondes)
+                        {td('Durée (secondes)', 'Duration (seconds)')}
                       </Label>
                       <Input
                         id="drill-duration"
@@ -563,7 +563,7 @@ export default function TrainHubScreen() {
                       maxLength={4}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Collez un emoji pour représenter l&apos;exercice
+                      {td("Collez un emoji pour représenter l'exercice", 'Paste an emoji to represent the drill')}
                     </p>
                   </div>
                 </div>
@@ -584,7 +584,7 @@ export default function TrainHubScreen() {
                     {createMutation.isPending && (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     )}
-                    Créer l&apos;exercice
+                    {td("Créer l'exercice", 'Create drill')}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -725,9 +725,7 @@ export default function TrainHubScreen() {
       <main className="flex-1 max-w-4xl lg:max-w-6xl w-full mx-auto px-4 py-4 pb-24">
         {/* Results count */}
         <p className="text-xs text-muted-foreground mb-3">
-          {filteredDrills.length} exercice
-          {filteredDrills.length !== 1 ? 's' : ''} trouvé
-          {filteredDrills.length !== 1 ? 's' : ''}
+          {td(`${filteredDrills.length} exercice${filteredDrills.length !== 1 ? 's' : ''} trouvé${filteredDrills.length !== 1 ? 's' : ''}`, `${filteredDrills.length} drill${filteredDrills.length !== 1 ? 's' : ''} found`)}
         </p>
 
         {/* Loading state */}
@@ -758,10 +756,10 @@ export default function TrainHubScreen() {
           >
             <span className="text-5xl mb-4">🔍</span>
             <h3 className="text-lg font-semibold text-foreground">
-              Aucun exercice trouvé
+              {td('Aucun exercice trouvé', 'No drills found')}
             </h3>
             <p className="text-sm text-muted-foreground mt-1 max-w-xs">
-              Essayez de modifier vos filtres ou votre recherche
+              {td('Essayez de modifier vos filtres ou votre recherche', 'Try adjusting your filters or search')}
             </p>
             <Button
               variant="outline"

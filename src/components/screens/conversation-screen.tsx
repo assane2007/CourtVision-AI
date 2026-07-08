@@ -21,7 +21,7 @@ interface MessageItem {
 }
 
 export default function ConversationScreen() {
-  const { t } = useTranslation()
+  const { t, td, language } = useTranslation()
   const { goBack } = useNavigation()
   const selectedDrillId = useAppStore(s => s.selectedDrillId)
   const queryClient = useQueryClient()
@@ -101,7 +101,7 @@ export default function ConversationScreen() {
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">{otherPlayer?.name || conv?.name || 'Conversation'}</p>
-            <p className="text-xs text-muted-foreground">En ligne</p>
+            <p className="text-xs text-muted-foreground">{td('En ligne', 'Online')}</p>
           </div>
         </div>
       </header>
@@ -109,8 +109,8 @@ export default function ConversationScreen() {
       <main className="flex-1 overflow-y-auto max-w-lg mx-auto w-full px-4 py-4 pb-20">
         {allMessages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center py-16">
-            <p className="text-sm text-muted-foreground">Début de la conversation</p>
-            <p className="text-xs text-muted-foreground mt-1">Envoyez le premier message</p>
+            <p className="text-sm text-muted-foreground">{td('Début de la conversation', 'Start of conversation')}</p>
+            <p className="text-xs text-muted-foreground mt-1">{td('Envoyez le premier message', 'Send the first message')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -128,14 +128,14 @@ export default function ConversationScreen() {
                 }`}>
                   {msg.type === 'workout' && msg.metadata?.workout ? (
                     <div className="text-center">
-                      <p className="text-xs font-medium mb-1">🏀 Séance partagée</p>
+                      <p className="text-xs font-medium mb-1">🏀 {td('Séance partagée', 'Shared workout')}</p>
                       <p className="text-[10px] opacity-80">Score: {(msg.metadata.workout as Record<string, unknown>).score}</p>
                     </div>
                   ) : (
                     <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
                   )}
                   <p className={`text-[9px] mt-1 ${msg.isOwn ? 'text-white/60' : 'text-muted-foreground'}`}>
-                    {new Date(msg.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(msg.createdAt).toLocaleTimeString(language === 'en' ? 'en-US' : 'fr-FR', { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
               </motion.div>
@@ -152,7 +152,7 @@ export default function ConversationScreen() {
           <Textarea
             value={text}
             onChange={e => setText(e.target.value)}
-            placeholder="Écrire un message..."
+            placeholder={td('Écrire un message...', 'Write a message...')}
             className="min-h-[40px] max-h-24 resize-none text-sm flex-1"
             rows={1}
             onKeyDown={e => {

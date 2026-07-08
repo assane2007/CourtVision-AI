@@ -58,6 +58,7 @@ import { apiFetch, cn, formatLocaleDate } from '@/lib/utils'
 import { toast } from 'sonner'
 import { containerVariants, itemVariants } from '@/lib/animations'
 import { BottomNav } from '@/components/shared/bottom-nav'
+import { useTranslation } from '@/components/providers/language-provider'
 
 interface VideoItem {
   id: string
@@ -101,6 +102,7 @@ function parseTags(tagsStr: string): string[] {
 }
 
 export default function VideoLibraryScreen() {
+  const { td } = useTranslation()
   const { goBack, navigate } = useNavigation()
   const queryClient = useQueryClient()
 
@@ -179,7 +181,7 @@ export default function VideoLibraryScreen() {
     } catch {
       toast.error(td('Erreur lors du partage', 'Share error'))
     }
-  }, [])
+  }, [td])
 
   const handlePlay = useCallback(
     (videoId: string) => {
@@ -194,10 +196,10 @@ export default function VideoLibraryScreen() {
       {/* Header */}
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur-lg">
         <div className="mx-auto flex h-14 max-w-3xl items-center gap-3 px-4">
-          <Button variant="ghost" size="icon" onClick={goBack} className="shrink-0">
+          <Button variant="ghost" size="icon" onClick={goBack} aria-label={td('Retour', 'Back')} className="shrink-0">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-lg font-semibold truncate">Mes vidéos</h1>
+          <h1 className="text-lg font-semibold truncate">{td('Mes vidéos', 'My Videos')}</h1>
           <div className="ml-auto flex items-center gap-2">
             <span className="text-xs text-muted-foreground">{total}</span>
             <Button
@@ -229,7 +231,7 @@ export default function VideoLibraryScreen() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher une vidéo..."
+            placeholder={td('Rechercher une vidéo...', 'Search for a video...')}
             className="pl-9 bg-muted/50"
           />
           {search && (
@@ -255,29 +257,29 @@ export default function VideoLibraryScreen() {
                 <CardContent className="p-3 space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-1.5">Trier par</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-1.5">{td('Trier par', 'Sort by')}</p>
                       <Select value={sortBy} onValueChange={setSortBy}>
                         <SelectTrigger className="h-9 text-sm bg-background">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="createdAt">Date</SelectItem>
-                          <SelectItem value="title">Titre</SelectItem>
-                          <SelectItem value="durationSec">Durée</SelectItem>
-                          <SelectItem value="viewCount">Vues</SelectItem>
+                          <SelectItem value="createdAt">{td('Date', 'Date')}</SelectItem>
+                          <SelectItem value="title">{td('Titre', 'Title')}</SelectItem>
+                          <SelectItem value="durationSec">{td('Durée', 'Duration')}</SelectItem>
+                          <SelectItem value="viewCount">{td('Vues', 'Views')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-1.5">Confidentialité</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-1.5">{td('Confidentialité', 'Privacy')}</p>
                       <Select value={privacyFilter} onValueChange={setPrivacyFilter}>
                         <SelectTrigger className="h-9 text-sm bg-background">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">Toutes</SelectItem>
-                          <SelectItem value="public">Publiques</SelectItem>
-                          <SelectItem value="private">Privées</SelectItem>
+                          <SelectItem value="all">{td('Toutes', 'All')}</SelectItem>
+                          <SelectItem value="public">{td('Publiques', 'Public')}</SelectItem>
+                          <SelectItem value="private">{td('Privées', 'Private')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -291,7 +293,7 @@ export default function VideoLibraryScreen() {
                           className="cursor-pointer text-xs"
                           onClick={() => setTagFilter('')}
                         >
-                          Tous
+                          {td('Tous', 'All')}
                         </Badge>
                         {allTags.map((tag) => (
                           <Badge
@@ -329,9 +331,9 @@ export default function VideoLibraryScreen() {
         {isError && (
           <Card>
             <CardContent className="p-8 text-center">
-              <p className="text-sm text-destructive mb-3">Erreur de chargement</p>
+              <p className="text-sm text-destructive mb-3">{td('Erreur de chargement', 'Loading error')}</p>
               <Button variant="outline" onClick={() => refetch()}>
-                Réessayer
+                {td('Réessayer', 'Retry')}
               </Button>
             </CardContent>
           </Card>
@@ -347,16 +349,16 @@ export default function VideoLibraryScreen() {
             <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-muted mb-4">
               <Film className="h-10 w-10 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-semibold mb-1">Aucune vidéo</h3>
+            <h3 className="text-lg font-semibold mb-1">{td('Aucune vidéo', 'No videos')}</h3>
             <p className="text-sm text-muted-foreground mb-6 max-w-xs">
               {search
-                ? 'Aucun résultat pour cette recherche'
-                : 'Commencez par télécharger votre première vidéo d\'entraînement'}
+                ? td('Aucun résultat pour cette recherche', 'No results for this search')
+                : td("Commencez par télécharger votre première vidéo d'entraînement", "Start by uploading your first training video")}
             </p>
             {!search && (
               <Button onClick={() => navigate('video-upload')} className="gap-2">
                 <Upload className="h-4 w-4" />
-                Ajouter une vidéo
+                {td('Ajouter une vidéo', 'Add a video')}
               </Button>
             )}
           </motion.div>
@@ -462,13 +464,13 @@ export default function VideoLibraryScreen() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem onClick={() => handlePlay(video.id)}>
-                                    <Play className="h-4 w-4 mr-2" /> Lire
+                                    <Play className="h-4 w-4 mr-2" /> {td('Lire', 'Play')}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => handleEdit(video)}>
-                                    <Pencil className="h-4 w-4 mr-2" /> Modifier
+                                    <Pencil className="h-4 w-4 mr-2" /> {td('Modifier', 'Edit')}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => handleShare(video)}>
-                                    <Share2 className="h-4 w-4 mr-2" /> Partager
+                                    <Share2 className="h-4 w-4 mr-2" /> {td('Partager', 'Share')}
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem
@@ -478,7 +480,7 @@ export default function VideoLibraryScreen() {
                                       setDeleteTarget(video)
                                     }}
                                   >
-                                    <Trash2 className="h-4 w-4 mr-2" /> Supprimer
+                                    <Trash2 className="h-4 w-4 mr-2" /> {td('Supprimer', 'Delete')}
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -521,7 +523,7 @@ export default function VideoLibraryScreen() {
               ) : (
                 <ChevronDown className="h-4 w-4 mr-2" />
               )}
-              Charger plus
+              {td('Charger plus', 'Load more')}
             </Button>
           </div>
         )}
@@ -546,20 +548,20 @@ export default function VideoLibraryScreen() {
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer cette vidéo ?</AlertDialogTitle>
+            <AlertDialogTitle>{td('Supprimer cette vidéo ?', 'Delete this video?')}</AlertDialogTitle>
             <AlertDialogDescription>
-              &quot;{deleteTarget?.title}&quot; sera définitivement supprimée. Cette action est irréversible.
+              {td('sera définitivement supprimée. Cette action est irréversible.', 'will be permanently deleted. This action is irreversible.')}  &quot;{deleteTarget?.title}&quot;
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogCancel>{td('Annuler', 'Cancel')}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
               disabled={deleteMutation.isPending}
             >
               {deleteMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              Supprimer
+              {td('Supprimer', 'Delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

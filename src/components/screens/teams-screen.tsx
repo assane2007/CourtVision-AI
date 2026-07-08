@@ -79,20 +79,20 @@ export default function TeamsScreen() {
           <Button variant="ghost" size="icon" onClick={goBack} className="shrink-0" aria-label={t('action.back')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-lg font-bold flex-1">Équipes</h1>
+          <h1 className="text-lg font-bold flex-1">{td('Équipes', 'Teams')}</h1>
           <Dialog open={showCreate} onOpenChange={setShowCreate}>
             <DialogTrigger asChild>
               <Button size="sm" className="h-8">
-                <Plus className="h-4 w-4 mr-1" />Créer
+                <Plus className="h-4 w-4 mr-1" />{td('Créer', 'Create')}
               </Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>Nouvelle équipe</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{td('Nouvelle équipe', 'New team')}</DialogTitle></DialogHeader>
               <div className="space-y-4 pt-2">
-                <div><Label>Nom</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Nom de l'équipe" /></div>
-                <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Description (optionnel)" rows={3} /></div>
+                <div><Label>{td('Nom', 'Name')}</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder={td("Nom de l'équipe", 'Team name')} /></div>
+                <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder={td('Description (optionnel)', 'Description (optional)')} rows={3} /></div>
                 <Button className="w-full" onClick={() => createTeam.mutate()} disabled={createTeam.isPending || !form.name.trim()}>
-                  {createTeam.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Créer l\'équipe'}
+                  {createTeam.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : td("Créer l'équipe", 'Create team')}
                 </Button>
               </div>
             </DialogContent>
@@ -107,7 +107,7 @@ export default function TeamsScreen() {
                 onClick={() => setTab(v)}
                 className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${tab === v ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}
               >
-                {v === 'all' ? 'Découvrir' : 'Mes équipes'}
+                {v === 'all' ? td('Découvrir', 'Discover') : td('Mes équipes', 'My teams')}
               </button>
             ))}
           </div>
@@ -131,7 +131,7 @@ export default function TeamsScreen() {
         ) : !data?.teams.length ? (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
             <Users className="h-12 w-12 text-muted-foreground/50" />
-            <p className="text-muted-foreground">{tab === 'my' ? 'Aucune équipe' : 'Aucune équipe publique'}</p>
+            <p className="text-muted-foreground">{tab === 'my' ? td('Aucune équipe', 'No teams') : td('Aucune équipe publique', 'No public teams')}</p>
           </div>
         ) : (
           <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-3">
@@ -143,7 +143,7 @@ export default function TeamsScreen() {
                 >
                   <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center shrink-0">
                     {team.logo ? (
-                      <img src={team.logo} alt="" className="w-full h-full rounded-xl object-cover" />
+                      <img src={team.logo} alt={team.name} className="w-full h-full rounded-xl object-cover" />
                     ) : (
                       <Users className="h-6 w-6 text-orange-500" />
                     )}
@@ -151,12 +151,12 @@ export default function TeamsScreen() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-sm truncate">{team.name}</span>
-                      {!team.isPublic && <Badge variant="outline" className="text-[10px]">Privé</Badge>}
+                      {!team.isPublic && <Badge variant="outline" className="text-[10px]">{td('Privé', 'Private')}</Badge>}
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">{team.description || 'Aucune description'}</p>
+                    <p className="text-xs text-muted-foreground truncate">{team.description || td('Aucune description', 'No description')}</p>
                     <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                      <span>{team.memberCount}/{team.maxMembers} membres</span>
-                      {team.challengeCount > 0 && <span>{team.challengeCount} défis</span>}
+                      <span>{team.memberCount}/{team.maxMembers} {td('membres', 'members')}</span>
+                      {team.challengeCount > 0 && <span>{team.challengeCount} {td('défis', 'challenges')}</span>}
                     </div>
                   </div>
                   <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />

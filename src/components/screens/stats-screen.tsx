@@ -45,11 +45,13 @@ import { containerVariants, itemVariants } from '@/lib/animations'
 import { useTranslation } from '@/components/providers/language-provider'
 
 // ── Day name mapping ────────────────────────────────────────────────
-const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
+const DAY_NAMES_FR = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
+const DAY_NAMES_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-function getDayLabel(dateStr: string): string {
+function getDayLabel(dateStr: string, lang: string): string {
   const date = new Date(dateStr + 'T00:00:00')
-  return dayNames[date.getDay()]
+  const days = lang === 'en' ? DAY_NAMES_EN : DAY_NAMES_FR
+  return days[date.getDay()]
 }
 
 // ── Custom tooltip for bar chart ────────────────────────────────────
@@ -112,7 +114,7 @@ interface StatsResponse {
 
 export function StatsScreen() {
   const { navigate } = useAppStore()
-  const { t, language } = useTranslation()
+  const { t, td, language } = useTranslation()
 
   // ── Fetch stats ─────────────────────────────────────────────────
   const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useQuery<StatsResponse>({
@@ -262,7 +264,7 @@ export function StatsScreen() {
                     <BarChart
                       data={dailyStats.map((d: DailyStat) => ({
                         ...d,
-                        day: getDayLabel(d.date),
+                        day: getDayLabel(d.date, language),
                         sessions: d.sessions,
                       }))}
                       margin={{ top: 8, right: 4, left: -12, bottom: 0 }}
@@ -283,7 +285,7 @@ export function StatsScreen() {
                       <Tooltip content={<CustomTooltip />} />
                       <Bar
                         dataKey="sessions"
-                        name="Séances"
+                        name={td('Séances', 'Sessions')}
                         fill="#f97316"
                         radius={[6, 6, 0, 0]}
                         maxBarSize={36}
@@ -331,7 +333,7 @@ export function StatsScreen() {
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-[11px] text-muted-foreground">
-                              {cat.drills} exercice{cat.drills > 1 ? 's' : ''}
+                              {cat.drills} {td(cat.drills > 1 ? 'exercices' : 'exercice', cat.drills > 1 ? 'drills' : 'drill')}
                             </span>
                             <span className={`text-sm font-bold ${scoreColor}`}>
                               {cat.avgScore}
@@ -478,14 +480,14 @@ export function StatsScreen() {
               </div>
               <h3 className="font-semibold text-lg mb-1">{t('empty.noData')}</h3>
               <p className="text-sm text-muted-foreground mb-6 max-w-[260px]">
-                Commencez votre premier entraînement pour suivre votre progression et voir vos statistiques.
+                {td('Commencez votre premier entraînement pour suivre votre progression et voir vos statistiques.', 'Start your first workout to track your progress and see your statistics.')}
               </p>
               <Button
                 onClick={() => navigate('train-hub')}
                 className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold px-6 shadow-lg shadow-orange-500/25 rounded-full"
               >
                 <Dumbbell className="h-4 w-4 mr-2" />
-                Commencer l&apos;entraînement
+                {td("Commencer l'entraînement", 'Start workout')}
               </Button>
             </motion.div>
           )}

@@ -19,6 +19,7 @@ export type Screen =
   | 'live-workout' | 'notifications'
   | 'video-library' | 'video-player' | 'video-upload' | 'video-compare'
   | 'ai-insights' | 'voice-coach' | 'predictions' | 'ai-workout-gen'
+  | 'terms' | 'privacy'
 
 export interface WorkoutDrillResult {
   drillId: string

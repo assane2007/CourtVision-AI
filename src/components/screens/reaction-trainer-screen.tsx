@@ -67,6 +67,13 @@ type Direction = (typeof DIRECTIONS)[number]
 
 const ACTIONS = ['TIR', 'DRIBBLE', 'PASSE', 'DÉFENSE'] as const
 
+const ACTIONS_EN: Record<string, string> = {
+  'TIR': 'SHOOT',
+  'DRIBBLE': 'DRIBBLE',
+  'PASSE': 'PASS',
+  'DÉFENSE': 'DEFENSE',
+}
+
 const MODE_ICONS: Record<GameMode, React.ReactNode> = {
   direction: <Target className="h-4 w-4" />,
   color: <Brain className="h-4 w-4" />,
@@ -77,51 +84,75 @@ const MODE_ICONS: Record<GameMode, React.ReactNode> = {
 const SHOT_CLOCK_SCENARIOS = [
   {
     situation: '8 sec restant, score = -2, ouvert à 3pts',
+    situationEn: '8 sec left, score = -2, open 3pt',
     choices: ['TIRER', 'PÉNÉTRER'],
+    choicesEn: ['SHOOT', 'DRIVE'],
     correct: 0,
     explanation: 'Ouvert à 3pts avec 8 secondes, c\'est le tir idéal !',
+    explanationEn: 'Open 3pt with 8 seconds, that\'s the ideal shot!',
   },
   {
     situation: '2 sec restant, score = +1, balle en main',
+    situationEn: '2 sec left, score = +1, ball in hand',
     choices: ['TIRER', 'PASSE RAPIDE'],
+    choicesEn: ['SHOOT', 'QUICK PASS'],
     correct: 1,
     explanation: '2 secondes seulement, une passe rapide est plus sûre.',
+    explanationEn: 'Only 2 seconds left, a quick pass is safer.',
   },
   {
     situation: '14 sec restant, score = -5, défenseur proche',
+    situationEn: '14 sec left, score = -5, defender close',
     choices: ['PÉNÉTRER', 'DÉCROCHER'],
+    choicesEn: ['DRIVE', 'FAKE AND SEPARATE'],
     correct: 1,
     explanation: '14 secondes, prends ton temps et décroche pour une meilleure position.',
+    explanationEn: '14 seconds, take your time and fake to create a better position.',
   },
   {
     situation: '5 sec restant, score = -3, 1 contre 1',
+    situationEn: '5 sec left, score = -3, 1 on 1',
     choices: ['TIRER À 3PTS', 'PÉNÉTRER'],
+    choicesEn: ['SHOOT 3PT', 'DRIVE'],
     correct: 0,
     explanation: 'Tu es à -3, il faut un 3pts. Pas le choix !',
+    explanationEn: 'You\'re down 3, you need a 3-pointer. No choice!',
   },
   {
     situation: '18 sec restant, score = +4, passeur libre',
+    situationEn: '18 sec left, score = +4, open passer',
     choices: ['TIRER', 'PASSE'],
+    choicesEn: ['SHOOT', 'PASS'],
     correct: 1,
     explanation: 'Tu as l\'avantage, fais circuler pour la meilleure option.',
+    explanationEn: 'You have the advantage, move the ball for the best option.',
   },
   {
     situation: '3 sec restant, score = -1, côté gauche',
+    situationEn: '3 sec left, score = -1, left side',
     choices: ['PÉNÉTRER DROITE', 'CROISER GAUCHE'],
+    choicesEn: ['DRIVE RIGHT', 'CROSSOVER LEFT'],
     correct: 1,
     explanation: '3 secondes et tu es déjà côté gauche, croise pour créer de l\'espace.',
+    explanationEn: '3 seconds and you\'re already on the left side, crossover to create space.',
   },
   {
     situation: '10 sec restant, score = -8, lancer franc accordé',
+    situationEn: '10 sec left, score = -8, free throw awarded',
     choices: ['LANCER RAPIDE', 'TEMPS MORT'],
+    choicesEn: ['QUICK FREE THROW', 'TIMEOUT'],
     correct: 0,
     explanation: 'Lancer franc accordé : prends les points gratuits rapidement.',
+    explanationEn: 'Free throw awarded: take the free points quickly.',
   },
   {
     situation: '6 sec restant, score = +2, fast break 2 contre 1',
+    situationEn: '6 sec left, score = +2, fast break 2 on 1',
     choices: ['TIRER EN COURSE', 'PASSE POUR LAY-UP'],
+    choicesEn: ['SHOOT ON THE MOVE', 'PASS FOR LAY-UP'],
     correct: 1,
     explanation: '2 contre 1 en fast break, la passe garantit un panier facile.',
+    explanationEn: '2 on 1 fast break, the pass guarantees an easy basket.',
   },
 ]
 
@@ -146,7 +177,7 @@ function formatType(type: string, t: (key: TranslationKey) => string): string {
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function ReactionTrainerScreen() {
-  const { t, language } = useTranslation()
+  const { t, td, language } = useTranslation()
   const MODES = (Object.keys(MODE_CONFIGS) as GameMode[]).map((id) => ({
     id,
     label: t(MODE_CONFIGS[id].iconKey as TranslationKey),
@@ -726,7 +757,7 @@ export default function ReactionTrainerScreen() {
                             animate={{ opacity: 1 }}
                             className="text-zinc-600 text-lg"
                           >
-                            Prépare-toi...
+                            {td('Prépare-toi...', 'Get ready...')}
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -810,7 +841,7 @@ export default function ReactionTrainerScreen() {
                             className="text-center"
                           >
                             <span className="text-4xl sm:text-5xl font-black text-white tracking-wider">
-                              {activeAction}
+                              {td(activeAction, ACTIONS_EN[activeAction] ?? activeAction)}
                             </span>
                             <p className="text-white/70 text-sm mt-2 font-medium">
                               {actionColor === 'green' ? t('reaction.tap') : t('reaction.dontTap')}
@@ -823,7 +854,7 @@ export default function ReactionTrainerScreen() {
                             animate={{ opacity: 1 }}
                             className="text-zinc-500 text-lg"
                           >
-                            Prépare-toi...
+                            {td('Prépare-toi...', 'Get ready...')}
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -845,12 +876,12 @@ export default function ReactionTrainerScreen() {
                           {colorFeedback === 'correct' ? (
                             <>
                               <CheckCircle2 className="h-4 w-4" />
-                              Bonne réaction !
+                              {td('Bonne réaction !', 'Good reaction!')}
                             </>
                           ) : (
                             <>
                               <XCircle className="h-4 w-4" />
-                              Piège ! Ne tape pas le rouge.
+                              {td('Piège ! Ne tape pas le rouge.', 'Trap! Don\'t tap the red.')}
                             </>
                           )}
                         </motion.div>
@@ -889,7 +920,7 @@ export default function ReactionTrainerScreen() {
                       >
                         {shotClockCountdown}
                       </motion.div>
-                      <span className="text-zinc-400 text-sm">secondes</span>
+                      <span className="text-zinc-400 text-sm">{td('secondes', 'seconds')}</span>
                     </div>
 
                     {/* Situation */}
@@ -898,9 +929,9 @@ export default function ReactionTrainerScreen() {
                       animate={{ opacity: 1, y: 0 }}
                       className="text-center"
                     >
-                      <p className="text-sm text-orange-400 font-medium mb-1">SITUATION DE JEU</p>
+                      <p className="text-sm text-orange-400 font-medium mb-1">{td('SITUATION DE JEU', 'GAME SITUATION')}</p>
                       <p className="text-white text-lg font-semibold px-4">
-                        {currentScenario.situation}
+                        {td(currentScenario.situation, currentScenario.situationEn!)}
                       </p>
                     </motion.div>
 
@@ -922,7 +953,7 @@ export default function ReactionTrainerScreen() {
                                   : 'bg-zinc-700 text-zinc-400'
                         }`}
                       >
-                        {currentScenario.choices[0]}
+                        {td(currentScenario.choices[0], currentScenario.choicesEn![0])}
                       </motion.button>
                       <motion.button
                         whileTap={{ scale: 0.95 }}
@@ -940,7 +971,7 @@ export default function ReactionTrainerScreen() {
                                   : 'bg-zinc-700 text-zinc-400'
                         }`}
                       >
-                        {currentScenario.choices[1]}
+                        {td(currentScenario.choices[1], currentScenario.choicesEn![1])}
                       </motion.button>
                     </div>
 
@@ -958,9 +989,9 @@ export default function ReactionTrainerScreen() {
                           }`}
                         >
                           <p className="font-semibold">
-                            {shotClockChosen === currentScenario.correct ? '✓ Bon choix !' : '✗ Mauvais choix'}
+                            {shotClockChosen === currentScenario.correct ? td('✓ Bon choix !', '✓ Good choice!') : td('✗ Mauvais choix', '✗ Wrong choice')}
                           </p>
-                          <p className="mt-1 text-xs opacity-80">{currentScenario.explanation}</p>
+                          <p className="mt-1 text-xs opacity-80">{td(currentScenario.explanation, currentScenario.explanationEn!)}</p>
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -976,7 +1007,7 @@ export default function ReactionTrainerScreen() {
                         {reflexTimeLeft}s
                       </span>
                       <span className="text-sm text-white/80 bg-black/50 px-2 py-1 rounded-lg backdrop-blur-sm">
-                        {reflexHits} touches
+                        {reflexHits} {td('touches', 'hits')}
                       </span>
                     </div>
 

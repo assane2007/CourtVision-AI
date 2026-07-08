@@ -26,16 +26,17 @@ interface ConversationItem {
   lastMessageAt: string; unreadCount: number
 }
 
-function formatMessageTime(date: string): string {
+function formatMessageTime(date: string, lang: string): string {
   const d = new Date(date)
   const now = new Date()
   const diff = now.getTime() - d.getTime()
-  if (diff < 86400000) return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+  const locale = lang === 'en' ? 'en-US' : 'fr-FR'
+  if (diff < 86400000) return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' })
 }
 
 export default function MessagesScreen() {
-  const { t } = useTranslation()
+  const { t, td, language } = useTranslation()
   const { goBack, navigate } = useNavigation()
   const [showNew, setShowNew] = useState(false)
   const [recipientId, setRecipientId] = useState('')
@@ -87,7 +88,7 @@ export default function MessagesScreen() {
             <Input
               value={recipientId}
               onChange={e => setRecipientId(e.target.value)}
-              placeholder="ID du joueur..."
+              placeholder={td('ID du joueur...', 'Player ID...')}
               className="flex-1"
             />
             <Button size="sm" onClick={() => createConvo.mutate()} disabled={createConvo.isPending || !recipientId.trim()}>
@@ -112,8 +113,8 @@ export default function MessagesScreen() {
         ) : !data?.conversations.length ? (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
             <MessageCircle className="h-12 w-12 text-muted-foreground/50" />
-            <p className="text-muted-foreground">Aucun message</p>
-            <p className="text-xs text-muted-foreground">Démarrez une nouvelle conversation</p>
+            <p className="text-muted-foreground">{td('Aucun message', 'No messages')}</p>
+            <p className="text-xs text-muted-foreground">{td('Démarrez une nouvelle conversation', 'Start a new conversation')}</p>
           </div>
         ) : (
           <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-2">
@@ -140,12 +141,12 @@ export default function MessagesScreen() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium truncate">{conv.otherPlayer?.name || conv.name}</span>
                       {conv.lastMessage && (
-                        <span className="text-[10px] text-muted-foreground shrink-0">{formatMessageTime(conv.lastMessage.createdAt)}</span>
+                        <span className="text-[10px] text-muted-foreground shrink-0">{formatMessageTime(conv.lastMessage.createdAt, language)}</span>
                       )}
                     </div>
                     {conv.lastMessage && (
                       <p className="text-xs text-muted-foreground truncate mt-0.5">
-                        {conv.lastMessage.isOwn ? 'Vous: ' : ''}{conv.lastMessage.type === 'workout' ? '🏀 Séance partagée' : conv.lastMessage.content}
+                        {conv.lastMessage.isOwn ? td('Vous: ', 'You: ') : ''}{conv.lastMessage.type === 'workout' ? td('🏀 Séance partagée', '🏀 Shared workout') : conv.lastMessage.content}
                       </p>
                     )}
                   </div>

@@ -172,11 +172,11 @@ export default function ProfileOtherScreen() {
               </div>
               <div className="p-3 rounded-xl bg-card border text-center">
                 <p className="text-lg font-bold">{totalSessions}</p>
-                <p className="text-[10px] text-muted-foreground">Séances</p>
+                <p className="text-[10px] text-muted-foreground">{td('Séances', 'Sessions')}</p>
               </div>
               <div className="p-3 rounded-xl bg-card border text-center">
                 <p className="text-lg font-bold">{avgScore}</p>
-                <p className="text-[10px] text-muted-foreground">Score moy.</p>
+                <p className="text-[10px] text-muted-foreground">{td('Score moy.', 'Avg score')}</p>
               </div>
             </motion.div>
 
@@ -184,10 +184,10 @@ export default function ProfileOtherScreen() {
             <motion.div variants={itemVariants}>
               <div className="flex gap-1 bg-muted rounded-xl p-1 mb-3">
                 <button onClick={() => setFollowTab('followers')} className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${followTab === 'followers' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}>
-                  Abonnés ({followData?.followersCount || 0})
+                  {td('Abonnés', 'Followers')} ({followData?.followersCount || 0})
                 </button>
                 <button onClick={() => setFollowTab('following')} className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${followTab === 'following' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}>
-                  Abonnements ({followData?.followingCount || 0})
+                  {td('Abonnements', 'Following')} ({followData?.followingCount || 0})
                 </button>
               </div>
 

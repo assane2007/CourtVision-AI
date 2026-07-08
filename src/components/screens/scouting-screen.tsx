@@ -111,7 +111,7 @@ const MAX_RADIUS = 120
 const LABEL_RADIUS = MAX_RADIUS + 28
 
 function RadarChart({ categories }: { categories: ScoutingCategory[] }) {
-  const { t } = useTranslation()
+  const { t, td } = useTranslation()
   const hasEstimated = categories.some((c) => c.estimated)
 
   const axes = categories.map((c) => ({
@@ -283,7 +283,7 @@ function RadarChart({ categories }: { categories: ScoutingCategory[] }) {
                 className="fill-muted-foreground/60 text-[9px]"
                 fontStyle="italic"
               >
-                (estimé)
+                {td('(estimé)', '(estimated)')}
               </text>
             )}
           </g>
@@ -301,6 +301,7 @@ function generateScoutingText(
   overallScore: number,
   overallGrade: string,
   t: (key: TranslationKey) => string,
+  td: (fr: string, en: string) => string,
 ): {
   strengths: string
   improvements: string
@@ -317,7 +318,7 @@ function generateScoutingText(
     return {
       strengths: t('scouting.insufficientData'),
       improvements: t('scouting.startTrainingForAnalysis'),
-      profile: `${playerName} est un nouveau joueur sur CourtVision AI. Aucune session d\'entraînement n\'a encore été complétée, ce qui ne permet pas de générer un profil détaillé.`,
+      profile: td(`${playerName} est un nouveau joueur sur CourtVision AI. Aucune session d\'entraînement n\'a encore été complétée, ce qui ne permet pas de générer un profil détaillé.`, `${playerName} is a new player on CourtVision AI. No training session has been completed yet, so a detailed profile cannot be generated.`),
       recommendation: t('scouting.recommendationMinSessions'),
     }
   }
@@ -326,12 +327,12 @@ function generateScoutingText(
   const strengthLines = topCategories.map((cat) => {
     const catFr = CATEGORY_FR[cat.key] ?? cat.name
     if (cat.avgScore >= 80) {
-      return `Excellente maîtrise en ${catFr.toLowerCase()} avec un score moyen remarquable de ${cat.avgScore}/100 — c\'est un atout compétitif majeur.`
+      return td(`Excellente maîtrise en ${catFr.toLowerCase()} avec un score moyen remarquable de ${cat.avgScore}/100 — c\'est un atout compétitif majeur.`, `Excellent mastery in ${catFr.toLowerCase()} with a remarkable average score of ${cat.avgScore}/100 — a major competitive asset.`)
     }
     if (cat.avgScore >= 65) {
       return `Bonne base technique en ${catFr.toLowerCase()} (${cat.avgScore}/100), montre de solides fondamentaux.`
     }
-    return `${catFr} est le point le plus développé actuellement (${cat.avgScore}/100), avec une marge de progression intéressante.`
+    return td(`${catFr} est le point le plus développé actuellement (${cat.avgScore}/100), avec une marge de progression intéressante.`, `${catFr} is the most developed area currently (${cat.avgScore}/100), with interesting room for improvement.`)
   })
 
   const strengths =
@@ -343,12 +344,12 @@ function generateScoutingText(
   const improvementLines = bottomCategories.map((cat) => {
     const catFr = CATEGORY_FR[cat.key] ?? cat.name
     if (cat.avgScore < 30) {
-      return `${catFr} (${cat.avgScore}/100) nécessite un travail significatif et régulier — c\'est la priorité absolue.`
+      return td(`${catFr} (${cat.avgScore}/100) nécessite un travail significatif et régulier — c\'est la priorité absolue.`, `${catFr} (${cat.avgScore}/100) requires significant and regular work — this is the top priority.`)
     }
     if (cat.avgScore < 50) {
-      return `${catFr} (${cat.avgScore}/100) reste en dessous du niveau attendu — des drills ciblés sont recommandés.`
+      return td(`${catFr} (${cat.avgScore}/100) reste en dessous du niveau attendu — des drills ciblés sont recommandés.`, `${catFr} (${cat.avgScore}/100) remains below the expected level — targeted drills are recommended.`)
     }
-    return `${catFr} (${cat.avgScore}/100) peut encore progresser pour atteindre un niveau compétitif.`
+    return td(`${catFr} (${cat.avgScore}/100) peut encore progresser pour atteindre un niveau compétitif.`, `${catFr} (${cat.avgScore}/100) can still improve to reach a competitive level.`)
   })
 
   const improvements =
@@ -361,9 +362,9 @@ function generateScoutingText(
     shooting: 'drills BEEF, One Motion Shot et Catches & Shoot',
     dribble: 'drills de balle de poche, crossovers et figure-8',
     vitesse: 'drills de changement de vitesse, sprints et stop-and-go',
-    defense: 'drills de glissade défensive, closeout et reaction defense',
+    defense: td('drills de glissade défensive, closeout et reaction defense', 'defensive slide drills, closeout and reaction defense'),
     placement: 'drills de footwork, jab steps et pivot series',
-    endurance: 'drills de condition physique, Tabata et circuits haute intensité',
+    endurance: td('drills de condition physique, Tabata et circuits haute intensité', 'conditioning drills, Tabata and high-intensity circuits'),
   }
 
   // ── Profile ─────────────────────────────────────────────────────────
@@ -374,34 +375,34 @@ function generateScoutingText(
 
   let profile = ''
   if (filledCount <= 2) {
-    profile = `${playerName} est un joueur en développement avec des aptitudes prometteuses. Les données actuelles couvrent ${filledCount} catégorie${filledCount > 1 ? 's' : ''} sur 6 — continuez à varier vos entraînements pour un profil plus complet.`
+    profile = td(`${playerName} est un joueur en développement avec des aptitudes prometteuses. Les données actuelles couvrent ${filledCount} catégorie${filledCount > 1 ? 's' : ''} sur 6 — continuez à varier vos entraînements pour un profil plus complet.`, `${playerName} is a developing player with promising abilities. Current data covers ${filledCount} categor${filledCount > 1 ? 'ies' : 'y'} out of 6 — keep varying your training for a more complete profile.`)
   } else if (overallScore >= 75) {
-    profile = `${playerName} présente un profil de joueur complet et compétitif avec des aptitudes supérieures en ${topFr.toLowerCase()} (score moyen : ${topScore}/100). La polyvalence est un atout clé de ce profil. Le score global de ${overallScore}/100 place ce joueur dans le haut du panier.`
+    profile = td(`${playerName} présente un profil de joueur complet et compétitif avec des aptitudes supérieures en ${topFr.toLowerCase()} (score moyen : ${topScore}/100). La polyvalence est un atout clé de ce profil. Le score global de ${overallScore}/100 place ce joueur dans le haut du panier.`, `${playerName} has a complete and competitive player profile with superior abilities in ${topFr.toLowerCase()} (average score: ${topScore}/100). Versatility is a key asset of this profile. The overall score of ${overallScore}/100 places this player at the top.`)
   } else if (overallScore >= 55) {
-    profile = `${playerName} présente un profil équilibré avec un point fort notable en ${topFr.toLowerCase()} (${topScore}/100). Le joueur montre de bonnes bases dans l\'ensemble des catégories avec un score global de ${overallScore}/100.`
+    profile = td(`${playerName} présente un profil équilibré avec un point fort notable en ${topFr.toLowerCase()} (${topScore}/100). Le joueur montre de bonnes bases dans l\'ensemble des catégories avec un score global de ${overallScore}/100.`, `${playerName} has a balanced profile with a notable strength in ${topFr.toLowerCase()} (${topScore}/100). The player shows solid fundamentals across all categories with an overall score of ${overallScore}/100.`)
   } else if (overallScore >= 35) {
-    profile = `${playerName} est un joueur en progression constante. Le point fort actuel se situe en ${topFr.toLowerCase()} (${topScore}/100). Le score global de ${overallScore}/100 indique un potentiel de développement important avec un entraînement régulier.`
+    profile = td(`${playerName} est un joueur en progression constante. Le point fort actuel se situe en ${topFr.toLowerCase()} (${topScore}/100). Le score global de ${overallScore}/100 indique un potentiel de développement important avec un entraînement régulier.`, `${playerName} is a player in constant progression. The current strength is in ${topFr.toLowerCase()} (${topScore}/100). The overall score of ${overallScore}/100 indicates significant development potential with regular training.`)
   } else {
-    profile = `${playerName} est en phase de construction de ses fondamentaux. Le meilleur score se situe en ${topFr.toLowerCase()} (${topScore}/100). Un travail régulier et structuré permettra une progression rapide.`
+    profile = td(`${playerName} est en phase de construction de ses fondamentaux. Le meilleur score se situe en ${topFr.toLowerCase()} (${topScore}/100). Un travail régulier et structuré permettra une progression rapide.`, `${playerName} is in the process of building fundamentals. The best score is in ${topFr.toLowerCase()} (${topScore}/100). Regular and structured work will enable rapid progression.`)
   }
 
   // ── Recommendation ──────────────────────────────────────────────────
   const weakKey = bottomCategories[0]?.key ?? ''
   const weakFr = CATEGORY_FR[weakKey] ?? 'fondamentaux'
   const weakScore = bottomCategories[0]?.avgScore ?? 0
-  const rec = drillRecs[weakKey] ?? 'drills fondamentaux variés'
+  const rec = drillRecs[weakKey] ?? td('drills fondamentaux variés', 'varied fundamental drills')
 
   let recommendation = ''
   if (bottomCategories.length > 0 && weakScore < 50) {
-    recommendation = `Focus prioritaire sur ${weakFr.toLowerCase()} (${weakScore}/100) — recommandé : ${rec}. Visez 3 sessions hebdomadaires dans cette catégorie avec une progression progressive de la difficulté.`
+    recommendation = td(`Focus prioritaire sur ${weakFr.toLowerCase()} (${weakScore}/100) — recommandé : ${rec}. Visez 3 sessions hebdomadaires dans cette catégorie avec une progression progressive de la difficulté.`, `Priority focus on ${weakFr.toLowerCase()} (${weakScore}/100) — recommended: ${rec}. Aim for 3 weekly sessions in this category with gradual difficulty progression.`)
   } else if (bottomCategories.length > 0) {
-    recommendation = `Continuez à travailler ${weakFr.toLowerCase()} pour élever votre plancher (${weakScore}/100 → objectif 70+). ${rec} sont de bons choix pour progresser.`
+    recommendation = td(`Continuez à travailler ${weakFr.toLowerCase()} pour élever votre plancher (${weakScore}/100 → objectif 70+). ${rec} sont de bons choix pour progresser.`, `Keep working on ${weakFr.toLowerCase()} to raise your floor (${weakScore}/100 → target 70+). ${rec} are good choices to progress.`)
   } else {
     recommendation = t('scouting.maintainTraining')
   }
 
   if (overallScore >= 70) {
-    recommendation += ' Passez aux drills avancés pour continuer à progresser et ne pas stagner.'
+    recommendation += td(' Passez aux drills avancés pour continuer à progresser et ne pas stagner.', ' Move on to advanced drills to keep progressing and avoid plateauing.')
   }
 
   return { strengths, improvements, profile, recommendation }
@@ -410,7 +411,7 @@ function generateScoutingText(
 // ── Main component ─────────────────────────────────────────────────────────
 
 export function ScoutingScreen() {
-  const { t, language } = useTranslation()
+  const { t, td, language } = useTranslation()
   const goBack = useAppStore((s) => s.goBack)
   const navigate = useAppStore((s) => s.navigate)
 
@@ -428,8 +429,9 @@ export function ScoutingScreen() {
       data.overallScore,
       data.overallGrade,
       t,
+      td,
     )
-  }, [data, t])
+  }, [data, t, td])
 
   const gradeColor = GRADE_COLORS[data?.overallGrade ?? 'F'] ?? GRADE_COLORS.F
 
@@ -510,7 +512,7 @@ export function ScoutingScreen() {
                         {data.player.name}
                       </h2>
                       <p className="text-sm text-muted-foreground mt-0.5">
-                        {levelInfo?.levelTitle ?? `Niveau ${data.player.level}`}
+                        {levelInfo?.levelTitle ?? `${td('Niveau', 'Level')} ${data.player.level}`}
                       </p>
 
                       {/* XP progress */}
@@ -535,7 +537,7 @@ export function ScoutingScreen() {
                   {/* Last updated */}
                   {lastActiveFormatted && (
                     <p className="text-xs text-muted-foreground mt-4 text-right">
-                      Dernière mise à jour : {lastActiveFormatted}
+                      {td('Dernière mise à jour :', 'Last updated:')} {lastActiveFormatted}
                     </p>
                   )}
                 </CardContent>
@@ -551,10 +553,10 @@ export function ScoutingScreen() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-orange-700 dark:text-orange-400">
-                      Profil estimé
+                      {td('Profil estimé', 'Estimated profile')}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                      Complète des séances pour débloquer tes vraies stats !
+                      {td('Complète des séances pour débloquer tes vraies stats !', 'Complete sessions to unlock your real stats!')}
                     </p>
                   </div>
                   {data.totalWorkouts === 0 && (
@@ -563,7 +565,7 @@ export function ScoutingScreen() {
                       className="flex-shrink-0 px-3 py-1.5 bg-orange-500 text-white text-xs font-semibold rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-1.5"
                     >
                       <Dumbbell className="h-3.5 w-3.5" />
-                      S&apos;entraîner
+                      {td("S'entraîner", 'Train')}
                     </button>
                   )}
                 </div>
@@ -577,7 +579,7 @@ export function ScoutingScreen() {
                 <CardHeader className="pb-2 pt-5 px-5">
                   <CardTitle className="text-base font-bold flex items-center gap-2">
                     <Target className="h-5 w-5 text-orange-500" />
-                    ADN Basketteur
+                    {td('ADN Basketteur', 'Basketball DNA')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-5 pb-6">
@@ -646,7 +648,7 @@ export function ScoutingScreen() {
                   <CardHeader className="pb-2 pt-5 px-5">
                     <CardTitle className="text-base font-bold flex items-center gap-2">
                       <Sparkles className="h-5 w-5 text-orange-500" />
-                      Analyse Scout IA
+                      {td('Analyse Scout IA', 'AI Scout Analysis')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-5 pb-6 space-y-5">
@@ -654,7 +656,7 @@ export function ScoutingScreen() {
                     <div>
                       <h3 className="text-sm font-bold text-emerald-500 mb-1.5 flex items-center gap-1.5">
                         <TrendingUp className="h-4 w-4" />
-                        Points Forts
+                        {td('Points Forts', 'Strengths')}
                       </h3>
                       <p className="text-sm text-muted-foreground leading-relaxed">
                         {scoutingText.strengths}
@@ -665,7 +667,7 @@ export function ScoutingScreen() {
                     <div>
                       <h3 className="text-sm font-bold text-orange-500 mb-1.5 flex items-center gap-1.5">
                         <TrendingDown className="h-4 w-4" />
-                        Axes d&apos;Amélioration
+                        {td("Axes d'Amélioration", 'Areas for Improvement')}
                       </h3>
                       <p className="text-sm text-muted-foreground leading-relaxed">
                         {scoutingText.improvements}
@@ -676,7 +678,7 @@ export function ScoutingScreen() {
                     <div>
                       <h3 className="text-sm font-bold text-foreground mb-1.5 flex items-center gap-1.5">
                         <Activity className="h-4 w-4 text-orange-500" />
-                        Profil de Joueur
+                        {td('Profil de Joueur', 'Player Profile')}
                       </h3>
                       <p className="text-sm text-muted-foreground leading-relaxed">
                         {scoutingText.profile}
@@ -687,7 +689,7 @@ export function ScoutingScreen() {
                     <div className="rounded-xl bg-orange-500/10 border border-orange-500/20 p-4">
                       <h3 className="text-sm font-bold text-orange-600 dark:text-orange-400 mb-1.5 flex items-center gap-1.5">
                         <Trophy className="h-4 w-4" />
-                        Recommandation
+                        {td('Recommandation', 'Recommendation')}
                       </h3>
                       <p className="text-sm text-orange-700 dark:text-orange-300 leading-relaxed">
                         {scoutingText.recommendation}
@@ -703,7 +705,7 @@ export function ScoutingScreen() {
               <Card className="border-0 shadow-lg">
                 <CardHeader className="pb-2 pt-5 px-5">
                   <CardTitle className="text-base font-bold">
-                    Détail par Catégorie
+                    {td('Détail par Catégorie', 'Category Breakdown')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-5 pb-6">
@@ -721,7 +723,7 @@ export function ScoutingScreen() {
               <Card className="border-0 shadow-lg">
                 <CardContent className="p-5">
                   <h3 className="text-sm font-bold mb-3">
-                    Comparaison au niveau {data.player.level}
+                    {td('Comparaison au niveau', 'Comparison at level')} {data.player.level}
                   </h3>
 
                   <div className="flex items-center justify-between gap-4">
@@ -753,12 +755,12 @@ export function ScoutingScreen() {
                     {data.overallScore >= data.levelAvg ? (
                       <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/20 gap-1.5 px-3 py-1.5">
                         <TrendingUp className="h-3.5 w-3.5" />
-                        Au-dessus de la moyenne
+                        {td('Au-dessus de la moyenne', 'Above average')}
                       </Badge>
                     ) : (
                       <Badge className="bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/25 hover:bg-orange-500/20 gap-1.5 px-3 py-1.5">
                         <TrendingDown className="h-3.5 w-3.5" />
-                        En dessous de la moyenne
+                        {td('En dessous de la moyenne', 'Below average')}
                       </Badge>
                     )}
                   </div>
@@ -769,9 +771,9 @@ export function ScoutingScreen() {
             {/* ── Footer stats ──────────────────────────────────────── */}
             <motion.div variants={itemVariants}>
               <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground pb-4">
-                <span>{data.totalWorkouts} séances</span>
+                <span>{data.totalWorkouts} {td('séances', 'sessions')}</span>
                 <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />
-                <span>{data.totalReps} répétitions</span>
+                <span>{data.totalReps} {td('répétitions', 'repetitions')}</span>
               </div>
             </motion.div>
             </div>
@@ -786,6 +788,7 @@ export function ScoutingScreen() {
 // ── Category breakdown card ─────────────────────────────────────────────────
 
 function CategoryCard({ category }: { category: ScoutingCategory }) {
+  const { td } = useTranslation()
   const _Icon = CATEGORY_ICONS[category.key] ?? Activity
   const emoji = CATEGORY_EMOJIS[category.key] ?? '🏀'
 
@@ -818,7 +821,7 @@ function CategoryCard({ category }: { category: ScoutingCategory }) {
           </span>
           {category.estimated && (
             <span className="text-[9px] italic text-orange-500/70 bg-orange-500/10 px-1.5 py-0.5 rounded-md">
-              estimé
+              {td('estimé', 'estimated')}
             </span>
           )}
         </div>
@@ -848,7 +851,7 @@ function CategoryCard({ category }: { category: ScoutingCategory }) {
         </div>
       ) : (
         <p className="text-[10px] text-muted-foreground/50 italic">
-          Aucune donnée encore
+          {td('Aucune donnée encore', 'No data yet')}
         </p>
       )}
     </div>

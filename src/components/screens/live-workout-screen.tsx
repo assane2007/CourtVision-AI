@@ -122,10 +122,10 @@ export default function LiveWorkoutScreen() {
               <ChevronDown className="h-5 w-5" />
             </Button>
             <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-            <h1 className="text-lg font-bold flex-1 truncate">{session?.title || 'Session live'}</h1>
+            <h1 className="text-lg font-bold flex-1 truncate">{session?.title || td('Session live', 'Live Session')}</h1>
             {session?.isHost && session.status !== 'ended' && (
               <Button size="sm" variant="destructive" className="h-8 text-xs" onClick={() => endSession.mutate(viewingSession)}>
-                <Square className="h-3 w-3 mr-1" />Terminer
+                <Square className="h-3 w-3 mr-1" />{td('Terminer', 'End')}
               </Button>
             )}
           </div>
@@ -138,8 +138,8 @@ export default function LiveWorkoutScreen() {
             <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
               <div className="text-center py-8">
                 <Trophy className="h-16 w-16 text-amber-500 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold">Session terminée!</h2>
-                <p className="text-sm text-muted-foreground mt-1">{session.participantCount} participants</p>
+                <h2 className="text-2xl font-bold">{td('Session terminée!', 'Session ended!')}</h2>
+                <p className="text-sm text-muted-foreground mt-1">{session.participantCount} {td('participants', 'participants')}</p>
               </div>
               <div className="space-y-2">
                 {session.rankings.map((entry, i) => (
@@ -153,7 +153,7 @@ export default function LiveWorkoutScreen() {
                         <AvatarFallback className="text-xs font-bold">{entry.name.charAt(0).toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium">{entry.name}{entry.isCurrentPlayer && ' (vous)'}</span>
+                        <span className="text-sm font-medium">{entry.name}{entry.isCurrentPlayer && <>{' ('}{td('vous', 'you')}{')'}</>}</span>
                         <p className="text-xs text-muted-foreground">{entry.reps} reps</p>
                       </div>
                       <span className="text-lg font-bold">{entry.score.toFixed(1)}</span>
@@ -175,7 +175,7 @@ export default function LiveWorkoutScreen() {
                     <span className="text-sm font-medium">{session.host.name}</span>
                     <Crown className="h-3.5 w-3.5 text-amber-500" />
                   </div>
-                  <p className="text-xs text-muted-foreground">{session.participantCount} participants</p>
+                  <p className="text-xs text-muted-foreground">{session.participantCount} {td('participants', 'participants')}</p>
                 </div>
                 <div className="flex items-center gap-1.5 text-red-500">
                   <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
@@ -186,7 +186,7 @@ export default function LiveWorkoutScreen() {
               {/* Rankings live */}
               <motion.div variants={itemVariants}>
                 <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                  <Trophy className="h-4 w-4 text-orange-500" />Classement en direct
+                  <Trophy className="h-4 w-4 text-orange-500" />{td('Classement en direct', 'Live Rankings')}
                 </h3>
                 <div className="space-y-2 max-h-96 overflow-y-auto">
                   {session.rankings.map((entry, i) => (
@@ -206,7 +206,7 @@ export default function LiveWorkoutScreen() {
                     </div>
                   ))}
                   {session.rankings.length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-6">En attente de participants...</p>
+                    <p className="text-sm text-muted-foreground text-center py-6">{td('En attente de participants...', 'Waiting for participants...')}</p>
                   )}
                 </div>
               </motion.div>
@@ -229,14 +229,14 @@ export default function LiveWorkoutScreen() {
           <h1 className="text-lg font-bold flex-1">Live Workout</h1>
           <Dialog open={showCreate} onOpenChange={setShowCreate}>
             <DialogTrigger asChild>
-              <Button size="sm" className="h-8 bg-red-500 hover:bg-red-600"><Play className="h-4 w-4 mr-1" />Héberger</Button>
+              <Button size="sm" className="h-8 bg-red-500 hover:bg-red-600"><Play className="h-4 w-4 mr-1" />{td('Héberger', 'Host')}</Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>Nouvelle session live</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{td('Nouvelle session live', 'New Live Session')}</DialogTitle></DialogHeader>
               <div className="space-y-4 pt-2">
-                <div><Label>Titre de la session</Label><Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex: Défi de tirs à 3 points" /></div>
+                <div><Label>{td('Titre de la session', 'Session title')}</Label><Input value={title} onChange={e => setTitle(e.target.value)} placeholder={td('Ex: Défi de tirs à 3 points', 'Ex: 3-point shooting challenge')} /></div>
                 <Button className="w-full bg-red-500 hover:bg-red-600" onClick={() => createSession.mutate()} disabled={createSession.isPending || !title.trim()}>
-                  {createSession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Démarrer la session'}
+                  {createSession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : td('Démarrer la session', 'Start session')}
                 </Button>
               </div>
             </DialogContent>
@@ -252,8 +252,8 @@ export default function LiveWorkoutScreen() {
         ) : !listData?.sessions.length ? (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
             <Radio className="h-12 w-12 text-muted-foreground/50" />
-            <p className="text-muted-foreground">Aucune session live active</p>
-            <p className="text-xs text-muted-foreground">Hébergez ou rejoignez une session!</p>
+            <p className="text-muted-foreground">{td('Aucune session live active', 'No active live sessions')}</p>
+            <p className="text-xs text-muted-foreground">{td('Hébergez ou rejoignez une session!', 'Host or join a session!')}</p>
           </div>
         ) : (
           <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-3">
@@ -270,16 +270,16 @@ export default function LiveWorkoutScreen() {
                         <span className="text-sm font-medium truncate">{s.host.name}</span>
                         <div className="flex items-center gap-1 text-red-500"><div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /><span className="text-[10px] font-medium">LIVE</span></div>
                       </div>
-                      <p className="text-xs text-muted-foreground">{s.viewerCount} participants</p>
+                      <p className="text-xs text-muted-foreground">{s.viewerCount} {td('participants', 'participants')}</p>
                     </div>
                   </div>
                   <h3 className="font-semibold text-sm mb-3">{s.title}</h3>
                   <div className="flex gap-2">
                     {s.isHost ? (
-                      <Button size="sm" className="flex-1 h-8" onClick={() => setViewingSession(s.id)}>Gérer</Button>
+                      <Button size="sm" className="flex-1 h-8" onClick={() => setViewingSession(s.id)}>{td('Gérer', 'Manage')}</Button>
                     ) : (
                       <Button size="sm" className="flex-1 h-8 bg-red-500 hover:bg-red-600" onClick={() => joinSession.mutate(s.id)} disabled={joinSession.isPending}>
-                        {joinSession.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Play className="h-3.5 w-3.5 mr-1" />Rejoindre</>}
+                        {joinSession.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Play className="h-3.5 w-3.5 mr-1" />{td('Rejoindre', 'Join')}</>}
                       </Button>
                     )}
                   </div>

@@ -35,7 +35,7 @@ interface CommentItem {
 }
 
 export default function PostDetailScreen() {
-  const { t } = useTranslation()
+  const { t, td, language } = useTranslation()
   const { goBack } = useNavigation()
   const selectedDrillId = useAppStore(s => s.selectedDrillId)
   const queryClient = useQueryClient()
@@ -91,7 +91,7 @@ export default function PostDetailScreen() {
           <Button variant="ghost" size="icon" onClick={goBack} className="shrink-0" aria-label={t('action.back')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-lg font-bold flex-1">Post</h1>
+          <h1 className="text-lg font-bold flex-1">{td('Post', 'Post')}</h1>
         </div>
       </header>
 
@@ -99,7 +99,7 @@ export default function PostDetailScreen() {
         {isLoading ? (
           <div className="space-y-4"><Skeleton className="h-10 w-10 rounded-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-2/3" /></div>
         ) : !post ? (
-          <p className="text-center text-muted-foreground py-16">Post introuvable</p>
+          <p className="text-center text-muted-foreground py-16">{td('Post introuvable', 'Post not found')}</p>
         ) : (
           <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
             {/* Post content */}
@@ -111,15 +111,15 @@ export default function PostDetailScreen() {
                 </Avatar>
                 <div>
                   <p className="text-sm font-medium">{post.player.name}</p>
-                  <p className="text-xs text-muted-foreground">Niv.{post.player.xpLevel} • {new Date(post.createdAt).toLocaleDateString('fr-FR')}</p>
+                  <p className="text-xs text-muted-foreground">{td('Niv.', 'Lv.')}{post.player.xpLevel} • {new Date(post.createdAt).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR')}</p>
                 </div>
               </div>
               <p className="text-sm whitespace-pre-wrap mb-3">{post.content}</p>
               {post.session && (
                 <div className="grid grid-cols-3 gap-2 mb-3 p-3 rounded-lg bg-muted/50">
-                  <div className="text-center"><p className="text-lg font-bold">{post.session.totalScore}</p><p className="text-[10px] text-muted-foreground">Score</p></div>
-                  <div className="text-center"><p className="text-lg font-bold">{post.session.totalReps}</p><p className="text-[10px] text-muted-foreground">Reps</p></div>
-                  <div className="text-center"><p className="text-lg font-bold">{post.session.totalDrills}</p><p className="text-[10px] text-muted-foreground">Exercices</p></div>
+                  <div className="text-center"><p className="text-lg font-bold">{post.session.totalScore}</p><p className="text-[10px] text-muted-foreground">{td('Score', 'Score')}</p></div>
+                  <div className="text-center"><p className="text-lg font-bold">{post.session.totalReps}</p><p className="text-[10px] text-muted-foreground">{td('Répétitions', 'Reps')}</p></div>
+                  <div className="text-center"><p className="text-lg font-bold">{post.session.totalDrills}</p><p className="text-[10px] text-muted-foreground">{td('Exercices', 'Exercises')}</p></div>
                 </div>
               )}
               <div className="flex items-center gap-4 pt-2 border-t">
@@ -135,7 +135,7 @@ export default function PostDetailScreen() {
             {/* Comments */}
             <div className="space-y-3">
               {allComments.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">Aucun commentaire</p>
+                <p className="text-sm text-muted-foreground text-center py-6">{td('Aucun commentaire', 'No comments')}</p>
               ) : allComments.map(comment => (
                 <motion.div key={comment.id} variants={itemVariants} className="p-3 rounded-xl bg-card border border-border/50">
                   <div className="flex items-start gap-2.5">
@@ -146,7 +146,7 @@ export default function PostDetailScreen() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-xs font-medium">{comment.player.name}</span>
-                        <span className="text-[10px] text-muted-foreground">{new Date(comment.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</span>
+                        <span className="text-[10px] text-muted-foreground">{new Date(comment.createdAt).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', { day: '2-digit', month: '2-digit' })}</span>
                       </div>
                       <p className="text-sm">{comment.content}</p>
 
@@ -169,7 +169,7 @@ export default function PostDetailScreen() {
                       )}
 
                       <button onClick={() => setReplyingTo(comment.id)} className="flex items-center gap-1 mt-1.5 text-[10px] text-muted-foreground hover:text-foreground">
-                        <Reply className="h-3 w-3" />Répondre
+                        <Reply className="h-3 w-3" />{td('Répondre', 'Reply')}
                       </button>
                     </div>
                   </div>
@@ -189,14 +189,14 @@ export default function PostDetailScreen() {
           {replyingTo && (
             <div className="flex items-center gap-1 bg-muted rounded-full px-2 py-0.5 text-[10px]">
               <Reply className="h-2.5 w-2.5" />
-              <span>Réponse</span>
+              <span>{td('Réponse', 'Reply')}</span>
               <button onClick={() => setReplyingTo(null)} className="ml-1">✕</button>
             </div>
           )}
           <Textarea
             value={commentText}
             onChange={e => setCommentText(e.target.value)}
-            placeholder={replyingTo ? 'Répondre...' : 'Commenter...'}
+            placeholder={replyingTo ? td('Répondre...', 'Reply...') : td('Commenter...', 'Comment...')}
             className="min-h-[40px] max-h-24 resize-none text-sm"
             rows={1}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (commentText.trim()) addComment.mutate() } }}

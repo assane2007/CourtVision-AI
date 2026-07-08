@@ -84,7 +84,7 @@ const INSIGHT_BG: Record<string, string> = {
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export default function AIInsightsScreen() {
-  const { t } = useTranslation()
+  const { t, td } = useTranslation()
   const { goBack, navigate } = useNavigation()
   const [data, setData] = useState<InsightsData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -98,12 +98,12 @@ export default function AIInsightsScreen() {
       setData(result)
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur de chargement')
+      setError(err instanceof Error ? err.message : td('Erreur de chargement', 'Loading error'))
     } finally {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [])
+  }, [td])
 
   useEffect(() => { fetchInsights() }, [fetchInsights])
 
@@ -167,9 +167,9 @@ export default function AIInsightsScreen() {
               {/* Quick Actions */}
               <div className="grid grid-cols-3 gap-3">
                 {([
-                  { screen: 'voice-coach' as const, icon: '🎙️', label: 'Coach Vocal' },
-                  { screen: 'predictions' as const, icon: '📊', label: 'Prédictions' },
-                  { screen: 'ai-workout-gen' as const, icon: '🏋️', label: 'Plan IA' },
+                  { screen: 'voice-coach' as const, icon: '🎙️', label: td('Coach Vocal', 'Voice Coach') },
+                  { screen: 'predictions' as const, icon: '📊', label: td('Prédictions', 'Predictions') },
+                  { screen: 'ai-workout-gen' as const, icon: '🏋️', label: td('Plan IA', 'AI Plan') },
                 ]).map((item) => (
                   <motion.button
                     key={item.screen}
@@ -187,15 +187,15 @@ export default function AIInsightsScreen() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-sm font-semibold">Performance globale</h2>
+                    <h2 className="text-sm font-semibold">{td('Performance globale', 'Overall Performance')}</h2>
                     <Badge variant={data.performance.weekGoalMet ? 'default' : 'secondary'} className={data.performance.weekGoalMet ? 'bg-green-500 text-white' : ''}>
-                      {data.performance.weekGoalMet ? 'Objectif atteint' : `${data.performance.weekSessions}/${data.performance.weeklyGoalSessions}`}
+                      {data.performance.weekGoalMet ? td('Objectif atteint', 'Goal met') : `${data.performance.weekSessions}/${data.performance.weeklyGoalSessions}`}
                     </Badge>
                   </div>
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
                       <p className="text-2xl font-bold text-foreground">{data.performance.avgScore}</p>
-                      <p className="text-xs text-muted-foreground">Score moy.</p>
+                      <p className="text-xs text-muted-foreground">{td('Score moy.', 'Avg. score')}</p>
                     </div>
                     <div>
                       <div className="flex items-center justify-center gap-1">
@@ -208,11 +208,11 @@ export default function AIInsightsScreen() {
                         )}
                         <p className="text-2xl font-bold">{Math.abs(data.performance.scoreTrend)}</p>
                       </div>
-                      <p className="text-xs text-muted-foreground">Tendance</p>
+                      <p className="text-xs text-muted-foreground">{td('Tendance', 'Trend')}</p>
                     </div>
                     <div>
                       <p className="text-2xl font-bold">{data.performance.shotRate}%</p>
-                      <p className="text-xs text-muted-foreground">Tir réussi</p>
+                      <p className="text-xs text-muted-foreground">{td('Tir réussi', 'Shot made')}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -224,13 +224,13 @@ export default function AIInsightsScreen() {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Activity className="h-4 w-4 text-orange-500" />
-                      <span className="text-sm font-semibold">Niveau {data.player.xpLevel}</span>
+                      <span className="text-sm font-semibold">{td('Niveau', 'Level')} {data.player.xpLevel}</span>
                     </div>
                     <span className="text-xs text-muted-foreground">{data.player.xpProgress}%</span>
                   </div>
                   <Progress value={data.player.xpProgress} className="h-2" />
                   <p className="text-xs text-muted-foreground mt-1.5">
-                    {data.player.xp} XP — prochain niveau
+                    {data.player.xp} XP — {td('prochain niveau', 'next level')}
                   </p>
                 </CardContent>
               </Card>
@@ -239,7 +239,7 @@ export default function AIInsightsScreen() {
               {data.categories.length > 0 && (
                 <Card>
                   <CardContent className="p-4">
-                    <h2 className="text-sm font-semibold mb-3">Performance par catégorie</h2>
+                    <h2 className="text-sm font-semibold mb-3">{td('Performance par catégorie', 'Performance by Category')}</h2>
                     <div className="space-y-3 max-h-48 overflow-y-auto">
                       {data.categories.slice(0, 6).map((cat) => (
                         <div key={cat.category} className="flex items-center gap-3">
@@ -269,7 +269,7 @@ export default function AIInsightsScreen() {
               {data.form && (
                 <Card>
                   <CardContent className="p-4">
-                    <h2 className="text-sm font-semibold mb-3">Dernière analyse de forme</h2>
+                    <h2 className="text-sm font-semibold mb-3">{td('Dernière analyse de forme', 'Latest form analysis')}</h2>
                     <div className="flex items-center gap-4 mb-3">
                       <div className="h-16 w-16 rounded-full border-4 border-orange-500 flex items-center justify-center">
                         <span className="text-lg font-bold">{data.form.overallScore}</span>
@@ -293,7 +293,7 @@ export default function AIInsightsScreen() {
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <Brain className="h-4 w-4 text-orange-500" />
-                      <h2 className="text-sm font-semibold">Insights IA</h2>
+                      <h2 className="text-sm font-semibold">{td('Insights IA', 'AI Insights')}</h2>
                     </div>
                     <div className="space-y-2">
                       {data.insights.map((insight, i) => {
@@ -329,7 +329,7 @@ export default function AIInsightsScreen() {
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <Trophy className="h-4 w-4 text-orange-500" />
-                        <h2 className="text-sm font-semibold">Achievements récents</h2>
+                        <h2 className="text-sm font-semibold">{td('Achievements récents', 'Recent achievements')}</h2>
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -349,11 +349,11 @@ export default function AIInsightsScreen() {
               {/* AI Actions */}
               <Card>
                 <CardContent className="p-4 space-y-2">
-                  <h2 className="text-sm font-semibold mb-2">Actions IA</h2>
+                  <h2 className="text-sm font-semibold mb-2">{td('Actions IA', 'AI Actions')}</h2>
                   {[
-                    { label: 'Générer un plan d\'entraînement', screen: 'ai-workout-gen' as const, icon: Dumbbell },
-                    { label: 'Prédictions de progression', screen: 'predictions' as const, icon: Target },
-                    { label: 'Coach vocal en direct', screen: 'voice-coach' as const, icon: Mic },
+                    { label: td("Générer un plan d'entraînement", 'Generate a training plan'), screen: 'ai-workout-gen' as const, icon: Dumbbell },
+                    { label: td('Prédictions de progression', 'Progression predictions'), screen: 'predictions' as const, icon: Target },
+                    { label: td('Coach vocal en direct', 'Live Voice Coach'), screen: 'voice-coach' as const, icon: Mic },
                   ].map((action) => (
                     <button
                       key={action.screen}

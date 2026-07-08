@@ -83,12 +83,12 @@ export default function TeamDetailScreen() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-bold truncate">{team?.name || 'Chargement...'}</h1>
-            {team && <p className="text-xs text-muted-foreground">{team.memberCount} membres</p>}
+            <h1 className="text-lg font-bold truncate">{team?.name || td('Chargement...', 'Loading...')}</h1>
+            {team && <p className="text-xs text-muted-foreground">{team.memberCount} {td('membres', 'members')}</p>}
           </div>
           {team && (
             <Button size="sm" variant="ghost" className="text-destructive h-8 text-xs" onClick={() => setLeaveConfirm(true)}>
-              <LogOut className="h-3.5 w-3.5 mr-1" />Quitter
+              <LogOut className="h-3.5 w-3.5 mr-1" />{td('Quitter', 'Leave')}
             </Button>
           )}
         </div>
@@ -99,7 +99,7 @@ export default function TeamDetailScreen() {
             {(['members', 'leaderboard', 'challenges'] as const).map(v => (
               <button key={v} onClick={() => setTab(v)}
                 className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${tab === v ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}>
-                {v === 'members' ? 'Membres' : v === 'leaderboard' ? 'Classement' : 'Défis'}
+                {v === 'members' ? td('Membres', 'Members') : v === 'leaderboard' ? td('Classement', 'Rankings') : td('Défis', 'Challenges')}
               </button>
             ))}
           </div>
@@ -114,8 +114,8 @@ export default function TeamDetailScreen() {
         ) : isError || !team ? (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
             <Users className="h-12 w-12 text-muted-foreground/50" />
-            <p className="text-muted-foreground">Équipe introuvable</p>
-            <Button variant="outline" onClick={goBack}>Retour</Button>
+            <p className="text-muted-foreground">{td('Équipe introuvable', 'Team not found')}</p>
+            <Button variant="outline" onClick={goBack}>{td('Retour', 'Back')}</Button>
           </div>
         ) : (
           <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
@@ -125,7 +125,7 @@ export default function TeamDetailScreen() {
                 <p className="text-sm text-muted-foreground">{team.description}</p>
                 <div className="flex gap-3 mt-3 text-xs text-muted-foreground">
                   <span>Xp total: {team.totalXp.toLocaleString()}</span>
-                  <span>Niv. moyen: {team.avgLevel}</span>
+                  <span>{td('Niv. moyen', 'Avg. level')}: {team.avgLevel}</span>
                 </div>
               </motion.div>
             )}
@@ -136,7 +136,7 @@ export default function TeamDetailScreen() {
                   <motion.div key={member.id} variants={itemVariants}>
                     <div className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card">
                       <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold shrink-0">
-                        {member.avatar ? <img src={member.avatar} alt="" className="w-full h-full rounded-full object-cover" /> : member.name.charAt(0).toUpperCase()}
+                        {member.avatar ? <img src={member.avatar} alt={member.name} className="w-full h-full rounded-full object-cover" /> : member.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -160,7 +160,7 @@ export default function TeamDetailScreen() {
                     <div className={`flex items-center gap-3 p-3 rounded-xl border ${i === 0 ? 'border-amber-500/50 bg-amber-500/5' : 'border-border/50 bg-card'}`}>
                       <span className={`text-sm font-bold w-8 text-center ${i === 0 ? 'text-amber-500' : 'text-muted-foreground'}`}>{i + 1}</span>
                       <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold shrink-0">
-                        {entry.avatar ? <img src={entry.avatar} alt="" className="w-full h-full rounded-full object-cover" /> : entry.name.charAt(0).toUpperCase()}
+                        {entry.avatar ? <img src={entry.avatar} alt={entry.name} className="w-full h-full rounded-full object-cover" /> : entry.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
                         <span className="text-sm font-medium truncate">{entry.name}</span>
@@ -181,7 +181,7 @@ export default function TeamDetailScreen() {
                 {team.challenges.length === 0 ? (
                   <div className="flex flex-col items-center gap-3 py-12 text-center">
                     <Target className="h-10 w-10 text-muted-foreground/50" />
-                    <p className="text-muted-foreground text-sm">Aucun défi d'équipe</p>
+                    <p className="text-muted-foreground text-sm">{td("Aucun défi d'équipe", 'No team challenges')}</p>
                   </div>
                 ) : team.challenges.map(ch => (
                   <motion.div key={ch.id} variants={itemVariants}>
@@ -203,11 +203,11 @@ export default function TeamDetailScreen() {
 
       <AlertDialog open={leaveConfirm} onOpenChange={setLeaveConfirm}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Quitter l'équipe ?</AlertDialogTitle>
-          <AlertDialogDescription>Vous pourrez rejoindre à nouveau plus tard.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>{td("Quitter l'équipe ?", 'Leave team?')}</AlertDialogTitle>
+          <AlertDialogDescription>{td('Vous pourrez rejoindre à nouveau plus tard.', 'You can join again later.')}</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={() => leaveTeam.mutate()} className="bg-destructive text-white hover:bg-destructive/90">Quitter</AlertDialogAction>
+            <AlertDialogCancel>{td('Annuler', 'Cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => leaveTeam.mutate()} className="bg-destructive text-white hover:bg-destructive/90">{td('Quitter', 'Leave')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

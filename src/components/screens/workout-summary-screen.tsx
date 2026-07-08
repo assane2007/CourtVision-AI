@@ -354,6 +354,7 @@ function DrillScoreChart({ drills, t }: { drills: WorkoutDrillResult[]; t: (key:
 // ─── Drill Breakdown Card ─────────────────────────────────────────────────────
 
 function DrillBreakdownCard({ drill, delay }: { drill: WorkoutDrillResult; delay: number }) {
+  const { td } = useTranslation()
   const prefersReducedMotion = useReducedMotion()
   const catMeta = CATEGORY_META[drill.drillCategory]
   const icon = catMeta?.icon ?? drill.drillIcon
@@ -391,7 +392,7 @@ function DrillBreakdownCard({ drill, delay }: { drill: WorkoutDrillResult; delay
                 />
               </div>
               <span className="text-[10px] text-white/40 tabular-nums shrink-0">
-                {drill.reps} rép.
+                {drill.reps} {td('rép.', 'reps')}
               </span>
             </div>
           </div>
@@ -502,7 +503,7 @@ function PRBanner({ drillNames }: { drillNames: string[] }) {
 }
 
 export default function WorkoutSummaryScreen() {
-  const { t } = useTranslation()
+  const { t, td } = useTranslation()
   const { workoutResult, navigate, setWorkoutResult, selectDrill } = useAppStore()
   const prefersReducedMotion = useReducedMotion()
   const [replayOpen, setReplayOpen] = useState(false)
@@ -725,7 +726,7 @@ export default function WorkoutSummaryScreen() {
                 className="w-full h-12 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/25"
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
-                Refaire l&apos;entraînement
+                {td("Refaire l'entraînement", 'Redo workout')}
               </Button>
               {/* Replay button */}
               <Button
@@ -734,7 +735,7 @@ export default function WorkoutSummaryScreen() {
                 className="w-full h-11 border-white/15 text-white hover:bg-white/10 rounded-xl"
               >
                 <Play className="h-4 w-4 mr-2" />
-                Rejouer 🎬
+                {td('Rejouer', 'Replay')} 🎬
               </Button>
               <div className="grid grid-cols-2 gap-2.5">
                 <Button
@@ -751,7 +752,7 @@ export default function WorkoutSummaryScreen() {
                   className="h-11 border-white/15 text-white hover:bg-white/10 rounded-xl"
                 >
                   <Share2 className="h-4 w-4 mr-2" />
-                  Partager
+                  {td('Partager', 'Share')}
                 </Button>
               </div>
             </div>
@@ -763,7 +764,7 @@ export default function WorkoutSummaryScreen() {
           <SheetContent side="bottom" className="max-h-[85vh] rounded-t-2xl bg-gray-950 border-white/10 p-0">
             <SheetHeader className="pt-3 pb-0 px-5">
               <SheetTitle className="text-white text-sm font-semibold text-center">
-                🎬 Rejouer l&apos;entraînement
+                🎬 {td("Rejouer l'entraînement", 'Replay workout')}
               </SheetTitle>
             </SheetHeader>
             <div className="h-[calc(85vh-52px)] overflow-hidden">
