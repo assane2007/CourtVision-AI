@@ -3,23 +3,14 @@
  * for testability. Contains no React, DOM, or side-effect dependencies.
  */
 
+import type { DrillCategory } from '@/lib/types'
+
 export interface Landmark {
   x: number;
   y: number;
   z: number;
   visibility: number;
 }
-
-export type DrillCategory =
-  | "pocket_ball"
-  | "shifty"
-  | "ball_handling"
-  | "speed_change"
-  | "defense"
-  | "shooting"
-  | "footwork"
-  | "conditioning"
-  | "passing";
 
 export interface RepState {
   buffer: number[];

@@ -5,6 +5,9 @@ import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
 import crypto from 'crypto'
+import { authenticator } from 'otplib'
+
+authenticator.options = { window: 1 }
 
 // POST /api/auth/2fa/verify
 // Verify a 2FA code to complete setup or during login
@@ -37,10 +40,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '2FA non configurée' }, { status: 400 })
     }
 
-    // Mock TOTP verification: accept any 6-digit code where the last digit
-    // matches the last digit of the secret (simple mock for development)
-    // In production, use a real TOTP library like 'otplib'
-    const isCodeValid = validateMockTotp(code, player.twoFactorSecret)
+    // Real TOTP verification
+    const isCodeValid = authenticator.verify({ token: code, secret: player.twoFactorSecret })
 
     if (!isCodeValid) {
       // Check backup codes
@@ -82,14 +83,6 @@ export async function POST(request: Request) {
     trackError('POST /api/auth/2fa/verify', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
-
-/**
- * Mock TOTP validation. In production, use `otplib.authenticator.verify()`.
- * For development, we accept any 6-digit code.
- */
-function validateMockTotp(code: string, _secret: string): boolean {
-  return /^\d{6}$/.test(code)
 }
 
 async function generateBackupCodes(playerId: string, count: number): Promise<string[]> {

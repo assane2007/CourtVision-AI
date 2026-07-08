@@ -36,8 +36,9 @@ const mockDb = {
 
 vi.mock('@/lib/db', () => ({ db: mockDb }))
 
+const mockRateLimit = vi.fn()
 vi.mock('@/lib/rate-limit', () => ({
-  rateLimit: vi.fn(() => ({ success: true, retryAfterMs: 0 })),
+  rateLimit: (...args: unknown[]) => mockRateLimit(...args),
 }))
 
 vi.mock('@/lib/monitoring', () => ({
@@ -92,7 +93,8 @@ function makeNextRequest(url: string, body?: unknown): Request {
 
 describe('POST /api/sessions', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.restoreAllMocks()
+    mockRateLimit.mockReturnValue({ success: true, retryAfterMs: 0 })
   })
 
   it('returns 401 when not authenticated', async () => {
@@ -187,13 +189,62 @@ describe('POST /api/sessions', () => {
     const body = await res.json()
     expect(body.error).toContain('introuvable')
   })
+
+  it('returns 201 with session and XP on valid input', async () => {
+    mockGetServerSession.mockResolvedValue({
+      user: { id: 'p1', email: 't@t.com' },
+    })
+    vi.resetModules()
+    const mod = await import('@/app/api/sessions/route')
+    const db = (await import('@/lib/db')).db as typeof mockDb
+
+    // Drills exist in DB
+    ;(db.drill.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { id: 'd1' },
+    ])
+    ;(db.workoutSessionDrill.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue(null)
+    ;(db.workoutSession.create as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: 's1',
+      totalScore: 80,
+      totalReps: 10,
+      totalDrills: 1,
+      drills: [],
+    })
+    ;(db.workoutSession.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
+
+    const res = await mod.POST(
+      makeNextRequest('/api/sessions', {
+        drillScores: [
+          { drillId: 'd1', reps: 10, score: 80, durationMs: 30000 },
+        ],
+      }),
+    )
+    expect(res.status).toBe(201)
+    const body = await res.json()
+    expect(body.session).toBeDefined()
+    expect(body.xpAwarded).toBeDefined()
+    expect(body.xpAwarded.xpGained).toBe(50)
+  })
+
+  it('returns 429 when rate limited on POST', async () => {
+    mockGetServerSession.mockResolvedValue({
+      user: { id: 'p1', email: 't@t.com' },
+    })
+    mockRateLimit.mockReturnValue({ success: false, retryAfterMs: 30000 })
+
+    vi.resetModules()
+    const { POST } = await import('@/app/api/sessions/route')
+    const res = await POST(makeNextRequest('/api/sessions', { drillScores: [] }))
+    expect(res.status).toBe(429)
+  })
 })
 
 // ── GET /api/sessions ─────────────────────────────────────────────────────────
 
 describe('GET /api/sessions', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.restoreAllMocks()
+    mockRateLimit.mockReturnValue({ success: true, retryAfterMs: 0 })
   })
 
   it('returns 401 when not authenticated', async () => {

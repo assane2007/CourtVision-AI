@@ -2,7 +2,7 @@
  * App store — backward-compatible barrel that combines navigation + workout stores.
  *
  * Existing code can keep importing `useAppStore` from `@/stores/app`.
- * New code can import `useNavigation` or `useWorkout` directly from their
+ * New code can import `useNavigation` directly from their
  * respective modules for finer-grained reactivity.
  */
 
@@ -159,4 +159,3 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
 
 // ── Re-export sub-stores for new code ─────────────────────────────────────────
 export { useNavigation } from '@/stores/navigation'
-export { useWorkout } from '@/stores/workout'

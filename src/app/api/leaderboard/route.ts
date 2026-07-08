@@ -8,6 +8,17 @@ import { withCache } from '@/lib/cache'
 
 type Period = 'all' | 'month' | 'week'
 
+interface LeaderboardEntry {
+  rank: number
+  name: string
+  xp: number
+  xpLevel: number
+  totalSessions: number
+  avgScore: number
+  position: string
+  isCurrentUser: boolean
+}
+
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -142,10 +153,80 @@ export async function GET(request: Request) {
       }
     }
 
-    // Per-user friends section (just the current player context)
-    const friends = currentPlayerRanked
-      ? [{ ...currentPlayerRanked, isCurrentUser: true }]
-      : []
+    // Per-user friends section: fetch accepted friends and rank them by XP
+    const acceptedFriendships = await db.friendship.findMany({
+      where: {
+        OR: [
+          { requesterId: playerId, status: 'accepted' },
+          { recipientId: playerId, status: 'accepted' },
+        ],
+      },
+      select: { requesterId: true, recipientId: true },
+    })
+
+    const friendIds = new Set<string>()
+    for (const f of acceptedFriendships) {
+      if (f.requesterId !== playerId) friendIds.add(f.requesterId)
+      if (f.recipientId !== playerId) friendIds.add(f.recipientId)
+    }
+
+    let friends: LeaderboardEntry[] = []
+    if (friendIds.size > 0) {
+      const friendPlayers = await db.player.findMany({
+        where: { id: { in: Array.from(friendIds) } },
+        select: {
+          id: true,
+          name: true,
+          xp: true,
+          xpLevel: true,
+          position: true,
+          sessions: {
+            select: { totalScore: true },
+            where: periodFilter ? { startedAt: { gte: periodFilter } } : undefined,
+            take: 100,
+          },
+        },
+      })
+
+      friends = friendPlayers
+        .map((p) => {
+          const totalScore = p.sessions.reduce((s, ses) => s + ses.totalScore, 0)
+          const avgScore = p.sessions.length > 0
+            ? Math.round((totalScore / p.sessions.length) * 10) / 10
+            : 0
+          return {
+            rank: 0, // will be assigned after sort
+            name: p.name,
+            xp: p.xp,
+            xpLevel: p.xpLevel,
+            totalSessions: p.sessions.length,
+            avgScore,
+            position: p.position,
+            isCurrentUser: false,
+          }
+        })
+        .sort((a, b) => b.xp - a.xp)
+        .map((p, i) => ({ ...p, rank: i + 1 }))
+
+      // Insert current player into friends list if they exist in global ranking
+      if (currentPlayerRanked) {
+        const me = {
+          rank: 0,
+          name: currentPlayerRanked.name,
+          xp: currentPlayerRanked.xp,
+          xpLevel: currentPlayerRanked.xpLevel,
+          totalSessions: currentPlayerRanked.totalSessions,
+          avgScore: currentPlayerRanked.avgScore,
+          position: currentPlayerRanked.position,
+          isCurrentUser: true,
+        }
+        friends.push(me)
+        friends.sort((a, b) => b.xp - a.xp)
+        friends = friends.map((p, i) => ({ ...p, rank: i + 1 }))
+      }
+    } else if (currentPlayerRanked) {
+      friends = [{ ...currentPlayerRanked, isCurrentUser: true, rank: 1 }]
+    }
 
     // Anonymize names for other players (show first name only)
     const anonymized = ranked.map((p) => ({

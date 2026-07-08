@@ -504,7 +504,10 @@ function PRBanner({ drillNames }: { drillNames: string[] }) {
 
 export default function WorkoutSummaryScreen() {
   const { t, td } = useTranslation()
-  const { workoutResult, navigate, setWorkoutResult, selectDrill } = useAppStore()
+  const workoutResult = useAppStore(s => s.workoutResult)
+  const navigate = useAppStore(s => s.navigate)
+  const setWorkoutResult = useAppStore(s => s.setWorkoutResult)
+  const selectDrill = useAppStore(s => s.selectDrill)
   const prefersReducedMotion = useReducedMotion()
   const [replayOpen, setReplayOpen] = useState(false)
 

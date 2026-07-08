@@ -20,6 +20,7 @@ interface PricingTier {
   id: string
   name: string
   price: string
+  annualPrice: string
   priceLabel: string
   description: string
   icon: React.ReactNode
@@ -38,6 +39,7 @@ function getTiers(t: (key: TranslationKey, params?: Record<string, string>) => s
       id: 'free',
       name: t('pricing.freeTierName'),
       price: '0',
+      annualPrice: '0',
       priceLabel: t('pricing.perMonth'),
       description: t('pricing.freeTierDesc'),
       icon: <Zap className="h-5 w-5" />,
@@ -57,6 +59,7 @@ function getTiers(t: (key: TranslationKey, params?: Record<string, string>) => s
       id: 'pro',
       name: t('pricing.pro'),
       price: '9,99',
+      annualPrice: '99,90',
       priceLabel: t('pricing.perMonth'),
       description: t('pricing.proTierDesc'),
       icon: <Star className="h-5 w-5" />,
@@ -77,6 +80,7 @@ function getTiers(t: (key: TranslationKey, params?: Record<string, string>) => s
       id: 'elite',
       name: t('pricing.elite'),
       price: '19,99',
+      annualPrice: '199,90',
       priceLabel: t('pricing.perMonth'),
       description: t('pricing.eliteTierDesc'),
       icon: <Crown className="h-5 w-5" />,
@@ -100,17 +104,21 @@ export default function PricingScreen() {
   const { t } = useTranslation()
   const goBack = useAppStore((s) => s.goBack)
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
+  const [annualBilling, setAnnualBilling] = useState(false)
   const TIERS = getTiers(t)
 
-  const handleSubscribe = async (planId: string) => {
-    if (planId === 'free') return
+  const handleSubscribe = async (tierId: string) => {
+    if (tierId === 'free') return
 
-    setLoadingPlan(planId)
+    const interval = annualBilling ? 'annual' : 'monthly'
+    const priceId = `${tierId}_${interval}`
+
+    setLoadingPlan(tierId)
     try {
-      const res = await fetch('/api/billing/checkout', {
+      const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId }),
+        body: JSON.stringify({ priceId }),
       })
 
       if (!res.ok) {
@@ -120,13 +128,10 @@ export default function PricingScreen() {
 
       const data = await res.json()
 
-      // In production, this would redirect to Stripe Checkout
-      // For now, show success toast
-      toast.success(t('pricing.redirectingToast'))
-
-      // Mock: simulate redirect to success
       if (data.url) {
         window.location.href = data.url
+      } else {
+        toast.error(t('pricing.paymentError'))
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('pricing.paymentError'))
@@ -167,6 +172,36 @@ export default function PricingScreen() {
             <p className="text-muted-foreground text-sm md:text-base max-w-md mx-auto">
               {t('pricing.subtitle')}
             </p>
+          </motion.div>
+
+          {/* Billing interval toggle */}
+          <motion.div variants={itemVariants} className="flex items-center justify-center gap-3">
+            <span className={cn('text-sm font-medium', !annualBilling && 'text-foreground', annualBilling && 'text-muted-foreground')}>
+              Mensuel
+            </span>
+            <button
+              type="button"
+              onClick={() => setAnnualBilling((v) => !v)}
+              className={cn(
+                'relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2',
+                annualBilling ? 'bg-orange-500' : 'bg-muted',
+              )}
+              role="switch"
+              aria-checked={annualBilling}
+            >
+              <span
+                className={cn(
+                  'pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform',
+                  annualBilling ? 'translate-x-5' : 'translate-x-0',
+                )}
+              />
+            </button>
+            <span className={cn('text-sm font-medium', annualBilling && 'text-foreground', !annualBilling && 'text-muted-foreground')}>
+              Annuel
+              <span className="ml-1.5 inline-flex items-center rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-600">
+                -17%
+              </span>
+            </span>
           </motion.div>
 
           {/* Pricing Cards */}
@@ -219,8 +254,20 @@ export default function PricingScreen() {
 
                   <CardContent className="flex-1 text-center">
                     <div className="mb-6">
-                      <span className="text-4xl font-bold tracking-tight">{tier.price}€</span>
-                      <span className="text-muted-foreground text-sm ml-1">{tier.priceLabel}</span>
+                      {annualBilling && tier.id !== 'free' ? (
+                        <>
+                          <span className="text-4xl font-bold tracking-tight">{tier.annualPrice}€</span>
+                          <span className="text-muted-foreground text-sm ml-1">/an</span>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            soit {tier.price}€ {t('pricing.perMonth')}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-4xl font-bold tracking-tight">{tier.price}€</span>
+                          <span className="text-muted-foreground text-sm ml-1">{tier.priceLabel}</span>
+                        </>
+                      )}
                     </div>
 
                     <div className="space-y-3 text-left">

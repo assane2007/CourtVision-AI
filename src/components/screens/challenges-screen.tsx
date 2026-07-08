@@ -105,10 +105,10 @@ export default function ChallengesScreen() {
             <DialogContent className="max-h-[85vh] overflow-y-auto">
               <DialogHeader><DialogTitle>{td('Nouveau défi', 'New Challenge')}</DialogTitle></DialogHeader>
               <div className="space-y-4 pt-2">
-                <div><Label>{td('Titre', 'Title')}</Label><Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder={td('Ex: 100 tirs en une semaine', 'Ex: 100 shots in one week')} /></div>
-                <div><Label>{td('Description', 'Description')}</Label><Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder={td('Détails du défi', 'Challenge details')} rows={2} /></div>
+                <div><Label htmlFor="challenge-name">{td('Titre', 'Title')}</Label><Input id="challenge-name" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder={td('Ex: 100 tirs en une semaine', 'Ex: 100 shots in one week')} /></div>
+                <div><Label htmlFor="challenge-desc">{td('Description', 'Description')}</Label><Textarea id="challenge-desc" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder={td('Détails du défi', 'Challenge details')} rows={2} /></div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>{td('Type', 'Type')}</Label>
+                  <div><Label htmlFor="challenge-type">{td('Type', 'Type')}</Label>
                     <Select value={form.type} onValueChange={v => setForm({ ...form, type: v })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -120,11 +120,11 @@ export default function ChallengesScreen() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div><Label>{td('Objectif', 'Goal')}</Label><Input type="number" value={form.targetValue} onChange={e => setForm({ ...form, targetValue: e.target.value })} /></div>
+                  <div><Label htmlFor="challenge-goal">{td('Objectif', 'Goal')}</Label><Input id="challenge-goal" type="number" value={form.targetValue} onChange={e => setForm({ ...form, targetValue: e.target.value })} /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>{td('Début', 'Start')}</Label><Input type="date" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })} /></div>
-                  <div><Label>{td('Fin', 'End')}</Label><Input type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })} /></div>
+                  <div><Label htmlFor="challenge-start">{td('Début', 'Start')}</Label><Input id="challenge-start" type="date" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })} /></div>
+                  <div><Label htmlFor="challenge-end">{td('Fin', 'End')}</Label><Input id="challenge-end" type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })} /></div>
                 </div>
                 <Button className="w-full" onClick={() => createChallenge.mutate()} disabled={createChallenge.isPending || !form.title.trim()}>
                   {createChallenge.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : td('Créer le défi', 'Create challenge')}
@@ -135,9 +135,9 @@ export default function ChallengesScreen() {
         </div>
 
         <div className="max-w-lg mx-auto px-4 pb-3">
-          <div className="flex gap-1 overflow-x-auto scrollbar-none">
+          <div role="tablist" className="flex gap-1 overflow-x-auto scrollbar-none">
             {TABS.map(t => (
-              <button key={t.value} onClick={() => setTab(t.value)}
+              <button key={t.value} role="tab" aria-selected={tab === t.value} onClick={() => setTab(t.value)}
                 className={`flex-1 py-2 px-3 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${tab === t.value ? 'bg-orange-500 text-white' : 'bg-muted text-muted-foreground'}`}>
                 {td(t.label, t.labelEn)}
               </button>
@@ -192,7 +192,7 @@ export default function ChallengesScreen() {
                       </div>
                     )}
                     {!ch.isJoined && tab === 'active' && (
-                      <Button size="sm" className="w-full h-8 text-xs" onClick={() => joinChallenge.mutate(ch.id)} disabled={joinChallenge.isPending}>
+                      <Button size="sm" className="w-full h-10 text-xs" onClick={() => joinChallenge.mutate(ch.id)} disabled={joinChallenge.isPending}>
                         {joinChallenge.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : td('Rejoindre le défi', 'Join challenge')}
                       </Button>
                     )}

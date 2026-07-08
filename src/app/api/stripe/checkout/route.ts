@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
-import { validateBody, validateString } from '@/app/api/_lib/validate'
+import { z } from 'zod'
 import Stripe from 'stripe'
 
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -31,14 +31,17 @@ export async function POST(req: Request) {
   }
 
   // Validate body
-  const bodyErr = validateBody(await req.json())
-  if (bodyErr) return NextResponse.json(bodyErr, { status: 400 })
-
-  const rawBody = await req.clone().json()
-  const priceIdErr = validateString(rawBody.priceId, 'priceId', 100)
-  if (priceIdErr) return NextResponse.json({ error: priceIdErr }, { status: 400 })
-
-  const priceId = rawBody.priceId as string
+  let body: { priceId?: string }
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Body JSON invalide' }, { status: 400 })
+  }
+  const parsed = z.object({ priceId: z.string().max(100) }).safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'priceId requis (max 100)' }, { status: 400 })
+  }
+  const priceId = parsed.data.priceId
 
   if (!PRICE_MAP[priceId]) {
     return NextResponse.json({ error: 'Plan invalide' }, { status: 400 })

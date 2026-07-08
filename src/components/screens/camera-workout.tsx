@@ -73,19 +73,17 @@ import {
 
 export default function CameraWorkoutScreen() {
   const { t } = useTranslation()
-  const {
-    selectedDrillId,
-    goBack,
-    navigate,
-    planDrillQueue,
-    planCurrentIndex,
-    planResults,
-    advancePlanDrill,
-    setWorkoutResult,
-    setXpAwarded,
-    clearPlanExecution,
-    selectDrill,
-  } = useAppStore()
+  const selectedDrillId = useAppStore(s => s.selectedDrillId)
+  const goBack = useAppStore(s => s.goBack)
+  const navigate = useAppStore(s => s.navigate)
+  const planDrillQueue = useAppStore(s => s.planDrillQueue)
+  const planCurrentIndex = useAppStore(s => s.planCurrentIndex)
+  const planResults = useAppStore(s => s.planResults)
+  const advancePlanDrill = useAppStore(s => s.advancePlanDrill)
+  const setWorkoutResult = useAppStore(s => s.setWorkoutResult)
+  const setXpAwarded = useAppStore(s => s.setXpAwarded)
+  const clearPlanExecution = useAppStore(s => s.clearPlanExecution)
+  const selectDrill = useAppStore(s => s.selectDrill)
   const isPlanMode = planDrillQueue.length > 0
   const queryClient = useQueryClient()
 

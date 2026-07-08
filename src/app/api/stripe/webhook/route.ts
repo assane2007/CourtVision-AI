@@ -7,7 +7,7 @@ const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' })
   : null
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || ''
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
 export async function POST(req: Request) {
   // If Stripe is not configured, acknowledge but do nothing
@@ -21,12 +21,10 @@ export async function POST(req: Request) {
   let event: Stripe.Event
 
   try {
-    if (webhookSecret) {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
-    } else {
-      // In dev without webhook secret, parse directly
-      event = JSON.parse(body) as Stripe.Event
+    if (!webhookSecret) {
+      return NextResponse.json({ error: 'Webhook non configuré' }, { status: 503 })
     }
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
   } catch {
     return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 })
   }

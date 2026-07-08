@@ -6,6 +6,7 @@ import { Trophy, PartyPopper, Check } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/components/providers/language-provider'
 
 // ---------------------------------------------------------------------------
 // Challenge definitions (rotate by ISO week number)
@@ -13,22 +14,25 @@ import { cn } from '@/lib/utils'
 interface ChallengeDef {
   id: string
   title: string
+  titleEn: string
   description: string
+  descriptionEn: string
   target: number
   unit: string
+  unitEn: string
   type: 'sessions' | 'score' | 'streak' | 'drills'
   icon: string
 }
 
 const CHALLENGES: ChallengeDef[] = [
-  { id: 'c1', title: 'Marathon de Tir', description: 'Complétez 5 exercices de tir', target: 5, unit: 'exercices', type: 'drills', icon: '🎯' },
-  { id: 'c2', title: 'Précision Élite', description: 'Obtenez 80%+ sur 3 exercices', target: 3, unit: 'exercices > 80%', type: 'score', icon: '🏆' },
-  { id: 'c3', title: 'Régularité', description: 'Entraînez-vous 4 jours cette semaine', target: 4, unit: 'jours', type: 'streak', icon: '📅' },
-  { id: 'c4', title: 'Centurion', description: 'Atteignez 100 répétitions cette semaine', target: 100, unit: 'répétitions', type: 'drills', icon: '💪' },
-  { id: 'c5', title: 'Polyvalence', description: 'Entraînez-vous dans 3 catégories différentes', target: 3, unit: 'catégories', type: 'sessions', icon: '🔄' },
-  { id: 'c6', title: 'Série de 5 Jours', description: 'Maintenez une série de 5 jours consécutifs', target: 5, unit: 'jours consécutifs', type: 'streak', icon: '🔥' },
-  { id: 'c7', title: 'Score Parfait', description: 'Obtenez 90%+ sur 2 exercices', target: 2, unit: 'exercices > 90%', type: 'score', icon: '⭐' },
-  { id: 'c8', title: 'Volume Sérieux', description: 'Complétez 3 séances cette semaine', target: 3, unit: 'séances', type: 'sessions', icon: '🏋️' },
+  { id: 'c1', title: 'Marathon de Tir', titleEn: 'Shooting Marathon', description: 'Complétez 5 exercices de tir', descriptionEn: 'Complete 5 shooting drills', target: 5, unit: 'exercices', unitEn: 'drills', type: 'drills', icon: '🎯' },
+  { id: 'c2', title: 'Précision Élite', titleEn: 'Elite Accuracy', description: 'Obtenez 80%+ sur 3 exercices', descriptionEn: 'Get 80%+ on 3 drills', target: 3, unit: 'exercices > 80%', unitEn: 'drills > 80%', type: 'score', icon: '🏆' },
+  { id: 'c3', title: 'Régularité', titleEn: 'Consistency', description: 'Entraînez-vous 4 jours cette semaine', descriptionEn: 'Train 4 days this week', target: 4, unit: 'jours', unitEn: 'days', type: 'streak', icon: '📅' },
+  { id: 'c4', title: 'Centurion', titleEn: 'Centurion', description: 'Atteignez 100 répétitions cette semaine', descriptionEn: 'Reach 100 reps this week', target: 100, unit: 'répétitions', unitEn: 'reps', type: 'drills', icon: '💪' },
+  { id: 'c5', title: 'Polyvalence', titleEn: 'Versatility', description: 'Entraînez-vous dans 3 catégories différentes', descriptionEn: 'Train in 3 different categories', target: 3, unit: 'catégories', unitEn: 'categories', type: 'sessions', icon: '🔄' },
+  { id: 'c6', title: 'Série de 5 Jours', titleEn: '5-Day Streak', description: 'Maintenez une série de 5 jours consécutifs', descriptionEn: 'Maintain a 5-day consecutive streak', target: 5, unit: 'jours consécutifs', unitEn: 'consecutive days', type: 'streak', icon: '🔥' },
+  { id: 'c7', title: 'Score Parfait', titleEn: 'Perfect Score', description: 'Obtenez 90%+ sur 2 exercices', descriptionEn: 'Get 90%+ on 2 drills', target: 2, unit: 'exercices > 90%', unitEn: 'drills > 90%', type: 'score', icon: '⭐' },
+  { id: 'c8', title: 'Volume Sérieux', titleEn: 'Serious Volume', description: 'Complétez 3 séances cette semaine', descriptionEn: 'Complete 3 sessions this week', target: 3, unit: 'séances', unitEn: 'sessions', type: 'sessions', icon: '🏋️' },
 ]
 
 function getChallengeForWeek(): ChallengeDef {
@@ -126,6 +130,7 @@ export function WeeklyChallenge({
   highScoreDrillsCount = 0,
   perfectScoreDrillsCount = 0,
 }: WeeklyChallengeProps) {
+  const { td } = useTranslation()
   const challenge = getChallengeForWeek()
   const weekKey = getWeekKey()
   const storageKey = `cv_challenge_${weekKey}`
@@ -206,7 +211,7 @@ export function WeeklyChallenge({
             </div>
             <div className="flex-1 min-w-0">
               <CardTitle className="text-sm font-semibold truncate">
-                {completed ? 'DÉFI RELEVÉ ! 🎉' : 'Défi de la Semaine'}
+                {completed ? td('DÉFI RELEVÉ ! 🎉', 'CHALLENGE COMPLETE! 🎉') : td('Défi de la Semaine', 'Weekly Challenge')}
               </CardTitle>
             </div>
             <span className="text-lg flex-shrink-0">{challenge.icon}</span>
@@ -214,13 +219,13 @@ export function WeeklyChallenge({
         </CardHeader>
 
         <CardContent className="px-5 pb-4">
-          <p className="text-xs text-muted-foreground mb-1 font-medium">{challenge.title}</p>
-          <p className="text-sm text-foreground/80 mb-3">{challenge.description}</p>
+          <p className="text-xs text-muted-foreground mb-1 font-medium">{td(challenge.title, challenge.titleEn)}</p>
+          <p className="text-sm text-foreground/80 mb-3">{td(challenge.description, challenge.descriptionEn)}</p>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="font-medium tabular-nums">
-                {Math.min(currentProgress, challenge.target)}/{challenge.target} {challenge.unit}
+                {Math.min(currentProgress, challenge.target)}/{challenge.target} {td(challenge.unit, challenge.unitEn)}
               </span>
               <span className={cn(
                 'font-semibold tabular-nums',
@@ -234,7 +239,7 @@ export function WeeklyChallenge({
               aria-valuenow={Math.min(currentProgress, challenge.target)}
               aria-valuemin={0}
               aria-valuemax={challenge.target}
-              aria-label={`Défi de la semaine: ${Math.min(currentProgress, challenge.target)}/${challenge.target} accompli`}
+              aria-label={`${td('Défi de la semaine', 'Weekly challenge')}: ${Math.min(currentProgress, challenge.target)}/${challenge.target} ${td('accompli', 'completed')}`}
             >
               <Progress
                 value={percentage}
@@ -254,7 +259,7 @@ export function WeeklyChallenge({
             >
               <PartyPopper className="h-3.5 w-3.5 text-orange-500" />
               <span className="text-xs font-medium text-orange-700 dark:text-orange-300">
-                Excellent travail ! Revenez la semaine prochaine.
+                {td('Excellent travail ! Revenez la semaine prochaine.', 'Great job! Come back next week.')}
               </span>
             </motion.div>
           )}

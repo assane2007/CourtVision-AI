@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { unlink } from 'fs/promises'
-import { join } from 'path'
+import path from 'path'
 
 // GET /api/videos/[id] — Get single video with annotations & highlights
 export async function GET(
@@ -153,13 +153,19 @@ export async function DELETE(
 
     // Delete file from filesystem (best-effort)
     try {
-      const publicDir = join(process.cwd(), 'public')
+      const publicDir = path.resolve(process.cwd(), 'public')
       if (video.url) {
-        const filePath = join(publicDir, video.url)
+        const filePath = path.resolve(publicDir, video.url)
+        if (!filePath.startsWith(path.resolve(publicDir))) {
+          return NextResponse.json({ error: 'Chemin invalide' }, { status: 400 })
+        }
         await unlink(filePath).catch(() => {})
       }
       if (video.thumbnailUrl) {
-        const thumbPath = join(publicDir, video.thumbnailUrl)
+        const thumbPath = path.resolve(publicDir, video.thumbnailUrl)
+        if (!thumbPath.startsWith(path.resolve(publicDir))) {
+          return NextResponse.json({ error: 'Chemin invalide' }, { status: 400 })
+        }
         await unlink(thumbPath).catch(() => {})
       }
     } catch {

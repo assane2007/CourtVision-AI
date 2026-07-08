@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Trophy } from 'lucide-react'
+import { ArrowLeft, Trophy, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -18,7 +18,7 @@ import { getLevelColor, getLevelBgColor } from '@/lib/xp'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-type Period = 'all' | 'month' | 'week'
+type Tab = 'all' | 'month' | 'week' | 'friends'
 
 interface LeaderboardEntry {
   rank: number
@@ -40,10 +40,11 @@ interface LeaderboardResponse {
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
-const PERIOD_TABS: { value: Period; labelKey: TranslationKey }[] = [
+const PERIOD_TABS: { value: Tab; labelKey: TranslationKey; icon?: typeof Users }[] = [
   { value: 'all', labelKey: 'leaderboard.global' },
   { value: 'month', labelKey: 'leaderboard.thisMonth' },
   { value: 'week', labelKey: 'leaderboard.thisWeek' },
+  { value: 'friends', labelKey: 'leaderboard.friends', icon: Users },
 ]
 
 function getPodiumStyle(rank: number) {
@@ -82,16 +83,21 @@ function getPodiumEmoji(rank: number) {
 export function LeaderboardScreen() {
   const goBack = useAppStore((s) => s.goBack)
   const { t, td } = useTranslation()
-  const [period, setPeriod] = useState<Period>('all')
+  const [tab, setTab] = useState<Tab>('all')
 
   const { data, isLoading, isError, refetch } = useQuery<LeaderboardResponse>({
-    queryKey: ['leaderboard', period],
-    queryFn: () => apiFetch<LeaderboardResponse>(`/api/leaderboard?period=${period}`),
+    queryKey: ['leaderboard', tab],
+    queryFn: () => {
+      if (tab === 'friends') return apiFetch<LeaderboardResponse>('/api/leaderboard?period=all')
+      return apiFetch<LeaderboardResponse>(`/api/leaderboard?period=${tab}`)
+    },
     staleTime: 60_000,
   })
 
-  const top3 = data?.leaderboard.slice(0, 3) ?? []
-  const rest = data?.leaderboard.slice(3) ?? []
+  const isFriendsTab = tab === 'friends'
+  const displayList = isFriendsTab ? (data?.friends ?? []) : (data?.leaderboard ?? [])
+  const top3 = isFriendsTab ? displayList.slice(0, 3) : data?.leaderboard.slice(0, 3) ?? []
+  const rest = isFriendsTab ? displayList.slice(3) : data?.leaderboard.slice(3) ?? []
 
   return (
     <SwipeToGoBack className="min-h-screen bg-background">
@@ -121,20 +127,21 @@ export function LeaderboardScreen() {
         {/* Period Tabs */}
         <div className="max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto px-4 pb-3">
           <div className="flex gap-1 bg-muted rounded-xl p-1" role="tablist" aria-label={t('leaderboard.periodLabel')}>
-            {PERIOD_TABS.map((tab) => (
+            {PERIOD_TABS.map((tabItem) => (
               <button
-                key={tab.value}
+                key={tabItem.value}
                 role="tab"
-                aria-selected={period === tab.value}
-                tabIndex={period === tab.value ? 0 : -1}
-                onClick={() => setPeriod(tab.value)}
-                className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${
-                  period === tab.value
+                aria-selected={tab === tabItem.value}
+                tabIndex={tab === tabItem.value ? 0 : -1}
+                onClick={() => setTab(tabItem.value)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-medium rounded-lg transition-all ${
+                  tab === tabItem.value
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-            {tab.labelKey && t(tab.labelKey)}
+                {tabItem.icon && <tabItem.icon className="h-3.5 w-3.5" />}
+                {tabItem.labelKey && t(tabItem.labelKey)}
               </button>
             ))}
           </div>
@@ -324,7 +331,7 @@ export function LeaderboardScreen() {
             )}
 
             {/* Empty state */}
-            {data && data.leaderboard.length === 0 && (
+            {data && displayList.length === 0 && (
               <div className="flex flex-col items-center gap-3 py-16 text-center">
                 <Trophy className="h-12 w-12 text-muted-foreground/50" />
                 <p className="text-muted-foreground">

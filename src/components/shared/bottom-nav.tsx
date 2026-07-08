@@ -22,13 +22,15 @@ export function BottomNav() {
 
   return (
     <nav aria-label="Navigation principale" className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-lg supports-[backdrop-filter]:bg-background/80 pb-safe">
-      <div className="mx-auto flex h-16 max-w-lg md:max-w-3xl lg:max-w-4xl items-center justify-around px-1">
+      <div role="tablist" className="mx-auto flex h-16 max-w-lg md:max-w-3xl lg:max-w-4xl items-center justify-around px-1">
         {tabs.map((tab) => {
           const isActive = currentScreen === tab.screen
           return (
             <button
               key={tab.screen}
               type="button"
+              role="tab"
+              aria-selected={isActive}
               onClick={() => { hapticLight(); navigate(tab.screen) }}
               className={`flex flex-col items-center gap-0.5 rounded-xl px-1.5 py-1.5 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 isActive

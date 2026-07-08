@@ -20,11 +20,11 @@ function formatLog(entry: LogEntry): string {
 export const logger = {
   debug(message: string, context?: string, data?: Record<string, unknown>) {
     if (process.env.NODE_ENV === 'development') {
-      console.warn(formatLog({ level: 'debug', message, context, data, timestamp: new Date().toISOString() }))
+      console.warn('[DEBUG]', formatLog({ level: 'debug', message, context, data, timestamp: new Date().toISOString() }))
     }
   },
   info(message: string, context?: string, data?: Record<string, unknown>) {
-    console.warn(formatLog({ level: 'info', message, context, data, timestamp: new Date().toISOString() }))
+    console.warn('[INFO]', formatLog({ level: 'info', message, context, data, timestamp: new Date().toISOString() }))
   },
   warn(message: string, context?: string, data?: Record<string, unknown>) {
     console.warn(formatLog({ level: 'warn', message, context, data, timestamp: new Date().toISOString() }))

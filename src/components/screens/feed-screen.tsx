@@ -173,7 +173,7 @@ export default function FeedScreen() {
                       </div>
                       {post.type !== 'text' && (
                         <Badge variant="outline" className="text-[10px] shrink-0">
-                          <TypeIcon className="h-3 w-3 mr-1" />{post.type}
+                          <TypeIcon className="h-3 w-3 mr-1" />{({ workout: td('Entraînement', 'Workout'), achievement: td('Succès', 'Achievement'), challenge: td('Défi', 'Challenge'), video: td('Vidéo', 'Video'), text: td('Publication', 'Post') } as Record<string, string>)[post.type] || post.type}
                         </Badge>
                       )}
                     </div>
@@ -195,7 +195,7 @@ export default function FeedScreen() {
                       <div className="grid grid-cols-2 gap-2 mb-3 rounded-lg overflow-hidden">
                         {post.imageUrls.slice(0, 4).map((url, i) => (
                           <div key={i} className={`${post.imageUrls.length === 1 ? 'col-span-2' : ''} aspect-square bg-muted`}>
-                            <img src={url} alt="" className="w-full h-full object-cover" />
+                            <img src={url} alt={post.content?.substring(0, 100) || 'Photo de publication'} className="w-full h-full object-cover" />
                           </div>
                         ))}
                       </div>
@@ -203,15 +203,15 @@ export default function FeedScreen() {
 
                     {/* Actions */}
                     <div className="flex items-center gap-4 pt-2 border-t">
-                      <button onClick={() => toggleLike.mutate(post.id)} aria-label={td("J'aime", 'Like')} className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${post.isLiked ? 'text-red-500' : 'text-muted-foreground hover:text-foreground'}`}>
+                      <button onClick={() => toggleLike.mutate(post.id)} aria-label={td("J'aime", 'Like')} className={`flex items-center gap-1.5 text-xs font-medium transition-colors min-h-[44px] ${post.isLiked ? 'text-red-500' : 'text-muted-foreground hover:text-foreground'}`}>
                         <Heart className={`h-4 w-4 ${post.isLiked ? 'fill-current' : ''}`} />
                         {post.likesCount > 0 && <span>{post.likesCount}</span>}
                       </button>
-                      <button onClick={() => navigate('post-detail')} aria-label={td('Commentaire', 'Comment')} className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
+                      <button onClick={() => navigate('post-detail')} aria-label={td('Commentaire', 'Comment')} className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors min-h-[44px]">
                         <MessageCircle className="h-4 w-4" />
                         {post.commentsCount > 0 && <span>{post.commentsCount}</span>}
                       </button>
-                      <button aria-label={td('Partager', 'Share')} className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
+                      <button aria-label={td('Partager', 'Share')} className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors min-h-[44px]">
                         <Share2 className="h-4 w-4" />
                       </button>
                     </div>

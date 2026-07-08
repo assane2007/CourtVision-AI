@@ -5,10 +5,7 @@ import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
 import ZAI from 'z-ai-web-dev-sdk'
-
-function sanitize(str: string): string {
-  return str.replace(/[\x00-\x1F\x7F]/g, '').slice(0, 1000)
-}
+import { sanitize } from '@/lib/sanitize'
 
 // POST /api/ai/form/analyze — Multi-category form analysis via LLM
 export async function POST(req: NextRequest) {
@@ -90,15 +87,19 @@ Réponds UNIQUEMENT en JSON:
       })
     }
 
-    const response = messages[0].content && Array.isArray(messages[0].content) && messages[0].content.some((c: Record<string, unknown>) => c.type === 'image_url')
+    const isVision = messages[0].content && Array.isArray(messages[0].content) && messages[0].content.some((c: Record<string, unknown>) => c.type === 'image_url')
+
+    const response = isVision
       ? await zai.chat.completions.createVision({
           model: 'gpt-4o',
           messages: messages as Parameters<typeof zai.chat.completions.createVision>[0]['messages'],
+          response_format: { type: 'json_object' },
           thinking: { type: 'disabled' },
         })
       : await zai.chat.completions.create({
           model: 'gpt-4o-mini',
           messages: messages as Parameters<typeof zai.chat.completions.create>[0]['messages'],
+          response_format: { type: 'json_object' },
           thinking: { type: 'disabled' },
         })
 
@@ -111,10 +112,7 @@ Réponds UNIQUEMENT en JSON:
     }
 
     try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/)
-      result = jsonMatch
-        ? JSON.parse(jsonMatch[0])
-        : { overallScore: 50, categories: {}, feedback: { good: [], issues: [], tips: [] } }
+      result = JSON.parse(content)
     } catch {
       result = { overallScore: 50, categories: {}, feedback: { good: [], issues: [], tips: [] } }
     }

@@ -8,14 +8,29 @@ function toLocalDateString(date: Date): string {
   return `${y}-${m}-${d}`
 }
 
+export function canUseStreakFreeze(freezesAvailable: number): boolean {
+  return freezesAvailable > 0
+}
+
+export function useStreakFreeze(): string {
+  // Returns the streak freeze date that should be used
+  return new Date().toISOString().split('T')[0]
+}
+
 /**
  * Calculate current and best training streaks from a set of session dates.
  *
  * @param sessionDates - Array of Date objects (e.g. session.startedAt).
  *   Does NOT need to be sorted; duplicates are handled via Set.
- * @returns {{ current: number; best: number }}
+ * @param streakFreezes - Number of available streak freezes (default 0).
+ *   If a gap of exactly 1 day is found, a freeze is automatically consumed
+ *   to bridge it instead of breaking the streak.
+ * @returns {{ current: number; best: number; freezesUsed: number }}
  */
-export function calculateStreak(sessionDates: Date[]): { current: number; best: number } {
+export function calculateStreak(
+  sessionDates: Date[],
+  streakFreezes: number = 0,
+): { current: number; best: number; freezesUsed: number } {
   // Unique training day strings (YYYY-MM-DD) — local time
   const trainingDays = new Set(
     sessionDates.map((d) => toLocalDateString(new Date(d))),
@@ -23,6 +38,7 @@ export function calculateStreak(sessionDates: Date[]): { current: number; best: 
 
   // ── Current streak: consecutive days ending at today or yesterday ──
   let currentStreak = 0
+  let freezesUsed = 0
   const checkDate = new Date()
 
   for (let i = 0; i < 365; i++) {
@@ -34,6 +50,11 @@ export function calculateStreak(sessionDates: Date[]): { current: number; best: 
       // Today might not have a session yet — start checking from yesterday
       checkDate.setDate(checkDate.getDate() - 1)
       continue
+    } else if (streakFreezes - freezesUsed > 0) {
+      // Gap of 1 day — use a streak freeze to bridge it
+      freezesUsed++
+      currentStreak++
+      checkDate.setDate(checkDate.getDate() - 1)
     } else {
       break
     }
@@ -62,5 +83,5 @@ export function calculateStreak(sessionDates: Date[]): { current: number; best: 
     bestStreak = Math.max(bestStreak, tempStreak)
   }
 
-  return { current: currentStreak, best: bestStreak }
+  return { current: currentStreak, best: bestStreak, freezesUsed }
 }

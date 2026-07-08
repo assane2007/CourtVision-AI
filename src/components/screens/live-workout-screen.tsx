@@ -234,7 +234,7 @@ export default function LiveWorkoutScreen() {
             <DialogContent>
               <DialogHeader><DialogTitle>{td('Nouvelle session live', 'New Live Session')}</DialogTitle></DialogHeader>
               <div className="space-y-4 pt-2">
-                <div><Label>{td('Titre de la session', 'Session title')}</Label><Input value={title} onChange={e => setTitle(e.target.value)} placeholder={td('Ex: Défi de tirs à 3 points', 'Ex: 3-point shooting challenge')} /></div>
+                <div><Label htmlFor="live-session-title">{td('Titre de la session', 'Session title')}</Label><Input id="live-session-title" value={title} onChange={e => setTitle(e.target.value)} placeholder={td('Ex: Défi de tirs à 3 points', 'Ex: 3-point shooting challenge')} /></div>
                 <Button className="w-full bg-red-500 hover:bg-red-600" onClick={() => createSession.mutate()} disabled={createSession.isPending || !title.trim()}>
                   {createSession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : td('Démarrer la session', 'Start session')}
                 </Button>

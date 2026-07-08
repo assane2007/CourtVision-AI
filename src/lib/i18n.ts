@@ -329,6 +329,7 @@ export type TranslationKey =
   | 'leaderboard.global'
   | 'leaderboard.thisMonth'
   | 'leaderboard.thisWeek'
+  | 'leaderboard.friends'
   | 'leaderboard.you'
   | 'leaderboard.yourPosition'
   | 'leaderboard.keepTraining'
@@ -1124,6 +1125,7 @@ const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
     'leaderboard.global': 'Global',
     'leaderboard.thisMonth': 'Ce mois',
     'leaderboard.thisWeek': 'Cette semaine',
+    'leaderboard.friends': 'Amis',
     'leaderboard.you': 'VOUS',
     'leaderboard.yourPosition': 'Votre position',
     'leaderboard.keepTraining': 'Continuez à vous entraîner pour monter !',
@@ -1943,6 +1945,7 @@ const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
     'leaderboard.global': 'Global',
     'leaderboard.thisMonth': 'This month',
     'leaderboard.thisWeek': 'This week',
+    'leaderboard.friends': 'Friends',
     'leaderboard.you': 'YOU',
     'leaderboard.yourPosition': 'Your position',
     'leaderboard.keepTraining': 'Keep training to climb the ranks!',

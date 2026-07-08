@@ -160,10 +160,12 @@ export default function FriendsScreen() {
         {/* Tabs */}
         {!searchQuery && (
           <div className="max-w-lg mx-auto px-4 pb-3">
-            <div className="flex gap-1 overflow-x-auto scrollbar-none">
+            <div role="tablist" className="flex gap-1 overflow-x-auto scrollbar-none">
               {TABS.map(t => (
                 <button
                   key={t.value}
+                  role="tab"
+                  aria-selected={tab === t.value}
                   onClick={() => setTab(t.value)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
                     tab === t.value ? 'bg-orange-500 text-white' : 'bg-muted text-muted-foreground hover:text-foreground'
@@ -238,7 +240,7 @@ export default function FriendsScreen() {
                     </div>
 
                     {isSearchResult && !item.friendshipStatus && (
-                      <Button size="sm" className="h-8 text-xs" onClick={e => { e.stopPropagation(); sendRequest.mutate(item.id as string) }} disabled={sendRequest.isPending}>
+                      <Button size="sm" className="h-10 text-xs" onClick={e => { e.stopPropagation(); sendRequest.mutate(item.id as string) }} disabled={sendRequest.isPending}>
                         {sendRequest.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <UserPlus className="h-3.5 w-3.5 mr-1" />}
                         {td('Ajouter', 'Add')}
                       </Button>
@@ -246,10 +248,10 @@ export default function FriendsScreen() {
 
                     {!isSearchResult && item.status === 'pending' && !item.isRequester && (
                       <div className="flex gap-1.5">
-                        <Button size="sm" className="h-8 text-xs bg-green-600 hover:bg-green-700" onClick={() => handleAction(item.id as string, 'accept')}>
+                        <Button size="sm" className="h-10 text-xs bg-green-600 hover:bg-green-700" onClick={() => handleAction(item.id as string, 'accept')}>
                           <UserCheck className="h-3.5 w-3.5 mr-1" />{td('Accepter', 'Accept')}
                         </Button>
-                        <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => handleAction(item.id as string, 'decline')}>
+                        <Button size="sm" variant="ghost" className="h-10 text-xs" onClick={() => handleAction(item.id as string, 'decline')}>
                           <UserX className="h-3.5 w-3.5" />
                         </Button>
                       </div>
@@ -260,13 +262,13 @@ export default function FriendsScreen() {
                     )}
 
                     {!isSearchResult && item.status === 'accepted' && (
-                      <Button size="sm" variant="ghost" className="h-8 text-xs text-destructive" onClick={() => removeFriend(item.id as string)}>
+                      <Button size="sm" variant="ghost" className="h-10 text-xs text-destructive" onClick={() => removeFriend(item.id as string)}>
                         {td('Retirer', 'Remove')}
                       </Button>
                     )}
 
                     {!isSearchResult && item.status === 'blocked' && (
-                      <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => removeFriend(item.id as string)}>
+                      <Button size="sm" variant="ghost" className="h-10 text-xs" onClick={() => removeFriend(item.id as string)}>
                         {td('Débloquer', 'Unblock')}
                       </Button>
                     )}

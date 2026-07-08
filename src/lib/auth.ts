@@ -4,6 +4,10 @@ import bcrypt from 'bcryptjs'
 import { db } from './db'
 import { rateLimit } from './rate-limit'
 
+if (process.env.NODE_ENV === 'production' && !process.env.NEXTAUTH_SECRET) {
+  throw new Error('FATAL: NEXTAUTH_SECRET is not set. Refusing to start in production.')
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -69,5 +73,5 @@ export const authOptions: NextAuthOptions = {
       return session
     }
   },
-  secret: process.env.NEXTAUTH_SECRET || (process.env.NODE_ENV === 'development' ? 'cvai-dev-fallback-secret' : ''),
+  secret: process.env.NEXTAUTH_SECRET!,
 }

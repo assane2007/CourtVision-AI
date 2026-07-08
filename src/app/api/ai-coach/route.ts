@@ -6,15 +6,10 @@ import { rateLimit } from '@/lib/rate-limit'
 import { aiCoachSchema, getZodErrorMessage } from '@/lib/validations'
 import { CATEGORY_LABELS } from '@/lib/constants'
 import { formatShortDate } from '@/lib/date-utils'
+import { requireSubscription, subscriptionError } from '@/lib/require-subscription'
 import ZAI from 'z-ai-web-dev-sdk'
 import { trackError } from '@/lib/monitoring'
-
-/** Truncate input and strip control characters */
-function sanitize(str: string): string {
-  return str
-    .replace(/[\x00-\x1F\x7F]/g, '') // strip control characters
-    .slice(0, 500)
-}
+import { sanitize } from '@/lib/sanitize'
 
 // GET /api/ai-coach — Fetch chat history
 export async function GET() {
@@ -60,6 +55,9 @@ export async function POST(req: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
+
+    const hasAccess = await requireSubscription(session.user.id, 'pro')
+    if (!hasAccess) return subscriptionError('pro')
 
     const rateResult = rateLimit(`ai-coach:post:${session.user.email}`, 20, 15 * 60 * 1000)
     if (!rateResult.success) {

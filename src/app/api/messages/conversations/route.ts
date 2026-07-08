@@ -66,19 +66,23 @@ export async function GET(request: Request) {
       }
     })
 
-    // Compute unread counts
+    // Batch all unread counts in a single query (avoids N+1)
+    const allUnread = await db.message.groupBy({
+      by: ['conversationId'],
+      where: {
+        conversationId: { in: conversations.map(c => c.id) },
+        senderId: { not: session.user.id },
+        isRead: false,
+      },
+      _count: { id: true },
+    })
+    const unreadMap = Object.fromEntries(allUnread.map(u => [u.conversationId, u._count.id]))
+
+    // Apply unread counts to conversations
     for (const conv of conversations) {
       const membership = memberships.find(m => m.conversationId === conv.id)
       if (membership) {
-        const unread = await db.message.count({
-          where: {
-            conversationId: conv.id,
-            senderId: { not: session.user.id },
-            isRead: false,
-            createdAt: { gt: membership.lastReadAt },
-          },
-        })
-        conv.unreadCount = unread
+        conv.unreadCount = unreadMap[conv.id] || 0
       }
     }
 

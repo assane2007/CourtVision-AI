@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
+import { awardXp } from '@/lib/award-xp'
 
 function generateReferralCode(name: string): string {
   const clean = name
@@ -93,6 +94,11 @@ export async function POST(req: Request) {
         where: { id: player.id },
         data: { referredBy: body.referralCode },
       })
+
+      // Award bonus XP to both referrer and referred
+      await awardXp(referrer.id, [{ amount: 50, source: 'bonus', description: 'Récompense parrainage' }])
+      await awardXp(session.user.id, [{ amount: 25, source: 'bonus', description: 'Bonus inscription via parrainage' }])
+
       return NextResponse.json({
         referralCode: player.referralCode,
         referralLink: `https://courtvision.ai/ref/${player.referralCode}`,

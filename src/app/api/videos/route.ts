@@ -99,6 +99,9 @@ export async function POST(req: NextRequest) {
     if (!url || typeof url !== 'string') {
       return NextResponse.json({ error: 'URL de la vidéo requise' }, { status: 400 })
     }
+    if (!url.startsWith('/uploads/')) {
+      return NextResponse.json({ error: 'URL de vidéo invalide' }, { status: 400 })
+    }
 
     const parsedTags = Array.isArray(tags) ? JSON.stringify(tags) : (typeof tags === 'string' ? tags : '[]')
 

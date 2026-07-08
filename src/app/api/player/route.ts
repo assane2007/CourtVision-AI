@@ -39,6 +39,8 @@ export async function GET(request: Request) {
           city: true,
           country: true,
           createdAt: true,
+          profilePublic: true,
+          showActivity: true,
           sessions: {
             select: { id: true, totalScore: true, totalReps: true, totalDrills: true, startedAt: true },
             take: 20,
@@ -49,6 +51,17 @@ export async function GET(request: Request) {
 
       if (!player) {
         return NextResponse.json({ error: 'Joueur non trouvé' }, { status: 404 })
+      }
+
+      // Privacy: remove sessions if profile is not public
+      if (!player.profilePublic) {
+        const { sessions: _sessions, ...publicPlayer } = player
+        return NextResponse.json(publicPlayer)
+      }
+      // Privacy: remove sessions if user hides activity
+      if (!player.showActivity && player.sessions) {
+        const { sessions: _sessions, ...publicPlayer } = player
+        return NextResponse.json(publicPlayer)
       }
 
       return NextResponse.json(player)

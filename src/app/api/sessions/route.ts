@@ -76,17 +76,19 @@ export async function POST(req: NextRequest) {
     const avgScore = Math.round((totalScore / drillScores.length) * 10) / 10
 
     // ── Check for personal bests (server-side, using DB records) ────────
+    // Fetch all personal bests in a single grouped query (avoids N+1)
+    const personalBests = await db.workoutSessionDrill.groupBy({
+      by: ['drillId'],
+      where: { drillId: { in: drillIds }, session: { playerId } },
+      _max: { score: true },
+      orderBy: { drillId: 'asc' },
+    })
+    const bestMap = Object.fromEntries(personalBests.map(b => [b.drillId, b._max.score]))
+
     let isPersonalBest = false
     for (const ds of drillScores) {
-      const prevBest = await db.workoutSessionDrill.findFirst({
-        where: {
-          drillId: ds.drillId,
-          session: { playerId },
-        },
-        orderBy: { score: 'desc' },
-        select: { score: true },
-      })
-      if (!prevBest || ds.score > prevBest.score) {
+      const prevBest = bestMap[ds.drillId] ?? 0
+      if (ds.score > prevBest) {
         isPersonalBest = true
         break // At least one drill is a personal best
       }

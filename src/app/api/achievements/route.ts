@@ -78,6 +78,7 @@ export async function GET() {
         db.workoutSessionDrill.findMany({
           where: { session: { playerId } },
           include: { drill: { select: { category: true } } },
+          take: 5000,
         }),
         db.workoutSession.findMany({
           where: { playerId },
@@ -128,7 +129,8 @@ export async function GET() {
         const day = new Date(s.startedAt).toISOString().split('T')[0]
         sessionsPerDay.set(day, (sessionsPerDay.get(day) ?? 0) + 1)
       }
-      const hasMarathon = Array.from(sessionsPerDay.values()).some(count => count >= 3)
+      const maxSessionsInDay = Math.max(0, ...Array.from(sessionsPerDay.values()))
+      const hasMarathon = maxSessionsInDay >= 3
 
       // Determine conditions
       const conditions: Record<string, boolean> = {
@@ -227,10 +229,41 @@ export async function GET() {
         })
       }
 
+      // Compute progress (0-1) for each achievement type
+      const progressMap: Record<string, number> = {
+        first_login: 1,
+        first_workout: Math.min(1, totalSessions / 1),
+        five_sessions: Math.min(1, totalSessions / 5),
+        ten_sessions: Math.min(1, totalSessions / 10),
+        fifty_sessions: Math.min(1, totalSessions / 50),
+        hundred_reps: Math.min(1, totalReps / 100),
+        five_hundred_reps: Math.min(1, totalReps / 500),
+        thousand_reps: Math.min(1, totalReps / 1000),
+        high_score: Math.min(1, avgScore / 80),
+        perfect_score: Math.min(1, avgScore / 95),
+        week_streak: Math.min(1, weekSessions / 3),
+        week_warrior: Math.min(1, weekSessions / 5),
+        explorer: Math.min(1, categoriesTried.size / 5),
+        master: Math.min(1, categoriesTried.size / 9),
+        night_owl: hasNightSession ? 1 : 0,
+        early_bird: hasEarlySession ? 1 : 0,
+        score_50: Math.min(1, avgScore / 50),
+        score_70: Math.min(1, avgScore / 70),
+        plan_creator: Math.min(1, trainingPlanCount / 1),
+        reaction_fast: avgReaction < 300 ? 1 : Math.min(1, 500 / avgReaction),
+        coach_user: Math.min(1, aiMessageCount / 5),
+        perfect_drill: Math.min(1, perfectDrillCount / 1),
+        weekend_warrior: hasWeekendSession ? 1 : 0,
+        marathon: Math.min(1, maxSessionsInDay / 3),
+        streak_7: Math.min(1, currentStreak / 7),
+        streak_30: Math.min(1, currentStreak / 30),
+      }
+
       const allAchievements = ACHIEVEMENTS.map(a => ({
         ...a,
         unlocked: unlockedMap.has(a.type) || conditions[a.type],
         unlockedAt: unlockedMap.get(a.type)?.toISOString() || (conditions[a.type] ? new Date().toISOString() : null),
+        progress: progressMap[a.type] ?? 0,
       }))
 
       return NextResponse.json({

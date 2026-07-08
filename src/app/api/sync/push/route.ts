@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
+import { rateLimit } from '@/lib/rate-limit'
 
 // POST /api/sync/push
 // Receive offline actions from client, process them (last-write-wins)
@@ -14,11 +15,21 @@ export async function POST(request: Request) {
     }
 
     const playerId = session.user.id
+
+    const rl = rateLimit(`sync-push:${session.user.id}`, 10, 60 * 1000)
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 })
+    }
+
     const body = await request.json()
     const { actions, deviceId } = body
 
     if (!Array.isArray(actions) || actions.length === 0) {
       return NextResponse.json({ error: 'Aucune action à synchroniser' }, { status: 400 })
+    }
+
+    if (actions.length > 100) {
+      return NextResponse.json({ error: 'Maximum 100 actions par requête' }, { status: 400 })
     }
 
     if (!deviceId) {

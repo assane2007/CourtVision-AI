@@ -156,11 +156,13 @@ export default function Home() {
 
   // Simple direction heuristic: tab screens go right (1), detail screens go left (-1)
   const getDirection = () => {
-    const tabScreens = ['home', 'plans', 'train-hub', 'stats', 'profile']
-    const previousScreen = useAppStore.getState().screenHistory.slice(-1)[0]
+    const history = useAppStore.getState().screenHistory
+    const previousScreen = history[history.length - 1]
+    const tabScreens = ['home', 'plans', 'train-hub', 'stats', 'profile', 'feed', 'messages']
+    // Tab to tab = no slide
     if (tabScreens.includes(currentScreen) && tabScreens.includes(previousScreen)) return 0
-    if (previousScreen === 'drill-detail' || previousScreen === 'achievements') return -1
-    return 0
+    // Going "deeper" = slide left
+    return 1
   }
 
   if (!mounted || status === 'loading') {
@@ -181,6 +183,7 @@ export default function Home() {
   return (
     <ErrorBoundary>
       <main id="main-content" className="min-h-screen bg-background">
+        <div aria-live="polite" aria-atomic="true" className="sr-only" id="live-announcer" />
         <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md">{td('Aller au contenu', 'Skip to content')}</a>
         <ScreenTransition screenKey={currentScreen} direction={direction}>
           {currentScreen === 'auth' && <AuthScreen />}

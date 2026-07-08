@@ -1,62 +1,26 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft,
-  Play,
-  Pause,
-  Maximize,
-  Minimize,
-  Volume2,
-  VolumeX,
-  PenTool,
-  Sparkles,
-  Download,
   Share2,
   Trash2,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
   Eye,
-  CircleDot,
-  Link2,
-  FileOutput,
   Star,
-  Type,
-  Minus,
-  Plus,
-  MessageSquare,
-  Check,
-  AlertCircle,
   Timer,
+  MessageSquare,
+  Link2,
+  AlertCircle,
+  PenTool,
+  FileOutput,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { Slider } from '@/components/ui/slider'
-import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
 import { useNavigation } from '@/stores/navigation'
 import { useTranslation } from '@/components/providers/language-provider'
 import { apiFetch, cn, formatLocaleDate } from '@/lib/utils'
@@ -64,87 +28,22 @@ import { toast } from 'sonner'
 import { itemVariants } from '@/lib/animations'
 import { BottomNav } from '@/components/shared/bottom-nav'
 
-// ── Types ────────────────────────────────────────────────────────────────────
-
-interface VideoData {
-  id: string
-  title: string
-  description: string
-  url: string
-  thumbnailUrl: string | null
-  durationSec: number
-  fileSize: number
-  mimeType: string
-  width: number
-  height: number
-  isPublic: boolean
-  viewCount: number
-  tags: string
-  createdAt: string
-  player: { id: string; name: string; avatar: string | null }
-  annotations: Annotation[]
-  highlights: Highlight[]
-  exports: VideoExport[]
-}
-
-interface Annotation {
-  id: string
-  videoId: string
-  playerId: string
-  type: string
-  data: string
-  timestampMs: number
-  durationMs: number
-  createdAt: string
-}
-
-interface Highlight {
-  id: string
-  videoId: string
-  title: string
-  startMs: number
-  endMs: number
-  type: string
-  score: number | null
-  createdAt: string
-}
-
-interface VideoExport {
-  id: string
-  videoId: string
-  type: string
-  format: string
-  url: string | null
-  status: string
-  fileSize: number
-  createdAt: string
-  completedAt: string | null
-}
-
-type AnnotationTool = 'freehand' | 'line' | 'arrow' | 'circle' | 'text'
-type AnnotationColor = string
-type PlayerTab = 'highlights' | 'annotations' | 'export' | 'share'
-
-const SPEED_OPTIONS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2]
-const ANNOTATION_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#ffffff']
-
-// ── Utility ──────────────────────────────────────────────────────────────────
-
-function formatTime(sec: number): string {
-  const m = Math.floor(sec / 60)
-  const s = Math.floor(sec % 60)
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
-
-function formatTimeMs(ms: number): string {
-  return formatTime(ms / 1000)
-}
-
-function formatFileSize(bytes: number): string {
-  if (!bytes) return '—'
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} Ko`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
-}
+// Video sub-components
+import {
+  formatTime,
+  formatFileSize,
+  type VideoData,
+  type Annotation,
+  type Highlight,
+  type VideoExport,
+  type AnnotationTool,
+  type AnnotationColor,
+  type PlayerTab,
+} from '@/components/video/video-types'
+import { VideoControlsOverlay, SpeedControlBar } from '@/components/video/video-controls'
+import { HighlightManager } from '@/components/video/highlight-manager'
+import { AnnotationPanel } from '@/components/video/annotation-panel'
+import { ExportManager } from '@/components/video/export-manager'
 
 // ── Component ────────────────────────────────────────────────────────────────
 
@@ -159,7 +58,7 @@ export default function VideoPlayerScreen() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const controlsTimerRef = useRef<ReturnType<typeof setTimeout>>()
+  const controlsTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -467,7 +366,6 @@ export default function VideoPlayerScreen() {
       if (!isDrawing || !showAnnotationTools) return
       e.preventDefault()
       const coords = getCanvasCoords(e)
-
       if (annotationTool === 'freehand') {
         setDrawingPoints((prev) => [...prev, coords])
       }
@@ -475,68 +373,65 @@ export default function VideoPlayerScreen() {
     [isDrawing, showAnnotationTools, annotationTool, getCanvasCoords]
   )
 
-  const handleDrawEnd = useCallback(() => {
-    if (!isDrawing) return
-    setIsDrawing(false)
+  const handleDrawEnd = useCallback(
+    (e: React.MouseEvent | React.TouchEvent) => {
+      if (!isDrawing || !showAnnotationTools) return
+      e.preventDefault()
+      setIsDrawing(false)
 
-    const videoEl = videoRef.current
-    if (!videoEl) return
+      const coords = getCanvasCoords(e)
 
-    const timestampMs = Math.round(videoEl.currentTime * 1000)
+      if (annotationTool === 'freehand' && drawingPoints.length > 1) {
+        saveAnnotation.mutate({
+          type: 'freehand',
+          data: JSON.stringify({ points: drawingPoints, color: annotationColor }),
+          timestampMs: Math.round(currentTime * 1000),
+          durationMs: 2000,
+        })
+      } else if (annotationTool === 'line' && drawStart) {
+        saveAnnotation.mutate({
+          type: 'line',
+          data: JSON.stringify({ start: drawStart, end: coords, color: annotationColor }),
+          timestampMs: Math.round(currentTime * 1000),
+          durationMs: 2000,
+        })
+      } else if (annotationTool === 'arrow' && drawStart) {
+        saveAnnotation.mutate({
+          type: 'arrow',
+          data: JSON.stringify({ start: drawStart, end: coords, color: annotationColor }),
+          timestampMs: Math.round(currentTime * 1000),
+          durationMs: 2000,
+        })
+      } else if (annotationTool === 'circle' && drawStart) {
+        const dx = coords.x - drawStart.x
+        const dy = coords.y - drawStart.y
+        const radius = Math.sqrt(dx * dx + dy * dy)
+        saveAnnotation.mutate({
+          type: 'circle',
+          data: JSON.stringify({ center: drawStart, radius, color: annotationColor }),
+          timestampMs: Math.round(currentTime * 1000),
+          durationMs: 2000,
+        })
+      }
 
-    if (annotationTool === 'freehand' && drawingPoints.length > 1) {
-      saveAnnotation.mutate({
-        type: 'drawing',
-        data: JSON.stringify({ points: drawingPoints, color: annotationColor }),
-        timestampMs,
-        durationMs: 0,
-      })
-    } else if (annotationTool === 'line' && drawStart) {
-      const end = drawingPoints[drawingPoints.length - 1] || drawStart
-      saveAnnotation.mutate({
-        type: 'line',
-        data: JSON.stringify({ start: drawStart, end, color: annotationColor }),
-        timestampMs,
-        durationMs: 0,
-      })
-    } else if (annotationTool === 'arrow' && drawStart) {
-      const end = drawingPoints[drawingPoints.length - 1] || drawStart
-      saveAnnotation.mutate({
-        type: 'arrow',
-        data: JSON.stringify({ start: drawStart, end, color: annotationColor }),
-        timestampMs,
-        durationMs: 0,
-      })
-    } else if (annotationTool === 'circle' && drawStart) {
-      const end = drawingPoints[drawingPoints.length - 1] || drawStart
-      const radius = Math.sqrt(
-        Math.pow(end.x - drawStart.x, 2) + Math.pow(end.y - drawStart.y, 2)
-      )
-      saveAnnotation.mutate({
-        type: 'circle',
-        data: JSON.stringify({ center: drawStart, radius, color: annotationColor }),
-        timestampMs,
-        durationMs: 0,
-      })
-    }
-
-    setDrawingPoints([])
-    setDrawStart(null)
-  }, [isDrawing, annotationTool, drawStart, drawingPoints, annotationColor, saveAnnotation])
+      setDrawingPoints([])
+      setDrawStart(null)
+    },
+    [isDrawing, annotationTool, drawStart, drawingPoints, annotationColor, saveAnnotation, currentTime, showAnnotationTools, getCanvasCoords]
+  )
 
   const handleTextAnnotation = useCallback(() => {
     if (!textAnnotation.trim()) return
-    const videoEl = videoRef.current
-    if (!videoEl) return
 
     saveAnnotation.mutate({
       type: 'text',
       data: JSON.stringify({ text: textAnnotation.trim(), x: 0.5, y: 0.1, color: annotationColor }),
-      timestampMs: Math.round(videoEl.currentTime * 1000),
-      durationMs: 3000,
+      timestampMs: Math.round(currentTime * 1000),
+      durationMs: 2000,
     })
+
     setTextAnnotation('')
-  }, [textAnnotation, annotationColor, saveAnnotation])
+  }, [textAnnotation, annotationColor, saveAnnotation, currentTime])
 
   // Draw annotations on canvas overlay
   useEffect(() => {
@@ -547,131 +442,124 @@ export default function VideoPlayerScreen() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    canvas.width = videoEl.videoWidth || 640
-    canvas.height = videoEl.videoHeight || 360
+    // Size canvas to match video display
+    const resizeCanvas = () => {
+      canvas.width = videoEl.videoWidth || 1920
+      canvas.height = videoEl.videoHeight || 1080
+    }
+    resizeCanvas()
+    videoEl.addEventListener('resize', resizeCanvas)
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    const currentMs = Math.round(videoEl.currentTime * 1000)
+      if (!video?.annotations) return
 
-    if (!video?.annotations) return
+      video.annotations.forEach((ann) => {
+        const startSec = ann.timestampMs / 1000
+        const endSec = (ann.timestampMs + ann.durationMs) / 1000
 
-    video.annotations.forEach((ann) => {
-      if (ann.durationMs > 0 && (currentMs < ann.timestampMs || currentMs > ann.timestampMs + ann.durationMs)) return
+        const isVisible = ann.durationMs > 0
+          ? currentTime >= startSec && currentTime <= endSec
+          : Math.abs(currentTime - startSec) < 2
 
-      try {
-        const data = JSON.parse(ann.data)
+        if (!isVisible) return
 
-        if (ann.type === 'drawing' && Array.isArray(data.points)) {
-          ctx.beginPath()
-          ctx.strokeStyle = data.color || '#ef4444'
+        try {
+          const parsed = JSON.parse(ann.data)
+          ctx.strokeStyle = parsed.color || '#ef4444'
+          ctx.fillStyle = parsed.color || '#ef4444'
           ctx.lineWidth = 3
           ctx.lineCap = 'round'
           ctx.lineJoin = 'round'
-          data.points.forEach((p: { x: number; y: number }, i: number) => {
-            if (i === 0) ctx.moveTo(p.x, p.y)
-            else ctx.lineTo(p.x, p.y)
-          })
-          ctx.stroke()
-        } else if (ann.type === 'line' && data.start && data.end) {
-          ctx.beginPath()
-          ctx.strokeStyle = data.color || '#ef4444'
-          ctx.lineWidth = 3
-          ctx.lineCap = 'round'
-          ctx.moveTo(data.start.x, data.start.y)
-          ctx.lineTo(data.end.x, data.end.y)
-          ctx.stroke()
-        } else if (ann.type === 'arrow' && data.start && data.end) {
-          const angle = Math.atan2(data.end.y - data.start.y, data.end.x - data.start.x)
-          const headLen = 15
-          ctx.beginPath()
-          ctx.strokeStyle = data.color || '#ef4444'
-          ctx.lineWidth = 3
-          ctx.lineCap = 'round'
-          ctx.moveTo(data.start.x, data.start.y)
-          ctx.lineTo(data.end.x, data.end.y)
-          ctx.lineTo(data.end.x - headLen * Math.cos(angle - Math.PI / 6), data.end.y - headLen * Math.sin(angle - Math.PI / 6))
-          ctx.moveTo(data.end.x, data.end.y)
-          ctx.lineTo(data.end.x - headLen * Math.cos(angle + Math.PI / 6), data.end.y - headLen * Math.sin(angle + Math.PI / 6))
-          ctx.stroke()
-        } else if (ann.type === 'circle' && data.center && data.radius) {
-          ctx.beginPath()
-          ctx.strokeStyle = data.color || '#ef4444'
-          ctx.lineWidth = 3
-          ctx.arc(data.center.x, data.center.y, data.radius, 0, Math.PI * 2)
-          ctx.stroke()
-        } else if (ann.type === 'text' && data.text) {
-          const fontSize = Math.max(16, Math.round(canvas.width * 0.035))
-          ctx.font = `bold ${fontSize}px sans-serif`
-          ctx.fillStyle = data.color || '#ffffff'
-          ctx.strokeStyle = 'rgba(0,0,0,0.7)'
-          ctx.lineWidth = 3
-          const x = (data.x || 0.5) * canvas.width
-          const y = (data.y || 0.1) * canvas.height
-          ctx.strokeText(data.text, x, y)
-          ctx.fillText(data.text, x, y)
+
+          if (ann.type === 'freehand' && parsed.points) {
+            ctx.beginPath()
+            parsed.points.forEach((pt: { x: number; y: number }, i: number) => {
+              if (i === 0) ctx.moveTo(pt.x, pt.y)
+              else ctx.lineTo(pt.x, pt.y)
+            })
+            ctx.stroke()
+          } else if (ann.type === 'line' && parsed.start && parsed.end) {
+            ctx.beginPath()
+            ctx.moveTo(parsed.start.x, parsed.start.y)
+            ctx.lineTo(parsed.end.x, parsed.end.y)
+            ctx.stroke()
+          } else if (ann.type === 'arrow' && parsed.start && parsed.end) {
+            ctx.beginPath()
+            ctx.moveTo(parsed.start.x, parsed.start.y)
+            ctx.lineTo(parsed.end.x, parsed.end.y)
+            ctx.stroke()
+          } else if (ann.type === 'circle' && parsed.center && parsed.radius) {
+            ctx.beginPath()
+            ctx.arc(parsed.center.x, parsed.center.y, parsed.radius, 0, Math.PI * 2)
+            ctx.stroke()
+          } else if (ann.type === 'text' && parsed.text) {
+            ctx.font = 'bold 28px sans-serif'
+            const metrics = ctx.measureText(parsed.text)
+            const x = (parsed.x || 0.5) * canvas.width - metrics.width / 2
+            const y = (parsed.y || 0.1) * canvas.height
+            ctx.fillStyle = 'rgba(0,0,0,0.6)'
+            ctx.fillRect(x - 6, y - 28, metrics.width + 12, 36)
+            ctx.fillStyle = parsed.color || '#ffffff'
+            ctx.fillText(parsed.text, x, y)
+          }
+        } catch {
+          // Skip malformed annotations
         }
-      } catch {
-        // Skip malformed annotations
-      }
-    })
+      })
+
+      requestAnimationFrame(draw)
+    }
+
+    const raf = requestAnimationFrame(draw)
+
+    return () => {
+      cancelAnimationFrame(raf)
+      videoEl.removeEventListener('resize', resizeCanvas)
+    }
   }, [currentTime, video?.annotations, showAnnotations])
 
-  // Draw current drawing in progress
+  // Draw current freehand in progress
   useEffect(() => {
+    if (!isDrawing || annotationTool !== 'freehand' || drawingPoints.length < 2) return
     const canvas = canvasRef.current
-    if (!canvas || !isDrawing) return
+    if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-
     // The annotation render effect above also draws, so we don't need extra logic here
-    // The drawing points state will be picked up in the next frame
-  }, [isDrawing, drawingPoints])
+  }, [isDrawing, annotationTool, drawingPoints])
 
   // ── Keyboard Shortcuts ─────────────────────────────────────────────────
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-      switch (e.key) {
-        case ' ':
-          e.preventDefault()
-          handleTogglePlay()
-          break
-        case 'ArrowLeft':
-          e.preventDefault()
-          if (e.shiftKey) stepFrame(-1)
-          else if (videoRef.current) videoRef.current.currentTime -= 5
-          break
-        case 'ArrowRight':
-          e.preventDefault()
-          if (e.shiftKey) stepFrame(1)
-          else if (videoRef.current) videoRef.current.currentTime += 5
-          break
-        case 'f':
-          toggleFullscreen()
-          break
-        case 'm':
-          setIsMuted((m) => !m)
-          break
-        case 'a':
-          setLoopPoint('A')
-          break
-        case 'b':
-          setLoopPoint('B')
-          break
-      }
-      resetControlsTimer()
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [handleTogglePlay, stepFrame, toggleFullscreen, setLoopPoint, resetControlsTimer])
 
-  // Fullscreen change listener
-  useEffect(() => {
-    const handler = () => setIsFullscreen(!!document.fullscreenElement)
-    document.addEventListener('fullscreenchange', handler)
-    return () => document.removeEventListener('fullscreenchange', handler)
-  }, [])
+      if (e.code === 'Space') {
+        e.preventDefault()
+        handleTogglePlay()
+      } else if (e.shiftKey && e.code === 'ArrowLeft') {
+        e.preventDefault()
+        stepFrame(-1)
+      } else if (e.shiftKey && e.code === 'ArrowRight') {
+        e.preventDefault()
+        stepFrame(1)
+      } else if (e.code === 'KeyA' && !e.ctrlKey && !e.metaKey) {
+        setLoopPoint('A')
+      } else if (e.code === 'KeyB' && !e.ctrlKey && !e.metaKey) {
+        setLoopPoint('B')
+      } else if (e.code === 'KeyF') {
+        toggleFullscreen()
+      } else if (e.code === 'KeyM') {
+        setIsMuted((m) => !m)
+      } else {
+        resetControlsTimer()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleTogglePlay, stepFrame, toggleFullscreen, setLoopPoint, resetControlsTimer])
 
   // Highlight playback (montage)
   const [isPlayingHighlights, setIsPlayingHighlights] = useState(false)
@@ -681,22 +569,25 @@ export default function VideoPlayerScreen() {
     if (highlights.length === 0) return
 
     setIsPlayingHighlights(true)
-    setIsPlaying(true)
     const vid = videoRef.current
+    vid.pause()
 
     for (const hl of highlights) {
       vid.currentTime = hl.startMs / 1000
       await new Promise<void>((resolve) => {
-        const check = () => {
-          if (vid.currentTime >= hl.endMs / 1000) resolve()
-          else requestAnimationFrame(check)
+        const handleTime = () => {
+          if (vid.currentTime >= hl.endMs / 1000) {
+            vid.removeEventListener('timeupdate', handleTime)
+            resolve()
+          }
         }
-        vid.play().then(check)
+        vid.addEventListener('timeupdate', handleTime)
+        vid.play()
       })
+      vid.pause()
+      await new Promise((r) => setTimeout(r, 300))
     }
-    vid.pause()
     setIsPlayingHighlights(false)
-    setIsPlaying(false)
   }, [video?.highlights])
 
   // ── Render ─────────────────────────────────────────────────────────────
@@ -747,6 +638,7 @@ export default function VideoPlayerScreen() {
       ? currentMs >= a.timestampMs && currentMs <= a.timestampMs + a.durationMs
       : Math.abs(currentMs - a.timestampMs) < 2000
   )
+  const visibleAnnotationIds = visibleAnnotations.map((a) => a.id)
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -831,163 +723,41 @@ export default function VideoPlayerScreen() {
             )}
 
             {/* Controls overlay */}
-            <AnimatePresence>
-              {showControls && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="absolute inset-0 flex flex-col justify-end"
-                >
-                  {/* Top bar */}
-                  <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/60 to-transparent p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {showAnnotationTools && (
-                          <Badge variant="destructive" className="text-[10px]">
-                            <PenTool className="h-3 w-3 mr-1" /> {td('Mode annotation', 'Annotation mode')}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Center play/pause */}
-                  <div className="flex-1 flex items-center justify-center gap-8">
-                    <button onClick={() => stepFrame(-1)} className="text-white/80 hover:text-white transition-colors">
-                      <ChevronLeft className="h-6 w-6" />
-                    </button>
-                    <button
-                      onClick={handleTogglePlay}
-                      className="h-14 w-14 rounded-full bg-white/90 flex items-center justify-center text-black hover:bg-white transition-colors"
-                    >
-                      {isPlaying ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7 ml-1" fill="black" />}
-                    </button>
-                    <button onClick={() => stepFrame(1)} className="text-white/80 hover:text-white transition-colors">
-                      <ChevronRight className="h-6 w-6" />
-                    </button>
-                  </div>
-
-                  {/* Bottom controls */}
-                  <div className="bg-gradient-to-t from-black/80 to-transparent p-3 pt-8 space-y-2">
-                    {/* Timeline */}
-                    <div className="relative">
-                      {/* Highlight markers on timeline */}
-                      {video.highlights && video.highlights.length > 0 && (
-                        <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 pointer-events-none">
-                          {video.highlights.map((hl) => (
-                            <div
-                              key={hl.id}
-                              className="absolute top-0 h-2 w-0.5 rounded bg-orange-400"
-                              style={{ left: `${(hl.startMs / (duration * 1000)) * 100}%` }}
-                            />
-                          ))}
-                        </div>
-                      )}
-                      {/* A-B loop markers */}
-                      {loopA !== null && (
-                        <div
-                          className="absolute top-0 h-4 w-0.5 rounded bg-green-400 -translate-y-1"
-                          style={{ left: `${(loopA / duration) * 100}%` }}
-                        />
-                      )}
-                      {loopB !== null && (
-                        <div
-                          className="absolute top-0 h-4 w-0.5 rounded bg-red-400 -translate-y-1"
-                          style={{ left: `${(loopB / duration) * 100}%` }}
-                        />
-                      )}
-                      <Slider
-                        value={[currentTime]}
-                        max={duration || 100}
-                        step={0.1}
-                        onValueChange={handleSeek}
-                        className="z-10"
-                      />
-                    </div>
-
-                    {/* Bottom row */}
-                    <div className="flex items-center justify-between text-white text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="tabular-nums min-w-[3.5rem]">
-                          {formatTime(currentTime)} / {formatTime(duration)}
-                        </span>
-                        <span className="text-white/60 flex items-center gap-1">
-                          {playbackRate !== 1 && `${playbackRate}x`}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => setIsMuted((m) => !m)} className="p-1.5 hover:text-white/80">
-                          {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-                        </button>
-                        <button onClick={toggleFullscreen} className="p-1.5 hover:text-white/80">
-                          {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <VideoControlsOverlay
+              isPlaying={isPlaying}
+              currentTime={currentTime}
+              duration={duration}
+              playbackRate={playbackRate}
+              isMuted={isMuted}
+              isFullscreen={isFullscreen}
+              showControls={showControls}
+              isBuffering={isBuffering}
+              showAnnotationTools={showAnnotationTools}
+              isPlayingHighlights={isPlayingHighlights}
+              loopA={loopA}
+              loopB={loopB}
+              highlights={video.highlights || []}
+              onTogglePlay={handleTogglePlay}
+              onSeek={handleSeek}
+              onMuteToggle={() => setIsMuted((m) => !m)}
+              onFullscreenToggle={toggleFullscreen}
+              onStepFrame={stepFrame}
+              td={td}
+            />
           </div>
         </motion.div>
 
         {/* Speed Control Bar */}
         <motion.div variants={itemVariants} initial="hidden" animate="visible">
-          <Card>
-            <CardContent className="p-2">
-              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-                {SPEED_OPTIONS.map((speed) => (
-                  <Button
-                    key={speed}
-                    size="sm"
-                    variant={playbackRate === speed ? 'default' : 'outline'}
-                    className="h-7 px-2.5 text-xs shrink-0"
-                    onClick={() => handleSpeedChange(speed)}
-                  >
-                    {speed}x
-                  </Button>
-                ))}
-                <Separator orientation="vertical" className="h-5 mx-1" />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 px-2.5 text-xs shrink-0"
-                  onClick={() => stepFrame(-1)}
-                  title={td('Image précédente (Shift+←)', 'Previous frame (Shift+←)')}
-                >
-                  <ChevronLeft className="h-3 w-3 mr-0.5" />1 frame
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 px-2.5 text-xs shrink-0"
-                  onClick={() => stepFrame(1)}
-                  title={td('Image suivante (Shift+→)', 'Next frame (Shift+→)')}
-                >
-                  1 frame<ChevronRight className="h-3 w-3 ml-0.5" />
-                </Button>
-                <Separator orientation="vertical" className="h-5 mx-1" />
-                <Button
-                  size="sm"
-                  variant={loopA !== null ? 'default' : 'outline'}
-                  className="h-7 px-2.5 text-xs shrink-0"
-                  onClick={() => loopA !== null ? clearLoop() : setLoopPoint('A')}
-                >
-                  A
-                </Button>
-                <Button
-                  size="sm"
-                  variant={loopB !== null ? 'default' : 'outline'}
-                  className="h-7 px-2.5 text-xs shrink-0"
-                  onClick={() => setLoopPoint('B')}
-                  disabled={loopA === null}
-                >
-                  B
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <SpeedControlBar
+            playbackRate={playbackRate}
+            loopA={loopA}
+            onSpeedChange={handleSpeedChange}
+            onStepFrame={stepFrame}
+            onSetLoopPoint={setLoopPoint}
+            onClearLoop={clearLoop}
+            td={td}
+          />
         </motion.div>
 
         {/* Tool Tabs */}
@@ -1014,305 +784,66 @@ export default function VideoPlayerScreen() {
 
             {/* ── Highlights Tab ─────────────────────────────────────── */}
             <TabsContent value="highlights" className="space-y-3 mt-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => generateHighlights.mutate()}
-                    disabled={generateHighlights.isPending}
-                    className="gap-1.5"
-                  >
-                    {generateHighlights.isPending ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-3.5 w-3.5" />
-                    )}
-                    IA
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setHlStart(Math.round(currentTime * 1000))
-                      setHlEnd(Math.round(currentTime * 1000) + 5000)
-                      setHighlightDialogOpen(true)
-                    }}
-                    className="gap-1.5"
-                  >
-                    <Plus className="h-3.5 w-3.5" /> {td('Manuel', 'Manual')}
-                  </Button>
-                </div>
-                {(video.highlights || []).length > 0 && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={playHighlightMontage}
-                    disabled={isPlayingHighlights}
-                    className="gap-1.5"
-                  >
-                    <Play className="h-3.5 w-3.5" /> {td('Montage', 'Montage')}
-                  </Button>
-                )}
-              </div>
-
-              <ScrollArea className="max-h-72">
-                <div className="space-y-2 pr-2">
-                  {(video.highlights || []).length === 0 ? (
-                    <div className="text-center py-6">
-                      <Star className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">{td('Aucun highlight', 'No highlights')}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{td("Générez avec l'IA ou créez manuellement", 'Generate with AI or create manually')}</p>
-                    </div>
-                  ) : (
-                    (video.highlights || []).map((hl) => (
-                      <Card
-                        key={hl.id}
-                        className="cursor-pointer hover:bg-muted/50 transition-colors"
-                        onClick={() => {
-                          if (videoRef.current) videoRef.current.currentTime = hl.startMs / 1000
-                        }}
-                      >
-                        <CardContent className="p-3 flex items-center gap-3">
-                          <div className="h-10 w-16 rounded bg-muted flex items-center justify-center shrink-0">
-                            <Play className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{hl.title}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatTimeMs(hl.startMs)} → {formatTimeMs(hl.endMs)}
-                              {hl.score !== null && (
-                                <span className="ml-2 text-orange-500">
-                                  {(hl.score * 100).toFixed(0)}%
-                                </span>
-                              )}
-                            </p>
-                          </div>
-                          <Badge variant="secondary" className="text-[10px] shrink-0">
-                            {hl.type === 'auto' ? td('IA', 'AI') : td('Manuel', 'Manual')}
-                          </Badge>
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
-                </div>
-              </ScrollArea>
+              <HighlightManager
+                videoRef={videoRef}
+                highlights={video.highlights || []}
+                currentTime={currentTime}
+                isPlayingHighlights={isPlayingHighlights}
+                generateHighlights={generateHighlights}
+                createHighlight={createHighlight}
+                highlightDialogOpen={highlightDialogOpen}
+                setHighlightDialogOpen={setHighlightDialogOpen}
+                hlStart={hlStart}
+                setHlStart={setHlStart}
+                hlEnd={hlEnd}
+                setHlEnd={setHlEnd}
+                hlTitle={hlTitle}
+                setHlTitle={setHlTitle}
+                onPlayMontage={playHighlightMontage}
+                td={td}
+              />
             </TabsContent>
 
             {/* ── Annotations Tab ────────────────────────────────────── */}
             <TabsContent value="annotations" className="space-y-3 mt-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={showAnnotationTools}
-                    onCheckedChange={setShowAnnotationTools}
-                    id="ann-toggle"
-                  />
-                  <Label htmlFor="ann-toggle" className="text-sm">
-                    Mode dessin
-                  </Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={showAnnotations}
-                    onCheckedChange={setShowAnnotations}
-                    id="ann-show"
-                  />
-                  <Label htmlFor="ann-show" className="text-sm">
-                    <Eye className="h-3.5 w-3.5 inline mr-1" />
-                    Afficher
-                  </Label>
-                </div>
-              </div>
-
-              {/* Annotation tools */}
-              <AnimatePresence>
-                {showAnnotationTools && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <Card>
-                      <CardContent className="p-3 space-y-3">
-                        {/* Tool selection */}
-                        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                          {([
-                            { tool: 'freehand' as const, icon: PenTool, label: td('Dessin', 'Drawing') },
-                            { tool: 'line' as const, icon: Minus, label: td('Ligne', 'Line') },
-                            { tool: 'arrow' as const, icon: ChevronRight, label: td('Flèche', 'Arrow') },
-                            { tool: 'circle' as const, icon: CircleDot, label: td('Cercle', 'Circle') },
-                            { tool: 'text' as const, icon: Type, label: td('Texte', 'Text') },
-                          ]).map(({ tool, icon: Icon, label }) => (
-                            <Button
-                              key={tool}
-                              size="sm"
-                              variant={annotationTool === tool ? 'default' : 'outline'}
-                              className="h-8 px-2.5 text-xs shrink-0 gap-1"
-                              onClick={() => setAnnotationTool(tool)}
-                            >
-                              <Icon className="h-3.5 w-3.5" /> {label}
-                            </Button>
-                          ))}
-                        </div>
-
-                        {/* Color picker */}
-                        <div className="flex items-center gap-1.5">
-                          {ANNOTATION_COLORS.map((color) => (
-                            <button
-                              key={color}
-                              onClick={() => setAnnotationColor(color)}
-                              className={cn(
-                                'h-6 w-6 rounded-full border-2 transition-transform',
-                                annotationColor === color
-                                  ? 'border-foreground scale-110'
-                                  : 'border-transparent'
-                              )}
-                              style={{ backgroundColor: color }}
-                            />
-                          ))}
-                        </div>
-
-                        {/* Text annotation input */}
-                        {annotationTool === 'text' && (
-                          <div className="flex gap-2">
-                            <Input
-                              value={textAnnotation}
-                              onChange={(e) => setTextAnnotation(e.target.value)}
-                              placeholder={td("Texte de l'annotation...", 'Annotation text...')}
-                              onKeyDown={(e) => e.key === 'Enter' && handleTextAnnotation()}
-                              className="h-9 text-sm"
-                            />
-                            <Button size="sm" onClick={handleTextAnnotation} disabled={!textAnnotation.trim()}>
-                              <Check className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Annotation list */}
-              <ScrollArea className="max-h-52">
-                <div className="space-y-2 pr-2">
-                  {(video.annotations || []).length === 0 ? (
-                    <div className="text-center py-6">
-                      <PenTool className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">{td('Aucune annotation', 'No annotations')}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{td('Activez le mode dessin pour annoter', 'Enable drawing mode to annotate')}</p>
-                    </div>
-                  ) : (
-                    (video.annotations || []).map((ann) => (
-                      <Card
-                        key={ann.id}
-                        className={cn(
-                          'cursor-pointer transition-colors',
-                          visibleAnnotations.some((v) => v.id === ann.id)
-                            ? 'ring-2 ring-orange-500'
-                            : 'hover:bg-muted/50'
-                        )}
-                        onClick={() => {
-                          if (videoRef.current) videoRef.current.currentTime = ann.timestampMs / 1000
-                        }}
-                      >
-                        <CardContent className="p-3 flex items-center gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary" className="text-[10px]">{ann.type}</Badge>
-                              <span className="text-xs text-muted-foreground">
-                                {formatTimeMs(ann.timestampMs)}
-                              </span>
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 shrink-0"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              deleteAnnotation.mutate(ann.id)
-                            }}
-                          >
-                            <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
-                </div>
-              </ScrollArea>
+              <AnnotationPanel
+                videoRef={videoRef}
+                annotations={video.annotations || []}
+                visibleAnnotationIds={visibleAnnotationIds}
+                showAnnotationTools={showAnnotationTools}
+                setShowAnnotationTools={setShowAnnotationTools}
+                showAnnotations={showAnnotations}
+                setShowAnnotations={setShowAnnotations}
+                annotationTool={annotationTool}
+                setAnnotationTool={setAnnotationTool}
+                annotationColor={annotationColor}
+                setAnnotationColor={setAnnotationColor}
+                textAnnotation={textAnnotation}
+                setTextAnnotation={setTextAnnotation}
+                onTextAnnotationSubmit={handleTextAnnotation}
+                onDeleteAnnotation={(id) => deleteAnnotation.mutate(id)}
+                td={td}
+              />
             </TabsContent>
 
             {/* ── Export Tab ────────────────────────────────────────── */}
             <TabsContent value="export" className="space-y-3 mt-3">
-              <Button
-                className="w-full gap-2"
-                onClick={() => {
-                  setExportStart(Math.round(currentTime * 1000))
-                  setExportEnd(Math.round(currentTime * 1000) + 10000)
-                  setExportDialogOpen(true)
-                }}
-              >
-                <FileOutput className="h-4 w-4" />
-                Nouvel export
-              </Button>
-
-              <ScrollArea className="max-h-72">
-                <div className="space-y-2 pr-2">
-                  {(video.exports || []).length === 0 ? (
-                    <div className="text-center py-6">
-                      <Download className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">{td('Aucun export', 'No exports')}</p>
-                    </div>
-                  ) : (
-                    (video.exports || []).map((exp) => (
-                      <Card key={exp.id}>
-                        <CardContent className="p-3 flex items-center gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary" className="text-[10px] uppercase">
-                                {exp.format}
-                              </Badge>
-                              <span className={cn(
-                                'text-[10px] font-medium',
-                                exp.status === 'completed' && 'text-green-500',
-                                exp.status === 'failed' && 'text-destructive',
-                                exp.status === 'processing' && 'text-orange-500',
-                                exp.status === 'pending' && 'text-muted-foreground',
-                              )}>
-                                {exp.status === 'completed' ? td('Terminé', 'Completed') :
-                                 exp.status === 'processing' ? td('Traitement...', 'Processing...') :
-                                 exp.status === 'failed' ? td('Échoué', 'Failed') : td('En attente', 'Pending')}
-                              </span>
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {formatFileSize(exp.fileSize)} · {formatLocaleDate(new Date(exp.createdAt))}
-                            </p>
-                          </div>
-                          {exp.status === 'completed' && exp.url && (
-                            <a
-                              href={exp.url}
-                              download
-                              className="shrink-0"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Button size="icon" variant="ghost" className="h-8 w-8">
-                                <Download className="h-4 w-4" />
-                              </Button>
-                            </a>
-                          )}
-                          {exp.status === 'processing' && (
-                            <Loader2 className="h-4 w-4 animate-spin text-orange-500 shrink-0" />
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
-                </div>
-              </ScrollArea>
+              <ExportManager
+                videoExports={video.exports || []}
+                currentTime={currentTime}
+                startExport={startExport}
+                exportDialogOpen={exportDialogOpen}
+                setExportDialogOpen={setExportDialogOpen}
+                exportStart={exportStart}
+                setExportStart={setExportStart}
+                exportEnd={exportEnd}
+                setExportEnd={setExportEnd}
+                exportQuality={exportQuality}
+                setExportQuality={setExportQuality}
+                exportType={exportType}
+                setExportType={setExportType}
+                td={td}
+              />
             </TabsContent>
 
             {/* ── Share Tab ─────────────────────────────────────────── */}
@@ -1387,119 +918,6 @@ export default function VideoPlayerScreen() {
           </Card>
         </motion.div>
       </div>
-
-      {/* Highlight Creation Dialog */}
-      <Dialog open={highlightDialogOpen} onOpenChange={setHighlightDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{td('Créer un highlight', 'Create highlight')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label>{td('Titre', 'Title')}</Label>
-              <Input
-                value={hlTitle}
-                onChange={(e) => setHlTitle(e.target.value)}
-                placeholder={td('Ex: Super tir à 3 points', 'Ex: Great 3-point shot')}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>{td('Début (ms)', 'Start (ms)')}</Label>
-                <Input
-                  type="number"
-                  value={hlStart}
-                  onChange={(e) => setHlStart(parseInt(e.target.value, 10) || 0)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>{td('Fin (ms)', 'End (ms)')}</Label>
-                <Input
-                  type="number"
-                  value={hlEnd}
-                  onChange={(e) => setHlEnd(parseInt(e.target.value, 10) || 0)}
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setHighlightDialogOpen(false)}>{td('Annuler', 'Cancel')}</Button>
-            <Button
-              onClick={() => createHighlight.mutate({ title: hlTitle || 'Highlight', startMs: hlStart, endMs: hlEnd })}
-              disabled={!hlTitle.trim() || hlEnd <= hlStart || createHighlight.isPending}
-            >
-              {createHighlight.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              {td('Créer', 'Create')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Export Dialog */}
-      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{td('Exporter', 'Export')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>{td('Format', 'Format')}</Label>
-                <Select value={exportType} onValueChange={setExportType}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gif">GIF</SelectItem>
-                    <SelectItem value="mp4">MP4</SelectItem>
-                    <SelectItem value="webm">WebM</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>{td('Qualité', 'Quality')}</Label>
-                <Select value={exportQuality} onValueChange={setExportQuality}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">{td('Basse', 'Low')}</SelectItem>
-                    <SelectItem value="medium">{td('Moyenne', 'Medium')}</SelectItem>
-                    <SelectItem value="high">{td('Haute', 'High')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>{td('Début (ms)', 'Start (ms)')}</Label>
-                <Input
-                  type="number"
-                  value={exportStart}
-                  onChange={(e) => setExportStart(parseInt(e.target.value, 10) || 0)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>{td('Fin (ms)', 'End (ms)')}</Label>
-                <Input
-                  type="number"
-                  value={exportEnd}
-                  onChange={(e) => setExportEnd(parseInt(e.target.value, 10) || 0)}
-                />
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {td('Durée:', 'Duration:')} {formatTimeMs(exportEnd - exportStart)}
-            </p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setExportDialogOpen(false)}>{td('Annuler', 'Cancel')}</Button>
-            <Button
-              onClick={() => startExport.mutate({ type: exportType, startMs: exportStart, endMs: exportEnd, quality: exportQuality })}
-              disabled={exportEnd <= exportStart || startExport.isPending}
-            >
-              {startExport.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              {td('Exporter', 'Export')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <BottomNav />
     </div>

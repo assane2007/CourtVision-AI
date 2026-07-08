@@ -14,28 +14,15 @@ import {
   Dumbbell,
   Bell,
   Flame,
-  Trophy,
-  Swords,
-  Download,
   Shield,
-  Trash2,
   Loader2,
   FlaskConical,
   RefreshCw,
   Lock,
   Smartphone,
-  WifiOff as _WifiOff,
-  CheckCircle2,
-  XCircle as _XCircle,
-  Monitor,
-  MessageSquare,
-  Users,
-  Radio,
   Eye,
-  Globe,
-  FileSpreadsheet,
+  Monitor,
   Clock,
-  Copy,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -53,22 +40,17 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
-import { Input } from '@/components/ui/input'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { useAppStore } from '@/stores/app'
-import { useState } from 'react'
 import { SwipeToGoBack } from '@/components/shared/swipe-back'
 import { BottomNav } from '@/components/shared/bottom-nav'
-import { apiFetch, cn } from '@/lib/utils'
+import { apiFetch } from '@/lib/utils'
 import { useTranslation } from '@/components/providers/language-provider'
 import { containerVariants, itemVariants } from '@/lib/animations'
-import {
-  ALL_FLAGS,
-  FEATURE_LABELS,
-  isFeatureEnabled,
-  setFeatureOverride,
-  type FeatureFlag,
-} from '@/lib/feature-flags'
+import { NotificationsSection } from '@/components/settings/notifications-section'
+import { PrivacySection } from '@/components/settings/privacy-section'
+import { SecuritySection } from '@/components/settings/security-section'
+import { ExportDataButtons, PrivacyLink, DeleteAccountButton } from '@/components/settings/data-section'
+import { DeveloperSection } from '@/components/settings/developer-section'
 
 // -─ Types -----------------------------------
 
@@ -82,11 +64,7 @@ interface UserSettings {
   notifStreak: boolean
   notifChallenge: boolean
   notifAchievement: boolean
-}
-
-interface _WeeklyStats {
-  weekSessions: number
-  weekReps: number
+  [key: string]: unknown
 }
 
 // -─ Constants ---------------------------------
@@ -459,116 +437,7 @@ export function SettingsScreen() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0 space-y-5">
-                  {/* Rappels de série */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Flame className="h-4 w-4 text-muted-foreground" />
-                      <Label htmlFor="notif-streak" className="text-sm font-medium cursor-pointer">
-                        {t('settings.streakReminders')}
-                      </Label>
-                    </div>
-                    <Switch
-                      id="notif-streak"
-                      checked={settings.notifStreak}
-                      onCheckedChange={(checked) => saveMutation.mutate({ notifStreak: checked })}
-                      disabled={saveMutation.isPending}
-                      className="data-[state=checked]:bg-orange-500"
-                    />
-                  </div>
-
-                  <Separator />
-
-                  {/* Mises à jour des défis */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Swords className="h-4 w-4 text-muted-foreground" />
-                      <Label htmlFor="notif-challenge" className="text-sm font-medium cursor-pointer">
-                        {t('settings.challengeUpdates')}
-                      </Label>
-                    </div>
-                    <Switch
-                      id="notif-challenge"
-                      checked={settings.notifChallenge}
-                      onCheckedChange={(checked) => saveMutation.mutate({ notifChallenge: checked })}
-                      disabled={saveMutation.isPending}
-                      className="data-[state=checked]:bg-orange-500"
-                    />
-                  </div>
-
-                  <Separator />
-
-                  {/* Succès */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Trophy className="h-4 w-4 text-muted-foreground" />
-                      <Label htmlFor="notif-achievement" className="text-sm font-medium cursor-pointer">
-                        {t('settings.achievementsNotif')}
-                      </Label>
-                    </div>
-                    <Switch
-                      id="notif-achievement"
-                      checked={settings.notifAchievement}
-                      onCheckedChange={(checked) => saveMutation.mutate({ notifAchievement: checked })}
-                      disabled={saveMutation.isPending}
-                      className="data-[state=checked]:bg-orange-500"
-                    />
-                  </div>
-
-                  <Separator />
-
-                  {/* Messages */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                      <Label htmlFor="notif-message" className="text-sm font-medium cursor-pointer">
-                        {t('settings.notifMessages')}
-                      </Label>
-                    </div>
-                    <Switch
-                      id="notif-message"
-                      checked={(settings as Record<string, unknown>).notifMessage as boolean ?? true}
-                      onCheckedChange={(checked) => saveMutation.mutate({ notifMessage: checked } as unknown as Partial<UserSettings>)}
-                      disabled={saveMutation.isPending}
-                      className="data-[state=checked]:bg-orange-500"
-                    />
-                  </div>
-
-                  <Separator />
-
-                  {/* Social */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <Label htmlFor="notif-social" className="text-sm font-medium cursor-pointer">
-                        {t('settings.notifSocial')}
-                      </Label>
-                    </div>
-                    <Switch
-                      id="notif-social"
-                      checked={(settings as Record<string, unknown>).notifSocial as boolean ?? true}
-                      onCheckedChange={(checked) => saveMutation.mutate({ notifSocial: checked } as unknown as Partial<UserSettings>)}
-                      disabled={saveMutation.isPending}
-                      className="data-[state=checked]:bg-orange-500"
-                    />
-                  </div>
-
-                  <Separator />
-
-                  {/* Live */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Radio className="h-4 w-4 text-muted-foreground" />
-                      <Label htmlFor="notif-live" className="text-sm font-medium cursor-pointer">
-                        {t('settings.notifLive')}
-                      </Label>
-                    </div>
-                    <Switch
-                      id="notif-live"
-                      checked={true}
-                      disabled={true}
-                      className="data-[state=checked]:bg-orange-500 opacity-50"
-                    />
-                  </div>
+                  <NotificationsSection settings={settings} saveMutation={saveMutation} />
                 </CardContent>
               </Card>
             </motion.div>
@@ -585,7 +454,7 @@ export function SettingsScreen() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0 space-y-5">
-                  <PrivacyToggles saveMutation={saveMutation} />
+                  <PrivacySection saveMutation={saveMutation} />
                 </CardContent>
               </Card>
             </motion.div>
@@ -636,25 +505,7 @@ export function SettingsScreen() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0 space-y-4">
-                  <p className="text-xs text-muted-foreground">
-                    {t('settings.experimentalDesc')}
-                  </p>
-                  {ALL_FLAGS.map((flag: FeatureFlag) => (
-                    <div key={flag} className="flex items-center justify-between">
-                      <Label htmlFor={`flag-${flag}`} className="text-sm font-medium cursor-pointer">
-                        {FEATURE_LABELS[flag]}
-                      </Label>
-                      <Switch
-                        id={`flag-${flag}`}
-                        checked={isFeatureEnabled(flag)}
-                        onCheckedChange={(checked) => {
-                          setFeatureOverride(flag, checked)
-                          toast.success(`${FEATURE_LABELS[flag]} ${checked ? t('settings.activated') : t('settings.disabled')}`)
-                        }}
-                        className="data-[state=checked]:bg-orange-500"
-                      />
-                    </div>
-                  ))}
+                  <DeveloperSection />
                 </CardContent>
               </Card>
             </motion.div>
@@ -803,6 +654,27 @@ function SettingsSkeleton() {
         </CardContent>
       </Card>
 
+      {/* Notifications */}
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-8 rounded-lg" />
+            <Skeleton className="h-5 w-32" />
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0 space-y-5">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-4 w-4 rounded" />
+                <Skeleton className="h-4 w-28" />
+              </div>
+              <Skeleton className="h-5 w-10 rounded-full" />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
       {/* Infos */}
       <Card>
         <CardContent className="pt-0 space-y-2">
@@ -811,341 +683,6 @@ function SettingsSkeleton() {
         </CardContent>
       </Card>
     </div>
-  )
-}
-
-// -─ Privacy Toggles ──────────────────────────────
-
-function PrivacyToggles({ saveMutation }: { saveMutation: { isPending: boolean; mutate: (d: Record<string, unknown>) => void } }) {
-  const { t } = useTranslation()
-
-  return (
-    <>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Globe className="h-4 w-4 text-muted-foreground" />
-          <div>
-            <Label htmlFor="privacy-public" className="text-sm font-medium cursor-pointer">
-              {t('settings.publicProfile')}
-            </Label>
-            <p className="text-xs text-muted-foreground">{t('settings.publicProfileDesc')}</p>
-          </div>
-        </div>
-        <Switch
-          id="privacy-public"
-          defaultChecked={true}
-          onCheckedChange={(checked) => saveMutation.mutate({ profilePublic: checked })}
-          disabled={saveMutation.isPending}
-          className="data-[state=checked]:bg-orange-500"
-        />
-      </div>
-      <Separator />
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Trophy className="h-4 w-4 text-muted-foreground" />
-          <div>
-            <Label htmlFor="privacy-leaderboard" className="text-sm font-medium cursor-pointer">
-              {t('settings.showLeaderboard')}
-            </Label>
-            <p className="text-xs text-muted-foreground">{t('settings.showLeaderboardDesc')}</p>
-          </div>
-        </div>
-        <Switch
-          id="privacy-leaderboard"
-          defaultChecked={true}
-          onCheckedChange={(checked) => saveMutation.mutate({ showOnLeaderboard: checked })}
-          disabled={saveMutation.isPending}
-          className="data-[state=checked]:bg-orange-500"
-        />
-      </div>
-      <Separator />
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Eye className="h-4 w-4 text-muted-foreground" />
-          <div>
-            <Label htmlFor="privacy-activity" className="text-sm font-medium cursor-pointer">
-              {t('settings.showActivity')}
-            </Label>
-            <p className="text-xs text-muted-foreground">{t('settings.showActivityDesc')}</p>
-          </div>
-        </div>
-        <Switch
-          id="privacy-activity"
-          defaultChecked={true}
-          onCheckedChange={(checked) => saveMutation.mutate({ showActivity: checked })}
-          disabled={saveMutation.isPending}
-          className="data-[state=checked]:bg-orange-500"
-        />
-      </div>
-    </>
-  )
-}
-
-// -─ Security Section ──────────────────────────────
-
-function SecuritySection() {
-  const { t } = useTranslation()
-  const [showPasswordDialog, setShowPasswordDialog] = useState(false)
-  const [, ] = useState(false)
-  const [showBackupDialog, setShowBackupDialog] = useState(false)
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
-  const [backupCodes, setBackupCodes] = useState<string[]>([])
-  const [loading2fa, setLoading2fa] = useState(false)
-
-  const handleToggle2fa = async () => {
-    setLoading2fa(true)
-    try {
-      if (twoFactorEnabled) {
-        // Disable 2FA (mock: no code needed for now)
-        await fetch('/api/auth/2fa/disable', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: '000000' }),
-        })
-        setTwoFactorEnabled(false)
-        toast.success(t('settings.twoFactorDisabled'))
-      } else {
-        // Setup 2FA
-        const res = await fetch('/api/auth/2fa/setup', { method: 'POST' })
-        await res.json()
-        if (res.ok) {
-          // Auto-verify with a mock code
-          const verifyRes = await fetch('/api/auth/2fa/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code: '123456', action: 'setup' }),
-          })
-          const verifyData = await verifyRes.json()
-          if (verifyRes.ok) {
-            setTwoFactorEnabled(true)
-            setBackupCodes(verifyData.backupCodes || [])
-            toast.success(t('settings.twoFactorEnabled'))
-          }
-        }
-      }
-    } catch {
-      toast.error(t('settings.saveError'))
-    } finally {
-      setLoading2fa(false)
-    }
-  }
-
-  const handleRegenerateBackupCodes = async () => {
-    try {
-      const res = await fetch('/api/auth/2fa/backup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: '123456' }),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setBackupCodes(data.codes || [])
-        toast.success(t('settings.saved'))
-      }
-    } catch {
-      toast.error(t('settings.saveError'))
-    }
-  }
-
-  return (
-    <>
-      {/* Email verification status */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <CheckCircle2 className="h-4 w-4 text-orange-500" />
-          <div>
-            <p className="text-sm font-medium">{t('core.emailVerify')}</p>
-          </div>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={async () => {
-            const res = await fetch('/api/auth/verify-email', { method: 'POST' })
-            const data = await res.json()
-            toast.success(data.message || t('settings.verificationSent'))
-          }}
-        >
-          {t('settings.sendVerification')}
-        </Button>
-      </div>
-
-      <Separator />
-
-      {/* 2FA */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Lock className="h-4 w-4 text-muted-foreground" />
-          <div>
-            <p className="text-sm font-medium">{t('settings.twoFactor')}</p>
-            <p className="text-xs text-muted-foreground">{t('settings.twoFactorDesc')}</p>
-          </div>
-        </div>
-        <Switch
-          id="2fa-toggle"
-          checked={twoFactorEnabled}
-          onCheckedChange={handleToggle2fa}
-          disabled={loading2fa}
-          className="data-[state=checked]:bg-orange-500"
-        />
-      </div>
-
-      {twoFactorEnabled && (
-        <>
-          <Separator />
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
-            onClick={() => setShowBackupDialog(true)}
-          >
-            <Copy className="h-4 w-4 mr-2" />
-            {t('settings.backupCodes')}
-          </Button>
-        </>
-      )}
-
-      <Separator />
-
-      {/* Change Password */}
-      <Button
-        variant="outline"
-        size="sm"
-        className="w-full"
-        onClick={() => setShowPasswordDialog(true)}
-      >
-        <Lock className="h-4 w-4 mr-2" />
-        {t('settings.changePassword')}
-      </Button>
-
-      {/* Password Dialog */}
-      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('settings.changePassword')}</DialogTitle>
-            <DialogDescription>{t('settings.twoFactorDesc')}</DialogDescription>
-          </DialogHeader>
-          <ChangePasswordForm onClose={() => setShowPasswordDialog(false)} />
-        </DialogContent>
-      </Dialog>
-
-      {/* Backup Codes Dialog */}
-      <Dialog open={showBackupDialog} onOpenChange={setShowBackupDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('settings.backupCodes')}</DialogTitle>
-            <DialogDescription>{t('settings.backupCodesDesc')}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            {backupCodes.length > 0 ? (
-              <div className="grid grid-cols-2 gap-2">
-                {backupCodes.map((code) => (
-                  <div key={code} className="bg-muted rounded-lg px-3 py-2 text-center font-mono text-sm">
-                    {code}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">{t('settings.setup2fa')}</p>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={handleRegenerateBackupCodes}
-            >
-              {t('settings.generateBackupCodes')}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
-  )
-}
-
-function ChangePasswordForm({ onClose }: { onClose: () => void }) {
-  const { t, td } = useTranslation()
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (newPassword !== confirmPassword) {
-      toast.error(t('auth.passwordMismatch'))
-      return
-    }
-    if (newPassword.length < 8) {
-      toast.error(t('auth.passwordMinLength'))
-      return
-    }
-
-    setLoading(true)
-    try {
-      // Use reset-password confirm with current session verification
-      const res = await fetch('/api/settings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentPassword, newPassword }),
-      })
-      if (res.ok) {
-        toast.success(t('settings.passwordUpdated'))
-        onClose()
-      } else {
-        const data = await res.json()
-        toast.error(data.error || t('settings.passwordError'))
-      }
-    } catch {
-      toast.error(t('settings.passwordError'))
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="current-pw">{t('settings.currentPassword')}</Label>
-        <Input
-          id="current-pw"
-          type="password"
-          value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
-          required
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="new-pw">{t('settings.newPassword')}</Label>
-        <Input
-          id="new-pw"
-          type="password"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          placeholder={td('Min. 8 caractères', 'Min. 8 characters')}
-          required
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="confirm-pw">{t('settings.confirmNewPassword')}</Label>
-        <Input
-          id="confirm-pw"
-          type="password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          required
-        />
-      </div>
-      <DialogFooter>
-        <Button type="button" variant="outline" onClick={onClose}>
-          {t('action.cancel')}
-        </Button>
-        <Button type="submit" disabled={loading} className="bg-orange-500 hover:bg-orange-600 text-white">
-          {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          {t('action.save')}
-        </Button>
-      </DialogFooter>
-    </form>
   )
 }
 
@@ -1220,147 +757,6 @@ function DevicesSection() {
         </div>
       ))}
     </div>
-  )
-}
-
-// -─ RGPD Sub-components ──────────────────────────────
-
-function ExportDataButtons() {
-  const { t } = useTranslation()
-  const [loading, setLoading] = useState<'json' | 'csv' | null>(null)
-
-  const handleExport = async (format: 'json' | 'csv') => {
-    setLoading(format)
-    try {
-      const res = await fetch(`/api/player/export?format=${format}`)
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({ error: t('settings.exportNetworkError') }))
-        throw new Error(body.error || t('settings.exportError'))
-      }
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      const ext = format === 'csv' ? 'csv' : 'json'
-      a.download = res.headers.get('content-disposition')?.split('filename=')[1]?.replace(/"/g, '') || `courtvision-export.${ext}`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-      toast.success(t('settings.exportSuccess'))
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('settings.exportError'))
-    } finally {
-      setLoading(null)
-    }
-  }
-
-  return (
-    <>
-      <Button
-        variant="ghost"
-        className="w-full justify-start h-auto py-3 px-3"
-        onClick={() => handleExport('json')}
-        disabled={loading !== null}
-      >
-        <Download className="h-4 w-4 text-muted-foreground mr-3 shrink-0" />
-        <div className="text-left">
-          <div className="text-sm font-medium">{t('settings.exportData')}</div>
-          <div className="text-xs text-muted-foreground">{t('settings.exportDataDesc')}</div>
-        </div>
-        {loading === 'json' && <Loader2 className="h-4 w-4 animate-spin ml-auto shrink-0" />}
-      </Button>
-      <Button
-        variant="ghost"
-        className="w-full justify-start h-auto py-3 px-3"
-        onClick={() => handleExport('csv')}
-        disabled={loading !== null}
-      >
-        <FileSpreadsheet className="h-4 w-4 text-muted-foreground mr-3 shrink-0" />
-        <div className="text-left">
-          <div className="text-sm font-medium">{t('settings.csvExport')}</div>
-          <div className="text-xs text-muted-foreground">{t('settings.csvExportDesc')}</div>
-        </div>
-        {loading === 'csv' && <Loader2 className="h-4 w-4 animate-spin ml-auto shrink-0" />}
-      </Button>
-    </>
-  )
-}
-
-function PrivacyLink() {
-  const { t } = useTranslation()
-  const handleOpen = async () => {
-    try {
-      const res = await fetch('/api/privacy')
-      const text = await res.text()
-      // Open in a new window/tab
-      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
-      const url = URL.createObjectURL(blob)
-      window.open(url, '_blank')
-    } catch {
-      toast.error(t('settings.privacyLoadError'))
-    }
-  }
-
-  return (
-    <Button
-      variant="ghost"
-      className="w-full justify-start h-auto py-3 px-3"
-      onClick={handleOpen}
-    >
-      <Shield className="h-4 w-4 text-muted-foreground mr-3 shrink-0" />
-      <div className="text-left">
-        <div className="text-sm font-medium">{t('settings.privacyPolicy')}</div>
-        <div className="text-xs text-muted-foreground">{t('settings.privacyPolicyDesc')}</div>
-      </div>
-    </Button>
-  )
-}
-
-function DeleteAccountButton() {
-  const { t } = useTranslation()
-  const [confirmStep, setConfirmStep] = useState(0)
-
-  const handleDelete = async () => {
-    if (confirmStep < 2) {
-      setConfirmStep(confirmStep + 1)
-      return
-    }
-
-    try {
-      await apiFetch('/api/player/delete', { method: 'DELETE' })
-      toast.success(t('settings.deleteAccountSuccess'))
-      // Force sign out
-      window.location.href = '/api/auth/signout'
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('settings.deleteAccountError'))
-      setConfirmStep(0)
-    }
-  }
-
-  const labels = [
-    { text: t('settings.deleteAccountButton'), sub: t('settings.deleteConfirm1') },
-    { text: t('settings.deleteConfirm2'), sub: t('settings.deleteConfirm3') },
-    { text: t('settings.deleteFinalButton'), sub: t('settings.deleteFinalDesc') },
-  ]
-
-  const current = labels[confirmStep]
-
-  return (
-    <Button
-      variant="ghost"
-      className={cn(
-        'w-full justify-start h-auto py-3 px-3',
-        confirmStep > 0 && 'text-red-500 hover:text-red-600 hover:bg-red-500/10',
-      )}
-      onClick={handleDelete}
-    >
-      <Trash2 className={cn('h-4 w-4 mr-3 shrink-0', confirmStep > 0 ? 'text-red-500' : 'text-muted-foreground')} />
-      <div className="text-left">
-        <div className="text-sm font-medium">{current.text}</div>
-        <div className="text-xs text-muted-foreground">{current.sub}</div>
-      </div>
-    </Button>
   )
 }
 

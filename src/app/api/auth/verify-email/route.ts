@@ -72,7 +72,7 @@ export async function POST(_request: Request) {
 
     return NextResponse.json({
       message: 'Email de vérification envoyé',
-      devToken: token, // Only in development
+      ...(process.env.NODE_ENV === 'development' ? { devToken: token } : {}),
     })
   } catch (error) {
     trackError('POST /api/auth/verify-email', error)

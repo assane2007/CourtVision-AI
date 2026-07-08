@@ -66,6 +66,7 @@ export default function RootLayout({
   return (
     <html lang="fr" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: `try { document.documentElement.lang = localStorage.getItem('cvai-language') || navigator.language.split('-')[0] || 'fr' } catch(e) {}` }} />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -73,7 +74,6 @@ export default function RootLayout({
       <body
         className={`${inter.variable} antialiased bg-background text-foreground`}
       >
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-orange-500 focus:text-white focus:rounded-lg">Aller au contenu</a>
         <Providers>
           {children}
         </Providers>

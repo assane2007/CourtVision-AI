@@ -81,6 +81,7 @@ export async function GET(request: Request) {
         db.workoutSessionDrill.findMany({
           where: { session: { playerId } },
           include: { drill: { select: { category: true } } },
+          take: 10000,
         }),
       ])
 

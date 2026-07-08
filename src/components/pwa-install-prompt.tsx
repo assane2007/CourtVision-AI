@@ -125,6 +125,8 @@ export function PWAInstallPrompt() {
   )
 }
 
+let swUpdateInterval: ReturnType<typeof setInterval> | null = null
+
 function registerServiceWorker() {
   if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -133,8 +135,11 @@ function registerServiceWorker() {
         .then((registration) => {
           if (process.env.NODE_ENV === 'development') console.warn('[PWA] Service Worker registered:', registration.scope)
 
+          // Clear any existing interval before setting a new one
+          if (swUpdateInterval) clearInterval(swUpdateInterval)
+
           // Check for updates periodically
-          setInterval(() => {
+          swUpdateInterval = setInterval(() => {
             registration.update()
           }, 60 * 60 * 1000) // every hour
         })

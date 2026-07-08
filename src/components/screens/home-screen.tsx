@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSession } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { toast } from 'sonner'
 import {
   Camera,
   Clock,
@@ -20,7 +21,7 @@ import {
   Target,
   Zap,
 } from 'lucide-react'
-import { ThemeToggle } from '@/components/theme-toggle'
+import { ThemeToggle } from '@/components/shared/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppStore } from '@/stores/app'
@@ -306,7 +307,12 @@ function SessionItem({ session }: { session: Session }) {
 // ---------------------------------------------------------------------------
 export default function HomeScreen() {
   const { data: session } = useSession()
-  const { navigate, selectDrill, workoutResult, xpAwarded, clearWorkoutState, setWorkoutResult } = useAppStore()
+  const navigate = useAppStore(s => s.navigate)
+  const selectDrill = useAppStore(s => s.selectDrill)
+  const workoutResult = useAppStore(s => s.workoutResult)
+  const xpAwarded = useAppStore(s => s.xpAwarded)
+  const clearWorkoutState = useAppStore(s => s.clearWorkoutState)
+  const setWorkoutResult = useAppStore(s => s.setWorkoutResult)
   const queryClient = useQueryClient()
   const hasAwardedRef = useRef(false)
   const { t, td, language } = useTranslation()
@@ -376,9 +382,34 @@ export default function HomeScreen() {
         setXpPopup({ xpGained: xpAwarded.xpGained, leveledUp: xpAwarded.leveledUp })
         queryClient.invalidateQueries({ queryKey: ['player-xp'] })
         clearWorkoutState()
+        const announcer = document.getElementById('live-announcer')
+        if (announcer) {
+          announcer.textContent = xpAwarded.leveledUp
+            ? td(`+${xpAwarded.xpGained} XP ! Niveau supérieur !`, `+${xpAwarded.xpGained} XP! Level up!`)
+            : td(`+${xpAwarded.xpGained} XP gagnés`, `+${xpAwarded.xpGained} XP gained`)
+        }
       })
     }
-  }, [xpAwarded, clearWorkoutState, queryClient])
+  }, [xpAwarded, clearWorkoutState, queryClient, td])
+
+  // ---- Daily login reward ----
+  const dailyRewardClaimed = useRef(false)
+  useEffect(() => {
+    if (dailyRewardClaimed.current || !session?.user?.id) return
+    dailyRewardClaimed.current = true
+    fetch('/api/daily-reward', { method: 'POST' })
+      .then((res) => res.json())
+      .then((data: { awarded: boolean; xp: number }) => {
+        if (data.awarded) {
+          toast.success(
+            `🎁 ${td('Récompense quotidienne', 'Daily reward')} +${data.xp} XP!`,
+            { duration: 3000 },
+          )
+          queryClient.invalidateQueries({ queryKey: ['player-xp'] })
+        }
+      })
+      .catch(() => { /* silent — not critical */ })
+  }, [session?.user?.id, queryClient, td])
 
   // Clear stale workout result without XP (e.g. if session save failed)
   useEffect(() => {

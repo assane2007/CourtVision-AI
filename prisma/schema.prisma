@@ -32,6 +32,9 @@ model Player {
   xp          Int      @default(0)
   xpLevel     Int      @default(1)
 
+  // Gamification
+  streakFreezes       Int      @default(1)
+
   // User preferences
   weeklyGoalSessions Int @default(3)
   weeklyGoalReps     Int @default(50)
@@ -46,6 +49,9 @@ model Player {
   notifAchievement   Boolean @default(true)
   notifSocial        Boolean @default(true)
   notifMessage       Boolean @default(true)
+
+  // Authorization
+  role               String   @default("user") // 'user' | 'admin'
 
   // Auth & Security
   resetToken         String?
@@ -77,6 +83,7 @@ model Player {
   reactionScores      ReactionScore[]
   aiChatMessages      AIChatMessage[]
   achievements        Achievement[]
+  dailyLogins         DailyLogin[]
 
   // Relations — Social
   sentFriendRequests     Friendship[]          @relation("SentRequests")
@@ -152,6 +159,7 @@ model Drill {
   trainingPlanDrills  TrainingPlanDrill[]
 
   @@index([playerId])
+  @@index([category])
 }
 
 model WorkoutSession {
@@ -176,6 +184,7 @@ model WorkoutSession {
 
   @@index([playerId])
   @@index([startedAt])
+  @@index([playerId, startedAt])
 }
 
 model WorkoutSessionDrill {
@@ -427,6 +436,7 @@ model FeedPost {
 
   @@index([playerId])
   @@index([createdAt])
+  @@index([type])
 }
 
 model FeedPostLike {
@@ -523,6 +533,7 @@ model Message {
   @@index([conversationId])
   @@index([senderId])
   @@index([createdAt])
+  @@index([conversationId, createdAt])
 }
 
 model Follow {
@@ -871,6 +882,18 @@ model Device {
 
   player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
+  @@index([playerId])
+}
+
+model DailyLogin {
+  id          String   @id @default(cuid())
+  playerId    String
+  date        String
+  xpAwarded   Int
+  createdAt   DateTime @default(now())
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, date])
   @@index([playerId])
 }
 

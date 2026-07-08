@@ -132,8 +132,9 @@ export default function NotificationsScreen() {
               const color = TYPE_COLORS[notif.type] || 'text-muted-foreground'
               return (
                 <motion.div key={notif.id} variants={itemVariants}>
-                  <div
-                    className={`flex items-start gap-3 p-3 rounded-xl border transition-colors cursor-pointer ${
+                  <button
+                    type="button"
+                    className={`w-full text-left flex items-start gap-3 p-3 rounded-xl border transition-colors ${
                       notif.isRead ? 'border-border/50 bg-card' : 'border-orange-500/30 bg-orange-500/5'
                     }`}
                     onClick={() => { if (!notif.isRead) markRead.mutate(notif.id) }}
@@ -149,7 +150,7 @@ export default function NotificationsScreen() {
                     {!notif.isRead && (
                       <div className="w-2 h-2 rounded-full bg-orange-500 shrink-0 mt-2" />
                     )}
-                  </div>
+                  </button>
                 </motion.div>
               )
             })}

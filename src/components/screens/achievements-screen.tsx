@@ -20,6 +20,7 @@ interface Achievement {
   icon: string
   unlocked: boolean
   unlockedAt: string | null
+  progress: number
 }
 
 export function AchievementsScreen() {
@@ -223,9 +224,26 @@ export function AchievementsScreen() {
                     })}
                   </Badge>
                 ) : (
-                  <div className="flex items-center gap-1 text-muted-foreground/50 relative z-10">
-                    <Lock className="h-3 w-3" />
-                    <span className="text-[9px]">{t('achievements.locked')}</span>
+                  <div className="w-full space-y-1.5 relative z-10">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1 text-muted-foreground/50">
+                        <Lock className="h-3 w-3" />
+                        <span className="text-[9px]">{t('achievements.locked')}</span>
+                      </div>
+                      <span className="text-[9px] text-muted-foreground/60">
+                        {Math.round(achievement.progress * 100)}%
+                      </span>
+                    </div>
+                    {achievement.progress > 0 && (
+                      <div className="w-full h-1.5 bg-foreground/10 rounded-full overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${achievement.progress * 100}%` }}
+                          transition={{ duration: 0.8, ease: 'easeOut' as const, delay: 0.2 }}
+                          className="h-full bg-gradient-to-r from-blue-500/60 to-sky-400/60 rounded-full"
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
               </motion.div>
