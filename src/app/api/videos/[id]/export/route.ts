@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { trackError } from '@/lib/monitoring'
 
 const VALID_EXPORT_TYPES = ['gif', 'mp4', 'webm']
 const VALID_QUALITIES = ['low', 'medium', 'high']
@@ -30,7 +31,7 @@ export async function GET(
 
     return NextResponse.json({ exports: exports_ })
   } catch (error) {
-    console.error('[GET /api/videos/[id]/export]', error)
+    trackError('[GET /api/videos/[id]/export]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -101,7 +102,7 @@ export async function POST(
       endMs,
       quality: quality || 'medium',
     }).catch((err) => {
-      console.error(`[Export ${videoExport.id}] Failed`, err)
+      trackError(`[Export ${videoExport.id}] Failed`, err)
       db.videoExport.update({
         where: { id: videoExport.id },
         data: { status: 'failed' },
@@ -110,7 +111,7 @@ export async function POST(
 
     return NextResponse.json({ export: videoExport }, { status: 201 })
   } catch (error) {
-    console.error('[POST /api/videos/[id]/export]', error)
+    trackError('[POST /api/videos/[id]/export]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

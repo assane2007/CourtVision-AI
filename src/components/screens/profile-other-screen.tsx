@@ -114,7 +114,7 @@ export default function ProfileOtherScreen() {
           <Button variant="ghost" size="icon" onClick={goBack} className="shrink-0" aria-label={t('action.back')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-lg font-bold truncate">{p?.name || 'Profil'}</h1>
+          <h1 className="text-lg font-bold truncate">{p?.name || td('Profil', 'Profile')}</h1>
         </div>
       </header>
 
@@ -129,7 +129,7 @@ export default function ProfileOtherScreen() {
           </div>
         ) : !p ? (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
-            <p className="text-muted-foreground">Joueur introuvable</p>
+            <p className="text-muted-foreground">{td('Joueur introuvable', 'Player not found')}</p>
           </div>
         ) : (
           <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
@@ -140,7 +140,7 @@ export default function ProfileOtherScreen() {
                 <AvatarFallback className="text-2xl font-bold">{p.name.charAt(0).toUpperCase()}</AvatarFallback>
               </Avatar>
               <h2 className="text-xl font-bold">{p.name}</h2>
-              <p className="text-sm text-muted-foreground capitalize">{p.position} • Niv.{p.xpLevel}</p>
+              <p className="text-sm text-muted-foreground capitalize">{p.position} • {td('Niv.', 'Lv.')}{p.xpLevel}</p>
               {p.city && (
                 <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                   <MapPin className="h-3 w-3" />{p.city}{p.country ? `, ${p.country}` : ''}
@@ -151,11 +151,11 @@ export default function ProfileOtherScreen() {
               {/* Action buttons */}
               <div className="flex gap-2 mt-4">
                 <Button size="sm" variant={isFollowing?.isFollowing ? 'outline' : 'default'} onClick={() => toggleFollow.mutate()}>
-                  {isFollowing?.isFollowing ? <><UserCheck className="h-3.5 w-3.5 mr-1" />Suivi</> : <><UserPlus className="h-3.5 w-3.5 mr-1" />Suivre</>}
+                  {isFollowing?.isFollowing ? <><UserCheck className="h-3.5 w-3.5 mr-1" />{td('Suivi', 'Following')}</> : <><UserPlus className="h-3.5 w-3.5 mr-1" />{td('Suivre', 'Follow')}</>}
                 </Button>
                 {friendStatus?.status === 'none' && (
                   <Button size="sm" variant="outline" onClick={() => sendFriendRequest.mutate()}>
-                    <UserPlus className="h-3.5 w-3.5 mr-1" />Ajouter
+                    <UserPlus className="h-3.5 w-3.5 mr-1" />{td('Ajouter', 'Add')}
                   </Button>
                 )}
                 <Button size="sm" variant="outline" onClick={() => startConvo.mutate()}>
@@ -199,7 +199,7 @@ export default function ProfileOtherScreen() {
                       <AvatarFallback className="text-[10px] font-bold">{item.name.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <span className="text-sm font-medium flex-1 truncate">{item.name}</span>
-                    <Badge variant="outline" className="text-[10px]">Niv.{item.xpLevel}</Badge>
+                    <Badge variant="outline" className="text-[10px]">{td('Niv.', 'Lv.')}{item.xpLevel}</Badge>
                   </div>
                 ))}
               </div>

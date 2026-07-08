@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { requirePlayer } from "@/lib/player/db-helpers";
+import { trackError } from "@/lib/monitoring";
 
 const onboardSchema = z.object({
   name: z.string().min(1).max(100),
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest) {
     if (err instanceof Error && err.message === "NO_PLAYER") {
       return NextResponse.json({ error: "No player found" }, { status: 404 });
     }
-    console.error("[onboard] error:", err instanceof Error ? err.message : err);
+    trackError("[onboard] error", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

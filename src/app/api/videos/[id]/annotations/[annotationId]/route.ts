@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { trackError } from '@/lib/monitoring'
 
 // DELETE /api/videos/[id]/annotations/[annotationId]
 export async function DELETE(
@@ -35,7 +36,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[DELETE /api/videos/[id]/annotations/[annotationId]]', error)
+    trackError('[DELETE /api/videos/[id]/annotations/[annotationId]]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

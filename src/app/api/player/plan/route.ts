@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { requirePlayer } from "@/lib/player/db-helpers";
+import { trackError } from "@/lib/monitoring";
 
 const planSchema = z.object({
   plan: z.record(z.unknown()),
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
     if (err instanceof Error && err.message === "NO_PLAYER") {
       return NextResponse.json({ error: "No player found" }, { status: 404 });
     }
-    console.error("[player/plan POST] error:", err instanceof Error ? err.message : err);
+    trackError("[player/plan POST] error", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -57,7 +58,7 @@ export async function GET() {
     if (err instanceof Error && err.message === "NO_PLAYER") {
       return NextResponse.json({ error: "No player found" }, { status: 404 });
     }
-    console.error("[player/plan GET] error:", err instanceof Error ? err.message : err);
+    trackError("[player/plan GET] error", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

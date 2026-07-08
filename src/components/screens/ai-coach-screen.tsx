@@ -44,9 +44,9 @@ const SUGGESTED_ACTIONS = [
 // Component
 // ---------------------------------------------------------------------------
 export default function AICoachScreen() {
-  const { t } = useTranslation()
+  const { t, td } = useTranslation()
   const { data: session } = useSession()
-  const userName = session?.user?.name || 'Joueur'
+  const userName = session?.user?.name || td('Joueur', 'Player')
   const goBack = useAppStore((s) => s.goBack)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')

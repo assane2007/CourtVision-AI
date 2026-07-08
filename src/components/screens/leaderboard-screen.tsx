@@ -81,7 +81,7 @@ function getPodiumEmoji(rank: number) {
 
 export function LeaderboardScreen() {
   const goBack = useAppStore((s) => s.goBack)
-  const { t } = useTranslation()
+  const { t, td } = useTranslation()
   const [period, setPeriod] = useState<Period>('all')
 
   const { data, isLoading, isError, refetch } = useQuery<LeaderboardResponse>({
@@ -113,7 +113,7 @@ export function LeaderboardScreen() {
           </div>
           {data && (
             <span className="text-xs text-muted-foreground">
-              {data.totalPlayers} joueur{data.totalPlayers > 1 ? 's' : ''}
+              {data.totalPlayers} {td('joueur', 'player')}{data.totalPlayers > 1 ? 's' : ''}
             </span>
           )}
         </div>
@@ -174,7 +174,7 @@ export function LeaderboardScreen() {
                         {top3[1].name}
                       </span>
                       <span className={`text-xs font-medium ${getLevelColor(top3[1].xpLevel)}`}>
-                        Niv. {top3[1].xpLevel}
+                        {td('Niv.', 'Lv.')} {top3[1].xpLevel}
                       </span>
                       <span className="text-xs text-muted-foreground">
                         {top3[1].xp.toLocaleString()} XP
@@ -203,7 +203,7 @@ export function LeaderboardScreen() {
                         )}
                       </span>
                       <span className={`text-xs font-medium ${getLevelColor(top3[0].xpLevel)}`}>
-                        Niv. {top3[0].xpLevel}
+                        {td('Niv.', 'Lv.')} {top3[0].xpLevel}
                       </span>
                       <span className="text-xs text-muted-foreground">
                         {top3[0].xp.toLocaleString()} XP
@@ -225,7 +225,7 @@ export function LeaderboardScreen() {
                         {top3[2].name}
                       </span>
                       <span className={`text-xs font-medium ${getLevelColor(top3[2].xpLevel)}`}>
-                        Niv. {top3[2].xpLevel}
+                        {td('Niv.', 'Lv.')} {top3[2].xpLevel}
                       </span>
                       <span className="text-xs text-muted-foreground">
                         {top3[2].xp.toLocaleString()} XP

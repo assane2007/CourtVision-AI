@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { trackError } from '@/lib/monitoring'
 
 // GET /api/videos/[id]/export/[exportId] — Get export status
 export async function GET(
@@ -30,7 +31,7 @@ export async function GET(
 
     return NextResponse.json({ export: videoExport })
   } catch (error) {
-    console.error('[GET /api/videos/[id]/export/[exportId]]', error)
+    trackError('[GET /api/videos/[id]/export/[exportId]]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

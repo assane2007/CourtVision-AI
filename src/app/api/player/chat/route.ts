@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { requirePlayer } from "@/lib/player/db-helpers";
+import { trackError } from "@/lib/monitoring";
 
 const chatSchema = z.object({
   role: z.enum(["user", "coach"]),
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
     if (err instanceof Error && err.message === "NO_PLAYER") {
       return NextResponse.json({ error: "No player found" }, { status: 404 });
     }
-    console.error("[player/chat POST] error:", err instanceof Error ? err.message : err);
+    trackError("[player/chat POST] error", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -81,7 +82,7 @@ export async function GET() {
     if (err instanceof Error && err.message === "NO_PLAYER") {
       return NextResponse.json({ error: "No player found" }, { status: 404 });
     }
-    console.error("[player/chat GET] error:", err instanceof Error ? err.message : err);
+    trackError("[player/chat GET] error", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

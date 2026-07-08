@@ -85,11 +85,11 @@ function formatDuration(sec: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-function formatFileSize(bytes: number): string {
+function formatFileSize(bytes: number, td: (fr: string, en?: string) => string): string {
   if (!bytes) return '—'
-  if (bytes < 1024) return `${bytes} o`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} Ko`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
+  if (bytes < 1024) return `${bytes} ${td('o', 'B')}`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} ${td('Ko', 'KB')}`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} ${td('Mo', 'MB')}`
 }
 
 function parseTags(tagsStr: string): string[] {
@@ -158,7 +158,7 @@ export default function VideoLibraryScreen() {
       toast.success(td('Vidéo supprimée', 'Video deleted'))
       setDeleteTarget(null)
     },
-    onError: (err) => toast.error(err instanceof Error ? err.message : 'Erreur'),
+    onError: (err) => toast.error(err instanceof Error ? err.message : td('Erreur', 'Error')),
   })
 
   const handleEdit = useCallback(
@@ -492,7 +492,7 @@ export default function VideoLibraryScreen() {
                           <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
                             <span>{formatDuration(video.durationSec)}</span>
                             <span className="flex items-center gap-0.5">
-                              <HardDrive className="h-3 w-3" />{formatFileSize(video.fileSize)}
+                              <HardDrive className="h-3 w-3" />{formatFileSize(video.fileSize, td)}
                             </span>
                             <span className="flex items-center gap-0.5">
                               <Eye className="h-3 w-3" />{video.viewCount}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { trackError } from '@/lib/monitoring'
 
 // GET /api/videos — List user's videos with filters
 export async function GET(req: NextRequest) {
@@ -76,7 +77,7 @@ export async function GET(req: NextRequest) {
       total: await db.video.count({ where }),
     })
   } catch (error) {
-    console.error('[GET /api/videos]', error)
+    trackError('[GET /api/videos]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -120,7 +121,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ video }, { status: 201 })
   } catch (error) {
-    console.error('[POST /api/videos]', error)
+    trackError('[POST /api/videos]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

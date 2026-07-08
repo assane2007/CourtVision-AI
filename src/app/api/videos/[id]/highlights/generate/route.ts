@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { trackError } from '@/lib/monitoring'
 
 // POST /api/videos/[id]/highlights/generate — AI-powered highlight generation
 // Uses z-ai-web-dev-sdk LLM to analyze video metadata and session data
@@ -95,7 +96,7 @@ Génère les highlights pour cette vidéo.`,
           .filter((h: { startMs: number; endMs: number }) => h.endMs > h.startMs)
       }
     } catch (aiError) {
-      console.error('[AI highlight generation]', aiError)
+      trackError('[AI highlight generation]', aiError)
       // Fallback: generate basic segments if AI fails
       const segments = Math.min(5, Math.max(1, Math.floor(video.durationSec / 15)))
       const segLen = Math.floor(durationMs / segments)
@@ -129,7 +130,7 @@ Génère les highlights pour cette vidéo.`,
 
     return NextResponse.json({ highlights, count: highlights.length })
   } catch (error) {
-    console.error('[POST /api/videos/[id]/highlights/generate]', error)
+    trackError('[POST /api/videos/[id]/highlights/generate]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

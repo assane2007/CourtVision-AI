@@ -818,7 +818,7 @@ export default function VideoPlayerScreen() {
             {/* Highlight montage badge */}
             {isPlayingHighlights && (
               <div className="absolute top-3 left-3 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1.5">
-                <Star className="h-3 w-3" fill="white" /> Highlights
+                <Star className="h-3 w-3" fill="white" /> {td('Highlights', 'Highlights')}
               </div>
             )}
 
@@ -845,7 +845,7 @@ export default function VideoPlayerScreen() {
                       <div className="flex items-center gap-2">
                         {showAnnotationTools && (
                           <Badge variant="destructive" className="text-[10px]">
-                            <PenTool className="h-3 w-3 mr-1" /> Mode annotation
+                            <PenTool className="h-3 w-3 mr-1" /> {td('Mode annotation', 'Annotation mode')}
                           </Badge>
                         )}
                       </div>
@@ -1051,7 +1051,7 @@ export default function VideoPlayerScreen() {
                     disabled={isPlayingHighlights}
                     className="gap-1.5"
                   >
-                    <Play className="h-3.5 w-3.5" /> Montage
+                    <Play className="h-3.5 w-3.5" /> {td('Montage', 'Montage')}
                   </Button>
                 )}
               </div>
@@ -1201,8 +1201,8 @@ export default function VideoPlayerScreen() {
                   {(video.annotations || []).length === 0 ? (
                     <div className="text-center py-6">
                       <PenTool className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">Aucune annotation</p>
-                      <p className="text-xs text-muted-foreground mt-1">Activez le mode dessin pour annoter</p>
+                      <p className="text-sm text-muted-foreground">{td('Aucune annotation', 'No annotations')}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{td('Activez le mode dessin pour annoter', 'Enable drawing mode to annotate')}</p>
                     </div>
                   ) : (
                     (video.annotations || []).map((ann) => (
@@ -1265,7 +1265,7 @@ export default function VideoPlayerScreen() {
                   {(video.exports || []).length === 0 ? (
                     <div className="text-center py-6">
                       <Download className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">Aucun export</p>
+                      <p className="text-sm text-muted-foreground">{td('Aucun export', 'No exports')}</p>
                     </div>
                   ) : (
                     (video.exports || []).map((exp) => (

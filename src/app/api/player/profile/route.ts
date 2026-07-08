@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getPlayer, requirePlayer } from "@/lib/player/db-helpers";
+import { trackError } from "@/lib/monitoring";
 
 export async function GET() {
   try {
@@ -43,7 +44,7 @@ export async function GET() {
       },
     });
   } catch (err: unknown) {
-    console.error("[player/profile GET] error:", err instanceof Error ? err.message : err);
+    trackError("[player/profile GET] error", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -108,7 +109,7 @@ export async function PATCH(req: Request) {
     if (err instanceof Error && err.message === "NO_PLAYER") {
       return NextResponse.json({ error: "No player found" }, { status: 404 });
     }
-    console.error("[player/profile PATCH] error:", err instanceof Error ? err.message : err);
+    trackError("[player/profile PATCH] error", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

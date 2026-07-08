@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { trackError } from '@/lib/monitoring'
 
 // GET /api/videos/compare — Get two videos for side-by-side comparison
 // Query params: videoA, videoB (video IDs)
@@ -59,7 +60,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ videoA, videoB })
   } catch (error) {
-    console.error('[GET /api/videos/compare]', error)
+    trackError('[GET /api/videos/compare]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

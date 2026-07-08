@@ -5,6 +5,7 @@ import { useEffect, Component, type ReactNode, useSyncExternalStore } from 'reac
 import dynamic from 'next/dynamic'
 import { FeatureGate } from '@/components/feature-gate'
 import { toast } from 'sonner'
+import { useTranslation } from '@/components/providers/language-provider'
 
 // Lazy-load the animation wrapper so framer-motion is not in the main bundle.
 // All screen components are already dynamically imported with ssr: false.
@@ -89,6 +90,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 // ─── Main ──────────────────────────────────────────────────────────────────────
 
 export default function Home() {
+  const { td } = useTranslation()
   const { data: session, status } = useSession()
   const { currentScreen, navigate, selectDrill } = useAppStore()
   const mounted = useSyncExternalStore(
@@ -179,6 +181,7 @@ export default function Home() {
   return (
     <ErrorBoundary>
       <main id="main-content" className="min-h-screen bg-background">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md">{td('Aller au contenu', 'Skip to content')}</a>
         <ScreenTransition screenKey={currentScreen} direction={direction}>
           {currentScreen === 'auth' && <AuthScreen />}
           {currentScreen === 'onboarding' && <OnboardingScreen />}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { trackError } from '@/lib/monitoring'
 import { unlink } from 'fs/promises'
 import { join } from 'path'
 
@@ -57,7 +58,7 @@ export async function GET(
 
     return NextResponse.json({ video })
   } catch (error) {
-    console.error('[GET /api/videos/[id]]', error)
+    trackError('[GET /api/videos/[id]]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -122,7 +123,7 @@ export async function PATCH(
 
     return NextResponse.json({ video })
   } catch (error) {
-    console.error('[PATCH /api/videos/[id]]', error)
+    trackError('[PATCH /api/videos/[id]]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -170,7 +171,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[DELETE /api/videos/[id]]', error)
+    trackError('[DELETE /api/videos/[id]]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

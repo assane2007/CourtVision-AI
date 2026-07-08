@@ -453,7 +453,7 @@ export default function VideoCompareScreen() {
               className="h-7 text-xs px-2"
               onClick={() => setCompareMode('split')}
             >
-              <Columns2 className="h-3.5 w-3.5 mr-1" /> Split
+              <Columns2 className="h-3.5 w-3.5 mr-1" /> {td('Split', 'Split')}
             </Button>
             <Button
               size="sm"
@@ -461,7 +461,7 @@ export default function VideoCompareScreen() {
               className="h-7 text-xs px-2"
               onClick={() => setCompareMode('overlay')}
             >
-              <Layers className="h-3.5 w-3.5 mr-1" /> Overlay
+              <Layers className="h-3.5 w-3.5 mr-1" /> {td('Overlay', 'Overlay')}
             </Button>
             <Button
               size="sm"
@@ -469,7 +469,7 @@ export default function VideoCompareScreen() {
               className="h-7 text-xs px-2"
               onClick={() => setCompareMode('mirror')}
             >
-              <FlipHorizontal2 className="h-3.5 w-3.5 mr-1" /> Miroir
+              <FlipHorizontal2 className="h-3.5 w-3.5 mr-1" /> {td('Miroir', 'Mirror')}
             </Button>
           </div>
         </div>
@@ -486,8 +486,8 @@ export default function VideoCompareScreen() {
         <div className="min-h-[50vh] flex items-center justify-center">
           <div className="text-center space-y-3 px-4">
             <AlertCircle className="h-10 w-10 text-destructive mx-auto" />
-            <p className="text-sm">Erreur de chargement</p>
-            <Button variant="outline" onClick={resetCompare}>Retour</Button>
+            <p className="text-sm">{td('Erreur de chargement', 'Loading error')}</p>
+            <Button variant="outline" onClick={resetCompare}>{td('Retour', 'Back')}</Button>
           </div>
         </div>
       )}
@@ -662,7 +662,7 @@ export default function VideoCompareScreen() {
                       checked={syncEnabled}
                       onCheckedChange={setSyncEnabled}
                     />
-                    <Label htmlFor="sync-toggle" className="text-sm">Synchronisation</Label>
+                    <Label htmlFor="sync-toggle" className="text-sm">{td('Synchronisation', 'Synchronization')}</Label>
                   </div>
                   {syncEnabled && (
                     <Button
@@ -676,7 +676,7 @@ export default function VideoCompareScreen() {
                         }
                       }}
                     >
-                      <Check className="h-3 w-3 mr-1" /> Resync
+                      <Check className="h-3 w-3 mr-1" /> {td('Resync', 'Resync')}
                     </Button>
                   )}
                 </div>

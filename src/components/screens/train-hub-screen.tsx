@@ -600,6 +600,7 @@ export default function TrainHubScreen() {
               placeholder={t('train.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              aria-label={td('Rechercher', 'Search')}
               className="pl-9 pr-4 h-10 rounded-full bg-muted/50 border-border/60 focus:bg-card transition-colors"
             />
           </div>
@@ -694,6 +695,7 @@ export default function TrainHubScreen() {
                 <button
                   key={cat.key}
                   onClick={() => setActiveCategory(cat.key)}
+                  aria-pressed={activeCategory === cat.key}
                   className={`
                     inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium
                     whitespace-nowrap transition-all duration-200 shrink-0 border

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { trackError } from '@/lib/monitoring'
 import crypto from 'crypto'
 
 // POST /api/videos/[id]/share — Share a video (generate link, share to feed, share to friends)
@@ -112,7 +113,7 @@ export async function POST(
         return NextResponse.json({ error: 'Action invalide. Actions: generate-link, share-to-feed, share-to-friends' }, { status: 400 })
     }
   } catch (error) {
-    console.error('[POST /api/videos/[id]/share]', error)
+    trackError('[POST /api/videos/[id]/share]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

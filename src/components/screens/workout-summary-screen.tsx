@@ -683,7 +683,7 @@ export default function WorkoutSummaryScreen() {
               icon={<Flame className="h-5 w-5 text-red-400" />}
               label={t('summary.estimatedCalories')}
               value={`${calories} kcal`}
-              subValue={`${workoutResult.totalReps} rép × 8 + ${formatDuration(workoutResult.totalDurationSec)} × 0.5`}
+              subValue={`${workoutResult.totalReps} ${td('rép', 'rep')} × 8 + ${formatDuration(workoutResult.totalDurationSec)} × 0.5`}
               delay={drills.length > 1 ? 0.75 : 0.6}
             />
           </div>

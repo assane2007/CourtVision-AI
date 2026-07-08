@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { requirePlayer } from "@/lib/player/db-helpers";
 import type { SkillKey } from "@/lib/player/iq-engine";
+import { trackError } from "@/lib/monitoring";
 
 const formAnalysisSchema = z.object({
   overallScore: z.int().min(0).max(100),
@@ -131,7 +132,7 @@ export async function POST(req: NextRequest) {
     if (err instanceof Error && err.message === "NO_PLAYER") {
       return NextResponse.json({ error: "No player found" }, { status: 404 });
     }
-    console.error("[player/form-analysis POST] error:", err instanceof Error ? err.message : err);
+    trackError("[player/form-analysis POST] error", err instanceof Error ? err.message : err);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -162,7 +163,7 @@ export async function GET(req: NextRequest) {
     if (err instanceof Error && err.message === "NO_PLAYER") {
       return NextResponse.json({ error: "No player found" }, { status: 404 });
     }
-    console.error("[player/form-analysis GET] error:", err instanceof Error ? err.message : err);
+    trackError("[player/form-analysis GET] error", err instanceof Error ? err.message : err);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

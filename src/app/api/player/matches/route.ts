@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { requirePlayer } from "@/lib/player/db-helpers";
+import { trackError } from "@/lib/monitoring";
 import {
   calcMatchXP,
   calcMatchSkillGains,
@@ -186,7 +187,7 @@ export async function POST(req: NextRequest) {
     if (err instanceof Error && err.message === "NO_PLAYER") {
       return NextResponse.json({ error: "No player found" }, { status: 404 });
     }
-    console.error("[player/matches POST] error:", err instanceof Error ? err.message : err);
+    trackError("[player/matches POST] error", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -218,7 +219,7 @@ export async function GET(req: NextRequest) {
     if (err instanceof Error && err.message === "NO_PLAYER") {
       return NextResponse.json({ error: "No player found" }, { status: 404 });
     }
-    console.error("[player/matches GET] error:", err instanceof Error ? err.message : err);
+    trackError("[player/matches GET] error", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

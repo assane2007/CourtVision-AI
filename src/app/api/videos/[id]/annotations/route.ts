@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { trackError } from '@/lib/monitoring'
 
 const VALID_ANNOTATION_TYPES = ['drawing', 'text', 'arrow', 'circle', 'line']
 
@@ -41,7 +42,7 @@ export async function GET(
 
     return NextResponse.json({ annotations })
   } catch (error) {
-    console.error('[GET /api/videos/[id]/annotations]', error)
+    trackError('[GET /api/videos/[id]/annotations]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -104,7 +105,7 @@ export async function POST(
 
     return NextResponse.json({ annotation }, { status: 201 })
   } catch (error) {
-    console.error('[POST /api/videos/[id]/annotations]', error)
+    trackError('[POST /api/videos/[id]/annotations]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

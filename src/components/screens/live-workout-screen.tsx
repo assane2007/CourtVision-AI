@@ -154,7 +154,7 @@ export default function LiveWorkoutScreen() {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <span className="text-sm font-medium">{entry.name}{entry.isCurrentPlayer && <>{' ('}{td('vous', 'you')}{')'}</>}</span>
-                        <p className="text-xs text-muted-foreground">{entry.reps} reps</p>
+                        <p className="text-xs text-muted-foreground">{entry.reps} {td('rép.', 'reps.')}</p>
                       </div>
                       <span className="text-lg font-bold">{entry.score.toFixed(1)}</span>
                     </div>
@@ -200,7 +200,7 @@ export default function LiveWorkoutScreen() {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <span className="text-sm font-medium truncate">{entry.name}</span>
-                        <p className="text-xs text-muted-foreground">{entry.reps} reps</p>
+                        <p className="text-xs text-muted-foreground">{entry.reps} {td('rép.', 'reps.')}</p>
                       </div>
                       <span className="text-sm font-bold tabular-nums">{entry.score.toFixed(1)}</span>
                     </div>

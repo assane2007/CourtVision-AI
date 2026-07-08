@@ -124,7 +124,7 @@ export default function TeamDetailScreen() {
               <motion.div variants={itemVariants} className="p-4 rounded-xl border bg-card">
                 <p className="text-sm text-muted-foreground">{team.description}</p>
                 <div className="flex gap-3 mt-3 text-xs text-muted-foreground">
-                  <span>Xp total: {team.totalXp.toLocaleString()}</span>
+                  <span>{td('XP total :', 'Total XP :')} {team.totalXp.toLocaleString()}</span>
                   <span>{td('Niv. moyen', 'Avg. level')}: {team.avgLevel}</span>
                 </div>
               </motion.div>
@@ -141,7 +141,7 @@ export default function TeamDetailScreen() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium truncate">{member.name}</span>
-                          <Badge variant="outline" className="text-[10px]">Niv.{member.xpLevel}</Badge>
+                          <Badge variant="outline" className="text-[10px]">{td('Niv.', 'Lv.')}{member.xpLevel}</Badge>
                           {member.role === 'owner' && <Crown className="h-3.5 w-3.5 text-amber-500" />}
                           {member.role === 'admin' && <Shield className="h-3.5 w-3.5 text-orange-500" />}
                         </div>
@@ -164,7 +164,7 @@ export default function TeamDetailScreen() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <span className="text-sm font-medium truncate">{entry.name}</span>
-                        <p className="text-xs text-muted-foreground">Niv.{entry.xpLevel}</p>
+                        <p className="text-xs text-muted-foreground">{td('Niv.', 'Lv.')}{entry.xpLevel}</p>
                       </div>
                       <div className="text-right">
                         <span className="text-sm font-bold">{entry.xp.toLocaleString()}</span>

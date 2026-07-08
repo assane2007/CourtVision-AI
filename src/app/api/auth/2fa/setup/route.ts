@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { trackError } from '@/lib/monitoring'
+import { trackError, trackEvent } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
 import crypto from 'crypto'
 
@@ -41,8 +41,8 @@ export async function POST() {
     })
 
     // In production, this would be a QR code URI for authenticator apps
-    // For mock purposes, we return the secret directly
-    console.warn('[2FA SETUP] Player:', player.name, `(${player.email})`, 'Secret:', secret, 'Mock TOTP URI:', `otpauth://totp/CourtVisionAI:${player.email}?secret=${secret}&issuer=CourtVisionAI`)
+    // For mock purposes, we return the secret directly (never log secrets)
+    trackEvent('2fa-setup-generated', { playerId })
 
     return NextResponse.json({
       message: 'Secret 2FA généré. Vérifiez avec un code pour activer.',

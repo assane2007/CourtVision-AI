@@ -6,6 +6,7 @@ import { requirePlayer } from "@/lib/player/db-helpers";
 import { levelFromXP } from "@/lib/player/iq-engine";
 import { calcTotalXP } from "@/lib/player/xp-engine";
 import type { SkillKey } from "@/lib/player/iq-engine";
+import { trackError } from "@/lib/monitoring";
 
 export async function GET() {
   try {
@@ -86,7 +87,7 @@ export async function GET() {
     if (err instanceof Error && err.message === "NO_PLAYER") {
       return NextResponse.json({ error: "No player found" }, { status: 404 });
     }
-    console.error("[player/stats GET] error:", err instanceof Error ? err.message : err);
+    trackError("[player/stats GET] error", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

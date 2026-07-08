@@ -116,10 +116,10 @@ export async function GET() {
 
     recommendations.sort((a, b) => b.priority - a.priority)
     const topRecs = recommendations.slice(0, 8)
-    return topRecs.map(rec => {
+    return NextResponse.json(topRecs.map(rec => {
       const drill = allDrills.find(d => d.id === rec.drillId)!
       return { ...drill, reasonFr: rec.reasonFr, factors: rec.factors }
-    })
+    }))
   } catch (error) {
     trackError('GET /api/recommendations', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

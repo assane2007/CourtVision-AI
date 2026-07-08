@@ -311,7 +311,7 @@ export default function HomeScreen() {
   const hasAwardedRef = useRef(false)
   const { t, td, language } = useTranslation()
 
-  const userName = session?.user?.name ?? (language === 'en' ? 'Player' : 'Joueur')
+  const userName = session?.user?.name ?? td('Joueur', 'Player')
   const userInitial = userName.charAt(0).toUpperCase()
 
   // ---- Data fetching ----
@@ -705,6 +705,10 @@ export default function HomeScreen() {
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
             onClick={() => navigate('leaderboard')}
+            role="button"
+            tabIndex={0}
+            aria-label={td('Classement', 'Leaderboard')}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('leaderboard') } }}
             className="relative overflow-hidden rounded-2xl p-4 cursor-pointer shadow-lg bg-card border border-border"
           >
             <div className="flex items-center gap-4">
@@ -734,11 +738,11 @@ export default function HomeScreen() {
               { icon: Trophy, label: td('Défis', 'Challenges'), screen: 'challenges' as const, color: 'bg-amber-500/10 text-amber-500' },
               { icon: Users, label: td('Équipes', 'Teams'), screen: 'teams' as const, color: 'bg-emerald-500/10 text-emerald-500' },
               { icon: Video, label: td('Vidéos', 'Videos'), screen: 'video-library' as const, color: 'bg-rose-500/10 text-rose-500' },
-              { icon: Mic, label: 'Voice Coach', screen: 'voice-coach' as const, color: 'bg-violet-500/10 text-violet-500' },
-              { icon: Brain, label: 'IA Insights', screen: 'ai-insights' as const, color: 'bg-cyan-500/10 text-cyan-500' },
+              { icon: Mic, label: td('Voice Coach', 'Voice Coach'), screen: 'voice-coach' as const, color: 'bg-violet-500/10 text-violet-500' },
+              { icon: Brain, label: td('IA Insights', 'AI Insights'), screen: 'ai-insights' as const, color: 'bg-cyan-500/10 text-cyan-500' },
               { icon: Target, label: td('Prédictions', 'Predictions'), screen: 'predictions' as const, color: 'bg-pink-500/10 text-pink-500' },
-              { icon: Sparkles, label: 'IA Workout', screen: 'ai-workout-gen' as const, color: 'bg-orange-500/10 text-orange-500' },
-              { icon: MessageCircle, label: 'Messages', screen: 'messages' as const, color: 'bg-teal-500/10 text-teal-500' },
+              { icon: Sparkles, label: td('IA Workout', 'AI Workout'), screen: 'ai-workout-gen' as const, color: 'bg-orange-500/10 text-orange-500' },
+              { icon: MessageCircle, label: td('Messages', 'Messages'), screen: 'messages' as const, color: 'bg-teal-500/10 text-teal-500' },
             ].map((feature) => (
               <motion.button
                 key={feature.screen}
@@ -764,6 +768,10 @@ export default function HomeScreen() {
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
             onClick={() => navigate('reaction-trainer')}
+            role="button"
+            tabIndex={0}
+            aria-label={td('Traineur de Réaction', 'Reaction Trainer')}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('reaction-trainer') } }}
             className="relative overflow-hidden rounded-2xl p-4 cursor-pointer shadow-lg"
             style={{
               background: 'linear-gradient(135deg, #f97316 0%, #f59e0b 50%, #f97316 100%)',
@@ -873,6 +881,7 @@ export default function HomeScreen() {
         whileTap={{ scale: 0.92 }}
         onClick={() => navigate('ai-coach')}
         className="fixed bottom-20 right-4 z-40 h-14 w-14 rounded-full bg-orange-500 text-white shadow-lg shadow-orange-500/30 flex items-center justify-center"
+        aria-label={td('Coach IA', 'AI Coach')}
       >
         <motion.div
           animate={{ scale: [1, 1.12, 1] }}

@@ -241,7 +241,7 @@ export default function VideoUploadScreen() {
                         setUploadProgress(0)
                       }}
                     >
-                      <X className="h-3 w-3 mr-1" /> Changer
+                      <X className="h-3 w-3 mr-1" /> {td('Changer', 'Change')}
                     </Button>
                   </div>
                 ) : (
@@ -252,7 +252,7 @@ export default function VideoUploadScreen() {
                     <div className="text-center">
                       <p className="font-medium text-sm">{td('Sélectionner une vidéo', 'Select a video')}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        MP4, WebM, MOV, AVI — Max 500 Mo
+                        {td('MP4, WebM, MOV, AVI — Max 500 Mo', 'MP4, WebM, MOV, AVI — Max 500 MB')}
                       </p>
                     </div>
                   </div>
@@ -289,7 +289,7 @@ export default function VideoUploadScreen() {
           <Card>
             <CardContent className="p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Miniature</Label>
+                <Label className="text-sm font-medium">{td('Miniature', 'Thumbnail')}</Label>
                 <Button
                   variant="outline"
                   size="sm"
@@ -308,7 +308,7 @@ export default function VideoUploadScreen() {
               </div>
               {thumbPreview ? (
                 <div className="relative w-full aspect-video max-w-xs rounded-lg overflow-hidden bg-muted">
-                  <img src={thumbPreview} alt="Miniature" className="w-full h-full object-cover" />
+                  <img src={thumbPreview} alt={td('Miniature', 'Thumbnail')} className="w-full h-full object-cover" />
                   <Button
                     variant="destructive"
                     size="icon"
@@ -333,7 +333,7 @@ export default function VideoUploadScreen() {
           <Card>
             <CardContent className="p-4 space-y-3">
               <Label htmlFor="video-title" className="text-sm font-medium">
-                Titre <span className="text-orange-500">*</span>
+                {td('Titre', 'Title')} <span className="text-orange-500">*</span>
               </Label>
               <Input
                 id="video-title"
@@ -352,7 +352,7 @@ export default function VideoUploadScreen() {
         <motion.div variants={itemVariants}>
           <Card>
             <CardContent className="p-4 space-y-3">
-              <Label htmlFor="video-desc" className="text-sm font-medium">Description</Label>
+              <Label htmlFor="video-desc" className="text-sm font-medium">{td('Description', 'Description')}</Label>
               <Textarea
                 id="video-desc"
                 value={description}
@@ -385,7 +385,7 @@ export default function VideoUploadScreen() {
                       addTag()
                     }
                   }}
-                  placeholder="Ajouter un tag..."
+                  placeholder={td('Ajouter un tag...', 'Add a tag...')}
                   className="bg-background"
                 />
                 <Button variant="outline" size="icon" onClick={addTag} disabled={!tagInput.trim()}>

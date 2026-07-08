@@ -510,6 +510,8 @@ export default function AuthScreen() {
                       disabled={loginLoading}
                       required
                       autoComplete="email"
+                      aria-describedby="login-error"
+                      aria-invalid={!!loginError}
                       className="h-11 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
                     />
                   </div>
@@ -530,6 +532,7 @@ export default function AuthScreen() {
 
                   {loginError && (
                     <motion.p
+                      id="login-error"
                       initial={{ opacity: 0, y: -4 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="text-sm text-red-500 dark:text-red-400 font-medium"
@@ -595,6 +598,8 @@ export default function AuthScreen() {
                       disabled={signupLoading}
                       required
                       autoComplete="email"
+                      aria-describedby="signup-error"
+                      aria-invalid={!!signupError}
                       className="h-11 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
                     />
                   </div>
@@ -614,6 +619,7 @@ export default function AuthScreen() {
 
                   {signupError && (
                     <motion.p
+                      id="signup-error"
                       initial={{ opacity: 0, y: -4 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="text-sm text-red-500 dark:text-red-400 font-medium"
@@ -692,7 +698,7 @@ export default function AuthScreen() {
                     />
                   </div>
                   {resetError && (
-                    <p className="text-sm text-red-500 dark:text-red-400">{resetError}</p>
+                    <p role="alert" className="text-sm text-red-500 dark:text-red-400">{resetError}</p>
                   )}
                   <Button
                     type="submit"
@@ -796,7 +802,7 @@ export default function AuthScreen() {
                         />
                       </div>
                       {resetError && (
-                        <p className="text-sm text-red-500 dark:text-red-400">{resetError}</p>
+                        <p role="alert" className="text-sm text-red-500 dark:text-red-400">{resetError}</p>
                       )}
                       <div className="flex gap-2">
                         <Button

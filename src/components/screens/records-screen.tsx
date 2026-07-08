@@ -159,7 +159,7 @@ function TrendIndicator({ scores }: { scores: number[] }) {
 // ── Record Card ─────────────────────────────────────────────────────────────
 
 function RecordCard({ record, index: _index }: { record: DrillRecord; index: number }) {
-  const { t, language } = useTranslation()
+  const { t, td, language } = useTranslation()
   const catMeta = getCategoryMeta(record.drillCategory)
   if (!catMeta) return null
   const catColor = getCategoryColor(record.drillCategory)
@@ -178,7 +178,7 @@ function RecordCard({ record, index: _index }: { record: DrillRecord; index: num
                 <h3 className="text-sm font-semibold truncate">{record.drillNameFr}</h3>
                 {record.isNewRecord && (
                   <Badge className="text-[10px] px-1.5 py-0 bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20 h-5 shrink-0">
-                    👑 Nouveau record !
+                    👑 {td('Nouveau record !', 'New record !')}
                   </Badge>
                 )}
               </div>

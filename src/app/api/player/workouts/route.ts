@@ -13,6 +13,7 @@ import {
   calcTotalXP,
 } from "@/lib/player/xp-engine";
 import type { PlanType } from "@/lib/player/iq-engine";
+import { trackError } from "@/lib/monitoring";
 
 const workoutSchema = z.object({
   planId: z.string().optional(),
@@ -166,7 +167,7 @@ export async function POST(req: NextRequest) {
     if (err instanceof Error && err.message === "NO_PLAYER") {
       return NextResponse.json({ error: "No player found" }, { status: 404 });
     }
-    console.error("[player/workouts POST] error:", err instanceof Error ? err.message : err);
+    trackError("[player/workouts POST] error", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -214,7 +215,7 @@ export async function GET(req: NextRequest) {
     if (err instanceof Error && err.message === "NO_PLAYER") {
       return NextResponse.json({ error: "No player found" }, { status: 404 });
     }
-    console.error("[player/workouts GET] error:", err instanceof Error ? err.message : err);
+    trackError("[player/workouts GET] error", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

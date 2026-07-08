@@ -42,11 +42,11 @@ interface FriendCounts {
 type Tab = 'all' | 'friends' | 'sent' | 'received' | 'blocked'
 
 const TABS: { value: Tab; label: string; icon: typeof Users }[] = [
-  { value: 'all', label: 'Tous', icon: Users },
-  { value: 'friends', label: 'Amis', icon: UserCheck },
+  { value: 'all', label: 'Tous', labelEn: 'All', icon: Users },
+  { value: 'friends', label: 'Amis', labelEn: 'Friends', icon: UserCheck },
   { value: 'sent', label: 'Envoyées', labelEn: 'Sent', icon: Send },
   { value: 'received', label: 'Reçues', labelEn: 'Received', icon: UserPlus },
-  { value: 'blocked', label: 'Bloqués', icon: ShieldBan },
+  { value: 'blocked', label: 'Bloqués', labelEn: 'Blocked', icon: ShieldBan },
 ]
 
 // ─── Component ─────────────────────────────────────────────────────────────────
@@ -231,7 +231,7 @@ export default function FriendsScreen() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium truncate">{item.name as string}</span>
                         <Badge variant="outline" className="text-[10px] shrink-0">
-                          Niv.{item.xpLevel as number}
+                          {td('Niv.', 'Lv.')}{item.xpLevel as number}
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground capitalize">{item.position as string}</p>

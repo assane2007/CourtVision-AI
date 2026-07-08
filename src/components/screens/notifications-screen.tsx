@@ -32,18 +32,18 @@ const TYPE_COLORS: Record<string, string> = {
   follow: 'text-violet-500', challenge: 'text-orange-500', achievement: 'text-amber-500', system: 'text-muted-foreground', live_start: 'text-red-500',
 }
 
-function formatNotifTime(date: string): string {
+function formatNotifTime(date: string, td: (fr: string, en?: string) => string, language: string): string {
   const d = new Date(date)
   const now = Date.now()
   const diff = now - d.getTime()
-  if (diff < 60000) return "À l'instant"
-  if (diff < 3600000) return `Il y a ${Math.floor(diff / 60000)}min`
-  if (diff < 86400000) return `Il y a ${Math.floor(diff / 3600000)}h`
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+  if (diff < 60000) return td("À l'instant", 'Just now')
+  if (diff < 3600000) return `${td('Il y a', 'Ago')} ${Math.floor(diff / 60000)}min`
+  if (diff < 86400000) return `${td('Il y a', 'Ago')} ${Math.floor(diff / 3600000)}h`
+  return d.toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', { day: '2-digit', month: '2-digit' })
 }
 
 export default function NotificationsScreen() {
-  const { t, td } = useTranslation()
+  const { t, td, language } = useTranslation()
   const { goBack, navigate: _navigate } = useNavigation()
   const queryClient = useQueryClient()
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -103,7 +103,7 @@ export default function NotificationsScreen() {
           <h1 className="text-lg font-bold flex-1">Notifications</h1>
           {unreadCount > 0 && (
             <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => markAllRead.mutate()}>
-              <CheckCheck className="h-3.5 w-3.5 mr-1" />Tout lire
+              <CheckCheck className="h-3.5 w-3.5 mr-1" />{td('Tout lire', 'Mark all read')}
             </Button>
           )}
         </div>
@@ -123,7 +123,7 @@ export default function NotificationsScreen() {
         ) : allNotifs.length === 0 ? (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
             <Bell className="h-12 w-12 text-muted-foreground/50" />
-            <p className="text-muted-foreground">Aucune notification</p>
+            <p className="text-muted-foreground">{td('Aucune notification', 'No notifications')}</p>
           </div>
         ) : (
           <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-2">
@@ -144,7 +144,7 @@ export default function NotificationsScreen() {
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm ${notif.isRead ? '' : 'font-medium'}`}>{notif.title}</p>
                       <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.body}</p>
-                      <p className="text-[10px] text-muted-foreground mt-1">{formatNotifTime(notif.createdAt)}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">{formatNotifTime(notif.createdAt, td, language)}</p>
                     </div>
                     {!notif.isRead && (
                       <div className="w-2 h-2 rounded-full bg-orange-500 shrink-0 mt-2" />

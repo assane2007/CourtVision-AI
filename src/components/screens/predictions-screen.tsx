@@ -37,29 +37,17 @@ interface PredictionsData {
 
 // ── Config ─────────────────────────────────────────────────────────────────────
 
-const TYPE_CONFIG: Record<string, { label: string; icon: typeof Target; color: string; bgColor: string }> = {
-  next_level: { label: 'Prochain Niveau', icon: TrendingUp, color: 'text-green-500', bgColor: 'bg-green-500/10' },
-  injury_risk: { label: 'Risque Blessure', icon: ShieldAlert, color: 'text-red-500', bgColor: 'bg-red-500/10' },
-  performance: { label: 'Performance', icon: Activity, color: 'text-orange-500', bgColor: 'bg-orange-500/10' },
-  plateau: { label: 'Plateau', icon: AlertTriangle, color: 'text-yellow-500', bgColor: 'bg-yellow-500/10' },
+const TYPE_CONFIG: Record<string, { label: string; labelEn: string; icon: typeof Target; color: string; bgColor: string }> = {
+  next_level: { label: 'Prochain Niveau', labelEn: 'Next Level', icon: TrendingUp, color: 'text-green-500', bgColor: 'bg-green-500/10' },
+  injury_risk: { label: 'Risque Blessure', labelEn: 'Injury Risk', icon: ShieldAlert, color: 'text-red-500', bgColor: 'bg-red-500/10' },
+  performance: { label: 'Performance', labelEn: 'Performance', icon: Activity, color: 'text-orange-500', bgColor: 'bg-orange-500/10' },
+  plateau: { label: 'Plateau', labelEn: 'Plateau', icon: AlertTriangle, color: 'text-yellow-500', bgColor: 'bg-yellow-500/10' },
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export default function PredictionsScreen() {
-  const { t, td } = useTranslation()
-
-  const TYPE_LABEL_EN: Record<string, string> = {
-    next_level: 'Next Level',
-    injury_risk: 'Injury Risk',
-    performance: 'Performance',
-    plateau: 'Plateau',
-  }
-  const CONF_EN: Record<string, string> = {
-    'Élevée': 'High',
-    'Moyenne': 'Medium',
-    'Faible': 'Low',
-  }
+  const { t, td, language } = useTranslation()
   const { goBack } = useNavigation()
   const [data, setData] = useState<PredictionsData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -112,9 +100,9 @@ export default function PredictionsScreen() {
 
   const formatConfidence = (c: number) => {
     const pct = Math.round(c * 100)
-    if (pct >= 80) return { label: 'Élevée', color: 'text-green-500' }
-    if (pct >= 50) return { label: 'Moyenne', color: 'text-yellow-500' }
-    return { label: 'Faible', color: 'text-red-500' }
+    if (pct >= 80) return { label: td('Élevée', 'High'), color: 'text-green-500' }
+    if (pct >= 50) return { label: td('Moyenne', 'Medium'), color: 'text-yellow-500' }
+    return { label: td('Faible', 'Low'), color: 'text-red-500' }
   }
 
   return (
@@ -202,7 +190,7 @@ export default function PredictionsScreen() {
                               <config.icon className={`h-5 w-5 ${config.color}`} />
                             </div>
                             <div>
-                              <p className="text-sm font-semibold">{td(config.label, TYPE_LABEL_EN[type] || config.label)}</p>
+                              <p className="text-sm font-semibold">{td(config.label, config.labelEn)}</p>
                               {latest ? (
                                 <p className="text-xs text-muted-foreground">
                                   {latest.predictedValue !== null ? td(`Valeur: ${latest.predictedValue}`, `Value: ${latest.predictedValue}`) : td('En attente', 'Pending')}
@@ -215,7 +203,7 @@ export default function PredictionsScreen() {
                           <div className="flex items-center gap-2">
                             {conf && (
                               <Badge variant="outline" className={`text-[10px] ${conf.color}`}>
-                                {td(conf.label, CONF_EN[conf.label] || conf.label)}
+                                {conf.label}
                               </Badge>
                             )}
                             {isExpanded ? (
@@ -274,7 +262,7 @@ export default function PredictionsScreen() {
                                 {/* Predicted date */}
                                 {latest.predictedAt && (
                                   <p className="text-[10px] text-muted-foreground">
-                                    {td('Prédit:', 'Predicted:')} {new Date(latest.predictedAt).toLocaleDateString('fr-FR')}
+                                    {td('Prédit:', 'Predicted:')} {new Date(latest.predictedAt).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR')}
                                   </p>
                                 )}
 

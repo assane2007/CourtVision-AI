@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { requirePlayer } from "@/lib/player/db-helpers";
+import { trackError } from "@/lib/monitoring";
 
 function dateRange(offsetDays: number) {
   const now = new Date();
@@ -138,7 +139,7 @@ export async function GET() {
     if (err instanceof Error && err.message === "NO_PLAYER") {
       return NextResponse.json({ error: "No player found" }, { status: 404 });
     }
-    console.error("[player/weekly-report GET] error:", err instanceof Error ? err.message : err);
+    trackError("[player/weekly-report GET] error", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

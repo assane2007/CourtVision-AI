@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { trackError } from '@/lib/monitoring'
 import Stripe from 'stripe'
 
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -103,7 +104,7 @@ export async function POST(req: Request) {
       }
     }
   } catch (err) {
-    console.error('Stripe webhook error:', err)
+    trackError('Stripe webhook error', err)
     return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 })
   }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { trackError } from '@/lib/monitoring'
 
 // GET /api/videos/[id]/highlights — List highlights for a video
 export async function GET(
@@ -38,7 +39,7 @@ export async function GET(
 
     return NextResponse.json({ highlights })
   } catch (error) {
-    console.error('[GET /api/videos/[id]/highlights]', error)
+    trackError('[GET /api/videos/[id]/highlights]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -94,7 +95,7 @@ export async function POST(
 
     return NextResponse.json({ highlight }, { status: 201 })
   } catch (error) {
-    console.error('[POST /api/videos/[id]/highlights]', error)
+    trackError('[POST /api/videos/[id]/highlights]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

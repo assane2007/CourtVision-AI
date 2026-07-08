@@ -129,7 +129,7 @@ export default function AIInsightsScreen() {
               <div className="h-8 w-8 rounded-full bg-orange-500 flex items-center justify-center">
                 <Brain className="h-4 w-4 text-white" />
               </div>
-              <h1 className="text-lg font-bold">IA Insights</h1>
+              <h1 className="text-lg font-bold">{td('Insights IA', 'AI Insights')}</h1>
             </div>
           </div>
           <Button

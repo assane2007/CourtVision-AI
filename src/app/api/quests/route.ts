@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
+import { trackError } from '@/lib/monitoring'
 
 export async function GET() {
   try {
@@ -108,7 +109,7 @@ export async function GET() {
 
     return NextResponse.json({ daily, weekly })
   } catch (error) {
-    console.error('[GET /api/quests]', error)
+    trackError('[GET /api/quests]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
