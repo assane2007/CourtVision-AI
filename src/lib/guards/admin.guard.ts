@@ -27,7 +27,7 @@ type AdminHandler<TCtx = void> = (
  */
 export function withAdminGuard<TCtx = void>(
   handler: AdminHandler<TCtx>,
-): (req: NextRequest, context?: TCtx) => Promise<NextResponse> {
+): (req: NextRequest, context: { params: Promise<Record<string, string>> }) => Promise<NextResponse> {
   return async (req, context) => {
     try {
       const auth = await requireAuth()

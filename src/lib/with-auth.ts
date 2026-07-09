@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import type { Session } from 'next-auth'
 
 /**
@@ -44,13 +44,13 @@ type OptionalAuthHandler<TCtx = void> = (
  */
 export function withAuth<TCtx = void>(
   handler: AuthenticatedHandler<TCtx>,
-): (req: Request, context?: TCtx) => Promise<NextResponse> {
+): (req: NextRequest, context: { params: Promise<Record<string, string>> }) => Promise<NextResponse> {
   return async (req, context) => {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
-    return handler(req, session, context as TCtx)
+    return handler(req, session, context as unknown as TCtx)
   }
 }
 
@@ -61,7 +61,7 @@ export function withAuth<TCtx = void>(
  */
 export function withAdmin<TCtx = void>(
   handler: AuthenticatedHandler<TCtx>,
-): (req: Request, context?: TCtx) => Promise<NextResponse> {
+): (req: NextRequest, context: { params: Promise<Record<string, string>> }) => Promise<NextResponse> {
   return async (req, context) => {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
@@ -77,7 +77,7 @@ export function withAdmin<TCtx = void>(
       return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
     }
 
-    return handler(req, session, context as TCtx)
+    return handler(req, session, context as unknown as TCtx)
   }
 }
 
@@ -95,9 +95,9 @@ export function withAdmin<TCtx = void>(
  */
 export function withOptionalAuth<TCtx = void>(
   handler: OptionalAuthHandler<TCtx>,
-): (req: Request, context?: TCtx) => Promise<NextResponse> {
+): (req: NextRequest, context: { params: Promise<Record<string, string>> }) => Promise<NextResponse> {
   return async (req, context) => {
     const session = (await getServerSession(authOptions)) ?? null
-    return handler(req, session, context as TCtx)
+    return handler(req, session, context as unknown as TCtx)
   }
 }

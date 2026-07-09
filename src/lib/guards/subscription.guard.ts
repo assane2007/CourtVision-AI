@@ -121,12 +121,12 @@ type SubscriptionHandler<TCtx = void> = (
 export function requireSubscription<TCtx = void>(
   requiredTier: 'pro' | 'elite',
   handler: SubscriptionHandler<TCtx>,
-): (req: NextRequest, context?: TCtx) => Promise<NextResponse> {
+): (req: NextRequest, context: { params: Promise<Record<string, string>> }) => Promise<NextResponse> {
   return async (req, context) => {
     try {
       const auth = await requireAuth()
       const subscription = await checkSubscription(auth.playerId, requiredTier)
-      return handler(req, auth, subscription, context as TCtx)
+      return handler(req, auth, subscription, context as unknown as TCtx)
     } catch (error) {
       return toErrorResponse(error, 'subscription-guard')
     }

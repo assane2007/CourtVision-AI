@@ -137,7 +137,7 @@ type AuthenticatedHandler<TCtx = void> = (
 export function withAuthGuard<TCtx = void>(
   handler: AuthenticatedHandler<TCtx>,
   requiredLevel?: AuthLevel,
-): (req: NextRequest, context?: TCtx) => Promise<NextResponse> {
+): (req: NextRequest, context: { params: Promise<Record<string, string>> }) => Promise<NextResponse> {
   return async (req, context) => {
     try {
       const session = await getServerSession(authOptions)
@@ -162,7 +162,7 @@ export function withAuthGuard<TCtx = void>(
         }
       }
 
-      return handler(req, auth, context as TCtx)
+      return handler(req, auth, context as unknown as TCtx)
     } catch (error) {
       return toErrorResponse(error, 'auth-guard')
     }
@@ -183,11 +183,11 @@ type OptionalAuthHandler<TCtx = void> = (
  */
 export function withOptionalAuthGuard<TCtx = void>(
   handler: OptionalAuthHandler<TCtx>,
-): (req: NextRequest, context?: TCtx) => Promise<NextResponse> {
+): (req: NextRequest, context: { params: Promise<Record<string, string>> }) => Promise<NextResponse> {
   return async (req, context) => {
     try {
       const auth = await getOptionalAuth()
-      return handler(req, auth, context as TCtx)
+      return handler(req, auth, context as unknown as TCtx)
     } catch (error) {
       return toErrorResponse(error, 'auth-guard')
     }
