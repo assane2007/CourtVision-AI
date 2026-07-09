@@ -284,7 +284,7 @@ export default function VideoPlayerScreen() {
   }
 
   // Get annotations/highlights for current time
-  const currentMs = player.currentTime * 1000
+  const currentMs = currentTime * 1000
   const visibleAnnotations = (video.annotations || []).filter(
     (a) => a.durationMs > 0
       ? currentMs >= a.timestampMs && currentMs <= a.timestampMs + a.durationMs
