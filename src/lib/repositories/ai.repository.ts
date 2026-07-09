@@ -11,7 +11,7 @@ import { BaseRepository } from './base.repository'
 
 export class AiChatRepository extends BaseRepository<'AIChatMessage', any> {
   constructor() {
-    super(db.aiChatMessage as any, 'AIChatMessage')
+    super(db.aIChatMessage as any, 'AIChatMessage')
   }
 
   /**

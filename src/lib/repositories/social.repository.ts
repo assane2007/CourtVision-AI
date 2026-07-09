@@ -12,6 +12,7 @@ import type { FriendData } from '@/lib/types/service.types'
 
 export class SocialRepository extends BaseRepository<'Friendship', any> {
   constructor() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     super(db.friendship as any, 'Friendship')
   }
 
@@ -120,6 +121,7 @@ export class SocialRepository extends BaseRepository<'Friendship', any> {
 
 export class TeamRepository extends BaseRepository<'Team', any> {
   constructor() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     super(db.team as any, 'Team')
   }
 
@@ -164,9 +166,10 @@ export class TeamRepository extends BaseRepository<'Team', any> {
 
 // ── Feed / Post Repository ─────────────────────────────────────────────────────
 
-export class FeedRepository extends BaseRepository<'Post', any> {
+export class FeedRepository extends BaseRepository<'FeedPost', any> {
   constructor() {
-    super(db.post as any, 'Post')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    super(db.feedPost as any, 'FeedPost')
   }
 
   /**
@@ -181,7 +184,7 @@ export class FeedRepository extends BaseRepository<'Post', any> {
     const { playerId, cursor, limit = 20, friendIds } = params
 
     // Build where clause: own posts + friends' posts
-    const where: Prisma.PostWhereInput = {
+    const where: Prisma.FeedPostWhereInput = {
       OR: [
         ...(playerId ? [{ authorId: playerId }] : []),
         ...(friendIds && friendIds.size > 0 ? [{ authorId: { in: Array.from(friendIds) } }] : []),
@@ -191,10 +194,10 @@ export class FeedRepository extends BaseRepository<'Post', any> {
     }
 
     const cursorWhere = cursor
-      ? { AND: [where, { id: { gt: cursor } }] as Prisma.PostWhereInput[] }
+      ? { AND: [where, { id: { gt: cursor } }] as Prisma.FeedPostWhereInput[] }
       : where
 
-    const posts = await db.post.findMany({
+    const posts = await db.feedPost.findMany({
       where: cursorWhere,
       include: {
         author: {
@@ -215,10 +218,10 @@ export class FeedRepository extends BaseRepository<'Post', any> {
     const pagePosts = hasMore ? posts.slice(0, limit) : posts
     const nextCursor = hasMore ? pagePosts[pagePosts.length - 1].id : null
 
-    const data: FeedPostData[] = pagePosts.map((p) => ({
+    const data: FeedPostData[] = pagePosts.map((p: any) => ({
       id: p.id,
       content: p.content,
-      mediaUrl: p.mediaUrl,
+      mediaUrl: p.imageUrls,
       likeCount: p._count.likes,
       commentCount: p._count.comments,
       createdAt: p.createdAt,

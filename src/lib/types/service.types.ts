@@ -14,11 +14,22 @@ import type {
 
 // ── Generic Query Parameters ────────────────────────────────────────────────────
 
+/** Timeframe for stats aggregation */
+export type Timeframe = 'week' | 'month' | 'all'
+
+/** Player level information */
+export type PlayerLevel = {
+  level: number
+  title: string
+  currentXp: number
+  xpToNext: number
+}
+
 /** Base filter interface for repository queries */
 export interface QueryParams {
-  where?: Prisma.WhereInput
-  orderBy?: Prisma.OrderByWithRelationInput
-  include?: Prisma.IncludeScalarFilter
+  where?: Record<string, unknown>
+  orderBy?: Record<string, unknown>
+  include?: Record<string, unknown>
 }
 
 /** Cursor-based pagination params */

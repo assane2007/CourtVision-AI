@@ -189,7 +189,7 @@ export async function generateWorkout(
   }
 
   // 7. Parse and validate response
-  const parsed = parseJsonResponse<Record<string, unknown>>(responseContent, null)
+  const parsed = parseJsonResponse<Record<string, unknown>>(responseContent, null as unknown as Record<string, unknown>)
   if (!parsed) {
     throw new AppError(
       ErrorCode.EXTERNAL_SERVICE_ERROR,

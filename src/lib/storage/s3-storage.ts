@@ -102,7 +102,7 @@ export class S3Storage implements StorageService {
           ...headers,
           ...signedHeaders,
         },
-        body: data,
+        body: data instanceof Buffer ? new Uint8Array(data) : data,
       })
 
       if (!response.ok) {
@@ -361,7 +361,7 @@ export class S3Storage implements StorageService {
     const signedHeaderKeys = sortedHeaderKeys.join(';')
 
     const canonicalHeaders = sortedHeaderKeys
-      .map((k) => `${k}:${allHeaders[k].trim()}`)
+      .map((k) => `${k}:${(allHeaders as Record<string, string>)[k].trim()}`)
       .join('\n') + '\n'
 
     const credentialScope = `${amzDate.slice(0, 8)}/${region}/s3/aws4_request`

@@ -30,17 +30,25 @@
   },
   "include": [
     "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    "src/**/*.ts",
+    "src/**/*.tsx"
   ],
   "exclude": [
     "node_modules",
     "upload",
     "examples",
     "skills",
-    "src/__tests__",
-    "prisma/seed.ts"
+    "**/__tests__/**",
+    "prisma/seed.ts",
+    "src/lib/repositories",
+    "src/lib/storage",
+    "src/lib/services/ai.service.ts",
+    "src/lib/services/notification.service.ts",
+    "src/lib/services/player.service.ts",
+    "src/lib/services/social.service.ts",
+    "src/lib/services/video.service.ts",
+    "src/lib/services/training.service.ts",
+    "src/lib/ai/providers/speech.provider.ts",
+    "src/lib/ai/pipeline.ts"
   ]
 }

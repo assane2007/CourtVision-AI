@@ -116,6 +116,10 @@ class SimpleRedisClient {
 
     return new Promise<string | null>((resolve, reject) => {
       const cmd = this.buildCommand(args)
+      if (!this.socket) {
+        reject(new Error('Redis not connected'))
+        return
+      }
       this.socket.write(cmd)
 
       this.responseQueue.push({

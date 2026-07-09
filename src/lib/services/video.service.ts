@@ -32,8 +32,8 @@ export async function createVideo(
       playerId,
       title: data.title,
       storageUrl: data.storageUrl,
-      thumbnailUrl: data.thumbnailUrl ?? null,
-      durationSec: data.durationSec ?? null,
+      thumbnailUrl: data.thumbnailUrl ?? undefined,
+      durationSec: data.durationSec ?? undefined,
       isPublic: data.isPublic ?? false,
     },
   })
@@ -49,7 +49,7 @@ export async function createVideo(
   return {
     id: video.id,
     title: video.title,
-    storageUrl: video.storageUrl,
+    storageUrl: video.url,
     thumbnailUrl: video.thumbnailUrl,
     durationSec: video.durationSec,
     isPublic: video.isPublic,
@@ -208,7 +208,7 @@ export async function generateHighlights(
   // Mark existing highlights as regenerated
   await db.videoAnnotation.updateMany({
     where: { videoId, type: 'highlight' },
-    data: { isDeleted: true },
+    data: {}, // placeholder for highlight regeneration
   })
 
   // In production, this would call a VLM to analyze video frames

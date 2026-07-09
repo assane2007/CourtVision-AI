@@ -232,7 +232,7 @@ export const liveScoreUpdateSchema = z.object({
 const syncActionSchema = z.object({
   id: z.string().optional(),
   type: z.enum(['session_save', 'drill_favorite', 'settings_update']),
-  payload: z.record(z.unknown()).optional(),
+  payload: z.record(z.string(), z.unknown()).optional(),
   createdAt: z.string().datetime().optional(),
 })
 

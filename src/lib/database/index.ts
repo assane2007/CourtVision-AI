@@ -63,11 +63,11 @@ function createPrismaClient(): PrismaClient {
   })
 
   // ─── Slow Query Logging ───────────────────────────────────────────────
-  // @ts-expect-error - Prisma event types are not fully exposed
-  client.$on('query', (e: { query: string; duration: number; params: string; target: string }) => {
-    if (e.duration > SLOW_QUERY_THRESHOLD_MS) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  client.$on('query', (e: any) => {
+    if (e?.duration > SLOW_QUERY_THRESHOLD_MS) {
       console.warn(
-        `[DB] Slow query (${e.duration}ms): ${e.query.slice(0, 200)}${e.query.length > 200 ? '...' : ''}`
+        `[DB] Slow query (${e.duration}ms): ${(e.query as string)?.slice(0, 200)}${(e.query as string)?.length > 200 ? '...' : ''}`
       )
     }
   })
@@ -118,7 +118,7 @@ export async function healthCheck(): Promise<{
       status: latencyMs > 1000 ? 'unhealthy' : 'healthy',
       latencyMs,
       provider: isPostgres ? 'postgresql' : 'sqlite',
-      ...(isPostgres ? { poolInfo: { ...POOL_CONFIG } } : {}),
+      ...(isPostgres ? { poolInfo: { connectionLimit: POOL_CONFIG.connection_limit, poolTimeout: POOL_CONFIG.pool_timeout } } : {}),
     }
   } catch {
     const latencyMs = Math.round(performance.now() - start)
@@ -126,7 +126,7 @@ export async function healthCheck(): Promise<{
       status: 'unhealthy',
       latencyMs,
       provider: isPostgres ? 'postgresql' : 'sqlite',
-      ...(isPostgres ? { poolInfo: { ...POOL_CONFIG } } : {}),
+      ...(isPostgres ? { poolInfo: { connectionLimit: POOL_CONFIG.connection_limit, poolTimeout: POOL_CONFIG.pool_timeout } } : {}),
     }
   }
 }

@@ -12,7 +12,7 @@ import { logger } from '@/lib/logger'
 
 type Strategy = 'memory' | 'redis'
 
-interface RateLimitConfig {
+export interface RateLimitConfig {
   max: number
   windowMs: number
 }
@@ -186,7 +186,7 @@ export class RateLimiter {
   ): { allowed: true; headers: Record<string, string> } | { allowed: false; response: Response } {
     const result = this.check(identifier, config)
 
-    const headers = {
+    const headers: Record<string, string> = {
       'X-RateLimit-Limit': String(result.limit),
       'X-RateLimit-Remaining': String(result.remaining),
       'X-RateLimit-Reset': String(Math.ceil(result.resetMs / 1000)),

@@ -10,6 +10,7 @@ import type { VideoData } from '@/lib/types/service.types'
 
 export class VideoRepository extends BaseRepository<'Video', any> {
   constructor() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     super(db.video as any, 'Video')
   }
 
@@ -50,11 +51,11 @@ export class VideoRepository extends BaseRepository<'Video', any> {
     const data: VideoData[] = pageVideos.map((v) => ({
       id: v.id,
       title: v.title,
-      storageUrl: v.storageUrl,
+      storageUrl: v.url,
       thumbnailUrl: v.thumbnailUrl,
       durationSec: v.durationSec,
       isPublic: v.isPublic,
-      viewsCount: v.viewsCount ?? 0,
+      viewsCount: v.viewCount ?? 0,
       annotationsCount: v._count.annotations,
       createdAt: v.createdAt,
     }))
@@ -88,7 +89,7 @@ export class VideoRepository extends BaseRepository<'Video', any> {
   async incrementViews(videoId: string): Promise<void> {
     await db.video.update({
       where: { id: videoId },
-      data: { viewsCount: { increment: 1 } },
+      data: { viewCount: { increment: 1 } },
     })
   }
 }
@@ -97,6 +98,7 @@ export class VideoRepository extends BaseRepository<'Video', any> {
 
 export class AnnotationRepository extends BaseRepository<'VideoAnnotation', any> {
   constructor() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     super(db.videoAnnotation as any, 'VideoAnnotation')
   }
 
@@ -135,6 +137,7 @@ export class AnnotationRepository extends BaseRepository<'VideoAnnotation', any>
 
 export class VideoExportRepository extends BaseRepository<'VideoExport', any> {
   constructor() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     super(db.videoExport as any, 'VideoExport')
   }
 
@@ -162,7 +165,6 @@ export class VideoExportRepository extends BaseRepository<'VideoExport', any> {
         format: data.format,
         status: 'pending',
         playerId: data.playerId,
-        options: data.options as any,
       },
     })
   }

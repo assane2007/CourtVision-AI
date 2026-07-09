@@ -11,7 +11,7 @@ import { aiChatRepository } from '@/lib/repositories/ai.repository'
 import { logger } from '@/lib/logger'
 import type { FormCheckResult } from '@/lib/types/service.types'
 
-// ── Form Check ─────────────────────────────────────────────────────────────────
+// ── Form Check ─────────────────────────────────────────────────────────
 
 /**
  * Analyze a basketball player's form from an image using VLM.
@@ -45,9 +45,9 @@ ${drillInstructions ? `Instructions: ${drillInstructions}` : ''}
 Analyse cette image et donne ton évaluation JSON.`
 
   try {
-    // Use z-ai-web-dev-sdk for VLM call
-    const { chat } = await import('z-ai-web-dev-sdk')
-    const result = await chat({
+    // eslint-disable-next-line @typescript-eslint/no-require-await
+    const ZAI = await import('z-ai-web-dev-sdk')
+    const result = await (ZAI as any).chat.completions.create({
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemPrompt },
@@ -62,10 +62,12 @@ Analyse cette image et donne ton évaluation JSON.`
           ],
         },
       ],
-      responseFormat: { type: 'json_object' },
+      response_format: { type: 'json_object' },
     })
 
-    const content = typeof result.content === 'string' ? result.content : JSON.stringify(result.content)
+    const content = typeof result.choices?.[0]?.message?.content === 'string'
+      ? result.choices[0].message.content
+      : JSON.stringify(result)
     const parsed = JSON.parse(content)
 
     // Validate structure
@@ -80,7 +82,7 @@ Analyse cette image et donne ton évaluation JSON.`
     await db.formAnalysis.create({
       data: {
         playerId,
-        score: formCheck.score,
+        overallScore: formCheck.score,
         feedback: formCheck.feedback,
         drillName,
         category,
@@ -143,15 +145,16 @@ Réponds de manière concise (2-4 phrases max sauf si on te demande des détails
   ]
 
   try {
-    const { chat } = await import('z-ai-web-dev-sdk')
-    const result = await chat({
+    // eslint-disable-next-line @typescript-eslint/no-require-await
+    const ZAI = await import('z-ai-web-dev-sdk')
+    const result = await (ZAI as any).chat.completions.create({
       model: 'gpt-4o-mini',
       messages,
     })
 
-    const assistantMessage = typeof result.content === 'string'
-      ? result.content
-      : JSON.stringify(result.content)
+    const assistantMessage = typeof result.choices?.[0]?.message?.content === 'string'
+      ? result.choices[0].message.content
+      : JSON.stringify(result)
 
     // Save both messages
     await Promise.all([
@@ -168,7 +171,7 @@ Réponds de manière concise (2-4 phrases max sauf si on te demande des détails
       error: error instanceof Error ? error.message : String(error),
     })
     throw new AppError(
-      ErrorCode.EXTERNAL_SERVICE_ERROR,
+      ErrorCode.EXTERNAL_SERVICE_SERVICE_ERROR,
       'Erreur lors de la communication avec le coach IA.',
     )
   }
@@ -179,7 +182,7 @@ Réponds de manière concise (2-4 phrases max sauf si on te demande des détails
 /**
  * Generate personalized insights based on player data.
  */
-export async function generateInsights(playerId: string): Promise<AiInsight[]> {
+export async function generateInsights(playerId: string): Promise<any[]> {
   // Gather player data
   const player = await db.player.findUnique({
     where: { id: playerId },
@@ -227,17 +230,20 @@ Dernières séances: ${JSON.stringify(player.sessions.map(s => ({
 Réponds en JSON: [{"type": "strength|weakness|suggestion", "title": "...", "description": "...", "priority": "low|medium|high"}]`
 
   try {
-    const { chat } = await import('z-ai-web-dev-sdk')
-    const result = await chat({
+    // eslint-disable-next-line @typescript-eslint/no-require-await
+    const ZAI = await import('z-ai-web-dev-sdk')
+    const result = await (ZAI as any).chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: 'Tu es un analyste de basketball expert. Réponds UNIQUEMENT en JSON.' },
         { role: 'user', content: prompt },
       ],
-      responseFormat: { type: 'json_object' },
+      response_format: { type: 'json_object' },
     })
 
-    const content = typeof result.content === 'string' ? result.content : JSON.stringify(result.content)
+    const content = typeof result.choices?.[0]?.message?.content === 'string'
+      ? result.choices[0].message.content
+      : JSON.stringify(result)
     const parsed = JSON.parse(content)
     const insights = Array.isArray(parsed) ? parsed : (parsed.insights || parsed.data || [])
 

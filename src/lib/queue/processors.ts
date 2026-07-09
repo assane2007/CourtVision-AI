@@ -73,7 +73,6 @@ export async function processFormAnalysis(
     feedback: 'Analysis not yet implemented',
     issues: [],
     goodPoints: [],
-    duration: Math.round(performance.now() - startMs),
   }
 }
 

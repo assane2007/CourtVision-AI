@@ -59,7 +59,7 @@ export async function chat(
   // Convert messages to SDK format
   const sdkMessages = trimmedMessages.map((m) => ({
     role: m.role,
-    content: m.content,
+    content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
   }))
 
   let lastError: unknown = null
@@ -69,15 +69,13 @@ export async function chat(
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
-      const response = await zai.chat.completions.create({
+      const response = await (zai.chat as any).completions.create({
         model,
         messages: sdkMessages,
         temperature,
         thinking: { type: 'disabled' },
         ...(responseFormat === 'json_object' ? { response_format: { type: 'json_object' } } : {}),
         ...(maxTokens ? { max_tokens: maxTokens } : {}),
-        // @ts-expect-error — signal may not be in the SDK types
-        signal: controller.signal,
       })
 
       clearTimeout(timeoutId)

@@ -172,7 +172,7 @@ export async function detectShotsInFrame(
     const shotType = validTypes.includes(parsed.shotType) ? parsed.shotType : 'missed'
 
     const detection: ShotDetection = {
-      type: shotType,
+      type: shotType as ShotDetection['type'],
       x: clamp(parsed.playerPosition?.x ?? 0.5, 0, 1),
       y: clamp(parsed.playerPosition?.y ?? 0.5, 0, 1),
       confidence: clamp(parsed.confidence ?? 0.5, 0, 1),

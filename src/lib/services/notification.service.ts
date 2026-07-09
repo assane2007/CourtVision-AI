@@ -43,7 +43,7 @@ export async function createNotification(
       type: payload.type,
       title: payload.title,
       body: payload.body,
-      data: payload.data ? JSON.stringify(payload.data) : null,
+      data: payload.data ? JSON.stringify(payload.data) : undefined,
     },
   })
 
@@ -66,7 +66,7 @@ export async function getPlayerNotifications(
 
   const where: any = { playerId }
   if (unreadOnly) {
-    where.read = false
+    where.isRead = false
   }
 
   const cursorWhere = cursor
@@ -85,7 +85,7 @@ export async function getPlayerNotifications(
 
   // Get unread count
   const unreadCount = await db.notification.count({
-    where: { playerId, read: false },
+    where: { playerId, isRead: false },
   })
 
   return {
@@ -119,7 +119,7 @@ export async function markAsRead(
 
   await db.notification.update({
     where: { id: notificationId },
-    data: { read: true },
+    data: { isRead: true },
   })
 }
 
@@ -128,8 +128,8 @@ export async function markAsRead(
  */
 export async function markAllAsRead(playerId: string): Promise<number> {
   const result = await db.notification.updateMany({
-    where: { playerId, read: false },
-    data: { read: true },
+    where: { playerId, isRead: false },
+    data: { isRead: true },
   })
 
   return result.count
@@ -170,13 +170,13 @@ export async function registerPushDevice(
   },
 ): Promise<any> {
   // Check if device already registered
-  const existing = await db.pushDevice.findUnique({
+  const existing = await db.device.findUnique({
     where: { pushToken: data.pushToken },
   })
 
   if (existing) {
     // Update existing
-    return db.pushDevice.update({
+    return db.device.update({
       where: { pushToken: data.pushToken },
       data: {
         playerId,
@@ -189,12 +189,12 @@ export async function registerPushDevice(
     })
   }
 
-  return db.pushDevice.create({
+  return db.device.create({
     data: {
       playerId,
       pushToken: data.pushToken,
-      deviceName: data.deviceName,
-      deviceType: data.deviceType,
+      name: data.deviceName,
+      type: data.deviceType,
       os: data.os,
       appVersion: data.appVersion,
     },
@@ -208,7 +208,7 @@ export async function unregisterPushDevice(
   pushToken: string,
   playerId: string,
 ): Promise<void> {
-  const device = await db.pushDevice.findUnique({
+  const device = await db.device.findUnique({
     where: { pushToken },
     select: { playerId: true },
   })
@@ -217,7 +217,7 @@ export async function unregisterPushDevice(
     throw new AppError(ErrorCode.NOT_FOUND, 'Appareil introuvable')
   }
 
-  await db.pushDevice.delete({ where: { pushToken } })
+  await db.device.delete({ where: { pushToken } })
 }
 
 /**
@@ -232,9 +232,9 @@ export async function sendPushNotification(
   await createNotification(playerId, payload)
 
   // In production, also send via push service
-  const devices = await db.pushDevice.findMany({
+  const devices = await db.device.findMany({
     where: { playerId },
-    select: { pushToken: true, deviceType: true },
+    select: { pushToken: true, type: true },
   })
 
   if (devices.length > 0) {

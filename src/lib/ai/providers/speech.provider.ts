@@ -39,7 +39,7 @@ export async function transcribe(
 
   try {
     const zai = await ZAI.create()
-    const transcription = await zai.audio.asr.create({ file_base64: audioBase64 })
+    const transcription: any = await zai.audio.asr.create({ file_base64: audioBase64 })
 
     const text = typeof transcription === 'string'
       ? transcription
@@ -89,7 +89,7 @@ export async function speak(
 
   try {
     const zai = await ZAI.create()
-    const audioResponse = await zai.audio.tts.create({ input: truncated })
+    const audioResponse: any = await zai.audio.tts.create({ input: truncated })
 
     const base64 = typeof audioResponse === 'string' ? audioResponse : ''
 

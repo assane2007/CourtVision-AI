@@ -157,7 +157,7 @@ export function signAccessToken(player: {
     type: 'access',
   }
 
-  return encodeJwt({ alg: 'HS256', typ: 'JWT' }, payload, key)
+  return encodeJwt({ alg: 'HS256', typ: 'JWT' }, payload as unknown as JwtPayload, key)
 }
 
 /**
@@ -180,7 +180,7 @@ export async function signRefreshToken(
     type: 'refresh',
   }
 
-  const token = encodeJwt({ alg: 'HS256', typ: 'JWT' }, payload, key)
+  const token = encodeJwt({ alg: 'HS256', typ: 'JWT' }, payload as unknown as JwtPayload, key)
 
   // Persist to DB (store hashed token)
   await db.refreshToken.create({
@@ -232,7 +232,7 @@ export function verifyAccessToken(token: string): AccessTokenPayload | null {
   // Check issuer
   if (payload.iss !== ISSUER) return null
 
-  return payload as AccessTokenPayload
+  return payload as unknown as AccessTokenPayload
 }
 
 /**
@@ -248,7 +248,7 @@ export function verifyRefreshToken(token: string): RefreshTokenPayload | null {
   if (payload.type !== 'refresh') return null
   if (payload.iss !== ISSUER) return null
 
-  return payload as RefreshTokenPayload
+  return payload as unknown as RefreshTokenPayload
 }
 
 /**

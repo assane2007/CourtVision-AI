@@ -124,10 +124,10 @@ export async function paginate<T>(
 export function selectFields<T extends Record<string, unknown>>(
   _model: T,
   fields: string[],
-): Record<string, true> {
-  const select: Record<string, true> = {}
-  for (const field of fields) {
-    select[field] = true
+): { select: Record<string, boolean> } {
+  const select: Record<string, boolean> = {}
+  for (const f of fields) {
+    select[f] = true
   }
   return { select }
 }
@@ -252,8 +252,8 @@ export async function safeUpsert<T>(
   _args: Record<string, unknown>,
 ): Promise<T> {
   return (await db.$transaction(async (tx) => {
-    // @ts-expect-error - dynamic Prisma operation
-    return tx.$executeRawUnsafe('') // placeholder — actual implementation per model
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (tx as any).$executeRawUnsafe('') // placeholder — actual implementation per model
   })) as T
 }
 

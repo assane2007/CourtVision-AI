@@ -96,7 +96,7 @@ export async function analyzeForm(
   }
 
   // 6. Parse and validate response
-  const parsed = parseJsonResponse<Record<string, unknown>>(response, null)
+  const parsed = parseJsonResponse<Record<string, unknown>>(response, null as unknown as Record<string, unknown>)
   const result = parseAndValidateFormResult(parsed, lang)
 
   // 7. Store result in DB
@@ -106,10 +106,6 @@ export async function analyzeForm(
         playerId,
         overallScore: result.overallScore,
         feedback: result.feedback,
-        drillName,
-        category,
-        issues: JSON.stringify(result.issues),
-        goodPoints: JSON.stringify(result.goodPoints),
         categories: JSON.stringify(result.categories),
       },
     })

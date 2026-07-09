@@ -173,7 +173,7 @@ export async function createTeam(
 ) {
   const team = await db.team.create({
     data: {
-      creatorId,
+      ownerId: creatorId,
       name: data.name,
       description: data.description ?? null,
       logo: data.logo ?? null,
@@ -257,7 +257,7 @@ export async function createPost(
     isPublic?: boolean
   },
 ) {
-  const post = await db.post.create({
+  const post = await db.feedPost.create({
     data: {
       authorId,
       content: data.content,
@@ -282,15 +282,15 @@ export async function createPost(
  * Like/unlike a post.
  */
 export async function togglePostLike(playerId: string, postId: string): Promise<boolean> {
-  const existing = await db.postLike.findUnique({
+  const existing = await db.feedPostLike.findUnique({
     where: { playerId_postId: { playerId, postId } },
   })
 
   if (existing) {
-    await db.postLike.delete({ where: { playerId_postId: { playerId, postId } } })
+    await db.feedPostLike.delete({ where: { playerId_postId: { playerId, postId } } })
     return false // unliked
   }
 
-  await db.postLike.create({ data: { playerId, postId } })
+  await db.feedPostLike.create({ data: { playerId, postId } })
   return true // liked
 }

@@ -84,7 +84,7 @@ export function corsHeaders(origin?: string): Record<string, string> {
     return {}
   }
 
-  const responseOrigin = allowedOrigins.includes(origin) ? origin : (allowedOrigins[0] || '*')
+  const responseOrigin = (origin && allowedOrigins.includes(origin)) ? origin : (allowedOrigins[0] || '*')
 
   return {
     'Access-Control-Allow-Origin': responseOrigin,

@@ -123,7 +123,7 @@ export async function predictProgression(
         maxTokens: 400,
       })
 
-      const parsed = parseJsonResponse<Record<string, unknown>>(response.content, null)
+      const parsed = parseJsonResponse<Record<string, unknown>>(response.content, null as unknown as Record<string, unknown>)
       const prediction = parseAndValidatePrediction(predType, parsed, lang)
 
       // 7. Store in DB

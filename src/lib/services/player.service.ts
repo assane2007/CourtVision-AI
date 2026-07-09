@@ -184,9 +184,9 @@ export async function getPlayerStats(playerId: string): Promise<PlayerStatsData>
     type: 'workout' as const,
     id: w.id,
     date: w.startedAt.toISOString(),
-    totalDurationSec: w.totalDurationSec ?? undefined,
-    totalScore: w.totalScore ?? undefined,
-    avgScore: w.avgScore ?? undefined,
+    totalDurationSec: w.totalDurationSec ?? undefined as number | undefined,
+    totalScore: w.totalScore ?? undefined as number | undefined,
+    avgScore: w.avgScore ?? undefined as number | undefined,
     totalDrills: w.totalDrills,
     notes: w.notes,
   }))
