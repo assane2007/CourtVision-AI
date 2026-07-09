@@ -18,7 +18,7 @@ export type Screen =
   | 'feed' | 'post-detail' | 'messages' | 'conversation' | 'profile-other'
   | 'live-workout' | 'notifications'
   | 'video-library' | 'video-player' | 'video-upload' | 'video-compare'
-  | 'ai-insights' | 'voice-coach' | 'predictions' | 'ai-workout-gen'
+  | 'ai-insights' | 'voice-coach' | 'predictions' | 'ai-workout-gen' | 'ai-tools'
   | 'terms' | 'privacy'
 
 export interface WorkoutDrillResult {

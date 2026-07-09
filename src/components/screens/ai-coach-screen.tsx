@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, ArrowUp, Trash2, Bot, RefreshCw } from 'lucide-react'
+import { ArrowLeft, ArrowUp, Trash2, Bot, RefreshCw, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAppStore } from '@/stores/app'
@@ -27,9 +27,9 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 interface ChatMessage {
-  role: string
+  role: 'user' | 'assistant' | 'system'
   content: string
-  createdAt: string
+  createdAt?: string
 }
 
 const SUGGESTED_ACTIONS = [
@@ -107,27 +107,34 @@ export default function AICoachScreen() {
         content: trimmed,
         createdAt: new Date().toISOString(),
       }
-      setMessages((prev) => [...prev, userMsg])
+      const newMessages = [...messages, userMsg]
+      setMessages(newMessages)
       setInput('')
       setIsLoading(true)
 
       try {
-        const data = await apiFetch<{ reply: string }>('/api/ai-coach', {
+        // Build history for the API (exclude system messages, last 10 pairs)
+        const historyForApi = newMessages
+          .filter((m) => m.role === 'user' || m.role === 'assistant')
+          .slice(-20)
+          .map(({ role, content }) => ({ role, content }))
+
+        const data = await apiFetch<{ response: string; history: Array<{ role: string; content: string }> }>('/api/ai/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: trimmed }),
+          body: JSON.stringify({ message: trimmed, history: historyForApi }),
         })
 
         const aiMsg: ChatMessage = {
           role: 'assistant',
-          content: data.reply,
+          content: data.response,
           createdAt: new Date().toISOString(),
         }
         setMessages((prev) => [...prev, aiMsg])
       } catch {
         const errMsg: ChatMessage = {
           role: 'assistant',
-          content: t('coach.errorGeneric'),
+          content: 'Désolé, une erreur est survenue. Réessayez.',
           createdAt: new Date().toISOString(),
         }
         setMessages((prev) => [...prev, errMsg])
@@ -136,7 +143,7 @@ export default function AICoachScreen() {
         inputRef.current?.focus()
       }
     },
-    [isLoading, t],
+    [isLoading, messages],
   )
 
   // ── Handle submit ────────────────────────────────────────────────────
@@ -208,7 +215,17 @@ export default function AICoachScreen() {
             </div>
           </div>
 
-          <AlertDialog>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 text-orange-500 hover:text-orange-600 rounded-full"
+              aria-label="AI Tools"
+              onClick={() => useAppStore.getState().navigate('ai-tools')}
+            >
+              <Sparkles className="h-4 w-4" />
+            </Button>
+            <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
                 variant="ghost"
@@ -237,6 +254,7 @@ export default function AICoachScreen() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          </div>
         </div>
       </header>
 

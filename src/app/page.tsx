@@ -57,6 +57,7 @@ const AIInsightsScreen = dynamic(() => import('@/components/screens/ai-insights-
 const VoiceCoachScreen = dynamic(() => import('@/components/screens/voice-coach-screen'), { ssr: false })
 const PredictionsScreen = dynamic(() => import('@/components/screens/predictions-screen'), { ssr: false })
 const AIWorkoutGenScreen = dynamic(() => import('@/components/screens/ai-workout-gen-screen'), { ssr: false })
+const AIToolsScreen = dynamic(() => import('@/components/screens/ai-tools-screen'), { ssr: false })
 const TermsScreen = dynamic(() => import('@/components/screens/terms-screen'), { ssr: false })
 const PrivacyScreen = dynamic(() => import('@/components/screens/privacy-screen'), { ssr: false })
 
@@ -245,6 +246,7 @@ export default function Home() {
           {currentScreen === 'voice-coach' && session && <VoiceCoachScreen />}
           {currentScreen === 'predictions' && session && <PredictionsScreen />}
           {currentScreen === 'ai-workout-gen' && session && <AIWorkoutGenScreen />}
+          {currentScreen === 'ai-tools' && session && <AIToolsScreen />}
           {currentScreen === 'terms' && <TermsScreen />}
           {currentScreen === 'privacy' && <PrivacyScreen />}
           {!session && currentScreen !== 'auth' && currentScreen !== 'landing' && currentScreen !== 'terms' && currentScreen !== 'privacy' && <AuthScreen />}
