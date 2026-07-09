@@ -9,7 +9,7 @@ import crypto from 'crypto'
 
 // POST /api/auth/verify-email
 // Send a new email verification token
-export async function POST(_request) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
