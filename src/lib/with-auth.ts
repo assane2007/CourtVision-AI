@@ -9,7 +9,7 @@ import type { Session } from 'next-auth'
  * and defaults to void for routes without dynamic segments.
  */
 type AuthenticatedHandler<TCtx = void> = (
-  req: Request,
+  req: NextRequest,
   session: Session,
   context: TCtx,
 ) => Promise<NextResponse>
@@ -18,7 +18,7 @@ type AuthenticatedHandler<TCtx = void> = (
  * Handler that receives an optional session (may be null).
  */
 type OptionalAuthHandler<TCtx = void> = (
-  req: Request,
+  req: NextRequest,
   session: Session | null,
   context: TCtx,
 ) => Promise<NextResponse>
