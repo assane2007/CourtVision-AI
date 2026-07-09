@@ -8,7 +8,7 @@ import ZAI from 'z-ai-web-dev-sdk'
 import { sanitize } from '@/lib/sanitize'
 
 // GET /api/recommendations — Smart drill recommendations (rule-based)
-export const GET = withAuth(async (_req, session) => {
+export const GET = withAuth(async (req, session) => {
   try {
     const playerId = session.user.id
 
@@ -118,7 +118,7 @@ export const GET = withAuth(async (_req, session) => {
 })
 
 // POST /api/recommendations — AI-powered personalized recommendations
-export const POST = withAuth(async (_req, session) => {
+export const POST = withAuth(async (req, session) => {
   try {
     const playerId = session.user.id
 

@@ -38,7 +38,7 @@ const ACHIEVEMENTS = [
   { type: 'streak_30', title: 'Roi de la Série', description: '30 jours consécutifs', icon: '👑' },
 ] as const
 
-export const GET = withAuth(async (_req, session) => {
+export const GET = withAuth(async (req, session) => {
   try {
     const rl = rateLimit(`achievements:get:${session.user.id}`, 30, 15 * 60 * 1000)
     if (!rl.success) {

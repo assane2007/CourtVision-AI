@@ -4,7 +4,7 @@ import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
 import { withAuth } from '@/lib/with-auth'
 
-export const POST = withAuth(async (_request, session, { params }) => {
+export const POST = withAuth(async (request, session, { params }) => {
   try {
 
     const rl = rateLimit(`live:join:${session.user.id}`, 20, 15 * 60 * 1000)
@@ -55,7 +55,7 @@ export const POST = withAuth(async (_request, session, { params }) => {
   }
 })
 
-export const DELETE = withAuth(async (_request, session, { params }) => {
+export const DELETE = withAuth(async (request, session, { params }) => {
   try {
 
     const { id: sessionId } = await params

@@ -4,7 +4,7 @@ import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
 import { withAuth } from '@/lib/with-auth'
 
-export const GET = withAuth(async (_request, session, { params }) => {
+export const GET = withAuth(async (request, session, { params }) => {
   try {
 
     const { id: otherPlayerId } = await params
@@ -32,7 +32,7 @@ export const GET = withAuth(async (_request, session, { params }) => {
   }
 })
 
-export const DELETE = withAuth(async (_request, session, { params }) => {
+export const DELETE = withAuth(async (request, session, { params }) => {
   try {
 
     const rl = rateLimit(`friends:delete:${session.user.id}`, 20, 15 * 60 * 1000)

@@ -6,7 +6,7 @@ import { withAuth } from '@/lib/with-auth'
 const VALID_ANNOTATION_TYPES = ['drawing', 'text', 'arrow', 'circle', 'line']
 
 // GET /api/videos/[id]/annotations — List annotations for a video
-export const GET = withAuth(async (_request, session, { params }) => {
+export const GET = withAuth(async (request, session, { params }) => {
   try {
 
     const { id: videoId } = await params
@@ -40,7 +40,7 @@ export const GET = withAuth(async (_request, session, { params }) => {
 })
 
 // POST /api/videos/[id]/annotations — Create an annotation
-export const POST = withAuth(async (_request, session, { params }) => {
+export const POST = withAuth(async (request, session, { params }) => {
   try {
 
     const { id: videoId } = await params

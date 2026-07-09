@@ -6,7 +6,7 @@ import { trackError } from '@/lib/monitoring'
 import { withAuth } from '@/lib/with-auth'
 
 // GET /api/plans/[id] — Single plan with drills
-export const GET = withAuth(async (_request, session, { params }) => {
+export const GET = withAuth(async (request, session, { params }) => {
   try {
 
     const rl = rateLimit(`plans:get:${session.user.id}`, 30, 15 * 60 * 1000)
@@ -46,7 +46,7 @@ export const GET = withAuth(async (_request, session, { params }) => {
 })
 
 // PATCH /api/plans/[id] — Update plan
-export const PATCH = withAuth(async (_request, session, { params }) => {
+export const PATCH = withAuth(async (request, session, { params }) => {
   try {
 
     const rateResult = rateLimit(`plans:patch:${session.user.email}`, 20, 15 * 60 * 1000)
@@ -127,7 +127,7 @@ export const PATCH = withAuth(async (_request, session, { params }) => {
 })
 
 // DELETE /api/plans/[id] — Delete plan
-export const DELETE = withAuth(async (_request, session, { params }) => {
+export const DELETE = withAuth(async (request, session, { params }) => {
   try {
 
     const rateResult = rateLimit(`plans:delete:${session.user.email}`, 20, 15 * 60 * 1000)

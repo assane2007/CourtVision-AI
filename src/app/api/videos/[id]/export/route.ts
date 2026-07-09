@@ -7,7 +7,7 @@ const VALID_EXPORT_TYPES = ['gif', 'mp4', 'webm']
 const VALID_QUALITIES = ['low', 'medium', 'high']
 
 // GET /api/videos/[id]/export — List exports for a video
-export const GET = withAuth(async (_request, session, { params }) => {
+export const GET = withAuth(async (request, session, { params }) => {
   try {
 
     const { id: videoId } = await params
@@ -29,7 +29,7 @@ export const GET = withAuth(async (_request, session, { params }) => {
 })
 
 // POST /api/videos/[id]/export — Start a new export job
-export const POST = withAuth(async (_request, session, { params }) => {
+export const POST = withAuth(async (request, session, { params }) => {
   try {
 
     const { id: videoId } = await params

@@ -6,7 +6,7 @@ import { withCache } from '@/lib/cache'
 import { trackError } from '@/lib/monitoring'
 
 // GET /api/records — Personal records per drill for authenticated user
-export const GET = withAuth(async (_req, session) => {
+export const GET = withAuth(async (req, session) => {
   try {
     const playerId = session.user.id
 

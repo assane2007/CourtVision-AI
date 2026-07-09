@@ -6,7 +6,7 @@ import { withAuth } from '@/lib/with-auth'
 
 // POST /api/videos/[id]/highlights/generate — AI-powered highlight generation
 // Uses z-ai-web-dev-sdk LLM to analyze video metadata and session data
-export const POST = withAuth(async (_request, session, { params }) => {
+export const POST = withAuth(async (request, session, { params }) => {
   try {
 
     const { id: videoId } = await params

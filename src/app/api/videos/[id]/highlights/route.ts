@@ -4,7 +4,7 @@ import { trackError } from '@/lib/monitoring'
 import { withAuth } from '@/lib/with-auth'
 
 // GET /api/videos/[id]/highlights — List highlights for a video
-export const GET = withAuth(async (_request, session, { params }) => {
+export const GET = withAuth(async (request, session, { params }) => {
   try {
 
     const { id: videoId } = await params
@@ -37,7 +37,7 @@ export const GET = withAuth(async (_request, session, { params }) => {
 })
 
 // POST /api/videos/[id]/highlights — Create a manual highlight
-export const POST = withAuth(async (_request, session, { params }) => {
+export const POST = withAuth(async (request, session, { params }) => {
   try {
 
     const { id: videoId } = await params

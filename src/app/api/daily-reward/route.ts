@@ -3,7 +3,7 @@ import { withAuth } from '@/lib/with-auth'
 import { claimDailyLoginReward } from '@/lib/daily-reward'
 import { trackError } from '@/lib/monitoring'
 
-export const POST = withAuth(async (_req, session) => {
+export const POST = withAuth(async (req, session) => {
   try {
     const result = await claimDailyLoginReward(session.user.id)
     return NextResponse.json(result)

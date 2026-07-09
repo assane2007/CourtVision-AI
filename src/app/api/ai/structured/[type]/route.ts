@@ -10,7 +10,7 @@ const VALID_TYPES = ['form_analysis', 'workout_plan', 'weakness_report'] as cons
 type StructuredType = (typeof VALID_TYPES)[number]
 
 // GET /api/ai/structured/[type] — Structured AI output by type
-export const GET = withAuth(async (_request, session, { params }) => {
+export const GET = withAuth(async (request, session, { params }) => {
   let structType: string | undefined
   try {
 

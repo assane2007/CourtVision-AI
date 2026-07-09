@@ -3,7 +3,7 @@ import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { withAuth } from '@/lib/with-auth'
 
-export const GET = withAuth(async (_request, session, { params }) => {
+export const GET = withAuth(async (request, session, { params }) => {
   try {
 
     const { id: conversationId } = await params
@@ -45,7 +45,7 @@ export const GET = withAuth(async (_request, session, { params }) => {
   }
 })
 
-export const PATCH = withAuth(async (_request, session, { params }) => {
+export const PATCH = withAuth(async (request, session, { params }) => {
   try {
 
     const { id: conversationId } = await params
