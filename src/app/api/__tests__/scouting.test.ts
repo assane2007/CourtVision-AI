@@ -32,6 +32,10 @@ vi.mock('@/lib/auth', () => ({
   authOptions: {},
 }))
 
+vi.mock('@/lib/cache', () => ({
+  withCache: (_key: string, _ttl: number, fetcher: () => Promise<unknown>) => fetcher(),
+}))
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const authenticatedSession = {
@@ -206,14 +210,15 @@ describe('GET /api/scouting', () => {
     expect(res.status).toBe(200)
     const data = await res.json()
 
-    // All categories should have 0 values
+    // Categories with no data should be estimated based on level
     for (const cat of data.categories) {
-      expect(cat.avgScore).toBe(0)
+      expect(cat.estimated).toBe(true)
       expect(cat.totalReps).toBe(0)
       expect(cat.totalSessions).toBe(0)
       expect(cat.lastScores).toEqual([])
     }
 
+    // overallScore is 0 because all categories are estimated (excluded)
     expect(data.overallScore).toBe(0)
     expect(data.overallGrade).toBe('F')
     expect(data.totalWorkouts).toBe(0)

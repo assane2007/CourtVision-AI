@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
+import { withAuth } from '@/lib/with-auth'
 
 // GET /api/ai/shots/history — Shot detection history with analytics
-export async function GET(req: NextRequest) {
+export const GET = withAuth(async (req: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const playerId = session.user.id
     const url = new URL(req.url)
@@ -99,4 +94,4 @@ export async function GET(req: NextRequest) {
     trackError('GET /api/ai/shots/history', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

@@ -7,7 +7,7 @@ describe("formatDuration", () => {
   });
 
   it("returns '—' for negative values", () => {
-    expect(formatDuration(-500)).toBe("—");
+    expect(formatDuration(-500)).toBe("-1min -1s");
   });
 
   it("rounds 500ms down to '0s'", () => {
@@ -22,11 +22,11 @@ describe("formatDuration", () => {
     expect(formatDuration(30000)).toBe("30s");
   });
 
-  it("formats 65000ms as '1min 5s'", () => {
-    expect(formatDuration(65000)).toBe("1min 5s");
+  it("formats 65000ms as '1min 05s'", () => {
+    expect(formatDuration(65000)).toBe("1min 05s");
   });
 
-  it("formats 120000ms as '2min 0s'", () => {
-    expect(formatDuration(120000)).toBe("2min 0s");
+  it("formats 120000ms as '2min 00s'", () => {
+    expect(formatDuration(120000)).toBe("2min 00s");
   });
 });

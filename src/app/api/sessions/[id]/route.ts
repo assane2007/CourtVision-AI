@@ -1,21 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { endSessionSchema, getZodErrorMessage } from '@/lib/validations'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
+import { withAuth } from '@/lib/with-auth'
 
 // GET /api/sessions/[id] — Single session with drill details
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const GET = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const rl = rateLimit(`sessions:get:${session.user.id}`, 30, 15 * 60 * 1000)
     if (!rl.success) {
@@ -45,18 +37,11 @@ export async function GET(
     trackError('GET /api/sessions/[id]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
 // PATCH /api/sessions/[id] — End/update a session (e.g., add final score, notes)
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const PATCH = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const rateResult = rateLimit(`sessions:patch:${session.user.email}`, 20, 15 * 60 * 1000)
     if (!rateResult.success) {
@@ -101,18 +86,11 @@ export async function PATCH(
     trackError('PATCH /api/sessions/[id]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
 // DELETE /api/sessions/[id] — Delete a session
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const DELETE = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const rateResult = rateLimit(`sessions:delete:${session.user.email}`, 20, 15 * 60 * 1000)
     if (!rateResult.success) {
@@ -138,4 +116,4 @@ export async function DELETE(
     trackError('DELETE /api/sessions/[id]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

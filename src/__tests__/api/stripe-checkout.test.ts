@@ -28,14 +28,17 @@ vi.mock('@/lib/rate-limit', () => ({
 const mockStripeCreate = vi.fn().mockResolvedValue({ id: 'cs_test_123', url: 'https://checkout.stripe.com/c/cs_test_123' })
 const mockCustomerCreate = vi.fn().mockResolvedValue({ id: 'cus_existing' })
 
-vi.mock('stripe', () => ({
-  default: vi.fn().mockImplementation(() => ({
-    customers: { create: (...args: unknown[]) => mockCustomerCreate(...args) },
-    checkout: {
-      sessions: { create: (...args: unknown[]) => mockStripeCreate(...args) },
-    },
-  })),
-}))
+vi.mock('stripe', () => {
+  function MockStripe(this: unknown) {
+    return {
+      customers: { create: (...args: unknown[]) => mockCustomerCreate(...args) },
+      checkout: {
+        sessions: { create: (...args: unknown[]) => mockStripeCreate(...args) },
+      },
+    }
+  }
+  return { default: MockStripe }
+})
 
 const authedSession = { user: { id: 'p1', email: 't@t.com' } }
 

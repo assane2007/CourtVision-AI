@@ -23,6 +23,9 @@ const mockDb = {
   team: {
     findUnique: vi.fn(),
   },
+  friendship: {
+    findMany: vi.fn().mockResolvedValue([]),
+  },
 }
 
 vi.mock('@/lib/db', () => ({ db: mockDb }))

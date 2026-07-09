@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { z } from 'zod'
 import Stripe from 'stripe'
+import { withAuth } from '@/lib/with-auth'
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-06-24.dahlia' })
@@ -17,12 +16,8 @@ const PRICE_MAP: Record<string, string> = {
   elite_annual: 'price_elite_annual',
 }
 
-export async function POST(req: Request) {
+export const POST = withAuth(async (req: Request, session) => {
   // Auth check
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  }
 
   // Rate limit
   const rl = rateLimit(session.user.id, 5, 60_000)
@@ -97,4 +92,4 @@ export async function POST(req: Request) {
   })
 
   return NextResponse.json({ url: checkoutSession.url })
-}
+})

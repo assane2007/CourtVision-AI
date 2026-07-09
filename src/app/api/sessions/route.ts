@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { createSessionSchema, getZodErrorMessage } from '@/lib/validations'
 import { rateLimit } from '@/lib/rate-limit'
@@ -9,15 +7,12 @@ import { trackError } from '@/lib/monitoring'
 import { awardXp } from '@/lib/award-xp'
 import { calculateWorkoutXp, calculateStreakXp } from '@/lib/xp'
 import { calculateStreak } from '@/lib/streak'
+import { withAuth } from '@/lib/with-auth'
 
 // POST /api/sessions — Create a new workout session with drill results
 // XP is awarded SERVER-SIDE based on validated drill scores.
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const rateResult = rateLimit(`sessions:post:${session.user.email}`, 20, 15 * 60 * 1000)
     if (!rateResult.success) {
@@ -153,15 +148,11 @@ export async function POST(req: NextRequest) {
     trackError('POST /api/sessions', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
 // GET /api/sessions — List user's workout sessions (paginated)
-export async function GET(req: NextRequest) {
+export const GET = withAuth(async (req: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const rl = rateLimit(`sessions:get:${session.user.id}`, 30, 15 * 60 * 1000)
     if (!rl.success) {
@@ -229,4 +220,4 @@ export async function GET(req: NextRequest) {
     trackError('GET /api/sessions', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

@@ -26,7 +26,7 @@ const mockDb = {
   formAnalysis: { findMany: vi.fn() },
   shotDetection: { findMany: vi.fn() },
   playerInsight: { findMany: vi.fn(), createMany: vi.fn() },
-  achievementUnlock: { findMany: vi.fn() },
+  achievement: { findMany: vi.fn() },
   playerDocument: { findMany: vi.fn() },
 }
 
@@ -85,7 +85,7 @@ describe('GET /api/ai/insights', () => {
     ;(mockDb.formAnalysis.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
     ;(mockDb.shotDetection.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
     ;(mockDb.playerInsight.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
-    ;(mockDb.achievementUnlock.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
+    ;(mockDb.achievement.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
     ;(mockDb.playerDocument.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
     vi.resetModules()
     const { GET } = await import('@/app/api/ai/insights/route')
@@ -103,7 +103,7 @@ describe('GET /api/ai/insights', () => {
     ;(mockDb.formAnalysis.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
     ;(mockDb.shotDetection.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
     ;(mockDb.playerInsight.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
-    ;(mockDb.achievementUnlock.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
+    ;(mockDb.achievement.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
     ;(mockDb.playerDocument.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
     mockChatCompletionsCreate.mockResolvedValue({
       choices: [{ message: { content: JSON.stringify({ insights: [
@@ -140,7 +140,7 @@ describe('GET /api/ai/insights', () => {
     ;(mockDb.formAnalysis.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
     ;(mockDb.shotDetection.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
     ;(mockDb.playerInsight.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
-    ;(mockDb.achievementUnlock.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
+    ;(mockDb.achievement.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
     ;(mockDb.playerDocument.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
     vi.resetModules()
     const { GET } = await import('@/app/api/ai/insights/route')
@@ -162,7 +162,7 @@ describe('GET /api/ai/insights', () => {
     ;(mockDb.formAnalysis.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
     ;(mockDb.shotDetection.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
     ;(mockDb.playerInsight.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
-    ;(mockDb.achievementUnlock.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
+    ;(mockDb.achievement.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
     ;(mockDb.playerDocument.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
     vi.resetModules()
     const { GET } = await import('@/app/api/ai/insights/route')

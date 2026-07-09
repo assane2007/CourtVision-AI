@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
 import ZAI from 'z-ai-web-dev-sdk'
 import { sanitize } from '@/lib/sanitize'
+import { withAuth } from '@/lib/with-auth'
 
 // POST /api/ai/rag/query — Query player data with LLM using RAG context
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const playerId = session.user.id
 
@@ -96,4 +91,4 @@ Règles:
     trackError('POST /api/ai/rag/query', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

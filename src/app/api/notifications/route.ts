@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
+import { withAuth } from '@/lib/with-auth'
 
-export async function GET(request: Request) {
+export const GET = withAuth(async (request: Request, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const rl = rateLimit(`notifications:${session.user.id}`, 60, 15 * 60 * 1000)
     if (!rl.success) {
@@ -25,22 +20,23 @@ export async function GET(request: Request) {
     const where: Record<string, unknown> = { playerId: session.user.id }
     if (unreadOnly) where.isRead = false
 
-    const notifications = await db.notification.findMany({
-      where,
-      take: limit + 1,
-      ...(cursor && {
-        cursor: { id: cursor },
-        skip: 1,
+    const [notifications, unreadCount] = await Promise.all([
+      db.notification.findMany({
+        where,
+        take: limit + 1,
+        ...(cursor && {
+          cursor: { id: cursor },
+          skip: 1,
+        }),
+        orderBy: { createdAt: 'desc' },
       }),
-      orderBy: { createdAt: 'desc' },
-    })
+      db.notification.count({
+        where: { playerId: session.user.id, isRead: false },
+      }),
+    ])
 
     const hasMore = notifications.length > limit
     if (hasMore) notifications.pop()
-
-    const unreadCount = await db.notification.count({
-      where: { playerId: session.user.id, isRead: false },
-    })
 
     return NextResponse.json({
       notifications: notifications.map(n => ({
@@ -59,14 +55,10 @@ export async function GET(request: Request) {
     trackError('GET /api/notifications', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = withAuth(async (request: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const body = await request.json()
     const { notificationId, markAll } = body
@@ -98,4 +90,4 @@ export async function PATCH(request: NextRequest) {
     trackError('PATCH /api/notifications', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

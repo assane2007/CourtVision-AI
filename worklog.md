@@ -3094,3 +3094,65 @@ Stage Summary:
 - Sentry SDK correctly initializes and transmits events to the configured DSN
 - Events should appear in Sentry Issues dashboard within ~30 seconds
 - All temporary changes reverted, no test artifacts remaining
+---
+Task ID: omega-push-56-to-90
+Agent: Main + 8 sub-agents
+Task: Push OMEGA audit score from ~82 to ~90
+
+Work Log:
+
+T1 — API Route Tests (227 new tests):
+- player.test.ts: 26 tests (GET/PATCH/DELETE with auth, privacy, validation, rate limits)
+- account.test.ts: 19 tests (soft/hard delete, reactivation, grace period)
+- settings.test.ts: 17 tests (GET/PATCH with Zod validation, all setting types)
+- videos.test.ts: 26 tests (GET/PATCH/DELETE with ownership, path traversal)
+- drills-create.test.ts: 15 tests (validation, creation, cache)
+- plans.test.ts: 35 tests (CRUD with drills, ownership, transactions)
+- auth-signup.test.ts: 15 tests (validation, bcrypt, uniqueness, XP)
+- auth-2fa.test.ts: 14 tests (TOTP, backup codes, setup)
+- teams.test.ts: 31 tests (CRUD, ownership, members, leaderboard)
+- challenges.test.ts: 29 tests (CRUD, tab filtering, participation, leaderboard)
+
+T2 — Utils Tests (50 new tests):
+- with-auth.test.ts: 12 tests (withAuth, withAdmin, withOptionalAuth)
+- monitoring.test.ts: 11 tests (trackError, trackEvent, metrics)
+- i18n.test.ts: 27 tests (t(), language switching, 713+ keys, parity)
+
+T3 — File Split: video-player-screen.tsx
+- 924 → 518 lines (44% reduction)
+- 4 new files: use-video-player.ts (213L), annotation-canvas.tsx (234L), share-panel.tsx (77L), video-info-card.tsx (31L)
+
+T4 — File Split: settings-screen.tsx
+- 782 → 301 lines (61.5% reduction)
+- 5 new files: weekly-goals-section.tsx, preferences-section.tsx, billing-section.tsx, devices-section.tsx, settings-skeleton.tsx
+
+T5 — File Split: auth-screen.tsx (already done)
+- 293 lines main + login-form.tsx (141L) + signup-form.tsx (164L) + reset-password-form.tsx (324L)
+
+T6 — withAuth() HOF Expansion:
+- 56 additional files, 96 additional handlers converted
+- Total: 71 files / 117 handlers using withAuth()
+- ~300 lines of auth boilerplate eliminated
+
+T7a — N+1 Query Optimization:
+- 12 routes optimized, ~30 sequential DB calls parallelized with Promise.all
+- Key wins: challenges (50→1 query), sync/pull (4→1 round-trip), stats (merged into 7-way Promise.all)
+
+T7b — Zod Validation:
+- 5 new schemas: createLiveSessionSchema, liveScoreUpdateSchema, syncPushSchema, pushRegisterSchema, registerDeviceSchema
+- 5 routes validated: live, live/[id]/score, sync/push, notifications/push/register, devices
+
+Sentry Configuration Update:
+- org: 'court-vision', project: 'javascript-nextjs-xq'
+- tracesSampleRate: 1.0 across all runtimes
+- browserTracingIntegration() + tracePropagationTargets added
+- Verified event transmission to Sentry ingest (TCP + HTTPS)
+
+Stage Summary:
+- Total tests: 674 (up from ~79, ~750% increase)
+- Files split: 3 major files reduced by 44-62%
+- withAuth adoption: 71 files, 117 handlers
+- N+1 fixes: 12 routes, ~30 queries parallelized
+- Zod validation: 5 new schemas
+- Lint: 0 errors, 0 warnings
+- Estimated OMEGA score: ~82 → ~88-90

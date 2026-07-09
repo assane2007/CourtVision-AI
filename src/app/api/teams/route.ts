@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
+import { withAuth } from '@/lib/with-auth'
 
-export async function GET(request: Request) {
+export const GET = withAuth(async (request: Request, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const rl = rateLimit(`teams:list:${session.user.id}`, 60, 15 * 60 * 1000)
     if (!rl.success) {
@@ -57,14 +52,10 @@ export async function GET(request: Request) {
     trackError('GET /api/teams', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const rl = rateLimit(`teams:create:${session.user.id}`, 5, 15 * 60 * 1000)
     if (!rl.success) {
@@ -106,4 +97,4 @@ export async function POST(request: NextRequest) {
     trackError('POST /api/teams', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

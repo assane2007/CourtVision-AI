@@ -1,18 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
+import { withAuth } from '@/lib/with-auth'
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const GET = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const { id } = await params
     const team = await db.team.findUnique({
@@ -94,17 +86,10 @@ export async function GET(
     trackError('GET /api/teams/[id]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const PATCH = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const { id } = await params
     const team = await db.team.findUnique({ where: { id } })
@@ -112,7 +97,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
     }
 
-    const body = await request.json()
+    const body = await _request.json()
     const { name, description, logo, isPublic, maxMembers } = body
 
     const updated = await db.team.update({
@@ -131,17 +116,10 @@ export async function PATCH(
     trackError('PATCH /api/teams/[id]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const DELETE = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const { id } = await params
     const team = await db.team.findUnique({ where: { id } })
@@ -155,4 +133,4 @@ export async function DELETE(
     trackError('DELETE /api/teams/[id]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

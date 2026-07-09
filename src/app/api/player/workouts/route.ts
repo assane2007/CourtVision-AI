@@ -128,17 +128,19 @@ export async function POST(req: NextRequest) {
     });
 
     // Check achievements using WorkoutSession and Achievement models
-    const allWorkouts = await db.workoutSession.count({ where: { playerId: player.id } });
-    // MatchLog model removed — pass 0 for match count
-    const allMatches = 0;
-
-    const existingAchievements = await db.achievement.findMany({
-      where: { playerId: player.id },
-      select: { type: true },
-    });
+    const [allWorkouts, existingAchievements] = await Promise.all([
+      db.workoutSession.count({ where: { playerId: player.id } }),
+      db.achievement.findMany({
+        where: { playerId: player.id },
+        select: { type: true },
+      }),
+    ]);
     const unlockedIds = existingAchievements.map((a) => a.type);
 
     const totalXP = player.xp + xpEarned;
+
+    // MatchLog model removed — pass 0 for match count
+    const allMatches = 0;
 
     const newAchievementIds = checkNewAchievements(
       allWorkouts,
@@ -209,15 +211,16 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const limit = parseInt(url.searchParams.get("limit") ?? "50", 10);
 
-    const totalCount = await db.workoutSession.count({
-      where: { playerId: player.id },
-    });
-
-    const workouts = await db.workoutSession.findMany({
-      where: { playerId: player.id },
-      orderBy: { startedAt: "desc" },
-      take: Math.min(limit, 200),
-    });
+    const [totalCount, workouts] = await Promise.all([
+      db.workoutSession.count({
+        where: { playerId: player.id },
+      }),
+      db.workoutSession.findMany({
+        where: { playerId: player.id },
+        orderBy: { startedAt: "desc" },
+        take: Math.min(limit, 200),
+      }),
+    ]);
 
     return NextResponse.json({
       totalCount,

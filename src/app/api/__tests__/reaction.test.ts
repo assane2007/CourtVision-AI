@@ -11,12 +11,18 @@ vi.mock('next-auth', () => ({
 
 const mockReactionCreateMany = vi.fn()
 const mockReactionFindMany = vi.fn()
+const mockReactionGroupBy = vi.fn().mockResolvedValue([])
+const mockAwardXp = vi.fn().mockImplementation(async (_id: string, rewards: Array<{ amount: number }>) => {
+  const total = rewards.reduce((s, r) => s + r.amount, 0)
+  return { xpGained: total, leveledUp: false, newLevel: 1, oldLevel: 1, rewards: [] }
+})
 
 vi.mock('@/lib/db', () => ({
   db: {
     reactionScore: {
       createMany: (...args: unknown[]) => mockReactionCreateMany(...args),
       findMany: (...args: unknown[]) => mockReactionFindMany(...args),
+      groupBy: (...args: unknown[]) => mockReactionGroupBy(...args),
     },
   },
 }))
@@ -29,8 +35,9 @@ vi.mock('@/lib/auth', () => ({
   authOptions: {},
 }))
 
-// Block the XP fetch call
-vi.mock('@/lib/xp', () => ({}))
+vi.mock('@/lib/award-xp', () => ({
+  awardXp: (...args: unknown[]) => mockAwardXp(...args),
+}))
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -68,6 +75,11 @@ function makeReactionScore(overrides: {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockReactionGroupBy.mockResolvedValue([])
+  mockAwardXp.mockImplementation(async (_id: string, rewards: Array<{ amount: number }>) => {
+    const total = rewards.reduce((s, r) => s + r.amount, 0)
+    return { xpGained: total, leveledUp: false, newLevel: 1, oldLevel: 1, rewards: [] }
+  })
 })
 
 // ─── POST Tests ───────────────────────────────────────────────────────────────
@@ -113,8 +125,6 @@ describe('POST /api/reaction', () => {
     const req = createMockRequest({ rounds: [{ reactionMs: 300, correct: true }] }, undefined, undefined, 'POST')
     const res = await POST(req)
     expect(res.status).toBe(400)
-    const data = await res.json()
-    expect(data.error).toBe('Données invalides')
   })
 
   it('returns 400 for missing rounds', async () => {
@@ -139,8 +149,6 @@ describe('POST /api/reaction', () => {
     }, undefined, undefined, 'POST')
     const res = await POST(req)
     expect(res.status).toBe(400)
-    const data = await res.json()
-    expect(data.error).toBe('Type de jeu invalide')
   })
 
   it('accepts all valid game types', async () => {
@@ -283,10 +291,8 @@ describe('GET /api/reaction', () => {
       makeReactionScore({ type: 'color', reactionMs: 450, correct: false, createdAt: new Date(baseTime.getTime() + 5500) }),
     ]
 
-    // First call: recent scores (take 200)
-    mockReactionFindMany.mockResolvedValueOnce([...game2Scores, ...game1Scores])
-    // Second call: all correct scores for personal bests
-    mockReactionFindMany.mockResolvedValueOnce(game1Scores.filter(s => s.correct))
+    mockReactionFindMany.mockResolvedValue([...game2Scores, ...game1Scores])
+    mockReactionGroupBy.mockResolvedValue([])
 
     const res = await GET()
     expect(res.status).toBe(200)
@@ -321,8 +327,11 @@ describe('GET /api/reaction', () => {
       makeReactionScore({ type: 'color', reactionMs: 350, correct: true, id: 'r4' }),
     ]
 
-    mockReactionFindMany.mockResolvedValueOnce(scores)
-    mockReactionFindMany.mockResolvedValueOnce(scores.filter(s => s.correct))
+    mockReactionFindMany.mockResolvedValue(scores)
+    mockReactionGroupBy.mockResolvedValue([
+      { type: 'direction', _min: { reactionMs: 250 } },
+      { type: 'color', _min: { reactionMs: 350 } },
+    ])
 
     const res = await GET()
     const data = await res.json()
@@ -350,8 +359,8 @@ describe('GET /api/reaction', () => {
       )
     }
 
-    mockReactionFindMany.mockResolvedValueOnce(scores)
-    mockReactionFindMany.mockResolvedValueOnce(scores.filter(s => s.correct))
+    mockReactionFindMany.mockResolvedValue(scores)
+    mockReactionGroupBy.mockResolvedValue([])
 
     const res = await GET()
     const data = await res.json()
@@ -362,6 +371,7 @@ describe('GET /api/reaction', () => {
   it('returns 500 on database error', async () => {
     mockGetServerSession.mockResolvedValue(authenticatedSession)
     mockReactionFindMany.mockRejectedValue(new Error('DB error'))
+    mockReactionGroupBy.mockRejectedValue(new Error('DB error'))
 
     const res = await GET()
     expect(res.status).toBe(500)

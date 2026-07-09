@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // ── Mocks ──────────────────────────────────────────────────────────────────────
 
 const mockGetServerSession = vi.fn()
+const mockRequireSubscription = vi.fn().mockResolvedValue(true)
+const mockSubscriptionError = vi.fn().mockReturnValue({ status: 403 })
 vi.mock('next-auth', () => ({
   getServerSession: (...args: unknown[]) => mockGetServerSession(...args),
 }))
@@ -12,8 +14,8 @@ vi.mock('@/lib/auth', () => ({
 }))
 
 vi.mock('@/lib/require-subscription', () => ({
-  requireSubscription: vi.fn().mockResolvedValue(true),
-  subscriptionError: vi.fn().mockReturnValue({ status: 403 }),
+  requireSubscription: (...args: unknown[]) => mockRequireSubscription(...args),
+  subscriptionError: (...args: unknown[]) => mockSubscriptionError(...args),
 }))
 
 vi.mock('@/lib/sanitize', () => ({
@@ -33,7 +35,7 @@ const mockDb = {
   shotDetection: {
     findMany: vi.fn(),
   },
-  achievementUnlock: {
+  achievement: {
     findMany: vi.fn(),
   },
   prediction: {
@@ -101,7 +103,7 @@ function setupPlayerMocks() {
   ;(mockDb.shotDetection.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([
     { type: 'made' }, { type: 'missed' }, { type: 'made' },
   ])
-  ;(mockDb.achievementUnlock.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
+  ;(mockDb.achievement.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
   ;(mockDb.prediction.create as ReturnType<typeof vi.fn>).mockResolvedValue({})
 }
 
@@ -111,6 +113,7 @@ describe('POST /api/ai/predictions/generate', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     mockGetServerSession.mockResolvedValue(null)
+    mockRequireSubscription.mockResolvedValue(true)
     allowRateLimit()
   })
 
@@ -167,7 +170,7 @@ describe('POST /api/ai/predictions/generate', () => {
     ;(mockDb.workoutSession.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
     ;(mockDb.formAnalysis.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
     ;(mockDb.shotDetection.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
-    ;(mockDb.achievementUnlock.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
+    ;(mockDb.achievement.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
 
     vi.resetModules()
     const { POST } = await import('@/app/api/ai/predictions/generate/route')
@@ -236,6 +239,7 @@ describe('POST /api/ai/predictions/generate', () => {
     mockGetServerSession.mockResolvedValue(authedSession)
     setupPlayerMocks()
 
+    mockChatCompletionsCreate.mockClear()
     mockChatCompletionsCreate.mockResolvedValue({
       choices: [{
         message: {

@@ -1,20 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
 import { requireSubscription, subscriptionError } from '@/lib/require-subscription'
 import ZAI from 'z-ai-web-dev-sdk'
 import { sanitize } from '@/lib/sanitize'
+import { withAuth } from '@/lib/with-auth'
 
 // POST /api/ai/voice/coach — Voice coaching: transcribe + get AI response + TTS
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const hasAccess = await requireSubscription(session.user.id, 'pro')
     if (!hasAccess) return subscriptionError('pro')
@@ -105,15 +100,11 @@ Réponds en français, de manière directe et utile pour un joueur en plein entr
     trackError('POST /api/ai/voice/coach', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
 // GET /api/ai/voice/coach — Voice session history
-export async function GET(req: NextRequest) {
+export const GET = withAuth(async (req: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const playerId = session.user.id
     const url = new URL(req.url)
@@ -139,4 +130,4 @@ export async function GET(req: NextRequest) {
     trackError('GET /api/ai/voice/coach', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

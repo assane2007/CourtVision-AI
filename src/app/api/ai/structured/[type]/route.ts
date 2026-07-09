@@ -1,26 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
 import ZAI from 'z-ai-web-dev-sdk'
 import { sanitize } from '@/lib/sanitize'
+import { withAuth } from '@/lib/with-auth'
 
 const VALID_TYPES = ['form_analysis', 'workout_plan', 'weakness_report'] as const
 type StructuredType = (typeof VALID_TYPES)[number]
 
 // GET /api/ai/structured/[type] — Structured AI output by type
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ type: string }> },
-) {
+export const GET = withAuth<{ type: string }>(async (_request: Request, session, { params }) => {
   let structType: string | undefined
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const resolvedParams = await params
     structType = resolvedParams.type
@@ -168,4 +160,4 @@ ${responseFormat}`
     trackError(`GET /api/ai/structured/${structType ?? 'unknown'}`, error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

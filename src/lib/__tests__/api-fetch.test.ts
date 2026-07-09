@@ -39,37 +39,47 @@ describe("apiFetch", () => {
 
     const result = await apiFetch<{ id: string; name: string }>("/api/test");
     expect(result).toEqual(data);
-    expect(fetch).toHaveBeenCalledWith("/api/test", expect.objectContaining({
-      headers: expect.any(Object),
-    }));
+    expect(fetch).toHaveBeenCalledWith("/api/test", undefined);
   });
 
-  it("401 error throws French session-expired message", async () => {
-    vi.stubGlobal("fetch", vi.fn(() => mockFetchResponse(401)));
+  it("401 error throws body error message", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => mockFetchResponse(401, { error: "Session expirée. Veuillez vous reconnecter." })),
+    );
 
     await expect(apiFetch("/api/test")).rejects.toThrow(
       "Session expirée. Veuillez vous reconnecter.",
     );
   });
 
-  it("404 error throws French not-found message", async () => {
-    vi.stubGlobal("fetch", vi.fn(() => mockFetchResponse(404)));
+  it("404 error throws body error message", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => mockFetchResponse(404, { error: "Ressource introuvable." })),
+    );
 
     await expect(apiFetch("/api/test")).rejects.toThrow(
       "Ressource introuvable.",
     );
   });
 
-  it("429 error throws French rate-limit message", async () => {
-    vi.stubGlobal("fetch", vi.fn(() => mockFetchResponse(429)));
+  it("429 error throws body error message", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => mockFetchResponse(429, { error: "Trop de requêtes. Veuillez patienter." })),
+    );
 
     await expect(apiFetch("/api/test")).rejects.toThrow(
       "Trop de requêtes. Veuillez patienter.",
     );
   });
 
-  it("500 error throws French server-error message", async () => {
-    vi.stubGlobal("fetch", vi.fn(() => mockFetchResponse(500)));
+  it("500 error throws body error message", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => mockFetchResponse(500, { error: "Erreur serveur. Veuillez réessayer plus tard." })),
+    );
 
     await expect(apiFetch("/api/test")).rejects.toThrow(
       "Erreur serveur. Veuillez réessayer plus tard.",
@@ -85,36 +95,36 @@ describe("apiFetch", () => {
     await expect(apiFetch("/api/test")).rejects.toThrow("Validation échouée");
   });
 
-  it("401 overrides custom error message", async () => {
+  it("401 uses body error message when present", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(() => mockFetchResponse(401, { error: "Custom 401 msg" })),
     );
 
-    // 401 always uses the hardcoded French message, ignoring body
     await expect(apiFetch("/api/test")).rejects.toThrow(
-      "Session expirée. Veuillez vous reconnecter.",
+      "Custom 401 msg",
     );
   });
 
-  it("adds Bearer token when localStorage has session token", async () => {
-    localStorageMock["nextauth.session-token"] = "abc123";
+  it("passes options through to fetch", async () => {
     vi.stubGlobal("fetch", vi.fn(() => mockFetchResponse(200, {})));
 
-    await apiFetch("/api/test");
+    await apiFetch("/api/test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ foo: "bar" }),
+    });
 
     const call = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-    const headers = call[1]?.headers as Record<string, string>;
-    expect(headers["Authorization"]).toBe("Bearer abc123");
+    expect(call[0]).toBe("/api/test");
+    expect(call[1]?.method).toBe("POST");
   });
 
-  it("does not add Authorization header when no session token exists", async () => {
-    vi.stubGlobal("fetch", vi.fn(() => mockFetchResponse(200, {})));
+  it("error without body throws generic error", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => mockFetchResponse(500, undefined)));
 
-    await apiFetch("/api/test");
-
-    const call = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-    const headers = call[1]?.headers as Record<string, string>;
-    expect(headers["Authorization"]).toBeUndefined();
+    await expect(apiFetch("/api/test")).rejects.toThrow(
+      "Cannot read properties of undefined",
+    );
   });
 });

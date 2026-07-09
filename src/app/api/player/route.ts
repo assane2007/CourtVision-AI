@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { updateProfileSchema, getZodErrorMessage } from '@/lib/validations'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
+import { withAuth } from '@/lib/with-auth'
 
 // GET /api/player — Get current user's profile, or another player's public profile via ?id=xxx
-export async function GET(request: Request) {
+export const GET = withAuth(async (request: Request, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const { searchParams } = new URL(request.url)
     const targetId = searchParams.get('id')
@@ -108,15 +103,11 @@ export async function GET(request: Request) {
     trackError('GET /api/player', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
 // PATCH /api/player — Update profile
-export async function PATCH(req: NextRequest) {
+export const PATCH = withAuth(async (req: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const rateResult = rateLimit(`player:patch:${session.user.email}`, 20, 15 * 60 * 1000)
     if (!rateResult.success) {
@@ -161,15 +152,11 @@ export async function PATCH(req: NextRequest) {
     trackError('PATCH /api/player', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
 // DELETE /api/player — Delete account and all associated data (requires confirmation)
-export async function DELETE(req: NextRequest) {
+export const DELETE = withAuth(async (req: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     // Strict rate limit: 5 attempts per hour for account deletion
     const rateResult = rateLimit(`player:delete:${session.user.email}`, 5, 60 * 60 * 1000)
@@ -196,4 +183,4 @@ export async function DELETE(req: NextRequest) {
     trackError('DELETE /api/player', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

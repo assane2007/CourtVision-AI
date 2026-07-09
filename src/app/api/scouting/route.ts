@@ -78,26 +78,29 @@ export async function GET() {
       const levelAvg =
         levelBenchmarks[player.xpLevel] ?? Math.min(25 + player.xpLevel * 3, 95)
 
-      // Fetch all session drills with their category
-      const sessionDrills = await db.workoutSessionDrill.findMany({
-        where: { session: { playerId } },
-        include: {
-          drill: { select: { category: true } },
-        },
-        orderBy: { createdAt: 'asc' },
-      })
+      // Fetch all data in parallel
+      const [sessionDrills, totalWorkouts, lastSession] = await Promise.all([
+        // All session drills with their category
+        db.workoutSessionDrill.findMany({
+          where: { session: { playerId } },
+          include: {
+            drill: { select: { category: true } },
+          },
+          orderBy: { createdAt: 'asc' },
+        }),
 
-      // Fetch total sessions
-      const totalWorkouts = await db.workoutSession.count({
-        where: { playerId },
-      })
+        // Total sessions
+        db.workoutSession.count({
+          where: { playerId },
+        }),
 
-      // Fetch last session date
-      const lastSession = await db.workoutSession.findFirst({
-        where: { playerId },
-        orderBy: { startedAt: 'desc' },
-        select: { startedAt: true },
-      })
+        // Last session date
+        db.workoutSession.findFirst({
+          where: { playerId },
+          orderBy: { startedAt: 'desc' },
+          select: { startedAt: true },
+        }),
+      ])
 
       // ── Build per-category stats ──────────────────────────────────────
       const categories: {

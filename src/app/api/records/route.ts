@@ -17,42 +17,44 @@ export const GET = withAuth(async (_req, session) => {
 
     // Get all session drill entries for this player, ordered chronologically (cached 2 min per user)
     const result = await withCache(`records:${playerId}`, 2 * 60 * 1000, async () => {
-      const allDrillEntries = await db.workoutSessionDrill.findMany({
-        where: {
-          session: { playerId },
-        },
-        include: {
-          drill: {
-            select: {
-              id: true,
-              name: true,
-              nameFr: true,
-              category: true,
-              icon: true,
-              difficulty: true,
+      const [allDrillEntries, latestSession] = await Promise.all([
+        // All session drill entries for this player, ordered chronologically
+        db.workoutSessionDrill.findMany({
+          where: {
+            session: { playerId },
+          },
+          include: {
+            drill: {
+              select: {
+                id: true,
+                name: true,
+                nameFr: true,
+                category: true,
+                icon: true,
+                difficulty: true,
+              },
+            },
+            session: {
+              select: {
+                id: true,
+                startedAt: true,
+              },
             },
           },
-          session: {
-            select: {
-              id: true,
-              startedAt: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'asc' },
-        take: 1000, // Safety limit to prevent unbounded memory usage
-      })
+          orderBy: { createdAt: 'asc' },
+          take: 1000, // Safety limit to prevent unbounded memory usage
+        }),
+        // Most recent session ID for "new record" detection
+        db.workoutSession.findFirst({
+          where: { playerId },
+          orderBy: { startedAt: 'desc' },
+          select: { id: true },
+        }),
+      ])
 
       if (allDrillEntries.length === 0) {
         return { records: [], summary: { totalDrills: 0, avgPersonalBest: 0, mostImprovedDrill: null, totalTrainingMs: 0 } }
       }
-
-      // Get the most recent session ID for "new record" detection
-      const latestSession = await db.workoutSession.findFirst({
-        where: { playerId },
-        orderBy: { startedAt: 'desc' },
-        select: { id: true },
-      })
 
       const latestSessionId = latestSession?.id ?? ''
 

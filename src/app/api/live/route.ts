@@ -1,16 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
+import { withAuth } from '@/lib/with-auth'
+import { createLiveSessionSchema, getZodErrorMessage } from '@/lib/validations'
 
-export async function GET(request: Request) {
+export const GET = withAuth(async (request: Request, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const rl = rateLimit(`live:list:${session.user.id}`, 60, 15 * 60 * 1000)
     if (!rl.success) {
@@ -52,14 +48,10 @@ export async function GET(request: Request) {
     trackError('GET /api/live', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const rl = rateLimit(`live:create:${session.user.id}`, 3, 15 * 60 * 1000)
     if (!rl.success) {
@@ -67,18 +59,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, drillId, maxViewers } = body
-
-    if (!title?.trim()) {
-      return NextResponse.json({ error: 'Titre requis' }, { status: 400 })
+    const parsed = createLiveSessionSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: getZodErrorMessage(parsed.error) }, { status: 400 })
     }
+
+    const { title, drillId, maxViewers } = parsed.data
 
     const liveSession = await db.liveSession.create({
       data: {
         hostId: session.user.id,
-        title: title.trim(),
-        drillId: drillId || null,
-        maxViewers: maxViewers || 10,
+        title,
+        drillId: drillId ?? null,
+        maxViewers,
         status: 'waiting',
       },
       include: {
@@ -91,4 +84,4 @@ export async function POST(request: NextRequest) {
     trackError('POST /api/live', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

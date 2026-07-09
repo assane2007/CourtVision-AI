@@ -6,39 +6,20 @@ import { toast } from 'sonner'
 import {
   ArrowLeft,
   Target,
-  Timer,
-  Volume2,
-  Vibrate,
-  Languages,
-  Info,
   Dumbbell,
+  Volume2,
   Bell,
   Flame,
   Shield,
-  Loader2,
-  FlaskConical,
   RefreshCw,
   Lock,
   Smartphone,
   Eye,
-  Monitor,
-  Clock,
+  FlaskConical,
+  Info,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Slider } from '@/components/ui/slider'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
 import { useAppStore } from '@/stores/app'
 import { SwipeToGoBack } from '@/components/shared/swipe-back'
@@ -46,11 +27,16 @@ import { BottomNav } from '@/components/shared/bottom-nav'
 import { apiFetch } from '@/lib/utils'
 import { useTranslation } from '@/components/providers/language-provider'
 import { containerVariants, itemVariants } from '@/lib/animations'
+import { WeeklyGoalsSection } from '@/components/settings/weekly-goals-section'
+import { TrainingSection, PreferencesSection } from '@/components/settings/preferences-section'
 import { NotificationsSection } from '@/components/settings/notifications-section'
 import { PrivacySection } from '@/components/settings/privacy-section'
 import { SecuritySection } from '@/components/settings/security-section'
-import { ExportDataButtons, PrivacyLink, DeleteAccountButton } from '@/components/settings/data-section'
+import { DevicesSection } from '@/components/settings/devices-section'
 import { DeveloperSection } from '@/components/settings/developer-section'
+import { BillingSection } from '@/components/settings/billing-section'
+import { ExportDataButtons, PrivacyLink, DeleteAccountButton } from '@/components/settings/data-section'
+import { SettingsSkeleton } from '@/components/settings/settings-skeleton'
 
 // -─ Types -----------------------------------
 
@@ -69,16 +55,6 @@ interface UserSettings {
 
 // -─ Constants ---------------------------------
 
-const REST_OPTIONS = [
-  { value: '10', label: '10 s' },
-  { value: '15', label: '15 s' },
-  { value: '30', label: '30 s' },
-  { value: '45', label: '45 s' },
-  { value: '60', label: '60 s' },
-  { value: '90', label: '90 s' },
-  { value: '120', label: '120 s' },
-]
-
 const DEFAULT_SETTINGS: UserSettings = {
   weeklyGoalSessions: 3,
   weeklyGoalReps: 50,
@@ -91,11 +67,42 @@ const DEFAULT_SETTINGS: UserSettings = {
   notifAchievement: true,
 }
 
+// -─ Section Card Wrapper -----------------------
+
+function SectionCard({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>
+  title: string
+  children: React.ReactNode
+}) {
+  return (
+    <motion.div variants={itemVariants}>
+      <Card className={title ? undefined : 'overflow-hidden'}>
+        {title && (
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
+                <Icon className="h-4 w-4 text-orange-500" />
+              </div>
+              {title}
+            </CardTitle>
+          </CardHeader>
+        )}
+        {children}
+      </Card>
+    </motion.div>
+  )
+}
+
 // -─ Component ---------------------------------
 
 export function SettingsScreen() {
   const goBack = useAppStore((s) => s.goBack)
   const queryClient = useQueryClient()
+  const { t, td, setLanguage: setI18nLanguage } = useTranslation()
 
   // Fetch settings
   const {
@@ -156,38 +163,7 @@ export function SettingsScreen() {
     },
   })
 
-  // Handlers — each saves immediately
-  const handleWeeklyGoalSessions = (value: number[]) => {
-    const v = value[0]
-    if (v !== settings.weeklyGoalSessions) {
-      saveMutation.mutate({ weeklyGoalSessions: v })
-    }
-  }
-
-  const handleWeeklyGoalReps = (value: number[]) => {
-    const v = value[0]
-    if (v !== settings.weeklyGoalReps) {
-      saveMutation.mutate({ weeklyGoalReps: v })
-    }
-  }
-
-  const handleRestChange = (val: string) => {
-    const v = parseInt(val, 10)
-    if (v !== settings.preferredRestSec) {
-      saveMutation.mutate({ preferredRestSec: v })
-    }
-  }
-
-  const handleSoundToggle = (checked: boolean) => {
-    saveMutation.mutate({ soundEnabled: checked })
-  }
-
-  const handleHapticsToggle = (checked: boolean) => {
-    saveMutation.mutate({ hapticsEnabled: checked })
-  }
-
-  const { t, td, setLanguage: setI18nLanguage } = useTranslation()
-
+  // Handler for language change (needs i18n sync)
   const handleLanguageChange = (val: string) => {
     if (val !== settings.language) {
       saveMutation.mutate({ language: val as 'fr' | 'en' })
@@ -195,14 +171,6 @@ export function SettingsScreen() {
       setI18nLanguage(val as 'fr' | 'en')
     }
   }
-
-  const sessionProgress = settings.weeklyGoalSessions > 0
-    ? Math.min((weekSessions / settings.weeklyGoalSessions) * 100, 100)
-    : 0
-
-  const repsProgress = settings.weeklyGoalReps > 0
-    ? Math.min((weekReps / settings.weeklyGoalReps) * 100, 100)
-    : 0
 
   return (
     <SwipeToGoBack className="min-h-screen bg-background">
@@ -241,346 +209,73 @@ export function SettingsScreen() {
             animate="visible"
             className="space-y-6"
           >
-            {/* -─ Objectifs Hebdomadaires ---------------- */}
-            <motion.div variants={itemVariants}>
-              <Card className="overflow-hidden">
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
-                      <Target className="h-4 w-4 text-orange-500" />
-                    </div>
-                    {t('settings.weeklyGoals')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6 pt-0">
-                  {/* Séances par semaine */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="weekly-goal-sessions" className="text-sm font-medium">
-                        {t('settings.sessionsPerWeek')}
-                      </Label>
-                      <span className="text-sm font-bold text-orange-500 tabular-nums">
-                        {settings.weeklyGoalSessions}
-                      </span>
-                    </div>
-                    <Slider
-                      id="weekly-goal-sessions"
-                      value={[settings.weeklyGoalSessions]}
-                      onValueChange={handleWeeklyGoalSessions}
-                      min={1}
-                      max={14}
-                      step={1}
-                      disabled={saveMutation.isPending}
-                      className="[&_[data-slot=slider-range]]:bg-orange-500 [&_[data-slot=slider-thumb]]:border-orange-500"
-                    />
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>1</span>
-                      <div className="flex items-center gap-2">
-                        <Progress
-                          value={sessionProgress}
-                          className="h-1.5 w-20 [&>[data-slot=progress-indicator]]:bg-orange-500"
-                        />
-                        <span className="tabular-nums">
-                          {weekSessions}/{settings.weeklyGoalSessions}
-                        </span>
-                      </div>
-                      <span>14</span>
-                    </div>
-                  </div>
+            {/* Weekly Goals */}
+            <SectionCard icon={Target} title={t('settings.weeklyGoals')}>
+              <WeeklyGoalsSection settings={settings} saveMutation={saveMutation} weekSessions={weekSessions} weekReps={weekReps} />
+            </SectionCard>
 
-                  <Separator />
+            {/* Training */}
+            <SectionCard icon={Dumbbell} title={t('settings.training')}>
+              <TrainingSection settings={settings} saveMutation={saveMutation} />
+            </SectionCard>
 
-                  {/* Répétitions par semaine */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="weekly-goal-reps" className="text-sm font-medium">
-                        {t('settings.repsPerWeek')}
-                      </Label>
-                      <span className="text-sm font-bold text-orange-500 tabular-nums">
-                        {settings.weeklyGoalReps}
-                      </span>
-                    </div>
-                    <Slider
-                      id="weekly-goal-reps"
-                      value={[settings.weeklyGoalReps]}
-                      onValueChange={handleWeeklyGoalReps}
-                      min={10}
-                      max={500}
-                      step={10}
-                      disabled={saveMutation.isPending}
-                      className="[&_[data-slot=slider-range]]:bg-orange-500 [&_[data-slot=slider-thumb]]:border-orange-500"
-                    />
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>10</span>
-                      <div className="flex items-center gap-2">
-                        <Progress
-                          value={repsProgress}
-                          className="h-1.5 w-20 [&>[data-slot=progress-indicator]]:bg-orange-500"
-                        />
-                        <span className="tabular-nums">
-                          {weekReps}/{settings.weeklyGoalReps}
-                        </span>
-                      </div>
-                      <span>500</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* -─ Entraînement ---------------------─ */}
-            <motion.div variants={itemVariants}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
-                      <Dumbbell className="h-4 w-4 text-orange-500" />
-                    </div>
-                    {t('settings.training')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-2">
-                    <Label htmlFor="rest-duration-select" className="text-sm font-medium">
-                      {t('settings.restDuration')}
-                    </Label>
-                    <Select
-                      value={String(settings.preferredRestSec)}
-                      onValueChange={handleRestChange}
-                      disabled={saveMutation.isPending}
-                    >
-                      <SelectTrigger id="rest-duration-select" className="w-full">
-                        <Timer className="mr-2 h-4 w-4 text-muted-foreground" />
-                        <SelectValue placeholder={t('settings.selectPlaceholder')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {REST_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* -─ Préférences ---------------------- */}
-            <motion.div variants={itemVariants}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
-                      <Volume2 className="h-4 w-4 text-orange-500" />
-                    </div>
-                    {t('settings.preferences')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0 space-y-5">
-                  {/* Sons toggle */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Volume2 className="h-4 w-4 text-muted-foreground" />
-                      <Label htmlFor="sound-toggle" className="text-sm font-medium cursor-pointer">
-                        {t('settings.sound')}
-                      </Label>
-                    </div>
-                    <Switch
-                      id="sound-toggle"
-                      checked={settings.soundEnabled}
-                      onCheckedChange={handleSoundToggle}
-                      disabled={saveMutation.isPending}
-                      className="data-[state=checked]:bg-orange-500"
-                    />
-                  </div>
-
-                  <Separator />
-
-                  {/* Vibrations toggle */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Vibrate className="h-4 w-4 text-muted-foreground" />
-                      <Label htmlFor="haptics-toggle" className="text-sm font-medium cursor-pointer">
-                        {t('settings.haptics')}
-                      </Label>
-                    </div>
-                    <Switch
-                      id="haptics-toggle"
-                      checked={settings.hapticsEnabled}
-                      onCheckedChange={handleHapticsToggle}
-                      disabled={saveMutation.isPending}
-                      className="data-[state=checked]:bg-orange-500"
-                    />
-                  </div>
-
-                  <Separator />
-
-                  {/* Langue select */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Languages className="h-4 w-4 text-muted-foreground" />
-                      <Label htmlFor="language-select" className="text-sm font-medium">
-                        {t('settings.language')}
-                      </Label>
-                    </div>
-                    <Select
-                      value={settings.language}
-                      onValueChange={handleLanguageChange}
-                      disabled={saveMutation.isPending}
-                    >
-                      <SelectTrigger id="language-select" className="w-[140px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="fr">{t('language.fr')}</SelectItem>
-                        <SelectItem value="en">{t('language.en')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
+            {/* Preferences */}
+            <SectionCard icon={Volume2} title={t('settings.preferences')}>
+              <PreferencesSection settings={settings} saveMutation={saveMutation} onLanguageChange={handleLanguageChange} />
+            </SectionCard>
 
             {/* Notifications */}
-            <motion.div variants={itemVariants}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
-                      <Bell className="h-4 w-4 text-orange-500" />
-                    </div>
-                    {t('settings.notifications')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0 space-y-5">
-                  <NotificationsSection settings={settings} saveMutation={saveMutation} />
-                </CardContent>
-              </Card>
-            </motion.div>
+            <SectionCard icon={Bell} title={t('settings.notifications')}>
+              <CardContent className="pt-0 space-y-5">
+                <NotificationsSection settings={settings} saveMutation={saveMutation} />
+              </CardContent>
+            </SectionCard>
 
-            {/* -─ Confidentialité ------------------------- */}
-            <motion.div variants={itemVariants}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
-                      <Eye className="h-4 w-4 text-orange-500" />
-                    </div>
-                    {t('core.privacy')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0 space-y-5">
-                  <PrivacySection saveMutation={saveMutation} />
-                </CardContent>
-              </Card>
-            </motion.div>
+            {/* Privacy */}
+            <SectionCard icon={Eye} title={t('core.privacy')}>
+              <CardContent className="pt-0 space-y-5">
+                <PrivacySection saveMutation={saveMutation} />
+              </CardContent>
+            </SectionCard>
 
-            {/* -─ Sécurité ------------------------- */}
-            <motion.div variants={itemVariants}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
-                      <Lock className="h-4 w-4 text-orange-500" />
-                    </div>
-                    {t('core.security')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0 space-y-4">
-                  <SecuritySection />
-                </CardContent>
-              </Card>
-            </motion.div>
+            {/* Security */}
+            <SectionCard icon={Lock} title={t('core.security')}>
+              <CardContent className="pt-0 space-y-4">
+                <SecuritySection />
+              </CardContent>
+            </SectionCard>
 
-            {/* -─ Appareils ------------------------- */}
-            <motion.div variants={itemVariants}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
-                      <Smartphone className="h-4 w-4 text-orange-500" />
-                    </div>
-                    {t('core.devices')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0 space-y-4">
-                  <DevicesSection />
-                </CardContent>
-              </Card>
-            </motion.div>
+            {/* Devices */}
+            <SectionCard icon={Smartphone} title={t('core.devices')}>
+              <CardContent className="pt-0 space-y-4">
+                <DevicesSection />
+              </CardContent>
+            </SectionCard>
 
-            {/* -─ Fonctionnalités expérimentales --------- */}
-            <motion.div variants={itemVariants}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
-                      <FlaskConical className="h-4 w-4 text-orange-500" />
-                    </div>
-                    {t('settings.experimentalFeatures')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0 space-y-4">
-                  <DeveloperSection />
-                </CardContent>
-              </Card>
-            </motion.div>
+            {/* Experimental Features */}
+            <SectionCard icon={FlaskConical} title={t('settings.experimentalFeatures')}>
+              <CardContent className="pt-0 space-y-4">
+                <DeveloperSection />
+              </CardContent>
+            </SectionCard>
 
-            {/* -─ Abonnement & Facturation ------------------------- */}
-            <motion.div variants={itemVariants}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
-                      <Flame className="h-4 w-4 text-orange-500" />
-                    </div>
-                    {t('settings.billing')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">{t('settings.currentPlan')}</p>
-                      <p className="text-xs text-muted-foreground">{planLabel(subscriptionStatus)}</p>
-                    </div>
-                    <Badge variant={subscriptionStatus !== 'free' ? 'default' : 'secondary'} className="text-xs">{planLabel(subscriptionStatus)}</Badge>
-                  </div>
-                  {subscriptionStatus === 'free' && (
-                    <Button
-                      className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold"
-                      onClick={() => useAppStore.getState().navigate('pricing')}
-                    >
-                      <Flame className="h-4 w-4 mr-2" />
-                      {t('settings.viewOffers')}
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
+            {/* Billing */}
+            <SectionCard icon={Flame} title={t('settings.billing')}>
+              <BillingSection subscriptionStatus={subscriptionStatus} planLabel={planLabel} />
+            </SectionCard>
 
-            {/* -─ Données & RGPD ------------------------- */}
-            <motion.div variants={itemVariants}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
-                      <Shield className="h-4 w-4 text-orange-500" />
-                    </div>
-                    {t('settings.dataPrivacy')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0 space-y-3">
-                  <ExportDataButtons />
-                  <Separator />
-                  <PrivacyLink />
-                  <Separator />
-                  <DeleteAccountButton />
-                </CardContent>
-              </Card>
-            </motion.div>
+            {/* Data & GDPR */}
+            <SectionCard icon={Shield} title={t('settings.dataPrivacy')}>
+              <CardContent className="pt-0 space-y-3">
+                <ExportDataButtons />
+                <Separator />
+                <PrivacyLink />
+                <Separator />
+                <DeleteAccountButton />
+              </CardContent>
+            </SectionCard>
 
-            {/* -─ Infos ------------------------- */}
+            {/* Info */}
             <motion.div variants={itemVariants}>
               <Card>
                 <CardContent className="pt-0">
@@ -601,181 +296,6 @@ export function SettingsScreen() {
 
       <BottomNav />
     </SwipeToGoBack>
-  )
-}
-
-// -─ Loading Skeleton -----------------------------─
-
-function SettingsSkeleton() {
-  return (
-    <div className="space-y-6 animate-pulse">
-      {/* Objectifs */}
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-8 w-8 rounded-lg" />
-            <Skeleton className="h-5 w-48" />
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0 space-y-6">
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <Skeleton className="h-4 w-36" />
-              <Skeleton className="h-4 w-8" />
-            </div>
-            <Skeleton className="h-6 w-full rounded-full" />
-            <Skeleton className="h-3 w-full rounded-full" />
-          </div>
-          <Separator />
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <Skeleton className="h-4 w-40" />
-              <Skeleton className="h-4 w-8" />
-            </div>
-            <Skeleton className="h-6 w-full rounded-full" />
-            <Skeleton className="h-3 w-full rounded-full" />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Entraînement */}
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-8 w-8 rounded-lg" />
-            <Skeleton className="h-5 w-28" />
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0 space-y-2">
-          <Skeleton className="h-4 w-56" />
-          <Skeleton className="h-9 w-full rounded-md" />
-        </CardContent>
-      </Card>
-
-      {/* Préférences */}
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-8 w-8 rounded-lg" />
-            <Skeleton className="h-5 w-28" />
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0 space-y-5">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Skeleton className="h-4 w-4 rounded" />
-                <Skeleton className="h-4 w-24" />
-              </div>
-              <Skeleton className="h-5 w-10 rounded-full" />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* Notifications */}
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-8 w-8 rounded-lg" />
-            <Skeleton className="h-5 w-32" />
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0 space-y-5">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Skeleton className="h-4 w-4 rounded" />
-                <Skeleton className="h-4 w-28" />
-              </div>
-              <Skeleton className="h-5 w-10 rounded-full" />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* Infos */}
-      <Card>
-        <CardContent className="pt-0 space-y-2">
-          <Skeleton className="h-4 w-48" />
-          <Skeleton className="h-3 w-64" />
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-// -─ Devices Section ──────────────────────────────
-
-function DevicesSection() {
-  const { t } = useTranslation()
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: ['devices'],
-    queryFn: () => apiFetch<{ devices: Array<{ id: string; name: string; type: string; os: string; appVersion: string; lastActive: string; isCurrent: boolean }> }>('/api/devices'),
-    staleTime: 30_000,
-  })
-
-  const revokeMutation = useMutation({
-    mutationFn: (deviceId: string) =>
-      apiFetch(`/api/devices/${deviceId}/revoke`, { method: 'DELETE' }),
-    onSuccess: () => {
-      toast.success(t('settings.deviceRevoked'))
-      refetch()
-    },
-    onError: () => toast.error(t('settings.saveError')),
-  })
-
-  const devices = data?.devices || []
-
-  if (isLoading) {
-    return (
-      <div className="space-y-3">
-        <Skeleton className="h-12 w-full rounded-lg" />
-        <Skeleton className="h-12 w-full rounded-lg" />
-      </div>
-    )
-  }
-
-  if (devices.length === 0) {
-    return <p className="text-sm text-muted-foreground">{t('settings.noDevices')}</p>
-  }
-
-  return (
-    <div className="space-y-3 max-h-64 overflow-y-auto">
-      {devices.map((device) => (
-        <div key={device.id} className="flex items-center justify-between rounded-lg border p-3">
-          <div className="flex items-center gap-3">
-            <Monitor className="h-5 w-5 text-muted-foreground shrink-0" />
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-medium">{device.name}</p>
-                {device.isCurrent && (
-                  <Badge variant="secondary" className="text-[10px] bg-orange-500/10 text-orange-600 border-orange-200">
-                    {t('settings.currentDevice')}
-                  </Badge>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {t('settings.lastActive')}: {new Date(device.lastActive).toLocaleDateString()}
-                {device.os && ` · ${device.os}`}
-              </p>
-            </div>
-          </div>
-          {!device.isCurrent && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => revokeMutation.mutate(device.id)}
-              disabled={revokeMutation.isPending}
-              className="text-red-500 hover:text-red-600 hover:bg-red-500/10 shrink-0"
-            >
-              {revokeMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t('settings.revokeDevice')}
-            </Button>
-          )}
-        </div>
-      ))}
-    </div>
   )
 }
 

@@ -1,20 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
+import { withAuth } from '@/lib/with-auth'
 
 // GET /api/ai/pose/[id] — Get pose data by ID or list session poses
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const GET = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
   let poseId: string | undefined
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const resolvedParams = await params
     poseId = resolvedParams.id
@@ -46,19 +38,12 @@ export async function GET(
     trackError(`GET /api/ai/pose/${poseId ?? 'unknown'}`, error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
 // DELETE /api/ai/pose/[id] — Delete pose data
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const DELETE = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
   let poseId: string | undefined
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const resolvedParams = await params
     poseId = resolvedParams.id
@@ -76,4 +61,4 @@ export async function DELETE(
     trackError(`DELETE /api/ai/pose/${poseId ?? 'unknown'}`, error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

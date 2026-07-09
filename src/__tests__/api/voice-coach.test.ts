@@ -47,7 +47,7 @@ vi.mock('@/lib/require-subscription', () => ({
 
 // Mock z-ai-web-dev-sdk
 const mockChatCompletionsCreate = vi.fn()
-const mockTTSGenerate = vi.fn()
+const mockTtsCreate = vi.fn()
 vi.mock('z-ai-web-dev-sdk', () => ({
   default: {
     create: vi.fn().mockResolvedValue({
@@ -56,9 +56,11 @@ vi.mock('z-ai-web-dev-sdk', () => ({
           create: (...args: unknown[]) => mockChatCompletionsCreate(...args),
         },
       },
-      createTTS: vi.fn().mockResolvedValue({
-        generate: (...args: unknown[]) => mockTTSGenerate(...args),
-      }),
+      audio: {
+        tts: {
+          create: (...args: unknown[]) => mockTtsCreate(...args),
+        },
+      },
     }),
   },
 }))
@@ -138,7 +140,7 @@ describe('POST /api/ai/voice/coach', () => {
         message: { content: 'Garde le bras droit tendu et relâchez au bon moment!' },
       }],
     })
-    mockTTSGenerate.mockResolvedValue('base64audio')
+    mockTtsCreate.mockResolvedValue('base64audio')
 
     vi.resetModules()
     const mod = await import('@/app/api/ai/voice/coach/route')
@@ -176,7 +178,7 @@ describe('POST /api/ai/voice/coach', () => {
     mockChatCompletionsCreate.mockResolvedValue({
       choices: [{ message: { content: 'Bon conseil!' } }],
     })
-    mockTTSGenerate.mockRejectedValue(new Error('TTS unavailable'))
+    mockTtsCreate.mockRejectedValue(new Error('TTS unavailable'))
 
     vi.resetModules()
     const { POST } = await import('@/app/api/ai/voice/coach/route')

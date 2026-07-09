@@ -1,19 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
+import { withAuth } from '@/lib/with-auth'
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const GET = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const { id: postId } = await params
     const { searchParams } = new URL(request.url)
@@ -62,17 +54,10 @@ export async function GET(
     trackError('GET /api/feed/[id]/comments', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const POST = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const rl = rateLimit(`feed:comment:${session.user.id}`, 30, 15 * 60 * 1000)
     if (!rl.success) {
@@ -148,4 +133,4 @@ export async function POST(
     trackError('POST /api/feed/[id]/comments', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

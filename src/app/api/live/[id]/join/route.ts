@@ -1,19 +1,11 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
+import { withAuth } from '@/lib/with-auth'
 
-export async function POST(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const POST = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const rl = rateLimit(`live:join:${session.user.id}`, 20, 15 * 60 * 1000)
     if (!rl.success) {
@@ -61,17 +53,10 @@ export async function POST(
     trackError('POST /api/live/[id]/join', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const DELETE = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const { id: sessionId } = await params
     await db.liveParticipant.deleteMany({
@@ -83,4 +68,4 @@ export async function DELETE(
     trackError('DELETE /api/live/[id]/join', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

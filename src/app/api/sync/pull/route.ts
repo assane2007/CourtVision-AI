@@ -55,44 +55,47 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Joueur introuvable' }, { status: 404 })
     }
 
-    // Fetch recent sessions (since the given date)
-    const sessions = await db.workoutSession.findMany({
-      where: {
-        playerId,
-        updatedAt: { gt: since },
-      },
-      include: {
-        drills: {
-          include: {
-            drill: {
-              select: { id: true, name: true, nameFr: true, category: true, icon: true },
+    // Fetch all independent data in parallel
+    const [sessions, achievements, favorites, pendingActions] = await Promise.all([
+      // Recent sessions (since the given date)
+      db.workoutSession.findMany({
+        where: {
+          playerId,
+          updatedAt: { gt: since },
+        },
+        include: {
+          drills: {
+            include: {
+              drill: {
+                select: { id: true, name: true, nameFr: true, category: true, icon: true },
+              },
             },
           },
         },
-      },
-      orderBy: { startedAt: 'desc' },
-      take: 50,
-    })
+        orderBy: { startedAt: 'desc' },
+        take: 50,
+      }),
 
-    // Fetch recent achievements
-    const achievements = await db.achievement.findMany({
-      where: {
-        playerId,
-        unlockedAt: { gt: since },
-      },
-      orderBy: { unlockedAt: 'desc' },
-    })
+      // Recent achievements
+      db.achievement.findMany({
+        where: {
+          playerId,
+          unlockedAt: { gt: since },
+        },
+        orderBy: { unlockedAt: 'desc' },
+      }),
 
-    // Fetch favorite drills
-    const favorites = await db.drillFavorite.findMany({
-      where: { playerId },
-      select: { drillId: true, createdAt: true },
-    })
+      // Favorite drills
+      db.drillFavorite.findMany({
+        where: { playerId },
+        select: { drillId: true, createdAt: true },
+      }),
 
-    // Count pending offline actions
-    const pendingActions = await db.offlineAction.count({
-      where: { playerId, status: 'pending' },
-    })
+      // Pending offline actions
+      db.offlineAction.count({
+        where: { playerId, status: 'pending' },
+      }),
+    ])
 
     return NextResponse.json({
       player,

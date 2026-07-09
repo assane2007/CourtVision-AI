@@ -1,22 +1,17 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
 import Stripe from 'stripe'
+import { withAuth } from '@/lib/with-auth'
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-06-24.dahlia' })
   : null
 
-export async function POST() {
+export const POST = withAuth(async (request: Request, session) => {
   try {
     // Auth check
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     // Rate limit
     const rl = rateLimit(session.user.id, 5, 60_000)
@@ -50,4 +45,4 @@ export async function POST() {
     trackError('POST /api/stripe/portal', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

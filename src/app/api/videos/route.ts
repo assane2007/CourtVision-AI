@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
+import { withAuth } from '@/lib/with-auth'
 
 // GET /api/videos — List user's videos with filters
-export async function GET(req: NextRequest) {
+export const GET = withAuth(async (req: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const { searchParams } = new URL(req.url)
     const search = searchParams.get('search') || ''
@@ -80,15 +75,11 @@ export async function GET(req: NextRequest) {
     trackError('[GET /api/videos]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
 // POST /api/videos — Create video metadata (after file is uploaded via /upload)
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const body = await req.json()
     const { title, description, url, thumbnailUrl, durationSec, fileSize, mimeType, width, height, tags, isPublic } = body
@@ -127,4 +118,4 @@ export async function POST(req: NextRequest) {
     trackError('[POST /api/videos]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

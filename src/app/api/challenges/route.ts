@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
+import { withAuth } from '@/lib/with-auth'
 
-export async function GET(request: Request) {
+export const GET = withAuth(async (request: Request, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const rl = rateLimit(`challenges:list:${session.user.id}`, 60, 15 * 60 * 1000)
     if (!rl.success) {
@@ -44,11 +39,19 @@ export async function GET(request: Request) {
       take: 50,
     })
 
-    // Add participant status for current user
-    const enriched = await Promise.all(challenges.map(async c => {
-      const participation = await db.challengeParticipant.findUnique({
-        where: { challengeId_playerId: { challengeId: c.id, playerId: session.user.id } },
-      })
+    // Batch-fetch participation status for all challenges at once (avoids N+1)
+    const challengeIds = challenges.map(c => c.id)
+    const participations = await db.challengeParticipant.findMany({
+      where: {
+        challengeId: { in: challengeIds },
+        playerId: session.user.id,
+      },
+      select: { challengeId: true, currentValue: true, completed: true },
+    })
+    const participationMap = new Map(participations.map(p => [p.challengeId, p]))
+
+    const enriched = challenges.map(c => {
+      const participation = participationMap.get(c.id)
 
       return {
         id: c.id,
@@ -68,21 +71,17 @@ export async function GET(request: Request) {
         isCompleted: participation?.completed || false,
         createdAt: c.createdAt,
       }
-    }))
+    })
 
     return NextResponse.json({ challenges: enriched })
   } catch (error) {
     trackError('GET /api/challenges', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const rl = rateLimit(`challenges:create:${session.user.id}`, 5, 15 * 60 * 1000)
     if (!rl.success) {
@@ -134,4 +133,4 @@ export async function POST(request: NextRequest) {
     trackError('POST /api/challenges', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

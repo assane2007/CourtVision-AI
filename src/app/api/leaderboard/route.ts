@@ -114,14 +114,14 @@ export const GET = withAuth(async (request, session) => {
         .sort((a, b) => b.sortXp - a.sortXp)
         .map((p, i) => ({ ...p, rank: i + 1 }))
 
-      const totalPlayers = teamMemberIds
-        ? teamMemberIds.length
-        : await db.player.count()
-
-      const teamInfo = teamId ? await db.team.findUnique({
-        where: { id: teamId },
-        select: { name: true },
-      }) : null
+      const [totalPlayers, teamInfo] = await Promise.all([
+        teamMemberIds
+          ? Promise.resolve(teamMemberIds.length)
+          : db.player.count(),
+        teamId
+          ? db.team.findUnique({ where: { id: teamId }, select: { name: true } })
+          : Promise.resolve(null),
+      ])
 
       // Return only global data — no per-user fields
       return { leaderboard, totalPlayers, teamName: teamInfo?.name || null }

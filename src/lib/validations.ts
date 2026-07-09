@@ -187,6 +187,54 @@ export const notificationSubscribeSchema = z.object({
   expirationTime: z.number().nullable().optional(),
 })
 
+// ── Live Sessions ───────────────────────────────────────────────────────
+
+export const createLiveSessionSchema = z.object({
+  title: z.string().min(1, 'Titre requis').max(200).transform(v => v.trim()),
+  drillId: z.string().max(100).optional().nullable(),
+  maxViewers: z.number().int().min(2).max(100).optional().default(10),
+})
+
+export const liveScoreUpdateSchema = z.object({
+  score: z.number().min(0).max(10000, 'Score trop élevé'),
+  reps: z.number().int().min(0).max(10000).optional().default(0),
+})
+
+// ── Sync ────────────────────────────────────────────────────────────────
+
+const syncActionSchema = z.object({
+  id: z.string().optional(),
+  type: z.enum(['session_save', 'drill_favorite', 'settings_update']),
+  payload: z.record(z.unknown()).optional(),
+  createdAt: z.string().datetime().optional(),
+})
+
+export const syncPushSchema = z.object({
+  actions: z.array(syncActionSchema).min(1, 'Aucune action à synchroniser').max(100, 'Maximum 100 actions par requête'),
+  deviceId: z.string().min(1, 'ID appareil requis').max(200),
+})
+
+// ── Push Register ───────────────────────────────────────────────────────
+
+export const pushRegisterSchema = z.object({
+  pushToken: z.string().min(1, 'Token push requis').max(1000),
+  deviceName: z.string().max(200).optional(),
+  deviceType: z.enum(['mobile', 'tablet', 'desktop', 'web']).optional(),
+  os: z.string().max(100).optional(),
+  appVersion: z.string().max(50).optional(),
+})
+
+// ── Devices ─────────────────────────────────────────────────────────────
+
+export const registerDeviceSchema = z.object({
+  name: z.string().max(200).optional(),
+  type: z.enum(['mobile', 'tablet', 'desktop', 'web']).optional(),
+  os: z.string().max(100).optional(),
+  appVersion: z.string().max(50).optional(),
+  pushToken: z.string().max(1000).optional().nullable(),
+  deviceId: z.string().max(100).optional(),
+})
+
 // ── Helper: Extract error message from ZodError ───────────────────────────
 
 export function getZodErrorMessage(error: z.ZodError): string {

@@ -24,6 +24,7 @@ const mockDb = {
   workoutSessionDrill: {
     findFirst: vi.fn(),
     findMany: vi.fn(),
+    groupBy: vi.fn(),
   },
   drill: {
     findMany: vi.fn(),
@@ -203,6 +204,7 @@ describe('POST /api/sessions', () => {
       { id: 'd1' },
     ])
     ;(db.workoutSessionDrill.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue(null)
+    ;(db.workoutSessionDrill.groupBy as ReturnType<typeof vi.fn>).mockResolvedValue([])
     ;(db.workoutSession.create as ReturnType<typeof vi.fn>).mockResolvedValue({
       id: 's1',
       totalScore: 80,

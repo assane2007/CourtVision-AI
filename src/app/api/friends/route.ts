@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
+import { withAuth } from '@/lib/with-auth'
 
-export async function GET(request: Request) {
+export const GET = withAuth(async (request: Request, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const rl = rateLimit(`friends:list:${session.user.id}`, 60, 15 * 60 * 1000)
     if (!rl.success) {
@@ -94,15 +89,28 @@ export async function GET(request: Request) {
       ]
     }
 
-    const friendships = await db.friendship.findMany({
-      where,
-      include: {
-        requester: { select: { id: true, name: true, avatar: true, xpLevel: true, position: true } },
-        recipient: { select: { id: true, name: true, avatar: true, xpLevel: true, position: true } },
-      },
-      orderBy: { updatedAt: 'desc' },
-      take: 50,
-    })
+    const [friendships, counts] = await Promise.all([
+      db.friendship.findMany({
+        where,
+        include: {
+          requester: { select: { id: true, name: true, avatar: true, xpLevel: true, position: true } },
+          recipient: { select: { id: true, name: true, avatar: true, xpLevel: true, position: true } },
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 50,
+      }),
+      db.friendship.groupBy({
+        by: ['status'],
+        where: {
+          OR: [
+            { requesterId: playerId },
+            { recipientId: playerId },
+          ],
+          status: { in: ['accepted', 'pending', 'blocked'] },
+        },
+        _count: true,
+      }),
+    ])
 
     const friends = friendships.map(f => {
       const isRequester = f.requesterId === playerId
@@ -118,18 +126,6 @@ export async function GET(request: Request) {
         isRequester,
         createdAt: f.createdAt,
       }
-    })
-
-    const counts = await db.friendship.groupBy({
-      by: ['status'],
-      where: {
-        OR: [
-          { requesterId: playerId },
-          { recipientId: playerId },
-        ],
-        status: { in: ['accepted', 'pending', 'blocked'] },
-      },
-      _count: true,
     })
 
     const countMap: Record<string, number> = {}
@@ -155,14 +151,10 @@ export async function GET(request: Request) {
     trackError('GET /api/friends', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const rl = rateLimit(`friends:send:${session.user.id}`, 20, 15 * 60 * 1000)
     if (!rl.success) {
@@ -224,14 +216,10 @@ export async function POST(request: NextRequest) {
     trackError('POST /api/friends', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = withAuth(async (request: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const body = await request.json()
     const { friendshipId, action } = body // action: accept, decline, block
@@ -290,4 +278,4 @@ export async function PATCH(request: NextRequest) {
     trackError('PATCH /api/friends', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

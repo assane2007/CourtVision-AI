@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { createPlanSchema, getZodErrorMessage } from '@/lib/validations'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
+import { withAuth } from '@/lib/with-auth'
 
 // GET /api/plans — List user's training plans
-export async function GET() {
+export const GET = withAuth(async (request: Request, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const rl = rateLimit(`plans:get:${session.user.id}`, 30, 15 * 60 * 1000)
     if (!rl.success) {
@@ -38,15 +33,11 @@ export async function GET() {
     trackError('GET /api/plans', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
 // POST /api/plans — Create a training plan
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const rateResult = rateLimit(`plans:post:${session.user.email}`, 20, 15 * 60 * 1000)
     if (!rateResult.success) {
@@ -119,4 +110,4 @@ export async function POST(req: NextRequest) {
     trackError('POST /api/plans', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

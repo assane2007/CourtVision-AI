@@ -11,6 +11,15 @@ vi.mock('@/lib/auth', () => ({
   authOptions: {},
 }))
 
+vi.mock('@/lib/require-subscription', () => ({
+  requireSubscription: vi.fn().mockResolvedValue(true),
+  subscriptionError: vi.fn().mockReturnValue({ status: 403 }),
+}))
+
+vi.mock('@/lib/sanitize', () => ({
+  sanitize: (s: string) => s,
+}))
+
 const mockDb = {
   player: {
     findUnique: vi.fn(),

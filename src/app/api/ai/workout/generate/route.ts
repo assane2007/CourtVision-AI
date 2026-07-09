@@ -1,20 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
 import { requireSubscription, subscriptionError } from '@/lib/require-subscription'
 import ZAI from 'z-ai-web-dev-sdk'
 import { sanitize } from '@/lib/sanitize'
+import { withAuth } from '@/lib/with-auth'
 
 // POST /api/ai/workout/generate — Generate personalized workout plan
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const hasAccess = await requireSubscription(session.user.id, 'pro')
     if (!hasAccess) return subscriptionError('pro')
@@ -221,4 +216,4 @@ Règles:
     trackError('POST /api/ai/workout/generate', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
+import { syncPushSchema, getZodErrorMessage } from '@/lib/validations'
 
 // POST /api/sync/push
 // Receive offline actions from client, process them (last-write-wins)
@@ -22,19 +23,12 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { actions, deviceId } = body
-
-    if (!Array.isArray(actions) || actions.length === 0) {
-      return NextResponse.json({ error: 'Aucune action à synchroniser' }, { status: 400 })
+    const parsed = syncPushSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: getZodErrorMessage(parsed.error) }, { status: 400 })
     }
 
-    if (actions.length > 100) {
-      return NextResponse.json({ error: 'Maximum 100 actions par requête' }, { status: 400 })
-    }
-
-    if (!deviceId) {
-      return NextResponse.json({ error: 'ID appareil requis' }, { status: 400 })
-    }
+    const { actions, deviceId } = parsed.data
 
     const results: { id: string; status: 'synced' | 'failed'; error?: string }[] = []
 

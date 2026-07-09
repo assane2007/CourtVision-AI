@@ -34,6 +34,7 @@ export const GET = withAuth(async (request, session) => {
         weekSessions,
         allSessions,
         sessionDrills,
+        achievementCount,
       ] = await Promise.all([
         // Total session count
         db.workoutSession.count({ where: { playerId } }),
@@ -77,6 +78,9 @@ export const GET = withAuth(async (request, session) => {
           include: { drill: { select: { category: true } } },
           take: 10000,
         }),
+
+        // Achievement count
+        db.achievement.count({ where: { playerId } }),
       ])
 
       // ── Build daily stats (last N days based on query param) ────────────
@@ -131,9 +135,7 @@ export const GET = withAuth(async (request, session) => {
         allSessions.map((s) => s.startedAt),
       )
 
-      // ── Achievements (lightweight) ─────────────────────────────────────
-
-      const achievementCount = await db.achievement.count({ where: { playerId } })
+      // ── Achievements (lightweight — already fetched in parallel above) ─
 
       return {
         totalSessions,

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
+import { registerDeviceSchema, getZodErrorMessage } from '@/lib/validations'
 
 // GET /api/devices
 // List all devices for the current player
@@ -58,7 +59,12 @@ export async function POST(request: Request) {
 
     const playerId = session.user.id
     const body = await request.json()
-    const { name, type, os, appVersion, pushToken, deviceId } = body
+    const parsed = registerDeviceSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: getZodErrorMessage(parsed.error) }, { status: 400 })
+    }
+
+    const { name, type, os, appVersion, pushToken, deviceId } = parsed.data
 
     // If deviceId is provided, update existing
     if (deviceId) {

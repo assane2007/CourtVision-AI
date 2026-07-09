@@ -1,18 +1,10 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
+import { withAuth } from '@/lib/with-auth'
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const GET = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const { id } = await params
     const liveSession = await db.liveSession.findUnique({
@@ -66,17 +58,10 @@ export async function GET(
     trackError('GET /api/live/[id]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const DELETE = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const { id } = await params
     const liveSession = await db.liveSession.findUnique({ where: { id } })
@@ -110,4 +95,4 @@ export async function DELETE(
     trackError('DELETE /api/live/[id]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

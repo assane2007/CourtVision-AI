@@ -27,22 +27,22 @@ export async function GET() {
     const prevWeek = dateRange(14);
     prevWeek.end = new Date(thisWeek.start);
 
-    // Fetch this week workout sessions
-    const thisWeekWorkouts = await db.workoutSession.findMany({
-      where: {
-        playerId: player.id,
-        startedAt: { gte: thisWeek.start, lte: thisWeek.end },
-      },
-      orderBy: { startedAt: "desc" },
-    });
-
-    // Fetch previous week workout sessions for comparison
-    const prevWeekWorkouts = await db.workoutSession.findMany({
-      where: {
-        playerId: player.id,
-        startedAt: { gte: prevWeek.start, lt: prevWeek.end },
-      },
-    });
+    // Fetch this week and previous week workout sessions in parallel
+    const [thisWeekWorkouts, prevWeekWorkouts] = await Promise.all([
+      db.workoutSession.findMany({
+        where: {
+          playerId: player.id,
+          startedAt: { gte: thisWeek.start, lte: thisWeek.end },
+        },
+        orderBy: { startedAt: "desc" },
+      }),
+      db.workoutSession.findMany({
+        where: {
+          playerId: player.id,
+          startedAt: { gte: prevWeek.start, lt: prevWeek.end },
+        },
+      }),
+    ]);
 
     // Aggregate this week
     const thisTotalWorkouts = thisWeekWorkouts.length;

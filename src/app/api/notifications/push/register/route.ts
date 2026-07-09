@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
+import { pushRegisterSchema, getZodErrorMessage } from '@/lib/validations'
 
 // POST /api/notifications/push/register
 export async function POST(request: Request) {
@@ -17,14 +18,15 @@ export async function POST(request: Request) {
 
     const playerId = session.user.id
     const body = await request.json()
-    const { pushToken, deviceName, deviceType, os, appVersion } = body
-
-    if (!pushToken || typeof pushToken !== 'string') {
+    const parsed = pushRegisterSchema.safeParse(body)
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Token push requis' },
+        { error: getZodErrorMessage(parsed.error) },
         { status: 400 },
       )
     }
+
+    const { pushToken, deviceName, deviceType, os, appVersion } = parsed.data
 
     // Upsert: update existing device with same pushToken or create new
     const existingDevice = await db.device.findFirst({

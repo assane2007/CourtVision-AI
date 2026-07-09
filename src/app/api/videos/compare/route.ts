@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
+import { withAuth } from '@/lib/with-auth'
 
 // GET /api/videos/compare — Get two videos for side-by-side comparison
 // Query params: videoA, videoB (video IDs)
-export async function GET(req: NextRequest) {
+export const GET = withAuth(async (req: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const { searchParams } = new URL(req.url)
     const videoAId = searchParams.get('videoA')
@@ -63,4 +58,4 @@ export async function GET(req: NextRequest) {
     trackError('[GET /api/videos/compare]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

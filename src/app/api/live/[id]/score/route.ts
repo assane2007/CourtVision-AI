@@ -1,19 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
+import { withAuth } from '@/lib/with-auth'
+import { liveScoreUpdateSchema, getZodErrorMessage } from '@/lib/validations'
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const PUT = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const rl = rateLimit(`live:score:${session.user.id}`, 60, 15 * 60 * 1000)
     if (!rl.success) {
@@ -22,11 +15,12 @@ export async function PUT(
 
     const { id: sessionId } = await params
     const body = await request.json()
-    const { score, reps } = body
-
-    if (typeof score !== 'number' || score < 0) {
-      return NextResponse.json({ error: 'Score invalide' }, { status: 400 })
+    const parsed = liveScoreUpdateSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: getZodErrorMessage(parsed.error) }, { status: 400 })
     }
+
+    const { score, reps } = parsed.data
 
     const participant = await db.liveParticipant.findUnique({
       where: { liveSessionId_playerId: { liveSessionId: sessionId, playerId: session.user.id } },
@@ -40,7 +34,7 @@ export async function PUT(
       where: { id: participant.id },
       data: {
         score: Math.max(participant.score, score),
-        reps: Math.max(participant.reps, reps || 0),
+        reps: Math.max(participant.reps, reps),
       },
     })
 
@@ -52,4 +46,4 @@ export async function PUT(
     trackError('PUT /api/live/[id]/score', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

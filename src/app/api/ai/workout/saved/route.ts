@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
+import { withAuth } from '@/lib/with-auth'
 
 // GET /api/ai/workout/saved — List saved/generated workouts
-export async function GET(req: NextRequest) {
+export const GET = withAuth(async (req: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const playerId = session.user.id
     const url = new URL(req.url)
@@ -53,15 +48,11 @@ export async function GET(req: NextRequest) {
     trackError('GET /api/ai/workout/saved', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
 // PATCH /api/ai/workout/saved — Mark workout as used or rate it
-export async function PATCH(req: NextRequest) {
+export const PATCH = withAuth(async (req: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const playerId = session.user.id
     const body = await req.json()
@@ -89,15 +80,11 @@ export async function PATCH(req: NextRequest) {
     trackError('PATCH /api/ai/workout/saved', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
 
 // DELETE /api/ai/workout/saved — Delete a generated workout
-export async function DELETE(req: NextRequest) {
+export const DELETE = withAuth(async (req: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const playerId = session.user.id
     const url = new URL(req.url)
@@ -122,4 +109,4 @@ export async function DELETE(req: NextRequest) {
     trackError('DELETE /api/ai/workout/saved', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})
