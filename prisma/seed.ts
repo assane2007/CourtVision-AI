@@ -50,23 +50,93 @@ const DRILLS = [
   { name: 'Burpee to Sprint', nameFr: 'Burpee à Sprint', category: 'conditioning', difficulty: 'advanced', description: 'Burpees followed by immediate sprint for explosive conditioning.', descriptionFr: 'Burpees suivi de sprint immédiat.', instructions: '1 burpee, immediately sprint 10 meters, jog back. Repeat 8 times. Maximum effort.', instructionsFr: '1 burpee, sprintez 10m immédiatement, revenez en jog. 8 fois.', durationSec: 50, targetReps: 8, icon: '💥' },
 ]
 
-async function seed() {
-  console.log('Seeding drills...')
+// ─── Seed Helpers ───────────────────────────────────────────────────────────
+
+function slugify(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+}
+
+/**
+ * Seed the admin user if it doesn't already exist.
+ * Uses env vars for credentials, with sensible defaults for local dev.
+ */
+async function seedAdmin() {
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@bballai.com'
+  const adminPassword = process.env.ADMIN_PASSWORD || 'Admin123!'
+
+  const existing = await db.player.findUnique({ where: { email: adminEmail } })
+  if (existing) {
+    console.log(`  ✓ Admin user already exists: ${adminEmail}`)
+    return
+  }
+
+  // Use bcryptjs to hash password (same as the auth module)
+  const bcrypt = await import('bcryptjs')
+  const hashedPassword = await bcrypt.hash(adminPassword, 12)
+
+  await db.player.create({
+    data: {
+      email: adminEmail,
+      password: hashedPassword,
+      name: 'Admin',
+      role: 'admin',
+      emailVerified: true,
+      isOnboarded: true,
+      onboarding: true,
+    },
+  })
+
+  console.log(`  ✓ Created admin user: ${adminEmail}`)
+}
+
+/**
+ * Seed the default drills if the Drill table is empty.
+ */
+async function seedDrills() {
+  const existingCount = await db.drill.count()
+  if (existingCount > 0) {
+    console.log(`  ✓ Drills table already has ${existingCount} records, skipping`)
+    return
+  }
 
   for (const drill of DRILLS) {
+    const id = slugify(drill.name) || `drill-${Math.random().toString(36).slice(2)}`
+
     await db.drill.upsert({
-      where: { id: drill.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || `drill-${Math.random().toString(36).slice(2)}` },
+      where: { id },
       update: drill,
       create: {
-        id: drill.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || `drill-${Math.random().toString(36).slice(2)}`,
+        id,
         ...drill,
-      }
+      },
     })
   }
 
-  console.log(`Seeded ${DRILLS.length} drills`)
-  const count = await db.drill.count()
-  console.log(`Total drills in DB: ${count}`)
+  console.log(`  ✓ Seeded ${DRILLS.length} default drills`)
+}
+
+// ─── Main ───────────────────────────────────────────────────────────────────
+
+async function seed() {
+  console.log('🌱 Starting database seed...')
+  console.log('')
+
+  try {
+    await seedAdmin()
+    await seedDrills()
+
+    console.log('')
+    const playerCount = await db.player.count()
+    const drillCount = await db.drill.count()
+    console.log('📊 Seed summary:')
+    console.log(`  Players: ${playerCount}`)
+    console.log(`  Drills:  ${drillCount}`)
+    console.log('')
+    console.log('✅ Seed completed successfully')
+  } catch (error) {
+    console.error('❌ Seed failed:', error)
+    throw error
+  }
 }
 
 seed()

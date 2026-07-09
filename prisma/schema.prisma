@@ -158,6 +158,7 @@ model Player {
   twoFactorBackupCodes  TwoFactorBackupCode[]
   devices               Device[]
   offlineActions        OfflineAction[]
+  refreshTokens         RefreshToken[]
 
   @@index([resetToken])
   @@index([email])
@@ -979,4 +980,26 @@ model OfflineAction {
   @@index([createdAt])
   @@index([deviceId])
   @@index([playerId, status])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// REFRESH TOKEN — JWT refresh token storage for token rotation
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  jti       String    @unique              // JWT ID — matches the jti claim in the token
+  playerId  String
+  token     String                         // The full refresh token (hashed in production)
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?                      // Non-null means the token has been revoked
+  userAgent String?                        // Client user agent for audit
+
+  player    Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([jti])
+  @@index([token])
+  @@index([revokedAt])
 }

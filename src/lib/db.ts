@@ -1,9 +1,11 @@
-import { PrismaClient } from '@prisma/client'
+import { getDb } from '@/lib/database'
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
-}
-
-export const db = globalForPrisma.prisma ?? new PrismaClient()
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
+/**
+ * Prisma database client singleton.
+ *
+ * Delegates to the database module for connection pooling,
+ * slow query logging, and health check support.
+ *
+ * The database module handles hot-reload safety via globalThis caching.
+ */
+export const db = getDb()

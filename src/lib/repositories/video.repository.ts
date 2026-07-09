@@ -1,0 +1,175 @@
+/**
+ * Video repository — data access layer for Video, VideoAnnotation, and VideoExport models.
+ */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { db } from '@/lib/db'
+import { Prisma } from '@prisma/client'
+import { BaseRepository } from './base.repository'
+import type { VideoData } from '@/lib/types/service.types'
+
+export class VideoRepository extends BaseRepository<'Video', any> {
+  constructor() {
+    super(db.video as any, 'Video')
+  }
+
+  /**
+   * Find videos for a player with annotation and export counts.
+   */
+  async findForPlayer(
+    playerId: string,
+    params?: { cursor?: string; limit?: number; isPublic?: boolean },
+  ) {
+    const { cursor, limit = 20, isPublic } = params ?? {}
+
+    const where: Prisma.VideoWhereInput = { playerId }
+    if (isPublic !== undefined) where.isPublic = isPublic
+
+    const cursorWhere = cursor
+      ? { AND: [where, { id: { gt: cursor } }] as Prisma.VideoWhereInput[] }
+      : where
+
+    const videos = await db.video.findMany({
+      where: cursorWhere,
+      include: {
+        _count: {
+          select: {
+            annotations: true,
+            exports: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit + 1,
+    })
+
+    const hasMore = videos.length > limit
+    const pageVideos = hasMore ? videos.slice(0, limit) : videos
+    const nextCursor = hasMore ? pageVideos[pageVideos.length - 1].id : null
+
+    const data: VideoData[] = pageVideos.map((v) => ({
+      id: v.id,
+      title: v.title,
+      storageUrl: v.storageUrl,
+      thumbnailUrl: v.thumbnailUrl,
+      durationSec: v.durationSec,
+      isPublic: v.isPublic,
+      viewsCount: v.viewsCount ?? 0,
+      annotationsCount: v._count.annotations,
+      createdAt: v.createdAt,
+    }))
+
+    return { videos: data, nextCursor, hasMore, count: data.length }
+  }
+
+  /**
+   * Find a video with annotations (ownership check included).
+   */
+  async findWithAnnotations(videoId: string, playerId: string) {
+    return db.video.findFirst({
+      where: { id: videoId, playerId },
+      include: {
+        annotations: {
+          orderBy: { timestampMs: 'asc' },
+        },
+        _count: {
+          select: {
+            annotations: true,
+            exports: true,
+          },
+        },
+      },
+    })
+  }
+
+  /**
+   * Increment view count.
+   */
+  async incrementViews(videoId: string): Promise<void> {
+    await db.video.update({
+      where: { id: videoId },
+      data: { viewsCount: { increment: 1 } },
+    })
+  }
+}
+
+// ── Annotation Repository ───────────────────────────────────────────────────────
+
+export class AnnotationRepository extends BaseRepository<'VideoAnnotation', any> {
+  constructor() {
+    super(db.videoAnnotation as any, 'VideoAnnotation')
+  }
+
+  /**
+   * Get annotations for a video.
+   */
+  async getForVideo(videoId: string) {
+    return db.videoAnnotation.findMany({
+      where: { videoId },
+      orderBy: { timestampMs: 'asc' },
+    })
+  }
+
+  /**
+   * Create an annotation for a video.
+   */
+  async createForVideo(videoId: string, data: {
+    type: string
+    timestampMs: number
+    annotationData: unknown
+    playerId: string
+  }) {
+    return db.videoAnnotation.create({
+      data: {
+        videoId,
+        type: data.type,
+        timestampMs: data.timestampMs,
+        data: data.annotationData as any,
+        playerId: data.playerId,
+      },
+    })
+  }
+}
+
+// ── Export Repository ───────────────────────────────────────────────────────────
+
+export class VideoExportRepository extends BaseRepository<'VideoExport', any> {
+  constructor() {
+    super(db.videoExport as any, 'VideoExport')
+  }
+
+  /**
+   * Get exports for a video.
+   */
+  async getForVideo(videoId: string) {
+    return db.videoExport.findMany({
+      where: { videoId },
+      orderBy: { createdAt: 'desc' },
+    })
+  }
+
+  /**
+   * Create an export job for a video.
+   */
+  async createExport(videoId: string, data: {
+    format: string
+    playerId: string
+    options?: Record<string, unknown>
+  }) {
+    return db.videoExport.create({
+      data: {
+        videoId,
+        format: data.format,
+        status: 'pending',
+        playerId: data.playerId,
+        options: data.options as any,
+      },
+    })
+  }
+}
+
+// ── Singletons ──────────────────────────────────────────────────────────────────
+
+export const videoRepository = new VideoRepository()
+export const annotationRepository = new AnnotationRepository()
+export const videoExportRepository = new VideoExportRepository()

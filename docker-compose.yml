@@ -1,41 +1,84 @@
 # ============================================
-# CourtVision AI — Docker Compose
+# CourtVision AI — Docker Compose (Local Dev)
 # ============================================
 # Usage:
-#   docker compose up -d          # Start in background
-#   docker compose logs -f        # Follow logs
-#   docker compose down           # Stop and remove containers
-#   docker compose up --build     # Rebuild and start
+#   docker compose up -d                # Start in background
+#   docker compose logs -f              # Follow logs
+#   docker compose down                 # Stop and remove containers
+#   docker compose up --build           # Rebuild and start
+#   docker compose --profile tools up   # Include pgAdmin
+
+version: '3.8'
 
 services:
-  courtvision:
+  app:
     build: .
     container_name: courtvision-ai
     ports:
       - "3000:3000"
-    volumes:
-      # SQLite database persists across container restarts
-      - courtvision-db:/app/db
-      # User uploads (AI form-check images, exports, etc.)
-      - courtvision-uploads:/app/uploads
     environment:
-      # Database — SQLite file inside the mounted volume
-      - DATABASE_URL=file:/app/db/courtvision.db
-      # NextAuth
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-change-me-in-production}
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
-      # Optional: uncomment if using Sentry
-      # - SENTRY_DSN=${SENTRY_DSN}
+      - DATABASE_URL=postgresql://courtvision:cv_pass_2024@postgres:5432/courtvision
+      - REDIS_URL=redis://redis:6379
+      - NEXTAUTH_SECRET=local-dev-secret-minimum-32-chars!!
+      - NEXTAUTH_URL=http://localhost:3000
+      - NODE_ENV=production
+    volumes:
+      - courtvision-uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: courtvision-postgres
+    environment:
+      POSTGRES_USER: courtvision
+      POSTGRES_PASSWORD: cv_pass_2024
+      POSTGRES_DB: courtvision
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      start_period: 15s
-      retries: 3
+      test: ["CMD-SHELL", "pg_isready -U courtvision"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: courtvision-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Optional: pgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: courtvision-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@courtvision.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    profiles:
+      - tools
 
 volumes:
-  courtvision-db:
+  postgres_data:
+    driver: local
+  redis_data:
     driver: local
   courtvision-uploads:
     driver: local

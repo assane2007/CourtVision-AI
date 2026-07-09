@@ -69,3 +69,25 @@ server.log
 test-results/
 playwright-report/
 blob-report/
+
+# Build
+dist/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+
+# Agent context
+agent-ctx/
+
+# Browser test artifacts
+browser-test/
+
+# Download artifacts
+download/
+
+# Root-level PNGs (generated assets, not source)
+/*.png

@@ -1,22 +1,55 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { NextRequest } from 'next/server'
+import { runHealthChecks, type HealthCheckResult } from '@/lib/monitoring/health'
+import { evaluateAlerts } from '@/lib/monitoring/alerts'
 
 // GET /api/health — Unauthenticated health check endpoint
-export async function GET() {
-  let dbStatus: 'connected' | 'error' = 'connected'
+// Supports ?detailed=true for full diagnostics including alerts
+export async function GET(req: NextRequest) {
+  const { searchParams } = req.nextUrl
+  const detailed = searchParams.get('detailed') === 'true'
 
-  try {
-    // Simple Prisma query to verify DB connection
-    await db.player.count({ take: 1 })
-  } catch {
-    dbStatus = 'error'
+  const healthResult = await runHealthChecks()
+
+  // Build the response based on detail level
+  if (!detailed) {
+    // Simple response for load balancers / uptime checks
+    const isHealthy = healthResult.status !== 'unhealthy'
+    return NextResponse.json(
+      {
+        status: isHealthy ? 'ok' : 'error',
+        timestamp: healthResult.timestamp,
+        uptime: healthResult.uptime,
+        version: healthResult.version,
+        db: healthResult.checks.database?.status === 'healthy' ? 'connected' : 'error',
+      },
+      {
+        status: isHealthy ? 200 : 503,
+        headers: {
+          'Cache-Control': 'no-store',
+        },
+      },
+    )
   }
 
-  return NextResponse.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    version: '1.0.0',
-    db: dbStatus,
+  // Detailed response includes all checks and alerts
+  const alerts = evaluateAlerts()
+
+  const detailedResponse: HealthCheckResult & {
+    alerts: ReturnType<typeof evaluateAlerts>
+  } = {
+    ...healthResult,
+    alerts,
+  }
+
+  const httpStatus = healthResult.status === 'unhealthy' ? 503
+    : healthResult.status === 'degraded' ? 200
+    : 200
+
+  return NextResponse.json(detailedResponse, {
+    status: httpStatus,
+    headers: {
+      'Cache-Control': 'no-store',
+    },
   })
 }
