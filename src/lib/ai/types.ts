@@ -4,7 +4,7 @@
  */
 
 export type { SubscriptionTier } from '@/lib/types/api.types'
-import type { SkillKey } from '@/lib/player/iq-engine'
+export type { SkillKey } from '@/lib/player/iq-engine'
 
 // ── Language ─────────────────────────────────────────────────────────────────────
 
