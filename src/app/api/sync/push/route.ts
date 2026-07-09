@@ -43,17 +43,17 @@ export async function POST(request: Request) {
             break
           }
           case 'drill_favorite': {
-            const { drillId, favorited } = payload
-            if (drillId && typeof favorited === 'boolean') {
-              if (favorited) {
+            const p = payload as { drillId?: string; favorited?: boolean } | undefined
+            if (p?.drillId && typeof p.favorited === 'boolean') {
+              if (p.favorited) {
                 await db.drillFavorite.upsert({
-                  where: { playerId_drillId: { playerId, drillId } },
-                  create: { playerId, drillId },
+                  where: { playerId_drillId: { playerId, drillId: p.drillId } },
+                  create: { playerId, drillId: p.drillId },
                   update: {},
                 })
               } else {
                 await db.drillFavorite.deleteMany({
-                  where: { playerId, drillId },
+                  where: { playerId, drillId: p.drillId },
                 })
               }
             }
