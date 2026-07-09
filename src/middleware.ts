@@ -12,6 +12,7 @@ const PUBLIC_PATHS = [
   '/sw.js',
   '/',
   '/monitoring', // Sentry tunnel route
+  '/api/sentry-test', // Debug endpoint
 ]
 
 export function middleware(request: NextRequest) {

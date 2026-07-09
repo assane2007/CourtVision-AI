@@ -7,9 +7,8 @@ Sentry.init({
     // Keep default PII collection for debugging; tighten in production
   },
 
-  // Capture 100% of transactions for performance monitoring
-  // Adjust down in production if volume is too high
-  tracesSampleRate: 1.0,
+  // Capture 10% of transactions in development to reduce memory overhead
+  tracesSampleRate: process.env.NODE_ENV === 'production' ? 1.0 : 0.1,
 
   // Session Replay: 10% of all sessions, 100% of sessions with errors
   replaysSessionSampleRate: 0.1,
@@ -21,7 +20,9 @@ Sentry.init({
 
   release: process.env.NEXT_PUBLIC_SENTRY_RELEASE || undefined,
 
-  enabled: process.env.NODE_ENV === 'production',
+  // Enable Sentry in ALL environments so errors reach the dashboard
+  // Set NEXT_PUBLIC_SENTRY_ENABLED=false to disable
+  enabled: process.env.NEXT_PUBLIC_SENTRY_ENABLED !== 'false',
 
   // Distributed tracing — define which outgoing requests get trace headers
   tracePropagationTargets: [
