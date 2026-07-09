@@ -16,6 +16,7 @@
  */
 
 import { createConnection, type Socket } from 'node:net'
+import { config } from '@/lib/config'
 import { MemoryCache } from './memory-cache'
 import type { CacheAdapter, CacheAdapterWithTags, CacheStats, RedisConfig } from './types'
 
@@ -307,21 +308,21 @@ export class RedisCache implements CacheAdapter, CacheAdapterWithTags {
     estimatedBytes: 0,
   }
 
-  constructor(config: RedisConfig = { url: process.env.REDIS_URL || '' }) {
-    this.namespace = config.namespace || DEFAULT_NAMESPACE
+  constructor(redisConfig: RedisConfig = { url: config.redis.url || '' }) {
+    this.namespace = redisConfig.namespace || DEFAULT_NAMESPACE
 
     // Always have a fallback ready
     this.fallback = new MemoryCache()
 
-    if (!config.url) {
+    if (!redisConfig.url) {
       // No Redis URL configured, use fallback
       return
     }
 
     try {
       this.client = new SimpleRedisClient(
-        config.url,
-        config.connectTimeout || DEFAULT_CONNECT_TIMEOUT,
+        redisConfig.url,
+        redisConfig.connectTimeout || DEFAULT_CONNECT_TIMEOUT,
       )
       this.usingFallback = false
     } catch {

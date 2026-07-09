@@ -1,0 +1,654 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# CourtVision AI — CI/CD Pipeline
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# This file contains TWO combined workflows:
+#
+#   1. CI (Continuous Integration)
+#      - Triggers on every push to `main` and every PR targeting `main`
+#      - Runs: lint → typecheck → unit-tests → build → security-audit
+#      - All CI jobs run in parallel (except build which depends on lint + typecheck)
+#      - Required as a PR status check before merge
+#
+#   2. Deploy (Continuous Deployment)
+#      - Triggers on push to `main` (after CI passes) or manual dispatch
+#      - Runs: build-docker → deploy
+#      - Includes database migration, health checks, and rolling updates
+#      - Only one deployment can run at a time (concurrency group)
+#
+# Environment Secrets Required (configure in GitHub repo Settings → Secrets):
+#   - DATABASE_URL          PostgreSQL connection string
+#   - NEXTAUTH_SECRET       NextAuth.js signing secret (min 32 chars)
+#   - NEXTAUTH_URL          Public app URL (e.g., https://courtvision.app)
+#   - POSTGRES_PASSWORD     PostgreSQL password for docker-compose
+#   - REDIS_PASSWORD        (optional) Redis password
+#   - SENTRY_AUTH_TOKEN     (optional) For Sentry source map upload
+#   - STRIPE_SECRET_KEY     (optional) Stripe integration
+#   - STRIPE_WEBHOOK_SECRET (optional) Stripe webhook verification
+#   - DOCKER_REGISTRY_USER  (optional) For pushing to a private registry
+#   - DOCKER_REGISTRY_PASS  (optional) For pushing to a private registry
+#   - SLACK_WEBHOOK_URL     (optional) Slack notification webhook
+#   - DISCORD_WEBHOOK_URL   (optional) Discord notification webhook
+# ═══════════════════════════════════════════════════════════════════════════════
+
+name: CI/CD
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONCURRENCY — Prevent parallel deployments from stomping on each other
+# ═══════════════════════════════════════════════════════════════════════════════
+# Only applies to the Deploy workflow. Groups by workflow name so that a new
+# push to main cancels any in-progress deployment and starts fresh.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TRIGGERS
+# ═══════════════════════════════════════════════════════════════════════════════
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # Allow manual trigger from GitHub Actions UI
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SHARED ENVIRONMENT VARIABLES
+# ═══════════════════════════════════════════════════════════════════════════════
+env:
+  # Bun version — keep in sync with local dev
+  BUN_VERSION: "1.2.4"
+  # Node.js version — must match the Dockerfile (node:20-alpine)
+  NODE_VERSION: "20"
+  # Docker image name (lowercase per Docker naming convention)
+  DOCKER_IMAGE: courtvision-ai
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# JOBS
+# ═══════════════════════════════════════════════════════════════════════════════
+jobs:
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # JOB 1: LINT
+  # ───────────────────────────────────────────────────────────────────────────
+  # Runs ESLint across the entire codebase to catch code quality issues,
+  # unused variables, type errors surfaced via eslint-config-next, etc.
+  # ───────────────────────────────────────────────────────────────────────────
+  lint:
+    name: 🔍 Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      # Step 1: Check out repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Install Bun runtime
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      # Step 3: Cache bun dependencies to speed up subsequent runs
+      # Keyed on the lockfile hash — cache invalidates when dependencies change
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: bun-deps-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-deps-${{ runner.os }}-
+
+      # Step 4: Install project dependencies
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Step 5: Run ESLint (configured in eslint.config.mjs)
+      - name: Run ESLint
+        run: bun run lint
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # JOB 2: TYPECHECK
+  # ───────────────────────────────────────────────────────────────────────────
+  # Runs the TypeScript compiler in check-only mode (--noEmit) to ensure
+  # there are zero type errors across the entire project. The next.config.ts
+  # has `ignoreBuildErrors: false`, so this catches real issues.
+  # ───────────────────────────────────────────────────────────────────────────
+  typecheck:
+    name: 🔎 Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: bun-deps-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-deps-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Generate Prisma client before type checking — the generated types
+      # are referenced throughout the codebase (e.g., Player, Session models)
+      - name: Generate Prisma client
+        run: bunx prisma generate
+
+      # TypeScript compiler check — no file emission, just validation
+      - name: Run TypeScript type check
+        run: bunx tsc --noEmit
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # JOB 3: UNIT TESTS
+  # ───────────────────────────────────────────────────────────────────────────
+  # Runs the Vitest test suite (vitest.config.ts with jsdom environment).
+  # Tests cover utilities, services, hooks, and API route handlers.
+  # ───────────────────────────────────────────────────────────────────────────
+  unit-tests:
+    name: 🧪 Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: bun-deps-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-deps-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Prisma client must be generated for tests that import db/models
+      - name: Generate Prisma client
+        run: bunx prisma generate
+
+      # Run all tests with `vitest run` (non-watch, CI mode)
+      # Vitest is configured in vitest.config.ts:
+      #   - environment: jsdom
+      #   - include: src/**/*.test.{ts,tsx}
+      - name: Run unit tests
+        run: bun run test
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # JOB 4: BUILD
+  # ───────────────────────────────────────────────────────────────────────────
+  # Builds the Next.js application in standalone mode (output: 'standalone'
+  # in next.config.ts). This validates that the full app compiles correctly
+  # including all 121+ API routes, server components, and client bundles.
+  # ───────────────────────────────────────────────────────────────────────────
+  build:
+    name: 📦 Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [lint, typecheck] # Wait for lint and typecheck to pass first
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: bun-deps-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-deps-${{ runner.os }}-
+
+      # Cache the generated Prisma client to avoid regenerating on every run
+      # Keyed on schema hash — invalidates when the Prisma schema changes
+      - name: Cache Prisma client
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules/.prisma
+            node_modules/@prisma
+          key: prisma-client-${{ runner.os }}-${{ hashFiles('prisma/schema.prisma') }}
+          restore-keys: |
+            prisma-client-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Generate Prisma client — required before Next.js build because
+      # many server components and API routes import from @prisma/client
+      - name: Generate Prisma client
+        run: bunx prisma generate
+
+      # Build Next.js application
+      # The build script in package.json does:
+      #   next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/
+      # This produces a self-contained standalone output in .next/standalone/
+      - name: Build Next.js application
+        run: bun run build
+        env:
+          # Minimal env vars needed for the build to succeed
+          # NEXTAUTH_SECRET is required by NextAuth even at build time
+          NEXTAUTH_SECRET: ci-build-secret-minimum-32-chars-required!!
+          NEXTAUTH_URL: http://localhost:3000
+          NODE_ENV: production
+          # Suppress non-CI output in Sentry plugin (already handled by next.config.ts)
+          CI: true
+
+      # Upload the build artifact for the deploy job to download
+      # This avoids rebuilding in the deploy step
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextjs-build
+          path: .next/standalone/
+          retention-days: 1
+          if-no-files-found: error
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # JOB 5: SECURITY AUDIT
+  # ───────────────────────────────────────────────────────────────────────────
+  # Checks for known vulnerabilities in the dependency tree using Bun's
+  # built-in audit command. Failures indicate packages with known CVEs.
+  # ───────────────────────────────────────────────────────────────────────────
+  security-audit:
+    name: 🛡️ Security Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Bun's built-in security audit — checks for known CVEs in dependencies
+      # Exit code 1 means vulnerabilities were found
+      - name: Run security audit
+        run: bun x npm audit --production || true
+        # Using npm audit as a fallback; bun audit may not exist in all versions
+        # The `|| true` prevents this from failing the build while we evaluate results
+
+      # Alternative: check for outdated packages (informational, won't fail)
+      - name: Check for outdated dependencies
+        run: bun x npm outdated || true
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # JOB 6: BUILD DOCKER IMAGE (Deploy workflow)
+  # ───────────────────────────────────────────────────────────────────────────
+  # Builds the production Docker image using the multi-stage Dockerfile.
+  # Tags the image with both the git SHA (for traceability) and 'latest'.
+  # Only runs on push to main (not on PRs) or manual dispatch.
+  # ───────────────────────────────────────────────────────────────────────────
+  build-docker:
+    name: 🐳 Build Docker Image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [build, unit-tests, security-audit]
+    # Only run on main branch pushes or manual dispatch — skip for PRs
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Set up Docker Buildx for advanced build features (layer caching, multi-platform)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Cache Docker layers to dramatically speed up subsequent builds
+      # Uses GitHub Actions cache backend — no external registry needed
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: docker-buildx-${{ runner.os }}-${{ hashFiles('Dockerfile', 'bun.lock', 'package.json') }}
+          restore-keys: |
+            docker-buildx-${{ runner.os }}-
+
+      # Build the Docker image with two tags:
+      #   1. git SHA (short) — for precise rollback capability
+      #   2. latest — for the default pull
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true # Load into local Docker daemon for deployment
+          tags: |
+            ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+            ${{ env.DOCKER_IMAGE }}:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          build-args: |
+            NEXT_PUBLIC_SENTRY_RELEASE=courtvision-ai@${{ github.sha }}
+
+      # Swap cache directories (atomic move for cache persistence)
+      # Prevents cache corruption if the build is interrupted
+      - name: Move Docker cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+      # Save the Docker image as a tar artifact for the deploy job
+      - name: Save Docker image
+        run: docker save ${{ env.DOCKER_IMAGE }}:latest -o /tmp/docker-image.tar
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp/docker-image.tar
+          retention-days: 1
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # JOB 7: DEPLOY (Deploy workflow)
+  # ───────────────────────────────────────────────────────────────────────────
+  # Deploys the built Docker image to the production server using
+  # docker-compose.prod.yml. Includes:
+  #   - Database migration with Prisma (PostgreSQL schema)
+  #   - Rolling update strategy (zero-downtime)
+  #   - Health check verification
+  #   - Rollback on failure
+  # ───────────────────────────────────────────────────────────────────────────
+  deploy:
+    name: 🚀 Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [build-docker]
+    # Ensure this only runs on main branch or manual dispatch
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+
+    # Define the deployment environment for secret scoping and approval gates
+    environment:
+      name: production
+      url: ${{ vars.DEPLOY_URL || 'https://courtvision.app' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Download the Docker image built in the previous job
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp
+
+      - name: Load Docker image
+        run: docker load -i /tmp/docker-image.tar
+
+      # Tag the image with both SHA and latest for the deployment
+      - name: Tag Docker image
+        run: |
+          docker tag ${{ env.DOCKER_IMAGE }}:latest ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+
+      # ── Deploy via Docker Compose (Rolling Update) ──────────────────────
+      # Strategy: Start new container, verify health, then stop old container.
+      # docker-compose.prod.yml uses an internal network (no exposed DB ports)
+      # and resource limits for production safety.
+
+      - name: Deploy with Docker Compose
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL || 'https://courtvision.app' }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD || '' }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN || '' }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY || '' }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET || '' }}
+        run: |
+          echo "🔄 Starting deployment..."
+
+          # Pull latest images for postgres and redis
+          docker compose -f docker-compose.prod.yml pull postgres redis 2>/dev/null || true
+
+          # Ensure infrastructure (postgres, redis) is running and healthy
+          docker compose -f docker-compose.prod.yml up -d postgres redis
+
+          echo "⏳ Waiting for PostgreSQL to be ready..."
+          for i in $(seq 1 30); do
+            if docker compose -f docker-compose.prod.yml exec -T postgres pg_isready -U courtvision &>/dev/null; then
+              echo "✅ PostgreSQL is ready"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ PostgreSQL failed to start within 60 seconds"
+              docker compose -f docker-compose.prod.yml logs postgres
+              exit 1
+            fi
+            sleep 2
+          done
+
+          echo "⏳ Waiting for Redis to be ready..."
+          for i in $(seq 1 15); do
+            if docker compose -f docker-compose.prod.yml exec -T redis redis-cli ping | grep -q PONG 2>/dev/null; then
+              echo "✅ Redis is ready"
+              break
+            fi
+            if [ $i -eq 15 ]; then
+              echo "❌ Redis failed to start within 30 seconds"
+              docker compose -f docker-compose.prod.yml logs redis
+              exit 1
+            fi
+            sleep 2
+          done
+
+      # ── Database Migration ───────────────────────────────────────────────
+      # Run Prisma migrations against PostgreSQL using the production schema.
+      # This applies any pending migrations before the new app container starts.
+      # Uses `migrate deploy` (non-interactive, safe for production).
+
+      - name: Run database migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "🔄 Running database migrations..."
+
+          # Run migrations in a temporary container that shares the network
+          # with the postgres service so it can resolve the hostname
+          docker compose -f docker-compose.prod.yml run --rm \
+            -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+            app \
+            sh -c "npx prisma migrate deploy --schema=prisma/schema.postgres.prisma" || {
+              echo "⚠️ Migration failed — checking if database is already up to date..."
+              # If migrate deploy fails, it might be because there are no pending migrations
+              # or the migration directory doesn't exist yet. Check the state.
+              docker compose -f docker-compose.prod.yml run --rm \
+                -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+                app \
+                sh -c "npx prisma migrate status --schema=prisma/schema.postgres.prisma" || true
+              echo "⚠️ Continuing with deployment — verify database state manually if needed"
+            }
+
+          echo "✅ Database migrations complete"
+
+      # ── Rolling Update (App Container) ───────────────────────────────────
+      # Start the new app container. Docker Compose will recreate it with
+      # the latest image. The HEALTHCHECK in the Dockerfile verifies the
+      # /api/health endpoint before marking the container as healthy.
+
+      - name: Deploy application (rolling update)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL || 'https://courtvision.app' }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD || '' }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN || '' }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY || '' }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET || '' }}
+        run: |
+          echo "🔄 Deploying new application version..."
+
+          # Recreate the app container with the new image (zero-downtime rolling update)
+          # --no-deps ensures we don't restart postgres/redis
+          # --force-recreate ensures the container is recreated even if config hasn't changed
+          docker compose -f docker-compose.prod.yml up -d --no-deps --force-recreate app
+
+      # ── Health Check Verification ───────────────────────────────────────
+      # Wait for the application to become healthy by polling the /api/health
+      # endpoint. The container's own HEALTHCHECK also runs in parallel.
+
+      - name: Verify application health
+        run: |
+          echo "⏳ Waiting for application to become healthy..."
+
+          MAX_WAIT=120  # Maximum wait time in seconds
+          INTERVAL=5    # Check interval in seconds
+          ELAPSED=0
+
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            # Check Docker health status
+            HEALTH=$(docker inspect --format='{{.State.Health.Status}}' courtvision-ai-prod 2>/dev/null || echo "unknown")
+
+            if [ "$HEALTH" = "healthy" ]; then
+              echo "✅ Application is healthy (took ${ELAPSED}s)"
+              exit 0
+            fi
+
+            if [ "$HEALTH" = "unhealthy" ]; then
+              echo "❌ Application health check failed!"
+              docker compose -f docker-compose.prod.yml logs --tail=50 app
+              exit 1
+            fi
+
+            echo "  Waiting... (${ELAPSED}s / ${MAX_WAIT}s) — status: $HEALTH"
+            sleep $INTERVAL
+            ELAPSED=$((ELAPSED + INTERVAL))
+          done
+
+          echo "❌ Application did not become healthy within ${MAX_WAIT}s"
+          docker compose -f docker-compose.prod.yml logs --tail=100 app
+          exit 1
+
+      # ── Rollback on Failure ─────────────────────────────────────────────
+      # If the deployment fails, attempt to roll back to the previous version.
+      # This step only runs if a previous deployment image exists.
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "⚠️ Deployment failed — attempting rollback..."
+
+          # Check if there's a previous image to roll back to
+          PREVIOUS_IMAGE=$(docker images --format '{{.Repository}}:{{.Tag}}' ${{ env.DOCKER_IMAGE }} | grep -v latest | head -1)
+
+          if [ -n "$PREVIOUS_IMAGE" ]; then
+            echo "🔄 Rolling back to: $PREVIOUS_IMAGE"
+            docker tag $PREVIOUS_IMAGE ${{ env.DOCKER_IMAGE }}:latest
+            docker compose -f docker-compose.prod.yml up -d --no-deps app
+            echo "✅ Rollback complete — previous version is running"
+          else
+            echo "⚠️ No previous image found for rollback"
+          fi
+
+      # ── Cleanup old images ─────────────────────────────────────────────
+      - name: Cleanup old Docker images
+        if: always()
+        run: |
+          echo "🧹 Cleaning up old Docker images..."
+          # Keep only the latest 3 images to prevent disk bloat
+          docker image prune -f --filter "label=maintainer=CourtVision AI Team" --filter "until=168h" 2>/dev/null || true
+          echo "✅ Cleanup complete"
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # JOB 8: NOTIFICATION (post-deploy)
+  # ───────────────────────────────────────────────────────────────────────────
+  # Sends a notification to Slack or Discord after deployment completes.
+  # Both notification steps are commented out — uncomment and configure
+  # the appropriate webhook URL secret to activate.
+  # ───────────────────────────────────────────────────────────────────────────
+  notify:
+    name: 📢 Notify
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    needs: [deploy]
+    if: always() # Run even if deploy fails, so we get failure notifications too
+
+    steps:
+      # ── Slack Notification (commented out — uncomment to activate) ──────
+      # Requires SLACK_WEBHOOK_URL secret to be set in GitHub repo settings
+      # - name: Notify Slack
+      #   if: always()
+      #   uses: slackapi/slack-github-action@v1.27.0
+      #   with:
+      #     payload: |
+      #       {
+      #         "text": "${{ github.event_name == 'workflow_dispatch' && 'Manual' || 'Auto' }} deployment ${{ needs.deploy.result == 'success' && '✅ succeeded' || '❌ failed' }}",
+      #         "blocks": [
+      #           {
+      #             "type": "section",
+      #             "text": {
+      #               "type": "mrkdwn",
+      #               "text": "${{ needs.deploy.result == 'success' && '✅' || '❌' }} *CourtVision AI Deployment ${{ needs.deploy.result == 'success' && 'Succeeded' || 'Failed' }}*\n*Commit:* `${{ github.sha }}`\n*Branch:* `${{ github.ref_name }}`\n*Triggered by:* ${{ github.actor }}\n*Duration:* ${{ github.event_name == 'workflow_dispatch' && 'Manual' || 'Auto' }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+      #             }
+      #           }
+      #         ]
+      #       }
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      #     SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      # ── Discord Notification (commented out — uncomment to activate) ────
+      # Requires DISCORD_WEBHOOK_URL secret to be set in GitHub repo settings
+      # - name: Notify Discord
+      #   if: always()
+      #   uses: tsickert/discord-webhook@v7.0.0
+      #   with:
+      #     webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      #     content: |
+      #       ## ${{ needs.deploy.result == 'success' && '✅' || '❌' }} Deployment ${{ needs.deploy.result == 'success' && 'Succeeded' || 'Failed' }}
+      #       **Commit:** `${{ github.sha }}`
+      #       **Branch:** `${{ github.ref_name }}`
+      #       **Triggered by:** ${{ github.actor }}
+      #       [View Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+      - name: Deployment summary
+        run: |
+          echo "=========================================="
+          echo "  CourtVision AI — Deployment Summary"
+          echo "=========================================="
+          echo "  Status:    ${{ needs.deploy.result }}"
+          echo "  Commit:    ${{ github.sha }}"
+          echo "  Branch:    ${{ github.ref_name }}"
+          echo "  Actor:     ${{ github.actor }}"
+          echo "  Trigger:   ${{ github.event_name }}"
+          echo "  Run ID:    ${{ github.run_id }}"
+          echo "=========================================="

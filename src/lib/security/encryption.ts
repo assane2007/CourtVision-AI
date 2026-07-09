@@ -12,6 +12,7 @@
 
 import crypto from 'node:crypto'
 import bcrypt from 'bcryptjs'
+import { config } from '@/lib/config'
 import { logger } from '@/lib/logger'
 
 // ── Key Management ───────────────────────────────────────────────────────────
@@ -26,10 +27,10 @@ const SALT_ROUNDS = 12    // bcrypt cost factor
  * In production, ENCRYPTION_KEY must be set. In dev, it's auto-generated.
  */
 function getEncryptionKey(): Buffer {
-  let key = process.env.ENCRYPTION_KEY
+  let key = config.security.encryptionKey
 
   if (!key) {
-    if (process.env.NODE_ENV === 'production') {
+    if (config.env.isProd) {
       throw new Error(
         'FATAL: ENCRYPTION_KEY is not set. Generate one with:\n' +
         '  node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'

@@ -5,6 +5,7 @@
  * and has a strategy pattern for memory (dev) vs redis (prod).
  */
 
+import { config } from '@/lib/config'
 import { logger } from '@/lib/logger'
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -236,5 +237,5 @@ export class RateLimiter {
 
 // ── Singleton ────────────────────────────────────────────────────────────────
 
-const strategy: Strategy = process.env.REDIS_URL ? 'redis' : 'memory'
+const strategy: Strategy = config.redis.isEnabled ? 'redis' : 'memory'
 export const rateLimiter = new RateLimiter(strategy)

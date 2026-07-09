@@ -13,6 +13,7 @@
  */
 
 import { createHash, createHmac, randomUUID } from 'node:crypto'
+import { config } from '@/lib/config'
 import { LocalStorage } from './local-storage'
 import type { StorageService, StorageFile, UploadOptions } from './types'
 import { MAX_FILE_SIZE_BYTES } from './types'
@@ -28,15 +29,15 @@ interface S3Config {
 }
 
 function getS3Config(): S3Config | null {
-  const bucket = process.env.S3_BUCKET
+  const bucket = config.storage.s3.bucket
   if (!bucket) return null
 
   return {
     bucket,
-    region: process.env.S3_REGION || 'auto',
-    accessKey: process.env.S3_ACCESS_KEY || '',
-    secretKey: process.env.S3_SECRET_KEY || '',
-    endpoint: process.env.S3_ENDPOINT || undefined,
+    region: config.storage.s3.region,
+    accessKey: config.storage.s3.accessKey,
+    secretKey: config.storage.s3.secretKey,
+    endpoint: config.storage.s3.endpoint,
   }
 }
 

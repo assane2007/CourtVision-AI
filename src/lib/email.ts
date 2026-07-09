@@ -1,6 +1,8 @@
 // ── CourtVision AI — Email Helper (Mock) ────────────────────────────────────
 // In production, replace with a real email service (SendGrid, Resend, etc.)
 
+import { config } from '@/lib/config'
+
 export type EmailTemplate =
   | 'verification'
   | 'password_reset'
@@ -42,7 +44,7 @@ export function getEmailTemplate(
   template: EmailTemplate,
   params: Record<string, string>,
 ): { subject: string; html: string; text: string } {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const baseUrl = config.email.appUrl
 
   switch (template) {
     case 'verification': {

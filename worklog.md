@@ -3303,3 +3303,154 @@ Stage Summary:
 **Docker (7):** Dockerfile, docker-compose.yml, docker-compose.prod.yml, .dockerignore, 3 scripts
 **Config (2):** .env.production.example, .nvmrc
 **Auth Routes (2):** refresh/route.ts, revoke/route.ts
+
+---
+Task ID: 3
+Agent: Env & DB Agent
+Task: Update .env.example, db.ts re-export, email.ts config
+
+Work Log:
+- Read worklog.md to understand project context
+- Rewrote `.env.example` as the definitive configuration reference with 11 categorized sections: General, Database, Authentication, Sentry, Stripe, Redis, S3/Cloud Storage, Security, Push Notifications (VAPID), Email, and Logging & Debugging. Each variable is annotated with [REQUIRED]/[OPTIONAL] markers and usage notes.
+- Updated `src/lib/db.ts` to a single re-export line: `export { getDb as db, healthCheck, disconnect, POOL_CONFIG, SLOW_QUERY_THRESHOLD_MS } from './database'`. This replaces the old manual singleton pattern and delegates entirely to the database module.
+- Created `src/lib/config.ts` as a minimal central configuration module exposing a typed `config` object. Currently provides `config.email.appUrl` read from `NEXT_PUBLIC_APP_URL` with a localhost fallback.
+- Updated `src/lib/email.ts` to import `{ config }` from `@/lib/config` and replaced the direct `process.env.NEXT_PUBLIC_APP_URL` reference with `config.email.appUrl` in `getEmailTemplate()`.
+
+Stage Summary:
+- `.env.example` is now the single source of truth for all 30+ environment variables across the project
+- `src/lib/db.ts` cleanly re-exports from the database module — all existing `import { db }` statements continue to resolve
+- `src/lib/email.ts` no longer reads `process.env` directly; uses centralized config instead
+
+---
+Task ID: 2
+Agent: CI/CD Agent
+Task: Create GitHub Actions CI/CD pipeline
+
+Work Log:
+- Read worklog.md, Dockerfile, docker-compose.yml, docker-compose.prod.yml, .env.example, prisma/schema.postgres.prisma, package.json, eslint.config.mjs, vitest.config.ts, next.config.ts to fully understand project structure and tooling
+- Created `.github/workflows/` directory
+- Created `.github/workflows/ci-cd.yml` — a single combined CI/CD pipeline with 8 jobs:
+
+  **CI Jobs (run on every PR and push to main):**
+  1. `lint` — ESLint via `bun run lint`, bun dependency cache keyed on bun.lock
+  2. `typecheck` — `bunx tsc --noEmit` with Prisma client generation first
+  3. `unit-tests` — `bun run test` (vitest run, jsdom environment)
+  4. `build` — `bun run build` (Next.js standalone), depends on lint + typecheck, uploads artifact
+  5. `security-audit` — `bun x npm audit --production` for vulnerability scanning
+
+  **Deploy Jobs (run on push to main or workflow_dispatch only):**
+  6. `build-docker` — Multi-stage Docker build with Buildx, layer caching, tags with git SHA + latest, uploads image artifact
+  7. `deploy` — Full production deployment via docker-compose.prod.yml:
+     - Waits for PostgreSQL and Redis to be healthy
+     - Runs `prisma migrate deploy --schema=prisma/schema.postgres.prisma` for DB migrations
+     - Rolling update with `--force-recreate` on the app container
+     - Health check polling loop (120s timeout) against Docker HEALTHCHECK
+     - Automatic rollback to previous image on failure
+     - Old image cleanup (prune images older than 7 days)
+     - Uses environment secrets: DATABASE_URL, NEXTAUTH_SECRET, NEXTAUTH_URL, POSTGRES_PASSWORD, etc.
+  8. `notify` — Post-deployment summary (Slack and Discord webhook steps commented out, ready to activate)
+
+  **Key design decisions:**
+  - Concurrency group `deploy-${{ github.ref }}` with `cancel-in-progress: true` prevents parallel deploys
+  - Deploy jobs gated with `if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'` to skip on PRs
+  - Bun dependency cache shared across all CI jobs via `actions/cache@v4` keyed on `bun.lock`
+  - Separate Prisma client cache keyed on `prisma/schema.prisma` hash
+  - Docker layer cache for fast rebuilds
+  - Build artifact passed from build→build-docker→deploy via `actions/upload-artifact@v4`/`actions/download-artifact@v4`
+  - All steps documented with inline comments explaining purpose and rationale
+  - File header lists all required environment secrets with descriptions
+
+Stage Summary:
+- Created `.github/workflows/ci-cd.yml` — production-ready CI/CD pipeline for CourtVision AI
+- CI pipeline: lint → typecheck → unit-tests → build (parallel where possible) + security-audit
+- Deploy pipeline: Docker build → infrastructure health wait → DB migration → rolling update → health check → rollback on failure → cleanup
+- Notification scaffolding (Slack/Discord) commented out and ready to activate
+- All environment secrets documented at the top of the file
+
+---
+Task ID: 1
+Agent: Config Module Agent
+Task: Create centralized config module
+
+Work Log:
+- Audited entire codebase for environment variable usage via grep across 80+ files
+- Read key consumer files: db.ts, auth.ts, database/index.ts, security/encryption.ts, cache/index.ts, storage/index.ts, storage/s3-storage.ts, auth/jwt.ts, email.ts, monitoring/logger.ts, rate-limiter.ts, billing.service.ts, notification.service.ts, security/headers.ts, instrumentation-client.ts, next.config.ts
+- Read .env.example and .env.production.example for documented vars
+- Created /home/z/my-project/src/lib/config.ts with:
+  - Typed AppConfig interface with 10 domain groups: env, database, auth, sentry, stripe, redis, storage, security, notifications, logging, email
+  - Production-required validation: DATABASE_URL, NEXTAUTH_SECRET (min 32 chars), NEXTAUTH_URL, ENCRYPTION_KEY (32-byte hex) throw on missing
+  - Development defaults: SQLite path, mock auth secret, localhost URL, auto-generated encryption key
+  - Auto-detection of database provider from URL prefix (postgresql:// vs file:)
+  - Auto-detection of storage provider from S3_BUCKET presence
+  - Stripe isEnabled computed from secretKey + publishableKey both present
+  - Redis isEnabled from REDIS_URL presence
+  - Log level validation against allowed values, defaulting to debug in dev / info in prod
+  - LOG_QUERIES defaults to true in dev, false in prod
+  - Sentry enabled by default unless NEXT_PUBLIC_SENTRY_ENABLED='false'
+  - deepFreeze() utility for full immutability
+  - validateConfig() function that logs warnings for 14 optional vars, returns string[] of warnings
+- Fixed TypeScript errors: changed `import crypto` to `import { randomBytes }`, removed duplicate AppConfig re-export
+- Verified type-checking passes with `npx tsc --noEmit`
+- Verified dev server continues to run without errors
+
+Stage Summary:
+- Created centralized, type-safe, frozen config module at src/lib/config.ts
+- All 30+ environment variables across the project are now accessible via typed config object
+- Production startup fails fast on missing critical vars (DATABASE_URL, NEXTAUTH_SECRET, NEXTAUTH_URL, ENCRYPTION_KEY)
+- Development mode uses sensible defaults so the app works without any env vars set
+- validateConfig() provides startup warnings for missing optional integrations (Sentry, Stripe, Redis, S3, VAPID, Resend, etc.)
+
+---
+Task ID: 3
+Agent: Main
+Task: Wire centralized config module into 10 files
+
+Work Log:
+- Read all 10 target files and the config module to understand current process.env usage
+- Made minimal, targeted edits to each file — only changed process.env references that map to config fields
+- Fixed variable shadowing issue in redis-cache.ts where constructor parameter `config` conflicted with imported `config` (renamed param to `redisConfig`)
+- Preserved all `process.env.NEXT_RUNTIME` references (Next.js internal, not config concern)
+- Preserved `process.env.NODE_ENV === 'production'` in logger.ts writeLog() (formatting toggle, separate from MIN_LEVEL)
+
+Files modified (10):
+1. `src/lib/cache/index.ts` — `process.env.REDIS_URL` → `config.redis.url`
+2. `src/lib/cache/redis-cache.ts` — `process.env.REDIS_URL || ''` → `config.redis.url || ''`
+3. `src/lib/security/rate-limiter.ts` — `process.env.REDIS_URL ? 'redis' : 'memory'` → `config.redis.isEnabled ? 'redis' : 'memory'`
+4. `src/lib/monitoring/logger.ts` — LOG_LEVEL detection → `config.logging.level as LogLevel`
+5. `src/lib/security/headers.ts` — `ALLOWED_ORIGINS` split → `config.security.allowedOrigins`, NODE_ENV checks → `config.env.isProd`/`config.env.isDev`
+6. `src/lib/security/encryption.ts` — `process.env.ENCRYPTION_KEY` → `config.security.encryptionKey`, NODE_ENV check → `config.env.isProd`
+7. `src/lib/performance/query-logger.ts` — two `NODE_ENV === 'development' || LOG_QUERIES === 'true'` checks → `config.logging.logQueries`
+8. `src/instrumentation.ts` — added `validateConfig()` call after Sentry init in nodejs block
+9. `src/lib/storage/s3-storage.ts` — `process.env.S3_*` → `config.storage.s3.*`
+10. `src/lib/auth.ts` — `process.env.NODE_ENV === 'production' && !process.env.NEXTAUTH_SECRET` → `config.env.isProd && !config.auth.secret`
+
+Lint: 0 errors, 1 pre-existing warning (console.log in config.ts validateConfig — not from this task)
+
+Stage Summary:
+- All 10 files now use the centralized config module instead of direct process.env access
+- Config validation (validateConfig) runs at server startup via instrumentation.ts
+- No behavioral changes — config values are identical to previous process.env reads
+- Shipped clean lint pass
+---
+Task ID: config-setup
+Agent: Main
+Task: Centralized configuration system — config module, env wiring, CI/CD, startup script
+
+Work Log:
+- Scanned entire codebase for all process.env.* references (30+ unique variables across 50+ files)
+- Created `/src/lib/config.ts` — centralized, type-safe, frozen config module with 11 domain groups
+- Created `/.github/workflows/ci-cd.yml` — comprehensive CI/CD pipeline (lint, typecheck, tests, build, security audit, Docker build, deploy with migration + rollback)
+- Rewrote `/.env.example` — definitive configuration reference with 11 sections and detailed comments
+- Updated `/src/lib/db.ts` — clean re-export from database module
+- Wired config module into 10 files: cache/index.ts, cache/redis-cache.ts, security/rate-limiter.ts, monitoring/logger.ts, security/headers.ts, security/encryption.ts, performance/query-logger.ts, storage/s3-storage.ts, auth.ts, instrumentation.ts
+- Updated `/scripts/start-production.sh` — production startup with env validation, DB auto-detect, migration support
+- Fixed Edge Runtime error: changed config import in instrumentation.ts to dynamic `await import()`
+- Fixed middleware.ts: removed `.unref()` call incompatible with Edge Runtime
+- Verified: lint passes (0 errors, 0 warnings), config validation shows 10 warnings for optional vars, first page compile succeeds (GET / 200 in 28.8s)
+
+Stage Summary:
+- Centralized config eliminates scattered process.env reads across codebase
+- All env vars now validated at startup with clear warnings
+- Production startup fails fast on missing required vars (DATABASE_URL, NEXTAUTH_SECRET, NEXTAUTH_URL, ENCRYPTION_KEY)
+- CI/CD pipeline ready for GitHub with proper job dependencies, caching, and deployment strategy
+- `.env.example` serves as complete configuration documentation

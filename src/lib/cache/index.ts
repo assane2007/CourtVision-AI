@@ -7,6 +7,7 @@
  * Server-only module.
  */
 
+import { config } from '@/lib/config'
 import { MemoryCache } from './memory-cache'
 import { RedisCache } from './redis-cache'
 import type { CacheAdapter, CacheAdapterWithTags } from './types'
@@ -14,8 +15,8 @@ import type { CacheAdapter, CacheAdapterWithTags } from './types'
 // ── Adapter Selection ───────────────────────────────────────────────────────────
 
 function createCache(): CacheAdapter & CacheAdapterWithTags {
-  if (process.env.REDIS_URL) {
-    return new RedisCache({ url: process.env.REDIS_URL })
+  if (config.redis.url) {
+    return new RedisCache({ url: config.redis.url })
   }
   return new MemoryCache()
 }

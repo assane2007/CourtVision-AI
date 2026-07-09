@@ -12,6 +12,7 @@
  */
 
 import * as Sentry from '@sentry/nextjs'
+import { config } from '@/lib/config'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -50,9 +51,7 @@ const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
   fatal: 4,
 }
 
-const MIN_LEVEL: LogLevel = (process.env.LOG_LEVEL as LogLevel) ?? (
-  process.env.NODE_ENV === 'production' ? 'info' : 'debug'
-)
+const MIN_LEVEL: LogLevel = config.logging.level as LogLevel
 
 const BATCH_FLUSH_INTERVAL_MS = 5_000
 const BATCH_MAX_SIZE = 100

@@ -7,6 +7,7 @@
  */
 
 import { NextResponse } from 'next/server'
+import { config } from '@/lib/config'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -43,12 +44,12 @@ export function securityHeaders(): Record<string, string> {
   }
 
   // HSTS — only in production with HTTPS
-  if (process.env.NODE_ENV === 'production') {
+  if (config.env.isProd) {
     headers['Strict-Transport-Security'] = 'max-age=63072000; includeSubDomains; preload'
   }
 
   // Content Security Policy — only in production
-  if (process.env.NODE_ENV === 'production') {
+  if (config.env.isProd) {
     headers['Content-Security-Policy'] = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
@@ -71,10 +72,10 @@ export function securityHeaders(): Record<string, string> {
  * In production, this should be configured to specific allowed domains.
  */
 export function corsHeaders(origin?: string): Record<string, string> {
-  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(s => s.trim()) || []
+  const allowedOrigins = config.security.allowedOrigins
 
   // In development, allow all origins
-  const isAllowed = process.env.NODE_ENV === 'development'
+  const isAllowed = config.env.isDev
     || !origin
     || allowedOrigins.length === 0
     || allowedOrigins.includes(origin)

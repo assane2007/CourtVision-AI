@@ -1,10 +1,11 @@
 import type { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
+import { config } from '@/lib/config'
 import { db } from './db'
 import { rateLimit } from './rate-limit'
 
-if (process.env.NODE_ENV === 'production' && !process.env.NEXTAUTH_SECRET) {
+if (config.env.isProd && !config.auth.secret) {
   throw new Error('FATAL: NEXTAUTH_SECRET is not set. Refusing to start in production.')
 }
 

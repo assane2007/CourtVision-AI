@@ -11,6 +11,8 @@
  * Server-only module.
  */
 
+import { config } from '@/lib/config'
+
 // ── Configuration ──────────────────────────────────────────────────────────────
 
 const SLOW_QUERY_THRESHOLD_MS = 100
@@ -150,7 +152,7 @@ export function getGlobalTracker(): RequestQueryTracker {
  * Log a query event from Prisma middleware.
  */
 export function logQueryEvent(query: string, duration: number): void {
-  const isEnabled = process.env.NODE_ENV === 'development' || process.env.LOG_QUERIES === 'true'
+  const isEnabled = config.logging.logQueries
   if (!isEnabled) return
 
   // Track in global tracker
@@ -180,7 +182,7 @@ export function logQueryEvent(query: string, duration: number): void {
  * installQueryLogger(db)
  */
 export function installQueryLogger(prisma: { $on: (event: string, callback: (e: { query: string; duration: number }) => void) => void }): void {
-  const isEnabled = process.env.NODE_ENV === 'development' || process.env.LOG_QUERIES === 'true'
+  const isEnabled = config.logging.logQueries
   if (!isEnabled) return
 
   // @ts-expect-error - Prisma event types

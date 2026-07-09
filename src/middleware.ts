@@ -84,7 +84,7 @@ const cleanupTimer = setInterval(() => {
     }
   }
 }, 5 * 60 * 1000)
-cleanupTimer.unref()
+// Note: unref() is not available in Edge Runtime; timer will keep process alive
 
 // ── Security headers ─────────────────────────────────────────────────────────
 
