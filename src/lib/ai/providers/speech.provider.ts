@@ -39,6 +39,7 @@ export async function transcribe(
 
   try {
     const zai = await ZAI.create()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const transcription: any = await zai.audio.asr.create({ file_base64: audioBase64 })
 
     const text = typeof transcription === 'string'
@@ -89,6 +90,7 @@ export async function speak(
 
   try {
     const zai = await ZAI.create()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const audioResponse: any = await zai.audio.tts.create({ input: truncated })
 
     const base64 = typeof audioResponse === 'string' ? audioResponse : ''
