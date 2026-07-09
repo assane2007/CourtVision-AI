@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError, trackEvent } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
+import { encrypt } from '@/lib/security/encryption'
 import crypto from 'crypto'
 
 // POST /api/auth/2fa/setup
@@ -31,23 +32,23 @@ export async function POST() {
       return NextResponse.json({ error: 'Joueur introuvable' }, { status: 404 })
     }
 
-    // Generate a mock secret (32-char hex string)
+    // Generate a TOTP secret (32-char hex string)
     const secret = crypto.randomBytes(16).toString('hex')
 
-    // Store secret (but don't enable 2FA yet — user must verify first)
+    // Encrypt the secret before storing at rest
+    const encryptedSecret = encrypt(secret)
+
+    // Store encrypted secret (don't enable 2FA yet — user must verify first)
     await db.player.update({
       where: { id: playerId },
-      data: { twoFactorSecret: secret },
+      data: { twoFactorSecret: encryptedSecret },
     })
 
-    // In production, this would be a QR code URI for authenticator apps
-    // For mock purposes, we return the secret directly (never log secrets)
     trackEvent('2fa-setup-generated', { playerId })
 
     return NextResponse.json({
       message: 'Secret 2FA généré. Vérifiez avec un code pour activer.',
       secret,
-      // In production, generate QR code from the URI
       mockUri: `otpauth://totp/CourtVisionAI:${player.email}?secret=${secret}&issuer=CourtVisionAI`,
     })
   } catch (error) {

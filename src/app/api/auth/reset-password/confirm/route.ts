@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
@@ -27,40 +28,20 @@ export async function POST(request: Request) {
       )
     }
 
-    // Find players with a valid (non-expired) reset token and compare hashes
-    const candidates = await db.player.findMany({
+    // Compute deterministic SHA-256 hash for O(1) lookup
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
+
+    // Find player by indexed hash (instead of O(n) findMany + bcrypt.compare loop)
+    const player = await db.player.findFirst({
       where: {
-        resetToken: { not: null },
+        resetTokenHash: tokenHash,
         resetTokenExpiresAt: { gt: new Date() },
       },
-      select: {
-        id: true,
-        resetToken: true,
-      },
-    })
-
-    let matchedPlayer: typeof candidates[number] | null = null
-    for (const candidate of candidates) {
-      if (await bcrypt.compare(token, candidate.resetToken!)) {
-        matchedPlayer = candidate
-        break
-      }
-    }
-
-    if (!matchedPlayer) {
-      return NextResponse.json(
-        { error: 'Token invalide ou expiré.' },
-        { status: 400 },
-      )
-    }
-
-    const player = await db.player.findUnique({
-      where: { id: matchedPlayer.id },
     })
 
     if (!player) {
       return NextResponse.json(
-        { error: 'Joueur introuvable.' },
+        { error: 'Token invalide ou expiré.' },
         { status: 400 },
       )
     }
@@ -74,6 +55,7 @@ export async function POST(request: Request) {
       data: {
         password: hashedPassword,
         resetToken: null,
+        resetTokenHash: null,
         resetTokenExpiresAt: null,
       },
     })

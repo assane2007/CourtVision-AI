@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
+import { decrypt } from '@/lib/security/encryption'
 import crypto from 'crypto'
 import { authenticator } from 'otplib'
 
@@ -40,8 +41,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '2FA non configurée' }, { status: 400 })
     }
 
-    // Real TOTP verification
-    const isCodeValid = authenticator.verify({ token: code, secret: player.twoFactorSecret })
+    // Decrypt the stored secret before TOTP verification
+    const decryptedSecret = decrypt(player.twoFactorSecret)
+    if (!decryptedSecret) {
+      return NextResponse.json({ error: 'Erreur de déchiffrement du secret 2FA' }, { status: 500 })
+    }
+
+    // Real TOTP verification using decrypted secret
+    const isCodeValid = authenticator.verify({ token: code, secret: decryptedSecret })
 
     if (!isCodeValid) {
       // Check backup codes

@@ -202,7 +202,7 @@ const steps = [
 const stats = [
   { value: '10+', labelKey: 'landing.stat1' as const },
   { value: '9', labelKey: 'landing.stat2' as const },
-  { value: 'IA', labelKey: 'landing.stat3' as const },
+  { value: '30fps', labelKey: 'landing.stat3' as const },
   { value: '100%', labelKey: 'landing.stat4' as const },
 ]
 
@@ -493,12 +493,13 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             </span>
           </div>
           <div className="flex items-center gap-6">
-            <a
-              href="/api/privacy"
+            <button
+              type="button"
+              onClick={() => onNavigate('settings')}
               className="text-sm dark:text-gray-500 text-muted-foreground hover:dark:text-gray-300 hover:text-foreground/80 transition-colors"
             >
               {t('landing.privacy')}
-            </a>
+            </button>
             <a
               href="mailto:privacy@courtvision.ai"
               className="text-sm dark:text-gray-500 text-muted-foreground hover:dark:text-gray-300 hover:text-foreground/80 transition-colors"

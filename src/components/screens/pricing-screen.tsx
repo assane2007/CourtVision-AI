@@ -93,7 +93,7 @@ function getTiers(t: (key: TranslationKey, params?: Record<string, string>) => s
         { text: t('pricing.feature.eliteBadge'), included: true },
       ],
       cta: t('pricing.subscribe'),
-      ctaVariant: 'outline',
+      ctaVariant: 'default',
     },
   ]
 }
@@ -177,7 +177,7 @@ export default function PricingScreen() {
           {/* Billing interval toggle */}
           <motion.div variants={itemVariants} className="flex items-center justify-center gap-3">
             <span className={cn('text-sm font-medium', !annualBilling && 'text-foreground', annualBilling && 'text-muted-foreground')}>
-              Mensuel
+              {t('pricing.monthly')}
             </span>
             <button
               type="button"
@@ -197,7 +197,7 @@ export default function PricingScreen() {
               />
             </button>
             <span className={cn('text-sm font-medium', annualBilling && 'text-foreground', !annualBilling && 'text-muted-foreground')}>
-              Annuel
+              {t('pricing.annual')}
               <span className="ml-1.5 inline-flex items-center rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-600">
                 -17%
               </span>
@@ -257,7 +257,7 @@ export default function PricingScreen() {
                       {annualBilling && tier.id !== 'free' ? (
                         <>
                           <span className="text-4xl font-bold tracking-tight">{tier.annualPrice}€</span>
-                          <span className="text-muted-foreground text-sm ml-1">/an</span>
+                          <span className="text-muted-foreground text-sm ml-1">{t('pricing.perYear')}</span>
                           <p className="text-xs text-muted-foreground mt-1">
                             soit {tier.price}€ {t('pricing.perMonth')}
                           </p>
@@ -358,10 +358,6 @@ export default function PricingScreen() {
             <span className="flex items-center gap-1">
               <Check className="h-3 w-3 text-emerald-500" />
               {t('pricing.securePayment')}
-            </span>
-            <span className="flex items-center gap-1">
-              <Check className="h-3 w-3 text-emerald-500" />
-              {t('pricing.noCommitment')}
             </span>
           </motion.div>
         </motion.div>

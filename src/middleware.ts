@@ -14,7 +14,6 @@ const PUBLIC_PATHS = [
   '/sw.js',
   '/',
   '/monitoring', // Sentry tunnel route
-  '/api/sentry-test', // Debug endpoint
 ]
 
 // ── Suspicious User-Agent patterns ───────────────────────────────────────────
@@ -75,8 +74,8 @@ function middlewareRateLimit(
   return { allowed: true, retryAfterMs: 0 }
 }
 
-// Cleanup timer for rate counters
-const cleanupTimer = setInterval(() => {
+// Cleanup timer for rate counters (variable referenced to prevent GC in Edge Runtime)
+const _cleanupTimer = setInterval(() => {
   const now = Date.now()
   for (const [key, entry] of rateCounters) {
     if (entry.resetAt < now) {
@@ -86,38 +85,12 @@ const cleanupTimer = setInterval(() => {
 }, 5 * 60 * 1000)
 // Note: unref() is not available in Edge Runtime; timer will keep process alive
 
-// ── Security headers ─────────────────────────────────────────────────────────
-
-function getSecurityHeaders(): Record<string, string> {
-  const headers: Record<string, string> = {
-    'X-Content-Type-Options': 'nosniff',
-    'X-Frame-Options': 'DENY',
-    'X-XSS-Protection': '1; mode=block',
-    'Referrer-Policy': 'strict-origin-when-cross-origin',
-    'Permissions-Policy': 'camera=(self), microphone=(self), geolocation=(self)',
-    'Cross-Origin-Opener-Policy': 'same-origin',
-    'Cross-Origin-Resource-Policy': 'same-origin',
-  }
-
-  if (process.env.NODE_ENV === 'production') {
-    headers['Strict-Transport-Security'] = 'max-age=63072000; includeSubDomains; preload'
-  }
-
-  return headers
-}
-
 // ── Main Middleware ───────────────────────────────────────────────────────────
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // ── Add security headers to all responses ────────────────────────────────
-  const securityHeaders = getSecurityHeaders()
   const response = NextResponse.next()
-
-  for (const [key, value] of Object.entries(securityHeaders)) {
-    response.headers.set(key, value)
-  }
 
   // ── Block suspicious user agents ────────────────────────────────────────
   const userAgent = request.headers.get('user-agent') || ''
@@ -144,7 +117,6 @@ export function middleware(request: NextRequest) {
             status: 403,
             headers: {
               'Content-Type': 'application/json',
-              ...securityHeaders,
             },
           },
         )
@@ -179,7 +151,6 @@ export function middleware(request: NextRequest) {
           headers: {
             'Content-Type': 'application/json',
             'Retry-After': String(Math.ceil(rateResult.retryAfterMs / 1000)),
-            ...securityHeaders,
           },
         },
       )
@@ -204,7 +175,6 @@ export function middleware(request: NextRequest) {
             status: 401,
             headers: {
               'Content-Type': 'application/json',
-              ...securityHeaders,
             },
           },
         )

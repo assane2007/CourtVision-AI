@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Home, ClipboardList, Dumbbell, BarChart3, User, MessageCircle } from 'lucide-react'
+import { Home, Dumbbell, BarChart3, User, MessageCircle } from 'lucide-react'
 import { useAppStore, type Screen } from '@/stores/app'
 import { hapticLight } from '@/lib/haptics'
 import { useTranslation } from '@/components/providers/language-provider'
@@ -10,9 +10,8 @@ import type { TranslationKey } from '@/lib/i18n'
 const tabs: { icon: typeof Home; labelKey: TranslationKey; screen: Screen }[] = [
   { icon: Home, labelKey: 'nav.home', screen: 'home' },
   { icon: Dumbbell, labelKey: 'nav.training', screen: 'train-hub' },
-  { icon: ClipboardList, labelKey: 'nav.plans', screen: 'plans' },
-  { icon: MessageCircle, labelKey: 'social.feed', screen: 'feed' },
   { icon: BarChart3, labelKey: 'nav.stats', screen: 'stats' },
+  { icon: MessageCircle, labelKey: 'nav.messages', screen: 'ai-coach' },
   { icon: User, labelKey: 'nav.profile', screen: 'profile' },
 ]
 

@@ -35,7 +35,7 @@ const workoutSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const playerId = (session?.user as { id?: string })?.id;
+    const playerId = session?.user?.id;
     if (!playerId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -202,7 +202,7 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const playerId = (session?.user as { id?: string })?.id;
+    const playerId = session?.user?.id;
     if (!playerId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

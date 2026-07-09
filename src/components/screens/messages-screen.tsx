@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ArrowLeft, Send, Loader2, X, Pencil, MessageCircle,
+  ArrowLeft, Loader2, X, Pencil, MessageCircle, Search,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,6 +26,15 @@ interface ConversationItem {
   lastMessageAt: string; unreadCount: number
 }
 
+interface PlayerResult {
+  id: string
+  name: string
+  avatar: string | null
+  xpLevel: number | null
+  position: string | null
+  friendshipStatus: string | null
+}
+
 function formatMessageTime(date: string, lang: string): string {
   const d = new Date(date)
   const now = new Date()
@@ -39,7 +48,34 @@ export default function MessagesScreen() {
   const { t, td, language } = useTranslation()
   const { goBack, navigate } = useNavigation()
   const [showNew, setShowNew] = useState(false)
-  const [recipientId, setRecipientId] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedPlayerId, setSelectedPlayerId] = useState('')
+
+  // Debounced search
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [debouncedQuery, setDebouncedQuery] = useState('')
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      setDebouncedQuery(value)
+    }, 300)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [])
+
+  // Search friends API
+  const { data: searchData, isLoading: searchLoading } = useQuery<{ players: PlayerResult[] }>({
+    queryKey: ['friend-search', debouncedQuery],
+    queryFn: () => apiFetch(`/api/friends?search=${encodeURIComponent(debouncedQuery)}`),
+    enabled: debouncedQuery.length >= 2,
+    staleTime: 5000,
+  })
 
   const { data, isLoading, isError, refetch } = useQuery<{ conversations: ConversationItem[] }>({
     queryKey: ['conversations'],
@@ -52,18 +88,29 @@ export default function MessagesScreen() {
     mutationFn: () => fetch('/api/messages/conversations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ recipientId }),
+      body: JSON.stringify({ recipientId: selectedPlayerId }),
     }).then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error) }); return r.json() }),
     onSuccess: (d) => {
       setShowNew(false)
-      setRecipientId('')
+      setSearchQuery('')
+      setDebouncedQuery('')
+      setSelectedPlayerId('')
       useAppStore.getState().selectDrill(d.conversationId)
       navigate('conversation')
     },
     onError: (e: Error) => toast.error(e.message),
   })
 
+  const selectAndCreate = (playerId: string) => {
+    setSelectedPlayerId(playerId)
+    // Use a tiny timeout so selectedPlayerId is set before mutation fires
+    setTimeout(() => {
+      createConvo.mutate()
+    }, 0)
+  }
+
   const totalUnread = (data?.conversations || []).reduce((sum, c) => sum + c.unreadCount, 0)
+  const searchResults = searchData?.players || []
 
   return (
     <SwipeToGoBack className="min-h-screen bg-background">
@@ -83,21 +130,92 @@ export default function MessagesScreen() {
           </Button>
         </div>
 
-        {showNew && (
-          <div className="max-w-lg mx-auto px-4 pb-3 flex gap-2">
-            <Input
-              value={recipientId}
-              onChange={e => setRecipientId(e.target.value)}
-              placeholder={td('ID du joueur...', 'Player ID...')}
-              className="flex-1"
-              aria-label={td('ID du joueur destinataire', 'Recipient player ID')}
-            />
-            <Button size="sm" className="min-h-[44px]" onClick={() => createConvo.mutate()} disabled={createConvo.isPending || !recipientId.trim()}>
-              {createConvo.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </Button>
-            <Button size="sm" variant="ghost" className="min-h-[44px]" onClick={() => setShowNew(false)} aria-label={td('Annuler', 'Cancel')}><X className="h-4 w-4" /></Button>
-          </div>
-        )}
+        <AnimatePresence>
+          {showNew && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="max-w-lg mx-auto px-4 pb-3 space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={searchQuery}
+                    onChange={e => handleSearchChange(e.target.value)}
+                    placeholder={t('paywall.messages.searchPlayer')}
+                    className="flex-1 pl-9"
+                    aria-label={td('Rechercher un joueur', 'Search for a player')}
+                    autoFocus
+                  />
+                  {searchQuery && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                      onClick={() => { handleSearchChange(''); }}
+                      aria-label={td('Effacer', 'Clear')}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+
+                {/* Search results dropdown */}
+                {debouncedQuery.length >= 2 && (
+                  <div className="border rounded-xl bg-card max-h-60 overflow-y-auto custom-scrollbar">
+                    {searchLoading ? (
+                      <div className="p-3 space-y-2">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                          <div key={i} className="flex items-center gap-3">
+                            <Skeleton className="h-9 w-9 rounded-full" />
+                            <Skeleton className="h-4 w-32" />
+                          </div>
+                        ))}
+                      </div>
+                    ) : searchResults.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-muted-foreground">
+                        {t('paywall.messages.noResults')}
+                      </div>
+                    ) : (
+                      <ul className="py-1">
+                        {searchResults.map(player => (
+                          <li key={player.id}>
+                            <button
+                              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors text-left min-h-[44px]"
+                              onClick={() => selectAndCreate(player.id)}
+                              disabled={createConvo.isPending}
+                            >
+                              <Avatar className="h-9 w-9">
+                                <AvatarImage src={player.avatar || undefined} />
+                                <AvatarFallback className="text-xs font-bold">
+                                  {player.name?.charAt(0).toUpperCase() || '?'}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{player.name}</p>
+                                {player.position && (
+                                  <p className="text-[10px] text-muted-foreground">{player.position}</p>
+                                )}
+                              </div>
+                              {createConvo.isPending && selectedPlayerId === player.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                              ) : (
+                                <span className="text-xs text-orange-500 font-medium">{t('paywall.messages.selectPlayer')}</span>
+                              )}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
       <main className="max-w-lg mx-auto px-4 pt-4 pb-24">

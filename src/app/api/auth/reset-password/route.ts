@@ -45,12 +45,14 @@ export async function POST(request: Request) {
     const resetToken = crypto.randomBytes(16).toString('hex') // 32-char hex
     const resetTokenExpiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
 
-    // Store hashed token in DB
+    // Store both the bcrypt hash (backward compat) and a deterministic SHA-256 hash for O(1) lookup
     const hashedToken = await bcrypt.hash(resetToken, 10)
+    const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex')
     await db.player.update({
       where: { id: player.id },
       data: {
         resetToken: hashedToken,
+        resetTokenHash: tokenHash,
         resetTokenExpiresAt,
       },
     })

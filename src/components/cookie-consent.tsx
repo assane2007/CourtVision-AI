@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Shield } from 'lucide-react'
+import { useTranslation } from '@/components/providers/language-provider'
 
 const CONSENT_KEY = 'courtvision-cookie-consent'
 
 export function CookieConsent() {
+  const { t } = useTranslation()
   const [visible, setVisible] = useState(false)
   const [analyticsChecked, setAnalyticsChecked] = useState(false)
 
@@ -59,12 +61,11 @@ export function CookieConsent() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm text-foreground">
-                Nous utilisons des cookies essentiels pour le fonctionnement de l&apos;application.
+                {t('cookie.description')}
               </p>
 
               <p className="text-xs text-muted-foreground mt-1.5 mb-2">
-                Vos préférences : seuls les cookies strictement nécessaires sont activés. Aucun cookie
-                de suivi ou d&apos;analyse n&apos;est utilisé.
+                {t('cookie.preferences')}
               </p>
 
               {/* Analytics option — disabled for future use */}
@@ -76,7 +77,7 @@ export function CookieConsent() {
                   disabled
                   className="h-3.5 w-3.5 rounded border-muted-foreground/30 text-orange-500 focus:ring-orange-500/30"
                 />
-                <span className="text-xs text-muted-foreground">Analytics (bientôt disponible)</span>
+                <span className="text-xs text-muted-foreground">{t('cookie.analytics')}</span>
               </label>
 
               <div className="flex items-center gap-2">
@@ -85,7 +86,7 @@ export function CookieConsent() {
                   onClick={handleAccept}
                   className="bg-orange-500 hover:bg-orange-600 text-white text-xs px-4"
                 >
-                  Accepter
+                  {t('cookie.accept')}
                 </Button>
                 <Button
                   variant="outline"
@@ -93,7 +94,7 @@ export function CookieConsent() {
                   onClick={handleReject}
                   className="text-xs px-4"
                 >
-                  Refuser
+                  {t('cookie.reject')}
                 </Button>
                 <Button
                   variant="ghost"
@@ -101,7 +102,7 @@ export function CookieConsent() {
                   onClick={handleMoreInfo}
                   className="text-xs px-3"
                 >
-                  En savoir plus
+                  {t('cookie.moreInfo')}
                 </Button>
               </div>
             </div>

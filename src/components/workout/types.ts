@@ -89,16 +89,16 @@ export const DEFAULT_REST_SEC = 15
 export const DEFAULT_SETS = 1
 
 export const FEEDBACK_MESSAGES = {
-  goodPosture: 'Bonne posture! ✅',
-  leanRight: 'Restez droit! 📐',
-  leanLeft: 'Restez droit! 📐',
-  tooSlow: 'Plus vite! ⚡',
-  goodSpeed: 'Excellent rythme! 🔥',
-  armsLow: 'Montez les bras! 💪',
-  keepGoing: 'Continuez comme ça! 🎯',
-  greatForm: 'Superbe forme! 💯',
-  narrowStance: 'Écartez les pieds! 🦶',
-  wideStance: 'Resserrez la garde! 🛡️',
+  goodPosture: 'feedback.goodPosture',
+  leanRight: 'feedback.leanRight',
+  leanLeft: 'feedback.leanLeft',
+  tooSlow: 'feedback.tooSlow',
+  goodSpeed: 'feedback.goodSpeed',
+  armsLow: 'feedback.armsLow',
+  keepGoing: 'feedback.keepGoing',
+  greatForm: 'feedback.greatForm',
+  narrowStance: 'feedback.narrowStance',
+  wideStance: 'feedback.wideStance',
 } as const
 
 export const SCORE_COLORS: Record<string, string> = {

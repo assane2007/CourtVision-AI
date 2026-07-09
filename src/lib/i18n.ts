@@ -776,6 +776,65 @@ export type TranslationKey =
   | 'settings.pushDesc'
   | 'settings.deepLinkInfo'
   | 'settings.deepLinkInfoDesc'
+  // Workout - extended (overlay)
+  | 'workout.sessionCompleteTitle'
+  | 'workout.repsLabel'
+  | 'workout.duration'
+  | 'workout.redo'
+  | 'workout.paused'
+  | 'workout.remaining'
+  | 'workout.sets'
+  | 'workout.objective'
+  | 'workout.repetitions'
+  | 'workout.formExcellent'
+  | 'workout.formGood'
+  | 'workout.formImprove'
+  // Feedback messages
+  | 'feedback.goodPosture'
+  | 'feedback.leanRight'
+  | 'feedback.leanLeft'
+  | 'feedback.tooSlow'
+  | 'feedback.goodSpeed'
+  | 'feedback.armsLow'
+  | 'feedback.keepGoing'
+  | 'feedback.greatForm'
+  | 'feedback.narrowStance'
+  | 'feedback.wideStance'
+  // Pricing - extended
+  | 'pricing.monthly'
+  | 'pricing.annual'
+  | 'pricing.perYear'
+  // Cookie consent
+  | 'cookie.description'
+  | 'cookie.preferences'
+  | 'cookie.analytics'
+  | 'cookie.analyticsDesc'
+  | 'cookie.accept'
+  | 'cookie.reject'
+  | 'cookie.moreInfo'
+  // PWA install prompt
+  | 'pwa.title'
+  | 'pwa.description'
+  | 'pwa.install'
+  | 'pwa.later'
+  | 'pwa.close'
+  // Navigation - extended
+  | 'nav.messages'
+  // Paywall
+  | 'paywall.title'
+  | 'paywall.viewPlans'
+  | 'paywall.later'
+  | 'paywall.scoutingDesc'
+  | 'paywall.aiCoachDesc'
+  | 'paywall.reactionTrainerDesc'
+  | 'paywall.proIncludes'
+  | 'paywall.proInclude1'
+  | 'paywall.proInclude2'
+  | 'paywall.proInclude3'
+  | 'paywall.proInclude4'
+  | 'paywall.messages.searchPlayer'
+  | 'paywall.messages.noResults'
+  | 'paywall.messages.selectPlayer'
 
 // ── Translation dictionaries ────────────────────────────────────────────────
 const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
@@ -950,7 +1009,7 @@ const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
     'landing.step3.description': "L'IA analyse ta forme et te donne des retours instantanés pour t'améliorer.",
     'landing.stat1': 'Exercices',
     'landing.stat2': 'Catégories',
-    'landing.stat3': 'Analyse ta forme',
+    'landing.stat3': 'Analyse temps réel',
     'landing.stat4': 'Gratuit',
 
     // Difficulty
@@ -1597,6 +1656,72 @@ const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
     'settings.pushDesc': 'Recevez des rappels d\'entraînement et des mises à jour',
     'settings.deepLinkInfo': 'Liens profonds',
     'settings.deepLinkInfoDesc': 'Les liens vers des exercices et défis s\'ouvrent directement dans l\'app',
+
+    // Workout - extended (overlay)
+    'workout.sessionCompleteTitle': 'Session Terminée !',
+    'workout.repsLabel': 'Réps',
+    'workout.duration': 'Durée',
+    'workout.redo': 'Refaire',
+    'workout.paused': 'En Pause',
+    'workout.remaining': 'restant',
+    'workout.sets': 'séries',
+    'workout.objective': 'Objectif',
+    'workout.repetitions': 'Répétitions',
+    'workout.formExcellent': 'Excellente forme',
+    'workout.formGood': 'Bonne forme',
+    'workout.formImprove': 'À améliorer',
+
+    // Feedback messages
+    'feedback.goodPosture': 'Bonne posture ! ✅',
+    'feedback.leanRight': 'Restez droit ! 📐',
+    'feedback.leanLeft': 'Restez droit ! 📐',
+    'feedback.tooSlow': 'Plus vite ! ⚡',
+    'feedback.goodSpeed': 'Excellent rythme ! 🔥',
+    'feedback.armsLow': 'Montez les bras ! 💪',
+    'feedback.keepGoing': 'Continuez comme ça ! 🎯',
+    'feedback.greatForm': 'Superbe forme ! 💯',
+    'feedback.narrowStance': 'Écartez les pieds ! 🦶',
+    'feedback.wideStance': 'Resserrez la garde ! 🛡️',
+
+    // Pricing - extended
+    'pricing.monthly': 'Mensuel',
+    'pricing.annual': 'Annuel',
+    'pricing.perYear': '/an',
+
+    // Cookie consent
+    'cookie.description': 'Nous utilisons des cookies essentiels pour le fonctionnement de l\'application.',
+    'cookie.preferences': 'Vos préférences : seuls les cookies strictement nécessaires sont activés. Aucun cookie de suivi ou d\'analyse n\'est utilisé.',
+    'cookie.analytics': 'Analytics (bientôt disponible)',
+    'cookie.analyticsDesc': '',
+    'cookie.accept': 'Accepter',
+    'cookie.reject': 'Refuser',
+    'cookie.moreInfo': 'En savoir plus',
+
+    // PWA install prompt
+    'pwa.title': 'Installer CourtVision AI',
+    'pwa.description': 'Ajoutez l\'app à votre écran d\'accueil pour un accès rapide et une expérience hors-ligne.',
+    'pwa.install': 'Installer',
+    'pwa.later': 'Plus tard',
+    'pwa.close': 'Fermer',
+
+    // Navigation - extended
+    'nav.messages': 'Messages',
+
+    // Paywall
+    'paywall.title': 'Fonctionnalité Premium',
+    'paywall.viewPlans': 'Voir les plans',
+    'paywall.later': 'Plus tard',
+    'paywall.scoutingDesc': 'Les rapports de scouting avancés nécessitent un abonnement Pro.',
+    'paywall.aiCoachDesc': 'Le coach IA personnalisé nécessite un abonnement Pro.',
+    'paywall.reactionTrainerDesc': 'L\'entraîneur de réaction avancé nécessite un abonnement Pro.',
+    'paywall.proIncludes': 'Avec Pro, vous accédez à :',
+    'paywall.proInclude1': 'Rapports de scouting IA complets',
+    'paywall.proInclude2': 'Coach IA personnalisé illimité',
+    'paywall.proInclude3': 'Entraînement de réaction avancé',
+    'paywall.proInclude4': 'Analyses vidéo et comparaisons',
+    'paywall.messages.searchPlayer': 'Rechercher un joueur...',
+    'paywall.messages.noResults': 'Aucun joueur trouvé',
+    'paywall.messages.selectPlayer': 'Sélectionner',
   },
 
   en: {
@@ -1770,7 +1895,7 @@ const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
     'landing.step3.description': 'AI analyzes your form and gives instant feedback to help you improve.',
     'landing.stat1': 'Exercises',
     'landing.stat2': 'Categories',
-    'landing.stat3': 'Analyzes your form',
+    'landing.stat3': 'Real-time analysis',
     'landing.stat4': 'Free',
 
     // Difficulty
@@ -2417,6 +2542,72 @@ const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
     'settings.pushDesc': 'Receive training reminders and updates',
     'settings.deepLinkInfo': 'Deep links',
     'settings.deepLinkInfoDesc': 'Links to drills and challenges open directly in the app',
+
+    // Workout - extended (overlay)
+    'workout.sessionCompleteTitle': 'Session Complete!',
+    'workout.repsLabel': 'Reps',
+    'workout.duration': 'Duration',
+    'workout.redo': 'Redo',
+    'workout.paused': 'Paused',
+    'workout.remaining': 'remaining',
+    'workout.sets': 'sets',
+    'workout.objective': 'Target',
+    'workout.repetitions': 'Repetitions',
+    'workout.formExcellent': 'Excellent form',
+    'workout.formGood': 'Good form',
+    'workout.formImprove': 'Needs improvement',
+
+    // Feedback messages
+    'feedback.goodPosture': 'Good posture! ✅',
+    'feedback.leanRight': 'Stay upright! 📐',
+    'feedback.leanLeft': 'Stay upright! 📐',
+    'feedback.tooSlow': 'Faster! ⚡',
+    'feedback.goodSpeed': 'Great pace! 🔥',
+    'feedback.armsLow': 'Raise your arms! 💪',
+    'feedback.keepGoing': 'Keep it up! 🎯',
+    'feedback.greatForm': 'Great form! 💯',
+    'feedback.narrowStance': 'Widen your stance! 🦶',
+    'feedback.wideStance': 'Tighten your guard! 🛡️',
+
+    // Pricing - extended
+    'pricing.monthly': 'Monthly',
+    'pricing.annual': 'Annual',
+    'pricing.perYear': '/year',
+
+    // Cookie consent
+    'cookie.description': 'We use essential cookies for the app to function properly.',
+    'cookie.preferences': 'Your preferences: only strictly necessary cookies are enabled. No tracking or analytics cookies are used.',
+    'cookie.analytics': 'Analytics (coming soon)',
+    'cookie.analyticsDesc': '',
+    'cookie.accept': 'Accept',
+    'cookie.reject': 'Reject',
+    'cookie.moreInfo': 'Learn more',
+
+    // PWA install prompt
+    'pwa.title': 'Install CourtVision AI',
+    'pwa.description': 'Add the app to your home screen for quick access and offline experience.',
+    'pwa.install': 'Install',
+    'pwa.later': 'Later',
+    'pwa.close': 'Close',
+
+    // Navigation - extended
+    'nav.messages': 'Messages',
+
+    // Paywall
+    'paywall.title': 'Premium Feature',
+    'paywall.viewPlans': 'View Plans',
+    'paywall.later': 'Later',
+    'paywall.scoutingDesc': 'Advanced scouting reports require a Pro subscription.',
+    'paywall.aiCoachDesc': 'The personalized AI coach requires a Pro subscription.',
+    'paywall.reactionTrainerDesc': 'The advanced reaction trainer requires a Pro subscription.',
+    'paywall.proIncludes': 'With Pro, you get:',
+    'paywall.proInclude1': 'Full AI scouting reports',
+    'paywall.proInclude2': 'Unlimited personalized AI coach',
+    'paywall.proInclude3': 'Advanced reaction training',
+    'paywall.proInclude4': 'Video analysis and comparisons',
+    'paywall.messages.searchPlayer': 'Search for a player...',
+    'paywall.messages.noResults': 'No players found',
+    'paywall.messages.selectPlayer': 'Select',
   },
 } as const
 

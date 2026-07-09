@@ -105,6 +105,19 @@ export default function Home() {
     if (status === 'unauthenticated' && currentScreen !== 'auth' && currentScreen !== 'landing') navigate('landing')
   }, [status, currentScreen, navigate])
 
+  // ── Stripe Checkout Feedback ───────────────────────────────────────────────
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('checkout') === 'success') {
+      toast.success('Paiement réussi ! Votre abonnement est maintenant actif.')
+      window.history.replaceState({}, '', '/')
+    }
+    if (params.get('checkout') === 'cancelled') {
+      toast.error('Paiement annulé. Vous pouvez réessayer à tout moment.')
+      window.history.replaceState({}, '', '/')
+    }
+  }, [])
+
   // ── Deep Linking ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (status !== 'authenticated') return

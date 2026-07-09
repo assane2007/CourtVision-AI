@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { apiFetch } from '@/lib/utils'
 import { useTranslation } from '@/components/providers/language-provider'
+import type { TranslationKey } from '@/lib/i18n'
 import {
   initAudio,
   toggleMute as toggleAudioMute,
@@ -496,12 +497,12 @@ export default function CameraWorkoutScreen() {
 
             const now = Date.now()
             if (now - lastFeedbackUpdate > 2000 && fb) {
-              setFeedback(fb)
+              setFeedback(t(fb as TranslationKey))
               lastFeedbackUpdate = now
             }
 
             if (rep && updatedTracker.sampleCount > 15) {
-              setFeedback(FEEDBACK_MESSAGES.keepGoing)
+              setFeedback(t(FEEDBACK_MESSAGES.keepGoing as unknown as TranslationKey))
             }
           }
         }

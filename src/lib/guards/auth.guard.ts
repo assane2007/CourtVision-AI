@@ -19,15 +19,37 @@ import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
 import type { AuthContext, AuthLevel } from '@/lib/types/service.types'
 import type { Session } from 'next-auth'
 
+// ── In-memory auth cache (60-second TTL) ───────────────────────────────────────
+
+const authCache = new Map<string, { data: AuthContext; expiry: number }>()
+const AUTH_CACHE_TTL = 60_000 // 60 seconds
+
+function getCachedAuth(playerId: string): AuthContext | null {
+  const cached = authCache.get(playerId)
+  if (cached && cached.expiry > Date.now()) return cached.data
+  if (cached) authCache.delete(playerId) // expired
+  return null
+}
+
+function setCachedAuth(playerId: string, data: AuthContext): void {
+  authCache.set(playerId, { data, expiry: Date.now() + AUTH_CACHE_TTL })
+}
+
 // ── Auth Context Builder ───────────────────────────────────────────────────────
 
 /**
  * Build an AuthContext from a NextAuth session and player record.
- * Determines the auth level based on email verification and 2FA status.
+ * Uses an in-memory cache with 60s TTL to avoid repeated DB queries.
  */
 async function buildAuthContext(session: Session): Promise<AuthContext> {
+  const playerId = session.user.id
+
+  // Check cache first
+  const cached = getCachedAuth(playerId)
+  if (cached) return cached
+
   const player = await db.player.findUnique({
-    where: { id: session.user.id },
+    where: { id: playerId },
     select: {
       id: true,
       email: true,
@@ -55,13 +77,17 @@ async function buildAuthContext(session: Session): Promise<AuthContext> {
     authLevel = 'verified'
   }
 
-  return {
+  const ctx: AuthContext = {
     playerId: player.id,
     email: player.email,
     name: player.name,
     role: player.role,
     authLevel,
   }
+
+  setCachedAuth(playerId, ctx)
+
+  return ctx
 }
 
 // ── Guard: Require Authentication ──────────────────────────────────────────────

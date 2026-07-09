@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Star, Save, RotateCcw, ArrowLeft, Loader2, ShieldCheck, Pause } from 'lucide-react'
 import type { Drill, WorkoutPhase } from './types'
 import { getGaugeColor, getGaugeTrackColor, getStarCount, getScoreColor, getScoreBgColor, formatTime } from './scoring'
+import { useTranslation } from '@/components/providers/language-provider'
 
 // ─── ScoreGauge ──────────────────────────────────────────────────────────────
 
@@ -60,7 +61,7 @@ export function ScoreGauge({ score, size = 80 }: { score: number; size?: number 
         y={center + 12}
         textAnchor="middle"
         dominantBaseline="middle"
-        className="fill-white/40"
+        className="fill-foreground/40"
         style={{ fontSize: '8px', fontWeight: 600 }}
       >
         SCORE
@@ -171,6 +172,8 @@ export function ActiveOverlay({
   timeRemaining,
   prefersReducedMotion,
 }: ActiveOverlayProps) {
+  const { t } = useTranslation()
+
   return (
     <>
       {/* Score Gauge — left side */}
@@ -184,7 +187,7 @@ export function ActiveOverlay({
       <div className="absolute top-3 right-3 z-10 text-right">
         <div className="bg-black/40 backdrop-blur-md rounded-xl px-3 py-1.5 border border-white/10">
           <p className="text-[10px] uppercase tracking-wider text-white/50 font-medium">
-            Objectif
+            {t('workout.objective')}
           </p>
           <p className="text-sm font-bold text-white tabular-nums leading-none mt-0.5">
             {Math.min(displayReps, targetReps)}/{targetReps}
@@ -197,7 +200,7 @@ export function ActiveOverlay({
         <div className="relative">
           <div className="bg-black/40 backdrop-blur-md rounded-2xl px-6 py-3 border border-white/10">
             <p className="text-[10px] uppercase tracking-wider text-white/50 font-medium">
-              Répétitions
+              {t('workout.repetitions')}
             </p>
             <motion.p
               key={displayReps}
@@ -223,9 +226,9 @@ export function ActiveOverlay({
         <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-15">
           <div className="text-center">
             <Pause className="h-16 w-16 text-white/80 mx-auto mb-3" />
-            <p className="text-white text-xl font-bold">En Pause</p>
+            <p className="text-white text-xl font-bold">{t('workout.paused')}</p>
             <p className="text-white/50 text-sm mt-1">
-              {formatTime(timeRemaining)} restant
+              {formatTime(timeRemaining)} {t('workout.remaining')}
             </p>
           </div>
         </div>
@@ -263,17 +266,19 @@ export function CompletionOverlay({
   onRestart,
   onBack,
 }: CompletionOverlayProps) {
+  const { t } = useTranslation()
+
   return (
-    <Card className="w-[90%] max-w-sm bg-gray-900 border-gray-700 text-white shadow-2xl">
+    <Card className="w-[90%] max-w-sm bg-card border-border text-foreground shadow-2xl">
       <CardContent className="p-6 space-y-5">
         {/* Header */}
         <div className="text-center">
           <div className="text-3xl mb-2">🏆</div>
-          <h2 className="text-xl font-bold">Session Terminée!</h2>
+          <h2 className="text-xl font-bold">{t('workout.sessionCompleteTitle')}</h2>
           {drill && (
-            <p className="text-white/50 text-sm mt-1">
+            <p className="text-muted-foreground text-sm mt-1">
               {drill.nameFr}
-              {totalSets > 1 && <span className="text-white/30"> · {totalSets} séries</span>}
+              {totalSets > 1 && <span className="text-muted-foreground/50"> · {totalSets} {t('workout.sets')}</span>}
             </p>
           )}
         </div>
@@ -286,7 +291,7 @@ export function CompletionOverlay({
               className={`h-7 w-7 transition-colors ${
                 i < getStarCount(finalScore)
                   ? 'fill-amber-400 text-amber-400'
-                  : 'text-gray-600'
+                  : 'text-muted-foreground/30'
               }`}
             />
           ))}
@@ -294,12 +299,12 @@ export function CompletionOverlay({
 
         {/* Stats Grid */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-gray-800 rounded-xl p-3 text-center">
+          <div className="bg-muted rounded-xl p-3 text-center">
             <p className="text-2xl font-black text-orange-400 tabular-nums">
               {displayReps}
             </p>
-            <p className="text-[10px] text-white/40 uppercase tracking-wider mt-1">
-              Réps
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">
+              {t('workout.repsLabel')}
             </p>
           </div>
           <div
@@ -314,16 +319,16 @@ export function CompletionOverlay({
             >
               {finalScore}
             </p>
-            <p className="text-[10px] text-white/40 uppercase tracking-wider mt-1">
-              Score
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">
+              {t('workout.score')}
             </p>
           </div>
-          <div className="bg-gray-800 rounded-xl p-3 text-center">
-            <p className="text-2xl font-black text-white tabular-nums">
+          <div className="bg-muted rounded-xl p-3 text-center">
+            <p className="text-2xl font-black text-foreground tabular-nums">
               {formatTime(elapsedAtEnd || totalDuration - timeRemaining)}
             </p>
-            <p className="text-[10px] text-white/40 uppercase tracking-wider mt-1">
-              Durée
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">
+              {t('workout.duration')}
             </p>
           </div>
         </div>
@@ -341,10 +346,10 @@ export function CompletionOverlay({
           >
             <ShieldCheck className="h-3.5 w-3.5 mr-1" />
             {finalScore >= 80
-              ? 'Excellente forme'
+              ? t('workout.formExcellent')
               : finalScore >= 50
-                ? 'Bonne forme'
-                : 'À améliorer'}
+                ? t('workout.formGood')
+                : t('workout.formImprove')}
           </Badge>
         </div>
 
@@ -354,31 +359,31 @@ export function CompletionOverlay({
             onClick={onSave}
             disabled={isSavePending}
             className="w-full h-12 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/25"
-            aria-label="Sauvegarder"
+            aria-label={t('action.save')}
           >
             {isSavePending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Save className="h-4 w-4 mr-2" />
             )}
-            Sauvegarder
+            {t('action.save')}
           </Button>
           <div className="grid grid-cols-2 gap-2.5">
             <Button
               variant="outline"
               onClick={onRestart}
-              className="h-11 border-gray-600 text-white hover:bg-gray-800 rounded-xl"
+              className="h-11 border-border text-foreground hover:bg-muted rounded-xl"
             >
               <RotateCcw className="h-4 w-4 mr-2" />
-              Refaire
+              {t('workout.redo')}
             </Button>
             <Button
               variant="outline"
               onClick={onBack}
-              className="h-11 border-gray-600 text-white hover:bg-gray-800 rounded-xl"
+              className="h-11 border-border text-foreground hover:bg-muted rounded-xl"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour
+              {t('action.back')}
             </Button>
           </div>
         </div>

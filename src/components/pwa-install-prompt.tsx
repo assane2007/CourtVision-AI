@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Download, X, Smartphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useTranslation } from '@/components/providers/language-provider'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>
@@ -11,6 +12,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export function PWAInstallPrompt() {
+  const { t } = useTranslation()
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showPrompt, setShowPrompt] = useState(false)
   const [dismissed, setDismissed] = useState(false)
@@ -81,10 +83,10 @@ export function PWAInstallPrompt() {
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm font-semibold">
-                  Installer CourtVision AI
+                  {t('pwa.title')}
                 </h3>
                 <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                  Ajoutez l&apos;app à votre écran d&apos;accueil pour un accès rapide et une expérience hors-ligne.
+                  {t('pwa.description')}
                 </p>
 
                 {/* Actions */}
@@ -95,7 +97,7 @@ export function PWAInstallPrompt() {
                     className="h-8 gap-1.5 bg-gradient-to-r from-orange-500 to-amber-500 text-xs font-semibold shadow-md shadow-orange-500/20 hover:from-orange-600 hover:to-amber-600"
                   >
                     <Download className="h-3.5 w-3.5" />
-                    Installer
+                    {t('pwa.install')}
                   </Button>
                   <Button
                     variant="ghost"
@@ -103,7 +105,7 @@ export function PWAInstallPrompt() {
                     onClick={handleDismiss}
                     className="h-8 text-xs text-muted-foreground"
                   >
-                    Plus tard
+                    {t('pwa.later')}
                   </Button>
                 </div>
               </div>
@@ -113,7 +115,7 @@ export function PWAInstallPrompt() {
                 type="button"
                 onClick={handleDismiss}
                 className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                aria-label="Fermer"
+                aria-label={t('pwa.close')}
               >
                 <X className="h-3.5 w-3.5" />
               </button>

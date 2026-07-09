@@ -41,6 +41,17 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        // If user has 2FA enabled, return a partial user with twoFactorRequired flag.
+        // The client must then call /api/auth/2fa/verify to get a full session.
+        if (player.twoFactorEnabled && player.twoFactorSecret) {
+          return {
+            id: player.id,
+            email: player.email,
+            name: player.name,
+            twoFactorRequired: true as const,
+          }
+        }
+
         return {
           id: player.id,
           email: player.email,
@@ -62,10 +73,21 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id!
         token.email = user.email!
         token.name = user.name!
+        // If 2FA is required, set a short-lived partial token
+        if ('twoFactorRequired' in user && user.twoFactorRequired) {
+          token.twoFactorRequired = true
+          // Override expiry to 5 minutes for this partial token
+          token.exp = Math.floor(Date.now() / 1000) + 5 * 60
+        }
       }
       return token
     },
     async session({ session, token }) {
+      // If the token still has twoFactorRequired, don't expose user data
+      if (token?.twoFactorRequired) {
+        session.user = { id: '', email: '', name: '' } as typeof session.user
+        return session
+      }
       if (session.user && token) {
         session.user.id = token.id as string
         session.user.email = token.email as string

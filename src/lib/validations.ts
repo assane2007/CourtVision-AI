@@ -43,6 +43,33 @@ export const updateProfileSchema = z.object({
   onboarding: z.boolean().optional(),
 })
 
+// ── Profile PATCH (full field set with strict validation) ────────────────────
+
+const skillField = z.number().int().min(0).max(100)
+
+export const profilePatchSchema = z.object({
+  name:        z.string().min(2).max(50).optional(),
+  bio:         z.string().max(500).optional(),
+  position:    z.enum(VALID_POSITIONS, { error: 'Position invalide' }).optional(),
+  level:       z.enum(VALID_LEVELS, { error: 'Niveau invalide' }).optional(),
+  city:        z.string().max(100).optional(),
+  country:     z.string().max(100).optional(),
+  avatar:      z.string().max(500).url('URL invalide').nullable().optional(),
+  coverPhoto:  z.string().max(500).url('URL invalide').nullable().optional(),
+  shooting:    skillField.optional(),
+  handling:    skillField.optional(),
+  finishing:   skillField.optional(),
+  defense:     skillField.optional(),
+  iq:          skillField.optional(),
+  age:         z.number().int().min(5).max(120).optional(),
+  heightCm:    z.number().int().min(50).max(300).optional(),
+  weightKg:    z.number().int().min(20).max(300).optional(),
+  yearsExp:    z.number().int().min(0).max(80).optional(),
+  isOnboarded: z.boolean().optional(),
+}).refine((data) => Object.keys(data).length > 0, {
+  message: 'Au moins un champ est requis.',
+})
+
 // ── Drills ─────────────────────────────────────────────────────────────────
 
 export const createDrillSchema = z.object({

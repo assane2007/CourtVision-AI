@@ -55,6 +55,7 @@ model Player {
 
   // Auth & Security
   resetToken         String?
+  resetTokenHash     String?
   resetTokenExpiresAt DateTime?
   emailVerified      Boolean @default(false)
   twoFactorEnabled   Boolean @default(false)
@@ -161,6 +162,7 @@ model Player {
   refreshTokens         RefreshToken[]
 
   @@index([resetToken])
+  @@index([resetTokenHash])
   @@index([email])
   @@index([twoFactorSecret])
   @@index([referralCode])

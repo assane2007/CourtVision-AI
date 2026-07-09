@@ -9,9 +9,6 @@ const nextConfig: NextConfig = {
   },
   /* React strict mode: catch side-effect bugs in development */
   reactStrictMode: true,
-  allowedDevOrigins: [
-    'preview-chat-c57e525c-9404-49d2-b3ca-8cf4027e7546.space-z.ai',
-  ],
   async headers() {
     return [
       {
@@ -35,7 +32,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
+            value: 'DENY',
           },
           {
             key: 'Referrer-Policy',
@@ -43,11 +40,11 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Permissions-Policy',
-            value: 'camera=(self), microphone=(self), geolocation=()',
+            value: 'camera=(self), microphone=(self), geolocation=(self)',
           },
           {
             key: 'Strict-Transport-Security',
-            value: 'max-age=31536000; includeSubDomains',
+            value: 'max-age=63072000; includeSubDomains; preload',
           },
         ],
       },

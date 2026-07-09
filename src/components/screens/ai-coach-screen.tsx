@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { useAppStore } from '@/stores/app'
 import { apiFetch } from '@/lib/utils'
 import { useTranslation } from '@/components/providers/language-provider'
+import type { TranslationKey } from '@/lib/i18n'
 import { BottomNav } from '@/components/shared/bottom-nav'
 import {
   AlertDialog,
@@ -161,9 +162,9 @@ export default function AICoachScreen() {
   // ── Handle suggested action ──────────────────────────────────────────
   const handleSuggestedAction = useCallback(
     (action: string) => {
-      sendMessage(action)
+      sendMessage(t(action as TranslationKey))
     },
-    [sendMessage],
+    [sendMessage, t],
   )
 
   // ── Handle clear chat ────────────────────────────────────────────────
@@ -299,7 +300,7 @@ export default function AICoachScreen() {
                     onClick={() => handleSuggestedAction(action)}
                     className="px-3.5 py-2 rounded-full bg-card border border-border text-xs font-medium text-foreground hover:bg-orange-50 hover:border-orange-300 hover:text-orange-700 dark:hover:bg-orange-950/30 dark:hover:border-orange-700 dark:hover:text-orange-400 transition-colors"
                   >
-                    {action}
+                    {t(action as TranslationKey)}
                   </button>
                 ))}
               </div>
@@ -379,7 +380,7 @@ export default function AICoachScreen() {
                   onClick={() => handleSuggestedAction(action)}
                   className="flex-shrink-0 min-h-[44px] flex items-center px-3 py-2.5 rounded-full bg-card border border-border text-xs font-medium text-muted-foreground hover:text-orange-600 hover:border-orange-300 dark:hover:text-orange-400 dark:hover:border-orange-700 transition-colors whitespace-nowrap"
                 >
-                  {action}
+                  {t(action as TranslationKey)}
                 </button>
               ))}
             </div>

@@ -4,7 +4,7 @@
  * Complements NextAuth — provides short-lived access tokens + long-lived
  * refresh tokens with rotation and revocation support.
  *
- * - signAccessToken(payload) → JWT, 15 min expiry
+ * - signAccessToken(player) → JWT, 15 min expiry (no PII — sub + name + role only)
  * - signRefreshToken(payload) → JWT, 7d expiry, stored in DB
  * - verifyAccessToken(token) → decoded payload or null
  * - verifyRefreshToken(token) → decoded payload or null
@@ -12,7 +12,7 @@
  * - revokeRefreshToken(token)
  */
 
-import crypto from 'node:crypto'
+import crypto, { createHash } from 'node:crypto'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 
@@ -25,6 +25,11 @@ function getSigningKey(): string {
     throw new Error('FATAL: JWT_SECRET or NEXTAUTH_SECRET must be set')
   }
   return key
+}
+
+/** SHA-256 hash a token for safe DB storage */
+function hashToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex')
 }
 
 /** Generate a unique JWT ID */
@@ -106,7 +111,6 @@ function verifyJwtSignature(token: string, key: string): JwtPayload | null {
 
 export interface AccessTokenPayload {
   sub: string        // Player ID
-  email: string
   name: string
   role: string
   jti: string
@@ -136,7 +140,6 @@ const REFRESH_TOKEN_TTL = 7 * 24 * 60 * 60 // 7 days
  */
 export function signAccessToken(player: {
   id: string
-  email: string
   name: string
   role?: string
 }): string {
@@ -145,7 +148,6 @@ export function signAccessToken(player: {
 
   const payload: AccessTokenPayload = {
     sub: player.id,
-    email: player.email,
     name: player.name,
     role: player.role || 'user',
     jti: generateJti(),
@@ -180,12 +182,12 @@ export async function signRefreshToken(
 
   const token = encodeJwt({ alg: 'HS256', typ: 'JWT' }, payload, key)
 
-  // Persist to DB
+  // Persist to DB (store hashed token)
   await db.refreshToken.create({
     data: {
       jti,
       playerId,
-      token,
+      token: hashToken(token),
       expiresAt: new Date((now + REFRESH_TOKEN_TTL) * 1000),
       userAgent: userAgent || null,
     },
@@ -282,8 +284,8 @@ export async function verifyRefreshTokenWithDb(
     return { valid: false, payload: null, error: 'Token has expired' }
   }
 
-  // Verify the stored token matches
-  if (stored.token !== token) {
+  // Verify the stored token hash matches
+  if (stored.token !== hashToken(token)) {
     logger.error('Refresh token mismatch — possible tampering', 'auth-jwt', {
       jti: payload.jti,
       playerId: payload.sub,
@@ -315,7 +317,7 @@ export async function rotateRefreshToken(
   // Look up the player
   const player = await db.player.findUnique({
     where: { id: playerId },
-    select: { id: true, email: true, name: true, role: true },
+    select: { id: true, name: true, role: true },
   })
 
   if (!player) {

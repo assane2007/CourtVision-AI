@@ -4,11 +4,12 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getPlayer, requirePlayer } from "@/lib/player/db-helpers";
 import { trackError } from "@/lib/monitoring";
+import { profilePatchSchema, getZodErrorMessage } from "@/lib/validations";
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    const playerId = (session?.user as { id?: string })?.id;
+    const playerId = session?.user?.id;
 
     // Special: return null player if no session (so frontend shows auth screen)
     if (!playerId) {
@@ -52,30 +53,25 @@ export async function GET() {
 export async function PATCH(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    const playerId = (session?.user as { id?: string })?.id;
+    const playerId = session?.user?.id;
     if (!playerId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
+
+    // Validate with Zod — email is intentionally NOT allowed here
+    const parsed = profilePatchSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: getZodErrorMessage(parsed.error) },
+        { status: 400 },
+      );
+    }
+
     const player = await requirePlayer(playerId);
 
-    // Build update data from allowed fields
-    const allowedFields = [
-      "name", "email", "age", "position", "heightCm", "weightKg", "yearsExp",
-      "shooting", "handling", "finishing", "defense", "iq", "isOnboarded",
-    ] as const;
-
-    const updateData: Record<string, unknown> = {};
-    for (const field of allowedFields) {
-      if (body[field] !== undefined) {
-        updateData[field] = body[field];
-      }
-    }
-
-    if (Object.keys(updateData).length === 0) {
-      return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
-    }
+    const updateData = { ...parsed.data };
 
     const updated = await db.player.update({
       where: { id: player.id },
