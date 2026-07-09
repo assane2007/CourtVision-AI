@@ -6,7 +6,7 @@ import { settingsPatchSchema, getZodErrorMessage } from '@/lib/validations'
 import { trackError } from '@/lib/monitoring'
 
 // GET /api/settings — Get user preferences
-export const GET = withAuth(async (_req, session) => {
+export const GET = withAuth(async (req, session) => {
   try {
     const player = await db.player.findUnique({
       where: { id: session.user.id },

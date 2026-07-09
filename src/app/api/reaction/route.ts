@@ -9,7 +9,7 @@ import { awardXp } from '@/lib/award-xp'
 // ─── GET /api/reaction ─────────────────────────────────────────────────────────
 // Returns player's reaction history (last 20 sessions) + personal bests per type
 
-export const GET = withAuth(async (_req, session) => {
+export const GET = withAuth(async (req, session) => {
   const rl = rateLimit(`reaction:get:${session.user.id}`, 30, 15 * 60 * 1000)
   if (!rl.success) {
     return NextResponse.json(

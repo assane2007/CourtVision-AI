@@ -13,7 +13,7 @@ function generateReferralCode(name: string): string {
   return `${clean}${random}`
 }
 
-export const GET = withAuth(async (_req, session) => {
+export const GET = withAuth(async (req, session) => {
   const rl = rateLimit(session.user.id, 20, 60_000)
   if (!rl.success) {
     return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 })
