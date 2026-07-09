@@ -66,7 +66,7 @@ export const PATCH = withAuth(async (request, session, { params }) => {
       return NextResponse.json({ error: 'Plan non trouvé' }, { status: 404 })
     }
 
-    const body = await _request.json()
+    const body = await request.json()
     const parsed = updatePlanSchema.safeParse(body)
 
     if (!parsed.success) {

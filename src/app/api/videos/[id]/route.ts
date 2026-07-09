@@ -60,7 +60,7 @@ export const PATCH = withAuth(async (request, session, { params }) => {
   try {
 
     const { id } = await params
-    const body = await _request.json()
+    const body = await request.json()
 
     // Verify ownership
     const existing = await db.video.findUnique({

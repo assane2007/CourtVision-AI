@@ -97,7 +97,7 @@ export const PATCH = withAuth(async (request, session, { params }) => {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
     }
 
-    const body = await _request.json()
+    const body = await request.json()
     const { name, description, logo, isPublic, maxMembers } = body
 
     const updated = await db.team.update({
