@@ -69,6 +69,7 @@ export async function chat(
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const response = await (zai.chat as any).completions.create({
         model,
         messages: sdkMessages,
