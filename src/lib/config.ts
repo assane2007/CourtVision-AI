@@ -86,12 +86,12 @@ function isPostgresqlUrl(url: string): boolean {
 
 function requireEnv(name: string, message?: string): string {
   const value = process.env[name]
-  if (!value) {
+  if (!value && !process.env.SKIP_ENV_VALIDATION) {
     throw new Error(
       message ?? `FATAL: ${name} is not set. Please add it to your .env file.`
     )
   }
-  return value
+  return value || ''
 }
 
 // ─── Build Config ───────────────────────────────────────────────────────────
