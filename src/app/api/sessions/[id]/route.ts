@@ -61,7 +61,7 @@ export const PATCH = withAuth(async (request, session, { params }) => {
       return NextResponse.json({ error: 'Séance non trouvée' }, { status: 404 })
     }
 
-    const body = await req.json()
+    const body = await request.json()
     const parsed = endSessionSchema.safeParse(body)
 
     if (!parsed.success) {

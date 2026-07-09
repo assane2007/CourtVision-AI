@@ -33,7 +33,7 @@ export const POST = withAuth(async (request, session, { params }) => {
   try {
 
     const { id: videoId } = await params
-    const body = await req.json()
+    const body = await request.json()
 
     const { type, format, startMs, endMs, quality } = body
 
