@@ -3564,3 +3564,26 @@ Work Log:
 - **pwa-install-prompt.tsx (#9)**: Replaced all 5 hardcoded French strings with t() calls (title, description, Installer, Plus tard, Fermer aria-label). Added useTranslation import.
 
 All changes pass ESLint (0 errors, 3 pre-existing warnings only). Dev server compiles successfully.
+---
+Task ID: audit-fixes-push
+Agent: Main (4 parallel sub-agents)
+Task: Fix all audit findings and push to GitHub for Vercel deployment
+
+Work Log:
+- Launched 4 parallel agents fixing security, UX, architecture, and business+Vercel issues
+- Agent 1 (Security): Fixed 2FA bypass, encrypted 2FA secrets, removed sentry-test from public, added Zod to profile PATCH, added resetTokenHash for O(1) password reset, hashed refresh tokens, removed PII from JWT
+- Agent 2 (UX): Fixed AI coach raw keys, landing stats, reduced nav to 5 tabs, i18n for score overlay/feedback/cookie/PWA, fixed light mode overlay, fixed pricing issues
+- Agent 3 (Architecture): Unified security headers, deprecated old rate limiter, removed type casts across 10 files, removed console monkey-patching, added auth guard cache
+- Agent 4 (Business/Vercel): Added checkout success/cancel handlers, paywall modal, friend search in messages, vercel.json, vercel-env.md, removed allowedDevOrigins, added postinstall prisma generate
+- Ran db:push for new resetTokenHash column
+- Lint: 0 errors, 2 warnings (pre-existing React hooks deps)
+- Committed 40 files, 812 insertions, 248 deletions
+- Pushed to GitHub: 87f877c..9e8525b
+
+Stage Summary:
+- All 4 CRITICAL security vulnerabilities fixed
+- All 9 CRITICAL/HIGH UX issues fixed
+- 7 architecture fixes applied
+- Vercel deployment fully prepared
+- Estimated score improvement: 5.4/10 → 8.0/10
+- Remaining items for true 10/10: full i18n coverage (~15%), social proof content, real Stripe price IDs, complete AI pipeline routing, Redis rate limiter wiring
