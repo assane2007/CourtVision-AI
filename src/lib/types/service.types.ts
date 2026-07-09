@@ -4,7 +4,6 @@
  * used across the service layer architecture.
  */
 
-import type { Prisma } from '@prisma/client'
 import type {
   PaginationMeta,
   PlayerPosition,

@@ -45,8 +45,8 @@ ${drillInstructions ? `Instructions: ${drillInstructions}` : ''}
 Analyse cette image et donne ton évaluation JSON.`
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-await
     const ZAI = await import('z-ai-web-dev-sdk')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await (ZAI as any).chat.completions.create({
       model: 'gpt-4o',
       messages: [
@@ -145,8 +145,8 @@ Réponds de manière concise (2-4 phrases max sauf si on te demande des détails
   ]
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-await
     const ZAI = await import('z-ai-web-dev-sdk')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await (ZAI as any).chat.completions.create({
       model: 'gpt-4o-mini',
       messages,
@@ -182,6 +182,7 @@ Réponds de manière concise (2-4 phrases max sauf si on te demande des détails
 /**
  * Generate personalized insights based on player data.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function generateInsights(playerId: string): Promise<any[]> {
   // Gather player data
   const player = await db.player.findUnique({
@@ -230,8 +231,8 @@ Dernières séances: ${JSON.stringify(player.sessions.map(s => ({
 Réponds en JSON: [{"type": "strength|weakness|suggestion", "title": "...", "description": "...", "priority": "low|medium|high"}]`
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-await
     const ZAI = await import('z-ai-web-dev-sdk')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await (ZAI as any).chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [

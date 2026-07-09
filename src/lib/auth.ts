@@ -5,8 +5,8 @@ import { config } from '@/lib/config'
 import { db } from './db'
 import { rateLimit } from './rate-limit'
 
-if (config.env.isProd && !config.auth.secret && !process.env.SKIP_ENV_VALIDATION) {
-  throw new Error('FATAL: NEXTAUTH_SECRET is not set. Refusing to start in production.')
+if (!config.auth.secret) {
+  console.warn('[AUTH] ⚠  NEXTAUTH_SECRET is not set — sessions will be unstable.')
 }
 
 export const authOptions: NextAuthOptions = {

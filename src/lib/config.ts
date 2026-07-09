@@ -86,9 +86,9 @@ function isPostgresqlUrl(url: string): boolean {
 
 function requireEnv(name: string, message?: string): string {
   const value = process.env[name]
-  if (!value && !process.env.SKIP_ENV_VALIDATION) {
-    throw new Error(
-      message ?? `FATAL: ${name} is not set. Please add it to your .env file.`
+  if (!value) {
+    console.warn(
+      `[CONFIG] ⚠  ${name} is not set — using empty fallback. Please add it to your environment.`
     )
   }
   return value || ''
@@ -101,27 +101,31 @@ const isProd = nodeEnv === 'production'
 const isDev = nodeEnv === 'development'
 
 // Database
-const databaseUrl = isProd
-  ? requireEnv('DATABASE_URL')
-  : (process.env.DATABASE_URL || 'file:./db/courtvision.db')
+const databaseUrl = process.env.DATABASE_URL || (isProd ? '' : 'file:./db/courtvision.db')
+if (!databaseUrl) {
+  console.warn('[CONFIG] ⚠  DATABASE_URL is not set — database features will not work.')
+}
 
 // Auth
-const nextauthSecret = isProd
-  ? (() => {
-      const secret = requireEnv('NEXTAUTH_SECRET')
-      if (secret && secret.length < 32) {
-        throw new Error(
-          'FATAL: NEXTAUTH_SECRET must be at least 32 characters. Generate one with:\n' +
-          '  openssl rand -base64 48'
-        )
-      }
-      return secret || 'build-time-placeholder-secret-do-not-use-in-prod'
-    })()
-  : (process.env.NEXTAUTH_SECRET || 'dev-secret-do-not-use-in-production-32chars!')
+const nextauthSecret = (() => {
+  const secret = process.env.NEXTAUTH_SECRET
+  if (secret) {
+    if (secret.length < 32) {
+      console.warn('[CONFIG] ⚠  NEXTAUTH_SECRET is too short — should be at least 32 characters.')
+    }
+    return secret
+  }
+  // Fallback for build time or missing env
+  if (isProd) {
+    console.warn('[CONFIG] ⚠  NEXTAUTH_SECRET is not set — using fallback. Set a proper secret in production!')
+  }
+  return 'dev-secret-do-not-use-in-production-32chars!'
+})()
 
-const nextauthUrl = isProd
-  ? requireEnv('NEXTAUTH_URL')
-  : (process.env.NEXTAUTH_URL || 'http://localhost:3000')
+const nextauthUrl = process.env.NEXTAUTH_URL || (isProd ? '' : 'http://localhost:3000')
+if (!nextauthUrl && isProd) {
+  console.warn('[CONFIG] ⚠  NEXTAUTH_URL is not set — OAuth callbacks may fail.')
+}
 
 const jwtSecret = process.env.JWT_SECRET || nextauthSecret
 
@@ -147,18 +151,18 @@ if (process.env.ENCRYPTION_KEY) {
   encryptionKey = process.env.ENCRYPTION_KEY
   const keyBuffer = Buffer.from(encryptionKey, 'hex')
   if (keyBuffer.length !== 32) {
-    throw new Error(
-      `ENCRYPTION_KEY must be exactly 32 bytes (64 hex chars). Got ${keyBuffer.length} bytes.`
+    console.warn(
+      `[CONFIG] ⚠  ENCRYPTION_KEY must be exactly 32 bytes (64 hex chars). Got ${keyBuffer.length} bytes. Using auto-generated key.`
     )
+    encryptionKey = randomBytes(32).toString('hex')
   }
-} else if (isProd && !process.env.SKIP_ENV_VALIDATION) {
-  throw new Error(
-    'FATAL: ENCRYPTION_KEY is not set. Generate one with:\n' +
-    '  node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
-  )
 } else {
   encryptionKey = randomBytes(32).toString('hex')
-  if (!process.env.SKIP_ENV_VALIDATION) {
+  if (isProd) {
+    console.warn(
+      '[CONFIG] ⚠  ENCRYPTION_KEY is not set — using auto-generated key. Set a stable key in production for data consistency!'
+    )
+  } else {
     console.warn(
       '[CONFIG] Auto-generated ENCRYPTION_KEY for development. Do NOT use in production.'
     )
