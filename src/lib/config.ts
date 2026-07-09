@@ -109,13 +109,13 @@ const databaseUrl = isProd
 const nextauthSecret = isProd
   ? (() => {
       const secret = requireEnv('NEXTAUTH_SECRET')
-      if (secret.length < 32) {
+      if (secret && secret.length < 32) {
         throw new Error(
           'FATAL: NEXTAUTH_SECRET must be at least 32 characters. Generate one with:\n' +
           '  openssl rand -base64 48'
         )
       }
-      return secret
+      return secret || 'build-time-placeholder-secret-do-not-use-in-prod'
     })()
   : (process.env.NEXTAUTH_SECRET || 'dev-secret-do-not-use-in-production-32chars!')
 
@@ -151,16 +151,18 @@ if (process.env.ENCRYPTION_KEY) {
       `ENCRYPTION_KEY must be exactly 32 bytes (64 hex chars). Got ${keyBuffer.length} bytes.`
     )
   }
-} else if (isProd) {
+} else if (isProd && !process.env.SKIP_ENV_VALIDATION) {
   throw new Error(
     'FATAL: ENCRYPTION_KEY is not set. Generate one with:\n' +
     '  node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
   )
 } else {
   encryptionKey = randomBytes(32).toString('hex')
-  console.warn(
-    '[CONFIG] Auto-generated ENCRYPTION_KEY for development. Do NOT use in production.'
-  )
+  if (!process.env.SKIP_ENV_VALIDATION) {
+    console.warn(
+      '[CONFIG] Auto-generated ENCRYPTION_KEY for development. Do NOT use in production.'
+    )
+  }
 }
 
 // Security — Allowed origins

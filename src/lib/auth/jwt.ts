@@ -21,10 +21,10 @@ import { logger } from '@/lib/logger'
 function getSigningKey(): string {
   // Use JWT_SECRET if set, otherwise fall back to NEXTAUTH_SECRET
   const key = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET
-  if (!key) {
+  if (!key && !process.env.SKIP_ENV_VALIDATION) {
     throw new Error('FATAL: JWT_SECRET or NEXTAUTH_SECRET must be set')
   }
-  return key
+  return key || 'build-time-placeholder-jwt-secret'
 }
 
 /** SHA-256 hash a token for safe DB storage */
