@@ -40,6 +40,7 @@
     "upload",
     "examples",
     "skills",
-    "src/__tests__"
+    "src/__tests__",
+    "prisma/seed.ts"
   ]
 }
