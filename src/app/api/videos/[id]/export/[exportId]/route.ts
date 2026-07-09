@@ -4,7 +4,7 @@ import { trackError } from '@/lib/monitoring'
 import { withAuth } from '@/lib/with-auth'
 
 // GET /api/videos/[id]/export/[exportId] — Get export status
-export const GET = withAuth<{ id: string; exportId: string }>(async (_request: Request, session, { params }) => {
+export const GET = withAuth(async (_request, session, { params }) => {
   try {
 
     const { id: videoId, exportId } = await params

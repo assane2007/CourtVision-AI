@@ -5,7 +5,7 @@ import crypto from 'crypto'
 import { withAuth } from '@/lib/with-auth'
 
 // POST /api/videos/[id]/share — Share a video (generate link, share to feed, share to friends)
-export const POST = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
+export const POST = withAuth(async (_request, session, { params }) => {
   try {
 
     const { id: videoId } = await params

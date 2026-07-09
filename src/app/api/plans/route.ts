@@ -6,7 +6,7 @@ import { trackError } from '@/lib/monitoring'
 import { withAuth } from '@/lib/with-auth'
 
 // GET /api/plans — List user's training plans
-export const GET = withAuth(async (request: Request, session) => {
+export const GET = withAuth(async (request, session) => {
   try {
 
     const rl = rateLimit(`plans:get:${session.user.id}`, 30, 15 * 60 * 1000)

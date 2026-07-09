@@ -3,7 +3,7 @@
  * of the required tier.
  *
  * Usage in routes:
- *   export const POST = requireSubscription('pro', async (req, auth) => { ... })
+ *   export const POST = requireSubscription('pro', async (req, auth, sub) => { ... })
  *
  * Usage in services:
  *   await checkSubscription(auth.playerId, 'elite')
@@ -16,6 +16,8 @@ import { requireAuth } from './auth.guard'
 import type { AuthContext } from '@/lib/types/service.types'
 import type { SubscriptionTier } from '@/lib/types/api.types'
 import { logger } from '@/lib/logger'
+
+type RouteContext = { params: Promise<Record<string, string>> }
 
 // ── Tier Hierarchy ──────────────────────────────────────────────────────────────
 
@@ -92,11 +94,11 @@ export async function checkSubscription(
 
 // ── Route Wrapper ───────────────────────────────────────────────────────────────
 
-type SubscriptionHandler<TCtx = void> = (
+type SubscriptionHandler = (
   req: NextRequest,
   auth: AuthContext,
   subscription: { tier: SubscriptionTier; expiresAt: Date | null },
-  context: TCtx,
+  context: RouteContext,
 ) => Promise<NextResponse>
 
 /**
@@ -110,7 +112,7 @@ type SubscriptionHandler<TCtx = void> = (
  * })
  *
  * // Require Elite subscription with dynamic params
- * export const GET = requireSubscription<{ params: Promise<{ id: string }> }>(
+ * export const GET = requireSubscription(
  *   'elite',
  *   async (req, auth, sub, { params }) => {
  *     const { id } = await params
@@ -118,15 +120,15 @@ type SubscriptionHandler<TCtx = void> = (
  *   }
  * )
  */
-export function requireSubscription<TCtx = void>(
+export function requireSubscription(
   requiredTier: 'pro' | 'elite',
-  handler: SubscriptionHandler<TCtx>,
-): (req: NextRequest, context: { params: Promise<Record<string, string>> }) => Promise<NextResponse> {
+  handler: SubscriptionHandler,
+): (req: NextRequest, context: RouteContext) => Promise<NextResponse> {
   return async (req, context) => {
     try {
       const auth = await requireAuth()
       const subscription = await checkSubscription(auth.playerId, requiredTier)
-      return handler(req, auth, subscription, context as unknown as TCtx)
+      return handler(req, auth, subscription, context)
     } catch (error) {
       return toErrorResponse(error, 'subscription-guard')
     }

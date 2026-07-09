@@ -16,7 +16,7 @@ const PRICE_MAP: Record<string, string> = {
   elite_annual: 'price_elite_annual',
 }
 
-export const POST = withAuth(async (req: Request, session) => {
+export const POST = withAuth(async (req, session) => {
   // Auth check
 
   // Rate limit

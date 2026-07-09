@@ -6,7 +6,7 @@ import { trackError } from '@/lib/monitoring'
 import { withAuth } from '@/lib/with-auth'
 
 // GET /api/player — Get current user's profile, or another player's public profile via ?id=xxx
-export const GET = withAuth(async (request: Request, session) => {
+export const GET = withAuth(async (request, session) => {
   try {
 
     const { searchParams } = new URL(request.url)

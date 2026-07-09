@@ -4,7 +4,7 @@ import { trackError } from '@/lib/monitoring'
 import { withAuth } from '@/lib/with-auth'
 
 // DELETE /api/videos/[id]/annotations/[annotationId]
-export const DELETE = withAuth<{ id: string; annotationId: string }>(async (_request: Request, session, { params }) => {
+export const DELETE = withAuth(async (_request, session, { params }) => {
   try {
 
     const { id: videoId, annotationId } = await params

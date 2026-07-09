@@ -3,24 +3,24 @@ import { authOptions } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import type { Session } from 'next-auth'
 
+type RouteContext = { params: Promise<Record<string, string>> }
+
 /**
  * Handler that receives an authenticated session.
- * TCtx is the Next.js route context (e.g. { params: Promise<{ id: string }> })
- * and defaults to void for routes without dynamic segments.
  */
-type AuthenticatedHandler<TCtx = void> = (
+type AuthenticatedHandler = (
   req: NextRequest,
   session: Session,
-  context: TCtx,
+  context: RouteContext,
 ) => Promise<NextResponse>
 
 /**
  * Handler that receives an optional session (may be null).
  */
-type OptionalAuthHandler<TCtx = void> = (
+type OptionalAuthHandler = (
   req: NextRequest,
   session: Session | null,
-  context: TCtx,
+  context: RouteContext,
 ) => Promise<NextResponse>
 
 /**
@@ -35,22 +35,22 @@ type OptionalAuthHandler<TCtx = void> = (
  *
  * @example
  * // Dynamic route
- * export const GET = withAuth<{ params: Promise<{ id: string }> }>(
+ * export const GET = withAuth(
  *   async (req, session, { params }) => {
  *     const { id } = await params
  *     // ...
  *   }
  * )
  */
-export function withAuth<TCtx = void>(
-  handler: AuthenticatedHandler<TCtx>,
-): (req: NextRequest, context: { params: Promise<Record<string, string>> }) => Promise<NextResponse> {
+export function withAuth(
+  handler: AuthenticatedHandler,
+): (req: NextRequest, context: RouteContext) => Promise<NextResponse> {
   return async (req, context) => {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
-    return handler(req, session, context as unknown as TCtx)
+    return handler(req, session, context)
   }
 }
 
@@ -59,9 +59,9 @@ export function withAuth<TCtx = void>(
  * Requires `session.user.id` AND player role to be 'admin'.
  * Returns 401 if not authenticated, 403 if not admin.
  */
-export function withAdmin<TCtx = void>(
-  handler: AuthenticatedHandler<TCtx>,
-): (req: NextRequest, context: { params: Promise<Record<string, string>> }) => Promise<NextResponse> {
+export function withAdmin(
+  handler: AuthenticatedHandler,
+): (req: NextRequest, context: RouteContext) => Promise<NextResponse> {
   return async (req, context) => {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
@@ -77,7 +77,7 @@ export function withAdmin<TCtx = void>(
       return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
     }
 
-    return handler(req, session, context as unknown as TCtx)
+    return handler(req, session, context)
   }
 }
 
@@ -93,11 +93,11 @@ export function withAdmin<TCtx = void>(
  *   return NextResponse.json({ name: 'Anonymous' })
  * })
  */
-export function withOptionalAuth<TCtx = void>(
-  handler: OptionalAuthHandler<TCtx>,
-): (req: NextRequest, context: { params: Promise<Record<string, string>> }) => Promise<NextResponse> {
+export function withOptionalAuth(
+  handler: OptionalAuthHandler,
+): (req: NextRequest, context: RouteContext) => Promise<NextResponse> {
   return async (req, context) => {
     const session = (await getServerSession(authOptions)) ?? null
-    return handler(req, session, context as unknown as TCtx)
+    return handler(req, session, context)
   }
 }

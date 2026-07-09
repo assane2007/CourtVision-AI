@@ -5,7 +5,7 @@ import { rateLimit } from '@/lib/rate-limit'
 import { withAuth } from '@/lib/with-auth'
 import { liveScoreUpdateSchema, getZodErrorMessage } from '@/lib/validations'
 
-export const PUT = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
+export const PUT = withAuth(async (_request, session, { params }) => {
   try {
 
     const rl = rateLimit(`live:score:${session.user.id}`, 60, 15 * 60 * 1000)

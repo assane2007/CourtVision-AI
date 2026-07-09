@@ -4,7 +4,7 @@ import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
 import { withAuth } from '@/lib/with-auth'
 
-export const GET = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
+export const GET = withAuth(async (_request, session, { params }) => {
   try {
 
     const { id: teamId } = await params
@@ -40,7 +40,7 @@ export const GET = withAuth<{ id: string }>(async (_request: Request, session, {
   }
 })
 
-export const POST = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
+export const POST = withAuth(async (_request, session, { params }) => {
   try {
 
     const rl = rateLimit(`teams:join:${session.user.id}`, 20, 15 * 60 * 1000)
@@ -94,7 +94,7 @@ export const POST = withAuth<{ id: string }>(async (_request: Request, session, 
   }
 })
 
-export const DELETE = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
+export const DELETE = withAuth(async (_request, session, { params }) => {
   try {
 
     const { id: teamId } = await params

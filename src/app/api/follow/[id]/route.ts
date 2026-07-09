@@ -3,7 +3,7 @@ import { withAuth } from '@/lib/with-auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 
-export const GET = withAuth<{ params: Promise<{ id: string }> }>(
+export const GET = withAuth(
   async (request, session, { params }) => {
     try {
       const { id: playerId } = await params

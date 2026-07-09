@@ -9,10 +9,12 @@ import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
 import { requireAuth } from './auth.guard'
 import type { AuthContext } from '@/lib/types/service.types'
 
-type AdminHandler<TCtx = void> = (
+type RouteContext = { params: Promise<Record<string, string>> }
+
+type AdminHandler = (
   req: NextRequest,
   auth: AuthContext,
-  context: TCtx,
+  context: RouteContext,
 ) => Promise<NextResponse>
 
 /**
@@ -25,9 +27,9 @@ type AdminHandler<TCtx = void> = (
  *   return NextResponse.json({ players: allPlayers })
  * })
  */
-export function withAdminGuard<TCtx = void>(
-  handler: AdminHandler<TCtx>,
-): (req: NextRequest, context: { params: Promise<Record<string, string>> }) => Promise<NextResponse> {
+export function withAdminGuard(
+  handler: AdminHandler,
+): (req: NextRequest, context: RouteContext) => Promise<NextResponse> {
   return async (req, context) => {
     try {
       const auth = await requireAuth()
@@ -36,7 +38,7 @@ export function withAdminGuard<TCtx = void>(
         throw new AppError(ErrorCode.ADMIN_ONLY, 'Accès non autorisé. Droits administrateur requis.')
       }
 
-      return handler(req, auth, context as TCtx)
+      return handler(req, auth, context)
     } catch (error) {
       return toErrorResponse(error, 'admin-guard')
     }

@@ -6,7 +6,7 @@ import { cacheInvalidatePattern } from '@/lib/cache'
 import { trackError } from '@/lib/monitoring'
 
 // GET /api/drills/[id] — Single drill detail
-export const GET = withAuth<{ params: Promise<{ id: string }> }>(
+export const GET = withAuth(
   async (_req, session, { params }) => {
     try {
       const rl = rateLimit(`drills:get:${session.user.id}`, 30, 15 * 60 * 1000)
@@ -45,7 +45,7 @@ export const GET = withAuth<{ params: Promise<{ id: string }> }>(
 )
 
 // DELETE /api/drills/[id] — Delete a custom drill (only the owner)
-export const DELETE = withAuth<{ params: Promise<{ id: string }> }>(
+export const DELETE = withAuth(
   async (_req, session, { params }) => {
     try {
       const rl = rateLimit(`drills:delete:${session.user.id}`, 20, 15 * 60 * 1000)

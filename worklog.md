@@ -3603,3 +3603,19 @@ Stage Summary:
 - Single-line fix resolves all 17 import paths
 - Vercel build should now pass
 - No functional changes — purely an export fix
+---
+Task ID: fix-withauth-generics
+Agent: Main
+Task: Fix all withAuth/withAdmin/withOptionalAuth generic types for Next.js 16 compatibility
+
+Work Log:
+- Removed TCtx generic from withAuth, withAdmin, withOptionalAuth in with-auth.ts
+- Changed handler types to always receive { params: Promise<Record<string, string>> }
+- Bulk-replaced ~50 route files removing incorrect generic type parameters
+- Fixed request: Request / _request: Request annotations in handler callbacks
+- Updated auth.guard.ts, admin.guard.ts, subscription.guard.ts same pattern
+
+Stage Summary:
+- All route handlers now use consistent Next.js 16 compatible signatures
+- No more type mismatches between wrapper and handler
+- Lint passes with 0 errors (2 pre-existing warnings unrelated to changes)

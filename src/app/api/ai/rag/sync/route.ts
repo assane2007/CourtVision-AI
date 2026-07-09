@@ -5,7 +5,7 @@ import { trackError } from '@/lib/monitoring'
 import { withAuth } from '@/lib/with-auth'
 
 // POST /api/ai/rag/sync — Sync player session data to PlayerDocument table for RAG context
-export const POST = withAuth(async (request: Request, session) => {
+export const POST = withAuth(async (request, session) => {
   try {
 
     const playerId = session.user.id

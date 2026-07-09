@@ -4,7 +4,7 @@ import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
 import { withAuth } from '@/lib/with-auth'
 
-export const GET = withAuth(async (request: Request, session) => {
+export const GET = withAuth(async (request, session) => {
   try {
 
     const rl = rateLimit(`teams:list:${session.user.id}`, 60, 15 * 60 * 1000)

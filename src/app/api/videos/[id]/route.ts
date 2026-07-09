@@ -6,7 +6,7 @@ import path from 'path'
 import { withAuth } from '@/lib/with-auth'
 
 // GET /api/videos/[id] — Get single video with annotations & highlights
-export const GET = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
+export const GET = withAuth(async (_request, session, { params }) => {
   try {
 
     const { id } = await params
@@ -56,7 +56,7 @@ export const GET = withAuth<{ id: string }>(async (_request: Request, session, {
 })
 
 // PATCH /api/videos/[id] — Update video metadata
-export const PATCH = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
+export const PATCH = withAuth(async (_request, session, { params }) => {
   try {
 
     const { id } = await params
@@ -114,7 +114,7 @@ export const PATCH = withAuth<{ id: string }>(async (_request: Request, session,
 })
 
 // DELETE /api/videos/[id] — Delete video and file
-export const DELETE = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
+export const DELETE = withAuth(async (_request, session, { params }) => {
   try {
 
     const { id } = await params

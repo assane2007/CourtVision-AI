@@ -9,7 +9,7 @@ const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-06-24.dahlia' })
   : null
 
-export const POST = withAuth(async (request: Request, session) => {
+export const POST = withAuth(async (request, session) => {
   try {
     // Auth check
 

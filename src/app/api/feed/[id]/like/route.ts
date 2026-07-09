@@ -4,7 +4,7 @@ import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
 import { withAuth } from '@/lib/with-auth'
 
-export const POST = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
+export const POST = withAuth(async (_request, session, { params }) => {
   try {
 
     const rl = rateLimit(`feed:like:${session.user.id}`, 60, 15 * 60 * 1000)

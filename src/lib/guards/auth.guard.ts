@@ -19,6 +19,8 @@ import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
 import type { AuthContext, AuthLevel } from '@/lib/types/service.types'
 import type { Session } from 'next-auth'
 
+type RouteContext = { params: Promise<Record<string, string>> }
+
 // ── In-memory auth cache (60-second TTL) ───────────────────────────────────────
 
 const authCache = new Map<string, { data: AuthContext; expiry: number }>()
@@ -119,10 +121,10 @@ export async function getOptionalAuth(): Promise<AuthContext | null> {
 
 // ── Route Wrappers ──────────────────────────────────────────────────────────────
 
-type AuthenticatedHandler<TCtx = void> = (
+type AuthenticatedHandler = (
   req: NextRequest,
   auth: AuthContext,
-  context: TCtx,
+  context: RouteContext,
 ) => Promise<NextResponse>
 
 /**
@@ -134,10 +136,10 @@ type AuthenticatedHandler<TCtx = void> = (
  *   return NextResponse.json({ playerId: auth.playerId, level: auth.authLevel })
  * })
  */
-export function withAuthGuard<TCtx = void>(
-  handler: AuthenticatedHandler<TCtx>,
+export function withAuthGuard(
+  handler: AuthenticatedHandler,
   requiredLevel?: AuthLevel,
-): (req: NextRequest, context: { params: Promise<Record<string, string>> }) => Promise<NextResponse> {
+): (req: NextRequest, context: RouteContext) => Promise<NextResponse> {
   return async (req, context) => {
     try {
       const session = await getServerSession(authOptions)
@@ -162,7 +164,7 @@ export function withAuthGuard<TCtx = void>(
         }
       }
 
-      return handler(req, auth, context as unknown as TCtx)
+      return handler(req, auth, context)
     } catch (error) {
       return toErrorResponse(error, 'auth-guard')
     }
@@ -171,23 +173,23 @@ export function withAuthGuard<TCtx = void>(
 
 // ── Optional Auth Wrapper ───────────────────────────────────────────────────────
 
-type OptionalAuthHandler<TCtx = void> = (
+type OptionalAuthHandler = (
   req: NextRequest,
   auth: AuthContext | null,
-  context: TCtx,
+  context: RouteContext,
 ) => Promise<NextResponse>
 
 /**
  * Wraps a route handler with optional authentication.
  * The handler always runs — auth is AuthContext if logged in, null otherwise.
  */
-export function withOptionalAuthGuard<TCtx = void>(
-  handler: OptionalAuthHandler<TCtx>,
-): (req: NextRequest, context: { params: Promise<Record<string, string>> }) => Promise<NextResponse> {
+export function withOptionalAuthGuard(
+  handler: OptionalAuthHandler,
+): (req: NextRequest, context: RouteContext) => Promise<NextResponse> {
   return async (req, context) => {
     try {
       const auth = await getOptionalAuth()
-      return handler(req, auth, context as unknown as TCtx)
+      return handler(req, auth, context)
     } catch (error) {
       return toErrorResponse(error, 'auth-guard')
     }

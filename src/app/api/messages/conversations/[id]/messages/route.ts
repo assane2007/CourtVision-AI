@@ -4,7 +4,7 @@ import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
 import { withAuth } from '@/lib/with-auth'
 
-export const GET = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
+export const GET = withAuth(async (_request, session, { params }) => {
   try {
 
     const { id: conversationId } = await params
@@ -54,7 +54,7 @@ export const GET = withAuth<{ id: string }>(async (_request: Request, session, {
   }
 })
 
-export const POST = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
+export const POST = withAuth(async (_request, session, { params }) => {
   try {
 
     const rl = rateLimit(`messages:send:${session.user.id}`, 60, 15 * 60 * 1000)

@@ -3,7 +3,7 @@ import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { withAuth } from '@/lib/with-auth'
 
-export const GET = withAuth<{ id: string }>(async (_request: Request, session, { params }) => {
+export const GET = withAuth(async (_request, session, { params }) => {
   try {
 
     const { id } = await params

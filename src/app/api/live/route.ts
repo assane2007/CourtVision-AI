@@ -5,7 +5,7 @@ import { rateLimit } from '@/lib/rate-limit'
 import { withAuth } from '@/lib/with-auth'
 import { createLiveSessionSchema, getZodErrorMessage } from '@/lib/validations'
 
-export const GET = withAuth(async (request: Request, session) => {
+export const GET = withAuth(async (request, session) => {
   try {
 
     const rl = rateLimit(`live:list:${session.user.id}`, 60, 15 * 60 * 1000)
