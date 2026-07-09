@@ -3587,3 +3587,19 @@ Stage Summary:
 - Vercel deployment fully prepared
 - Estimated score improvement: 5.4/10 → 8.0/10
 - Remaining items for true 10/10: full i18n coverage (~15%), social proof content, real Stripe price IDs, complete AI pipeline routing, Redis rate limiter wiring
+---
+Task ID: fix-1
+Agent: Main
+Task: Fix Vercel build failure — ErrorCode not exported from error-handler.ts
+
+Work Log:
+- Vercel build failed with 2 Turbopack errors: `ErrorCode` imported from `@/lib/middleware/error-handler` in `admin.guard.ts` and `auth.guard.ts`, but the export didn't exist
+- Root cause: `error-handler.ts` imports `ErrorCode` from `@/lib/types/api.types` but never re-exports it. 17 files across the project import `{ AppError, ErrorCode }` from `@/lib/middleware/error-handler`
+- Fix: Added `export { ErrorCode }` re-export line in `error-handler.ts` after the import
+- Verified: `bun run lint` passes with 0 errors (2 pre-existing warnings only)
+- Verified: dev server starts cleanly, page returns 200, no runtime errors in console
+
+Stage Summary:
+- Single-line fix resolves all 17 import paths
+- Vercel build should now pass
+- No functional changes — purely an export fix
