@@ -3,7 +3,7 @@
  * Core types and interfaces for all AI operations in the basketball training platform.
  */
 
-import type { SubscriptionTier } from '@/lib/types/api.types'
+export type { SubscriptionTier } from '@/lib/types/api.types'
 import type { SkillKey } from '@/lib/player/iq-engine'
 
 // ── Language ─────────────────────────────────────────────────────────────────────
