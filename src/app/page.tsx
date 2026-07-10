@@ -1,5 +1,5 @@
 'use client'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/components/providers/supabase-auth-provider'
 import { useAppStore, type Screen } from '@/stores/app'
 import { useEffect, Component, type ReactNode, useSyncExternalStore } from 'react'
 import dynamic from 'next/dynamic'
@@ -94,7 +94,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 
 export default function Home() {
   const { td } = useTranslation()
-  const { data: session, status } = useSession()
+  const { loading, isAuthenticated } = useAuth()
   const currentScreen = useAppStore(s => s.currentScreen)
   const navigate = useAppStore(s => s.navigate)
   const selectDrill = useAppStore(s => s.selectDrill)
@@ -105,8 +105,8 @@ export default function Home() {
   )
 
   useEffect(() => {
-    if (status === 'unauthenticated' && currentScreen !== 'auth' && currentScreen !== 'landing') navigate('landing')
-  }, [status, currentScreen, navigate])
+    if (!loading && !isAuthenticated && currentScreen !== 'auth' && currentScreen !== 'landing') navigate('landing')
+  }, [loading, isAuthenticated, currentScreen, navigate])
 
   // ── Stripe Checkout Feedback ───────────────────────────────────────────────
   useEffect(() => {
@@ -123,7 +123,7 @@ export default function Home() {
 
   // ── Deep Linking ──────────────────────────────────────────────────────────
   useEffect(() => {
-    if (status !== 'authenticated') return
+    if (!isAuthenticated) return
 
     const params = new URLSearchParams(window.location.search)
     const hash = window.location.hash.replace('#', '')
@@ -170,7 +170,7 @@ export default function Home() {
       navigate('drill-detail')
       window.history.replaceState({}, '', '/')
     }
-  }, [status, navigate, selectDrill])
+  }, [isAuthenticated, navigate, selectDrill])
 
   // Simple direction heuristic: tab screens go right (1), detail screens go left (-1)
   const getDirection = () => {
@@ -183,12 +183,12 @@ export default function Home() {
     return 1
   }
 
-  if (!mounted || status === 'loading') {
+  if (!mounted || loading) {
     return <LoadingSpinner />
   }
 
   // Landing page: render outside the ScreenTransition wrapper (full-width marketing page)
-  if (!session && currentScreen === 'landing') {
+  if (!isAuthenticated && currentScreen === 'landing') {
     return (
       <ErrorBoundary>
         <LandingPage onNavigate={navigate} />
@@ -206,52 +206,52 @@ export default function Home() {
         <ScreenTransition screenKey={currentScreen} direction={direction}>
           {currentScreen === 'auth' && <AuthScreen />}
           {currentScreen === 'onboarding' && <OnboardingScreen />}
-          {currentScreen === 'home' && session && <HomeScreen />}
-          {currentScreen === 'plans' && session && <PlansScreen />}
-          {currentScreen === 'train-hub' && session && <TrainHubScreen />}
+          {currentScreen === 'home' && isAuthenticated && <HomeScreen />}
+          {currentScreen === 'plans' && isAuthenticated && <PlansScreen />}
+          {currentScreen === 'train-hub' && isAuthenticated && <TrainHubScreen />}
           {currentScreen === 'drill-detail' && <DrillDetailScreen />}
-          {currentScreen === 'camera-workout' && session && <CameraWorkoutScreen />}
-          {currentScreen === 'workout-summary' && session && <WorkoutSummaryScreen />}
-          {currentScreen === 'stats' && session && <StatsScreen />}
-          {currentScreen === 'profile' && session && <ProfileScreen />}
-          {currentScreen === 'achievements' && session && <AchievementsScreen />}
-          {currentScreen === 'settings' && session && <SettingsScreen />}
-          {currentScreen === 'scouting' && session && (
+          {currentScreen === 'camera-workout' && isAuthenticated && <CameraWorkoutScreen />}
+          {currentScreen === 'workout-summary' && isAuthenticated && <WorkoutSummaryScreen />}
+          {currentScreen === 'stats' && isAuthenticated && <StatsScreen />}
+          {currentScreen === 'profile' && isAuthenticated && <ProfileScreen />}
+          {currentScreen === 'achievements' && isAuthenticated && <AchievementsScreen />}
+          {currentScreen === 'settings' && isAuthenticated && <SettingsScreen />}
+          {currentScreen === 'scouting' && isAuthenticated && (
             <FeatureGate flag="scouting"><ScoutingScreen /></FeatureGate>
           )}
-          {currentScreen === 'ai-coach' && session && (
+          {currentScreen === 'ai-coach' && isAuthenticated && (
             <FeatureGate flag="ai_coach"><AICoachScreen /></FeatureGate>
           )}
-          {currentScreen === 'reaction-trainer' && session && (
+          {currentScreen === 'reaction-trainer' && isAuthenticated && (
             <FeatureGate flag="reaction_trainer"><ReactionTrainerScreen /></FeatureGate>
           )}
-          {currentScreen === 'pricing' && session && <PricingScreen />}
-          {currentScreen === 'leaderboard' && session && <LeaderboardScreen />}
-          {currentScreen === 'records' && session && <RecordsScreen />}
-          {currentScreen === 'friends' && session && <FriendsScreen />}
-          {currentScreen === 'teams' && session && <TeamsScreen />}
-          {currentScreen === 'team-detail' && session && <TeamDetailScreen />}
-          {currentScreen === 'challenges' && session && <ChallengesScreen />}
-          {currentScreen === 'challenge-detail' && session && <ChallengeDetailScreen />}
-          {currentScreen === 'feed' && session && <FeedScreen />}
-          {currentScreen === 'post-detail' && session && <PostDetailScreen />}
-          {currentScreen === 'messages' && session && <MessagesScreen />}
-          {currentScreen === 'conversation' && session && <ConversationScreen />}
-          {currentScreen === 'profile-other' && session && <ProfileOtherScreen />}
-          {currentScreen === 'live-workout' && session && <LiveWorkoutScreen />}
-          {currentScreen === 'notifications' && session && <NotificationsScreen />}
-          {currentScreen === 'video-library' && session && <VideoLibraryScreen />}
-          {currentScreen === 'video-player' && session && <VideoPlayerScreen />}
-          {currentScreen === 'video-upload' && session && <VideoUploadScreen />}
-          {currentScreen === 'video-compare' && session && <VideoCompareScreen />}
-          {currentScreen === 'ai-insights' && session && <AIInsightsScreen />}
-          {currentScreen === 'voice-coach' && session && <VoiceCoachScreen />}
-          {currentScreen === 'predictions' && session && <PredictionsScreen />}
-          {currentScreen === 'ai-workout-gen' && session && <AIWorkoutGenScreen />}
-          {currentScreen === 'ai-tools' && session && <AIToolsScreen />}
+          {currentScreen === 'pricing' && isAuthenticated && <PricingScreen />}
+          {currentScreen === 'leaderboard' && isAuthenticated && <LeaderboardScreen />}
+          {currentScreen === 'records' && isAuthenticated && <RecordsScreen />}
+          {currentScreen === 'friends' && isAuthenticated && <FriendsScreen />}
+          {currentScreen === 'teams' && isAuthenticated && <TeamsScreen />}
+          {currentScreen === 'team-detail' && isAuthenticated && <TeamDetailScreen />}
+          {currentScreen === 'challenges' && isAuthenticated && <ChallengesScreen />}
+          {currentScreen === 'challenge-detail' && isAuthenticated && <ChallengeDetailScreen />}
+          {currentScreen === 'feed' && isAuthenticated && <FeedScreen />}
+          {currentScreen === 'post-detail' && isAuthenticated && <PostDetailScreen />}
+          {currentScreen === 'messages' && isAuthenticated && <MessagesScreen />}
+          {currentScreen === 'conversation' && isAuthenticated && <ConversationScreen />}
+          {currentScreen === 'profile-other' && isAuthenticated && <ProfileOtherScreen />}
+          {currentScreen === 'live-workout' && isAuthenticated && <LiveWorkoutScreen />}
+          {currentScreen === 'notifications' && isAuthenticated && <NotificationsScreen />}
+          {currentScreen === 'video-library' && isAuthenticated && <VideoLibraryScreen />}
+          {currentScreen === 'video-player' && isAuthenticated && <VideoPlayerScreen />}
+          {currentScreen === 'video-upload' && isAuthenticated && <VideoUploadScreen />}
+          {currentScreen === 'video-compare' && isAuthenticated && <VideoCompareScreen />}
+          {currentScreen === 'ai-insights' && isAuthenticated && <AIInsightsScreen />}
+          {currentScreen === 'voice-coach' && isAuthenticated && <VoiceCoachScreen />}
+          {currentScreen === 'predictions' && isAuthenticated && <PredictionsScreen />}
+          {currentScreen === 'ai-workout-gen' && isAuthenticated && <AIWorkoutGenScreen />}
+          {currentScreen === 'ai-tools' && isAuthenticated && <AIToolsScreen />}
           {currentScreen === 'terms' && <TermsScreen />}
           {currentScreen === 'privacy' && <PrivacyScreen />}
-          {!session && currentScreen !== 'auth' && currentScreen !== 'landing' && currentScreen !== 'terms' && currentScreen !== 'privacy' && <AuthScreen />}
+          {!isAuthenticated && currentScreen !== 'auth' && currentScreen !== 'landing' && currentScreen !== 'terms' && currentScreen !== 'privacy' && <AuthScreen />}
         </ScreenTransition>
       </main>
     </ErrorBoundary>

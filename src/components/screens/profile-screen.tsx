@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { signOut } from 'next-auth/react'
+import { useAuth } from '@/components/providers/supabase-auth-provider'
 import {
   Pencil,
   X,
@@ -265,7 +265,7 @@ export function ProfileScreen() {
         description: t('profile.accountDeletedDesc'),
       })
       setDeleteDialogOpen(false)
-      signOut({ redirect: false }).then(() => navigate('auth'))
+      signOut().then(() => navigate('auth'))
     },
     onError: (err: Error) => {
       toast.error(td('Erreur', 'Error'), { description: err.message })
@@ -277,9 +277,11 @@ export function ProfileScreen() {
     deleteAccount.mutate()
   }
 
+  const { signOut } = useAuth()
+
   // ── Sign out handler ────────────────────────────────────────────
   const handleSignOut = async () => {
-    await signOut({ redirect: false })
+    await signOut()
     navigate('auth')
   }
 

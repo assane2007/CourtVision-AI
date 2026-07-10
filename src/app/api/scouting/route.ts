@@ -1,6 +1,5 @@
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
@@ -44,18 +43,18 @@ function getTrend(scores: number[]): 'up' | 'down' | 'stable' {
 // GET /api/scouting
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id || !session.user.email) {
+    const supabase = await createSupabaseServerClient(); const { data: { user }, error: _error } = await supabase.auth.getUser()
+    if (!user?.id || !user.email) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
     // Rate limit: 30 requests per 15 minutes
-    const rateResult = rateLimit(`scouting:get:${session.user.email}`, 30, 15 * 60 * 1000)
+    const rateResult = rateLimit(`scouting:get:${user.email}`, 30, 15 * 60 * 1000)
     if (!rateResult.success) {
       return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 })
     }
 
-    const playerId = session.user.id
+    const playerId = user.id
 
     return withCache(`scouting:${playerId}`, 3 * 60 * 1000, async () => {
       // Fetch player data

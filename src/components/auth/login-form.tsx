@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Loader2, Eye, EyeOff } from 'lucide-react'
-import { signIn } from 'next-auth/react'
+import { createClient } from '@/lib/supabase/client'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -28,16 +28,16 @@ export function LoginForm({ onSuccess, onForgotPassword }: LoginFormProps) {
     setLoading(true)
 
     try {
-      const result = await signIn('credentials', {
+      const supabase = createClient()
+      const { error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
-        redirect: false,
       })
 
-      if (result?.ok) {
-        onSuccess()
-      } else {
+      if (authError) {
         setError(t('auth.loginError'))
+      } else {
+        onSuccess()
       }
     } catch {
       setError(t('auth.networkError'))

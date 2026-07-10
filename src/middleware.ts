@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { logger } from '@/lib/logger'
+import { updateSession } from '@/lib/supabase/middleware'
 
 // ── Routes that DON'T require authentication ─────────────────────────────────
 
@@ -63,7 +64,6 @@ const SUSPICIOUS_UA_PATTERNS = [
 const AUTH_PATHS = [
   '/api/auth/signup',
   '/api/auth/reset-password',
-  '/api/auth/2fa',
 ]
 
 // ── Simple in-memory rate counter for middleware ─────────────────────────────
@@ -102,66 +102,13 @@ const _cleanupTimer = setInterval(() => {
 }, 5 * 60 * 1000)
 // Note: unref() is not available in Edge Runtime; timer will keep process alive
 
-// ── Edge-compatible JWT access token verification ─────────────────────────────
-
-const JWT_ISSUER = 'courtvision'
-
-function getJwtSigningKey(): string {
-  return process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || ''
-}
-
-function base64urlDecode(str: string): string {
-  let s = str.replace(/-/g, '+').replace(/_/g, '/')
-  while (s.length % 4) s += '='
-  return atob(s)
-}
-
-/**
- * Verify a JWT access token using Web Crypto API (Edge Runtime compatible).
- * Returns true if the token is valid, unexpired, and has type=access.
- */
-async function verifyAccessTokenEdge(token: string): Promise<boolean> {
-  const key = getJwtSigningKey()
-  if (!key) return false
-
-  const parts = token.split('.')
-  if (parts.length !== 3) return false
-
-  try {
-    const payload = JSON.parse(base64urlDecode(parts[1]))
-
-    // Check expiry
-    if (typeof payload.exp !== 'number' || Math.floor(Date.now() / 1000) > payload.exp) return false
-    // Check type
-    if (payload.type !== 'access') return false
-    // Check issuer
-    if (payload.iss !== JWT_ISSUER) return false
-
-    // Verify HMAC-SHA256 signature using Web Crypto API
-    const encoder = new TextEncoder()
-    const cryptoKey = await crypto.subtle.importKey(
-      'raw',
-      encoder.encode(key),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['verify'],
-    )
-
-    const data = encoder.encode(`${parts[0]}.${parts[1]}`)
-    const signature = Uint8Array.from(atob(parts[2].replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0))
-
-    return await crypto.subtle.verify('HMAC', cryptoKey, signature, data)
-  } catch {
-    return false
-  }
-}
-
 // ── Main Middleware ───────────────────────────────────────────────────────────
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  const response = NextResponse.next()
+  // ── Refresh Supabase auth session ─────────────────────────────────────
+  const { supabaseResponse, user } = await updateSession(request)
 
   // ── Block suspicious user agents ────────────────────────────────────────
   const userAgent = request.headers.get('user-agent') || ''
@@ -197,12 +144,12 @@ export async function middleware(request: NextRequest) {
 
   // ── Allow public routes ─────────────────────────────────────────────────
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
-    return response
+    return supabaseResponse
   }
 
   // Allow static files and Next.js internals
   if (pathname.startsWith('/_next') || pathname.startsWith('/favicon')) {
-    return response
+    return supabaseResponse
   }
 
   // ── Rate limit auth endpoints more strictly ─────────────────────────────
@@ -228,15 +175,13 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // ── For API routes (except public ones), check for session cookie ───────
+  // ── For API routes (except public ones), check for Supabase session ───
   if (pathname.startsWith('/api/')) {
-    const sessionToken = request.cookies.get('next-auth.session-token')
-      || request.cookies.get('__Secure-next-auth.session-token')
-    if (!sessionToken) {
-      // Also accept our custom access token in Authorization header
+    if (!user) {
+      // Also accept Bearer token (Supabase access token)
       const authHeader = request.headers.get('authorization')
       if (!authHeader?.startsWith('Bearer ')) {
-        logger.info('API request rejected: no session or access token', 'middleware', {
+        logger.info('API request rejected: no session', 'middleware', {
           path: pathname,
           ip: getClientIp(request),
         })
@@ -250,29 +195,10 @@ export async function middleware(request: NextRequest) {
           },
         )
       }
-
-      // Validate the Bearer token as a proper JWT
-      const accessToken = authHeader.slice(7)
-      const isValid = await verifyAccessTokenEdge(accessToken)
-      if (!isValid) {
-        logger.warn('API request rejected: invalid or expired access token', 'middleware', {
-          path: pathname,
-          ip: getClientIp(request),
-        })
-        return new NextResponse(
-          JSON.stringify({ error: 'Token invalide ou expiré' }),
-          {
-            status: 401,
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          },
-        )
-      }
     }
   }
 
-  return response
+  return supabaseResponse
 }
 
 export const config = {

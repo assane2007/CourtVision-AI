@@ -1,6 +1,5 @@
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { withCache } from '@/lib/cache'
@@ -11,8 +10,8 @@ import { Prisma } from '@prisma/client'
 // Query params: ?cursor=xxx&limit=20&category=shooting&difficulty=beginner&search=dribble&favoritesOnly=true
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    const playerId = session?.user?.id ?? null
+    const supabase = await createSupabaseServerClient(); const { data: { user }, error: _error } = await supabase.auth.getUser()
+    const playerId = user?.id ?? null
 
     // IP-based rate limit (optional auth)
     const ip = req.headers.get('x-forwarded-for') || 'unknown'

@@ -1,6 +1,5 @@
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
@@ -10,14 +9,14 @@ import { syncPushSchema, getZodErrorMessage } from '@/lib/validations'
 // Receive offline actions from client, process them (last-write-wins)
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const supabase = await createSupabaseServerClient(); const { data: { user }, error: _error } = await supabase.auth.getUser()
+    if (_error || !user) {
       return NextResponse.json({ error: 'Authentification requise' }, { status: 401 })
     }
 
-    const playerId = session.user.id
+    const playerId = user.id
 
-    const rl = rateLimit(`sync-push:${session.user.id}`, 10, 60 * 1000)
+    const rl = rateLimit(`sync-push:${user.id}`, 10, 60 * 1000)
     if (!rl.success) {
       return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 })
     }

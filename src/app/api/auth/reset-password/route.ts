@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { createAdminClient } from '@/lib/supabase/server'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
 import { resetPasswordSchema, getZodErrorMessage } from '@/lib/validations'
-import crypto from 'crypto'
-import bcrypt from 'bcryptjs'
 
 // POST /api/auth/reset-password
 export async function POST(request: Request) {
@@ -28,48 +26,25 @@ export async function POST(request: Request) {
       )
     }
 
-    // Check if player exists
-    const player = await db.player.findUnique({
-      where: { email: email.toLowerCase().trim() },
+    const adminClient = createAdminClient()
+    if (!adminClient) {
+      return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 })
+    }
+
+    // Use Supabase to send password reset email
+    const { error } = await adminClient.auth.resetPasswordForEmail(email, {
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || ''}/api/auth/supabase/callback`,
     })
+
+    if (error) {
+      // Log but don't expose to prevent email enumeration
+      trackError('POST /api/auth/reset-password', error)
+    }
 
     // Always return success to prevent email enumeration
-    if (!player) {
-      return NextResponse.json({
-        message:
-          "Si un compte existe avec cet email, un lien de réinitialisation a été généré.",
-      })
-    }
-
-    // Generate reset token
-    const resetToken = crypto.randomBytes(16).toString('hex') // 32-char hex
-    const resetTokenExpiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
-
-    // Store both the bcrypt hash (backward compat) and a deterministic SHA-256 hash for O(1) lookup
-    const hashedToken = await bcrypt.hash(resetToken, 10)
-    const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex')
-    await db.player.update({
-      where: { id: player.id },
-      data: {
-        resetToken: hashedToken,
-        resetTokenHash: tokenHash,
-        resetTokenExpiresAt,
-      },
+    return NextResponse.json({
+      message: 'Si un compte existe avec cet email, un lien de réinitialisation a été envoyé.',
     })
-
-    // Build response — token is NEVER returned to the client.
-    // In development with explicit opt-in, log to server console for testing.
-    const response: { message: string } = {
-      message:
-        'Si un compte existe avec cet email, un lien de réinitialisation a été envoyé.',
-    }
-
-    // Only log token to server-side console when explicitly opted in
-    if (process.env.DEV_SHOW_RESET_TOKEN === 'true') {
-      console.error(`[DEV] Reset token for ${email}: ${resetToken}`)
-    }
-
-    return NextResponse.json(response)
   } catch (error) {
     trackError('POST /api/auth/reset-password', error)
     return NextResponse.json(

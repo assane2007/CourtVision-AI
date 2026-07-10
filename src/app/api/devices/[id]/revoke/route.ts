@@ -1,6 +1,5 @@
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 
@@ -11,12 +10,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const supabase = await createSupabaseServerClient(); const { data: { user }, error: _error } = await supabase.auth.getUser()
+    if (_error || !user) {
       return NextResponse.json({ error: 'Authentification requise' }, { status: 401 })
     }
 
-    const playerId = session.user.id
+    const playerId = user.id
     const { id: deviceId } = await params
 
     const device = await db.device.findFirst({

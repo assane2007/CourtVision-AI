@@ -1,6 +1,5 @@
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
@@ -9,12 +8,12 @@ import bcrypt from 'bcryptjs'
 // DELETE /api/account — Soft delete (set accountDeleted=true, anonymize data)
 export async function DELETE(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const supabase = await createSupabaseServerClient(); const { data: { user }, error: _error } = await supabase.auth.getUser()
+    if (_error || !user) {
       return NextResponse.json({ error: 'Authentification requise' }, { status: 401 })
     }
 
-    const playerId = session.user.id
+    const playerId = user.id
 
     // Rate limit: 1 per hour
     const rl = rateLimit(`account-delete:${playerId}`, 1, 60 * 60 * 1000)
@@ -109,12 +108,12 @@ export async function DELETE(request: Request) {
 // PATCH /api/account — Reactivate a soft-deleted account
 export async function PATCH(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const supabase = await createSupabaseServerClient(); const { data: { user }, error: _error } = await supabase.auth.getUser()
+    if (_error || !user) {
       return NextResponse.json({ error: 'Authentification requise' }, { status: 401 })
     }
 
-    const playerId = session.user.id
+    const playerId = user.id
     const body = await request.json()
     const { action } = body
 

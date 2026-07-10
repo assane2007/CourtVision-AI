@@ -1,6 +1,5 @@
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { requirePlayer } from "@/lib/player/db-helpers";
 import { trackError } from "@/lib/monitoring";
@@ -15,8 +14,8 @@ function dateRange(offsetDays: number) {
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    const playerId = session?.user?.id;
+    const supabase = await createSupabaseServerClient(); const { data: { user }, error: _error } = await supabase.auth.getUser();
+    const playerId = user?.id;
     if (!playerId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

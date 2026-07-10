@@ -1,23 +1,18 @@
 /**
- * Enhanced authentication guard.
- * Replaces with-auth.ts with richer features:
- * - JWT verification + session refresh
+ * Enhanced authentication guard using Supabase Auth.
+ *
+ * - Validates Supabase session via getUser()
  * - Attaches full player object to context
  * - Supports different auth levels (basic, verified, 2fa)
  * - Returns standardized error responses via AppError
- *
- * This is a drop-in replacement for with-auth but returns richer types.
- * The original with-auth.ts remains untouched for backward compatibility.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { db } from '@/lib/db'
 import { toErrorResponse } from '@/lib/middleware/error-handler'
 import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
 import type { AuthContext, AuthLevel } from '@/lib/types/service.types'
-import type { Session } from 'next-auth'
 
 type RouteContext = { params: Promise<Record<string, string>> }
 
@@ -39,31 +34,24 @@ function setCachedAuth(playerId: string, data: AuthContext): void {
 
 /**
  * Invalidate the auth cache for a specific player.
- * Call this whenever the player's role, emailVerified, twoFactorEnabled,
- * or other auth-relevant fields change.
  */
 export function invalidateAuthCache(playerId: string): void {
-  const deleted = authCache.delete(playerId)
-  if (deleted) {
-    // Silently invalidated — no logger import needed in this module
-  }
+  authCache.delete(playerId)
 }
 
 // ── Auth Context Builder ───────────────────────────────────────────────────────
 
 /**
- * Build an AuthContext from a NextAuth session and player record.
+ * Build an AuthContext from a Supabase user and player record.
  * Uses an in-memory cache with 60s TTL to avoid repeated DB queries.
  */
-async function buildAuthContext(session: Session): Promise<AuthContext> {
-  const playerId = session.user.id
-
+async function buildAuthContext(supabaseUserId: string, _email?: string, _name?: string): Promise<AuthContext> {
   // Check cache first
-  const cached = getCachedAuth(playerId)
+  const cached = getCachedAuth(supabaseUserId)
   if (cached) return cached
 
   const player = await db.player.findUnique({
-    where: { id: playerId },
+    where: { id: supabaseUserId },
     select: {
       id: true,
       email: true,
@@ -99,7 +87,7 @@ async function buildAuthContext(session: Session): Promise<AuthContext> {
     authLevel,
   }
 
-  setCachedAuth(playerId, ctx)
+  setCachedAuth(supabaseUserId, ctx)
 
   return ctx
 }
@@ -111,21 +99,34 @@ async function buildAuthContext(session: Session): Promise<AuthContext> {
  * Use this in services that need auth context without the route wrapper.
  */
 export async function requireAuth(): Promise<AuthContext> {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
+  const supabase = await createSupabaseServerClient()
+  const { data: { user }, error } = await supabase.auth.getUser()
+
+  if (error || !user) {
     throw new AppError(ErrorCode.AUTH_REQUIRED, 'Non autorisé')
   }
-  return buildAuthContext(session)
+
+  return buildAuthContext(
+    user.id,
+    user.email ?? '',
+    user.user_metadata?.name || user.email?.split('@')[0] || '',
+  )
 }
 
 /**
  * Get the authenticated session or return null (no error).
  */
 export async function getOptionalAuth(): Promise<AuthContext | null> {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return null
+  const supabase = await createSupabaseServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return null
   try {
-    return await buildAuthContext(session)
+    return await buildAuthContext(
+      user.id,
+      user.email ?? '',
+      user.user_metadata?.name || user.email?.split('@')[0] || '',
+    )
   } catch {
     return null
   }
@@ -154,12 +155,18 @@ export function withAuthGuard(
 ): (req: NextRequest, context: RouteContext) => Promise<NextResponse> {
   return async (req, context) => {
     try {
-      const session = await getServerSession(authOptions)
-      if (!session?.user?.id) {
+      const supabase = await createSupabaseServerClient()
+      const { data: { user }, error } = await supabase.auth.getUser()
+
+      if (error || !user) {
         throw new AppError(ErrorCode.AUTH_REQUIRED, 'Non autorisé')
       }
 
-      const auth = await buildAuthContext(session)
+      const auth = await buildAuthContext(
+        user.id,
+        user.email ?? '',
+        user.user_metadata?.name || user.email?.split('@')[0] || '',
+      )
 
       // Check auth level if required
       if (requiredLevel) {

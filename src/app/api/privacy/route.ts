@@ -206,9 +206,8 @@ const HTML_PAGE = `<!DOCTYPE html>
   <div class="card">
     <h3>Cookies essentiels utilis&eacute;s :</h3>
     <ul>
-      <li><strong>next-auth.session-token</strong> : Jeton de session pour maintenir votre connexion (HTTP-only, Secure)</li>
-      <li><strong>next-auth.csrf-token</strong> : Protection contre les attaques CSRF</li>
-      <li><strong>next-auth.callback-url</strong> : Gestion de la redirection apr&egrave;s authentification</li>
+      <li><strong>sb-access-token</strong> : Jeton d'acc&egrave;s Supabase pour maintenir votre connexion (HTTP-only, Secure)</li>
+      <li><strong>sb-refresh-token</strong> : Jeton de rafra&icirc;chissement Supabase pour renouveler la session</li>
     </ul>
   </div>
   <div class="card">

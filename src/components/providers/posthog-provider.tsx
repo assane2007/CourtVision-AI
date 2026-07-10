@@ -1,20 +1,20 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/components/providers/supabase-auth-provider'
 import { identifyUser } from '@/lib/analytics'
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
-  const { data: session } = useSession()
+  const { user } = useAuth()
 
   useEffect(() => {
-    if (session?.user) {
-      identifyUser(session.user.id as string, {
-        email: session.user.email,
-        name: session.user.name,
+    if (user) {
+      identifyUser(user.id, {
+        email: user.email,
+        name: user.name,
       })
     }
-  }, [session])
+  }, [user])
 
   return <>{children}</>
 }

@@ -1,6 +1,5 @@
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import ZAI from 'z-ai-web-dev-sdk'
 import { formCheckSchema, getZodErrorMessage } from '@/lib/validations'
 import { rateLimit } from '@/lib/rate-limit'
@@ -10,13 +9,13 @@ import { sanitize } from '@/lib/sanitize'
 // POST /api/ai/form-check — AI form verification during camera workout
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const supabase = await createSupabaseServerClient(); const { data: { user }, error: _error } = await supabase.auth.getUser()
+    if (_error || !user) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
     // Rate limit: 5 attempts per 15 minutes (expensive AI call)
-    const rateResult = rateLimit(`ai-form-check:${session.user.email}`, 5, 15 * 60 * 1000)
+    const rateResult = rateLimit(`ai-form-check:${user.email}`, 5, 15 * 60 * 1000)
     if (!rateResult.success) {
       return NextResponse.json(
         { error: 'Trop de demandes d\'analyse IA. Réessayez dans 15 minutes.' },

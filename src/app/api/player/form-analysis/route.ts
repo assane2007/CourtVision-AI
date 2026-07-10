@@ -1,7 +1,6 @@
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod/v4";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { requirePlayer } from "@/lib/player/db-helpers";
 import type { SkillKey } from "@/lib/player/iq-engine";
@@ -53,8 +52,8 @@ function formToSkillNudges(data: {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const playerId = session?.user?.id;
+    const supabase = await createSupabaseServerClient(); const { data: { user }, error: _error } = await supabase.auth.getUser();
+    const playerId = user?.id;
     if (!playerId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -150,8 +149,8 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const playerId = session?.user?.id;
+    const supabase = await createSupabaseServerClient(); const { data: { user }, error: _error } = await supabase.auth.getUser();
+    const playerId = user?.id;
     if (!playerId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

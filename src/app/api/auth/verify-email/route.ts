@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
 import { sendEmail, getEmailTemplate } from '@/lib/email'
 import crypto from 'crypto'
+import { db } from '@/lib/db'
 
 function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex')
@@ -15,12 +14,14 @@ function hashToken(token: string): string {
 // Send a new email verification token
 export async function POST(_request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const supabase = await createSupabaseServerClient()
+    const { data: { user }, error: _error } = await supabase.auth.getUser()
+
+    if (_error || !user) {
       return NextResponse.json({ error: 'Authentification requise' }, { status: 401 })
     }
 
-    const playerId = session.user.id
+    const playerId = user.id
 
     // Rate limit: 3 per hour
     const rl = rateLimit(`verify-email-send:${playerId}`, 3, 60 * 60 * 1000)

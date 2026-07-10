@@ -482,3 +482,44 @@ Stage Summary:
 - IMPORTANT: User must create `courtvision` bucket in Supabase Storage dashboard (public policy for avatars/feed, private for videos)
 - IMPORTANT: User must run `npx prisma db push` to create tables on the PostgreSQL database
 - IMPORTANT: All env vars from .env must be added to Vercel dashboard
+---
+Task ID: 10
+Agent: full-stack-developer
+Task: Migrate from NextAuth to Supabase Auth
+
+Work Log:
+- Replaced `src/lib/with-auth.ts`: swapped `getServerSession(authOptions)` for `createSupabaseServerClient()` + `supabase.auth.getUser()`, mapping Supabase user to compatible session object
+- Rewrote `src/lib/guards/auth.guard.ts`: replaced NextAuth `getServerSession` with Supabase `getUser()` in `requireAuth()`, `getOptionalAuth()`, `withAuthGuard()`, `withOptionalAuthGuard()`
+- Created `src/components/providers/supabase-auth-provider.tsx`: React context provider listening to Supabase auth state changes, providing `user`, `session`, `loading`, `isAuthenticated`, `signUp()`, `signIn()`, `signOut()` to children
+- Created `src/app/api/auth/supabase/sync/route.ts`: POST endpoint using `withAuth` to auto-create Player record for new Supabase users (with first_login achievement)
+- Updated `src/components/auth/login-form.tsx`: replaced `signIn('credentials', ...)` from next-auth with `supabase.auth.signInWithPassword()`
+- Updated `src/components/auth/signup-form.tsx`: replaced `apiFetch('/api/auth/signup')` + `signIn('credentials')` with `supabase.auth.signUp()` + `supabase.auth.signInWithPassword()`
+- Updated `src/components/providers.tsx`: replaced `NextAuthSessionProvider` with `SupabaseAuthProvider`
+- Updated `src/app/page.tsx`: replaced `useSession()` with `useAuth()`, using `isAuthenticated` and `loading`
+- Updated `src/components/screens/home-screen.tsx`: replaced `useSession` with `useAuth`, using `user?.name` and `user?.id`
+- Updated `src/components/screens/ai-coach-screen.tsx`: replaced `useSession` with `useAuth`
+- Updated `src/components/providers/posthog-provider.tsx`: replaced `useSession` with `useAuth` for user identification
+- Updated `src/components/screens/profile-screen.tsx`: replaced `signOut` from next-auth/react with `signOut` from `useAuth()` hook
+- Updated `src/middleware.ts`: integrated `updateSession()` from `@/lib/supabase/middleware` to refresh Supabase session tokens, replaced NextAuth cookie checks with Supabase session validation
+- Updated `src/app/api/auth/signup/route.ts`: replaced bcrypt/Prisma signup with Supabase Admin `createUser()`
+- Updated `src/app/api/auth/reset-password/route.ts`: replaced token generation with Supabase `resetPasswordForEmail()`
+- Updated `src/app/api/auth/reset-password/confirm/route.ts`: replaced bcrypt token verification with Supabase `verifyOtp()` + `updateUser()`
+- Updated `src/app/api/auth/verify-email/route.ts`: replaced `getServerSession` with Supabase `getUser()`
+- Updated 15+ API routes (email, notifications, devices, account, quests, sync, ai-coach, drills, scouting, form-check) to use Supabase auth instead of NextAuth
+- Updated 10 player API routes (workouts, chat, profile, video-analysis, form-analysis, onboard, stats, weekly-report, plan, matches) to use Supabase auth
+- Updated `src/app/api/privacy/route.ts`: replaced NextAuth cookie names with Supabase cookie names in privacy policy
+- Removed `src/app/api/auth/[...nextauth]/route.ts`
+- Removed `src/app/api/auth/2fa/` directory (backup, verify, setup, disable routes)
+- Removed `src/app/api/auth/revoke/route.ts`
+- Removed `src/app/api/auth/refresh/route.ts`
+- Removed `src/types/next-auth.d.ts`
+- Removed `src/lib/auth.ts`
+- Removed `src/lib/auth/jwt.ts` (entire JWT token system)
+- Removed test files: `src/lib/__tests__/with-auth.test.ts`, `src/app/api/__tests__/auth-2fa.test.ts`
+
+Stage Summary:
+- NextAuth completely removed, replaced with Supabase Auth
+- All API routes use Supabase JWT validation via withAuth (or direct getUser())
+- Login/signup use Supabase Auth (email+password)
+- Player records auto-created on first sign-in via sync endpoint
+- Build passes with 0 errors, lint passes with 0 errors/warnings

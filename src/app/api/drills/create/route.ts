@@ -1,6 +1,5 @@
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { createDrillSchema, getZodErrorMessage } from '@/lib/validations'
 import { rateLimit } from '@/lib/rate-limit'
@@ -10,12 +9,12 @@ import { trackError } from '@/lib/monitoring'
 // POST /api/drills/create — Create a custom drill owned by the current user
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const supabase = await createSupabaseServerClient(); const { data: { user }, error: _error } = await supabase.auth.getUser()
+    if (_error || !user) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    const rateResult = rateLimit(`drills:create:${session.user.email}`, 20, 15 * 60 * 1000)
+    const rateResult = rateLimit(`drills:create:${user.email}`, 20, 15 * 60 * 1000)
     if (!rateResult.success) {
       return NextResponse.json(
         { error: 'Trop de requêtes. Réessayez dans 15 minutes.' },
@@ -43,7 +42,7 @@ export async function POST(req: NextRequest) {
 
     const drill = await db.drill.create({
       data: {
-        playerId: session.user.id,
+        playerId: user.id,
         name: name || nameFr,
         nameFr,
         category,

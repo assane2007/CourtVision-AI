@@ -3,11 +3,10 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Loader2, Eye, EyeOff } from 'lucide-react'
-import { signIn } from 'next-auth/react'
+import { createClient } from '@/lib/supabase/client'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { apiFetch } from '@/lib/utils'
 import { useTranslation } from '@/components/providers/language-provider'
 
 interface SignupFormProps {
@@ -29,28 +28,33 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
     setLoading(true)
 
     try {
-      await apiFetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          password,
-          name,
-        }),
-      })
-
-      // Auto-login after successful signup
-      const result = await signIn('credentials', {
+      const supabase = createClient()
+      const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        redirect: false,
+        options: {
+          data: { name },
+        },
       })
 
-      if (result?.ok) {
-        onSuccess()
-      } else {
-        setError(t('auth.signupCreatedError'))
+      if (signUpError) {
+        setError(signUpError.message || t('auth.genericError'))
+        return
       }
+
+      // Auto-login after successful signup
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (signInError) {
+        // Signup succeeded but auto-login failed — user can manually sign in
+        setError(t('auth.signupCreatedError'))
+        return
+      }
+
+      onSuccess()
     } catch (err) {
       setError(err instanceof Error ? err.message : t('auth.genericError'))
     } finally {

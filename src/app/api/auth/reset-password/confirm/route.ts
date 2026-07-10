@@ -1,12 +1,9 @@
 import { NextResponse } from 'next/server'
-import bcrypt from 'bcryptjs'
-import crypto from 'crypto'
-import { db } from '@/lib/db'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
 import { resetPasswordConfirmSchema, getZodErrorMessage } from '@/lib/validations'
 import { invalidateAuthCache } from '@/lib/guards/auth.guard'
-import { revokeAllRefreshTokens } from '@/lib/auth/jwt'
 
 // POST /api/auth/reset-password/confirm
 export async function POST(request: Request) {
@@ -30,41 +27,43 @@ export async function POST(request: Request) {
       )
     }
 
-    // Compute deterministic SHA-256 hash for O(1) lookup
-    const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
+    // Use Supabase to verify and update password via the session from the reset token
+    // The token from the reset-password email link is used to establish a session
+    const supabase = await createSupabaseServerClient()
 
-    // Find player by indexed hash (instead of O(n) findMany + bcrypt.compare loop)
-    const player = await db.player.findFirst({
-      where: {
-        resetTokenHash: tokenHash,
-        resetTokenExpiresAt: { gt: new Date() },
-      },
+    // Exchange the reset token for a session, then update the password
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      token_hash: token,
+      type: 'recovery',
     })
 
-    if (!player) {
+    if (verifyError) {
       return NextResponse.json(
         { error: 'Token invalide ou expiré.' },
         { status: 400 },
       )
     }
 
-    // Hash new password
-    const hashedPassword = await bcrypt.hash(newPassword, 12)
-
-    // Update password and clear token
-    await db.player.update({
-      where: { id: player.id },
-      data: {
-        password: hashedPassword,
-        resetToken: null,
-        resetTokenHash: null,
-        resetTokenExpiresAt: null,
-      },
+    // Now update the password
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword,
     })
 
-    // Revoke all refresh tokens and invalidate auth cache after password change
-    await revokeAllRefreshTokens(player.id)
-    invalidateAuthCache(player.id)
+    if (updateError) {
+      return NextResponse.json(
+        { error: updateError.message || 'Erreur lors de la mise à jour du mot de passe.' },
+        { status: 400 },
+      )
+    }
+
+    // Get the current user to invalidate cache
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      invalidateAuthCache(user.id)
+    }
+
+    // Sign out after password reset to force re-login
+    await supabase.auth.signOut()
 
     return NextResponse.json({
       message: 'Mot de passe mis à jour avec succès. Tu peux maintenant te connecter.',

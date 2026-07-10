@@ -1,6 +1,5 @@
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { aiCoachSchema, getZodErrorMessage } from '@/lib/validations'
@@ -15,18 +14,18 @@ import { stripHtml } from '@/lib/security/sanitization'
 // GET /api/ai-coach — Fetch chat history
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const supabase = await createSupabaseServerClient(); const { data: { user }, error: _error } = await supabase.auth.getUser()
+    if (_error || !user) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    const rateResult = rateLimit(`ai-coach:get:${session.user.email}`, 60, 15 * 60 * 1000)
+    const rateResult = rateLimit(`ai-coach:get:${user.email}`, 60, 15 * 60 * 1000)
     if (!rateResult.success) {
       return NextResponse.json({ error: 'Trop de requêtes. Réessayez plus tard.' }, { status: 429 })
     }
 
     const messages = await db.aIChatMessage.findMany({
-      where: { playerId: session.user.id },
+      where: { playerId: user.id },
       select: {
         role: true,
         content: true,
@@ -52,15 +51,15 @@ export async function GET() {
 // POST /api/ai-coach — Send message and get AI reply
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const supabase = await createSupabaseServerClient(); const { data: { user }, error: _error } = await supabase.auth.getUser()
+    if (_error || !user) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    const hasAccess = await requireSubscription(session.user.id, 'pro')
+    const hasAccess = await requireSubscription(user.id, 'pro')
     if (!hasAccess) return subscriptionError('pro')
 
-    const rateResult = rateLimit(`ai-coach:post:${session.user.email}`, 20, 15 * 60 * 1000)
+    const rateResult = rateLimit(`ai-coach:post:${user.email}`, 20, 15 * 60 * 1000)
     if (!rateResult.success) {
       return NextResponse.json(
         { error: "Trop de messages. Attends un moment avant de continuer." },
@@ -76,7 +75,7 @@ export async function POST(req: NextRequest) {
 
     const userMessage = sanitize(parsed.data.message)
 
-    const playerId = session.user.id
+    const playerId = user.id
 
     // 1. Save user message
     await db.aIChatMessage.create({
@@ -218,18 +217,18 @@ dis-le honnêtement. Maximum 3-4 phrases par réponse.`
 // DELETE /api/ai-coach — Clear all chat messages
 export async function DELETE() {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const supabase = await createSupabaseServerClient(); const { data: { user }, error: _error } = await supabase.auth.getUser()
+    if (_error || !user) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    const rateResult = rateLimit(`ai-coach:delete:${session.user.email}`, 10, 15 * 60 * 1000)
+    const rateResult = rateLimit(`ai-coach:delete:${user.email}`, 10, 15 * 60 * 1000)
     if (!rateResult.success) {
       return NextResponse.json({ error: 'Trop de requêtes. Réessayez plus tard.' }, { status: 429 })
     }
 
     await db.aIChatMessage.deleteMany({
-      where: { playerId: session.user.id },
+      where: { playerId: user.id },
     })
 
     return NextResponse.json({ success: true })

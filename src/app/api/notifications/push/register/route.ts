@@ -1,6 +1,5 @@
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { pushRegisterSchema, getZodErrorMessage } from '@/lib/validations'
@@ -8,15 +7,15 @@ import { pushRegisterSchema, getZodErrorMessage } from '@/lib/validations'
 // POST /api/notifications/push/register
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const supabase = await createSupabaseServerClient(); const { data: { user }, error: _error } = await supabase.auth.getUser()
+    if (_error || !user) {
       return NextResponse.json(
         { error: 'Authentification requise' },
         { status: 401 },
       )
     }
 
-    const playerId = session.user.id
+    const playerId = user.id
     const body = await request.json()
     const parsed = pushRegisterSchema.safeParse(body)
     if (!parsed.success) {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/components/providers/supabase-auth-provider'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, ArrowUp, Trash2, Bot, RefreshCw, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -46,8 +46,8 @@ const SUGGESTED_ACTIONS = [
 // ---------------------------------------------------------------------------
 export default function AICoachScreen() {
   const { t, td } = useTranslation()
-  const { data: session } = useSession()
-  const userName = session?.user?.name || td('Joueur', 'Player')
+  const { user } = useAuth()
+  const userName = user?.name || td('Joueur', 'Player')
   const goBack = useAppStore((s) => s.goBack)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')

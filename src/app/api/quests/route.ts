@@ -1,23 +1,22 @@
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
+    const supabase = await createSupabaseServerClient(); const { data: { user }, error: _error } = await supabase.auth.getUser()
+    if (!user?.email) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
-    const rateResult = rateLimit(`quests:${session.user.email}`, 30, 60000)
+    const rateResult = rateLimit(`quests:${user.email}`, 30, 60000)
     if (!rateResult.success) {
       return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 })
     }
 
-    const playerId = session.user.id!
+    const playerId = user.id!
 
     // ── Today's date range ───────────────────────────────────────────
     const now = new Date()

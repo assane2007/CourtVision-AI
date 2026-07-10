@@ -1,6 +1,5 @@
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { registerDeviceSchema, getZodErrorMessage } from '@/lib/validations'
@@ -9,12 +8,12 @@ import { registerDeviceSchema, getZodErrorMessage } from '@/lib/validations'
 // List all devices for the current player
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const supabase = await createSupabaseServerClient(); const { data: { user }, error: _error } = await supabase.auth.getUser()
+    if (_error || !user) {
       return NextResponse.json({ error: 'Authentification requise' }, { status: 401 })
     }
 
-    const playerId = session.user.id
+    const playerId = user.id
 
     const devices = await db.device.findMany({
       where: { playerId },
@@ -52,12 +51,12 @@ export async function GET() {
 // Register the current device
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const supabase = await createSupabaseServerClient(); const { data: { user }, error: _error } = await supabase.auth.getUser()
+    if (_error || !user) {
       return NextResponse.json({ error: 'Authentification requise' }, { status: 401 })
     }
 
-    const playerId = session.user.id
+    const playerId = user.id
     const body = await request.json()
     const parsed = registerDeviceSchema.safeParse(body)
     if (!parsed.success) {

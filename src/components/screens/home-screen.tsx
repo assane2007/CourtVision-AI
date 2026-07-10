@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/components/providers/supabase-auth-provider'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 import {
@@ -306,7 +306,7 @@ function SessionItem({ session }: { session: Session }) {
 // Main component
 // ---------------------------------------------------------------------------
 export default function HomeScreen() {
-  const { data: session } = useSession()
+  const { user } = useAuth()
   const navigate = useAppStore(s => s.navigate)
   const selectDrill = useAppStore(s => s.selectDrill)
   const workoutResult = useAppStore(s => s.workoutResult)
@@ -317,7 +317,7 @@ export default function HomeScreen() {
   const hasAwardedRef = useRef(false)
   const { t, td, language } = useTranslation()
 
-  const userName = session?.user?.name ?? td('Joueur', 'Player')
+  const userName = user?.name ?? td('Joueur', 'Player')
   const userInitial = userName.charAt(0).toUpperCase()
 
   // ---- Data fetching ----
@@ -395,7 +395,7 @@ export default function HomeScreen() {
   // ---- Daily login reward ----
   const dailyRewardClaimed = useRef(false)
   useEffect(() => {
-    if (dailyRewardClaimed.current || !session?.user?.id) return
+    if (dailyRewardClaimed.current || !user?.id) return
     dailyRewardClaimed.current = true
     fetch('/api/daily-reward', { method: 'POST' })
       .then((res) => res.json())
@@ -409,7 +409,7 @@ export default function HomeScreen() {
         }
       })
       .catch(() => { /* silent — not critical */ })
-  }, [session?.user?.id, queryClient, td])
+  }, [user?.id, queryClient, td])
 
   // Clear stale workout result without XP (e.g. if session save failed)
   useEffect(() => {

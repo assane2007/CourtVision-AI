@@ -1,6 +1,5 @@
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { trackError } from '@/lib/monitoring'
 import { sendEmail, getEmailTemplate } from '@/lib/email'
 import { rateLimit } from '@/lib/rate-limit'
@@ -13,13 +12,13 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 // Generic email send endpoint (admin/internal use)
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const supabase = await createSupabaseServerClient(); const { data: { user }, error: _error } = await supabase.auth.getUser()
+    if (_error || !user) {
       return NextResponse.json({ error: 'Authentification requise' }, { status: 401 })
     }
 
     // Admin-only check
-    const player = await db.player.findUnique({ where: { id: session.user.id }, select: { role: true } })
+    const player = await db.player.findUnique({ where: { id: user.id }, select: { role: true } })
     if (!player || player.role !== 'admin') {
       return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
     }
@@ -42,7 +41,7 @@ export async function POST(request: Request) {
     }
 
     // Rate limit email sending
-    const rl = rateLimit(`email:${session.user.id}`, 10, 60 * 60 * 1000)
+    const rl = rateLimit(`email:${user.id}`, 10, 60 * 60 * 1000)
     if (!rl.success) {
       return NextResponse.json({ error: 'Trop d\'emails envoyés. Réessayez plus tard.' }, { status: 429 })
     }
