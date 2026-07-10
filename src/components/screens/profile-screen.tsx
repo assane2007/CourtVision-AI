@@ -290,7 +290,7 @@ export function ProfileScreen() {
               ) : (
                 <>
                   <Pencil className="h-3.5 w-3.5" />
-                  Modifier
+                  {td('Modifier', 'Edit')}
                 </>
               )}
             </Button>
@@ -463,7 +463,7 @@ export function ProfileScreen() {
                   <CardHeader className="pb-3 px-5 pt-5">
                     <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
                       <Pencil className="h-4 w-4 text-orange-500" />
-                      Modifier le Profil
+                      {td('Modifier le Profil', 'Edit Profile')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-5 pb-5 space-y-4">

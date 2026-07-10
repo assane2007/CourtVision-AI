@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { rotateRefreshToken, verifyRefreshTokenWithDb } from '@/lib/auth/jwt'
 import { rateLimit } from '@/lib/rate-limit'
 import { logger } from '@/lib/logger'
+import { getClientIp } from '@/lib/security/rate-limit-middleware'
 
 /**
  * POST /api/auth/refresh
@@ -12,7 +13,7 @@ import { logger } from '@/lib/logger'
 export async function POST(request: Request) {
   try {
     // Rate limit by client IP
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const ip = getClientIp(request)
     const rateResult = rateLimit(`refresh:${ip}`, 10, 60 * 1000) // 10/min
     if (!rateResult.success) {
       return NextResponse.json(

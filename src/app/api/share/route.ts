@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
 import { formatDate } from '@/lib/date-utils'
+import { shareSchema, getZodErrorMessage } from '@/lib/validations'
 
 export const POST = withAuth(async (request, session) => {
   try {
@@ -13,7 +14,12 @@ export const POST = withAuth(async (request, session) => {
     }
 
     const body = await request.json()
-    const { sessionId, postToFeed, content } = body
+    const parsed = shareSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: getZodErrorMessage(parsed.error) }, { status: 400 })
+    }
+
+    const { sessionId, postToFeed, content } = parsed.data
 
     let sessionData: {
       startedAt: Date

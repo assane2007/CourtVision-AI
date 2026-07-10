@@ -1,7 +1,8 @@
 import * as Sentry from '@sentry/nextjs'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { withAdmin } from '@/lib/with-auth'
 
-export async function GET() {
+export const GET = withAdmin(async (_req: NextRequest, _session) => {
   const transactionId = Math.random().toString(36).substring(2, 10)
 
   Sentry.withScope((scope) => {
@@ -20,4 +21,4 @@ export async function GET() {
     transactionId,
     hint: 'Check your Sentry dashboard for this event',
   })
-}
+})

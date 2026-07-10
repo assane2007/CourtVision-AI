@@ -2,20 +2,38 @@ import { NextRequest, NextResponse } from 'next/server'
 import ZAI from 'z-ai-web-dev-sdk'
 import { withAuth } from '@/lib/with-auth'
 import { rateLimit } from '@/lib/rate-limit'
+import { stripHtml } from '@/lib/security/sanitization'
+
+const AI_TIMEOUT_MS = 30_000
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Délai d\'attente dépassé')), ms),
+    ),
+  ])
+}
 
 // POST /api/ai/web-reader — Web Page Reader
 export const POST = withAuth(async (req: NextRequest, session) => {
   try {
     const rl = rateLimit(`ai:web-reader:${session.user.id}`, 20, 60_000)
     if (!rl.success) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+      return NextResponse.json({ error: 'Trop de requêtes. Veuillez réessayer plus tard.' }, { status: 429 })
     }
 
-    const body = await req.json()
+    let body: Record<string, unknown>
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: 'Requête invalide.' }, { status: 400 })
+    }
+
     const { url } = body
 
     if (!url || typeof url !== 'string' || url.trim().length === 0) {
-      return NextResponse.json({ error: 'URL is required' }, { status: 400 })
+      return NextResponse.json({ error: 'L\'URL est requise.' }, { status: 400 })
     }
 
     const trimmedUrl = url.trim()
@@ -24,22 +42,30 @@ export const POST = withAuth(async (req: NextRequest, session) => {
     try {
       new URL(trimmedUrl)
     } catch {
-      return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 })
+      return NextResponse.json({ error: 'Format d\'URL invalide.' }, { status: 400 })
     }
 
     // Only allow http/https protocols
     if (!trimmedUrl.startsWith('http://') && !trimmedUrl.startsWith('https://')) {
-      return NextResponse.json({ error: 'Only HTTP and HTTPS URLs are supported' }, { status: 400 })
+      return NextResponse.json({ error: 'Seules les URLs HTTP et HTTPS sont supportées.' }, { status: 400 })
+    }
+
+    // Limit URL length
+    if (trimmedUrl.length > 2048) {
+      return NextResponse.json({ error: 'URL trop longue (max 2048 caractères).' }, { status: 400 })
     }
 
     const zai = await ZAI.create()
-    const response = await zai.functions.invoke('page_reader', {
-      url: trimmedUrl,
-    })
+    const response = await withTimeout(
+      zai.functions.invoke('page_reader', {
+        url: trimmedUrl,
+      }),
+      AI_TIMEOUT_MS,
+    )
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rawData = response as any
-    const title = String(rawData?.title || rawData?.data?.title || '')
+    const title = stripHtml(String(rawData?.title || rawData?.data?.title || ''))
     let content = String(rawData?.content || rawData?.text || rawData?.markdown || rawData?.data?.html || rawData?.data?.content || '')
 
     // Strip HTML tags for plain text content if HTML is returned
@@ -58,13 +84,20 @@ export const POST = withAuth(async (req: NextRequest, session) => {
         .trim()
     }
 
+    // Sanitize final content
+    const sanitizedContent = stripHtml(content)
+
     return NextResponse.json({
       title,
-      content,
+      content: sanitizedContent,
       url: trimmedUrl,
     })
   } catch (error) {
     console.error('POST /api/ai/web-reader error:', error)
-    return NextResponse.json({ error: 'Failed to read web page' }, { status: 500 })
+    const isTimeout = error instanceof Error && error.message.includes('Délai')
+    return NextResponse.json(
+      { error: isTimeout ? 'La lecture de la page prend trop de temps. Réessayez.' : 'Erreur lors de la lecture de la page web.' },
+      { status: 500 },
+    )
   }
 })

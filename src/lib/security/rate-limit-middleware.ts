@@ -24,10 +24,36 @@ import type { RateLimitConfig } from './rate-limiter'
 type RouteHandlerFn = (req: Request, context?: Record<string, unknown>) => Promise<NextResponse> | NextResponse
 
 /**
+ * Extract client IP from request headers with X-Real-IP fallback.
+ *
+ * Priority:
+ * 1. X-Real-IP — set by the closest trusted reverse proxy, not chainable by client
+ * 2. X-Forwarded-For leftmost IP — common but spoofable if no trusted proxy
+ * 3. 'unknown' — fallback when no headers are available
+ *
+ * IMPORTANT: Configure your reverse proxy (Nginx, Vercel, Cloudflare) to set
+ * X-Real-IP and to overwrite/clear X-Forwarded-For from untrusted sources.
+ */
+export function getClientIp(req: Request): string {
+  // Prefer X-Real-IP (set by trusted reverse proxy, not spoofable by client)
+  const realIp = req.headers.get('x-real-ip')?.trim()
+  if (realIp) return realIp
+
+  // Fall back to leftmost IP in X-Forwarded-For
+  const forwarded = req.headers.get('x-forwarded-for')
+  if (forwarded) {
+    const firstIp = forwarded.split(',')[0]?.trim()
+    if (firstIp) return firstIp
+  }
+
+  return 'unknown'
+}
+
+/**
  * Wrap a route handler with rate limiting.
  *
  * The rate limiter will:
- * - Extract identifier from IP (x-forwarded-for) or fallback to 'unknown'
+ * - Extract identifier from IP (X-Real-IP > x-forwarded-for) or fallback to 'unknown'
  * - Apply the specified limit (preset or custom)
  * - Return 429 with Retry-After header when exceeded
  * - Attach X-RateLimit-* headers to successful responses
@@ -37,8 +63,8 @@ export function withRateLimit(
   handler: RouteHandlerFn,
 ): RouteHandlerFn {
   return async (req, context) => {
-    // Extract identifier from IP
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    // Extract identifier from IP with X-Real-IP fallback
+    const ip = getClientIp(req)
     // Include the URL path for per-endpoint rate limiting
     const url = new URL(req.url)
     const identifier = `${ip}:${url.pathname}`

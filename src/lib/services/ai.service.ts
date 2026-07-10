@@ -9,7 +9,19 @@ import { db } from '@/lib/db'
 import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
 import { aiChatRepository } from '@/lib/repositories/ai.repository'
 import { logger } from '@/lib/logger'
+import { stripHtml } from '@/lib/security/sanitization'
 import type { FormCheckResult } from '@/lib/types/service.types'
+
+const AI_TIMEOUT_MS = 30_000
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Délai d\'attente dépassé')), ms),
+    ),
+  ])
+}
 
 // ── Form Check ─────────────────────────────────────────────────────────
 
@@ -47,7 +59,7 @@ Analyse cette image et donne ton évaluation JSON.`
   try {
     const ZAI = await import('z-ai-web-dev-sdk')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await (ZAI as any).chat.completions.create({
+    const result = await withTimeout((ZAI as any).chat.completions.create({
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemPrompt },
@@ -63,7 +75,7 @@ Analyse cette image et donne ton évaluation JSON.`
         },
       ],
       response_format: { type: 'json_object' },
-    })
+    }), AI_TIMEOUT_MS)
 
     const content = typeof result.choices?.[0]?.message?.content === 'string'
       ? result.choices[0].message.content
@@ -73,9 +85,9 @@ Analyse cette image et donne ton évaluation JSON.`
     // Validate structure
     const formCheck: FormCheckResult = {
       score: Math.max(0, Math.min(100, Number(parsed.score) || 50)),
-      feedback: String(parsed.feedback || 'Analyse complète'),
-      issues: Array.isArray(parsed.issues) ? parsed.issues.map(String) : [],
-      goodPoints: Array.isArray(parsed.goodPoints) ? parsed.goodPoints.map(String) : [],
+      feedback: stripHtml(String(parsed.feedback || 'Analyse complète')),
+      issues: Array.isArray(parsed.issues) ? parsed.issues.map((v: unknown) => stripHtml(String(v))) : [],
+      goodPoints: Array.isArray(parsed.goodPoints) ? parsed.goodPoints.map((v: unknown) => stripHtml(String(v))) : [],
     }
 
     // Save to history
@@ -147,14 +159,15 @@ Réponds de manière concise (2-4 phrases max sauf si on te demande des détails
   try {
     const ZAI = await import('z-ai-web-dev-sdk')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await (ZAI as any).chat.completions.create({
+    const result = await withTimeout((ZAI as any).chat.completions.create({
       model: 'gpt-4o-mini',
       messages,
-    })
+    }), AI_TIMEOUT_MS)
 
-    const assistantMessage = typeof result.choices?.[0]?.message?.content === 'string'
+    const rawMessage = typeof result.choices?.[0]?.message?.content === 'string'
       ? result.choices[0].message.content
       : JSON.stringify(result)
+    const assistantMessage = stripHtml(rawMessage)
 
     // Save both messages
     await Promise.all([
@@ -171,7 +184,7 @@ Réponds de manière concise (2-4 phrases max sauf si on te demande des détails
       error: error instanceof Error ? error.message : String(error),
     })
     throw new AppError(
-      ErrorCode.EXTERNAL_SERVICE_SERVICE_ERROR,
+      ErrorCode.EXTERNAL_SERVICE_ERROR,
       'Erreur lors de la communication avec le coach IA.',
     )
   }
@@ -233,14 +246,14 @@ Réponds en JSON: [{"type": "strength|weakness|suggestion", "title": "...", "des
   try {
     const ZAI = await import('z-ai-web-dev-sdk')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await (ZAI as any).chat.completions.create({
+    const result = await withTimeout((ZAI as any).chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: 'Tu es un analyste de basketball expert. Réponds UNIQUEMENT en JSON.' },
         { role: 'user', content: prompt },
       ],
       response_format: { type: 'json_object' },
-    })
+    }), AI_TIMEOUT_MS)
 
     const content = typeof result.choices?.[0]?.message?.content === 'string'
       ? result.choices[0].message.content

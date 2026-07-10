@@ -18,7 +18,14 @@ export const GET = withAuth(async (request, session) => {
 
     const where: Record<string, unknown> = {}
     if (status === 'active') {
+      // Discovery mode: show all active/waiting sessions from any user
       where.status = { in: ['waiting', 'active'] }
+    } else {
+      // Non-active history: only show user's own sessions
+      where.hostId = session.user.id
+      if (status === 'completed' || status === 'ended') {
+        where.status = { in: ['completed', 'ended'] }
+      }
     }
 
     const sessions = await db.liveSession.findMany({

@@ -7,6 +7,10 @@ import { rateLimit } from '@/lib/rate-limit'
 import { sendEmail, getEmailTemplate } from '@/lib/email'
 import crypto from 'crypto'
 
+function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex')
+}
+
 // POST /api/auth/verify-email
 // Send a new email verification token
 export async function POST(_request: NextRequest) {
@@ -50,10 +54,11 @@ export async function POST(_request: NextRequest) {
     const token = crypto.randomBytes(24).toString('hex')
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
 
+    // Store the hashed token, not the plaintext
     await db.emailVerificationToken.create({
       data: {
         playerId,
-        token,
+        token: hashToken(token),
         expiresAt,
       },
     })

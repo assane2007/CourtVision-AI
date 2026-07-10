@@ -5,6 +5,8 @@ import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
 import { resetPasswordConfirmSchema, getZodErrorMessage } from '@/lib/validations'
+import { invalidateAuthCache } from '@/lib/guards/auth.guard'
+import { revokeAllRefreshTokens } from '@/lib/auth/jwt'
 
 // POST /api/auth/reset-password/confirm
 export async function POST(request: Request) {
@@ -59,6 +61,10 @@ export async function POST(request: Request) {
         resetTokenExpiresAt: null,
       },
     })
+
+    // Revoke all refresh tokens and invalidate auth cache after password change
+    await revokeAllRefreshTokens(player.id)
+    invalidateAuthCache(player.id)
 
     return NextResponse.json({
       message: 'Mot de passe mis à jour avec succès. Tu peux maintenant te connecter.',

@@ -8,6 +8,16 @@ const DEFAULT_VOICE = 'tongtong'
 const DEFAULT_SPEED = 1.0
 const MIN_SPEED = 0.5
 const MAX_SPEED = 2.0
+const AI_TIMEOUT_MS = 30_000
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Délai d\'attente dépassé')), ms),
+    ),
+  ])
+}
 
 /**
  * Split text into chunks at sentence boundaries, each <= maxLength.
@@ -62,21 +72,27 @@ export const POST = withAuth(async (req: NextRequest, session) => {
   try {
     const rl = rateLimit(`ai:tts:${session.user.id}`, 20, 60_000)
     if (!rl.success) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+      return NextResponse.json({ error: 'Trop de requêtes. Veuillez réessayer plus tard.' }, { status: 429 })
     }
 
-    const body = await req.json()
+    let body: Record<string, unknown>
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: 'Requête invalide.' }, { status: 400 })
+    }
+
     const { text, voice, speed } = body
 
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
-      return NextResponse.json({ error: 'Text is required' }, { status: 400 })
+      return NextResponse.json({ error: 'Le texte est requis.' }, { status: 400 })
     }
 
     const trimmedText = text.trim()
 
     if (trimmedText.length > MAX_TEXT_LENGTH) {
       return NextResponse.json(
-        { error: `Text exceeds maximum length of ${MAX_TEXT_LENGTH} characters` },
+        { error: `Texte trop long (max ${MAX_TEXT_LENGTH} caractères).` },
         { status: 400 },
       )
     }
@@ -92,9 +108,10 @@ export const POST = withAuth(async (req: NextRequest, session) => {
     const audioBuffers: Buffer[] = []
 
     for (const chunk of chunks) {
-      const audioResponse = await zai.audio.tts.create({
-        input: chunk,
-      })
+      const audioResponse = await withTimeout(
+        zai.audio.tts.create({ input: chunk }),
+        AI_TIMEOUT_MS,
+      )
 
       // Response may be a string (base64) or an object with base64 data
       let audioBase64 = ''
@@ -112,7 +129,7 @@ export const POST = withAuth(async (req: NextRequest, session) => {
     }
 
     if (audioBuffers.length === 0) {
-      return NextResponse.json({ error: 'Failed to generate audio' }, { status: 500 })
+      return NextResponse.json({ error: 'Impossible de générer l\'audio.' }, { status: 500 })
     }
 
     const combinedBuffer = Buffer.concat(audioBuffers)
@@ -126,6 +143,10 @@ export const POST = withAuth(async (req: NextRequest, session) => {
     })
   } catch (error) {
     console.error('POST /api/ai/tts error:', error)
-    return NextResponse.json({ error: 'Failed to generate speech' }, { status: 500 })
+    const isTimeout = error instanceof Error && error.message.includes('Délai')
+    return NextResponse.json(
+      { error: isTimeout ? 'La génération audio prend trop de temps. Réessayez.' : 'Erreur lors de la génération vocale.' },
+      { status: 500 },
+    )
   }
 })

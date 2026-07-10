@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { getPlayer, requirePlayer } from "@/lib/player/db-helpers";
 import { trackError } from "@/lib/monitoring";
 import { profilePatchSchema, getZodErrorMessage } from "@/lib/validations";
+import { invalidateAuthCache } from "@/lib/guards/auth.guard";
 
 export async function GET() {
   try {
@@ -77,6 +78,9 @@ export async function PATCH(req: Request) {
       where: { id: player.id },
       data: updateData,
     });
+
+    // Invalidate auth cache so name/role changes take effect immediately
+    invalidateAuthCache(player.id);
 
     return NextResponse.json({
       player: {

@@ -26,6 +26,7 @@ export const GET = withAuth(async (request, session) => {
         _count: { select: { drills: true } },
       },
       orderBy: { updatedAt: 'desc' },
+      take: 100,
     })
 
     return NextResponse.json({ plans })

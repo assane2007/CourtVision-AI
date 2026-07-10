@@ -154,7 +154,10 @@ if (process.env.ENCRYPTION_KEY) {
     )
   } else {
     console.warn(
-      '[CONFIG] Auto-generated ENCRYPTION_KEY for development. Do NOT use in production.'
+      '[CONFIG] ⚠  Auto-generated ENCRYPTION_KEY for this session.\n' +
+      '  WARNING: This key changes on EVERY server restart.\n' +
+      '  Encrypted data (2FA secrets, etc.) will be lost after restart.\n' +
+      '  Set ENCRYPTION_KEY env var for persistent data. Do NOT use in production.'
     )
   }
 }

@@ -78,6 +78,7 @@ export const GET = withAuth(async (req, session) => {
           where: { playerId },
           select: { startedAt: true },
           orderBy: { startedAt: 'desc' },
+          take: 1000,
         }),
         db.trainingPlan.count({ where: { playerId } }),
         db.reactionScore.aggregate({

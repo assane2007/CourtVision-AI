@@ -16,6 +16,23 @@ const PUBLIC_PATHS = [
   '/monitoring', // Sentry tunnel route
 ]
 
+// ── IP extraction with X-Real-IP fallback ──────────────────────────────────────
+
+/**
+ * Extract client IP with X-Real-IP priority.
+ * X-Real-IP is set by the closest trusted reverse proxy and is not chainable/spoofable.
+ */
+function getClientIp(request: NextRequest): string {
+  const realIp = request.headers.get('x-real-ip')?.trim()
+  if (realIp) return realIp
+  const forwarded = request.headers.get('x-forwarded-for')
+  if (forwarded) {
+    const firstIp = forwarded.split(',')[0]?.trim()
+    if (firstIp) return firstIp
+  }
+  return 'unknown'
+}
+
 // ── Suspicious User-Agent patterns ───────────────────────────────────────────
 
 const SUSPICIOUS_UA_PATTERNS = [
@@ -85,9 +102,63 @@ const _cleanupTimer = setInterval(() => {
 }, 5 * 60 * 1000)
 // Note: unref() is not available in Edge Runtime; timer will keep process alive
 
+// ── Edge-compatible JWT access token verification ─────────────────────────────
+
+const JWT_ISSUER = 'courtvision'
+
+function getJwtSigningKey(): string {
+  return process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || ''
+}
+
+function base64urlDecode(str: string): string {
+  let s = str.replace(/-/g, '+').replace(/_/g, '/')
+  while (s.length % 4) s += '='
+  return atob(s)
+}
+
+/**
+ * Verify a JWT access token using Web Crypto API (Edge Runtime compatible).
+ * Returns true if the token is valid, unexpired, and has type=access.
+ */
+async function verifyAccessTokenEdge(token: string): Promise<boolean> {
+  const key = getJwtSigningKey()
+  if (!key) return false
+
+  const parts = token.split('.')
+  if (parts.length !== 3) return false
+
+  try {
+    const payload = JSON.parse(base64urlDecode(parts[1]))
+
+    // Check expiry
+    if (typeof payload.exp !== 'number' || Math.floor(Date.now() / 1000) > payload.exp) return false
+    // Check type
+    if (payload.type !== 'access') return false
+    // Check issuer
+    if (payload.iss !== JWT_ISSUER) return false
+
+    // Verify HMAC-SHA256 signature using Web Crypto API
+    const encoder = new TextEncoder()
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(key),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['verify'],
+    )
+
+    const data = encoder.encode(`${parts[0]}.${parts[1]}`)
+    const signature = Uint8Array.from(atob(parts[2].replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0))
+
+    return await crypto.subtle.verify('HMAC', cryptoKey, signature, data)
+  } catch {
+    return false
+  }
+}
+
 // ── Main Middleware ───────────────────────────────────────────────────────────
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   const response = NextResponse.next()
@@ -108,7 +179,7 @@ export function middleware(request: NextRequest) {
       if (pattern.test(userAgent)) {
         logger.warn('Blocked request from suspicious user agent', 'middleware', {
           ua: userAgent.slice(0, 100),
-          ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown',
+          ip: getClientIp(request),
           path: pathname,
         })
         return new NextResponse(
@@ -136,7 +207,7 @@ export function middleware(request: NextRequest) {
 
   // ── Rate limit auth endpoints more strictly ─────────────────────────────
   if (AUTH_PATHS.some((p) => pathname.startsWith(p))) {
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const ip = getClientIp(request)
     const rateResult = middlewareRateLimit(`auth-mw:${ip}`, 10, 60_000) // 10/min
 
     if (!rateResult.allowed) {
@@ -167,10 +238,29 @@ export function middleware(request: NextRequest) {
       if (!authHeader?.startsWith('Bearer ')) {
         logger.info('API request rejected: no session or access token', 'middleware', {
           path: pathname,
-          ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown',
+          ip: getClientIp(request),
         })
         return new NextResponse(
           JSON.stringify({ error: 'Non autorisé' }),
+          {
+            status: 401,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+        )
+      }
+
+      // Validate the Bearer token as a proper JWT
+      const accessToken = authHeader.slice(7)
+      const isValid = await verifyAccessTokenEdge(accessToken)
+      if (!isValid) {
+        logger.warn('API request rejected: invalid or expired access token', 'middleware', {
+          path: pathname,
+          ip: getClientIp(request),
+        })
+        return new NextResponse(
+          JSON.stringify({ error: 'Token invalide ou expiré' }),
           {
             status: 401,
             headers: {

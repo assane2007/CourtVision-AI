@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
 import { decrypt } from '@/lib/security/encryption'
+import { invalidateAuthCache } from '@/lib/guards/auth.guard'
 import crypto from 'crypto'
 import { authenticator } from 'otplib'
 
@@ -74,6 +75,9 @@ export async function POST(request: Request) {
         where: { id: playerId },
         data: { twoFactorEnabled: true },
       })
+
+      // Invalidate auth cache so authLevel updates from basic/verified → 2fa
+      invalidateAuthCache(playerId)
 
       // Generate backup codes
       const backupCodes = await generateBackupCodes(playerId, 8)

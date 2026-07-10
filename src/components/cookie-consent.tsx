@@ -84,7 +84,7 @@ export function CookieConsent() {
                 <Button
                   size="sm"
                   onClick={handleAccept}
-                  className="bg-orange-500 hover:bg-orange-600 text-white text-xs px-4"
+                  className="bg-orange-500 hover:bg-orange-600 text-white text-xs px-4 min-h-[44px]"
                 >
                   {t('cookie.accept')}
                 </Button>
@@ -92,7 +92,7 @@ export function CookieConsent() {
                   variant="outline"
                   size="sm"
                   onClick={handleReject}
-                  className="text-xs px-4"
+                  className="text-xs px-4 min-h-[44px]"
                 >
                   {t('cookie.reject')}
                 </Button>
@@ -100,7 +100,7 @@ export function CookieConsent() {
                   variant="ghost"
                   size="sm"
                   onClick={handleMoreInfo}
-                  className="text-xs px-3"
+                  className="text-xs px-3 min-h-[44px]"
                 >
                   {t('cookie.moreInfo')}
                 </Button>

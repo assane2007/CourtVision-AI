@@ -122,7 +122,8 @@ export default function FeedScreen() {
                     const Icon = TYPE_ICONS[type] || Trophy
                     return (
                       <button key={type} onClick={() => setNewPost({ ...newPost, type })}
-                        className={`flex items-center gap-1.5 px-3 min-h-[44px] rounded-full text-xs font-medium transition-colors ${newPost.type === type ? 'bg-orange-500 text-white' : 'bg-muted text-muted-foreground'}`}>
+                        aria-pressed={newPost.type === type}
+                        className={`flex items-center gap-1.5 px-3 min-h-[44px] rounded-full text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${newPost.type === type ? 'bg-orange-500 text-white' : 'bg-muted text-muted-foreground'}`}>
                         <Icon className="h-3.5 w-3.5" />{type === 'text' ? td('Texte', 'Text') : type === 'workout' ? td('Séance', 'Workout') : type === 'achievement' ? td('Succès', 'Achievement') : td('Défi', 'Challenge')}
                       </button>
                     )
@@ -162,7 +163,7 @@ export default function FeedScreen() {
                   <div className="p-4 rounded-xl border border-border/50 bg-card">
                     {/* Header */}
                     <div className="flex items-center gap-3 mb-3">
-                      <Avatar className="h-10 w-10 cursor-pointer" onClick={() => navigate('profile-other')}>
+                      <Avatar className="h-10 w-10 cursor-pointer" onClick={() => navigate('profile-other')} aria-label={td('Voir le profil', 'View profile')}>
                         <AvatarImage src={post.player.avatar || undefined} />
                         <AvatarFallback className="text-xs font-bold">{post.player.name.charAt(0).toUpperCase()}</AvatarFallback>
                       </Avatar>

@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
 import { withAuth } from '@/lib/with-auth'
+import { createFeedPostSchema, getZodErrorMessage } from '@/lib/validations'
 
 export const GET = withAuth(async (request, session) => {
   try {
@@ -77,14 +78,26 @@ export const POST = withAuth(async (request: NextRequest, session) => {
     }
 
     const body = await request.json()
-    const { content, type, sessionId, imageUrls } = body
-
-    if (!content && !sessionId) {
-      return NextResponse.json({ error: 'Contenu requis' }, { status: 400 })
+    const parsed = createFeedPostSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: getZodErrorMessage(parsed.error) }, { status: 400 })
     }
 
+    const { content, type, sessionId, imageUrls } = parsed.data
+
     const validTypes = ['text', 'workout', 'achievement', 'challenge', 'video']
-    const postType = validTypes.includes(type) ? type : 'text'
+    const postType = type && validTypes.includes(type) ? type : 'text'
+
+    // Verify session ownership if sessionId is provided
+    if (sessionId) {
+      const sessionData = await db.workoutSession.findFirst({
+        where: { id: sessionId, playerId: session.user.id },
+        select: { id: true },
+      })
+      if (!sessionData) {
+        return NextResponse.json({ error: 'Séance introuvable' }, { status: 403 })
+      }
+    }
 
     const post = await db.feedPost.create({
       data: {

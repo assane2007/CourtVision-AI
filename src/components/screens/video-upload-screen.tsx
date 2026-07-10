@@ -296,7 +296,7 @@ export default function VideoUploadScreen() {
                   onClick={() => thumbInputRef.current?.click()}
                 >
                   <ImagePlus className="h-3.5 w-3.5 mr-1.5" />
-                  Choisir
+                  {/* i18n-FR: hardcoded French — TODO: use i18n */}Choisir
                 </Button>
                 <input
                   ref={thumbInputRef}
@@ -317,6 +317,7 @@ export default function VideoUploadScreen() {
                       setThumbnail(null)
                       setThumbPreview(null)
                     }}
+                    aria-label={td('Supprimer la miniature', 'Remove thumbnail')}
                   >
                     <X className="h-3 w-3" />
                   </Button>
@@ -396,7 +397,7 @@ export default function VideoUploadScreen() {
                 {tags.map((tag) => (
                   <Badge key={tag} variant="secondary" className="gap-1">
                     {tag}
-                    <button onClick={() => removeTag(tag)} className="hover:text-destructive">
+                <button onClick={() => removeTag(tag)} className="hover:text-destructive" aria-label={td('Supprimer le tag', 'Remove tag')}>
                       <X className="h-3 w-3" />
                     </button>
                   </Badge>
@@ -427,7 +428,7 @@ export default function VideoUploadScreen() {
                     </p>
                   </div>
                 </div>
-                <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+                <Switch checked={isPublic} onCheckedChange={setIsPublic} aria-label={td('Rendre la vidéo publique', 'Make video public')} />
               </div>
             </CardContent>
           </Card>

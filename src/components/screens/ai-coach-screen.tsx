@@ -59,6 +59,7 @@ export default function AICoachScreen() {
   const inputRef = useRef<HTMLInputElement>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const cancelledRef = useRef(false)
+  const abortRef = useRef<AbortController>(null)
 
   // ── Load chat history ──────────────────────────────────────────────────
   const loadHistory = useCallback(async () => {
@@ -81,6 +82,7 @@ export default function AICoachScreen() {
     loadHistory()
     return () => {
       cancelledRef.current = true
+      abortRef.current?.abort()
     }
   }, [loadHistory])
 
@@ -119,10 +121,15 @@ export default function AICoachScreen() {
           .slice(-20)
           .map(({ role, content }) => ({ role, content }))
 
+        abortRef.current?.abort()
+        const controller = new AbortController()
+        abortRef.current = controller
+
         const data = await apiFetch<{ response: string; history: Array<{ role: string; content: string }> }>('/api/ai/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message: trimmed, history: historyForApi }),
+          signal: controller.signal,
         })
 
         const aiMsg: ChatMessage = {
@@ -131,13 +138,16 @@ export default function AICoachScreen() {
           createdAt: new Date().toISOString(),
         }
         setMessages((prev) => [...prev, aiMsg])
-      } catch {
-        const errMsg: ChatMessage = {
-          role: 'assistant',
-          content: 'Désolé, une erreur est survenue. Réessayez.',
-          createdAt: new Date().toISOString(),
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        if (!cancelledRef.current) {
+          const errMsg: ChatMessage = {
+            role: 'assistant',
+            content: 'Désolé, une erreur est survenue. Réessayez.',
+            createdAt: new Date().toISOString(),
+          }
+          setMessages((prev) => [...prev, errMsg])
         }
-        setMessages((prev) => [...prev, errMsg])
       } finally {
         setIsLoading(false)
         inputRef.current?.focus()

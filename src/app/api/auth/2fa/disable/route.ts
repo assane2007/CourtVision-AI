@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
 import { decrypt } from '@/lib/security/encryption'
+import { invalidateAuthCache } from '@/lib/guards/auth.guard'
 import { authenticator } from 'otplib'
 
 authenticator.options = { window: 1 }
@@ -72,6 +73,9 @@ export async function POST(request: Request) {
       }),
       db.twoFactorBackupCode.deleteMany({ where: { playerId } }),
     ])
+
+    // Invalidate auth cache so authLevel updates from 2fa → basic/verified
+    invalidateAuthCache(playerId)
 
     return NextResponse.json({ message: '2FA désactivée avec succès.' })
   } catch (error) {

@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
 import { withAuth } from '@/lib/with-auth'
+import { friendsPatchSchema, friendsSendSchema, getZodErrorMessage } from '@/lib/validations'
 
 export const GET = withAuth(async (request, session) => {
   try {
@@ -161,7 +162,11 @@ export const POST = withAuth(async (request: NextRequest, session) => {
     }
 
     const body = await request.json()
-    const { recipientId } = body
+    const parsed = friendsSendSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: getZodErrorMessage(parsed.error) }, { status: 400 })
+    }
+    const { recipientId } = parsed.data
 
     if (!recipientId || recipientId === session.user.id) {
       return NextResponse.json({ error: 'Destinataire invalide' }, { status: 400 })
@@ -221,11 +226,12 @@ export const PATCH = withAuth(async (request: NextRequest, session) => {
   try {
 
     const body = await request.json()
-    const { friendshipId, action } = body // action: accept, decline, block
-
-    if (!friendshipId || !['accept', 'decline', 'block'].includes(action)) {
-      return NextResponse.json({ error: 'Paramètres invalides' }, { status: 400 })
+    const parsed = friendsPatchSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: getZodErrorMessage(parsed.error) }, { status: 400 })
     }
+
+    const { friendshipId, action } = parsed.data
 
     const friendship = await db.friendship.findUnique({ where: { id: friendshipId } })
     if (!friendship) {

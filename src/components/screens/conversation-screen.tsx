@@ -162,7 +162,7 @@ export default function ConversationScreen() {
               }
             }}
           />
-          <Button size="icon" className="shrink-0 h-9 w-9" onClick={() => sendMessage.mutate()} disabled={sendMessage.isPending || !text.trim()}>
+          <Button size="icon" className="shrink-0 h-9 w-9 min-h-[44px] min-w-[44px]" onClick={() => sendMessage.mutate()} disabled={sendMessage.isPending || !text.trim()} aria-label={td('Envoyer', 'Send')}>
             {sendMessage.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>

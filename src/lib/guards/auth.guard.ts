@@ -37,6 +37,18 @@ function setCachedAuth(playerId: string, data: AuthContext): void {
   authCache.set(playerId, { data, expiry: Date.now() + AUTH_CACHE_TTL })
 }
 
+/**
+ * Invalidate the auth cache for a specific player.
+ * Call this whenever the player's role, emailVerified, twoFactorEnabled,
+ * or other auth-relevant fields change.
+ */
+export function invalidateAuthCache(playerId: string): void {
+  const deleted = authCache.delete(playerId)
+  if (deleted) {
+    // Silently invalidated — no logger import needed in this module
+  }
+}
+
 // ── Auth Context Builder ───────────────────────────────────────────────────────
 
 /**

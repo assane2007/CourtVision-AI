@@ -31,6 +31,7 @@ export const GET = withAuth(async (req, session) => {
       db.workoutSessionDrill.findMany({
         where: { session: { playerId } },
         include: { drill: { select: { id: true, category: true, difficulty: true } } },
+        take: 5000,
       }),
     ])
 

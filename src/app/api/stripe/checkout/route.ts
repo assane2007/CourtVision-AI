@@ -4,6 +4,7 @@ import { rateLimit } from '@/lib/rate-limit'
 import { z } from 'zod'
 import Stripe from 'stripe'
 import { withAuth } from '@/lib/with-auth'
+import { trackError } from '@/lib/monitoring'
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-06-24.dahlia' })
@@ -57,39 +58,45 @@ export const POST = withAuth(async (req, session) => {
 
   // Create or retrieve Stripe customer
   let customerId = player.stripeCustomerId
-  if (!customerId) {
-    const customer = await stripe.customers.create({
-      email: player.email,
-      name: player.name,
-      metadata: { playerId: player.id },
-    })
-    customerId = customer.id
-    await db.player.update({
-      where: { id: player.id },
-      data: { stripeCustomerId: customerId },
-    })
-  }
+  try {
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: player.email,
+        name: player.name,
+        metadata: { playerId: player.id },
+      })
+      customerId = customer.id
+      await db.player.update({
+        where: { id: player.id },
+        data: { stripeCustomerId: customerId },
+      })
+    }
 
-  // Determine the tier from priceId
-  const tier = priceId.includes('pro') ? 'pro' : 'elite'
+    // Determine the tier from priceId
+    const tier = priceId.includes('pro') ? 'pro' : 'elite'
 
-  const checkoutSession = await stripe.checkout.sessions.create({
-    customer: customerId,
-    mode: 'subscription',
-    payment_method_types: ['card'],
-    line_items: [
-      {
-        price: PRICE_MAP[priceId],
-        quantity: 1,
+    const checkoutSession = await stripe.checkout.sessions.create({
+      customer: customerId,
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: PRICE_MAP[priceId],
+          quantity: 1,
+        },
+      ],
+      success_url: `${process.env.NEXTAUTH_URL || ''}/?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXTAUTH_URL || ''}/?checkout=cancelled`,
+      metadata: {
+        playerId: player.id,
+        tier,
       },
-    ],
-    success_url: `${process.env.NEXTAUTH_URL || ''}/?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${process.env.NEXTAUTH_URL || ''}/?checkout=cancelled`,
-    metadata: {
-      playerId: player.id,
-      tier,
-    },
-  })
+    })
 
-  return NextResponse.json({ url: checkoutSession.url })
+    return NextResponse.json({ url: checkoutSession.url })
+  } catch (stripeError) {
+    trackError('POST /api/stripe/checkout', stripeError)
+    const message = stripeError instanceof Error ? stripeError.message : 'Erreur lors de la création du paiement'
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
 })

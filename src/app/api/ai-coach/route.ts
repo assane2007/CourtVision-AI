@@ -10,6 +10,7 @@ import { requireSubscription, subscriptionError } from '@/lib/require-subscripti
 import ZAI from 'z-ai-web-dev-sdk'
 import { trackError } from '@/lib/monitoring'
 import { sanitize } from '@/lib/sanitize'
+import { stripHtml } from '@/lib/security/sanitization'
 
 // GET /api/ai-coach — Fetch chat history
 export async function GET() {
@@ -196,17 +197,18 @@ dis-le honnêtement. Maximum 3-4 phrases par réponse.`
       return NextResponse.json({ error: 'Pas de réponse du coach IA' }, { status: 500 })
     }
 
-    // 6. Save AI reply
+    // 6. Sanitize & save AI reply (strip any HTML/scripts from LLM output)
+    const sanitizedReply = stripHtml(reply).slice(0, 5000)
     await db.aIChatMessage.create({
       data: {
         playerId,
         role: 'assistant',
-        content: reply,
+        content: sanitizedReply,
       },
     })
 
-    // 7. Return reply
-    return NextResponse.json({ reply })
+    // 7. Return the sanitized reply
+    return NextResponse.json({ reply: sanitizedReply })
   } catch (error) {
     trackError('POST /api/ai-coach', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

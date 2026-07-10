@@ -36,9 +36,14 @@ function getEncryptionKey(): Buffer {
         '  node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
       )
     }
-    // Dev mode: generate a stable key (deterministic per session)
+    // Dev mode: generate a random key (changes on every server restart)
     key = crypto.randomBytes(32).toString('hex')
-    logger.warn('Auto-generated ENCRYPTION_KEY for development. Do NOT use in production.', 'encryption')
+    console.warn(
+      '[ENCRYPTION] ⚠  Auto-generated a random ENCRYPTION_KEY for this session.\n' +
+      '  This key will change EVERY TIME the server restarts.\n' +
+      '  Data encrypted with this key (e.g., 2FA secrets) will become unreadable after restart.\n' +
+      '  Set ENCRYPTION_KEY env var to a stable value for persistent encryption.'
+    )
   }
 
   // Validate key length

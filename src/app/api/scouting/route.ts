@@ -87,6 +87,7 @@ export async function GET() {
             drill: { select: { category: true } },
           },
           orderBy: { createdAt: 'asc' },
+          take: 5000,
         }),
 
         // Total sessions

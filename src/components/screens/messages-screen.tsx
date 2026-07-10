@@ -242,6 +242,9 @@ export default function MessagesScreen() {
                 <div
                   className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card cursor-pointer hover:bg-muted/50 transition-colors"
                   onClick={() => { useAppStore.getState().selectConversation(conv.id); navigate('conversation') }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); useAppStore.getState().selectConversation(conv.id); navigate('conversation') } }}
+                  role="button"
+                  tabIndex={0}
                 >
                   <div className="relative shrink-0">
                     <Avatar className="h-12 w-12">

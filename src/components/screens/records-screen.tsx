@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -78,6 +78,7 @@ function getCategoryColor(category: string): string {
 // ── Mini Sparkline SVG ──────────────────────────────────────────────────────
 
 function Sparkline({ scores }: { scores: number[] }) {
+  const gradientId = useRef(`sparkGrad-${Math.random().toString(36).slice(2, 9)}`)
   if (scores.length < 2) return null
 
   const w = 80
@@ -99,12 +100,12 @@ function Sparkline({ scores }: { scores: number[] }) {
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="w-20 h-7" fill="none">
       <defs>
-        <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={gradientId.current} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#f97316" stopOpacity="0.3" />
           <stop offset="100%" stopColor="#f97316" stopOpacity="0.02" />
         </linearGradient>
       </defs>
-      <polygon points={areaPoints} fill="url(#sparkGrad)" />
+      <polygon points={areaPoints} fill={`url(#${gradientId.current})`} />
       <polyline
         points={linePoints}
         stroke="#f97316"
@@ -123,7 +124,7 @@ function Sparkline({ scores }: { scores: number[] }) {
             cy={cy}
             r="2.5"
             fill="#f97316"
-            stroke="white"
+            stroke="currentColor"
             strokeWidth="1.5"
           />
         )

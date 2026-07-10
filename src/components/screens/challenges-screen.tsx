@@ -138,7 +138,7 @@ export default function ChallengesScreen() {
           <div role="tablist" className="flex gap-1 overflow-x-auto scrollbar-none">
             {TABS.map(t => (
               <button key={t.value} role="tab" aria-selected={tab === t.value} onClick={() => setTab(t.value)}
-                className={`flex-1 py-2 px-3 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${tab === t.value ? 'bg-orange-500 text-white' : 'bg-muted text-muted-foreground'}`}>
+                className={`flex-1 py-2 px-3 text-xs font-medium rounded-full whitespace-nowrap transition-colors min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${tab === t.value ? 'bg-orange-500 text-white' : 'bg-muted text-muted-foreground'}`}>
                 {td(t.label, t.labelEn)}
               </button>
             ))}

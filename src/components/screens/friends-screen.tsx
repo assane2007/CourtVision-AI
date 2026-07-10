@@ -151,7 +151,7 @@ export default function FriendsScreen() {
               />
             </div>
             {searchQuery && (
-              <Button variant="ghost" size="icon" onClick={() => setSearchQuery('')}>
+              <Button variant="ghost" size="icon" onClick={() => setSearchQuery('')} aria-label={td('Effacer la recherche', 'Clear search')}>
                 <X className="h-4 w-4" />
               </Button>
             )}
@@ -168,7 +168,7 @@ export default function FriendsScreen() {
                   role="tab"
                   aria-selected={tab === t.value}
                   onClick={() => setTab(t.value)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] rounded-full text-xs font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                     tab === t.value ? 'bg-orange-500 text-white' : 'bg-muted text-muted-foreground hover:text-foreground'
                   }`}
                 >
@@ -222,6 +222,9 @@ export default function FriendsScreen() {
                   <div
                     className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card"
                     onClick={() => isSearchResult && navigate('profile-other')}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (isSearchResult) navigate('profile-other') } }}
+                    role={isSearchResult ? 'button' : undefined}
+                    tabIndex={isSearchResult ? 0 : undefined}
                   >
                     <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold shrink-0">
                       {item.avatar ? (

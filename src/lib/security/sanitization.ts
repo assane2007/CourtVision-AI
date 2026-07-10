@@ -52,6 +52,7 @@ const SUSPICIOUS_PATTERNS = [
 
 /**
  * Sanitize a single string value:
+ * - Strip HTML tags (plain text output)
  * - Remove null bytes
  * - Remove control characters (except \n, \t)
  * - Trim whitespace
@@ -59,8 +60,11 @@ const SUSPICIOUS_PATTERNS = [
  * - Limit length
  */
 function sanitizeString(value: string, maxLen = MAX_STRING_LENGTH): string {
+  // Strip HTML tags first
+  let cleaned = value.replace(HTML_TAG_RE, '')
+
   // Remove null bytes
-  let cleaned = value.replace(NULL_BYTE_RE, '')
+  cleaned = cleaned.replace(NULL_BYTE_RE, '')
 
   // Remove control characters (keep newline \n and tab \t)
   cleaned = cleaned.replace(CONTROL_CHARS_RE, '')
@@ -125,7 +129,9 @@ export function sanitizeInput(obj: unknown, maxLen?: number): unknown {
  * Preserves newlines and tabs, strips HTML, enforces higher length limit.
  */
 export function sanitizeLongText(value: string, maxLen = MAX_LONG_STRING_LENGTH): string {
-  return sanitizeString(value, maxLen)
+  // Strip HTML tags for long text too (plain text output)
+  const stripped = value.replace(HTML_TAG_RE, '')
+  return sanitizeString(stripped, maxLen)
 }
 
 /**

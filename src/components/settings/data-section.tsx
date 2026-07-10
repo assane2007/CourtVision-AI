@@ -41,7 +41,7 @@ function ExportDataButtons() {
     <>
       <Button
         variant="ghost"
-        className="w-full justify-start h-auto py-3 px-3"
+        className="w-full justify-start h-auto py-3 px-3 min-h-[44px]"
         onClick={() => handleExport('json')}
         disabled={loading !== null}
       >
@@ -54,7 +54,7 @@ function ExportDataButtons() {
       </Button>
       <Button
         variant="ghost"
-        className="w-full justify-start h-auto py-3 px-3"
+        className="w-full justify-start h-auto py-3 px-3 min-h-[44px]"
         onClick={() => handleExport('csv')}
         disabled={loading !== null}
       >
@@ -87,7 +87,7 @@ function PrivacyLink() {
   return (
     <Button
       variant="ghost"
-      className="w-full justify-start h-auto py-3 px-3"
+      className="w-full justify-start h-auto py-3 px-3 min-h-[44px]"
       onClick={handleOpen}
     >
       <Shield className="h-4 w-4 text-muted-foreground mr-3 shrink-0" />
@@ -132,10 +132,11 @@ function DeleteAccountButton() {
     <Button
       variant="ghost"
       className={cn(
-        'w-full justify-start h-auto py-3 px-3',
+        'w-full justify-start h-auto py-3 px-3 min-h-[44px]',
         confirmStep > 0 && 'text-red-500 hover:text-red-600 hover:bg-red-500/10',
       )}
       onClick={handleDelete}
+      aria-label={t('settings.deleteAccountButton')}
     >
       <Trash2 className={cn('h-4 w-4 mr-3 shrink-0', confirmStep > 0 ? 'text-red-500' : 'text-muted-foreground')} />
       <div className="text-left">

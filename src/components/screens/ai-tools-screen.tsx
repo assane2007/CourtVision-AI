@@ -7,7 +7,7 @@ import {
   MessageCircle,
   Volume2,
   Mic,
-  Image,
+  ImageIcon,
   Search,
   FileText,
   Upload,
@@ -18,6 +18,7 @@ import {
   Trash2,
   Music,
   Globe,
+  RefreshCw,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -70,6 +71,8 @@ const IMAGE_SIZES = [
   { value: '1440x720', label: 'Wide', desc: '1440×720' },
 ] as const
 
+// i18n-FR: entire file uses hardcoded English — TODO: migrate to useTranslation()
+
 // ── Animation Variants ────────────────────────────────────────────────────────
 
 const fadeUp = {
@@ -85,6 +88,7 @@ const stagger = {
 
 // ── Tab Config ────────────────────────────────────────────────────────────────
 
+// i18n-FR: hardcoded English labels — TODO: use i18n system
 const TABS = [
   { value: 'chat', icon: MessageCircle, label: 'Chat Coach' },
   { value: 'tts', icon: Volume2, label: 'Voice' },
@@ -123,7 +127,7 @@ export default function AIToolsScreen() {
             size="icon"
             className="shrink-0"
             onClick={goBack}
-            aria-label="Go back"
+            aria-label="Retour"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -237,25 +241,38 @@ function TTSTab() {
   const [voice, setVoice] = useState('tongtong')
   const [speed, setSpeed] = useState(1.0)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
+  const abortRef = useRef<AbortController>(null)
 
   const handleGenerate = async () => {
     if (!text.trim()) return
     setLoading(true)
+    setError(null)
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
     try {
       const res = await fetch('/api/ai/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, voice, speed }),
+        signal: controller.signal,
       })
-      if (!res.ok) throw new Error(`Error ${res.status}`)
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: 'Erreur' }))
+        throw new Error(body.error || `Erreur ${res.status}`)
+      }
       const blob = await res.blob()
       if (audioUrl) URL.revokeObjectURL(audioUrl)
       const url = URL.createObjectURL(blob)
       setAudioUrl(url)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to generate speech')
+      if (err instanceof DOMException && err.name === 'AbortError') return
+      const msg = err instanceof Error ? err.message : 'Erreur lors de la génération vocale.'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
@@ -264,6 +281,7 @@ function TTSTab() {
   useEffect(() => {
     return () => {
       if (audioUrl) URL.revokeObjectURL(audioUrl)
+      abortRef.current?.abort()
     }
   }, [audioUrl])
 
@@ -284,6 +302,7 @@ function TTSTab() {
           onChange={(e) => setText(e.target.value.slice(0, 1024))}
           className="min-h-[100px] resize-none"
           maxLength={1024}
+          disabled={loading}
         />
         <div className="flex justify-end mt-1">
           <span className="text-xs text-muted-foreground">
@@ -347,6 +366,28 @@ function TTSTab() {
         </Button>
       </motion.div>
 
+      {/* Error with Retry */}
+      <AnimatePresence>
+        {error && !loading && (
+          <motion.div
+            variants={fadeUp}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            <Card className="border-destructive/50">
+              <CardContent className="p-4 flex items-center justify-between">
+                <p className="text-sm text-destructive">{error}</p>
+                <Button variant="outline" size="sm" onClick={handleGenerate}>
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Réessayer
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {audioUrl && (
           <motion.div
@@ -395,16 +436,23 @@ function TTSTab() {
 function ASRTab() {
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [transcription, setTranscription] = useState('')
   const [copied, setCopied] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const abortRef = useRef<AbortController>(null)
   const [isDragging, setIsDragging] = useState(false)
 
   const handleFileSelect = (f: File) => {
+    setError(null)
     const validTypes = ['.wav', '.mp3', '.m4a', '.ogg']
     const ext = '.' + f.name.split('.').pop()?.toLowerCase()
     if (!validTypes.includes(ext)) {
-      toast.error('Please upload a .wav, .mp3, .m4a, or .ogg file')
+      toast.error('Formats acceptés : .wav, .mp3, .m4a, .ogg')
+      return
+    }
+    if (f.size > 25_000_000) {
+      toast.error('Fichier trop volumineux (max 25 Mo).')
       return
     }
     setFile(f)
@@ -428,22 +476,37 @@ function ASRTab() {
   const handleTranscribe = async () => {
     if (!file) return
     setLoading(true)
+    setError(null)
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
     try {
       const formData = new FormData()
       formData.append('audio', file)
       const res = await fetch('/api/ai/transcribe', {
         method: 'POST',
         body: formData,
+        signal: controller.signal,
       })
-      if (!res.ok) throw new Error(`Error ${res.status}`)
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: 'Erreur' }))
+        throw new Error(body.error || `Erreur ${res.status}`)
+      }
       const data = await res.json()
-      setTranscription(data.text || data.transcription || 'No transcription available')
+      setTranscription(data.text || data.transcription || 'Aucune transcription disponible.')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Transcription failed')
+      if (err instanceof DOMException && err.name === 'AbortError') return
+      const msg = err instanceof Error ? err.message : 'Erreur lors de la transcription.'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    return () => { abortRef.current?.abort() }
+  }, [])
 
   const handleCopy = async () => {
     if (!transcription) return
@@ -547,6 +610,28 @@ function ASRTab() {
       </motion.div>
 
       {/* Results */}
+      {/* Error with Retry */}
+      <AnimatePresence>
+        {error && !loading && (
+          <motion.div
+            variants={fadeUp}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            <Card className="border-destructive/50">
+              <CardContent className="p-4 flex items-center justify-between">
+                <p className="text-sm text-destructive">{error}</p>
+                <Button variant="outline" size="sm" onClick={handleTranscribe}>
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Réessayer
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {transcription && (
           <motion.div
@@ -600,24 +685,38 @@ function ImageGenTab() {
   const [prompt, setPrompt] = useState('')
   const [size, setSize] = useState('1024x1024')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const abortRef = useRef<AbortController>(null)
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return
     setLoading(true)
+    setError(null)
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
     try {
-      const data = await apiFetch<{ response: string }>('/api/ai/generate-image', {
+      const data = await apiFetch<{ image: string; size: string }>('/api/ai/generate-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt, size }),
+        signal: controller.signal,
       })
-      setImageUrl(data.response)
+      setImageUrl(data.image)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Image generation failed')
+      if (err instanceof DOMException && err.name === 'AbortError') return
+      const msg = err instanceof Error ? err.message : 'Erreur lors de la génération d\'image.'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    return () => { abortRef.current?.abort() }
+  }, [])
 
   return (
     <motion.div
@@ -631,9 +730,16 @@ function ImageGenTab() {
         <Textarea
           placeholder="Describe the image you want to generate..."
           value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
+          onChange={(e) => setPrompt(e.target.value.slice(0, 2000))}
           className="min-h-[80px] resize-none"
+          maxLength={2000}
+          disabled={loading}
         />
+        <div className="flex justify-end mt-1">
+          <span className="text-xs text-muted-foreground">
+            {prompt.length} / 2000
+          </span>
+        </div>
       </motion.div>
 
       <motion.div variants={fadeUp}>
@@ -671,11 +777,33 @@ function ImageGenTab() {
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <Image className="h-4 w-4" alt="" />
+            <ImageIcon className="h-4 w-4" aria-hidden="true" />
           )}
           {loading ? 'Generating...' : 'Generate'}
         </Button>
       </motion.div>
+
+      {/* Error with Retry */}
+      <AnimatePresence>
+        {error && !loading && (
+          <motion.div
+            variants={fadeUp}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            <Card className="border-destructive/50">
+              <CardContent className="p-4 flex items-center justify-between">
+                <p className="text-sm text-destructive">{error}</p>
+                <Button variant="outline" size="sm" onClick={handleGenerate}>
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Réessayer
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {loading && (
@@ -742,11 +870,17 @@ function ImageGenTab() {
 function WebSearchTab() {
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [results, setResults] = useState<SearchResult[]>([])
+  const abortRef = useRef<AbortController>(null)
 
   const handleSearch = async () => {
     if (!query.trim()) return
     setLoading(true)
+    setError(null)
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
     try {
       const data = await apiFetch<{ results: SearchResult[] }>(
         '/api/ai/web-search',
@@ -754,11 +888,15 @@ function WebSearchTab() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query }),
+          signal: controller.signal,
         },
       )
       setResults(data.results || [])
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Search failed')
+      if (err instanceof DOMException && err.name === 'AbortError') return
+      const msg = err instanceof Error ? err.message : 'Erreur lors de la recherche.'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
@@ -767,6 +905,10 @@ function WebSearchTab() {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleSearch()
   }
+
+  useEffect(() => {
+    return () => { abortRef.current?.abort() }
+  }, [])
 
   return (
     <motion.div
@@ -783,9 +925,11 @@ function WebSearchTab() {
             <Input
               placeholder="Search the web..."
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => setQuery(e.target.value.slice(0, 500))}
               onKeyDown={handleKeyDown}
               className="pl-9"
+              maxLength={500}
+              disabled={loading}
             />
           </div>
           <Button
@@ -801,6 +945,28 @@ function WebSearchTab() {
           </Button>
         </div>
       </motion.div>
+
+      {/* Error with Retry */}
+      <AnimatePresence>
+        {error && !loading && (
+          <motion.div
+            variants={fadeUp}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            <Card className="border-destructive/50">
+              <CardContent className="p-4 flex items-center justify-between">
+                <p className="text-sm text-destructive">{error}</p>
+                <Button variant="outline" size="sm" onClick={handleSearch}>
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Réessayer
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Loading */}
       <AnimatePresence>
@@ -878,7 +1044,7 @@ function WebSearchTab() {
       )}
 
       {/* No Results */}
-      {!loading && results.length === 0 && query && (
+      {!loading && !error && results.length === 0 && query && (
         <motion.div
           className="text-center py-12"
           variants={fadeUp}
@@ -893,7 +1059,7 @@ function WebSearchTab() {
       )}
 
       {/* Empty State */}
-      {!loading && results.length === 0 && !query && (
+      {!loading && !error && results.length === 0 && !query && (
         <motion.div
           className="text-center py-12"
           variants={fadeUp}
@@ -920,20 +1086,30 @@ function WebSearchTab() {
 function WebReaderTab() {
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<WebReaderResult | null>(null)
+  const abortRef = useRef<AbortController>(null)
 
   const handleRead = async () => {
     if (!url.trim()) return
     setLoading(true)
+    setError(null)
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
     try {
       const data = await apiFetch<WebReaderResult>('/api/ai/web-reader', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
+        signal: controller.signal,
       })
       setResult(data)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to read page')
+      if (err instanceof DOMException && err.name === 'AbortError') return
+      const msg = err instanceof Error ? err.message : 'Erreur lors de la lecture de la page.'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
@@ -942,6 +1118,10 @@ function WebReaderTab() {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleRead()
   }
+
+  useEffect(() => {
+    return () => { abortRef.current?.abort() }
+  }, [])
 
   return (
     <motion.div
@@ -958,9 +1138,11 @@ function WebReaderTab() {
             <Input
               placeholder="https://example.com/article"
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={(e) => setUrl(e.target.value.slice(0, 2048))}
               onKeyDown={handleKeyDown}
               className="pl-9"
+              maxLength={2048}
+              disabled={loading}
             />
           </div>
           <Button
@@ -979,6 +1161,28 @@ function WebReaderTab() {
           </Button>
         </div>
       </motion.div>
+
+      {/* Error with Retry */}
+      <AnimatePresence>
+        {error && !loading && (
+          <motion.div
+            variants={fadeUp}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            <Card className="border-destructive/50">
+              <CardContent className="p-4 flex items-center justify-between">
+                <p className="text-sm text-destructive">{error}</p>
+                <Button variant="outline" size="sm" onClick={handleRead}>
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Réessayer
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Loading */}
       <AnimatePresence>
@@ -1059,7 +1263,7 @@ function WebReaderTab() {
       </AnimatePresence>
 
       {/* Empty State */}
-      {!loading && !result && (
+      {!loading && !error && !result && (
         <motion.div
           className="text-center py-12"
           variants={fadeUp}

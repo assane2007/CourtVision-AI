@@ -226,6 +226,7 @@ export default function VoiceCoachScreen() {
           <Button
             variant="ghost" size="icon" className="h-9 w-9 rounded-full"
             onClick={() => setShowHistory(!showHistory)}
+            aria-label={td('Historique vocal', 'Voice history')}
           >
             <Clock className="h-4 w-4" />
           </Button>
@@ -382,6 +383,7 @@ export default function VoiceCoachScreen() {
             className="h-11 w-11 rounded-full flex-shrink-0"
             onClick={toggleRecording}
             disabled={isLoading}
+            aria-label={isRecording ? td('Arrêter l\'enregistrement', 'Stop recording') : td('Démarrer l\'enregistrement', 'Start recording')}
           >
             {isRecording ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
           </Button>
@@ -400,6 +402,7 @@ export default function VoiceCoachScreen() {
             disabled={!input.trim() || isLoading}
             size="icon"
             className="h-11 w-11 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-md shadow-orange-500/25 disabled:opacity-40 disabled:shadow-none flex-shrink-0"
+            aria-label={td('Envoyer', 'Send')}
           >
             <Send className="h-5 w-5" />
           </Button>

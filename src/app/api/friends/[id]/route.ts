@@ -40,19 +40,23 @@ export const DELETE = withAuth(async (request, session, { params }) => {
       return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 })
     }
 
-    const { id: friendshipId } = await params
+    const { id: otherPlayerId } = await params
     const playerId = session.user.id
 
-    const friendship = await db.friendship.findUnique({ where: { id: friendshipId } })
+    // Find the friendship between current user and the target player
+    const friendship = await db.friendship.findFirst({
+      where: {
+        OR: [
+          { requesterId: playerId, recipientId: otherPlayerId },
+          { requesterId: otherPlayerId, recipientId: playerId },
+        ],
+      },
+    })
     if (!friendship) {
       return NextResponse.json({ error: 'Amitié introuvable' }, { status: 404 })
     }
 
-    if (friendship.requesterId !== playerId && friendship.recipientId !== playerId) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
-    }
-
-    await db.friendship.delete({ where: { id: friendshipId } })
+    await db.friendship.delete({ where: { id: friendship.id } })
     return NextResponse.json({ success: true })
   } catch (error) {
     trackError('DELETE /api/friends/[id]', error)

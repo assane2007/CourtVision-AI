@@ -179,9 +179,17 @@ export function SecuritySection() {
           variant="outline"
           size="sm"
           onClick={async () => {
-            const res = await fetch('/api/auth/verify-email', { method: 'POST' })
-            const data = await res.json()
-            toast.success(data.message || t('settings.verificationSent'))
+            try {
+              const res = await fetch('/api/auth/verify-email', { method: 'POST' })
+              const data = await res.json()
+              if (res.ok) {
+                toast.success(data.message || t('settings.verificationSent'))
+              } else {
+                toast.error(data.error || t('settings.saveError'))
+              }
+            } catch {
+              toast.error(t('settings.saveError'))
+            }
           }}
         >
           {t('settings.sendVerification')}
@@ -269,7 +277,7 @@ export function SecuritySection() {
               <div className="flex justify-center">
                 <img
                   src={qrCodeUrl}
-                  alt="QR Code"
+                  alt={td('Code QR pour l\'authentification à deux facteurs', 'QR code for two-factor authentication setup')}
                   className="w-48 h-48 rounded-lg border"
                 />
               </div>

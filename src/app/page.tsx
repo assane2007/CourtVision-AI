@@ -67,16 +67,18 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div role="alert" className="min-h-screen flex items-center justify-center bg-background p-4">
           <div className="text-center space-y-4 max-w-sm">
-            <div className="text-5xl">😵</div>
+            <div className="text-5xl" aria-hidden="true">😵</div>
+            {/* i18n-FR: hardcoded French — TODO: use i18n */}
             <h1 className="text-xl font-bold">Une erreur est survenue</h1>
             <p className="text-sm text-muted-foreground">
               Quelque chose s&apos;est mal passé. Veuillez rafraîchir la page.
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="px-6 py-2.5 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors"
+              aria-label="Rafraîchir la page"
+              className="min-h-[44px] px-6 py-2.5 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               Rafraîchir
             </button>
@@ -110,14 +112,14 @@ export default function Home() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.get('checkout') === 'success') {
-      toast.success('Paiement réussi ! Votre abonnement est maintenant actif.')
+      toast.success(td('Paiement réussi ! Votre abonnement est maintenant actif.', 'Payment successful! Your subscription is now active.'))
       window.history.replaceState({}, '', '/')
     }
     if (params.get('checkout') === 'cancelled') {
-      toast.error('Paiement annulé. Vous pouvez réessayer à tout moment.')
+      toast.error(td('Paiement annulé. Vous pouvez réessayer à tout moment.', 'Payment cancelled. You can try again at any time.'))
       window.history.replaceState({}, '', '/')
     }
-  }, [])
+  }, [td])
 
   // ── Deep Linking ──────────────────────────────────────────────────────────
   useEffect(() => {

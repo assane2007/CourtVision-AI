@@ -197,12 +197,6 @@ export const settingsPatchSchema = z.object({
   message: 'Au moins un champ est requis.',
 })
 
-// ── Share ───────────────────────────────────────────────────────────────
-
-export const shareSchema = z.object({
-  sessionId: z.string().min(1),
-})
-
 // ── Notifications ───────────────────────────────────────────────────────
 
 export const notificationSubscribeSchema = z.object({
@@ -260,6 +254,36 @@ export const registerDeviceSchema = z.object({
   appVersion: z.string().max(50).optional(),
   pushToken: z.string().max(1000).optional().nullable(),
   deviceId: z.string().max(100).optional(),
+})
+
+// ── Friends ──────────────────────────────────────────────────────────────
+
+export const friendsPatchSchema = z.object({
+  friendshipId: z.string().min(1, 'ID de l\'amitié requis'),
+  action: z.enum(['accept', 'decline', 'block'], { message: 'Action invalide' }),
+})
+
+export const friendsSendSchema = z.object({
+  recipientId: z.string().min(1, 'Destinataire requis'),
+})
+
+// ── Feed ────────────────────────────────────────────────────────────────
+
+export const createFeedPostSchema = z.object({
+  content: z.string().max(5000).optional(),
+  type: z.enum(['text', 'workout', 'achievement', 'challenge', 'video']).optional(),
+  sessionId: z.string().max(100).optional(),
+  imageUrls: z.array(z.string().max(500).url('URL invalide')).max(10).optional(),
+}).refine((data) => data.content?.trim() || data.sessionId, {
+  message: 'Contenu requis',
+})
+
+// ── Share ───────────────────────────────────────────────────────────────
+
+export const shareSchema = z.object({
+  sessionId: z.string().max(100).optional(),
+  postToFeed: z.boolean().optional(),
+  content: z.string().max(2000).optional(),
 })
 
 // ── Helper: Extract error message from ZodError ───────────────────────────

@@ -22,14 +22,22 @@ export const GET = withAuth(
         })
 
         if (type === 'followers') {
-          const enriched = await Promise.all(followers.map(async (f) => ({
+          // Batch-fetch follow relationships to avoid N+1
+          const followerIds = followers.map(f => f.followerId)
+          const myFollowings = followerIds.length > 0
+            ? await db.follow.findMany({
+                where: { followerId: session.user.id, followingId: { in: followerIds } },
+                select: { followingId: true },
+              })
+            : []
+          const followingSet = new Set(myFollowings.map(f => f.followingId))
+
+          const enriched = followers.map(f => ({
             playerId: f.followerId,
             ...f.follower,
-            isFollowing: f.followerId === session.user.id ? false : !!(await db.follow.findUnique({
-              where: { followerId_followingId: { followerId: session.user.id, followingId: f.followerId } },
-            })),
+            isFollowing: f.followerId === session.user.id ? false : followingSet.has(f.followerId),
             followedAt: f.createdAt,
-          })))
+          }))
 
           return NextResponse.json({ followers: enriched })
         }
