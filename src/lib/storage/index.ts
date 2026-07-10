@@ -1,14 +1,17 @@
 /**
  * Storage service — auto-selects backend based on environment.
  *
- * - S3_BUCKET env var set → S3Storage (with automatic fallback to local)
- * - Otherwise → LocalStorage (filesystem)
+ * Priority:
+ * 1. SUPABASE_SERVICE_ROLE_KEY set → SupabaseStorage
+ * 2. S3_BUCKET env var set → S3Storage (with automatic fallback to local)
+ * 3. Otherwise → LocalStorage (filesystem)
  *
  * Server-only module.
  */
 
 import { LocalStorage } from './local-storage'
 import { S3Storage } from './s3-storage'
+import { SupabaseStorage } from './supabase-storage'
 import type { StorageService } from './types'
 
 // ── Singleton ──────────────────────────────────────────────────────────────────
@@ -18,6 +21,17 @@ const globalForStorage = globalThis as unknown as {
 }
 
 function createStorage(): StorageService {
+  // 1. Supabase Storage (highest priority)
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    try {
+      return new SupabaseStorage('courtvision')
+    } catch {
+      console.warn('[Storage] Supabase Storage init failed, falling back to local.')
+      return new LocalStorage()
+    }
+  }
+
+  // 2. S3 Storage
   if (process.env.S3_BUCKET) {
     try {
       return new S3Storage()
@@ -26,6 +40,8 @@ function createStorage(): StorageService {
       return new LocalStorage()
     }
   }
+
+  // 3. Local filesystem
   return new LocalStorage()
 }
 
@@ -63,3 +79,4 @@ export {
 } from './types'
 export { LocalStorage } from './local-storage'
 export { S3Storage } from './s3-storage'
+export { SupabaseStorage } from './supabase-storage'

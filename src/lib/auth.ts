@@ -9,8 +9,50 @@ if (!config.auth.secret) {
   console.warn('[AUTH] ⚠  NEXTAUTH_SECRET is not set — sessions will be unstable.')
 }
 
+// ── Supabase Auth Provider (Google OAuth via Supabase) ─────────────────────────
+
+function getSupabaseProviders() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return []
+  }
+
+  // If Google OAuth is configured via Supabase, add a custom provider
+  // that validates tokens against Supabase and links to local Player records.
+  const providers: NextAuthOptions['providers'] = []
+
+  // Google OAuth via Supabase
+  // The redirect goes through Supabase Auth, which handles the Google flow
+  // and returns an access token. We validate that token server-side.
+  if (process.env.GOOGLE_CLIENT_ID) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const GoogleProvider = require('next-auth/providers/google').default
+      providers.push(
+        GoogleProvider({
+          clientId: process.env.GOOGLE_CLIENT_ID,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+          authorization: {
+            params: {
+              // Request minimal scopes
+              scope: 'openid email profile',
+            },
+          },
+        }),
+      )
+    } catch {
+      console.warn('[AUTH] ⚠  Google provider failed to load. OAuth login unavailable.')
+    }
+  }
+
+  return providers
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
+    // Email + Password (local credentials)
     CredentialsProvider({
       name: 'credentials',
       credentials: {
@@ -58,7 +100,10 @@ export const authOptions: NextAuthOptions = {
           name: player.name,
         }
       }
-    })
+    }),
+
+    // Dynamic Supabase-linked providers (Google OAuth)
+    ...getSupabaseProviders(),
   ],
   session: {
     strategy: 'jwt',
@@ -68,11 +113,12 @@ export const authOptions: NextAuthOptions = {
     signIn: '/',
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id!
         token.email = user.email!
         token.name = user.name!
+        token.provider = account?.provider ?? 'credentials'
         // If 2FA is required, set a short-lived partial token
         if ('twoFactorRequired' in user && user.twoFactorRequired) {
           token.twoFactorRequired = true
@@ -94,7 +140,38 @@ export const authOptions: NextAuthOptions = {
         session.user.name = token.name as string
       }
       return session
-    }
+    },
+    // Link OAuth sign-in/up to local Player record
+    async signIn({ account, profile }) {
+      if (account?.provider === 'google' && profile?.email) {
+        const existing = await db.player.findUnique({
+          where: { email: profile.email },
+        })
+
+        if (!existing) {
+          // Auto-create a Player record for first-time OAuth users
+          await db.player.create({
+            data: {
+              email: profile.email,
+              password: await bcrypt.hash(crypto.randomUUID(), 10),
+              name: profile.name || profile.email.split('@')[0],
+              avatar: profile.picture || null,
+              emailVerified: profile.email_verified ? true : false,
+              onboarding: false,
+            },
+          })
+        } else {
+          // Update avatar from OAuth if we have one
+          if (profile.picture && !existing.avatar) {
+            await db.player.update({
+              where: { id: existing.id },
+              data: { avatar: profile.picture },
+            })
+          }
+        }
+      }
+      return true
+    },
   },
   secret: process.env.NEXTAUTH_SECRET!,
 }

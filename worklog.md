@@ -392,3 +392,46 @@ Stage Summary:
 - AUTH-001/002: Hardcoded fallback secrets in dev mode (intentional, throws in prod)
 - Various i18n gaps (hardcoded strings in error boundaries, notifications)
 - Some i18n flags in ai-tools-screen.tsx needing full migration
+
+---
+Task ID: 10
+Agent: Main
+Task: Integrate Supabase (Auth, Storage, Realtime, Config)
+
+Work Log:
+- Added Supabase env vars to `.env`:
+  - `NEXT_PUBLIC_SUPABASE_URL=https://akvgtjnllvcnesokrwlo.supabase.co`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_zNNOR0ekTGTgOOsn6-WSWA_YQB4qPJq`
+  - `SUPABASE_SERVICE_ROLE_KEY=REDACTED_SECRET`
+  - `SUPABASE_JWKS_URL=https://akvgtjnllvcnesokrwlo.supabase.co/auth/v1/.well-known/jwks.json`
+- Installed `@supabase/supabase-js@2.110.2` and `@supabase/ssr@0.12.0`
+- Created Supabase client utilities:
+  - `src/lib/supabase/client.ts` — Browser client (anon key, SSR-safe)
+  - `src/lib/supabase/server.ts` — Server client (cookie-based) + admin client (service role)
+  - `src/lib/supabase/middleware.ts` — Session refresh helper for Next.js middleware
+  - `src/lib/supabase/use-realtime.ts` — React hook for real-time subscriptions
+  - `src/lib/supabase/use-auth.ts` — React hook for Supabase Auth (magic link, OAuth, sign-out)
+- Created Supabase Storage adapter:
+  - `src/lib/storage/supabase-storage.ts` — Full StorageService implementation (upload, download, delete, signed URLs, list, exists, metadata, public URLs)
+  - Updated `src/lib/storage/index.ts` — Auto-selects Supabase > S3 > Local based on env vars
+- Updated NextAuth config (`src/lib/auth.ts`):
+  - Added dynamic Google OAuth provider loading
+  - Added `signIn` callback to auto-create Player records for OAuth users
+  - Added `provider` field to JWT token
+  - Avatar auto-update from OAuth profile
+- Created API routes:
+  - `POST /api/auth/supabase/magic-link` — Send passwordless login email via Supabase Auth
+  - `GET /api/auth/supabase/session` — Get current Supabase session
+  - `GET /api/auth/supabase/callback` — Handle OAuth/magic-link redirect
+  - `POST /api/upload` — Upload files to Supabase Storage (or configured backend)
+- Updated `src/lib/config.ts`:
+  - Added `supabase` section to AppConfig type
+  - Added Supabase config parsing (url, anonKey, serviceRoleKey, jwksUrl, isEnabled)
+  - Storage provider now supports 'supabase' type
+
+Stage Summary:
+- Full Supabase integration: Auth (magic link + OAuth), Storage, Realtime, SSR
+- Storage auto-selects backend: Supabase (highest priority) > S3 > Local
+- 3 new API routes for Supabase auth flows
+- 2 React hooks for frontend Supabase usage
+- `bun run lint`: 0 errors, 0 warnings

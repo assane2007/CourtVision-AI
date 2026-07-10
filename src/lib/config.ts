@@ -49,7 +49,7 @@ export interface AppConfig {
     isEnabled: boolean
   }
   storage: {
-    provider: 'local' | 's3'
+    provider: 'local' | 's3' | 'supabase'
     s3: {
       bucket: string | undefined
       region: string
@@ -57,6 +57,13 @@ export interface AppConfig {
       secretKey: string
       endpoint: string | undefined
     }
+  }
+  supabase: {
+    url: string
+    anonKey: string
+    serviceRoleKey: string | undefined
+    jwksUrl: string | undefined
+    isEnabled: boolean
   }
   security: {
     encryptionKey: string
@@ -133,7 +140,17 @@ const redisUrl = process.env.REDIS_URL || undefined
 
 // Storage
 const s3Bucket = process.env.S3_BUCKET || undefined
-const storageProvider: 'local' | 's3' = s3Bucket ? 's3' : 'local'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || undefined
+const supabaseJwksUrl = process.env.SUPABASE_JWKS_URL || undefined
+const supabaseIsEnabled = !!(supabaseUrl && supabaseAnonKey)
+
+const storageProvider: 'local' | 's3' | 'supabase' = supabaseServiceRoleKey
+  ? 'supabase'
+  : s3Bucket
+    ? 's3'
+    : 'local'
 
 // Security — Encryption key
 let encryptionKey: string
@@ -226,6 +243,13 @@ const rawConfig: AppConfig = {
       secretKey: process.env.S3_SECRET_KEY || '',
       endpoint: process.env.S3_ENDPOINT || undefined,
     },
+  },
+  supabase: {
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
+    serviceRoleKey: supabaseServiceRoleKey,
+    jwksUrl: supabaseJwksUrl,
+    isEnabled: supabaseIsEnabled,
   },
   security: {
     encryptionKey,
