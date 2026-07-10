@@ -47,32 +47,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false)
   const isMountedRef = useRef(false)
 
-  // ── Fetch player language preference on mount ────────────────────────────
+  // ── Mark as loaded immediately (use localStorage/browser lang) ──────────
   useEffect(() => {
     isMountedRef.current = true
-
-    async function fetchLanguage() {
-      try {
-        const res = await fetch('/api/settings')
-        if (res.ok) {
-          const data = await res.json()
-          const playerLang = data?.settings?.language
-          if (playerLang === 'fr' || playerLang === 'en') {
-            setLanguageState(playerLang)
-            localStorage.setItem(STORAGE_KEY, playerLang)
-          }
-        }
-      } catch {
-        // Silently fall back to current state (localStorage / browser lang)
-      } finally {
-        if (isMountedRef.current) {
-          setIsLoaded(true)
-        }
-      }
-    }
-
-    fetchLanguage()
-
+    setIsLoaded(true)
     return () => {
       isMountedRef.current = false
     }

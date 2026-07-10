@@ -1,8 +1,9 @@
-import { withSentryConfig } from '@sentry/nextjs'
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  // Allow preview panel cross-origin requests from any space-z.ai subdomain
+  allowedDevOrigins: ['https://*.space-z.ai', 'http://*.space-z.ai'],
   /* Type safety: catch errors at build time */
   typescript: {
     ignoreBuildErrors: false,
@@ -32,9 +33,9 @@ const nextConfig: NextConfig = {
               "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://va.vercel-scripts.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https: https://lh3.googleusercontent.com https://*.gravatar.com https://storage.googleapis.com",
-              "connect-src 'self' https://*.space-z.ai https://cdn.jsdelivr.net https://storage.googleapis.com https://*.ingest.us.sentry.io",
+              "connect-src 'self' https://*.space-z.ai http://*.space-z.ai https://cdn.jsdelivr.net https://storage.googleapis.com https://*.ingest.us.sentry.io",
               "font-src 'self'",
-              "frame-ancestors 'self' https://*.space-z.ai",
+              "frame-ancestors 'self' https://*.space-z.ai http://*.space-z.ai",
             ].join('; '),
           },
           {
@@ -43,7 +44,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'X-Frame-Options',
-            value: 'DENY',
+            value: 'SAMEORIGIN',
           },
           {
             key: 'Referrer-Policy',
@@ -53,30 +54,10 @@ const nextConfig: NextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(self), microphone=(self), geolocation=(self)',
           },
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=63072000; includeSubDomains; preload',
-          },
         ],
       },
     ]
   },
 }
 
-export default withSentryConfig(nextConfig, {
-  // Sentry org and project slugs (for source map upload)
-  org: 'court-vision',
-  project: 'javascript-nextjs-xq',
-
-  // Source map upload auth token
-  authToken: process.env.SENTRY_AUTH_TOKEN,
-
-  // Upload wider set of client source files for better stack trace resolution
-  widenClientFileUpload: true,
-
-  // Create a proxy API route to bypass ad-blockers
-  tunnelRoute: '/monitoring',
-
-  // Suppress non-CI output
-  silent: !process.env.CI,
-})
+export default nextConfig

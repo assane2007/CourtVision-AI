@@ -70,7 +70,6 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
         <div role="alert" className="min-h-screen flex items-center justify-center bg-background p-4">
           <div className="text-center space-y-4 max-w-sm">
             <div className="text-5xl" aria-hidden="true">😵</div>
-            {/* i18n-FR: hardcoded French — TODO: use i18n */}
             <h1 className="text-xl font-bold">Une erreur est survenue</h1>
             <p className="text-sm text-muted-foreground">
               Quelque chose s&apos;est mal passé. Veuillez rafraîchir la page.
@@ -133,7 +132,6 @@ export default function Home() {
 
     // Priority: verify_email > deep link > drill param
     if (verifyEmailParam) {
-      // Auto-verify email token via API, then navigate
       fetch(`/api/email/verify/${encodeURIComponent(verifyEmailParam)}`)
         .then((res) => res.json())
         .then((data) => {
@@ -143,7 +141,6 @@ export default function Home() {
         })
         .catch(() => {})
         .finally(() => {
-          // Clean URL
           window.history.replaceState({}, '', '/')
         })
     } else if (deepParam) {
