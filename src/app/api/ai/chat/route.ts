@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import ZAI from 'z-ai-web-dev-sdk'
+import { withAuth } from '@/lib/with-auth'
+import { rateLimit } from '@/lib/rate-limit'
 
 const SYSTEM_PROMPT =
   'You are "CourtVision AI Coach", an expert basketball coach. Help users improve their game with specific drills, techniques, and strategies. Be encouraging and detailed.'
@@ -7,8 +9,13 @@ const SYSTEM_PROMPT =
 const MAX_HISTORY = 20
 
 // POST /api/ai/chat — LLM Chatbot for Basketball Coaching
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest, session) => {
   try {
+    const rl = rateLimit(`ai:chat:${session.user.id}`, 20, 60_000)
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    }
+
     const body = await req.json()
     const { message, history } = body
 
@@ -66,4 +73,4 @@ export async function POST(req: NextRequest) {
     console.error('POST /api/ai/chat error:', error)
     return NextResponse.json({ error: 'Failed to get AI response' }, { status: 500 })
   }
-}
+})

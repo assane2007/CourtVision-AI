@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import ZAI from 'z-ai-web-dev-sdk'
+import { withAuth } from '@/lib/with-auth'
+import { rateLimit } from '@/lib/rate-limit'
 
 const SUPPORTED_FORMATS = ['audio/wav', 'audio/mpeg', 'audio/mp3', 'audio/x-m4a', 'audio/mp4', 'audio/ogg']
 const SUPPORTED_EXTENSIONS = ['wav', 'mp3', 'm4a', 'ogg']
 
 // POST /api/ai/transcribe — Speech-to-Text (ASR)
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest, session) => {
   try {
+    const rl = rateLimit(`ai:transcribe:${session.user.id}`, 20, 60_000)
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    }
+
     const formData = await req.formData()
     const audioFile = formData.get('audio')
 
@@ -63,4 +70,4 @@ export async function POST(req: NextRequest) {
     console.error('POST /api/ai/transcribe error:', error)
     return NextResponse.json({ error: 'Failed to transcribe audio' }, { status: 500 })
   }
-}
+})

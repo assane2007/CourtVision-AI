@@ -118,9 +118,10 @@ export const POST = withAuth(async (req: NextRequest, session) => {
     const workoutRewards = calculateWorkoutXp(avgScore, totalReps, durationSec, isPersonalBest)
     const allRewards = [...workoutRewards]
 
-    // Check streak and award streak XP
+    // Check streak and award streak XP (only last 60 days for streak calculation)
+    const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
     const allPlayerSessions = await db.workoutSession.findMany({
-      where: { playerId },
+      where: { playerId, startedAt: { gte: sixtyDaysAgo } },
       select: { startedAt: true },
       orderBy: { startedAt: 'asc' },
     })

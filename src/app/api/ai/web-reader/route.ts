@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import ZAI from 'z-ai-web-dev-sdk'
+import { withAuth } from '@/lib/with-auth'
+import { rateLimit } from '@/lib/rate-limit'
 
 // POST /api/ai/web-reader — Web Page Reader
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest, session) => {
   try {
+    const rl = rateLimit(`ai:web-reader:${session.user.id}`, 20, 60_000)
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    }
+
     const body = await req.json()
     const { url } = body
 
@@ -60,4 +67,4 @@ export async function POST(req: NextRequest) {
     console.error('POST /api/ai/web-reader error:', error)
     return NextResponse.json({ error: 'Failed to read web page' }, { status: 500 })
   }
-}
+})

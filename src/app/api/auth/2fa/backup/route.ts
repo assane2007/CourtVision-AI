@@ -4,7 +4,11 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { rateLimit } from '@/lib/rate-limit'
+import { decrypt } from '@/lib/security/encryption'
+import { authenticator } from 'otplib'
 import crypto from 'crypto'
+
+authenticator.options = { window: 1 }
 
 // GET /api/auth/2fa/backup
 // Retrieve existing backup codes (show each only once)
@@ -48,7 +52,7 @@ export async function GET() {
 }
 
 // POST /api/auth/2fa/backup
-// Regenerate backup codes (requires 2FA code)
+// Regenerate backup codes (requires valid 2FA code)
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -71,16 +75,26 @@ export async function POST(request: Request) {
 
     const player = await db.player.findUnique({
       where: { id: playerId },
-      select: { id: true, twoFactorEnabled: true },
+      select: { id: true, twoFactorEnabled: true, twoFactorSecret: true },
     })
 
     if (!player || !player.twoFactorEnabled) {
       return NextResponse.json({ error: '2FA non activée' }, { status: 400 })
     }
 
-    // Verify code
-    const isValidCode = /^\d{6}$/.test(code)
-    if (!isValidCode) {
+    // Decrypt the stored TOTP secret
+    if (!player.twoFactorSecret) {
+      return NextResponse.json({ error: 'Secret 2FA introuvable' }, { status: 500 })
+    }
+    const decryptedSecret = decrypt(player.twoFactorSecret)
+    if (!decryptedSecret) {
+      return NextResponse.json({ error: 'Erreur de déchiffrement du secret 2FA' }, { status: 500 })
+    }
+
+    // Verify the code against the TOTP secret
+    const isCodeValid = authenticator.verify({ token: code, secret: decryptedSecret })
+
+    if (!isCodeValid) {
       return NextResponse.json({ error: 'Code invalide' }, { status: 400 })
     }
 

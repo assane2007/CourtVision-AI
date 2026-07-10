@@ -58,8 +58,6 @@ export async function processVideoAnalysis(
 export async function processFormAnalysis(
   payload: FormAnalysisPayload,
 ): Promise<FormAnalysisResult> {
-  const startMs = performance.now()
-
   // TODO: Integrate with VLM AI service (z-ai-web-dev-sdk)
   // 1. Fetch video or frame from storage
   // 2. Select best frame (mid-shot, clear form visible)

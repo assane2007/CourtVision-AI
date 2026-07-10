@@ -234,7 +234,12 @@ export function SettingsScreen() {
             {/* Privacy */}
             <SectionCard icon={Eye} title={t('core.privacy')}>
               <CardContent className="pt-0 space-y-5">
-                <PrivacySection saveMutation={saveMutation} />
+                <PrivacySection
+                  saveMutation={saveMutation}
+                  profilePublic={settings.profilePublic !== false}
+                  showOnLeaderboard={settings.showOnLeaderboard !== false}
+                  showActivity={settings.showActivity !== false}
+                />
               </CardContent>
             </SectionCard>
 

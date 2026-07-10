@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import ZAI from 'z-ai-web-dev-sdk'
+import { withAuth } from '@/lib/with-auth'
+import { rateLimit } from '@/lib/rate-limit'
 
 const DEFAULT_NUM = 5
 const MAX_NUM = 10
 
 // POST /api/ai/web-search — Web Search
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest, session) => {
   try {
+    const rl = rateLimit(`ai:web-search:${session.user.id}`, 20, 60_000)
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    }
+
     const body = await req.json()
     const { query, num } = body
 
@@ -51,4 +58,4 @@ export async function POST(req: NextRequest) {
     console.error('POST /api/ai/web-search error:', error)
     return NextResponse.json({ error: 'Failed to perform web search' }, { status: 500 })
   }
-}
+})

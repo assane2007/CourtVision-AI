@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import ZAI from 'z-ai-web-dev-sdk'
+import { withAuth } from '@/lib/with-auth'
+import { rateLimit } from '@/lib/rate-limit'
 
 const SUPPORTED_SIZES = ['1024x1024', '1344x768', '768x1344', '1440x720'] as const
 type SupportedSize = (typeof SUPPORTED_SIZES)[number]
@@ -16,8 +18,13 @@ function hasBasketballContext(text: string): boolean {
 }
 
 // POST /api/ai/generate-image — Image Generation
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest, session) => {
   try {
+    const rl = rateLimit(`ai:generate-image:${session.user.id}`, 20, 60_000)
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    }
+
     const body = await req.json()
     const { prompt, size } = body
 
@@ -63,4 +70,4 @@ export async function POST(req: NextRequest) {
     console.error('POST /api/ai/generate-image error:', error)
     return NextResponse.json({ error: 'Failed to generate image' }, { status: 500 })
   }
-}
+})

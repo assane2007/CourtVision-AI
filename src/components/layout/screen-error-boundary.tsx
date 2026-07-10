@@ -25,23 +25,23 @@ function ScreenErrorFallback({
 
   return (
     <div className="flex items-center justify-center p-8">
-      <div className="w-full max-w-xs rounded-xl border border-cv-border bg-cv-surface p-6 text-center shadow-lg shadow-black/20">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-cv-lime/10">
-          <AlertTriangle className="h-6 w-6 text-cv-lime" />
+      <div className="w-full max-w-xs rounded-xl border border-border bg-card p-6 text-center shadow-lg shadow-black/20">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-orange-500/10">
+          <AlertTriangle className="h-6 w-6 text-orange-500" />
         </div>
 
-        <h3 className="mb-1 text-sm font-semibold text-cv-text">
+        <h3 className="mb-1 text-sm font-semibold text-foreground">
           {screenName}
         </h3>
 
-        <p className="mb-5 text-xs leading-relaxed text-cv-text-secondary">
+        <p className="mb-5 text-xs leading-relaxed text-muted-foreground">
           {td("Une erreur est survenue", "An error occurred")}
         </p>
 
         <button
           type="button"
           onClick={onRetry}
-          className="rounded-lg bg-cv-lime px-5 py-2 text-sm font-semibold text-black hover:bg-[#bef264] transition-colors"
+          className="rounded-lg bg-orange-500 px-5 py-2 text-sm font-semibold text-white hover:bg-orange-400 transition-colors"
         >
           {td("Réessayer", "Retry")}
         </button>

@@ -11,7 +11,7 @@ const tabs: { icon: typeof Home; labelKey: TranslationKey; screen: Screen }[] = 
   { icon: Home, labelKey: 'nav.home', screen: 'home' },
   { icon: Dumbbell, labelKey: 'nav.training', screen: 'train-hub' },
   { icon: BarChart3, labelKey: 'nav.stats', screen: 'stats' },
-  { icon: MessageCircle, labelKey: 'nav.messages', screen: 'ai-coach' },
+  { icon: MessageCircle, labelKey: 'nav.messages', screen: 'messages' },
   { icon: User, labelKey: 'nav.profile', screen: 'profile' },
 ]
 

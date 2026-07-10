@@ -516,7 +516,7 @@ export default function CameraWorkoutScreen() {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
-  }, [phase, drill?.category, poseLandmarkerRef])
+  }, [phase, drill?.category, poseLandmarkerRef, t])
 
   // ── Cleanup on unmount ────────────────────────────────────────────────
   useEffect(() => {

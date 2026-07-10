@@ -10,7 +10,6 @@ import type { VideoData } from '@/lib/types/service.types'
 
 export class VideoRepository extends BaseRepository<'Video', any> {
   constructor() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     super(db.video as any, 'Video')
   }
 
@@ -98,7 +97,6 @@ export class VideoRepository extends BaseRepository<'Video', any> {
 
 export class AnnotationRepository extends BaseRepository<'VideoAnnotation', any> {
   constructor() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     super(db.videoAnnotation as any, 'VideoAnnotation')
   }
 
@@ -137,7 +135,6 @@ export class AnnotationRepository extends BaseRepository<'VideoAnnotation', any>
 
 export class VideoExportRepository extends BaseRepository<'VideoExport', any> {
   constructor() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     super(db.videoExport as any, 'VideoExport')
   }
 

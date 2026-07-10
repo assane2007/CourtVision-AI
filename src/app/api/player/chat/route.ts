@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     const playerId = session?.user?.id;
@@ -62,9 +62,14 @@ export async function GET() {
 
     const player = await requirePlayer(playerId);
 
+    const { searchParams } = new URL(req.url)
+    const limitParam = parseInt(searchParams.get('limit') || '200', 10)
+    const limit = Math.min(Math.max(limitParam, 1), 200)
+
     const messages = await db.aIChatMessage.findMany({
       where: { playerId: player.id },
       orderBy: { createdAt: "asc" },
+      take: limit,
     });
 
     return NextResponse.json({

@@ -84,16 +84,6 @@ function isPostgresqlUrl(url: string): boolean {
   return url.startsWith('postgresql://') || url.startsWith('postgres://')
 }
 
-function requireEnv(name: string, message?: string): string {
-  const value = process.env[name]
-  if (!value) {
-    console.warn(
-      `[CONFIG] ⚠  ${name} is not set — using empty fallback. Please add it to your environment.`
-    )
-  }
-  return value || ''
-}
-
 // ─── Build Config ───────────────────────────────────────────────────────────
 
 const nodeEnv = process.env.NODE_ENV || 'development'

@@ -77,7 +77,6 @@ export function corsHeaders(origin?: string): Record<string, string> {
   // In development, allow all origins
   const isAllowed = config.env.isDev
     || !origin
-    || allowedOrigins.length === 0
     || allowedOrigins.includes(origin)
 
   if (!isAllowed) {

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import ZAI from 'z-ai-web-dev-sdk'
+import { withAuth } from '@/lib/with-auth'
+import { rateLimit } from '@/lib/rate-limit'
 
 const MAX_TEXT_LENGTH = 1024
 const DEFAULT_VOICE = 'tongtong'
@@ -56,8 +58,13 @@ function splitTextIntoChunks(text: string, maxLength: number): string[] {
 }
 
 // POST /api/ai/tts — Text-to-Speech
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest, session) => {
   try {
+    const rl = rateLimit(`ai:tts:${session.user.id}`, 20, 60_000)
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    }
+
     const body = await req.json()
     const { text, voice, speed } = body
 
@@ -121,4 +128,4 @@ export async function POST(req: NextRequest) {
     console.error('POST /api/ai/tts error:', error)
     return NextResponse.json({ error: 'Failed to generate speech' }, { status: 500 })
   }
-}
+})

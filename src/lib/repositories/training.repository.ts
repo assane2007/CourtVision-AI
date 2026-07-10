@@ -13,7 +13,6 @@ import type { DrillData, DrillFilters } from '@/lib/types/service.types'
 
 export class SessionRepository extends BaseRepository<'WorkoutSession', any> {
   constructor() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     super(db.workoutSession as any, 'WorkoutSession')
   }
 
@@ -98,7 +97,6 @@ export class SessionRepository extends BaseRepository<'WorkoutSession', any> {
 
 export class DrillRepository extends BaseRepository<'Drill', any> {
   constructor() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     super(db.drill as any, 'Drill')
   }
 
@@ -241,7 +239,6 @@ export class DrillRepository extends BaseRepository<'Drill', any> {
 
 export class TrainingPlanRepository extends BaseRepository<'TrainingPlan', any> {
   constructor() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     super(db.trainingPlan as any, 'TrainingPlan')
   }
 

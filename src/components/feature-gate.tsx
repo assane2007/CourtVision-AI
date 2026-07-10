@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { isFeatureEnabled, type FeatureFlag, FEATURE_LABELS } from '@/lib/feature-flags'
 import { useTranslation } from '@/components/providers/language-provider'
 import { useAppStore } from '@/stores/app'
@@ -34,18 +34,10 @@ const FLAG_DESC_KEYS: Record<string, string> = {
  */
 export function FeatureGate({ flag, children, fallback = null }: FeatureGateProps) {
   const [dismissed, setDismissed] = useState(false)
-  const [storageTick, setStorageTick] = useState(0)
   const { t } = useTranslation()
   const navigate = useAppStore(s => s.navigate)
 
-  // Re-compute on storage changes (e.g., toggled in settings from another tab)
-  const onStorage = useCallback(() => setStorageTick(tick => tick + 1), [])
-  useEffect(() => {
-    window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
-  }, [onStorage])
-
-  const enabled = useMemo(() => isFeatureEnabled(flag), [flag, storageTick])
+  const enabled = useMemo(() => isFeatureEnabled(flag), [flag])
   const shouldShowPaywall = !enabled && !dismissed
 
   const handleViewPlans = useCallback(() => {

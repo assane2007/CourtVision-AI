@@ -11,9 +11,12 @@ interface PrivacySectionProps {
     isPending: boolean
     mutate: (d: Record<string, unknown>) => void
   }
+  profilePublic?: boolean
+  showOnLeaderboard?: boolean
+  showActivity?: boolean
 }
 
-export function PrivacySection({ saveMutation }: PrivacySectionProps) {
+export function PrivacySection({ saveMutation, profilePublic = true, showOnLeaderboard = true, showActivity = true }: PrivacySectionProps) {
   const { t } = useTranslation()
 
   return (
@@ -30,7 +33,7 @@ export function PrivacySection({ saveMutation }: PrivacySectionProps) {
         </div>
         <Switch
           id="privacy-public"
-          defaultChecked={true}
+          checked={profilePublic}
           onCheckedChange={(checked) => saveMutation.mutate({ profilePublic: checked })}
           disabled={saveMutation.isPending}
           className="data-[state=checked]:bg-orange-500"
@@ -49,7 +52,7 @@ export function PrivacySection({ saveMutation }: PrivacySectionProps) {
         </div>
         <Switch
           id="privacy-leaderboard"
-          defaultChecked={true}
+          checked={showOnLeaderboard}
           onCheckedChange={(checked) => saveMutation.mutate({ showOnLeaderboard: checked })}
           disabled={saveMutation.isPending}
           className="data-[state=checked]:bg-orange-500"
@@ -68,7 +71,7 @@ export function PrivacySection({ saveMutation }: PrivacySectionProps) {
         </div>
         <Switch
           id="privacy-activity"
-          defaultChecked={true}
+          checked={showActivity}
           onCheckedChange={(checked) => saveMutation.mutate({ showActivity: checked })}
           disabled={saveMutation.isPending}
           className="data-[state=checked]:bg-orange-500"

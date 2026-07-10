@@ -134,6 +134,18 @@ class MemoryStore {
     this.entries.delete(key)
   }
 
+  /** Remove entries whose timestamps have all expired (older than 15 min window) */
+  evictExpired(): void {
+    const now = Date.now()
+    const maxWindow = 15 * 60_000 // 15 minutes — the largest configured window
+    for (const [key, entry] of this.entries) {
+      entry.timestamps = entry.timestamps.filter(t => t > now - maxWindow)
+      if (entry.timestamps.length === 0) {
+        this.entries.delete(key)
+      }
+    }
+  }
+
   /** Clear all entries */
   clear(): void {
     this.entries.clear()
@@ -152,9 +164,9 @@ export class RateLimiter {
     this.store = new MemoryStore()
 
     if (this.strategy === 'memory') {
-      // Periodic cleanup every 5 minutes
+      // Periodic cleanup every 5 minutes — only evict expired entries
       this.cleanupTimer = setInterval(() => {
-        this.store.clear()
+        this.store.evictExpired()
       }, 5 * 60_000)
       this.cleanupTimer.unref()
     }

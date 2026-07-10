@@ -12,7 +12,6 @@ import type { FriendData } from '@/lib/types/service.types'
 
 export class SocialRepository extends BaseRepository<'Friendship', any> {
   constructor() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     super(db.friendship as any, 'Friendship')
   }
 
@@ -121,7 +120,6 @@ export class SocialRepository extends BaseRepository<'Friendship', any> {
 
 export class TeamRepository extends BaseRepository<'Team', any> {
   constructor() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     super(db.team as any, 'Team')
   }
 
@@ -168,7 +166,6 @@ export class TeamRepository extends BaseRepository<'Team', any> {
 
 export class FeedRepository extends BaseRepository<'FeedPost', any> {
   constructor() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     super(db.feedPost as any, 'FeedPost')
   }
 

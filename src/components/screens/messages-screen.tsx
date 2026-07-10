@@ -95,7 +95,7 @@ export default function MessagesScreen() {
       setSearchQuery('')
       setDebouncedQuery('')
       setSelectedPlayerId('')
-      useAppStore.getState().selectDrill(d.conversationId)
+      useAppStore.getState().selectConversation(d.conversationId)
       navigate('conversation')
     },
     onError: (e: Error) => toast.error(e.message),
@@ -241,7 +241,7 @@ export default function MessagesScreen() {
               <motion.div key={conv.id} variants={itemVariants}>
                 <div
                   className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => { useAppStore.getState().selectDrill(conv.id); navigate('conversation') }}
+                  onClick={() => { useAppStore.getState().selectConversation(conv.id); navigate('conversation') }}
                 >
                   <div className="relative shrink-0">
                     <Avatar className="h-12 w-12">

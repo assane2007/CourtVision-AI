@@ -24,7 +24,6 @@ export const GET = withAuth(async (request, session) => {
           id: { not: playerId },
           OR: [
             { name: { contains: search } },
-            { email: { contains: search } },
           ],
         },
         select: {

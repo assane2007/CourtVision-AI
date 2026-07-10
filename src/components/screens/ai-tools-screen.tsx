@@ -10,7 +10,6 @@ import {
   Image,
   Search,
   FileText,
-  Send,
   Upload,
   Copy,
   Check,
@@ -672,7 +671,7 @@ function ImageGenTab() {
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <Image className="h-4 w-4" />
+            <Image className="h-4 w-4" alt="" />
           )}
           {loading ? 'Generating...' : 'Generate'}
         </Button>
@@ -718,7 +717,6 @@ function ImageGenTab() {
                   </Badge>
                 </div>
                 <div className="rounded-lg overflow-hidden border">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={imageUrl.startsWith('data:') ? imageUrl : `data:image/png;base64,${imageUrl}`}
                     alt={prompt}

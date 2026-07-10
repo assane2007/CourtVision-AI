@@ -25,12 +25,18 @@ export const POST = withAuth(async (request, session, { params }) => {
     })
 
     if (existing) {
-      // Unlike
-      await db.feedPostLike.delete({ where: { id: existing.id } })
-      await db.feedPost.update({
-        where: { id: postId },
-        data: { likesCount: { decrement: 1 } },
-      })
+      // Unlike — atomic transaction
+      await db.$transaction([
+        db.feedPostLike.delete({ where: { id: existing.id } }),
+        db.feedPost.update({
+          where: { id: postId },
+          data: { likesCount: { decrement: 1 } },
+        }),
+      ])
+
+      // Re-fetch accurate count
+      const updatedPost = await db.feedPost.findUnique({ where: { id: postId }, select: { likesCount: true } })
+      const accurateCount = Math.max(0, updatedPost?.likesCount ?? 0)
 
       // Notify post owner
       if (post.playerId !== playerId) {
@@ -46,16 +52,22 @@ export const POST = withAuth(async (request, session, { params }) => {
         })
       }
 
-      return NextResponse.json({ liked: false, likesCount: Math.max(0, post.likesCount - 1) })
+      return NextResponse.json({ liked: false, likesCount: accurateCount })
     } else {
-      // Like
-      await db.feedPostLike.create({
-        data: { postId, playerId },
-      })
-      await db.feedPost.update({
-        where: { id: postId },
-        data: { likesCount: { increment: 1 } },
-      })
+      // Like — atomic transaction
+      await db.$transaction([
+        db.feedPostLike.create({
+          data: { postId, playerId },
+        }),
+        db.feedPost.update({
+          where: { id: postId },
+          data: { likesCount: { increment: 1 } },
+        }),
+      ])
+
+      // Re-fetch accurate count
+      const updatedPost = await db.feedPost.findUnique({ where: { id: postId }, select: { likesCount: true } })
+      const accurateCount = updatedPost?.likesCount ?? 0
 
       if (post.playerId !== playerId) {
         await db.notification.create({
@@ -69,7 +81,7 @@ export const POST = withAuth(async (request, session, { params }) => {
         })
       }
 
-      return NextResponse.json({ liked: true, likesCount: post.likesCount + 1 })
+      return NextResponse.json({ liked: true, likesCount: accurateCount })
     }
   } catch (error) {
     trackError('POST /api/feed/[id]/like', error)

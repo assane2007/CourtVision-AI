@@ -23,7 +23,7 @@ interface MessageItem {
 export default function ConversationScreen() {
   const { t, td, language } = useTranslation()
   const { goBack } = useNavigation()
-  const selectedDrillId = useAppStore(s => s.selectedDrillId)
+  const selectedConversationId = useAppStore(s => s.selectedConversationId)
   const queryClient = useQueryClient()
   const [text, setText] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -32,37 +32,37 @@ export default function ConversationScreen() {
   const { data: convData } = useQuery<{
     conversation: { id: string; type: string; name: string | null; avatar: string | null; otherPlayer: { id: string; name: string; avatar: string | null } | null }
   }>({
-    queryKey: ['conversation', selectedDrillId],
-    queryFn: () => apiFetch(`/api/messages/conversations/${selectedDrillId}`),
-    enabled: !!selectedDrillId,
+    queryKey: ['conversation', selectedConversationId],
+    queryFn: () => apiFetch(`/api/messages/conversations/${selectedConversationId}`),
+    enabled: !!selectedConversationId,
   })
 
   const { data: msgsData, fetchNextPage: _fetchNextPage, hasNextPage: _hasNextPage, isFetchingNextPage } = useInfiniteQuery<{
     messages: MessageItem[]; nextCursor: string | null
   }>({
-    queryKey: ['messages', selectedDrillId],
-    queryFn: ({ pageParam }) => apiFetch(`/api/messages/conversations/${selectedDrillId}/messages?limit=40${pageParam ? `&cursor=${pageParam}` : ''}`),
+    queryKey: ['messages', selectedConversationId],
+    queryFn: ({ pageParam }) => apiFetch(`/api/messages/conversations/${selectedConversationId}/messages?limit=40${pageParam ? `&cursor=${pageParam}` : ''}`),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.nextCursor || undefined,
-    enabled: !!selectedDrillId,
+    enabled: !!selectedConversationId,
   })
 
   const allMessages = msgsData?.pages.flatMap(p => p.messages) || []
 
   // Mark as read
   useEffect(() => {
-    if (selectedDrillId) {
-      fetch(`/api/messages/conversations/${selectedDrillId}`, { method: 'PATCH' }).catch(() => {})
+    if (selectedConversationId) {
+      fetch(`/api/messages/conversations/${selectedConversationId}`, { method: 'PATCH' }).catch(() => {})
     }
-  }, [selectedDrillId])
+  }, [selectedConversationId])
 
   // Poll for new messages
   useEffect(() => {
     pollRef.current = setInterval(() => {
-      queryClient.invalidateQueries({ queryKey: ['messages', selectedDrillId] })
+      queryClient.invalidateQueries({ queryKey: ['messages', selectedConversationId] })
     }, 10000)
     return () => { if (pollRef.current) clearInterval(pollRef.current) }
-  }, [selectedDrillId, queryClient])
+  }, [selectedConversationId, queryClient])
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -70,13 +70,13 @@ export default function ConversationScreen() {
   }, [allMessages.length])
 
   const sendMessage = useMutation({
-    mutationFn: () => fetch(`/api/messages/conversations/${selectedDrillId}/messages`, {
+    mutationFn: () => fetch(`/api/messages/conversations/${selectedConversationId}/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: text }),
     }).then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error) }); return r.json() }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['messages', selectedDrillId] })
+      queryClient.invalidateQueries({ queryKey: ['messages', selectedConversationId] })
       queryClient.invalidateQueries({ queryKey: ['conversations'] })
       setText('')
     },
@@ -86,7 +86,7 @@ export default function ConversationScreen() {
   const conv = convData?.conversation
   const otherPlayer = conv?.otherPlayer
 
-  if (!selectedDrillId) return <div className="min-h-screen bg-background" />
+  if (!selectedConversationId) return <div className="min-h-screen bg-background" />
 
   return (
     <SwipeToGoBack className="min-h-screen bg-background flex flex-col">

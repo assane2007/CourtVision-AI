@@ -66,6 +66,7 @@ export interface AppActions {
   navigate: (screen: Screen) => void
   goBack: () => void
   selectDrill: (drillId: string) => void
+  selectConversation: (conversationId: string) => void
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
   setWorkoutResult: (result: WorkoutResult | null) => void
@@ -82,6 +83,7 @@ interface AppState {
   // Navigation
   currentScreen: Screen
   selectedDrillId: string | null
+  selectedConversationId: string | null
   screenHistory: Screen[]
   sidebarOpen: boolean
 
@@ -101,6 +103,7 @@ interface AppState {
 export const useAppStore = create<AppState & AppActions>((set) => ({
   currentScreen: 'landing',
   selectedDrillId: null,
+  selectedConversationId: null,
   screenHistory: [],
   sidebarOpen: false,
   workoutResult: null,
@@ -124,6 +127,8 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
   }),
 
   selectDrill: (drillId) => set({ selectedDrillId: drillId }),
+
+  selectConversation: (conversationId) => set({ selectedConversationId: conversationId }),
 
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
