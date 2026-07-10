@@ -90,7 +90,9 @@ export const POST = withAuth(async (req: NextRequest, session) => {
     if (!url || typeof url !== 'string') {
       return NextResponse.json({ error: 'URL de la vidéo requise' }, { status: 400 })
     }
-    if (!url.startsWith('/uploads/')) {
+    // Accept local, Supabase, or any valid HTTP(S) URL
+    const isValidUrl = url.startsWith('/') || url.startsWith('http://') || url.startsWith('https://')
+    if (!isValidUrl) {
       return NextResponse.json({ error: 'URL de vidéo invalide' }, { status: 400 })
     }
 

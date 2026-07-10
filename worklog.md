@@ -435,3 +435,23 @@ Stage Summary:
 - 3 new API routes for Supabase auth flows
 - 2 React hooks for frontend Supabase usage
 - `bun run lint`: 0 errors, 0 warnings
+
+---
+Task ID: 11
+Agent: Main
+Task: Wire all file uploads through Supabase Storage
+
+Work Log:
+- Created `POST /api/videos/upload` — uploads video + thumbnail to Supabase Storage (`videos/{userId}/` and `thumbnails/{userId}/`), returns signed URLs. Rate limited 5/min.
+- Created `POST /api/upload/avatar` — uploads avatar image to Supabase Storage (`avatars/{userId}/`), auto-updates Player.avatar in DB. Max 5 MB. Public bucket.
+- Created `POST /api/upload/feed` — uploads up to 4 feed post images to Supabase Storage (`feed/{userId}/`). Max 10 MB each. Public bucket.
+- Updated `POST /api/videos` — URL validation now accepts `/local/path`, `http://`, and `https://` URLs (was hardcoded to `/uploads/` only)
+- Created `src/lib/supabase/use-upload.ts` — reusable React hook with XHR progress tracking, abort support, error handling
+- Created `supabase_storage_buckets.sql` — SQL script to create `courtvision` bucket + RLS policies in Supabase
+
+Stage Summary:
+- All upload flows now go through Supabase Storage (when SUPABASE_SERVICE_ROLE_KEY is set)
+- 3 new upload API endpoints (video, avatar, feed)
+- 1 reusable frontend upload hook
+- Storage auto-selects: Supabase > S3 > Local filesystem
+- `bun run lint`: 0 errors, 0 warnings
