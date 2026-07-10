@@ -93,7 +93,7 @@ const TABS = [
   { value: 'chat', icon: MessageCircle, label: 'Chat Coach' },
   { value: 'tts', icon: Volume2, label: 'Voice' },
   { value: 'asr', icon: Mic, label: 'Transcribe' },
-  { value: 'image', icon: Image, label: 'Image Gen' },
+  { value: 'image', icon: ImageIcon, label: 'Image Gen' },
   { value: 'websearch', icon: Search, label: 'Web Search' },
   { value: 'webreader', icon: FileText, label: 'Web Reader' },
 ] as const

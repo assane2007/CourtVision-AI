@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft, Heart, MessageCircle, Share2, Plus, Loader2,
-  Trophy, Dumbbell, Video, Award,
+  Trophy, Dumbbell, Video, Award, ImagePlus, X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -45,7 +45,81 @@ export default function FeedScreen() {
   const queryClient = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
   const [newPost, setNewPost] = useState({ content: '', type: 'text' })
+  const [postImages, setPostImages] = useState<string[]>([]) // preview URLs
+  const [postImageUrls, setPostImageUrls] = useState<string[]>([]) // uploaded URLs
+  const [isUploadingImages, setIsUploadingImages] = useState(false)
+  const imageInputRef = useRef<HTMLInputElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
+
+  // Upload feed images to Supabase
+  const handleImageSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+    if (postImages.length + files.length > 4) {
+      toast.error(td('Maximum 4 images', 'Maximum 4 images'))
+      e.target.value = ''
+      return
+    }
+
+    setIsUploadingImages(true)
+    const newPreviews: string[] = []
+    const newUrls: string[] = []
+
+    for (const file of files) {
+      const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
+      if (!allowedTypes.has(file.type)) continue
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(td('Image trop volumineuse (max 10 Mo)', 'Image too large (max 10 MB)'))
+        continue
+      }
+
+      // Create preview
+      newPreviews.push(URL.createObjectURL(file))
+
+      // Upload to server
+      try {
+        const formData = new FormData()
+        formData.append('images', file)
+        const res = await fetch('/api/upload/feed', { method: 'POST', body: formData })
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: 'Upload failed' }))
+          toast.error(err.error || 'Upload failed')
+          newPreviews.pop()
+          continue
+        }
+        const data = await res.json() as { urls: string[] }
+        if (data.urls?.length > 0) {
+          newUrls.push(data.urls[0])
+        } else {
+          newPreviews.pop()
+        }
+      } catch {
+        toast.error(td('Erreur réseau', 'Network error'))
+        newPreviews.pop()
+      }
+    }
+
+    setPostImages(prev => [...prev, ...newPreviews])
+    setPostImageUrls(prev => [...prev, ...newUrls])
+    setIsUploadingImages(false)
+    e.target.value = ''
+  }, [postImages.length, td])
+
+  const removePostImage = useCallback((index: number) => {
+    setPostImages(prev => {
+      const removed = prev[index]
+      if (removed) URL.revokeObjectURL(removed)
+      return prev.filter((_, i) => i !== index)
+    })
+    setPostImageUrls(prev => prev.filter((_, i) => i !== index))
+  }, [])
+
+  const resetPostForm = useCallback(() => {
+    setNewPost({ content: '', type: 'text' })
+    postImages.forEach(url => URL.revokeObjectURL(url))
+    setPostImages([])
+    setPostImageUrls([])
+  }, [postImages])
 
   const { data, isLoading, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery<{
     posts: FeedPost[]; nextCursor: string | null
@@ -73,12 +147,15 @@ export default function FeedScreen() {
     mutationFn: () => fetch('/api/feed', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newPost),
+      body: JSON.stringify({
+        ...newPost,
+        imageUrls: postImageUrls.length > 0 ? postImageUrls : undefined,
+      }),
     }).then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error) }); return r.json() }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['feed'] })
       setShowCreate(false)
-      setNewPost({ content: '', type: 'text' })
+      resetPostForm()
       toast.success(td('Post publié', 'Post published'))
     },
     onError: (e: Error) => toast.error(e.message),
@@ -109,27 +186,71 @@ export default function FeedScreen() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-lg font-bold flex-1">{td("Fil d'actualité", 'News Feed')}</h1>
-          <Dialog open={showCreate} onOpenChange={setShowCreate}>
+          <Dialog open={showCreate} onOpenChange={(open) => { if (!open) resetPostForm(); setShowCreate(open) }}>
             <DialogTrigger asChild>
               <Button size="sm" className="min-h-[44px]"><Plus className="h-4 w-4 mr-1" />{td('Publier', 'Post')}</Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-md">
               <DialogHeader><DialogTitle>{td('Nouveau post', 'New post')}</DialogTitle></DialogHeader>
               <div className="space-y-4 pt-2">
                 <Textarea value={newPost.content} onChange={e => setNewPost({ ...newPost, content: e.target.value })} placeholder={td('Quoi de neuf?', 'What\'s new?')} rows={4} />
-                <div className="flex gap-2">
-                  {(['text', 'workout', 'achievement', 'challenge'] as const).map(type => {
-                    const Icon = TYPE_ICONS[type] || Trophy
-                    return (
-                      <button key={type} onClick={() => setNewPost({ ...newPost, type })}
-                        aria-pressed={newPost.type === type}
-                        className={`flex items-center gap-1.5 px-3 min-h-[44px] rounded-full text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${newPost.type === type ? 'bg-orange-500 text-white' : 'bg-muted text-muted-foreground'}`}>
-                        <Icon className="h-3.5 w-3.5" />{type === 'text' ? td('Texte', 'Text') : type === 'workout' ? td('Séance', 'Workout') : type === 'achievement' ? td('Succès', 'Achievement') : td('Défi', 'Challenge')}
-                      </button>
-                    )
-                  })}
+
+                {/* Image previews */}
+                {postImages.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {postImages.map((url, i) => (
+                      <div key={i} className="relative aspect-square rounded-lg overflow-hidden bg-muted">
+                        <img src={url} alt={td('Image du post', 'Post image')} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removePostImage(i)}
+                          className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
+                          aria-label={td('Supprimer l\'image', 'Remove image')}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Action row: image upload + type selector */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    multiple
+                    className="hidden"
+                    onChange={handleImageSelect}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="min-h-[44px]"
+                    onClick={() => imageInputRef.current?.click()}
+                    disabled={isUploadingImages || postImages.length >= 4}
+                  >
+                    {isUploadingImages ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+                    <span className="ml-1.5">{td('Photo', 'Photo')}{postImages.length > 0 ? ` (${postImages.length}/4)` : ''}</span>
+                  </Button>
+
+                  <div className="flex gap-1.5">
+                    {(['text', 'workout', 'achievement', 'challenge'] as const).map(type => {
+                      const Icon = TYPE_ICONS[type] || Trophy
+                      return (
+                        <button key={type} onClick={() => setNewPost({ ...newPost, type })}
+                          aria-pressed={newPost.type === type}
+                          className={`flex items-center gap-1.5 px-3 min-h-[44px] rounded-full text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${newPost.type === type ? 'bg-orange-500 text-white' : 'bg-muted text-muted-foreground'}`}>
+                          <Icon className="h-3.5 w-3.5" />{type === 'text' ? td('Texte', 'Text') : type === 'workout' ? td('Séance', 'Workout') : type === 'achievement' ? td('Succès', 'Achievement') : td('Défi', 'Challenge')}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
-                <Button className="w-full" onClick={() => createPost.mutate()} disabled={createPost.isPending || !newPost.content.trim()}>
+
+                <Button className="w-full" onClick={() => createPost.mutate()} disabled={createPost.isPending || isUploadingImages || !newPost.content.trim()}>
                   {createPost.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : td('Publier', 'Post')}
                 </Button>
               </div>

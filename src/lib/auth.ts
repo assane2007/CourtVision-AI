@@ -143,29 +143,30 @@ export const authOptions: NextAuthOptions = {
     },
     // Link OAuth sign-in/up to local Player record
     async signIn({ account, profile }) {
-      if (account?.provider === 'google' && profile?.email) {
+      const p = profile as Record<string, unknown> | undefined
+      if (account?.provider === 'google' && p?.email) {
         const existing = await db.player.findUnique({
-          where: { email: profile.email },
+          where: { email: p.email as string },
         })
 
         if (!existing) {
           // Auto-create a Player record for first-time OAuth users
           await db.player.create({
             data: {
-              email: profile.email,
+              email: p.email as string,
               password: await bcrypt.hash(crypto.randomUUID(), 10),
-              name: profile.name || profile.email.split('@')[0],
-              avatar: profile.picture || null,
-              emailVerified: profile.email_verified ? true : false,
+              name: (p.name as string) || (p.email as string).split('@')[0],
+              avatar: (p.picture as string) || null,
+              emailVerified: p.email_verified ? true : false,
               onboarding: false,
             },
           })
         } else {
           // Update avatar from OAuth if we have one
-          if (profile.picture && !existing.avatar) {
+          if (p.picture && !existing.avatar) {
             await db.player.update({
               where: { id: existing.id },
-              data: { avatar: profile.picture },
+              data: { avatar: p.picture as string },
             })
           }
         }

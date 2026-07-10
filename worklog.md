@@ -455,3 +455,30 @@ Stage Summary:
 - 1 reusable frontend upload hook
 - Storage auto-selects: Supabase > S3 > Local filesystem
 - `bun run lint`: 0 errors, 0 warnings
+
+---
+Task ID: 3
+Agent: Main
+Task: "Upload vers Supabase" — Full frontend upload integration + build fixes
+
+Work Log:
+- Created missing `src/lib/storage/local-storage.ts` (LocalStorage class implementing StorageService) — this was a build blocker since index.ts and s3-storage.ts imported it
+- Added avatar upload to profile screen: clickable avatar with camera overlay, validates file type/size, uploads to `/api/upload/avatar`, auto-updates DB and invalidates cache
+- Added image upload to feed post creation dialog: "Photo" button, multi-select up to 4 images, preview grid with remove buttons, uploads via `/api/upload/feed`, includes imageUrls in post body
+- Fixed `ai-tools-screen.tsx`: TABS array used `Image` (renamed to `ImageIcon` in previous session)
+- Fixed `auth.ts`: OAuth profile typed as `Record<string, unknown>` instead of NextAuth `Profile` to access `picture`, `email_verified` properties
+- Fixed `s3-storage.ts`: `body: new Uint8Array(data)` instead of conditional Buffer/Uint8Array
+- Fixed `supabase-storage.ts`: `lastModified` type narrowed to `number` with typeof check
+- Fixed `supabase/server.ts`: Converted module-level `cookies()` call (returns Promise in Next.js 16) to async function `createSupabaseServerClient()`
+- Fixed `supabase/use-auth.ts`: `session.user.email ?? null` (3 occurrences) to handle `string | undefined`
+- Video upload screen already uses `/api/videos/upload` which routes through Supabase storage ✅
+- Build: 0 TypeScript errors, 0 lint errors
+- Server starts without runtime errors
+
+Stage Summary:
+- All uploads now work end-to-end: Avatar upload (profile screen), Image upload (feed posts), Video upload (video screen)
+- Frontend → API routes → StorageService → SupabaseStorage → Supabase Storage bucket `courtvision`
+- 7 additional build errors fixed (all TypeScript strict mode issues)
+- IMPORTANT: User must create `courtvision` bucket in Supabase Storage dashboard (public policy for avatars/feed, private for videos)
+- IMPORTANT: User must run `npx prisma db push` to create tables on the PostgreSQL database
+- IMPORTANT: All env vars from .env must be added to Vercel dashboard

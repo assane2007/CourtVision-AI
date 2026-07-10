@@ -2,35 +2,38 @@
  * Supabase server client.
  *
  * Uses cookies to persist the user's session.
- * Pass the `cookies()` from `next/headers` in App Router,
- * or `req.cookies` in Pages API routes / middleware.
+ * Must be called inside an async function (App Router / API route).
  */
 
 import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import type { CookieOptions } from '@supabase/ssr'
 
-export const supabase = createServerClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  {
-    cookies: {
-      getAll() {
-        return cookies().getAll()
-      },
-      setAll(cookiesToSet) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookies().set(name, value, options as CookieOptions),
-          )
-        } catch {
-          // setAll is called from Server Component where cookies cannot be set.
-          // This can be ignored if middleware refreshes sessions.
-        }
+export async function createSupabaseServerClient() {
+  const { cookies } = await import('next/headers')
+  const cookieStore = await cookies()
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options as CookieOptions),
+            )
+          } catch {
+            // setAll is called from Server Component where cookies cannot be set.
+            // This can be ignored if middleware refreshes sessions.
+          }
+        },
       },
     },
-  },
-)
+  )
+}
 
 /**
  * Create a Supabase admin client with full access (bypasses RLS).

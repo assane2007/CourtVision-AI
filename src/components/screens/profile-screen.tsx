@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { signOut } from 'next-auth/react'
@@ -22,6 +22,7 @@ import {
   Target,
   Trash2,
   Loader2,
+  Camera,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -50,6 +51,7 @@ import {
 import { useAppStore } from '@/stores/app'
 import { BottomNav } from '@/components/shared/bottom-nav'
 import { cn, apiFetch, formatLocaleDate } from '@/lib/utils'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { containerVariants, itemVariants } from '@/lib/animations'
 import { getLevelInfo, getLevelColor, getLevelBgColor } from '@/lib/xp'
 import { toast } from 'sonner'
@@ -60,6 +62,7 @@ interface PlayerData {
   id?: string
   name?: string
   email?: string
+  avatar?: string | null
   position?: string
   level?: string
   goals?: string
@@ -189,6 +192,62 @@ export function ProfileScreen() {
   })
 
   // ── Delete account state ────────────────────────────────────────
+  // ── Avatar upload ─────────────────────────────────────────────
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+
+  const uploadAvatarMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData()
+      formData.append('avatar', file)
+      const res = await fetch('/api/upload/avatar', {
+        method: 'POST',
+        body: formData,
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: td('Erreur serveur', 'Server error') }))
+        throw new Error(err.error || `Erreur ${res.status}`)
+      }
+      return res.json() as Promise<{ url: string; path: string }>
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['player'] })
+      toast.success(td('Photo de profil mise à jour !', 'Profile photo updated!'))
+    },
+    onError: (err: Error) => {
+      toast.error(td('Erreur avatar', 'Avatar error'), { description: err.message })
+    },
+    onSettled: () => {
+      setIsUploadingAvatar(false)
+    },
+  })
+
+  const handleAvatarClick = useCallback(() => {
+    avatarInputRef.current?.click()
+  }, [])
+
+  const handleAvatarChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
+    if (!allowedTypes.has(file.type)) {
+      toast.error(td('Format non supporté. Utilisez JPEG, PNG, GIF ou WebP.', 'Unsupported format. Use JPEG, PNG, GIF, or WebP.'))
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(td('Image trop volumineuse (max 5 Mo)', 'Image too large (max 5 MB)'))
+      return
+    }
+
+    setIsUploadingAvatar(true)
+    uploadAvatarMutation.mutate(file)
+    // Reset input so same file can be re-selected
+    e.target.value = ''
+  }, [uploadAvatarMutation, td])
+
+  // ── Delete account state ────────────────────────────────────────
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   // ── Delete account mutation ─────────────────────────────────────
@@ -304,10 +363,39 @@ export function ProfileScreen() {
               <div className="h-1.5 bg-gradient-to-r from-orange-400 via-orange-500 to-amber-500" />
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
-                  {/* Avatar */}
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-2xl font-bold shadow-md flex-shrink-0">
-                    {initials}
-                  </div>
+                  {/* Avatar — clickable to upload */}
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                    aria-label={td('Changer la photo de profil', 'Change profile photo')}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAvatarClick}
+                    disabled={isUploadingAvatar}
+                    className="relative w-20 h-20 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-2xl font-bold shadow-md flex-shrink-0 overflow-hidden group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-70 transition-opacity"
+                    aria-label={td('Changer la photo de profil', 'Change profile photo')}
+                  >
+                    {player?.avatar ? (
+                      <Avatar className="h-full w-full rounded-full">
+                        <AvatarImage src={player.avatar} alt={player.name} />
+                        <AvatarFallback className="text-2xl font-bold">{initials}</AvatarFallback>
+                      </Avatar>
+                    ) : (
+                      <span>{initials}</span>
+                    )}
+                    {/* Camera overlay */}
+                    <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity">
+                      {isUploadingAvatar ? (
+                        <Loader2 className="h-6 w-6 text-white animate-spin" />
+                      ) : (
+                        <Camera className="h-6 w-6 text-white" />
+                      )}
+                    </div>
+                  </button>
 
                   <div className="flex-1 min-w-0">
                     <h2 className="text-xl font-bold truncate">{player?.name}</h2>

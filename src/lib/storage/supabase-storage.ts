@@ -130,7 +130,7 @@ export class SupabaseStorage implements StorageService {
     return (data ?? []).map((f) => ({
       key: `${prefix}/${f.name}`,
       size: f.metadata?.size ?? 0,
-      lastModified: f.metadata?.lastModified ?? Date.now(),
+      lastModified: typeof f.metadata?.lastModified === 'number' ? f.metadata.lastModified : Date.now(),
       contentType: f.metadata?.mimetype,
       etag: f.metadata?.etag,
     }))

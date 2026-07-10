@@ -102,7 +102,7 @@ export class S3Storage implements StorageService {
           ...headers,
           ...signedHeaders,
         },
-        body: data instanceof Buffer ? new Uint8Array(data) : data,
+        body: new Uint8Array(data),
       })
 
       if (!response.ok) {

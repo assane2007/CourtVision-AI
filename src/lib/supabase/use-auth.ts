@@ -39,7 +39,7 @@ export function useSupabaseAuth(): UseSupabaseAuthReturn {
       if (session?.user) {
         setUser({
           id: session.user.id,
-          email: session.user.email,
+          email: session.user.email ?? null,
           name: session.user.user_metadata?.name || null,
           avatar: session.user.user_metadata?.avatar_url || null,
           provider: session.user.app_metadata?.provider || 'supabase',
@@ -53,7 +53,7 @@ export function useSupabaseAuth(): UseSupabaseAuthReturn {
       if (session?.user) {
         setUser({
           id: session.user.id,
-          email: session.user.email,
+          email: session.user.email ?? null,
           name: session.user.user_metadata?.name || null,
           avatar: session.user.user_metadata?.avatar_url || null,
           provider: session.user.app_metadata?.provider || 'supabase',
@@ -98,7 +98,7 @@ export function useSupabaseAuth(): UseSupabaseAuthReturn {
     if (session?.user) {
       setUser({
         id: session.user.id,
-        email: session.user.email,
+        email: session.user.email ?? null,
         name: session.user.user_metadata?.name || null,
         avatar: session.user.user_metadata?.avatar_url || null,
         provider: session.user.app_metadata?.provider || 'supabase',
