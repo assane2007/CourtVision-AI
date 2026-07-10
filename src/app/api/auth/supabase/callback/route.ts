@@ -1,19 +1,22 @@
 import { NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000'
 
 /**
  * GET /api/auth/supabase/callback
  *
- * Handles the redirect back from Supabase Auth (magic link / OAuth).
+ * Handles redirects back from Supabase Auth:
+ * - Magic link sign-in (type=signup or type=magiclink)
+ * - OAuth sign-in (provider redirect)
+ * - Password recovery (type=recovery)
  */
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const accessToken = searchParams.get('access_token')
     const refreshToken = searchParams.get('refresh_token')
+    const type = searchParams.get('type') || ''
     const error = searchParams.get('error')
     const errorDescription = searchParams.get('error_description')
 
@@ -26,29 +29,47 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${APP_URL}/?error=no_token`)
     }
 
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (!supabaseUrl || !supabaseAnonKey) {
       return NextResponse.redirect(`${APP_URL}/?error=supabase_not_configured`)
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { createClient } = require('@supabase/supabase-js')
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    // Use @supabase/ssr server client to properly set cookies
+    const response = NextResponse.next()
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() { return [] },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options as import('@supabase/ssr').CookieOptions)
+          })
+        },
+      },
+    })
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken)
+    // Verify the token and set session
+    const { data, error: authError } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken || '',
+    })
 
-    if (authError || !user) {
+    if (authError || !data.session) {
       console.error('[Supabase Callback] Invalid token:', authError)
       return NextResponse.redirect(`${APP_URL}/?error=invalid_token`)
     }
 
-    const params = new URLSearchParams({
-      supabase_access_token: accessToken,
-      supabase_refresh_token: refreshToken || '',
-      email: user.email || '',
-      name: user.user_metadata?.name || user.email || '',
-    })
+    const _user = data.session.user
 
-    return NextResponse.redirect(`${APP_URL}/?${params.toString()}`)
+    if (type === 'recovery') {
+      // Password recovery flow — redirect to a "set new password" page
+      return NextResponse.redirect(
+        `${APP_URL}/?reset_password=1`,
+      )
+    }
+
+    // Normal sign-in flow (magic link, OAuth)
+    return NextResponse.redirect(APP_URL)
   } catch (err) {
     console.error('[Supabase Callback] Unexpected error:', err)
     return NextResponse.redirect(`${APP_URL}/?error=server_error`)

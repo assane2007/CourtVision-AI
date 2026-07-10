@@ -11,6 +11,7 @@ import { useTranslation } from '@/components/providers/language-provider'
 import { LoginForm } from '@/components/auth/login-form'
 import { SignupForm } from '@/components/auth/signup-form'
 import { ResetPasswordForm } from '@/components/auth/reset-password-form'
+import { SetPasswordDialog } from '@/components/auth/set-password-dialog'
 
 /* ── Floating basketball config ──────────────────────────────────── */
 const floatingBasketballs = [
@@ -165,6 +166,18 @@ export default function AuthScreen() {
 
   // ── Password reset dialog state ───────────────────────────────────
   const [resetOpen, setResetOpen] = useState(false)
+  // Detect recovery flow from URL (reset_password=1)
+  const [setPasswordOpen, setSetPasswordOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const isRecovery = params.get('reset_password') === '1'
+      if (isRecovery) {
+        window.history.replaceState({}, '', '/')
+      }
+      return isRecovery
+    }
+    return false
+  })
 
   const handleAuthSuccess = useCallback(() => {
     setPendingNavigation(true)
@@ -288,6 +301,12 @@ export default function AuthScreen() {
       <ResetPasswordForm
         open={resetOpen}
         onClose={() => setResetOpen(false)}
+      />
+
+      {/* ── Set Password Dialog (after recovery link) ──────────────── */}
+      <SetPasswordDialog
+        open={setPasswordOpen}
+        onClose={() => setSetPasswordOpen(false)}
       />
     </div>
   )

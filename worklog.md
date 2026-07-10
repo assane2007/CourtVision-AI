@@ -523,3 +523,62 @@ Stage Summary:
 - Login/signup use Supabase Auth (email+password)
 - Player records auto-created on first sign-in via sync endpoint
 - Build passes with 0 errors, lint passes with 0 errors/warnings
+
+---
+Task ID: supabase-auth-completion
+Agent: Main
+Task: Complete Supabase Auth integration, fix reset-password flow, add Google OAuth, fix bugs
+
+Work Log:
+- Assessed current auth state: Supabase Auth was already 90% integrated from previous sessions
+- Login form: Already used `supabase.auth.signInWithPassword()` ✅
+- Signup form: Already used `supabase.auth.signUp()` with auto-login ✅
+- with-auth.ts: Already used `supabase.auth.getUser()` ✅
+- middleware.ts: Already used `updateSession()` from supabase/middleware.ts ✅
+- providers.tsx: Already wrapped with `SupabaseAuthProvider` ✅
+- page.tsx: Already used `useAuth()` from Supabase provider ✅
+- No remaining NextAuth imports in production code (only in test files)
+- Old `src/lib/auth.ts` and `src/app/api/auth/[...nextauth]/` already removed
+
+Changes made:
+1. **Reset Password Flow** — Completely rewritten for Supabase:
+   - `src/app/api/auth/reset-password/route.ts`: Uses `adminClient.auth.resetPasswordForEmail()` to send reset email via Supabase
+   - `src/app/api/auth/reset-password/confirm/route.ts`: Uses `supabase.auth.updateUser({ password })` for recovery sessions
+   - `src/components/auth/reset-password-form.tsx`: Simplified to 2-step flow (enter email → show success)
+   - `src/components/auth/set-password-dialog.tsx`: NEW — Handles new password entry when user arrives via recovery link
+   - `src/components/screens/auth-screen.tsx`: Detects `?reset_password=1` URL param and shows SetPasswordDialog
+
+2. **Callback Route** — Updated for recovery type:
+   - `src/app/api/auth/supabase/callback/route.ts`: Now handles `type=recovery` (redirects with `?reset_password=1`)
+   - Uses `@supabase/ssr` `createServerClient` to properly set session cookies
+   - Handles magic link, OAuth, and password recovery flows
+
+3. **Google OAuth** — Added to both login and signup forms:
+   - `src/components/auth/login-form.tsx`: Added Google OAuth button with divider
+   - `src/components/auth/signup-form.tsx`: Added Google OAuth button with divider
+   - Uses `supabase.auth.signInWithOAuth({ provider: 'google' })` with redirect to callback
+
+4. **i18n** — Updated translation keys:
+   - Removed old token-based keys (sendToken, resetTokenTitle, etc.)
+   - Added new keys: sendResetEmail, resetEmailSent, resetEmailSentDesc, continueWithGoogle, orContinueWith, setPassword, setPasswordDesc, passwordUpdated, passwordUpdatedDesc
+   - Updated French and English translations
+
+5. **Middleware Resilience** — Made middleware handle missing Supabase config:
+   - `src/lib/supabase/middleware.ts`: Returns null user if Supabase URL/key not set (graceful degradation)
+
+6. **Caddyfile** — Changed `localhost:3000` to `127.0.0.1:3000` for IPv4 compatibility
+
+7. **Bug Fixes**:
+   - Fixed lint error: setState in useEffect → moved to useState initializer
+   - Fixed unused variable warnings in callback route and reset-password-form
+   - Removed unused toast import
+
+Stage Summary:
+- Supabase Auth is now the COMPLETE and ONLY authentication system
+- 0 lint errors, 0 warnings
+- All 80+ API routes use Supabase auth (via withAuth or withAuthGuard)
+- Login: Email/password + Google OAuth
+- Signup: Email/password + Google OAuth  
+- Password Reset: Email-based (Supabase sends reset link → callback → set new password)
+- Player sync: Automatic on auth state change (SupabaseAuthProvider calls /api/auth/supabase/sync)
+- User needs to set their real Supabase keys in .env and configure Google OAuth in Supabase dashboard

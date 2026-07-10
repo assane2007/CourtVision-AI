@@ -12,7 +12,7 @@
         }
 
         handle @allowed_port_3000 {
-                reverse_proxy localhost:3000 {
+                reverse_proxy 127.0.0.1:3000 {
                         header_up Host {host}
                         header_up X-Forwarded-For {remote_host}
                         header_up X-Forwarded-Proto {scheme}
@@ -21,7 +21,7 @@
         }
 
         handle @allowed_port_3003 {
-                reverse_proxy localhost:3003 {
+                reverse_proxy 127.0.0.1:3003 {
                         header_up Host {host}
                         header_up X-Forwarded-For {remote_host}
                         header_up X-Forwarded-Proto {scheme}
@@ -34,7 +34,7 @@
         }
 
         handle {
-                reverse_proxy localhost:3000 {
+                reverse_proxy 127.0.0.1:3000 {
                         header_up Host {host}
                         header_up X-Forwarded-For {remote_host}
                         header_up X-Forwarded-Proto {scheme}

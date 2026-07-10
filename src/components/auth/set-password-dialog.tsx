@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Loader2, KeyRound, CheckCircle2 } from 'lucide-react'
+import { Loader2, Eye, EyeOff, KeyRound, CheckCircle2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -15,34 +15,48 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useTranslation } from '@/components/providers/language-provider'
 
-interface ResetPasswordFormProps {
+interface SetPasswordDialogProps {
   open: boolean
   onClose: () => void
 }
 
-export function ResetPasswordForm({ open, onClose }: ResetPasswordFormProps) {
+export function SetPasswordDialog({ open, onClose }: SetPasswordDialogProps) {
   const { t } = useTranslation()
-  const [email, setEmail] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [sent, setSent] = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const resetState = useCallback(() => {
-    setEmail('')
+    setNewPassword('')
+    setConfirmPassword('')
     setError('')
-    setSent(false)
+    setSuccess(false)
+    setShowPassword(false)
   }, [])
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
       setError('')
+
+      if (newPassword.length < 8) {
+        setError('Le mot de passe doit contenir au moins 8 caractères.')
+        return
+      }
+      if (newPassword !== confirmPassword) {
+        setError('Les mots de passe ne correspondent pas.')
+        return
+      }
+
       setLoading(true)
       try {
-        const res = await fetch('/api/auth/reset-password', {
+        const res = await fetch('/api/auth/reset-password/confirm', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
+          body: JSON.stringify({ newPassword }),
         })
 
         const data = await res.json()
@@ -52,15 +66,14 @@ export function ResetPasswordForm({ open, onClose }: ResetPasswordFormProps) {
           return
         }
 
-        // Always show success even if account not found (prevents email enumeration)
-        setSent(true)
+        setSuccess(true)
       } catch {
         setError(t('auth.genericError'))
       } finally {
         setLoading(false)
       }
     },
-    [email, t],
+    [newPassword, confirmPassword, t],
   )
 
   const handleClose = useCallback(() => {
@@ -72,9 +85,9 @@ export function ResetPasswordForm({ open, onClose }: ResetPasswordFormProps) {
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose() }}>
       <DialogContent className="bg-background border-border sm:max-w-md">
         <AnimatePresence mode="wait">
-          {!sent ? (
+          {!success ? (
             <motion.div
-              key="email"
+              key="form"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
@@ -83,44 +96,75 @@ export function ResetPasswordForm({ open, onClose }: ResetPasswordFormProps) {
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-foreground">
                   <KeyRound className="h-5 w-5 text-orange-400" />
-                  {t('auth.resetTitle')}
+                  {t('auth.setPassword')}
                 </DialogTitle>
                 <DialogDescription className="text-muted-foreground">
-                  {t('auth.resetDesc')}
+                  {t('auth.setPasswordDesc')}
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 mt-4">
                 <div className="space-y-2">
-                  <Label htmlFor="reset-email" className="text-foreground">
-                    {t('auth.email')}
+                  <Label htmlFor="new-pw" className="text-foreground">
+                    {t('auth.setPassword')}
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="new-pw"
+                      type={showPassword ? 'text' : 'password'}
+                      value={newPassword}
+                      onChange={(e) => {
+                        setNewPassword(e.target.value)
+                        setError('')
+                      }}
+                      placeholder="Min. 8 caractères, 1 majuscule, 1 chiffre"
+                      disabled={loading}
+                      required
+                      className="h-11 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground pr-10 focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      tabIndex={-1}
+                      aria-label={showPassword ? 'Masquer' : 'Afficher'}
+                    >
+                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-pw" className="text-foreground">
+                    Confirmer le mot de passe
                   </Label>
                   <Input
-                    id="reset-email"
-                    type="email"
-                    value={email}
+                    id="confirm-pw"
+                    type="password"
+                    value={confirmPassword}
                     onChange={(e) => {
-                      setEmail(e.target.value)
+                      setConfirmPassword(e.target.value)
                       setError('')
                     }}
-                    placeholder={t('auth.emailPlaceholder')}
+                    placeholder="Confirmer"
                     disabled={loading}
                     required
-                    autoComplete="email"
                     className="h-11 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:border-amber-500/60 focus-visible:ring-amber-500/30"
                   />
                 </div>
+
                 {error && (
                   <p role="alert" className="text-sm text-red-500 dark:text-red-400">{error}</p>
                 )}
+
                 <Button
                   type="submit"
-                  disabled={loading || !email}
-                  className="w-full h-11 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold transition-all cursor-pointer"
+                  disabled={loading || !newPassword || !confirmPassword}
+                  className="w-full h-11 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 dark:text-white text-foreground font-semibold transition-all cursor-pointer"
                 >
                   {loading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    t('auth.sendResetEmail')
+                    t('action.save')
                   )}
                 </Button>
               </form>
@@ -137,9 +181,9 @@ export function ResetPasswordForm({ open, onClose }: ResetPasswordFormProps) {
                 <CheckCircle2 className="h-8 w-8 text-emerald-400" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-foreground">{t('auth.resetEmailSent')}</h3>
+                <h3 className="text-lg font-bold text-foreground">{t('auth.passwordUpdated')}</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {t('auth.resetEmailSentDesc')}
+                  {t('auth.passwordUpdatedDesc')}
                 </p>
               </div>
               <Button

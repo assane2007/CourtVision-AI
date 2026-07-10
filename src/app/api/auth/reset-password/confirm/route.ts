@@ -1,50 +1,48 @@
 import { NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
-import { resetPasswordConfirmSchema, getZodErrorMessage } from '@/lib/validations'
-import { invalidateAuthCache } from '@/lib/guards/auth.guard'
+import { z } from 'zod'
 
-// POST /api/auth/reset-password/confirm
+const updatePasswordSchema = z.object({
+  newPassword: z.string()
+    .min(8, 'Le mot de passe doit contenir au moins 8 caractères')
+    .regex(/[A-Z]/, 'Le mot de passe doit contenir au moins une majuscule')
+    .regex(/[0-9]/, 'Le mot de passe doit contenir au moins un chiffre'),
+})
+
+/**
+ * POST /api/auth/reset-password/confirm
+ *
+ * Updates the password for an authenticated recovery session.
+ * The user arrives here after clicking the reset link in their email
+ * (the callback route sets the recovery session cookie).
+ */
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const result = resetPasswordConfirmSchema.safeParse(body)
+    const result = updatePasswordSchema.safeParse(body)
+
     if (!result.success) {
       return NextResponse.json(
-        { error: getZodErrorMessage(result.error) },
+        { error: result.error.errors.map(e => e.message).join('. ') },
         { status: 400 },
       )
     }
-    const { token, newPassword } = result.data
 
-    // Rate limit by token
-    const rateResult = rateLimit(`reset-confirm:${token}`, 5, 15 * 60 * 1000)
-    if (!rateResult.success) {
-      return NextResponse.json(
-        { error: 'Trop de tentatives. Réessaie dans 15 minutes.' },
-        { status: 429 },
-      )
-    }
+    const { newPassword } = result.data
 
-    // Use Supabase to verify and update password via the session from the reset token
-    // The token from the reset-password email link is used to establish a session
     const supabase = await createSupabaseServerClient()
 
-    // Exchange the reset token for a session, then update the password
-    const { error: verifyError } = await supabase.auth.verifyOtp({
-      token_hash: token,
-      type: 'recovery',
-    })
-
-    if (verifyError) {
+    // Check that the current session is a recovery session
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
       return NextResponse.json(
-        { error: 'Token invalide ou expiré.' },
-        { status: 400 },
+        { error: 'Session expirée. Veuillez demander un nouveau lien de réinitialisation.' },
+        { status: 401 },
       )
     }
 
-    // Now update the password
+    // Update the password
     const { error: updateError } = await supabase.auth.updateUser({
       password: newPassword,
     })
@@ -54,12 +52,6 @@ export async function POST(request: Request) {
         { error: updateError.message || 'Erreur lors de la mise à jour du mot de passe.' },
         { status: 400 },
       )
-    }
-
-    // Get the current user to invalidate cache
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      invalidateAuthCache(user.id)
     }
 
     // Sign out after password reset to force re-login

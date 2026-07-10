@@ -480,20 +480,15 @@ export type TranslationKey =
   | 'auth.termsText'
   | 'auth.resetTitle'
   | 'auth.resetDesc'
-  | 'auth.sendToken'
-  | 'auth.resetTokenTitle'
-  | 'auth.resetTokenDesc'
-  | 'auth.resetTokenLabel'
-  | 'auth.hideToken'
-  | 'auth.showToken'
-  | 'auth.copyToken'
-  | 'auth.newPassword'
-  | 'auth.confirmPassword'
-  | 'auth.confirmPlaceholder'
-  | 'auth.minCharsPlaceholder'
-  | 'auth.resetButton'
-  | 'auth.resetSuccess'
-  | 'auth.resetSuccessDesc'
+  | 'auth.sendResetEmail'
+  | 'auth.resetEmailSent'
+  | 'auth.resetEmailSentDesc'
+  | 'auth.continueWithGoogle'
+  | 'auth.orContinueWith'
+  | 'auth.setPassword'
+  | 'auth.setPasswordDesc'
+  | 'auth.passwordUpdated'
+  | 'auth.passwordUpdatedDesc'
   | 'auth.backToLogin'
   // Home - extended
   | 'home.today'
@@ -1342,21 +1337,16 @@ const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
     'auth.signupPasswordPlaceholder': 'Choisir un mot de passe',
     'auth.termsText': "En continuant, vous acceptez nos conditions d\u2019utilisation et notre politique de confidentialité.",
     'auth.resetTitle': 'Réinitialiser le mot de passe',
-    'auth.resetDesc': 'Entre ton email pour recevoir un token de réinitialisation.',
-    'auth.sendToken': 'Envoyer le token',
-    'auth.resetTokenTitle': 'Token de réinitialisation',
-    'auth.resetTokenDesc': 'En production, ce token serait envoyé par email.',
-    'auth.resetTokenLabel': 'Token de réinitialisation',
-    'auth.hideToken': 'Masquer le token',
-    'auth.showToken': 'Afficher le token',
-    'auth.copyToken': 'Copier le token',
-    'auth.newPassword': 'Nouveau mot de passe',
-    'auth.confirmPassword': 'Confirmer le mot de passe',
-    'auth.confirmPlaceholder': 'Confirmer',
-    'auth.minCharsPlaceholder': 'Min. 8 caractères',
-    'auth.resetButton': 'Réinitialiser',
-    'auth.resetSuccess': 'Mot de passe mis à jour !',
-    'auth.resetSuccessDesc': 'Tu peux maintenant te connecter avec ton nouveau mot de passe.',
+    'auth.resetDesc': 'Entre ton email pour recevoir un lien de réinitialisation.',
+    'auth.sendResetEmail': 'Envoyer le lien',
+    'auth.resetEmailSent': 'Email envoyé !',
+    'auth.resetEmailSentDesc': 'Si un compte existe avec cet email, tu recevras un lien pour réinitialiser ton mot de passe.',
+    'auth.continueWithGoogle': 'Continuer avec Google',
+    'auth.orContinueWith': 'ou continuer avec',
+    'auth.setPassword': 'Nouveau mot de passe',
+    'auth.setPasswordDesc': 'Choisis ton nouveau mot de passe.',
+    'auth.passwordUpdated': 'Mot de passe mis à jour !',
+    'auth.passwordUpdatedDesc': 'Tu peux maintenant te connecter avec ton nouveau mot de passe.',
     'auth.backToLogin': 'Retour à la connexion',
 
     // Home - extended
@@ -2228,21 +2218,16 @@ const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
     'auth.signupPasswordPlaceholder': 'Choose a password',
     'auth.termsText': "By continuing, you agree to our terms of use and privacy policy.",
     'auth.resetTitle': 'Reset password',
-    'auth.resetDesc': 'Enter your email to receive a reset token.',
-    'auth.sendToken': 'Send token',
-    'auth.resetTokenTitle': 'Reset token',
-    'auth.resetTokenDesc': 'In production, this token would be sent by email.',
-    'auth.resetTokenLabel': 'Reset token',
-    'auth.hideToken': 'Hide token',
-    'auth.showToken': 'Show token',
-    'auth.copyToken': 'Copy token',
-    'auth.newPassword': 'New password',
-    'auth.confirmPassword': 'Confirm password',
-    'auth.confirmPlaceholder': 'Confirm',
-    'auth.minCharsPlaceholder': 'Min. 8 characters',
-    'auth.resetButton': 'Reset',
-    'auth.resetSuccess': 'Password updated!',
-    'auth.resetSuccessDesc': 'You can now sign in with your new password.',
+    'auth.resetDesc': 'Enter your email to receive a reset link.',
+    'auth.sendResetEmail': 'Send reset link',
+    'auth.resetEmailSent': 'Email sent!',
+    'auth.resetEmailSentDesc': 'If an account exists with this email, you will receive a link to reset your password.',
+    'auth.continueWithGoogle': 'Continue with Google',
+    'auth.orContinueWith': 'or continue with',
+    'auth.setPassword': 'New password',
+    'auth.setPasswordDesc': 'Choose your new password.',
+    'auth.passwordUpdated': 'Password updated!',
+    'auth.passwordUpdatedDesc': 'You can now sign in with your new password.',
     'auth.backToLogin': 'Back to login',
 
     // Home - extended
