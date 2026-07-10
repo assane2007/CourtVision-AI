@@ -7,16 +7,8 @@ import { FeatureGate } from '@/components/feature-gate'
 import { toast } from 'sonner'
 import { useTranslation } from '@/components/providers/language-provider'
 
-// Lazy-load the animation wrapper so framer-motion is not in the main bundle.
-// All screen components are already dynamically imported with ssr: false.
-const ScreenTransition = dynamic(
-  () => import('@/components/screen-transition').then(m => ({ default: m.ScreenTransition })),
-  { ssr: false },
-)
-const LoadingSpinner = dynamic(
-  () => import('@/components/screen-transition').then(m => ({ default: m.LoadingSpinner })),
-  { ssr: false },
-)
+const ScreenTransition = dynamic(() => import('@/components/screen-transition').then(m => ({ default: m.ScreenTransition })), { ssr: false })
+const LoadingSpinner = dynamic(() => import('@/components/screen-transition').then(m => ({ default: m.LoadingSpinner })), { ssr: false })
 
 const LandingPage = dynamic(() => import('@/components/landing/landing-page'), { ssr: false })
 const AuthScreen = dynamic(() => import('@/components/screens/auth-screen'), { ssr: false })
@@ -71,16 +63,8 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
           <div className="text-center space-y-4 max-w-sm">
             <div className="text-5xl" aria-hidden="true">😵</div>
             <h1 className="text-xl font-bold">Une erreur est survenue</h1>
-            <p className="text-sm text-muted-foreground">
-              Quelque chose s&apos;est mal passé. Veuillez rafraîchir la page.
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              aria-label="Rafraîchir la page"
-              className="min-h-[44px] px-6 py-2.5 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              Rafraîchir
-            </button>
+            <p className="text-sm text-muted-foreground">Quelque chose s&apos;est mal passé. Veuillez rafraîchir la page.</p>
+            <button onClick={() => window.location.reload()} className="min-h-[44px] px-6 py-2.5 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors">Rafraîchir</button>
           </div>
         </div>
       )
@@ -89,117 +73,59 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-// ─── Main ──────────────────────────────────────────────────────────────────────
-
 export default function Home() {
   const { td } = useTranslation()
   const { loading, isAuthenticated } = useAuth()
   const currentScreen = useAppStore(s => s.currentScreen)
   const navigate = useAppStore(s => s.navigate)
   const selectDrill = useAppStore(s => s.selectDrill)
-  const mounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  )
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
 
   useEffect(() => {
     if (!loading && !isAuthenticated && currentScreen !== 'auth' && currentScreen !== 'landing') navigate('landing')
   }, [loading, isAuthenticated, currentScreen, navigate])
 
-  // ── Stripe Checkout Feedback ───────────────────────────────────────────────
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.get('checkout') === 'success') {
-      toast.success(td('Paiement réussi ! Votre abonnement est maintenant actif.', 'Payment successful! Your subscription is now active.'))
+      toast.success(td('Paiement réussi !', 'Payment successful!'))
       window.history.replaceState({}, '', '/')
     }
     if (params.get('checkout') === 'cancelled') {
-      toast.error(td('Paiement annulé. Vous pouvez réessayer à tout moment.', 'Payment cancelled. You can try again at any time.'))
+      toast.error(td('Paiement annulé.', 'Payment cancelled.'))
       window.history.replaceState({}, '', '/')
     }
   }, [td])
 
-  // ── Deep Linking ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isAuthenticated) return
-
     const params = new URLSearchParams(window.location.search)
     const hash = window.location.hash.replace('#', '')
     const deepParam = params.get('deep')
     const verifyEmailParam = params.get('verify_email')
     const drillId = params.get('drill') || hash.startsWith('drill/') ? hash.replace('drill/', '') : null
-
-    // Priority: verify_email > deep link > drill param
     if (verifyEmailParam) {
-      fetch(`/api/email/verify/${encodeURIComponent(verifyEmailParam)}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.message) {
-            toast.success?.(data.message)
-          }
-        })
-        .catch(() => {})
-        .finally(() => {
-          window.history.replaceState({}, '', '/')
-        })
+      fetch(`/api/email/verify/${encodeURIComponent(verifyEmailParam)}`).then(r => r.json()).then(d => d.message && toast.success?.(d.message)).catch(() => {}).finally(() => window.history.replaceState({}, '', '/'))
     } else if (deepParam) {
       const [type, id] = deepParam.split('/')
-      const screenMap: Record<string, Screen> = {
-        drill: 'drill-detail',
-        challenge: 'challenge-detail',
-        team: 'team-detail',
-        profile: 'profile-other',
-        video: 'video-player',
-      }
-      const targetScreen = screenMap[type]
-      if (targetScreen && id) {
-        if (type === 'drill') {
-          navigate('drill-detail')
-          selectDrill(id)
-        } else if (targetScreen) {
-          navigate(targetScreen)
-        }
-      }
+      const screenMap: Record<string, Screen> = { drill: 'drill-detail', challenge: 'challenge-detail', team: 'team-detail', profile: 'profile-other', video: 'video-player' }
+      const target = screenMap[type]
+      if (target && id) { if (type === 'drill') { navigate('drill-detail'); selectDrill(id) } else navigate(target) }
       window.history.replaceState({}, '', '/')
-    } else if (drillId) {
-      selectDrill(drillId)
-      navigate('drill-detail')
-      window.history.replaceState({}, '', '/')
-    }
+    } else if (drillId) { selectDrill(drillId); navigate('drill-detail'); window.history.replaceState({}, '', '/') }
   }, [isAuthenticated, navigate, selectDrill])
 
-  // Simple direction heuristic: tab screens go right (1), detail screens go left (-1)
-  const getDirection = () => {
-    const history = useAppStore.getState().screenHistory
-    const previousScreen = history[history.length - 1]
-    const tabScreens = ['home', 'plans', 'train-hub', 'stats', 'profile', 'feed', 'messages']
-    // Tab to tab = no slide
-    if (tabScreens.includes(currentScreen) && tabScreens.includes(previousScreen)) return 0
-    // Going "deeper" = slide left
-    return 1
-  }
+  if (!mounted || loading) return <LoadingSpinner />
 
-  if (!mounted || loading) {
-    return <LoadingSpinner />
-  }
-
-  // Landing page: render outside the ScreenTransition wrapper (full-width marketing page)
   if (!isAuthenticated && currentScreen === 'landing') {
-    return (
-      <ErrorBoundary>
-        <LandingPage onNavigate={navigate} />
-      </ErrorBoundary>
-    )
+    return <ErrorBoundary><LandingPage onNavigate={navigate} /></ErrorBoundary>
   }
 
-  const direction = getDirection()
+  const direction = 1
 
   return (
     <ErrorBoundary>
-      <main id="main-content" className="min-h-screen bg-background">
-        <div aria-live="polite" aria-atomic="true" className="sr-only" id="live-announcer" />
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md">{td('Aller au contenu', 'Skip to content')}</a>
+      <main className="min-h-screen bg-background">
         <ScreenTransition screenKey={currentScreen} direction={direction}>
           {currentScreen === 'auth' && <AuthScreen />}
           {currentScreen === 'onboarding' && <OnboardingScreen />}
@@ -213,15 +139,9 @@ export default function Home() {
           {currentScreen === 'profile' && isAuthenticated && <ProfileScreen />}
           {currentScreen === 'achievements' && isAuthenticated && <AchievementsScreen />}
           {currentScreen === 'settings' && isAuthenticated && <SettingsScreen />}
-          {currentScreen === 'scouting' && isAuthenticated && (
-            <FeatureGate flag="scouting"><ScoutingScreen /></FeatureGate>
-          )}
-          {currentScreen === 'ai-coach' && isAuthenticated && (
-            <FeatureGate flag="ai_coach"><AICoachScreen /></FeatureGate>
-          )}
-          {currentScreen === 'reaction-trainer' && isAuthenticated && (
-            <FeatureGate flag="reaction_trainer"><ReactionTrainerScreen /></FeatureGate>
-          )}
+          {currentScreen === 'scouting' && isAuthenticated && <FeatureGate flag="scouting"><ScoutingScreen /></FeatureGate>}
+          {currentScreen === 'ai-coach' && isAuthenticated && <FeatureGate flag="ai_coach"><AICoachScreen /></FeatureGate>}
+          {currentScreen === 'reaction-trainer' && isAuthenticated && <FeatureGate flag="reaction_trainer"><ReactionTrainerScreen /></FeatureGate>}
           {currentScreen === 'pricing' && isAuthenticated && <PricingScreen />}
           {currentScreen === 'leaderboard' && isAuthenticated && <LeaderboardScreen />}
           {currentScreen === 'records' && isAuthenticated && <RecordsScreen />}

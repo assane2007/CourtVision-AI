@@ -57,24 +57,10 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, newSession) => {
+      (_event, newSession) => {
         if (newSession?.user) {
           setSession(newSession)
           setUser(mapUser(newSession.user))
-
-          // Check if a Player record exists — if not, trigger sync
-          try {
-            const res = await fetch('/api/auth/supabase/sync', {
-              method: 'POST',
-              credentials: 'include',
-            })
-            // If sync succeeds, great. If it fails (e.g. already exists), ignore.
-            if (res.ok) {
-              await res.json()
-            }
-          } catch {
-            // Silently ignore sync errors — the Player record may already exist
-          }
         } else {
           setSession(null)
           setUser(null)
