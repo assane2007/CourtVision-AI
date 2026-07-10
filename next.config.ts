@@ -9,6 +9,17 @@ const nextConfig: NextConfig = {
   },
   /* React strict mode: catch side-effect bugs in development */
   reactStrictMode: true,
+  async rewrites() {
+    return [
+      // Alias /api/training/* → /api/* (sessions, drills, plans)
+      { source: '/api/training/sessions/:path*', destination: '/api/sessions/:path*' },
+      { source: '/api/training/drills/:path*', destination: '/api/drills/:path*' },
+      { source: '/api/training/plans/:path*', destination: '/api/plans/:path*' },
+      // Alias /api/social/* → /api/* (friends, feed)
+      { source: '/api/social/friends/:path*', destination: '/api/friends/:path*' },
+      { source: '/api/social/feed/:path*', destination: '/api/feed/:path*' },
+    ]
+  },
   async headers() {
     return [
       {
@@ -18,7 +29,7 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+              "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://va.vercel-scripts.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob:",
               "connect-src 'self' https://*.space-z.ai https://cdn.jsdelivr.net https://storage.googleapis.com https://*.ingest.us.sentry.io",

@@ -66,6 +66,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
         </Label>
         <Input
           id="signup-name"
+          name="name"
           type="text"
           value={name}
           onChange={(e) => {
@@ -86,6 +87,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
         </Label>
         <Input
           id="signup-email"
+          name="email"
           type="email"
           value={email}
           onChange={(e) => {
@@ -110,6 +112,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
         <div className="relative">
           <Input
             id="signup-password"
+            name="password"
             type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(e) => {

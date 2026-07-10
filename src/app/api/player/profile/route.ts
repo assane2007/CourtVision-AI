@@ -11,9 +11,9 @@ export async function GET() {
     const session = await getServerSession(authOptions);
     const playerId = session?.user?.id;
 
-    // Special: return null player if no session (so frontend shows auth screen)
+    // Require authentication — return 401 if no session
     if (!playerId) {
-      return NextResponse.json({ player: null });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const player = await getPlayer(playerId);

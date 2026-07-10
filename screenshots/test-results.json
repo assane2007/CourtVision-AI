@@ -1,0 +1,127 @@
+[
+  {
+    "test": "GET /",
+    "status": "FAIL",
+    "detail": "timeout"
+  },
+  {
+    "test": "POST /api/auth/signup",
+    "status": "PASS",
+    "detail": "id=cmrec9xff0000o7dynilv7ae4"
+  },
+  {
+    "test": "POST /api/auth/callback/credentials",
+    "status": "PASS",
+    "detail": "status=302"
+  },
+  {
+    "test": "GET /api/auth/session",
+    "status": "PASS",
+    "detail": "status=200"
+  },
+  {
+    "test": "GET /api/player/profile",
+    "status": "WARN",
+    "detail": "status=200 (should be protected?)"
+  },
+  {
+    "test": "GET /api/player/stats",
+    "status": "PASS",
+    "detail": "status=401 (protected)"
+  },
+  {
+    "test": "GET /api/settings",
+    "status": "PASS",
+    "detail": "status=401 (protected)"
+  },
+  {
+    "test": "GET /api/training/sessions",
+    "status": "WARN",
+    "detail": "status=404 (should be protected?)"
+  },
+  {
+    "test": "GET /api/training/drills",
+    "status": "WARN",
+    "detail": "status=404 (should be protected?)"
+  },
+  {
+    "test": "GET /api/training/plans",
+    "status": "WARN",
+    "detail": "status=404 (should be protected?)"
+  },
+  {
+    "test": "GET /api/social/friends",
+    "status": "WARN",
+    "detail": "status=404 (should be protected?)"
+  },
+  {
+    "test": "GET /api/social/feed",
+    "status": "WARN",
+    "detail": "status=404 (should be protected?)"
+  },
+  {
+    "test": "GET /api/leaderboard",
+    "status": "PASS",
+    "detail": "status=401 (protected)"
+  },
+  {
+    "test": "GET /api/achievements",
+    "status": "PASS",
+    "detail": "status=401 (protected)"
+  },
+  {
+    "test": "GET /api/notifications/subscribe",
+    "status": "WARN",
+    "detail": "status=405 (should be protected?)"
+  },
+  {
+    "test": "POST /api/ai/chat",
+    "status": "PASS",
+    "detail": "status=200"
+  },
+  {
+    "test": "POST /api/ai/tts",
+    "status": "FAIL",
+    "detail": "status=500"
+  },
+  {
+    "test": "POST /api/ai/web-search",
+    "status": "PASS",
+    "detail": "status=200"
+  },
+  {
+    "test": "GET /favicon.ico",
+    "status": "WARN",
+    "detail": "status=404"
+  },
+  {
+    "test": "Page renders content",
+    "status": "PASS",
+    "detail": "1666 chars"
+  },
+  {
+    "test": "No JS errors",
+    "status": "FAIL",
+    "detail": "2 errors: Loading the script 'https://va.vercel-scripts.com/v1/speed-insights/script.debug.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.; Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+  },
+  {
+    "test": "Signup form fields exist",
+    "status": "FAIL",
+    "detail": "name=false email=false pass=false"
+  },
+  {
+    "test": "Mobile renders",
+    "status": "PASS",
+    "detail": "1666 chars"
+  },
+  {
+    "test": "No horizontal overflow (mobile)",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "test": "Login form",
+    "status": "FAIL",
+    "detail": "inputs not found"
+  }
+]

@@ -54,6 +54,7 @@ export function LoginForm({ onSuccess, onForgotPassword }: LoginFormProps) {
         </Label>
         <Input
           id="login-email"
+          name="email"
           type="email"
           value={email}
           onChange={(e) => {
@@ -78,6 +79,7 @@ export function LoginForm({ onSuccess, onForgotPassword }: LoginFormProps) {
         <div className="relative">
           <Input
             id="login-password"
+            name="password"
             type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(e) => {

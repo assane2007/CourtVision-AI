@@ -74,8 +74,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const selectedVoice = typeof voice === 'string' ? voice : DEFAULT_VOICE
-    const selectedSpeed =
+    const _selectedVoice = typeof voice === 'string' ? voice : DEFAULT_VOICE
+    const _selectedSpeed =
       typeof speed === 'number' ? Math.max(MIN_SPEED, Math.min(MAX_SPEED, speed)) : DEFAULT_SPEED
 
     const zai = await ZAI.create()
@@ -87,11 +87,18 @@ export async function POST(req: NextRequest) {
     for (const chunk of chunks) {
       const audioResponse = await zai.audio.tts.create({
         input: chunk,
-        voice: selectedVoice,
-        speed: selectedSpeed,
       })
 
-      const audioBase64 = typeof audioResponse === 'string' ? audioResponse : ''
+      // Response may be a string (base64) or an object with base64 data
+      let audioBase64 = ''
+      if (typeof audioResponse === 'string') {
+        audioBase64 = audioResponse
+      } else if (audioResponse && typeof audioResponse === 'object') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const resp = audioResponse as any
+        audioBase64 = resp.audio_base64 || resp.audio || resp.data || ''
+      }
+
       if (audioBase64) {
         audioBuffers.push(Buffer.from(audioBase64, 'base64'))
       }
