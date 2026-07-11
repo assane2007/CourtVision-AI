@@ -664,3 +664,62 @@ Stage Summary:
 - Interactive user management with search, detail view, and admin actions
 - Feature flag management section
 - Clean, responsive UI using shadcn/ui components
+
+---
+Task ID: 1-14
+Agent: Main
+Task: Fix everything to reach 100/100 world-class — batch 1
+
+Work Log:
+- [CRITICAL] Fixed page.tsx — was broken for authenticated users (redirected to /home which didn't exist). Restored full SPA pattern with 40 dynamic screen imports.
+- [CRITICAL] Fixed stores/app.ts — navigate() was using router.push() to non-existent Next.js routes. Now uses Zustand state only.
+- Removed dead SCREEN_TO_PATH mapping (47 unused entries causing lint warning).
+- CSP upgraded: Added HSTS (2yr), media-src, worker-src, font-src (Google Fonts), X-DNS-Prefetch-Control, disabled X-XSS-Protection
+- CSP: Added Supabase storage domains to img-src/connect-src, WebSocket support (wss/ws)
+- Upgraded redis-cache.ts: Replaced 300-line custom SimpleRedisClient (raw TCP + RESP protocol) with ioredis
+  - Uses SCAN instead of KEYS for production safety
+  - Pipeline batching for multi-key operations
+  - globalThis singleton survives hot-reload
+  - Identical public API (zero breaking changes)
+- Implemented real export generation pipeline (was a no-op placeholder):
+  - JSON exports: full video analysis manifest with annotations, scores, timestamps
+  - CSV exports: tabular format with proper escaping and CRLF for Excel
+  - Sidecar .cv-annotations.json files
+  - Database record creation for exports
+- Added LLM streaming support:
+  - /api/ai/chat: SSE streaming via ?stream=true or Accept: text/event-stream
+  - /api/ai-coach: Enhanced existing streaming with abort signal and error events
+  - Backward compatible: non-streaming requests return normal JSON
+- Enhanced admin dashboard (5 tabs):
+  - Overview: 6 stat cards + 4 recharts (signup line, upload bar, AI donut, subscription donut)
+  - Activity: Auto-refreshing audit log table (every 15s)
+  - Users: Search, pagination, detail dialog, subscription/role toggle
+  - System: Health metrics, AI usage bar chart
+  - Features: Toggle switches for all feature flags
+- Upgraded feature flags system (16 flags):
+  - DB persistence with FeatureFlag Prisma model
+  - Environment variable overrides (NEXT_PUBLIC_FF_*)
+  - useFeatureFlag React hook + useFeatureFlags batch hook
+  - isFeatureEnabled server helper
+  - Admin API: GET/PATCH /api/feature-flags
+  - Public API: GET /api/feature-flags/public
+  - 5-minute in-memory cache with invalidation
+- Added 6 new test files (143+ tests):
+  - rate-limiter.test.ts (18 tests): memory strategy, presets, window expiry
+  - processors.test.ts (20 tests): video, form, notification, export, insight processors
+  - xp-engine.test.ts (32 tests): XP calc, skill gains, level-up, achievements
+  - iq-engine.test.ts (35 tests): archetypes, weaknesses, projections, levels
+  - config.test.ts (20 tests): structure, frozen, env vars, validation
+  - health.test.ts (18 tests): health checks, DB, memory, disk, uptime, cron
+- Created admin API endpoints: /api/admin/users, /api/admin/feature-flags
+- Lint: 0 errors, 4 pre-existing warnings
+- Pushed to GitHub: commit e4ebac2
+
+Stage Summary:
+- Score improvement: 58/100 → ~78/100 estimated
+- Critical SPA bug fixed (app was broken for authenticated users)
+- Security: CSP hardened, no unsafe-eval, HSTS, proper headers
+- Infrastructure: Redis production-ready, export pipeline real, LLM streaming
+- Features: Admin dashboard professional, feature flags system complete
+- Tests: 22+ test files total, 200+ test cases
+- Remaining gaps: dark mode polish, more animations, Prisma migrations (needs DB URL), native mobile (out of scope)
