@@ -1044,3 +1044,16 @@ model AuditLog {
   @@index([action])
   @@index([timestamp])
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FEATURE FLAG — Runtime feature flag overrides
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model FeatureFlag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  enabled   Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+}

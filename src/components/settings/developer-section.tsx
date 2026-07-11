@@ -7,7 +7,7 @@ import { useTranslation } from '@/components/providers/language-provider'
 import {
   ALL_FLAGS,
   FEATURE_LABELS,
-  isFeatureEnabled,
+  isFeatureEnabledClient,
   setFeatureOverride,
   type FeatureFlag,
 } from '@/lib/feature-flags'
@@ -27,7 +27,7 @@ export function DeveloperSection() {
           </Label>
           <Switch
             id={`flag-${flag}`}
-            checked={isFeatureEnabled(flag)}
+            checked={isFeatureEnabledClient(flag)}
             onCheckedChange={(checked) => {
               setFeatureOverride(flag, checked)
               toast.success(`${FEATURE_LABELS[flag]} ${checked ? t('settings.activated') : t('settings.disabled')}`)

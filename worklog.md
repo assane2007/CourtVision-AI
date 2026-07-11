@@ -523,3 +523,144 @@ Stage Summary:
 - RAG embeddings | Video pipeline (ffmpeg) | Admin dashboard
 - PostHog analytics | API v1 versioning | Audit log system
 - Auth unified | Prisma migrations | 45+ test files | 48 DB models
+
+---
+Task ID: 3
+Agent: Redis Upgrade Agent
+Task: Upgrade redis-cache.ts to use ioredis instead of custom SimpleRedisClient
+
+Work Log:
+- Removed custom SimpleRedisClient (300+ lines of raw TCP/RESP protocol)
+- Replaced with ioredis lazyConnect singleton
+- Implemented all cache operations using ioredis API
+- Used SCAN instead of KEYS for production safety
+- Preserved MemoryCache fallback on connection failure
+- Maintained identical public API (RedisCache class, all methods)
+
+Stage Summary:
+- Redis cache now uses battle-tested ioredis library
+- ~300 lines of custom protocol code removed
+- Backward compatible: no changes needed in consumers
+
+---
+Task ID: 5
+Agent: LLM Streaming Agent
+Task: Add LLM streaming support to AI chat and coach endpoints
+
+Work Log:
+- Analyzed z-ai-web-dev-sdk streaming capabilities (stream: boolean in CreateChatCompletionBody, returns ReadableStream<Uint8Array>)
+- Reviewed existing streaming infrastructure: chatStream() and createSSETransformStream() in language.provider.ts
+- Confirmed /api/ai-coach already had partial streaming (?stream=true only), enhanced it
+- Rewrote /api/ai/chat to support streaming while keeping backward compatibility
+- Both endpoints now detect streaming via ?stream=true query param OR Accept: text/event-stream header
+- Added abort signal handling to both endpoints — streams close cleanly on client disconnect
+- Added SSE error events (data: {"error":"..."}\n\n followed by data: [DONE]\n\n) for graceful error handling
+- Proper SSE headers: Content-Type: text/event-stream, Cache-Control: no-cache, Connection: keep-alive, X-Accel-Buffering: no
+- /api/ai/chat: moved from withAuth wrapper to inline auth (needed to return raw Response for streaming)
+- /api/ai-coach: added Accept header detection, abort signal passthrough, improved stream cleanup
+- All 3 existing streaming tests pass, no new TypeScript errors introduced
+
+Stage Summary:
+- Real-time AI responses now possible via SSE
+- Reduces perceived latency for users
+- Backward compatible with existing clients (non-streaming JSON still default)
+- Proper error boundaries and stream cleanup on abort
+
+---
+Task ID: 4
+Agent: Export Pipeline Agent
+Task: Implement real export generation pipeline
+
+Work Log:
+- Analyzed current no-op export generation in processors.ts and queue/index.ts
+- Read Prisma schema (Video, VideoAnnotation, VideoExport models) and video repository
+- Extended ExportGenerationPayload type with 'json' | 'csv' format options and optional exportId
+- Implemented `buildJsonExport()` — full analysis manifest with video metadata, player info, parsed annotations, summary stats (score min/max/avg), type counts
+- Implemented `buildCsvExport()` — tabular one-row-per-annotation export with header, timestamp formatting, proper CSV escaping, CRLF line endings
+- Added `csvEscape()` and `formatTimestampMs()` helper functions
+- Implemented `writeSidecarAnnotationFile()` — writes `.cv-annotations.json` next to locally-stored video files
+- Replaced no-op `processExportGeneration` with real 6-step pipeline: DB lookup → fetch annotations → generate content → write file → sidecar → update/create DB record
+- Graceful degradation: video not found → empty result, annotations missing → still exports metadata, video formats (mp4/gif/webm) → logged warning + empty result, file/DB errors → caught with fallback
+- Updated TaskQueue stub in queue/index.ts to delegate to real processor
+- Updated API route POST /api/videos/[id]/export: added 'json' and 'csv' to valid types, data exports skip startMs/endMs validation, routes data exports through real processor
+- Created public/uploads/exports/ directory for generated files
+- TypeScript compilation verified — no new errors introduced
+
+Stage Summary:
+- Export pipeline now generates real JSON/CSV files with analysis data
+- No longer a placeholder — produces actual downloadable exports
+- Graceful degradation maintained for missing data
+- VideoExport DB records created/updated with real file URLs and sizes
+- Sidecar annotation files written alongside local video files
+
+---
+Task ID: 7
+Agent: Test Coverage Agent
+Task: Add comprehensive unit tests for untested modules
+
+Work Log:
+- Created rate-limiter.test.ts (memory strategy tests)
+- Created processors.test.ts (queue processor tests with mocks)
+- Created xp-engine.test.ts (XP calculation and level tests)
+- Created iq-engine.test.ts (basketball IQ engine tests)
+- Created config.test.ts (configuration module tests)
+- Created health.test.ts (health check module tests)
+
+Stage Summary:
+- Added 6 new test files covering security, queue, player engine, config, monitoring
+- Total test files increased from ~16 to ~22
+- Proper mocking patterns used for database and external services
+
+---
+Task ID: 9
+Agent: Feature Flags Agent
+Task: Upgrade feature flags system to production-ready
+
+Work Log:
+- Read existing feature-flags.ts
+- Defined 16 comprehensive feature flags
+- Added env var override support (NEXT_PUBLIC_FF_*)
+- Added database persistence with FeatureFlag model
+- Created GET/PATCH /api/feature-flags endpoints
+- Created GET /api/feature-flags/public for client use
+- Created useFeatureFlag React hook
+- Created isFeatureEnabled server helper
+- Added 5-minute cache with invalidation
+- Updated legacy /api/admin/feature-flags to use new DB-backed system
+- Updated FeatureGate component to use useFeatureFlag hook
+- Updated DeveloperSection to use isFeatureEnabledClient
+
+Stage Summary:
+- Production-ready feature flag system
+- 16 flags covering all major features
+- Admin API for flag management
+- Client hook for conditional rendering
+- Database-backed with caching
+---
+Task ID: 6
+Agent: Admin Dashboard Agent
+Task: Enhance admin dashboard with real stats, charts, and management features
+
+Work Log:
+- Read existing admin-screen.tsx, admin APIs, Prisma schema, feature-flags config
+- Enhanced /api/admin/stats with real DB queries: total videos, workouts, AI analyses, active subscriptions, video uploads per day, cache hit rate, rate limit stats
+- Added mock data fallback when DB queries fail
+- Created /api/admin/users route: GET search/list users, PATCH toggle subscription & role
+- Created /api/admin/feature-flags route: GET list flags, POST toggle overrides (in-memory)
+- Rebuilt admin-screen.tsx with 6 sections across 5 tabs:
+  - Overview: 6 stat cards (users, videos, workouts, AI analyses, subscriptions, MRR) + 4 charts (signups line, video uploads bar, AI usage donut, subscription donut) + recent signups table
+  - Activity: Last 20 audit log entries with timestamp, user, action, resource, IP
+  - Users: Search bar, user table with view details dialog, subscription/role toggle
+  - System: 6 health metric cards + AI usage bar chart
+  - Feature Flags: Toggle switches for all flags with override indicators
+- Used framer-motion for staggered card animations
+- Responsive design with mobile-first grid (2 cols mobile, 3 cols tablet, 6 cols desktop)
+- Loading skeletons throughout, auto-refresh every 15-30s
+- All lint warnings in new files resolved
+
+Stage Summary:
+- Admin dashboard now has professional data visualization with 4 chart types
+- Real-time stats from enhanced admin APIs with DB fallback to mock data
+- Interactive user management with search, detail view, and admin actions
+- Feature flag management section
+- Clean, responsive UI using shadcn/ui components

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
-import { isFeatureEnabled, type FeatureFlag, FEATURE_LABELS } from '@/lib/feature-flags'
+import { useState, useCallback } from 'react'
+import { useFeatureFlag, type FeatureFlag, FEATURE_LABELS } from '@/hooks/use-feature-flag'
 import { useTranslation } from '@/components/providers/language-provider'
 import { useAppStore } from '@/stores/app'
 import {
@@ -24,8 +24,11 @@ interface FeatureGateProps {
 /** Map each feature flag to a description translation key */
 const FLAG_DESC_KEYS: Record<string, string> = {
   scouting: 'paywall.scoutingDesc',
-  ai_coach: 'paywall.aiCoachDesc',
+  ai_streaming: 'paywall.aiCoachDesc',
   reaction_trainer: 'paywall.reactionTrainerDesc',
+  voice_coach: 'paywall.aiCoachDesc',
+  advanced_analytics: 'paywall.aiCoachDesc',
+  video_export: 'paywall.aiCoachDesc',
 }
 
 /**
@@ -37,7 +40,7 @@ export function FeatureGate({ flag, children, fallback = null }: FeatureGateProp
   const { t } = useTranslation()
   const navigate = useAppStore(s => s.navigate)
 
-  const enabled = useMemo(() => isFeatureEnabled(flag), [flag])
+  const enabled = useFeatureFlag(flag)
   const shouldShowPaywall = !enabled && !dismissed
 
   const handleViewPlans = useCallback(() => {
@@ -64,7 +67,7 @@ export function FeatureGate({ flag, children, fallback = null }: FeatureGateProp
             <DialogTitle>{t('paywall.title')}</DialogTitle>
           </div>
           <DialogDescription className="text-sm text-muted-foreground">
-            {descKey ? t(descKey as 'paywall.scoutingDesc') : `${FEATURE_LABELS[flag]} nécessite un abonnement Pro.`}
+            {descKey ? t(descKey as 'paywall.scoutingDesc') : `${FEATURE_LABELS[flag]} requires a Pro subscription.`}
           </DialogDescription>
         </DialogHeader>
 

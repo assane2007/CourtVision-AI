@@ -61,12 +61,16 @@ export interface NotificationSendPayload {
   data?: Record<string, unknown>
 }
 
+export type ExportFormat = 'mp4' | 'gif' | 'webm' | 'json' | 'csv'
+
 export interface ExportGenerationPayload {
   videoId: string
   playerId: string
-  format: 'mp4' | 'gif' | 'webm'
+  format: ExportFormat
   quality: 'low' | 'medium' | 'high'
   annotations?: boolean
+  /** Optional pre-existing VideoExport record ID (created by the API route). */
+  exportId?: string
 }
 
 export interface InsightRefreshPayload {

@@ -186,11 +186,13 @@ dis-le honnêtement. Maximum 3-4 phrases par réponse.`
       { role: 'user' as const, content: userMessage },
     ]
 
-    // 6. Check if streaming is requested
-    const isStream = req.nextUrl.searchParams.get('stream') === 'true'
+    // 6. Check if streaming is requested (?stream=true or Accept: text/event-stream)
+    const isStream =
+      req.nextUrl.searchParams.get('stream') === 'true' ||
+      req.headers.get('accept') === 'text/event-stream'
 
     if (isStream) {
-      return handleStreamResponse(llmMessages, playerId)
+      return handleStreamResponse(llmMessages, playerId, req.signal)
     }
 
     // 7. Non-streaming: call LLM directly
@@ -231,10 +233,12 @@ dis-le honnêtement. Maximum 3-4 phrases par réponse.`
  * Handle a streaming AI coach response.
  * Calls the LLM with stream=true, pipes through SSE transform,
  * accumulates the full reply, and persists it to DB after the stream completes.
+ * Handles client disconnect via abort signal to clean up resources.
  */
 async function handleStreamResponse(
   messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
   playerId: string,
+  abortSignal: AbortSignal,
 ) {
   try {
     const sdkStream = await chatStream(messages)
@@ -242,13 +246,14 @@ async function handleStreamResponse(
     // We need to accumulate tokens to persist the full reply to DB
     let fullContent = ''
     const encoder = new TextEncoder()
+    const decoder = new TextDecoder()
 
     const accumulatingStream = new TransformStream<Uint8Array, Uint8Array>({
       transform(chunk, controller) {
         // Pass through to client
         controller.enqueue(chunk)
         // Also accumulate for DB persistence
-        const text = new TextDecoder().decode(chunk, { stream: true })
+        const text = decoder.decode(chunk, { stream: true })
         const lines = text.split('\n')
         for (const line of lines) {
           const trimmed = line.trim()
@@ -264,7 +269,8 @@ async function handleStreamResponse(
         }
       },
       async flush() {
-        // Persist the complete reply to DB after stream ends
+        // Persist the complete reply to DB after stream ends (unless aborted)
+        if (abortSignal.aborted || !fullContent) return
         const sanitized = stripHtml(fullContent).slice(0, 5000)
         if (sanitized) {
           await db.aIChatMessage.create({
@@ -279,7 +285,40 @@ async function handleStreamResponse(
     const sseTransform = createSSETransformStream()
     const pipeline = sdkStream.pipeThrough(sseTransform).pipeThrough(accumulatingStream)
 
-    return new Response(pipeline, {
+    // Wrap pipeline to handle abort signal for clean client disconnect
+    const abortableStream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        const reader = pipeline.getReader()
+
+        const onAbort = () => {
+          reader.cancel().catch(() => {})
+          controller.close()
+        }
+        abortSignal.addEventListener('abort', onAbort, { once: true })
+
+        try {
+          for (;;) {
+            const { done, value } = await reader.read()
+            if (done) break
+            if (abortSignal.aborted) break
+            controller.enqueue(value)
+          }
+        } catch (err) {
+          // If the stream errors mid-way, send an error event before closing
+          if (!abortSignal.aborted) {
+            const errorMsg = err instanceof Error ? err.message : 'Erreur de stream'
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ error: errorMsg })}\n\n`),
+            )
+          }
+        } finally {
+          abortSignal.removeEventListener('abort', onAbort)
+          controller.close()
+        }
+      },
+    })
+
+    return new Response(abortableStream, {
       status: 200,
       headers: {
         'Content-Type': 'text/event-stream',
@@ -292,11 +331,11 @@ async function handleStreamResponse(
     trackError('POST /api/ai-coach (stream)', error)
     // Return a single SSE error event then [DONE]
     const errorMsg = error instanceof Error ? error.message : 'Erreur serveur'
-    const encoder = new TextEncoder()
+    const errorEncoder = new TextEncoder()
     const errorStream = new ReadableStream({
       start(controller) {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: errorMsg })}\n\n`))
-        controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+        controller.enqueue(errorEncoder.encode(`data: ${JSON.stringify({ error: errorMsg })}\n\n`))
+        controller.enqueue(errorEncoder.encode('data: [DONE]\n\n'))
         controller.close()
       },
     })
@@ -305,6 +344,7 @@ async function handleStreamResponse(
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
       },
     })
   }

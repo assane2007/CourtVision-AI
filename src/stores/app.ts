@@ -9,57 +9,6 @@
 import { create } from 'zustand'
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 
-// ── Screen-to-Path mapping ────────────────────────────────────────────────────
-
-const SCREEN_TO_PATH: Record<string, string> = {
-  'home': '/home',
-  'train': '/train',
-  'drill-detail': '/train/drill/',
-  'camera-workout': '/train/workout',
-  'workout-summary': '/train/workout/summary',
-  'plans': '/train/plans',
-  'ai-coach': '/ai-coach',
-  'ai-tools': '/ai-tools',
-  'ai-insights': '/ai-insights',
-  'predictions': '/ai/predictions',
-  'ai-workout': '/ai/workout',
-  'voice-coach': '/ai/voice',
-  'video-library': '/videos',
-  'video-upload': '/videos/upload',
-  'video-player': '/videos/',
-  'video-compare': '/videos/compare',
-  'stats': '/stats',
-  'records': '/records',
-  'scouting': '/scouting',
-  'reaction-trainer': '/reaction',
-  'feed': '/feed',
-  'post-detail': '/feed/',
-  'friends': '/friends',
-  'messages': '/messages',
-  'conversation': '/messages/',
-  'teams': '/teams',
-  'team-detail': '/teams/',
-  'challenges': '/challenges',
-  'challenge-detail': '/challenges/',
-  'leaderboard': '/leaderboard',
-  'achievements': '/achievements',
-  'profile': '/profile',
-  'profile-other': '/profile/',
-  'settings': '/settings',
-  'notifications': '/notifications',
-  'pricing': '/pricing',
-  'live-workout': '/live',
-  'admin': '/admin',
-  'train-hub': '/train/hub',
-  'ai-workout-gen': '/ai/workout-gen',
-  'terms': '/terms',
-  'privacy': '/privacy',
-  'quests': '/quests',
-  'recommendations': '/recommendations',
-  'daily-reward': '/daily-reward',
-  'referral': '/referral',
-}
-
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type Screen =
@@ -173,25 +122,16 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
   setRouter: (router) => set({ router }),
 
   navigate: (screen, id) => {
-    const state = useAppStore.getState()
-    const basePath = SCREEN_TO_PATH[screen]
-
-    // Use Next.js router when available and a path mapping exists
-    if (state.router && basePath) {
-      const fullPath = basePath + (id || '')
-      state.router.push(fullPath)
-      // Also update Zustand state for backward compatibility
-      set((s) => ({
-        currentScreen: screen,
-        screenHistory: [...s.screenHistory.slice(-20), s.currentScreen],
-      }))
-      return
-    }
-
-    // Fallback: Zustand state change only
     set((s) => ({
       currentScreen: screen,
       screenHistory: [...s.screenHistory.slice(-20), s.currentScreen],
+      ...(screen === 'drill-detail' && id ? { selectedDrillId: id } : {}),
+      ...(screen === 'conversation' && id ? { selectedConversationId: id } : {}),
+      ...(screen === 'team-detail' && id ? { selectedDrillId: id } : {}),
+      ...(screen === 'challenge-detail' && id ? { selectedDrillId: id } : {}),
+      ...(screen === 'post-detail' && id ? { selectedDrillId: id } : {}),
+      ...(screen === 'profile-other' && id ? { selectedDrillId: id } : {}),
+      ...(screen === 'video-player' && id ? { selectedDrillId: id } : {}),
     }))
   },
 

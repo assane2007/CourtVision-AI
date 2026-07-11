@@ -2,9 +2,13 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { trackError } from '@/lib/monitoring'
 import { withAuth } from '@/lib/with-auth'
+import { processExportGeneration } from '@/lib/queue/processors'
 
-const VALID_EXPORT_TYPES = ['gif', 'mp4', 'webm']
+const VALID_EXPORT_TYPES = ['gif', 'mp4', 'webm', 'json', 'csv']
 const VALID_QUALITIES = ['low', 'medium', 'high']
+
+/** Export types that produce downloadable data files (no ffmpeg needed). */
+const DATA_EXPORT_TYPES = ['json', 'csv']
 
 // GET /api/videos/[id]/export — List exports for a video
 export const GET = withAuth(async (request, session, { params }) => {
@@ -35,9 +39,9 @@ export const POST = withAuth(async (request, session, { params }) => {
     const { id: videoId } = await params
     const body = await request.json()
 
-    const { type, format, startMs, endMs, quality } = body
+    const { type, format, startMs, endMs, quality, annotations } = body
 
-    const exportType = type || format || 'gif'
+    const exportType = type || format || 'json'
     if (!VALID_EXPORT_TYPES.includes(exportType)) {
       return NextResponse.json(
         { error: `Type invalide. Types acceptés : ${VALID_EXPORT_TYPES.join(', ')}` },
@@ -52,12 +56,17 @@ export const POST = withAuth(async (request, session, { params }) => {
       )
     }
 
-    if (typeof startMs !== 'number' || startMs < 0) {
-      return NextResponse.json({ error: 'Temps de début invalide' }, { status: 400 })
-    }
+    const isDataExport = DATA_EXPORT_TYPES.includes(exportType)
 
-    if (typeof endMs !== 'number' || endMs <= startMs) {
-      return NextResponse.json({ error: 'Temps de fin invalide' }, { status: 400 })
+    // Video clip exports require startMs/endMs; data exports do not
+    if (!isDataExport) {
+      if (typeof startMs !== 'number' || startMs < 0) {
+        return NextResponse.json({ error: 'Temps de début invalide' }, { status: 400 })
+      }
+
+      if (typeof endMs !== 'number' || endMs <= startMs) {
+        return NextResponse.json({ error: 'Temps de fin invalide' }, { status: 400 })
+      }
     }
 
     // Verify video ownership
@@ -70,6 +79,38 @@ export const POST = withAuth(async (request, session, { params }) => {
       return NextResponse.json({ error: 'Vidéo introuvable' }, { status: 404 })
     }
 
+    // For data exports (json/csv), use the real queue processor
+    if (isDataExport) {
+      const videoExport = await db.videoExport.create({
+        data: {
+          videoId,
+          playerId: session.user.id,
+          type: exportType,
+          format: exportType,
+          status: 'pending',
+        },
+      })
+
+      // Fire-and-forget: delegate to the real export processor
+      processExportGeneration({
+        videoId,
+        playerId: session.user.id,
+        format: exportType as 'json' | 'csv',
+        quality: quality || 'medium',
+        annotations: annotations ?? true,
+        exportId: videoExport.id,
+      }).catch((err) => {
+        trackError(`[Export ${videoExport.id}] Failed`, err)
+        db.videoExport.update({
+          where: { id: videoExport.id },
+          data: { status: 'failed' },
+        }).catch(() => {})
+      })
+
+      return NextResponse.json({ export: videoExport }, { status: 201 })
+    }
+
+    // Video clip exports (gif/mp4/webm) — keep existing simulated flow
     const videoExport = await db.videoExport.create({
       data: {
         videoId,
@@ -80,8 +121,8 @@ export const POST = withAuth(async (request, session, { params }) => {
       },
     })
 
-    // Process export asynchronously (non-blocking)
-    processExport(videoExport.id, videoId, session.user.id, {
+    // Process video clip export asynchronously (simulated)
+    processVideoClipExport(videoExport.id, videoId, session.user.id, {
       exportType,
       startMs,
       endMs,
@@ -101,8 +142,8 @@ export const POST = withAuth(async (request, session, { params }) => {
   }
 })
 
-// Async export processing (simulated — in production this would use ffmpeg)
-async function processExport(
+// Async video clip export processing (simulated — requires ffmpeg in production)
+async function processVideoClipExport(
   exportId: string,
   videoId: string,
   playerId: string,

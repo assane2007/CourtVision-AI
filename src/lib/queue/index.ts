@@ -33,6 +33,9 @@ import type {
   FormAnalysisResult,
   ExportResult,
 } from './types'
+import {
+  processExportGeneration as realProcessExportGeneration,
+} from './processors'
 
 // ── Configuration ──────────────────────────────────────────────────────────────
 
@@ -330,22 +333,8 @@ export class TaskQueue {
   private async processExportGeneration(
     task: Task<ExportGenerationPayload>,
   ): Promise<ExportResult> {
-    // In production, this would:
-    // 1. Fetch video + annotations
-    // 2. Render to requested format
-    // 3. Upload to storage
-    // 4. Return download URL
-
-    const result: ExportResult = {
-      videoId: task.payload.videoId,
-      exportId: randomUUID(),
-      url: '',
-      format: task.payload.format,
-      sizeBytes: 0,
-      duration: 0,
-    }
-
-    return result
+    // Delegate to the real processor which handles JSON/CSV data exports
+    return realProcessExportGeneration(task.payload)
   }
 
   private async processInsightRefresh(
