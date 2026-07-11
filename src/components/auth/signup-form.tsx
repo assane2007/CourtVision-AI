@@ -58,6 +58,10 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
     try {
       const { createClient } = await import('@/lib/supabase/client')
       const supabase = createClient()
+      if (!supabase) {
+        setError('Authentication is not configured')
+        return
+      }
       await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {

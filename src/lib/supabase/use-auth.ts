@@ -21,8 +21,9 @@ interface SupabaseUser {
 interface UseSupabaseAuthReturn {
   user: SupabaseUser | null
   loading: boolean
+  supabaseReady: boolean
   signInWithMagicLink: (email: string) => Promise<{ error: string | null }>
-  signInWithOAuth: (provider: 'google' | 'github') => Promise<void>
+  signInWithOAuth: (provider: 'google' | 'github') => Promise<{ error: string | null }>
   signOut: () => Promise<void>
   refreshSession: () => Promise<void>
 }
@@ -33,6 +34,10 @@ export function useSupabaseAuth(): UseSupabaseAuthReturn {
 
   useEffect(() => {
     const supabase = createClient()
+    if (!supabase) {
+      setLoading(false)
+      return
+    }
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -67,33 +72,44 @@ export function useSupabaseAuth(): UseSupabaseAuthReturn {
   }, [])
 
   const signInWithMagicLink = useCallback(async (email: string) => {
+    const supabase = createClient()
+    if (!supabase) return { error: 'Authentication is not configured' }
+
     try {
-      const supabase = createClient()
       const { error } = await supabase.auth.signInWithOtp({ email })
       return { error: error?.message || null }
     } catch {
-      return { error: 'Erreur de connexion' }
+      return { error: 'Failed to send magic link' }
     }
   }, [])
 
   const signInWithOAuth = useCallback(async (provider: 'google' | 'github') => {
     const supabase = createClient()
-    await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: window.location.origin,
-      },
-    })
+    if (!supabase) return { error: 'Authentication is not configured' }
+
+    try {
+      await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: window.location.origin,
+        },
+      })
+      return { error: null }
+    } catch {
+      return { error: 'OAuth sign-in failed' }
+    }
   }, [])
 
   const signOut = useCallback(async () => {
     const supabase = createClient()
-    await supabase.auth.signOut()
+    if (supabase) await supabase.auth.signOut()
     setUser(null)
   }, [])
 
   const refreshSession = useCallback(async () => {
     const supabase = createClient()
+    if (!supabase) return
+
     const { data: { session } } = await supabase.auth.refreshSession()
     if (session?.user) {
       setUser({
@@ -106,5 +122,5 @@ export function useSupabaseAuth(): UseSupabaseAuthReturn {
     }
   }, [])
 
-  return { user, loading, signInWithMagicLink, signInWithOAuth, signOut, refreshSession }
+  return { user, loading, supabaseReady: !!createClient(), signInWithMagicLink, signInWithOAuth, signOut, refreshSession }
 }

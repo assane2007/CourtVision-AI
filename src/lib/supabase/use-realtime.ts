@@ -29,7 +29,7 @@ export function useSupabaseRealtime(
   options: RealtimeOptions = {},
 ) {
   const { filter, onInsert, onUpdate, onDelete, enabled = true } = options
-  const channelRef = useRef<ReturnType<ReturnType<typeof createClient>['channel']> | null>(null)
+  const channelRef = useRef<ReturnType<ReturnType<typeof import('@/lib/supabase/client').createClient>['channel']> | null>(null)
 
   const cleanup = useCallback(() => {
     if (channelRef.current) {
@@ -45,6 +45,7 @@ export function useSupabaseRealtime(
     }
 
     const supabase = createClient()
+    if (!supabase) return
 
     const eventHandlers: Array<{ event: EventType; handler: (payload: Record<string, unknown>) => void }> = []
 

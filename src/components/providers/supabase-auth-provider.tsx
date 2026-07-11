@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import type { User, Session } from '@supabase/supabase-js'
+import type { User, Session, SupabaseClient } from '@supabase/supabase-js'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -18,6 +18,7 @@ interface AuthContextValue {
   session: Session | null
   loading: boolean
   isAuthenticated: boolean
+  supabaseReady: boolean
   signUp: (email: string, password: string, name: string) => Promise<{ error: string | null }>
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
@@ -66,6 +67,12 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
     mountedRef.current = true
     const supabase = createClient()
 
+    if (!supabase) {
+      // Supabase not configured — skip auth, mark loading as done
+      setLoading(false)
+      return
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       if (!mountedRef.current) return
@@ -105,8 +112,10 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signUp = useCallback(async (email: string, password: string, name: string) => {
+    const supabase = createClient()
+    if (!supabase) return { error: 'Authentication is not configured' }
+
     try {
-      const supabase = createClient()
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -114,7 +123,6 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
       })
 
       if (!error && data.user) {
-        // Sync Player record immediately after successful signup
         await syncPlayerToDb(data.user.id, data.user.email, name)
       }
 
@@ -125,15 +133,16 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signIn = useCallback(async (email: string, password: string) => {
+    const supabase = createClient()
+    if (!supabase) return { error: 'Authentication is not configured' }
+
     try {
-      const supabase = createClient()
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (!error && data.user) {
-        // Sync Player record on login (creates if missing, no-op if exists)
         const name = data.user.user_metadata?.name || data.user.email?.split('@')[0] || null
         await syncPlayerToDb(data.user.id, data.user.email, name)
       }
@@ -146,7 +155,7 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     const supabase = createClient()
-    await supabase.auth.signOut()
+    if (supabase) await supabase.auth.signOut()
     setUser(null)
     setSession(null)
   }, [])
@@ -156,6 +165,7 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
     session,
     loading,
     isAuthenticated: !!user,
+    supabaseReady: !!createClient(),
     signUp,
     signIn,
     signOut,
