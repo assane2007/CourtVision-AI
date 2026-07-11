@@ -77,3 +77,60 @@ Stage Summary:
 - [ ] Set DATABASE_URL (Supabase PostgreSQL)
 - [ ] Set ENCRYPTION_KEY (openssl rand -base64 48)
 - [ ] Run `prisma migrate dev` or `prisma db push` on first deploy
+
+---
+Task ID: 4
+Agent: Main
+Task: Implement all remaining improvements before production
+
+Work Log:
+- Discovered AI features are ALREADY IMPLEMENTED (ai-coach, form-check, insights, TTS, ASR, image gen, web search/reader all call real z-ai-web-dev-sdk)
+- Wired queue processors to real AI pipeline:
+  - `processFormAnalysis` → calls `aiPipeline.form.analyze()` with VLM
+  - `processInsightRefresh` → calls `aiPipeline.predictions.predict()` for performance trends
+  - `processNotificationSend` → inserts in-app notifications via Prisma, logs push/email as requiring external config
+  - `processVideoAnalysis` → logs placeholder (needs frame extraction pipeline)
+  - `processExportGeneration` → logs placeholder with format details
+- Completed i18n for ai-tools-screen.tsx: 48 strings translated (FR/EN) across 6 tab components
+- Created GitHub Actions CI/CD pipeline (.github/workflows/ci.yml):
+  - lint-and-typecheck job (bun lint + tsc --noEmit)
+  - build job (prisma generate + bun run build with SKIP_ENV_VALIDATION)
+  - Triggers on push/PR to main
+- Fixed 26 `any` types in core repository files:
+  - base.repository.ts: 6 → 0
+  - ai.repository.ts: 13 → 0
+  - video.repository.ts: 7 → 0
+- Total `any` count: 64 → 38 (14 are in mediapipe.d.ts type declarations = expected)
+- Fixed console.log → console.warn in queue processors (lint compliance)
+- Lint: 0 errors, 0 warnings
+
+Stage Summary:
+- All AI features are functional (LLM, VLM, TTS, ASR, image gen, search, reader)
+- Queue processors now use real AI pipeline for form analysis and insights
+- CI/CD pipeline active on GitHub (lint + build on every push)
+- i18n complete for all major screens
+- 26 type safety improvements in repository layer
+- Pushed as commit 14576c4
+
+## Updated Project Status
+
+### What Works NOW
+- ✅ AI Coach (real LLM responses with player context)
+- ✅ Form Analysis (real VLM vision analysis)
+- ✅ AI Insights dashboard (real LLM-generated insights)
+- ✅ TTS / ASR / Image Gen / Web Search / Web Reader
+- ✅ Workout generation (LLM-powered personalized plans)
+- ✅ Player predictions (progression, injury risk, trends)
+- ✅ i18n for all major screens (FR/EN bilingual)
+- ✅ CI/CD pipeline (GitHub Actions)
+- ✅ Sentry error monitoring (server + client + edge)
+- ✅ Supabase Auth (email/password + OAuth + magic link)
+
+### Remaining Improvements (lower priority)
+- 24 `any` types in 14 files (mostly service layer, low risk)
+- SPA architecture (all screens in one page.tsx) — refactor to real routes
+- 3 `@ts-ignore` (vision provider, pool monitor, query logger)
+- Video frame extraction pipeline (async background processing)
+- Push notification delivery (needs VAPID key + service worker)
+- Email delivery (needs Resend API key)
+- Dark mode polish (some components missing dark: variants)
