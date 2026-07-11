@@ -1,22 +1,21 @@
+import { withSentryConfig } from '@sentry/nextjs'
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   output: 'standalone',
-  // Allow preview panel cross-origin requests from any space-z.ai subdomain
-  allowedDevOrigins: ['https://*.space-z.ai', 'http://*.space-z.ai'],
-  /* Type safety: catch errors at build time */
+  // Allow preview panel cross-origin requests
+  allowedDevOrigins: process.env.NODE_ENV === 'development'
+    ? ['https://*.space-z.ai', 'http://*.space-z.ai']
+    : undefined,
   typescript: {
     ignoreBuildErrors: false,
   },
-  /* React strict mode: catch side-effect bugs in development */
   reactStrictMode: true,
   async rewrites() {
     return [
-      // Alias /api/training/* → /api/* (sessions, drills, plans)
       { source: '/api/training/sessions/:path*', destination: '/api/sessions/:path*' },
       { source: '/api/training/drills/:path*', destination: '/api/drills/:path*' },
       { source: '/api/training/plans/:path*', destination: '/api/plans/:path*' },
-      // Alias /api/social/* → /api/* (friends, feed)
       { source: '/api/social/friends/:path*', destination: '/api/friends/:path*' },
       { source: '/api/social/feed/:path*', destination: '/api/feed/:path*' },
     ]
@@ -38,26 +37,23 @@ const nextConfig: NextConfig = {
               "frame-ancestors 'self' https://*.space-z.ai http://*.space-z.ai",
             ].join('; '),
           },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
-          },
-          {
-            key: 'Permissions-Policy',
-            value: 'camera=(self), microphone=(self), geolocation=(self)',
-          },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(self), microphone=(self), geolocation=(self)' },
         ],
       },
     ]
   },
 }
 
-export default nextConfig
+export default withSentryConfig(nextConfig, {
+  org: 'court-vision',
+  project: 'javascript-nextjs-xq',
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  widenClientFileUpload: true,
+  tunnelRoute: '/monitoring',
+  silent: !process.env.CI,
+  // Only enable Sentry when DSN is configured
+  disableLogger: !process.env.SENTRY_DSN,
+})

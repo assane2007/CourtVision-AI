@@ -44,13 +44,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
     return detectBrowserLanguage()
   })
-  const [isLoaded, setIsLoaded] = useState(false)
+  const [isLoaded, setIsLoaded] = useState(true) // Start as loaded (use localStorage/browser lang)
   const isMountedRef = useRef(false)
 
-  // ── Mark as loaded immediately (use localStorage/browser lang) ──────────
   useEffect(() => {
     isMountedRef.current = true
-    setIsLoaded(true)
     return () => {
       isMountedRef.current = false
     }

@@ -72,11 +72,15 @@ export default function NotificationsScreen() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   const markAllRead = useMutation({
-    mutationFn: () => fetch('/api/notifications', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ markAll: true }),
-    }).then(r => r.json()),
+    mutationFn: async () => {
+      const res = await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ markAll: true }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return res.json()
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
       toast.success(td('Toutes les notifications marquées comme lues', 'All notifications marked as read'))
@@ -84,11 +88,15 @@ export default function NotificationsScreen() {
   })
 
   const markRead = useMutation({
-    mutationFn: (id: string) => fetch('/api/notifications', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ notificationId: id }),
-    }).then(r => r.json()),
+    mutationFn: async (id: string) => {
+      const res = await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notificationId: id }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return res.json()
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
   })
 
