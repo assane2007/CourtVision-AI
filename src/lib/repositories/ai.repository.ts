@@ -3,15 +3,15 @@
  * Covers: AIChatMessage, FormAnalysis, Prediction, VoiceSession, GeneratedWorkout.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
-import { BaseRepository } from './base.repository'
+import { BaseRepository, type PrismaModelDelegate } from './base.repository'
 
 // ── AI Chat Repository ──────────────────────────────────────────────────────────
 
-export class AiChatRepository extends BaseRepository<'AIChatMessage', any> {
+export class AiChatRepository extends BaseRepository<'AIChatMessage', Prisma.AIChatMessage> {
   constructor() {
-    super(db.aIChatMessage as any, 'AIChatMessage')
+    super(db.aIChatMessage as unknown as PrismaModelDelegate<Prisma.AIChatMessage>, 'AIChatMessage')
   }
 
   /**
@@ -51,9 +51,9 @@ export class AiChatRepository extends BaseRepository<'AIChatMessage', any> {
 
 // ── Form Analysis Repository ────────────────────────────────────────────────────
 
-export class FormAnalysisRepository extends BaseRepository<'FormAnalysis', any> {
+export class FormAnalysisRepository extends BaseRepository<'FormAnalysis', Prisma.FormAnalysis> {
   constructor() {
-    super(db.formAnalysis as any, 'FormAnalysis')
+    super(db.formAnalysis as unknown as PrismaModelDelegate<Prisma.FormAnalysis>, 'FormAnalysis')
   }
 
   /**
@@ -62,7 +62,7 @@ export class FormAnalysisRepository extends BaseRepository<'FormAnalysis', any> 
   async getHistory(playerId: string, params?: { cursor?: string; limit?: number }) {
     const { cursor, limit = 20 } = params ?? {}
 
-    const where: any = { playerId }
+    const where: Prisma.FormAnalysisWhereInput = { playerId }
     const cursorWhere = cursor
       ? { AND: [where, { id: { gt: cursor } }] }
       : where
@@ -83,9 +83,9 @@ export class FormAnalysisRepository extends BaseRepository<'FormAnalysis', any> 
 
 // ── Prediction Repository ───────────────────────────────────────────────────────
 
-export class PredictionRepository extends BaseRepository<'Prediction', any> {
+export class PredictionRepository extends BaseRepository<'Prediction', Prisma.Prediction> {
   constructor() {
-    super(db.prediction as any, 'Prediction')
+    super(db.prediction as unknown as PrismaModelDelegate<Prisma.Prediction>, 'Prediction')
   }
 
   /**
@@ -94,7 +94,7 @@ export class PredictionRepository extends BaseRepository<'Prediction', any> {
   async getHistory(playerId: string, params?: { cursor?: string; limit?: number }) {
     const { cursor, limit = 20 } = params ?? {}
 
-    const where: any = { playerId }
+    const where: Prisma.PredictionWhereInput = { playerId }
     const cursorWhere = cursor
       ? { AND: [where, { id: { gt: cursor } }] }
       : where
@@ -115,17 +115,17 @@ export class PredictionRepository extends BaseRepository<'Prediction', any> {
 
 // ── Voice Session Repository ────────────────────────────────────────────────────
 
-export class VoiceSessionRepository extends BaseRepository<'VoiceSession', any> {
+export class VoiceSessionRepository extends BaseRepository<'VoiceSession', Prisma.VoiceSession> {
   constructor() {
-    super(db.voiceSession as any, 'VoiceSession')
+    super(db.voiceSession as unknown as PrismaModelDelegate<Prisma.VoiceSession>, 'VoiceSession')
   }
 }
 
 // ── Generated Workout Repository ────────────────────────────────────────────────
 
-export class GeneratedWorkoutRepository extends BaseRepository<'GeneratedWorkout', any> {
+export class GeneratedWorkoutRepository extends BaseRepository<'GeneratedWorkout', Prisma.GeneratedWorkout> {
   constructor() {
-    super(db.generatedWorkout as any, 'GeneratedWorkout')
+    super(db.generatedWorkout as unknown as PrismaModelDelegate<Prisma.GeneratedWorkout>, 'GeneratedWorkout')
   }
 
   /**
@@ -134,7 +134,7 @@ export class GeneratedWorkoutRepository extends BaseRepository<'GeneratedWorkout
   async getPlayerWorkouts(playerId: string, params?: { cursor?: string; limit?: number }) {
     const { cursor, limit = 20 } = params ?? {}
 
-    const where: any = { playerId }
+    const where: Prisma.GeneratedWorkoutWhereInput = { playerId }
     const cursorWhere = cursor
       ? { AND: [where, { id: { gt: cursor } }] }
       : where

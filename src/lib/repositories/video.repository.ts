@@ -2,15 +2,14 @@
  * Video repository — data access layer for Video, VideoAnnotation, and VideoExport models.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { db } from '@/lib/db'
 import { Prisma } from '@prisma/client'
-import { BaseRepository } from './base.repository'
+import { db } from '@/lib/db'
+import { BaseRepository, type PrismaModelDelegate } from './base.repository'
 import type { VideoData } from '@/lib/types/service.types'
 
-export class VideoRepository extends BaseRepository<'Video', any> {
+export class VideoRepository extends BaseRepository<'Video', Prisma.Video> {
   constructor() {
-    super(db.video as any, 'Video')
+    super(db.video as unknown as PrismaModelDelegate<Prisma.Video>, 'Video')
   }
 
   /**
@@ -95,9 +94,9 @@ export class VideoRepository extends BaseRepository<'Video', any> {
 
 // ── Annotation Repository ───────────────────────────────────────────────────────
 
-export class AnnotationRepository extends BaseRepository<'VideoAnnotation', any> {
+export class AnnotationRepository extends BaseRepository<'VideoAnnotation', Prisma.VideoAnnotation> {
   constructor() {
-    super(db.videoAnnotation as any, 'VideoAnnotation')
+    super(db.videoAnnotation as unknown as PrismaModelDelegate<Prisma.VideoAnnotation>, 'VideoAnnotation')
   }
 
   /**
@@ -124,7 +123,7 @@ export class AnnotationRepository extends BaseRepository<'VideoAnnotation', any>
         videoId,
         type: data.type,
         timestampMs: data.timestampMs,
-        data: data.annotationData as any,
+        data: data.annotationData as string,
         playerId: data.playerId,
       },
     })
@@ -133,9 +132,9 @@ export class AnnotationRepository extends BaseRepository<'VideoAnnotation', any>
 
 // ── Export Repository ───────────────────────────────────────────────────────────
 
-export class VideoExportRepository extends BaseRepository<'VideoExport', any> {
+export class VideoExportRepository extends BaseRepository<'VideoExport', Prisma.VideoExport> {
   constructor() {
-    super(db.videoExport as any, 'VideoExport')
+    super(db.videoExport as unknown as PrismaModelDelegate<Prisma.VideoExport>, 'VideoExport')
   }
 
   /**

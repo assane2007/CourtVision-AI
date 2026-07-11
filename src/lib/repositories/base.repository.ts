@@ -16,7 +16,6 @@
  * }
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
@@ -44,27 +43,27 @@ export interface PrismaModelDelegate<T> {
 // These re-exports allow us to use Prisma's own types in generics
 type FindManyArgs<T = never> = T extends never
   ? Prisma.FindManyArgs
-  : Prisma.FindManyArgs & { select?: any; include?: any }
+  : Prisma.FindManyArgs & { select?: unknown; include?: unknown }
 
 type FindFirstArgs<T = never> = T extends never
   ? Prisma.FindFirstArgs
-  : Prisma.FindFirstArgs & { select?: any; include?: any }
+  : Prisma.FindFirstArgs & { select?: unknown; include?: unknown }
 
 type FindUniqueArgs<T = never> = T extends never
   ? Prisma.FindUniqueArgs
-  : Prisma.FindUniqueArgs & { select?: any; include?: any }
+  : Prisma.FindUniqueArgs & { select?: unknown; include?: unknown }
 
 type CreateArgs<T = never> = T extends never
   ? Prisma.CreateArgs
-  : Prisma.CreateArgs & { select?: any; include?: any }
+  : Prisma.CreateArgs & { select?: unknown; include?: unknown }
 
 type UpdateArgs<T = never> = T extends never
   ? Prisma.UpdateArgs
-  : Prisma.UpdateArgs & { select?: any; include?: any }
+  : Prisma.UpdateArgs & { select?: unknown; include?: unknown }
 
 type DeleteArgs<T = never> = T extends never
   ? Prisma.DeleteArgs
-  : Prisma.DeleteArgs & { select?: any; include?: any }
+  : Prisma.DeleteArgs & { select?: unknown; include?: unknown }
 
 type CountArgs = Prisma.CountArgs
 

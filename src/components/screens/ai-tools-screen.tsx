@@ -39,6 +39,7 @@ import { useAppStore } from '@/stores/app'
 import { apiFetch } from '@/lib/utils'
 import { BottomNav } from '@/components/shared/bottom-nav'
 import { toast } from 'sonner'
+import { useTranslation } from '@/components/providers/language-provider'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -71,7 +72,6 @@ const IMAGE_SIZES = [
   { value: '1440x720', label: 'Wide', desc: '1440×720' },
 ] as const
 
-// i18n-FR: entire file uses hardcoded English — TODO: migrate to useTranslation()
 
 // ── Animation Variants ────────────────────────────────────────────────────────
 
@@ -88,7 +88,6 @@ const stagger = {
 
 // ── Tab Config ────────────────────────────────────────────────────────────────
 
-// i18n-FR: hardcoded English labels — TODO: use i18n system
 const TABS = [
   { value: 'chat', icon: MessageCircle, label: 'Chat Coach' },
   { value: 'tts', icon: Volume2, label: 'Voice' },
@@ -101,9 +100,19 @@ const TABS = [
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function AIToolsScreen() {
+  const { td } = useTranslation()
   const navigate = useAppStore((s) => s.navigate)
   const goBack = useAppStore((s) => s.goBack)
   const [activeTab, setActiveTab] = useState('chat')
+
+  const tabLabelFr: Record<string, string> = {
+    chat: 'Coach Chat',
+    tts: 'Voix',
+    asr: 'Transcrire',
+    image: 'Gén. Image',
+    websearch: 'Rech. Web',
+    webreader: 'Lecteur Web',
+  }
 
   // Navigate to ai-coach on Chat Coach tab click
   const handleTabChange = useCallback(
@@ -127,20 +136,20 @@ export default function AIToolsScreen() {
             size="icon"
             className="shrink-0"
             onClick={goBack}
-            aria-label="Retour"
+            aria-label={td('Retour', 'Back')}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1
             className="text-lg font-bold tracking-tight flex-1"
           >
-            AI Tools Hub
+            {td("Hub d'outils IA", 'AI Tools Hub')}
           </h1>
           <Badge
             variant="secondary"
             className="bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300 text-[10px] px-2 py-0.5"
           >
-            6 Tools
+            {td('6 outils', '6 Tools')}
           </Badge>
         </div>
       </header>
@@ -166,8 +175,8 @@ export default function AIToolsScreen() {
                   className="flex-1 min-w-[calc(33%-4px)] sm:min-w-0 gap-1 text-xs py-2 data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:shadow-md"
                 >
                   <tab.icon className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                  <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+                  <span className="hidden sm:inline">{td(tabLabelFr[tab.value], tab.label)}</span>
+                  <span className="sm:hidden">{td(tabLabelFr[tab.value], tab.label).split(' ')[0]}</span>
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -183,10 +192,9 @@ export default function AIToolsScreen() {
                 <MessageCircle className="h-8 w-8 text-orange-500" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold">Chat Coach</h2>
+                <h2 className="text-xl font-semibold">{td('Coach Chat', 'Chat Coach')}</h2>
                 <p className="text-sm text-muted-foreground mt-1 max-w-xs">
-                  Your AI basketball coach is ready. Tap below to start a
-                  conversation and get personalized advice.
+                  {td("Votre coach IA de basket est prêt. Appuyez ci-dessous pour démarrer une conversation et obtenir des conseils personnalisés.", "Your AI basketball coach is ready. Tap below to start a conversation and get personalized advice.")}
                 </p>
               </div>
               <Button
@@ -194,7 +202,7 @@ export default function AIToolsScreen() {
                 className="bg-orange-500 hover:bg-orange-600 text-white gap-2 px-8"
               >
                 <MessageCircle className="h-4 w-4" />
-                Open Chat Coach
+                {td('Ouvrir le Coach Chat', 'Open Chat Coach')}
               </Button>
             </motion.div>
           </TabsContent>
@@ -237,6 +245,7 @@ export default function AIToolsScreen() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 function TTSTab() {
+  const { td } = useTranslation()
   const [text, setText] = useState('')
   const [voice, setVoice] = useState('tongtong')
   const [speed, setSpeed] = useState(1.0)
@@ -261,8 +270,8 @@ function TTSTab() {
         signal: controller.signal,
       })
       if (!res.ok) {
-        const body = await res.json().catch(() => ({ error: 'Erreur' }))
-        throw new Error(body.error || `Erreur ${res.status}`)
+        const body = await res.json().catch(() => ({ error: td('Erreur', 'Error') }))
+        throw new Error(body.error || `${td('Erreur', 'Error')} ${res.status}`)
       }
       const blob = await res.blob()
       if (audioUrl) URL.revokeObjectURL(audioUrl)
@@ -270,7 +279,7 @@ function TTSTab() {
       setAudioUrl(url)
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return
-      const msg = err instanceof Error ? err.message : 'Erreur lors de la génération vocale.'
+      const msg = err instanceof Error ? err.message : td('Erreur lors de la génération vocale.', 'Error generating speech.')
       setError(msg)
       toast.error(msg)
     } finally {
@@ -294,10 +303,10 @@ function TTSTab() {
     >
       <motion.div variants={fadeUp}>
         <label className="text-sm font-medium mb-1.5 block">
-          Text to Speech
+          {td('Synthèse vocale', 'Text to Speech')}
         </label>
         <Textarea
-          placeholder="Enter the text you want to convert to speech..."
+          placeholder={td("Entrez le texte que vous souhaitez convertir en parole...", "Enter the text you want to convert to speech...")}
           value={text}
           onChange={(e) => setText(e.target.value.slice(0, 1024))}
           className="min-h-[100px] resize-none"
@@ -313,11 +322,11 @@ function TTSTab() {
 
       <motion.div variants={fadeUp} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="text-sm font-medium mb-1.5 block">Voice</label>
+          <label className="text-sm font-medium mb-1.5 block">{td('Voix', 'Voice')}</label>
           <Select value={voice} onValueChange={setVoice}>
             <SelectTrigger className="w-full">
               <Music className="h-4 w-4 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="Select voice" />
+              <SelectValue placeholder={td('Sélectionner une voix', 'Select voice')} />
             </SelectTrigger>
             <SelectContent>
               {VOICES.map((v) => (
@@ -331,7 +340,7 @@ function TTSTab() {
 
         <div>
           <label className="text-sm font-medium mb-1.5 block">
-            Speed: {speed.toFixed(1)}x
+            {td('Vitesse', 'Speed')}: {speed.toFixed(1)}x
           </label>
           <div className="pt-2 px-1">
             <Slider
@@ -362,7 +371,7 @@ function TTSTab() {
           ) : (
             <Volume2 className="h-4 w-4" />
           )}
-          {loading ? 'Generating Speech...' : 'Generate Speech'}
+          {loading ? td('Génération vocale...', 'Generating Speech...') : td('Générer la parole', 'Generate Speech')}
         </Button>
       </motion.div>
 
@@ -380,7 +389,7 @@ function TTSTab() {
                 <p className="text-sm text-destructive">{error}</p>
                 <Button variant="outline" size="sm" onClick={handleGenerate}>
                   <RefreshCw className="h-3 w-3 mr-1" />
-                  Réessayer
+                  {td('Réessayer', 'Retry')}
                 </Button>
               </CardContent>
             </Card>
@@ -403,7 +412,7 @@ function TTSTab() {
                     <Volume2 className="h-4 w-4 text-orange-500" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">Audio Ready</p>
+                    <p className="text-sm font-medium">{td('Audio prêt', 'Audio Ready')}</p>
                     <p className="text-xs text-muted-foreground">
                       {VOICES.find((v) => v.value === voice)?.label} •{' '}
                       {speed.toFixed(1)}x
@@ -434,6 +443,7 @@ function TTSTab() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 function ASRTab() {
+  const { td } = useTranslation()
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -448,11 +458,11 @@ function ASRTab() {
     const validTypes = ['.wav', '.mp3', '.m4a', '.ogg']
     const ext = '.' + f.name.split('.').pop()?.toLowerCase()
     if (!validTypes.includes(ext)) {
-      toast.error('Formats acceptés : .wav, .mp3, .m4a, .ogg')
+      toast.error(td('Formats acceptés : .wav, .mp3, .m4a, .ogg', 'Accepted formats: .wav, .mp3, .m4a, .ogg'))
       return
     }
     if (f.size > 25_000_000) {
-      toast.error('Fichier trop volumineux (max 25 Mo).')
+      toast.error(td('Fichier trop volumineux (max 25 Mo).', 'File too large (max 25 MB).'))
       return
     }
     setFile(f)
@@ -489,14 +499,14 @@ function ASRTab() {
         signal: controller.signal,
       })
       if (!res.ok) {
-        const body = await res.json().catch(() => ({ error: 'Erreur' }))
-        throw new Error(body.error || `Erreur ${res.status}`)
+        const body = await res.json().catch(() => ({ error: td('Erreur', 'Error') }))
+        throw new Error(body.error || `${td('Erreur', 'Error')} ${res.status}`)
       }
       const data = await res.json()
-      setTranscription(data.text || data.transcription || 'Aucune transcription disponible.')
+      setTranscription(data.text || data.transcription || td('Aucune transcription disponible.', 'No transcription available.'))
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return
-      const msg = err instanceof Error ? err.message : 'Erreur lors de la transcription.'
+      const msg = err instanceof Error ? err.message : td('Erreur lors de la transcription.', 'Error during transcription.')
       setError(msg)
       toast.error(msg)
     } finally {
@@ -512,7 +522,7 @@ function ASRTab() {
     if (!transcription) return
     await navigator.clipboard.writeText(transcription)
     setCopied(true)
-    toast.success('Copied to clipboard')
+    toast.success(td('Copié dans le presse-papiers', 'Copied to clipboard'))
     setTimeout(() => setCopied(false), 2000)
   }
 
@@ -532,7 +542,7 @@ function ASRTab() {
       {/* Drop Zone */}
       <motion.div variants={fadeUp}>
         <label className="text-sm font-medium mb-1.5 block">
-          Audio File
+          {td('Fichier audio', 'Audio File')}
         </label>
         <div
           onDragOver={handleDragOver}
@@ -577,14 +587,14 @@ function ASRTab() {
                 className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1 mx-auto"
               >
                 <Trash2 className="h-3 w-3" />
-                Remove
+                {td('Supprimer', 'Remove')}
               </button>
             </div>
           ) : (
             <div className="space-y-2">
               <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
               <p className="text-sm text-muted-foreground">
-                Drag & drop or tap to upload
+                {td('Glissez-déposez ou appuyez pour télécharger', 'Drag & drop or tap to upload')}
               </p>
               <p className="text-xs text-muted-foreground">
                 .wav, .mp3, .m4a, .ogg
@@ -605,7 +615,7 @@ function ASRTab() {
           ) : (
             <Mic className="h-4 w-4" />
           )}
-          {loading ? 'Transcribing...' : 'Transcribe'}
+          {loading ? td('Transcription en cours...', 'Transcribing...') : td('Transcrire', 'Transcribe')}
         </Button>
       </motion.div>
 
@@ -624,7 +634,7 @@ function ASRTab() {
                 <p className="text-sm text-destructive">{error}</p>
                 <Button variant="outline" size="sm" onClick={handleTranscribe}>
                   <RefreshCw className="h-3 w-3 mr-1" />
-                  Réessayer
+                  {td('Réessayer', 'Retry')}
                 </Button>
               </CardContent>
             </Card>
@@ -643,17 +653,17 @@ function ASRTab() {
             <Card>
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold">Transcription</h3>
+                  <h3 className="text-sm font-semibold">{td('Transcription', 'Transcription')}</h3>
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary" className="text-[10px]">
-                      {transcription.split(/\s+/).filter(Boolean).length} words
+                      {transcription.split(/\s+/).filter(Boolean).length} {td('mots', 'words')}
                     </Badge>
                     <Button
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
                       onClick={handleCopy}
-                      aria-label="Copy transcription"
+                      aria-label={td('Copier la transcription', 'Copy transcription')}
                     >
                       {copied ? (
                         <Check className="h-4 w-4 text-green-500" />
@@ -682,6 +692,13 @@ function ASRTab() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 function ImageGenTab() {
+  const { td } = useTranslation()
+  const sizeLabelFr: Record<string, string> = {
+    '1024x1024': 'Carré',
+    '1344x768': 'Paysage',
+    '768x1344': 'Portrait',
+    '1440x720': 'Panoramique',
+  }
   const [prompt, setPrompt] = useState('')
   const [size, setSize] = useState('1024x1024')
   const [loading, setLoading] = useState(false)
@@ -706,7 +723,7 @@ function ImageGenTab() {
       setImageUrl(data.image)
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return
-      const msg = err instanceof Error ? err.message : 'Erreur lors de la génération d\'image.'
+      const msg = err instanceof Error ? err.message : td("Erreur lors de la génération d'image.", "Error generating image.")
       setError(msg)
       toast.error(msg)
     } finally {
@@ -726,9 +743,9 @@ function ImageGenTab() {
       animate="animate"
     >
       <motion.div variants={fadeUp}>
-        <label className="text-sm font-medium mb-1.5 block">Prompt</label>
+        <label className="text-sm font-medium mb-1.5 block">{td('Invite', 'Prompt')}</label>
         <Textarea
-          placeholder="Describe the image you want to generate..."
+          placeholder={td("Décrivez l'image que vous souhaitez générer...", "Describe the image you want to generate...")}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value.slice(0, 2000))}
           className="min-h-[80px] resize-none"
@@ -743,7 +760,7 @@ function ImageGenTab() {
       </motion.div>
 
       <motion.div variants={fadeUp}>
-        <label className="text-sm font-medium mb-1.5 block">Size</label>
+        <label className="text-sm font-medium mb-1.5 block">{td('Taille', 'Size')}</label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {IMAGE_SIZES.map((s) => (
             <button
@@ -759,7 +776,7 @@ function ImageGenTab() {
                 }
               `}
             >
-              <p className="text-xs font-medium">{s.label}</p>
+              <p className="text-xs font-medium">{td(sizeLabelFr[s.value], s.label)}</p>
               <p className="text-[10px] text-muted-foreground mt-0.5">
                 {s.desc}
               </p>
@@ -779,7 +796,7 @@ function ImageGenTab() {
           ) : (
             <ImageIcon className="h-4 w-4" aria-hidden="true" />
           )}
-          {loading ? 'Generating...' : 'Generate'}
+          {loading ? td('Génération...', 'Generating...') : td('Générer', 'Generate')}
         </Button>
       </motion.div>
 
@@ -797,7 +814,7 @@ function ImageGenTab() {
                 <p className="text-sm text-destructive">{error}</p>
                 <Button variant="outline" size="sm" onClick={handleGenerate}>
                   <RefreshCw className="h-3 w-3 mr-1" />
-                  Réessayer
+                  {td('Réessayer', 'Retry')}
                 </Button>
               </CardContent>
             </Card>
@@ -839,7 +856,7 @@ function ImageGenTab() {
             <Card>
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold">Generated Image</h3>
+                  <h3 className="text-sm font-semibold">{td('Image générée', 'Generated Image')}</h3>
                   <Badge variant="secondary" className="text-[10px]">
                     {IMAGE_SIZES.find((s) => s.value === size)?.desc}
                   </Badge>
@@ -868,6 +885,7 @@ function ImageGenTab() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 function WebSearchTab() {
+  const { td } = useTranslation()
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -894,7 +912,7 @@ function WebSearchTab() {
       setResults(data.results || [])
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return
-      const msg = err instanceof Error ? err.message : 'Erreur lors de la recherche.'
+      const msg = err instanceof Error ? err.message : td('Erreur lors de la recherche.', 'Error during search.')
       setError(msg)
       toast.error(msg)
     } finally {
@@ -918,12 +936,12 @@ function WebSearchTab() {
       animate="animate"
     >
       <motion.div variants={fadeUp}>
-        <label className="text-sm font-medium mb-1.5 block">Search Query</label>
+        <label className="text-sm font-medium mb-1.5 block">{td('Requête de recherche', 'Search Query')}</label>
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search the web..."
+              placeholder={td('Rechercher sur le web...', 'Search the web...')}
               value={query}
               onChange={(e) => setQuery(e.target.value.slice(0, 500))}
               onKeyDown={handleKeyDown}
@@ -960,7 +978,7 @@ function WebSearchTab() {
                 <p className="text-sm text-destructive">{error}</p>
                 <Button variant="outline" size="sm" onClick={handleSearch}>
                   <RefreshCw className="h-3 w-3 mr-1" />
-                  Réessayer
+                  {td('Réessayer', 'Retry')}
                 </Button>
               </CardContent>
             </Card>
@@ -1002,7 +1020,7 @@ function WebSearchTab() {
           animate="animate"
         >
           <motion.p variants={fadeUp} className="text-xs text-muted-foreground">
-            {results.length} result{results.length !== 1 ? 's' : ''} found
+            {results.length === 1 ? td('1 résultat trouvé', '1 result found') : `${results.length} ${td('résultats trouvés', 'results found')}`}
           </motion.p>
           {results.map((r, i) => (
             <motion.div key={i} variants={fadeUp}>
@@ -1053,7 +1071,7 @@ function WebSearchTab() {
         >
           <Search className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
           <p className="text-sm text-muted-foreground">
-            No results found. Try a different query.
+            {td('Aucun résultat trouvé. Essayez une autre requête.', 'No results found. Try a different query.')}
           </p>
         </motion.div>
       )}
@@ -1069,9 +1087,9 @@ function WebSearchTab() {
           <div className="h-14 w-14 rounded-2xl bg-orange-100 dark:bg-orange-950 mx-auto flex items-center justify-center mb-3">
             <Search className="h-7 w-7 text-orange-500" />
           </div>
-          <h3 className="text-sm font-semibold">Web Search</h3>
+          <h3 className="text-sm font-semibold">{td('Recherche Web', 'Web Search')}</h3>
           <p className="text-xs text-muted-foreground mt-1 max-w-[200px] mx-auto">
-            Search the web for basketball tips, drills, news, and more.
+            {td('Recherchez sur le web des conseils de basket, des exercices, des actualités et plus encore.', 'Search the web for basketball tips, drills, news, and more.')}
           </p>
         </motion.div>
       )}
@@ -1084,6 +1102,7 @@ function WebSearchTab() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 function WebReaderTab() {
+  const { td } = useTranslation()
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -1107,7 +1126,7 @@ function WebReaderTab() {
       setResult(data)
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return
-      const msg = err instanceof Error ? err.message : 'Erreur lors de la lecture de la page.'
+      const msg = err instanceof Error ? err.message : td('Erreur lors de la lecture de la page.', 'Error reading page.')
       setError(msg)
       toast.error(msg)
     } finally {
@@ -1131,7 +1150,7 @@ function WebReaderTab() {
       animate="animate"
     >
       <motion.div variants={fadeUp}>
-        <label className="text-sm font-medium mb-1.5 block">Page URL</label>
+        <label className="text-sm font-medium mb-1.5 block">{td('URL de la page', 'Page URL')}</label>
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -1156,7 +1175,7 @@ function WebReaderTab() {
               <FileText className="h-4 w-4" />
             )}
             <span className="hidden sm:inline">
-              {loading ? 'Reading...' : 'Read Page'}
+              {loading ? td('Lecture...', 'Reading...') : td('Lire la page', 'Read Page')}
             </span>
           </Button>
         </div>
@@ -1176,7 +1195,7 @@ function WebReaderTab() {
                 <p className="text-sm text-destructive">{error}</p>
                 <Button variant="outline" size="sm" onClick={handleRead}>
                   <RefreshCw className="h-3 w-3 mr-1" />
-                  Réessayer
+                  {td('Réessayer', 'Retry')}
                 </Button>
               </CardContent>
             </Card>
@@ -1241,7 +1260,7 @@ function WebReaderTab() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary" className="text-[10px]">
-                    {result.content.split(/\s+/).filter(Boolean).length} words
+                    {result.content.split(/\s+/).filter(Boolean).length} {td('mots', 'words')}
                   </Badge>
                   <Button
                     variant="ghost"
@@ -1249,11 +1268,11 @@ function WebReaderTab() {
                     className="h-7 text-xs gap-1"
                     onClick={async () => {
                       await navigator.clipboard.writeText(result.content)
-                      toast.success('Content copied to clipboard')
+                      toast.success(td('Contenu copié dans le presse-papiers', 'Content copied to clipboard'))
                     }}
                   >
                     <Copy className="h-3 w-3" />
-                    Copy Content
+                    {td('Copier le contenu', 'Copy Content')}
                   </Button>
                 </div>
               </CardContent>
@@ -1273,9 +1292,9 @@ function WebReaderTab() {
           <div className="h-14 w-14 rounded-2xl bg-orange-100 dark:bg-orange-950 mx-auto flex items-center justify-center mb-3">
             <FileText className="h-7 w-7 text-orange-500" />
           </div>
-          <h3 className="text-sm font-semibold">Web Reader</h3>
+          <h3 className="text-sm font-semibold">{td('Lecteur Web', 'Web Reader')}</h3>
           <p className="text-xs text-muted-foreground mt-1 max-w-[200px] mx-auto">
-            Extract clean text content from any web page URL.
+            {td("Extrayez le contenu textuel propre de n'importe quelle URL de page web.", 'Extract clean text content from any web page URL.')}
           </p>
         </motion.div>
       )}
