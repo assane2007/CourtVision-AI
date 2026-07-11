@@ -5,6 +5,12 @@
  * or used by the TaskQueue's dispatch logic.
  *
  * Server-only module.
+ *
+ * All processors below are placeholder no-ops. Each returns an empty or
+ * zero-value result so that the queue infrastructure can be exercised
+ * end-to-end without requiring external services (AI, storage, push
+ * providers, etc.). Replace the placeholder body with the real
+ * integration when the corresponding backend service is available.
  */
 
 import type {
@@ -23,21 +29,18 @@ import type {
 /**
  * Process a video for analysis (pose detection, shot detection, highlights).
  *
- * In production, this connects to the AI service and video processing pipeline.
- * For now, returns a placeholder result.
+ * **Placeholder** – returns empty arrays for poses, shots, and highlights.
+ *
+ * Production: integrate with video processing pipeline
+ * (fetch video → extract frames → pose estimation → shot detection → highlights → save)
  */
 export async function processVideoAnalysis(
   payload: VideoProcessingPayload,
 ): Promise<VideoAnalysisResult> {
   const startMs = performance.now()
 
-  // TODO: Integrate with actual video processing pipeline
-  // 1. Fetch video from storage service
-  // 2. Extract frames at regular intervals
-  // 3. Run pose estimation via MediaPipe or AI service
-  // 4. Detect shot events (release, follow-through)
-  // 5. Identify highlight moments
-  // 6. Save results to database
+  // Production: integrate with video processing pipeline
+  // (fetch video → extract frames → pose estimation → shot detection → highlights → save)
 
   return {
     videoId: payload.videoId,
@@ -53,17 +56,16 @@ export async function processVideoAnalysis(
 /**
  * Analyze basketball shooting form using AI vision.
  *
- * In production, this sends the video frame to the VLM AI service.
+ * **Placeholder** – returns a zero score and empty feedback arrays.
+ *
+ * Production: integrate with VLM AI service (z-ai-web-dev-sdk)
+ * (fetch frame → select best frame → send to AI → parse response → save to player history)
  */
 export async function processFormAnalysis(
   payload: FormAnalysisPayload,
 ): Promise<FormAnalysisResult> {
-  // TODO: Integrate with VLM AI service (z-ai-web-dev-sdk)
-  // 1. Fetch video or frame from storage
-  // 2. Select best frame (mid-shot, clear form visible)
-  // 3. Send to AI for form analysis
-  // 4. Parse and validate response
-  // 5. Save to player's form history
+  // Production: integrate with VLM AI service (z-ai-web-dev-sdk)
+  // (fetch frame → select best frame → send to AI → parse response → save to player history)
 
   return {
     videoId: payload.videoId,
@@ -80,25 +82,27 @@ export async function processFormAnalysis(
  * Send a notification to a player.
  *
  * Supports push, in-app, and email notifications.
+ *
+ * **Placeholder** – each notification type branch is currently a no-op.
+ *
+ * Production: integrate with notification infrastructure
+ * (lookup preferences → push via Web Push API / in-app DB insert / email via email service)
  */
 export async function processNotificationSend(
   payload: NotificationSendPayload,
 ): Promise<void> {
-  // TODO: Integrate with notification infrastructure
-  // 1. Look up player's notification preferences
-  // 2. For push: fetch Web Push subscription, send via push API
-  // 3. For in-app: save to notifications table
-  // 4. For email: queue via email service
+  // Production: integrate with notification infrastructure
+  // (lookup preferences → push via Web Push API / in-app DB insert / email via email service)
 
   switch (payload.type) {
     case 'push':
-      // TODO: Web Push implementation
+      // Production: fetch Web Push subscription and send via push API
       break
     case 'in_app':
-      // TODO: DB insert
+      // Production: insert notification record into the notifications table
       break
     case 'email':
-      // TODO: Email service integration
+      // Production: queue message through the email service
       break
   }
 }
@@ -107,6 +111,11 @@ export async function processNotificationSend(
 
 /**
  * Generate an export of a video (with annotations) in the requested format.
+ *
+ * **Placeholder** – returns an empty URL with zero size.
+ *
+ * Production: integrate with video rendering pipeline
+ * (fetch video → fetch annotations → render with FFmpeg/canvas → encode → upload → signed URL)
  */
 export async function processExportGeneration(
   payload: ExportGenerationPayload,
@@ -114,13 +123,8 @@ export async function processExportGeneration(
   const startMs = performance.now()
   const { randomUUID } = await import('node:crypto')
 
-  // TODO: Integrate with video rendering pipeline
-  // 1. Fetch original video from storage
-  // 2. Fetch annotations from database
-  // 3. Render annotations onto video using FFmpeg or canvas
-  // 4. Encode to target format
-  // 5. Upload to storage
-  // 6. Generate signed URL
+  // Production: integrate with video rendering pipeline
+  // (fetch video → fetch annotations → render with FFmpeg/canvas → encode → upload → signed URL)
 
   return {
     videoId: payload.videoId,
@@ -139,16 +143,17 @@ export async function processExportGeneration(
  *
  * Pulls together workout stats, form analysis results, and trends
  * to produce fresh AI-generated insights.
+ *
+ * **Placeholder** – only invalidates the cache; no actual insight generation.
+ *
+ * Production: integrate with insight generation pipeline
+ * (fetch recent sessions → aggregate stats → call AI → cache insights → invalidate)
  */
 export async function processInsightRefresh(
   payload: InsightRefreshPayload,
 ): Promise<void> {
-  // TODO: Integrate with insight generation pipeline
-  // 1. Fetch player's recent sessions (last 7 days)
-  // 2. Aggregate stats: shots made, form scores, streak data
-  // 3. Call AI to generate personalized insights
-  // 4. Cache insights for quick retrieval
-  // 5. Invalidate cache: invalidateTags(['insights:' + payload.playerId])
+  // Production: integrate with insight generation pipeline
+  // (fetch recent sessions → aggregate stats → call AI → cache insights → invalidate)
 
   // Invalidate cache for this player's insights
   const { invalidateTags } = await import('@/lib/cache/helpers')

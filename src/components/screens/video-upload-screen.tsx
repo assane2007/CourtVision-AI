@@ -296,7 +296,7 @@ export default function VideoUploadScreen() {
                   onClick={() => thumbInputRef.current?.click()}
                 >
                   <ImagePlus className="h-3.5 w-3.5 mr-1.5" />
-                  {/* i18n-FR: hardcoded French — TODO: use i18n */}Choisir
+                  {td('Choisir', 'Choose')}
                 </Button>
                 <input
                   ref={thumbInputRef}

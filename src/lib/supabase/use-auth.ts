@@ -30,12 +30,11 @@ interface UseSupabaseAuthReturn {
 
 export function useSupabaseAuth(): UseSupabaseAuthReturn {
   const [user, setUser] = useState<SupabaseUser | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => !createClient())
 
   useEffect(() => {
     const supabase = createClient()
     if (!supabase) {
-      setLoading(false)
       return
     }
 

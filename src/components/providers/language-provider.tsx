@@ -44,7 +44,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
     return detectBrowserLanguage()
   })
-  const [isLoaded, setIsLoaded] = useState(true) // Start as loaded (use localStorage/browser lang)
+  const [isLoaded] = useState(true) // Start as loaded (use localStorage/browser lang)
   const isMountedRef = useRef(false)
 
   useEffect(() => {

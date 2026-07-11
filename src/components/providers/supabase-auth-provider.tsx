@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import type { User, Session, SupabaseClient } from '@supabase/supabase-js'
+import type { User, Session } from '@supabase/supabase-js'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -60,7 +60,7 @@ async function syncPlayerToDb(userId: string, email: string | null, name: string
 export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => !createClient())
   const mountedRef = useRef(true)
 
   useEffect(() => {
@@ -68,8 +68,6 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
     const supabase = createClient()
 
     if (!supabase) {
-      // Supabase not configured — skip auth, mark loading as done
-      setLoading(false)
       return
     }
 
