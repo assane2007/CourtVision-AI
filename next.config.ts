@@ -1,12 +1,9 @@
-import { withSentryConfig } from '@sentry/nextjs'
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   output: 'standalone',
   // Allow preview panel cross-origin requests
-  allowedDevOrigins: process.env.NODE_ENV === 'development'
-    ? ['https://*.space-z.ai', 'http://*.space-z.ai']
-    : undefined,
+  allowedDevOrigins: ['https://*.space-z.ai', 'http://*.space-z.ai'],
   typescript: {
     ignoreBuildErrors: false,
   },
@@ -47,13 +44,21 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default withSentryConfig(nextConfig, {
-  org: 'court-vision',
-  project: 'javascript-nextjs-xq',
-  authToken: process.env.SENTRY_AUTH_TOKEN,
-  widenClientFileUpload: true,
-  tunnelRoute: '/monitoring',
-  silent: !process.env.CI,
-  // Only enable Sentry when DSN is configured
-  disableLogger: !process.env.SENTRY_DSN,
-})
+// Sentry is only active in production (SENTRY_DSN set on Vercel)
+// In dev, withSentryConfig causes process instability in sandboxed environments
+let finalConfig = nextConfig
+
+if (process.env.SENTRY_DSN) {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { withSentryConfig } = require('@sentry/nextjs')
+  finalConfig = withSentryConfig(nextConfig, {
+    org: 'court-vision',
+    project: 'javascript-nextjs-xq',
+    authToken: process.env.SENTRY_AUTH_TOKEN,
+    widenClientFileUpload: true,
+    tunnelRoute: '/monitoring',
+    silent: !process.env.CI,
+  })
+}
+
+export default finalConfig
