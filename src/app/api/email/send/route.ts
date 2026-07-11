@@ -49,8 +49,8 @@ export async function POST(request: Request) {
     const emailContent = getEmailTemplate(template, params)
     const result = await sendEmail({
       to,
-      ...emailContent,
-      template,
+      subject: emailContent.subject,
+      html: emailContent.html,
     })
 
     return NextResponse.json({ message: 'Email envoyé', messageId: result.messageId })

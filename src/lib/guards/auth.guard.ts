@@ -5,6 +5,10 @@
  * - Attaches full player object to context
  * - Supports different auth levels (basic, verified, 2fa)
  * - Returns standardized error responses via AppError
+ *
+ * TODO: Unify with `@/lib/with-auth.ts` — that file now delegates here, so all
+ * auth logic lives in this module. Once all ~119 routes are migrated to use
+ * `withAuthGuard` directly, `with-auth.ts` can be removed.
  */
 
 import { NextRequest, NextResponse } from 'next/server'

@@ -1,57 +1,16 @@
 'use client'
 import { useAuth } from '@/components/providers/supabase-auth-provider'
-import { useAppStore, type Screen } from '@/stores/app'
+import { useAppStore } from '@/stores/app'
 import { useEffect, Component, type ReactNode, useSyncExternalStore } from 'react'
 import dynamic from 'next/dynamic'
-import { FeatureGate } from '@/components/feature-gate'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { useTranslation } from '@/components/providers/language-provider'
 
-const ScreenTransition = dynamic(() => import('@/components/screen-transition').then(m => ({ default: m.ScreenTransition })), { ssr: false })
 const LoadingSpinner = dynamic(() => import('@/components/screen-transition').then(m => ({ default: m.LoadingSpinner })), { ssr: false })
-
 const LandingPage = dynamic(() => import('@/components/landing/landing-page'), { ssr: false })
 const AuthScreen = dynamic(() => import('@/components/screens/auth-screen'), { ssr: false })
 const OnboardingScreen = dynamic(() => import('@/components/screens/onboarding-screen'), { ssr: false })
-const HomeScreen = dynamic(() => import('@/components/screens/home-screen'), { ssr: false })
-const PlansScreen = dynamic(() => import('@/components/screens/plans-screen'), { ssr: false })
-const TrainHubScreen = dynamic(() => import('@/components/screens/train-hub-screen'), { ssr: false })
-const DrillDetailScreen = dynamic(() => import('@/components/screens/drill-detail-screen'), { ssr: false })
-const CameraWorkoutScreen = dynamic(() => import('@/components/screens/camera-workout'), { ssr: false })
-const WorkoutSummaryScreen = dynamic(() => import('@/components/screens/workout-summary-screen'), { ssr: false })
-const StatsScreen = dynamic(() => import('@/components/screens/stats-screen'), { ssr: false })
-const ProfileScreen = dynamic(() => import('@/components/screens/profile-screen'), { ssr: false })
-const AchievementsScreen = dynamic(() => import('@/components/screens/achievements-screen'), { ssr: false })
-const SettingsScreen = dynamic(() => import('@/components/screens/settings-screen'), { ssr: false })
-const ScoutingScreen = dynamic(() => import('@/components/screens/scouting-screen'), { ssr: false })
-const AICoachScreen = dynamic(() => import('@/components/screens/ai-coach-screen'), { ssr: false })
-const ReactionTrainerScreen = dynamic(() => import('@/components/screens/reaction-trainer-screen'), { ssr: false })
-const PricingScreen = dynamic(() => import('@/components/screens/pricing-screen'), { ssr: false })
-const LeaderboardScreen = dynamic(() => import('@/components/screens/leaderboard-screen'), { ssr: false })
-const RecordsScreen = dynamic(() => import('@/components/screens/records-screen'), { ssr: false })
-const FriendsScreen = dynamic(() => import('@/components/screens/friends-screen'), { ssr: false })
-const TeamsScreen = dynamic(() => import('@/components/screens/teams-screen'), { ssr: false })
-const TeamDetailScreen = dynamic(() => import('@/components/screens/team-detail-screen'), { ssr: false })
-const ChallengesScreen = dynamic(() => import('@/components/screens/challenges-screen'), { ssr: false })
-const ChallengeDetailScreen = dynamic(() => import('@/components/screens/challenge-detail-screen'), { ssr: false })
-const FeedScreen = dynamic(() => import('@/components/screens/feed-screen'), { ssr: false })
-const PostDetailScreen = dynamic(() => import('@/components/screens/post-detail-screen'), { ssr: false })
-const MessagesScreen = dynamic(() => import('@/components/screens/messages-screen'), { ssr: false })
-const ConversationScreen = dynamic(() => import('@/components/screens/conversation-screen'), { ssr: false })
-const ProfileOtherScreen = dynamic(() => import('@/components/screens/profile-other-screen'), { ssr: false })
-const LiveWorkoutScreen = dynamic(() => import('@/components/screens/live-workout-screen'), { ssr: false })
-const NotificationsScreen = dynamic(() => import('@/components/screens/notifications-screen'), { ssr: false })
-const VideoLibraryScreen = dynamic(() => import('@/components/screens/video-library-screen'), { ssr: false })
-const VideoPlayerScreen = dynamic(() => import('@/components/screens/video-player-screen'), { ssr: false })
-const VideoUploadScreen = dynamic(() => import('@/components/screens/video-upload-screen'), { ssr: false })
-const VideoCompareScreen = dynamic(() => import('@/components/screens/video-compare-screen'), { ssr: false })
-const AIInsightsScreen = dynamic(() => import('@/components/screens/ai-insights-screen'), { ssr: false })
-const VoiceCoachScreen = dynamic(() => import('@/components/screens/voice-coach-screen'), { ssr: false })
-const PredictionsScreen = dynamic(() => import('@/components/screens/predictions-screen'), { ssr: false })
-const AIWorkoutGenScreen = dynamic(() => import('@/components/screens/ai-workout-gen-screen'), { ssr: false })
-const AIToolsScreen = dynamic(() => import('@/components/screens/ai-tools-screen'), { ssr: false })
-const TermsScreen = dynamic(() => import('@/components/screens/terms-screen'), { ssr: false })
-const PrivacyScreen = dynamic(() => import('@/components/screens/privacy-screen'), { ssr: false })
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false }
@@ -79,98 +38,89 @@ export default function Home() {
   const currentScreen = useAppStore(s => s.currentScreen)
   const navigate = useAppStore(s => s.navigate)
   const selectDrill = useAppStore(s => s.selectDrill)
+  const router = useRouter()
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
 
+  // Authenticated users get redirected to /home
   useEffect(() => {
-    if (!loading && !isAuthenticated && currentScreen !== 'auth' && currentScreen !== 'landing') navigate('landing')
+    if (!loading && isAuthenticated && currentScreen !== 'auth' && currentScreen !== 'onboarding') {
+      router.push('/home')
+    }
+  }, [loading, isAuthenticated, currentScreen, router])
+
+  // Unauthenticated users not on landing/auth get sent to landing
+  useEffect(() => {
+    if (!loading && !isAuthenticated && currentScreen !== 'auth' && currentScreen !== 'landing') {
+      navigate('landing')
+    }
   }, [loading, isAuthenticated, currentScreen, navigate])
 
+  // Deep linking: read URL params and redirect
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
+    const hash = window.location.hash.replace('#', '')
+
+    // Checkout callbacks
     if (params.get('checkout') === 'success') {
       toast.success(td('Paiement réussi !', 'Payment successful!'))
       window.history.replaceState({}, '', '/')
+      return
     }
     if (params.get('checkout') === 'cancelled') {
       toast.error(td('Paiement annulé.', 'Payment cancelled.'))
       window.history.replaceState({}, '', '/')
+      return
     }
-  }, [td])
 
-  useEffect(() => {
     if (!isAuthenticated) return
-    const params = new URLSearchParams(window.location.search)
-    const hash = window.location.hash.replace('#', '')
-    const deepParam = params.get('deep')
+
     const verifyEmailParam = params.get('verify_email')
-    const drillId = params.get('drill') || hash.startsWith('drill/') ? hash.replace('drill/', '') : null
+    const deepParam = params.get('deep')
+    const drillId = params.get('drill') || (hash.startsWith('drill/') ? hash.replace('drill/', '') : null)
+
     if (verifyEmailParam) {
-      fetch(`/api/email/verify/${encodeURIComponent(verifyEmailParam)}`).then(r => r.json()).then(d => d.message && toast.success?.(d.message)).catch(() => {}).finally(() => window.history.replaceState({}, '', '/'))
+      fetch(`/api/email/verify/${encodeURIComponent(verifyEmailParam)}`)
+        .then(r => r.json())
+        .then(d => d.message && toast.success?.(d.message))
+        .catch(() => {})
+        .finally(() => window.history.replaceState({}, '', '/'))
     } else if (deepParam) {
       const [type, id] = deepParam.split('/')
-      const screenMap: Record<string, Screen> = { drill: 'drill-detail', challenge: 'challenge-detail', team: 'team-detail', profile: 'profile-other', video: 'video-player' }
-      const target = screenMap[type]
-      if (target && id) { if (type === 'drill') { navigate('drill-detail'); selectDrill(id) } else navigate(target) }
+      const pathMap: Record<string, string> = {
+        drill: `/train/drill/${id || ''}`,
+        challenge: `/challenges/${id || ''}`,
+        team: `/teams/${id || ''}`,
+        profile: `/profile/${id || ''}`,
+        video: `/videos/${id || ''}`,
+      }
+      const path = pathMap[type]
+      if (path) router.push(path)
+      if (type === 'drill' && id) selectDrill(id)
       window.history.replaceState({}, '', '/')
-    } else if (drillId) { selectDrill(drillId); navigate('drill-detail'); window.history.replaceState({}, '', '/') }
-  }, [isAuthenticated, navigate, selectDrill])
+    } else if (drillId) {
+      selectDrill(drillId)
+      router.push(`/train/drill/${drillId}`)
+      window.history.replaceState({}, '', '/')
+    }
+  }, [isAuthenticated, navigate, selectDrill, router, td])
 
   if (!mounted || loading) return <LoadingSpinner />
 
+  // Landing page for unauthenticated users
   if (!isAuthenticated && currentScreen === 'landing') {
     return <ErrorBoundary><LandingPage onNavigate={navigate} /></ErrorBoundary>
   }
 
-  const direction = 1
+  // Auth screen
+  if (!isAuthenticated && currentScreen === 'auth') {
+    return <ErrorBoundary><AuthScreen /></ErrorBoundary>
+  }
 
-  return (
-    <ErrorBoundary>
-      <main className="min-h-screen bg-background">
-        <ScreenTransition screenKey={currentScreen} direction={direction}>
-          {currentScreen === 'auth' && <AuthScreen />}
-          {currentScreen === 'onboarding' && <OnboardingScreen />}
-          {currentScreen === 'home' && isAuthenticated && <HomeScreen />}
-          {currentScreen === 'plans' && isAuthenticated && <PlansScreen />}
-          {currentScreen === 'train-hub' && isAuthenticated && <TrainHubScreen />}
-          {currentScreen === 'drill-detail' && <DrillDetailScreen />}
-          {currentScreen === 'camera-workout' && isAuthenticated && <CameraWorkoutScreen />}
-          {currentScreen === 'workout-summary' && isAuthenticated && <WorkoutSummaryScreen />}
-          {currentScreen === 'stats' && isAuthenticated && <StatsScreen />}
-          {currentScreen === 'profile' && isAuthenticated && <ProfileScreen />}
-          {currentScreen === 'achievements' && isAuthenticated && <AchievementsScreen />}
-          {currentScreen === 'settings' && isAuthenticated && <SettingsScreen />}
-          {currentScreen === 'scouting' && isAuthenticated && <FeatureGate flag="scouting"><ScoutingScreen /></FeatureGate>}
-          {currentScreen === 'ai-coach' && isAuthenticated && <FeatureGate flag="ai_coach"><AICoachScreen /></FeatureGate>}
-          {currentScreen === 'reaction-trainer' && isAuthenticated && <FeatureGate flag="reaction_trainer"><ReactionTrainerScreen /></FeatureGate>}
-          {currentScreen === 'pricing' && isAuthenticated && <PricingScreen />}
-          {currentScreen === 'leaderboard' && isAuthenticated && <LeaderboardScreen />}
-          {currentScreen === 'records' && isAuthenticated && <RecordsScreen />}
-          {currentScreen === 'friends' && isAuthenticated && <FriendsScreen />}
-          {currentScreen === 'teams' && isAuthenticated && <TeamsScreen />}
-          {currentScreen === 'team-detail' && isAuthenticated && <TeamDetailScreen />}
-          {currentScreen === 'challenges' && isAuthenticated && <ChallengesScreen />}
-          {currentScreen === 'challenge-detail' && isAuthenticated && <ChallengeDetailScreen />}
-          {currentScreen === 'feed' && isAuthenticated && <FeedScreen />}
-          {currentScreen === 'post-detail' && isAuthenticated && <PostDetailScreen />}
-          {currentScreen === 'messages' && isAuthenticated && <MessagesScreen />}
-          {currentScreen === 'conversation' && isAuthenticated && <ConversationScreen />}
-          {currentScreen === 'profile-other' && isAuthenticated && <ProfileOtherScreen />}
-          {currentScreen === 'live-workout' && isAuthenticated && <LiveWorkoutScreen />}
-          {currentScreen === 'notifications' && isAuthenticated && <NotificationsScreen />}
-          {currentScreen === 'video-library' && isAuthenticated && <VideoLibraryScreen />}
-          {currentScreen === 'video-player' && isAuthenticated && <VideoPlayerScreen />}
-          {currentScreen === 'video-upload' && isAuthenticated && <VideoUploadScreen />}
-          {currentScreen === 'video-compare' && isAuthenticated && <VideoCompareScreen />}
-          {currentScreen === 'ai-insights' && isAuthenticated && <AIInsightsScreen />}
-          {currentScreen === 'voice-coach' && isAuthenticated && <VoiceCoachScreen />}
-          {currentScreen === 'predictions' && isAuthenticated && <PredictionsScreen />}
-          {currentScreen === 'ai-workout-gen' && isAuthenticated && <AIWorkoutGenScreen />}
-          {currentScreen === 'ai-tools' && isAuthenticated && <AIToolsScreen />}
-          {currentScreen === 'terms' && <TermsScreen />}
-          {currentScreen === 'privacy' && <PrivacyScreen />}
-          {!isAuthenticated && currentScreen !== 'auth' && currentScreen !== 'landing' && currentScreen !== 'terms' && currentScreen !== 'privacy' && <AuthScreen />}
-        </ScreenTransition>
-      </main>
-    </ErrorBoundary>
-  )
+  // Onboarding screen
+  if (isAuthenticated && currentScreen === 'onboarding') {
+    return <ErrorBoundary><OnboardingScreen /></ErrorBoundary>
+  }
+
+  // Fallback: loading state while redirect happens
+  return <LoadingSpinner />
 }

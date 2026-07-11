@@ -116,6 +116,144 @@ export async function chat(
   throw createAiError('model_error', 'LLM call failed after all retries', false, 500, lastError)
 }
 
+// ── Streaming Chat Function ─────────────────────────────────────────────────────
+
+/**
+ * SSE chunk emitted by the streaming LLM response.
+ * The SDK returns a ReadableStream of SSE lines when stream=true.
+ */
+export interface StreamChunk {
+  content: string
+}
+
+/**
+ * Send a streaming chat completion request to the LLM.
+ * Returns a ReadableStream<Uint8Array> of SSE-formatted data from the SDK.
+ * The caller is responsible for piping this to the HTTP response.
+ *
+ * Unlike `chat()`, this does NOT retry — once we start streaming we cannot
+ * restart transparently. A single attempt is made with a longer timeout.
+ */
+export async function chatStream(
+  messages: ChatMessage[],
+  options?: ChatOptions & { timeoutMs?: number },
+): Promise<ReadableStream<Uint8Array>> {
+  const {
+    temperature = 0.7,
+    maxTokens,
+    model = DEFAULT_MODEL,
+    responseFormat,
+    timeoutMs = 60_000, // longer timeout for streaming
+  } = options ?? {}
+
+  const trimmedMessages = trimMessagesToFitWindow(messages, model, maxTokens ?? 1024)
+  const estimatedInputTokens = estimateMessagesTokens(trimmedMessages)
+  logger.debug(
+    `LLM stream: model=${model}, messages=${trimmedMessages.length}, est_input_tokens≈${estimatedInputTokens}`,
+    'ai.language.stream',
+  )
+
+  const zai = await ZAI.create()
+
+  const sdkMessages = trimmedMessages.map((m) => ({
+    role: m.role,
+    content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+  }))
+
+  const chatApi = zai.chat as unknown as {
+    completions: { create: (args: Record<string, unknown>) => Promise<ReadableStream<Uint8Array>> }
+  }
+
+  const stream = await chatApi.completions.create({
+    model,
+    messages: sdkMessages,
+    temperature,
+    stream: true,
+    thinking: { type: 'disabled' },
+    ...(responseFormat === 'json_object' ? { response_format: { type: 'json_object' } } : {}),
+    ...(maxTokens ? { max_tokens: maxTokens } : {}),
+  })
+
+  if (!(stream instanceof ReadableStream)) {
+    throw createAiError(
+      'model_error',
+      'SDK did not return a ReadableStream for streaming request',
+      false,
+      500,
+    )
+  }
+
+  logger.info(`LLM stream started: model=${model}`, 'ai.language.stream')
+  return stream
+}
+
+/**
+ * Convert a raw SDK SSE ReadableStream into a TransformStream that emits
+ * clean `data: {"content":"..."}\n\n` SSE events for the HTTP response.
+ * Sends `data: [DONE]\n\n` when the source stream ends.
+ *
+ * This handles the SSE parsing from the SDK and re-emits in our standard format.
+ */
+export function createSSETransformStream(): TransformStream<Uint8Array, Uint8Array> {
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  return new TransformStream({
+    transform(chunk, controller) {
+      buffer += decoder.decode(chunk, { stream: true })
+      const lines = buffer.split('\n')
+      // Keep the last (potentially incomplete) line in the buffer
+      buffer = lines.pop() ?? ''
+
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed || !trimmed.startsWith('data: ')) continue
+        const payload = trimmed.slice(6) // strip "data: " prefix
+        if (payload === '[DONE]') {
+          controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'))
+          return
+        }
+        try {
+          const parsed = JSON.parse(payload)
+          // OpenAI-compatible SSE: choices[0].delta.content
+          const token = parsed?.choices?.[0]?.delta?.content
+          if (token) {
+            controller.enqueue(
+              new TextEncoder().encode(`data: ${JSON.stringify({ content: token })}\n\n`),
+            )
+          }
+        } catch {
+          // Ignore malformed JSON lines from the SDK
+        }
+      }
+    },
+    flush(controller) {
+      // Process any remaining buffer
+      if (buffer.trim()) {
+        const trimmed = buffer.trim()
+        if (trimmed.startsWith('data: ')) {
+          const payload = trimmed.slice(6)
+          if (payload !== '[DONE]') {
+            try {
+              const parsed = JSON.parse(payload)
+              const token = parsed?.choices?.[0]?.delta?.content
+              if (token) {
+                controller.enqueue(
+                  new TextEncoder().encode(`data: ${JSON.stringify({ content: token })}\n\n`),
+                )
+              }
+            } catch {
+              // Ignore
+            }
+          }
+        }
+      }
+      // Always send [DONE] at the end if not already sent
+      controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'))
+    },
+  })
+}
+
 // ── Structured Output ───────────────────────────────────────────────────────────
 
 /**

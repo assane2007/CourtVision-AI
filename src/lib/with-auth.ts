@@ -1,5 +1,16 @@
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+/**
+ * @deprecated Prefer `withAuthGuard` / `requireAuth` from `@/lib/guards/auth.guard.ts`.
+ * This module is kept for backward compatibility with the ~119 routes that import it.
+ * New routes should use auth.guard.ts which provides auth levels, caching, and
+ * standardized error handling via AppError.
+ *
+ * TODO: Unify with auth.guard.ts — migrate all callers to `withAuthGuard`, then
+ * remove this file. See matching TODO in auth.guard.ts.
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth, invalidateAuthCache } from '@/lib/guards/auth.guard'
+import type { AuthContext } from '@/lib/types/service.types'
 
 type RouteContext = { params: Promise<Record<string, string>> }
 
@@ -58,24 +69,14 @@ export function withAuth(
   handler: AuthenticatedHandler,
 ): (req: NextRequest, context: RouteContext) => Promise<NextResponse> {
   return async (req, context) => {
-    const supabase = await createSupabaseServerClient()
-    const { data: { user }, error } = await supabase.auth.getUser()
-
-    if (error || !user) {
+    try {
+      // Delegate to the auth guard's core logic (Supabase validation + DB lookup + cache)
+      const auth: AuthContext = await requireAuth()
+      const session = authContextToSession(auth)
+      return handler(req, session, context)
+    } catch {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
-
-    const session: SupabaseSession = {
-      user: {
-        id: user.id,
-        email: user.email ?? '',
-        name: user.user_metadata?.name || user.email?.split('@')[0] || '',
-      },
-      // Supabase access_token typically expires in 1 hour
-      expires: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-    }
-
-    return handler(req, session, context)
   }
 }
 
@@ -88,32 +89,16 @@ export function withAdmin(
   handler: AuthenticatedHandler,
 ): (req: NextRequest, context: RouteContext) => Promise<NextResponse> {
   return async (req, context) => {
-    const supabase = await createSupabaseServerClient()
-    const { data: { user }, error } = await supabase.auth.getUser()
-
-    if (error || !user) {
+    try {
+      const auth: AuthContext = await requireAuth()
+      if (auth.role !== 'admin') {
+        return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
+      }
+      const session = authContextToSession(auth)
+      return handler(req, session, context)
+    } catch {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
-
-    const { db } = await import('@/lib/db')
-    const player = await db.player.findUnique({
-      where: { id: user.id },
-      select: { role: true },
-    })
-    if (!player || player.role !== 'admin') {
-      return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
-    }
-
-    const session: SupabaseSession = {
-      user: {
-        id: user.id,
-        email: user.email ?? '',
-        name: user.user_metadata?.name || user.email?.split('@')[0] || '',
-      },
-      expires: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-    }
-
-    return handler(req, session, context)
   }
 }
 
@@ -133,24 +118,32 @@ export function withOptionalAuth(
   handler: OptionalAuthHandler,
 ): (req: NextRequest, context: RouteContext) => Promise<NextResponse> {
   return async (req, context) => {
-    const supabase = await createSupabaseServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
+    try {
+      const { getOptionalAuth } = await import('@/lib/guards/auth.guard')
+      const auth = await getOptionalAuth()
+      const session = auth ? authContextToSession(auth) : null
+      return handler(req, session, context)
+    } catch {
       return handler(req, null, context)
     }
-
-    const session: SupabaseSession = {
-      user: {
-        id: user.id,
-        email: user.email ?? '',
-        name: user.user_metadata?.name || user.email?.split('@')[0] || '',
-      },
-      expires: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-    }
-
-    return handler(req, session, context)
   }
 }
 
+// Re-export invalidateAuthCache so callers of with-auth.ts don't need to switch imports
+export { invalidateAuthCache }
+
 export type { SupabaseSession }
+
+// ── Internal Helpers ─────────────────────────────────────────────────────────────
+
+/** Adapt the richer AuthContext back to the legacy SupabaseSession shape. */
+function authContextToSession(auth: AuthContext): SupabaseSession {
+  return {
+    user: {
+      id: auth.playerId,
+      email: auth.email,
+      name: auth.name,
+    },
+    expires: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+  }
+}

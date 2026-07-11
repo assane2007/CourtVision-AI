@@ -7,6 +7,58 @@
  */
 
 import { create } from 'zustand'
+import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
+
+// ── Screen-to-Path mapping ────────────────────────────────────────────────────
+
+const SCREEN_TO_PATH: Record<string, string> = {
+  'home': '/home',
+  'train': '/train',
+  'drill-detail': '/train/drill/',
+  'camera-workout': '/train/workout',
+  'workout-summary': '/train/workout/summary',
+  'plans': '/train/plans',
+  'ai-coach': '/ai-coach',
+  'ai-tools': '/ai-tools',
+  'ai-insights': '/ai-insights',
+  'predictions': '/ai/predictions',
+  'ai-workout': '/ai/workout',
+  'voice-coach': '/ai/voice',
+  'video-library': '/videos',
+  'video-upload': '/videos/upload',
+  'video-player': '/videos/',
+  'video-compare': '/videos/compare',
+  'stats': '/stats',
+  'records': '/records',
+  'scouting': '/scouting',
+  'reaction-trainer': '/reaction',
+  'feed': '/feed',
+  'post-detail': '/feed/',
+  'friends': '/friends',
+  'messages': '/messages',
+  'conversation': '/messages/',
+  'teams': '/teams',
+  'team-detail': '/teams/',
+  'challenges': '/challenges',
+  'challenge-detail': '/challenges/',
+  'leaderboard': '/leaderboard',
+  'achievements': '/achievements',
+  'profile': '/profile',
+  'profile-other': '/profile/',
+  'settings': '/settings',
+  'notifications': '/notifications',
+  'pricing': '/pricing',
+  'live-workout': '/live',
+  'admin': '/admin',
+  'train-hub': '/train/hub',
+  'ai-workout-gen': '/ai/workout-gen',
+  'terms': '/terms',
+  'privacy': '/privacy',
+  'quests': '/quests',
+  'recommendations': '/recommendations',
+  'daily-reward': '/daily-reward',
+  'referral': '/referral',
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -19,7 +71,7 @@ export type Screen =
   | 'live-workout' | 'notifications'
   | 'video-library' | 'video-player' | 'video-upload' | 'video-compare'
   | 'ai-insights' | 'voice-coach' | 'predictions' | 'ai-workout-gen' | 'ai-tools'
-  | 'terms' | 'privacy'
+  | 'terms' | 'privacy' | 'admin'
 
 export interface WorkoutDrillResult {
   drillId: string
@@ -63,7 +115,7 @@ export interface PlanDrillQueueItem {
 // ── Action types (separate from state to avoid unused-param lint on interface) ──
 
 export interface AppActions {
-  navigate: (screen: Screen) => void
+  navigate: (screen: Screen, id?: string) => void
   goBack: () => void
   selectDrill: (drillId: string) => void
   selectConversation: (conversationId: string) => void
@@ -75,6 +127,7 @@ export interface AppActions {
   startPlanExecution: (planId: string, drills: PlanDrillQueueItem[]) => void
   advancePlanDrill: (result: WorkoutDrillResult) => void
   clearPlanExecution: () => void
+  setRouter: (router: AppRouterInstance) => void
 }
 
 // ── Combined State (backward compatible) ──────────────────────────────────────
@@ -86,6 +139,7 @@ interface AppState {
   selectedConversationId: string | null
   screenHistory: Screen[]
   sidebarOpen: boolean
+  router: AppRouterInstance | null
 
   // Workout
   workoutResult: WorkoutResult | null
@@ -106,6 +160,7 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
   selectedConversationId: null,
   screenHistory: [],
   sidebarOpen: false,
+  router: null,
   workoutResult: null,
   xpAwarded: null,
 
@@ -115,16 +170,43 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
   planResults: [],
   planId: null,
 
-  navigate: (screen) => set((state) => ({
-    currentScreen: screen,
-    screenHistory: [...state.screenHistory.slice(-20), state.currentScreen],
-  })),
+  setRouter: (router) => set({ router }),
 
-  goBack: () => set((state) => {
-    const newHistory = [...state.screenHistory]
-    const prevScreen = newHistory.pop() || 'home'
-    return { currentScreen: prevScreen, screenHistory: newHistory }
-  }),
+  navigate: (screen, id) => {
+    const state = useAppStore.getState()
+    const basePath = SCREEN_TO_PATH[screen]
+
+    // Use Next.js router when available and a path mapping exists
+    if (state.router && basePath) {
+      const fullPath = basePath + (id || '')
+      state.router.push(fullPath)
+      // Also update Zustand state for backward compatibility
+      set((s) => ({
+        currentScreen: screen,
+        screenHistory: [...s.screenHistory.slice(-20), s.currentScreen],
+      }))
+      return
+    }
+
+    // Fallback: Zustand state change only
+    set((s) => ({
+      currentScreen: screen,
+      screenHistory: [...s.screenHistory.slice(-20), s.currentScreen],
+    }))
+  },
+
+  goBack: () => {
+    const state = get()
+    if (state.router) {
+      state.router.back()
+      return
+    }
+    set((s) => {
+      const newHistory = [...s.screenHistory]
+      const prevScreen = newHistory.pop() || 'home'
+      return { currentScreen: prevScreen, screenHistory: newHistory }
+    })
+  },
 
   selectDrill: (drillId) => set({ selectedDrillId: drillId }),
 

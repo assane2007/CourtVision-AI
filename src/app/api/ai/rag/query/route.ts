@@ -5,6 +5,13 @@ import { trackError } from '@/lib/monitoring'
 import ZAI from 'z-ai-web-dev-sdk'
 import { sanitize } from '@/lib/sanitize'
 import { withAuth } from '@/lib/with-auth'
+import {
+  generateEmbedding,
+  cosineSimilarity,
+  parseEmbedding,
+} from '@/lib/ai/providers/embedding.provider'
+
+const TOP_K = 5 // Number of most similar documents to use as context
 
 // POST /api/ai/rag/query — Query player data with LLM using RAG context
 export const POST = withAuth(async (req: NextRequest, session) => {
@@ -23,12 +30,32 @@ export const POST = withAuth(async (req: NextRequest, session) => {
       return NextResponse.json({ error: 'Question invalide (1-500 caractères)' }, { status: 400 })
     }
 
-    // Fetch player documents as RAG context
-    const documents = await db.playerDocument.findMany({
+    // Generate embedding for the query for similarity-based retrieval
+    const queryEmbedding = await generateEmbedding(query)
+
+    // Fetch all player documents for RAG context
+    const allDocuments = await db.playerDocument.findMany({
       where: { playerId },
       orderBy: { createdAt: 'desc' },
-      take: 15,
+      take: 30,
     })
+
+    // Rank documents by cosine similarity to query embedding
+    let contextDocuments = allDocuments
+    if (queryEmbedding) {
+      const scored = allDocuments
+        .map((doc) => {
+          const docEmb = parseEmbedding(doc.embedding)
+          if (!docEmb) return { doc, score: -1 }
+          return { doc, score: cosineSimilarity(queryEmbedding, docEmb) }
+        })
+        .filter((s) => s.score >= 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, TOP_K)
+
+      contextDocuments = scored.map((s) => s.doc)
+    }
+    // If no embedding was generated, fall back to most recent documents
 
     // Also fetch player profile for context
     const player = await db.player.findUnique({
@@ -40,8 +67,8 @@ export const POST = withAuth(async (req: NextRequest, session) => {
       ? `${player.name}, ${player.position}, niveau ${player.level}, objectif: ${player.goals}, niveau XP ${player.xpLevel}`
       : 'Joueur inconnu'
 
-    const contextStr = documents.length > 0
-      ? documents.map(d => `[${d.type}] ${d.content}`).join('\n')
+    const contextStr = contextDocuments.length > 0
+      ? contextDocuments.map(d => `[${d.type}] ${d.content}`).join('\n')
       : 'Aucune donnée de joueur disponible.'
 
     const zai = await ZAI.create()

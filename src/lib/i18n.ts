@@ -830,6 +830,31 @@ export type TranslationKey =
   | 'paywall.messages.searchPlayer'
   | 'paywall.messages.noResults'
   | 'paywall.messages.selectPlayer'
+  // Admin dashboard
+  | 'admin.title'
+  | 'admin.overview'
+  | 'admin.users'
+  | 'admin.aiUsage'
+  | 'admin.system'
+  | 'admin.totalUsers'
+  | 'admin.activeToday'
+  | 'admin.mrr'
+  | 'admin.aiCallsToday'
+  | 'admin.signups30d'
+  | 'admin.usageByType'
+  | 'admin.subscriptionDist'
+  | 'admin.recentSignups'
+  | 'admin.dbConnections'
+  | 'admin.queueDepth'
+  | 'admin.errorRate'
+  | 'admin.email'
+  | 'admin.date'
+  | 'admin.plan'
+  | 'admin.free'
+  | 'admin.pro'
+  | 'admin.unauthorized'
+  | 'admin.unauthorizedDesc'
+  | 'admin.loadFailed'
 
 // ── Translation dictionaries ────────────────────────────────────────────────
 const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
@@ -1712,6 +1737,32 @@ const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
     'paywall.messages.searchPlayer': 'Rechercher un joueur...',
     'paywall.messages.noResults': 'Aucun joueur trouvé',
     'paywall.messages.selectPlayer': 'Sélectionner',
+
+    // Admin dashboard
+    'admin.title': 'Administration',
+    'admin.overview': 'Vue d\'ensemble',
+    'admin.users': 'Utilisateurs',
+    'admin.aiUsage': 'Utilisation IA',
+    'admin.system': 'Système',
+    'admin.totalUsers': 'Utilisateurs totaux',
+    'admin.activeToday': 'Actifs aujourd\'hui',
+    'admin.mrr': 'Revenus mensuels',
+    'admin.aiCallsToday': 'Appels IA aujourd\'hui',
+    'admin.signups30d': 'Inscriptions (30j)',
+    'admin.usageByType': 'Utilisation par type',
+    'admin.subscriptionDist': 'Répartition abonnements',
+    'admin.recentSignups': 'Inscriptions récentes',
+    'admin.dbConnections': 'Connexions DB',
+    'admin.queueDepth': 'File d\'attente',
+    'admin.errorRate': 'Taux d\'erreur',
+    'admin.email': 'E-mail',
+    'admin.date': 'Date',
+    'admin.plan': 'Plan',
+    'admin.free': 'Gratuit',
+    'admin.pro': 'Pro',
+    'admin.unauthorized': 'Accès non autorisé',
+    'admin.unauthorizedDesc': 'Vous n\'avez pas les droits administrateur.',
+    'admin.loadFailed': 'Erreur lors du chargement des statistiques',
   },
 
   en: {
@@ -2593,6 +2644,32 @@ const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
     'paywall.messages.searchPlayer': 'Search for a player...',
     'paywall.messages.noResults': 'No players found',
     'paywall.messages.selectPlayer': 'Select',
+
+    // Admin dashboard
+    'admin.title': 'Administration',
+    'admin.overview': 'Overview',
+    'admin.users': 'Users',
+    'admin.aiUsage': 'AI Usage',
+    'admin.system': 'System',
+    'admin.totalUsers': 'Total users',
+    'admin.activeToday': 'Active today',
+    'admin.mrr': 'Monthly revenue',
+    'admin.aiCallsToday': 'AI calls today',
+    'admin.signups30d': 'Signups (30d)',
+    'admin.usageByType': 'Usage by type',
+    'admin.subscriptionDist': 'Subscription distribution',
+    'admin.recentSignups': 'Recent signups',
+    'admin.dbConnections': 'DB connections',
+    'admin.queueDepth': 'Queue depth',
+    'admin.errorRate': 'Error rate',
+    'admin.email': 'Email',
+    'admin.date': 'Date',
+    'admin.plan': 'Plan',
+    'admin.free': 'Free',
+    'admin.pro': 'Pro',
+    'admin.unauthorized': 'Unauthorized',
+    'admin.unauthorizedDesc': 'You do not have admin privileges.',
+    'admin.loadFailed': 'Failed to load statistics',
   },
 } as const
 

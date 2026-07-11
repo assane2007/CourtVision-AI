@@ -160,6 +160,8 @@ model Player {
   devices               Device[]
   offlineActions        OfflineAction[]
   refreshTokens         RefreshToken[]
+  pushSubscriptions     PushSubscription[]
+  auditLogs              AuditLog[]
 
   @@index([resetToken])
   @@index([resetTokenHash])
@@ -953,6 +955,21 @@ model Device {
   @@index([playerId])
 }
 
+model PushSubscription {
+  id        String   @id @default(cuid())
+  playerId  String
+  endpoint  String
+  p256dh    String
+  auth      String
+  userAgent String?  // browser / device identifier
+  createdAt DateTime @default(now())
+
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@unique([endpoint])
+}
+
 model DailyLogin {
   id          String   @id @default(cuid())
   playerId    String
@@ -1004,4 +1021,26 @@ model RefreshToken {
   @@index([jti])
   @@index([token])
   @@index([revokedAt])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AUDIT LOG — Immutable record of significant user actions
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  playerId    String
+  action      String
+  resource    String
+  resourceId  String?
+  details     String?  // JSON string
+  ipAddress   String?
+  userAgent   String?
+  timestamp   DateTime @default(now())
+
+  player      Player   @relation(fields: [playerId], references: [id])
+
+  @@index([playerId])
+  @@index([action])
+  @@index([timestamp])
 }

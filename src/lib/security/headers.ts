@@ -24,7 +24,7 @@ export function securityHeaders(): Record<string, string> {
     'X-Content-Type-Options': 'nosniff',
 
     // Prevent clickjacking
-    'X-Frame-Options': 'DENY',
+    'X-Frame-Options': 'SAMEORIGIN',
 
     // Legacy XSS protection (older browsers)
     'X-XSS-Protection': '1; mode=block',
@@ -41,6 +41,10 @@ export function securityHeaders(): Record<string, string> {
 
     // Cache control for API responses
     'Cache-Control': 'no-store, max-age=0',
+
+    // API versioning
+    'X-API-Version': 'v1',
+    'X-API-Deprecated': 'false',
   }
 
   // HSTS — only in production with HTTPS
@@ -52,13 +56,13 @@ export function securityHeaders(): Record<string, string> {
   if (config.env.isProd) {
     headers['Content-Security-Policy'] = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "script-src 'self'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self'",
       "connect-src 'self'",
       "media-src 'self' blob:",
-      "frame-ancestors 'none'",
+      "frame-ancestors 'self'",
       "base-uri 'self'",
       "form-action 'self'",
     ].join('; ')

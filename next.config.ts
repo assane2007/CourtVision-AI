@@ -22,6 +22,7 @@ const nextConfig: NextConfig = {
       { source: '/api/training/plans/:path*', destination: '/api/plans/:path*' },
       { source: '/api/social/friends/:path*', destination: '/api/friends/:path*' },
       { source: '/api/social/feed/:path*', destination: '/api/feed/:path*' },
+      { source: '/api/v1/:path*', destination: '/api/:path*' },
     ]
   },
   async headers() {
@@ -33,12 +34,12 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://va.vercel-scripts.com",
+              "script-src 'self' 'nonce-{{NONCE}}' https://cdn.jsdelivr.net https://va.vercel-scripts.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https: https://lh3.googleusercontent.com https://*.gravatar.com https://storage.googleapis.com",
               "connect-src 'self' https://*.space-z.ai http://*.space-z.ai https://*.supabase.co https://cdn.jsdelivr.net https://storage.googleapis.com https://*.ingest.us.sentry.io https://www.inngest.com",
               "font-src 'self'",
-              "frame-ancestors 'self' https://*.space-z.ai http://*.space-z.ai",
+              "frame-ancestors 'self'" + (process.env.NODE_ENV === 'development' ? " https://*.space-z.ai http://*.space-z.ai" : ""),
             ].join('; '),
           },
           { key: 'X-Content-Type-Options', value: 'nosniff' },

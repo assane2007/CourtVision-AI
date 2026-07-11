@@ -69,7 +69,7 @@ export function withRateLimit(
     const url = new URL(req.url)
     const identifier = `${ip}:${url.pathname}`
 
-    const result = rateLimiter.limit(identifier, config)
+    const result = await rateLimiter.limit(identifier, config)
 
     // Rate limited — return 429
     if (!result.allowed) {

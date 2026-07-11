@@ -1,8 +1,12 @@
 /**
- * Production rate limiter with sliding window algorithm.
+ * Production rate limiter with fixed-window algorithm.
  *
  * Supports configurable per-endpoint limits, returns proper HTTP headers,
- * and has a strategy pattern for memory (dev) vs redis (prod).
+ * and uses a strategy pattern for memory (dev) vs Redis (prod).
+ *
+ * When `REDIS_URL` is set the limiter transparently switches to a Redis
+ * backed store that uses INCR + PEXPIRE in a MULTI transaction so the
+ * increment + TTL refresh are atomic.
  */
 
 import { config } from '@/lib/config'
@@ -25,8 +29,17 @@ export interface RateLimitResult {
   retryAfterMs?: number // Only set when `allowed` is false
 }
 
-interface SlidingWindowEntry {
-  timestamps: number[] // Sorted array of request timestamps
+/**
+ * Common store interface that both MemoryStore and RedisStore implement.
+ *
+ * `increment` atomically bumps the counter for a key within a time window
+ * and returns the new count together with the absolute reset timestamp.
+ */
+export interface Store {
+  increment(key: string, windowMs: number): Promise<{ count: number; resetMs: number }>
+  get(key: string): Promise<number | undefined>
+  reset(key: string): Promise<void>
+  cleanup(): Promise<void>
 }
 
 // ── Presets ──────────────────────────────────────────────────────────────────
@@ -50,125 +63,95 @@ export const RATE_PRESETS = {
   webhook: { max: 100, windowMs: 60_000 },       // 100/min
 } as const
 
-// ── Sliding Window Implementation ────────────────────────────────────────────
+// ── Memory Store (fixed-window) ──────────────────────────────────────────────
+
+interface MemoryEntry {
+  count: number
+  resetMs: number
+}
 
 /**
- * In-memory sliding window rate limiter.
- * Uses a Map<string, number[]> where each key is the identifier
- * and the value is an array of request timestamps.
+ * In-memory fixed-window rate limit store.
+ *
+ * Keeps counters in a Map and periodically purges expired entries
+ * so memory usage stays bounded.
  */
-class MemoryStore {
-  private entries = new Map<string, SlidingWindowEntry>()
+class MemoryStore implements Store {
+  private entries = new Map<string, MemoryEntry>()
   private maxEntries = 50_000
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null
 
-  check(key: string, config: RateLimitConfig): RateLimitResult {
+  constructor() {
+    // Purge expired entries every 5 minutes
+    this.cleanupTimer = setInterval(() => this.evictExpired(), 5 * 60_000)
+    this.cleanupTimer.unref()
+  }
+
+  async increment(key: string, windowMs: number): Promise<{ count: number; resetMs: number }> {
     const now = Date.now()
-    const windowStart = now - config.windowMs
-
-    // Get or create entry
     let entry = this.entries.get(key)
 
-    if (!entry) {
+    // If no entry or window has expired, start fresh
+    if (!entry || now >= entry.resetMs) {
       // Evict if at capacity
-      if (this.entries.size >= this.maxEntries) {
-        this.evict(now)
+      if (!entry && this.entries.size >= this.maxEntries) {
+        this.evictExpired()
       }
-      entry = { timestamps: [] }
+      entry = { count: 0, resetMs: now + windowMs }
       this.entries.set(key, entry)
     }
 
-    // Remove expired timestamps (sliding window)
-    entry.timestamps = entry.timestamps.filter(t => t > windowStart)
+    entry.count++
 
-    const remaining = Math.max(0, config.max - entry.timestamps.length)
-
-    if (entry.timestamps.length >= config.max) {
-      // Find the oldest timestamp in the window to calculate reset
-      const oldestInWindow = entry.timestamps[0] || now
-      const resetMs = oldestInWindow + config.windowMs
-      return {
-        allowed: false,
-        remaining: 0,
-        limit: config.max,
-        resetMs,
-        retryAfterMs: resetMs - now,
-      }
-    }
-
-    // Record this request
-    entry.timestamps.push(now)
-
-    // Calculate when the window resets (based on the first request in the window)
-    const resetMs = (entry.timestamps[0] || now) + config.windowMs
-
-    return {
-      allowed: true,
-      remaining: remaining - 1, // -1 because we just used one
-      limit: config.max,
-      resetMs,
-    }
+    return { count: entry.count, resetMs: entry.resetMs }
   }
 
-  /** Remove entries that have no active timestamps */
-  private evict(now: number): void {
-    const keysToDelete: string[] = []
-    let deleted = 0
-    const targetDelete = Math.floor(this.maxEntries * 0.2) // Evict 20%
-
-    for (const [key, entry] of this.entries) {
-      entry.timestamps = entry.timestamps.filter(t => t > now - 60_000) // 1 min window
-      if (entry.timestamps.length === 0) {
-        keysToDelete.push(key)
-        deleted++
-        if (deleted >= targetDelete) break
-      }
-    }
-
-    for (const key of keysToDelete) {
-      this.entries.delete(key)
-    }
+  async get(key: string): Promise<number | undefined> {
+    const entry = this.entries.get(key)
+    if (!entry || Date.now() >= entry.resetMs) return undefined
+    return entry.count
   }
 
-  /** Delete a specific key */
-  delete(key: string): void {
+  async reset(key: string): Promise<void> {
     this.entries.delete(key)
   }
 
-  /** Remove entries whose timestamps have all expired (older than 15 min window) */
-  evictExpired(): void {
+  async cleanup(): Promise<void> {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer)
+      this.cleanupTimer = null
+    }
+    this.entries.clear()
+  }
+
+  /** Remove entries whose window has expired */
+  private evictExpired(): void {
     const now = Date.now()
-    const maxWindow = 15 * 60_000 // 15 minutes — the largest configured window
     for (const [key, entry] of this.entries) {
-      entry.timestamps = entry.timestamps.filter(t => t > now - maxWindow)
-      if (entry.timestamps.length === 0) {
+      if (now >= entry.resetMs) {
         this.entries.delete(key)
       }
     }
-  }
-
-  /** Clear all entries */
-  clear(): void {
-    this.entries.clear()
   }
 }
 
 // ── Rate Limiter Class ───────────────────────────────────────────────────────
 
 export class RateLimiter {
-  private store: MemoryStore
+  private store: Store
   private strategy: Strategy
-  private cleanupTimer: ReturnType<typeof setInterval> | null = null
 
   constructor(strategy: Strategy = 'memory') {
     this.strategy = strategy
-    this.store = new MemoryStore()
 
-    if (this.strategy === 'memory') {
-      // Periodic cleanup every 5 minutes — only evict expired entries
-      this.cleanupTimer = setInterval(() => {
-        this.store.evictExpired()
-      }, 5 * 60_000)
-      this.cleanupTimer.unref()
+    if (strategy === 'redis' && config.redis.url) {
+      // Dynamic import to avoid bundling ioredis when not needed
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { RedisStore } = require('./redis-store') as typeof import('./redis-store')
+      this.store = new RedisStore(config.redis.url)
+      logger.info('Rate limiter using Redis store', 'rate-limiter')
+    } else {
+      this.store = new MemoryStore()
     }
   }
 
@@ -178,13 +161,34 @@ export class RateLimiter {
    * @param identifier - Unique identifier (IP, userId, etc.)
    * @param config - Rate limit config or a preset name
    */
-  check(
+  async check(
     identifier: string,
     config: RateLimitConfig | keyof typeof RATE_PRESETS = 'api',
-  ): RateLimitResult {
+  ): Promise<RateLimitResult> {
     const resolvedConfig = typeof config === 'string' ? RATE_PRESETS[config] : config
+    const key = `${this.strategy}:${identifier}`
 
-    return this.store.check(`${this.strategy}:${identifier}`, resolvedConfig)
+    const { count, resetMs } = await this.store.increment(key, resolvedConfig.windowMs)
+
+    const remaining = Math.max(0, resolvedConfig.max - count)
+    const now = Date.now()
+
+    if (count > resolvedConfig.max) {
+      return {
+        allowed: false,
+        remaining: 0,
+        limit: resolvedConfig.max,
+        resetMs,
+        retryAfterMs: Math.max(0, resetMs - now),
+      }
+    }
+
+    return {
+      allowed: true,
+      remaining: remaining - 1, // -1 because we just used one
+      limit: resolvedConfig.max,
+      resetMs,
+    }
   }
 
   /**
@@ -192,11 +196,11 @@ export class RateLimiter {
    *
    * @returns `null` if allowed (attach headers manually), or a 429 Response.
    */
-  limit(
+  async limit(
     identifier: string,
     config: RateLimitConfig | keyof typeof RATE_PRESETS = 'api',
-  ): { allowed: true; headers: Record<string, string> } | { allowed: false; response: Response } {
-    const result = this.check(identifier, config)
+  ): Promise<{ allowed: true; headers: Record<string, string> } | { allowed: false; response: Response }> {
+    const result = await this.check(identifier, config)
 
     const headers: Record<string, string> = {
       'X-RateLimit-Limit': String(result.limit),
@@ -234,16 +238,13 @@ export class RateLimiter {
   /**
    * Reset rate limit for a specific identifier.
    */
-  reset(identifier: string): void {
-    this.store.delete(`${this.strategy}:${identifier}`)
+  async reset(identifier: string): Promise<void> {
+    await this.store.reset(`${this.strategy}:${identifier}`)
   }
 
-  /** Clean up resources */
-  destroy(): void {
-    if (this.cleanupTimer) {
-      clearInterval(this.cleanupTimer)
-      this.cleanupTimer = null
-    }
+  /** Clean up resources (Redis connection, timers, etc.) */
+  async destroy(): Promise<void> {
+    await this.store.cleanup()
   }
 }
 

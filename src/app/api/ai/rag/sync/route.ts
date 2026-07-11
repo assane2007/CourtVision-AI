@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackError } from '@/lib/monitoring'
 import { withAuth } from '@/lib/with-auth'
+import { generateEmbedding } from '@/lib/ai/providers/embedding.provider'
 
 // POST /api/ai/rag/sync — Sync player session data to PlayerDocument table for RAG context
 export const POST = withAuth(async (request, session) => {
@@ -105,12 +106,18 @@ export const POST = withAuth(async (request, session) => {
     await db.playerDocument.deleteMany({ where: { playerId } })
 
     if (documentsToCreate.length > 0) {
+      // Generate embeddings for each document in parallel
+      const embeddingResults = await Promise.all(
+        documentsToCreate.map((d) => generateEmbedding(d.content)),
+      )
+
       await db.playerDocument.createMany({
-        data: documentsToCreate.map(d => ({
+        data: documentsToCreate.map((d, i) => ({
           playerId,
           type: d.type,
           content: d.content,
           metadata: JSON.stringify(d.metadata),
+          embedding: embeddingResults[i] ? JSON.stringify(embeddingResults[i]) : null,
         })),
       })
     }

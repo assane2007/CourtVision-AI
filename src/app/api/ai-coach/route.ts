@@ -6,10 +6,10 @@ import { aiCoachSchema, getZodErrorMessage } from '@/lib/validations'
 import { CATEGORY_LABELS } from '@/lib/constants'
 import { formatShortDate } from '@/lib/date-utils'
 import { requireSubscription, subscriptionError } from '@/lib/require-subscription'
-import ZAI from 'z-ai-web-dev-sdk'
 import { trackError } from '@/lib/monitoring'
 import { sanitize } from '@/lib/sanitize'
 import { stripHtml } from '@/lib/security/sanitization'
+import { chatStream, createSSETransformStream } from '@/lib/ai/providers/language.provider'
 
 // GET /api/ai-coach — Fetch chat history
 export async function GET() {
@@ -179,14 +179,25 @@ dis-le honnêtement. Maximum 3-4 phrases par réponse.`
       content: m.content,
     }))
 
-    // 5. Call LLM
+    // 5. Build full message array for LLM
+    const llmMessages = [
+      { role: 'system' as const, content: systemPrompt },
+      ...chatHistory,
+      { role: 'user' as const, content: userMessage },
+    ]
+
+    // 6. Check if streaming is requested
+    const isStream = req.nextUrl.searchParams.get('stream') === 'true'
+
+    if (isStream) {
+      return handleStreamResponse(llmMessages, playerId)
+    }
+
+    // 7. Non-streaming: call LLM directly
+    const ZAI = (await import('z-ai-web-dev-sdk')).default
     const zai = await ZAI.create()
     const response = await zai.chat.completions.create({
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...chatHistory,
-        { role: 'user', content: userMessage },
-      ],
+      messages: llmMessages,
       thinking: { type: 'disabled' },
     })
 
@@ -196,7 +207,7 @@ dis-le honnêtement. Maximum 3-4 phrases par réponse.`
       return NextResponse.json({ error: 'Pas de réponse du coach IA' }, { status: 500 })
     }
 
-    // 6. Sanitize & save AI reply (strip any HTML/scripts from LLM output)
+    // 8. Sanitize & save AI reply (strip any HTML/scripts from LLM output)
     const sanitizedReply = stripHtml(reply).slice(0, 5000)
     await db.aIChatMessage.create({
       data: {
@@ -206,11 +217,96 @@ dis-le honnêtement. Maximum 3-4 phrases par réponse.`
       },
     })
 
-    // 7. Return the sanitized reply
+    // 9. Return the sanitized reply
     return NextResponse.json({ reply: sanitizedReply })
   } catch (error) {
     trackError('POST /api/ai-coach', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+  }
+}
+
+// ── Streaming Helper ─────────────────────────────────────────────────────────────
+
+/**
+ * Handle a streaming AI coach response.
+ * Calls the LLM with stream=true, pipes through SSE transform,
+ * accumulates the full reply, and persists it to DB after the stream completes.
+ */
+async function handleStreamResponse(
+  messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
+  playerId: string,
+) {
+  try {
+    const sdkStream = await chatStream(messages)
+
+    // We need to accumulate tokens to persist the full reply to DB
+    let fullContent = ''
+    const encoder = new TextEncoder()
+
+    const accumulatingStream = new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        // Pass through to client
+        controller.enqueue(chunk)
+        // Also accumulate for DB persistence
+        const text = new TextDecoder().decode(chunk, { stream: true })
+        const lines = text.split('\n')
+        for (const line of lines) {
+          const trimmed = line.trim()
+          if (!trimmed || !trimmed.startsWith('data: ')) continue
+          const payload = trimmed.slice(6)
+          if (payload === '[DONE]') continue
+          try {
+            const parsed = JSON.parse(payload)
+            if (parsed?.content) fullContent += parsed.content
+          } catch {
+            // ignore
+          }
+        }
+      },
+      async flush() {
+        // Persist the complete reply to DB after stream ends
+        const sanitized = stripHtml(fullContent).slice(0, 5000)
+        if (sanitized) {
+          await db.aIChatMessage.create({
+            data: { playerId, role: 'assistant', content: sanitized },
+          }).catch(() => {
+            // Best-effort persistence — don't break the stream if DB write fails
+          })
+        }
+      },
+    })
+
+    const sseTransform = createSSETransformStream()
+    const pipeline = sdkStream.pipeThrough(sseTransform).pipeThrough(accumulatingStream)
+
+    return new Response(pipeline, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no', // Disable nginx buffering
+      },
+    })
+  } catch (error) {
+    trackError('POST /api/ai-coach (stream)', error)
+    // Return a single SSE error event then [DONE]
+    const errorMsg = error instanceof Error ? error.message : 'Erreur serveur'
+    const encoder = new TextEncoder()
+    const errorStream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: errorMsg })}\n\n`))
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+        controller.close()
+      },
+    })
+    return new Response(errorStream, {
+      status: 200, // SSE connections should stay 200; errors are in the payload
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+      },
+    })
   }
 }
 
