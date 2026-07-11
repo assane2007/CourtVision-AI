@@ -2,9 +2,8 @@
  * Notification service — in-app notifications and push notifications.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { db } from '@/lib/db'
+import { Prisma } from '@prisma/client'
 import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
 import { logger } from '@/lib/logger'
 
@@ -36,7 +35,7 @@ export interface NotificationPayload {
 export async function createNotification(
   playerId: string,
   payload: NotificationPayload,
-): Promise<any> {
+): Promise<Prisma.Notification> {
   const notification = await db.notification.create({
     data: {
       playerId,
@@ -64,7 +63,7 @@ export async function getPlayerNotifications(
 ) {
   const { cursor, limit = 20, unreadOnly } = params ?? {}
 
-  const where: any = { playerId }
+  const where: Prisma.NotificationWhereInput = { playerId }
   if (unreadOnly) {
     where.isRead = false
   }
@@ -168,7 +167,7 @@ export async function registerPushDevice(
     os?: string
     appVersion?: string
   },
-): Promise<any> {
+): Promise<Prisma.Device> {
   // Check if device already registered
   const existing = await db.device.findUnique({
     where: { pushToken: data.pushToken },

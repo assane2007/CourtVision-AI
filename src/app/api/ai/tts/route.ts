@@ -118,8 +118,7 @@ export const POST = withAuth(async (req: NextRequest, session) => {
       if (typeof audioResponse === 'string') {
         audioBase64 = audioResponse
       } else if (audioResponse && typeof audioResponse === 'object') {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const resp = audioResponse as any
+        const resp = audioResponse as Record<string, unknown>
         audioBase64 = resp.audio_base64 || resp.audio || resp.data || ''
       }
 

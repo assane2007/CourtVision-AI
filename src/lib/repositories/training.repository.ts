@@ -3,17 +3,16 @@
  * Extends BaseRepository with training-specific queries.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { db } from '@/lib/db'
 import { Prisma } from '@prisma/client'
-import { BaseRepository } from './base.repository'
+import { BaseRepository, type PrismaModelDelegate } from './base.repository'
 import type { DrillData, DrillFilters } from '@/lib/types/service.types'
 
 // ── Workout Session Repository ──────────────────────────────────────────────────
 
-export class SessionRepository extends BaseRepository<'WorkoutSession', any> {
+export class SessionRepository extends BaseRepository<'WorkoutSession', Prisma.WorkoutSession> {
   constructor() {
-    super(db.workoutSession as any, 'WorkoutSession')
+    super(db.workoutSession as unknown as PrismaModelDelegate<Prisma.WorkoutSession>, 'WorkoutSession')
   }
 
   /**
@@ -95,9 +94,9 @@ export class SessionRepository extends BaseRepository<'WorkoutSession', any> {
 
 // ── Drill Repository ────────────────────────────────────────────────────────────
 
-export class DrillRepository extends BaseRepository<'Drill', any> {
+export class DrillRepository extends BaseRepository<'Drill', Prisma.Drill> {
   constructor() {
-    super(db.drill as any, 'Drill')
+    super(db.drill as unknown as PrismaModelDelegate<Prisma.Drill>, 'Drill')
   }
 
   /**
@@ -237,9 +236,9 @@ export class DrillRepository extends BaseRepository<'Drill', any> {
 
 // ── Training Plan Repository ────────────────────────────────────────────────────
 
-export class TrainingPlanRepository extends BaseRepository<'TrainingPlan', any> {
+export class TrainingPlanRepository extends BaseRepository<'TrainingPlan', Prisma.TrainingPlan> {
   constructor() {
-    super(db.trainingPlan as any, 'TrainingPlan')
+    super(db.trainingPlan as unknown as PrismaModelDelegate<Prisma.TrainingPlan>, 'TrainingPlan')
   }
 
   /**

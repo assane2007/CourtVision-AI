@@ -191,7 +191,7 @@ export default function PricingScreen() {
             >
               <span
                 className={cn(
-                  'pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform',
+                  'pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform',
                   annualBilling ? 'translate-x-5' : 'translate-x-0',
                 )}
               />

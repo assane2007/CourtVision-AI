@@ -37,10 +37,14 @@ const REST_OPTIONS = [
   { value: '120', label: '120 s' },
 ]
 
+interface SaveMutationProps {
+  isPending: boolean
+  mutate: (d: Partial<UserSettings>) => unknown
+}
+
 interface TrainingSectionProps {
   settings: UserSettings
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  saveMutation: { isPending: boolean; mutate: (d: any) => any }
+  saveMutation: SaveMutationProps
 }
 
 export function TrainingSection({ settings, saveMutation }: TrainingSectionProps) {
@@ -83,8 +87,7 @@ export function TrainingSection({ settings, saveMutation }: TrainingSectionProps
 
 interface PreferencesSectionProps {
   settings: UserSettings
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  saveMutation: { isPending: boolean; mutate: (d: any) => any }
+  saveMutation: SaveMutationProps
   onLanguageChange: (val: string) => void
 }
 

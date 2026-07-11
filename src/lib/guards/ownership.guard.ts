@@ -59,9 +59,12 @@ export async function verifyOwnership(
     )
   }
 
-  // Use raw query for dynamic model access
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const resource = await (db as any)[config.model].findUnique({
+  // Use dynamic model access via Record key
+  const modelDelegate = (db as Record<string, { findUnique: (args: Record<string, unknown>) => Promise<Record<string, unknown> | null> }>)[config.model]
+  if (!modelDelegate) {
+    throw new AppError(ErrorCode.VALIDATION_ERROR, `Type de ressource inconnu: ${resourceType}`)
+  }
+  const resource = await modelDelegate.findUnique({
     where: { [config.idField]: resourceId },
     select: { [config.playerField]: true },
   })
@@ -93,8 +96,9 @@ export async function getResourceOwnerId(
   if (!config) return null
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const resource = await (db as any)[config.model].findUnique({
+    const modelDelegate = (db as Record<string, { findUnique: (args: Record<string, unknown>) => Promise<Record<string, unknown> | null> }>)[config.model]
+    if (!modelDelegate) return null
+    const resource = await modelDelegate.findUnique({
       where: { [config.idField]: resourceId },
       select: { [config.playerField]: true },
     })

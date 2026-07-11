@@ -2,8 +2,6 @@
  * Billing service — subscription management and Stripe integration.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { db } from '@/lib/db'
 import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
 import { logger } from '@/lib/logger'
@@ -182,10 +180,11 @@ export async function handleWebhook(eventType: string, payload: unknown): Promis
 
   switch (eventType) {
     case 'checkout.session.completed': {
-      const data = payload as any
-      const playerId = data?.metadata?.playerId
-      const customerId = data?.customer
-      const subscriptionId = data?.subscription
+      const data = payload as Record<string, unknown>
+      const metadata = data?.metadata as Record<string, unknown> | undefined
+      const playerId = metadata?.playerId as string | undefined
+      const customerId = data?.customer as string | undefined
+      const subscriptionId = data?.subscription as string | undefined
 
       if (playerId && customerId) {
         // In production, fetch subscription details from Stripe
@@ -201,8 +200,9 @@ export async function handleWebhook(eventType: string, payload: unknown): Promis
     }
 
     case 'customer.subscription.deleted': {
-      const data = payload as any
-      const playerId = data?.metadata?.playerId
+      const data = payload as Record<string, unknown>
+      const metadata = data?.metadata as Record<string, unknown> | undefined
+      const playerId = metadata?.playerId as string | undefined
       if (playerId) {
         await db.player.update({
           where: { id: playerId },

@@ -29,7 +29,7 @@ const nextConfig: NextConfig = {
               "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://va.vercel-scripts.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https: https://lh3.googleusercontent.com https://*.gravatar.com https://storage.googleapis.com",
-              "connect-src 'self' https://*.space-z.ai http://*.space-z.ai https://*.supabase.co https://cdn.jsdelivr.net https://storage.googleapis.com https://*.ingest.us.sentry.io",
+              "connect-src 'self' https://*.space-z.ai http://*.space-z.ai https://*.supabase.co https://cdn.jsdelivr.net https://storage.googleapis.com https://*.ingest.us.sentry.io https://www.inngest.com",
               "font-src 'self'",
               "frame-ancestors 'self' https://*.space-z.ai http://*.space-z.ai",
             ].join('; '),

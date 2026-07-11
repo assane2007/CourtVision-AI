@@ -58,8 +58,8 @@ Analyse cette image et donne ton évaluation JSON.`
 
   try {
     const ZAI = await import('z-ai-web-dev-sdk')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await withTimeout((ZAI as any).chat.completions.create({
+    const sdk = ZAI as unknown as { chat: { completions: { create: (args: Record<string, unknown>) => Promise<{ choices: Array<{ message: { content: string } }> }> } } }
+    const result = await withTimeout(sdk.chat.completions.create({
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemPrompt },
@@ -158,8 +158,8 @@ Réponds de manière concise (2-4 phrases max sauf si on te demande des détails
 
   try {
     const ZAI = await import('z-ai-web-dev-sdk')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await withTimeout((ZAI as any).chat.completions.create({
+    const sdk = ZAI as unknown as { chat: { completions: { create: (args: Record<string, unknown>) => Promise<{ choices: Array<{ message: { content: string } }> }> } } }
+    const result = await withTimeout(sdk.chat.completions.create({
       model: 'gpt-4o-mini',
       messages,
     }), AI_TIMEOUT_MS)
@@ -195,8 +195,14 @@ Réponds de manière concise (2-4 phrases max sauf si on te demande des détails
 /**
  * Generate personalized insights based on player data.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function generateInsights(playerId: string): Promise<any[]> {
+interface AiInsight {
+  type: string
+  title: string
+  description: string
+  priority: string
+}
+
+export async function generateInsights(playerId: string): Promise<AiInsight[]> {
   // Gather player data
   const player = await db.player.findUnique({
     where: { id: playerId },
@@ -245,8 +251,8 @@ Réponds en JSON: [{"type": "strength|weakness|suggestion", "title": "...", "des
 
   try {
     const ZAI = await import('z-ai-web-dev-sdk')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await withTimeout((ZAI as any).chat.completions.create({
+    const sdk = ZAI as unknown as { chat: { completions: { create: (args: Record<string, unknown>) => Promise<{ choices: Array<{ message: { content: string } }> }> } } }
+    const result = await withTimeout(sdk.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: 'Tu es un analyste de basketball expert. Réponds UNIQUEMENT en JSON.' },

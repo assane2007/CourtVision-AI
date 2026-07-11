@@ -12,6 +12,7 @@
  */
 
 import { config } from '@/lib/config'
+import { Prisma } from '@prisma/client'
 
 // ── Configuration ──────────────────────────────────────────────────────────────
 
@@ -181,12 +182,11 @@ export function logQueryEvent(query: string, duration: number): void {
  * const db = getDb()
  * installQueryLogger(db)
  */
-export function installQueryLogger(prisma: { $on: (event: string, callback: (e: { query: string; duration: number }) => void) => void }): void {
+export function installQueryLogger(prisma: { $on(event: 'query', callback: (e: Prisma.QueryEvent) => void): void }): void {
   const isEnabled = config.logging.logQueries
   if (!isEnabled) return
 
-  // @ts-expect-error - Prisma event types
-  prisma.$on('query', (e: { query: string; duration: number; params: string; target: string }) => {
+  prisma.$on('query', (e: Prisma.QueryEvent) => {
     logQueryEvent(e.query, e.duration)
   })
 }

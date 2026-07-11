@@ -2,8 +2,6 @@
  * Social service — business logic for friends, teams, feed, and messaging.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { db } from '@/lib/db'
 import { socialRepository, teamRepository, feedRepository } from '@/lib/repositories/social.repository'
 import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
@@ -212,7 +210,7 @@ export async function addTeamMember(
     throw new AppError(ErrorCode.TEAM_NOT_FOUND, 'Équipe introuvable')
   }
 
-  if (team.isMember && !team.members.some((m: any) => m.role === 'admin')) {
+  if (team.isMember && !team.members.some((m) => m.role === 'admin')) {
     throw new AppError(ErrorCode.FORBIDDEN, 'Seuls les administrateurs peuvent ajouter des membres')
   }
 

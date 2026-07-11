@@ -39,12 +39,11 @@ export async function transcribe(
 
   try {
     const zai = await ZAI.create()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const transcription: any = await zai.audio.asr.create({ file_base64: audioBase64 })
+    const transcription = await zai.audio.asr.create({ file_base64: audioBase64 }) as unknown as Record<string, unknown>
 
     const text = typeof transcription === 'string'
       ? transcription
-      : (transcription as Record<string, unknown>)?.text || ''
+      : String(transcription?.text || '')
 
     const durationSec = (Date.now() - startTime) / 1000
 
@@ -90,10 +89,9 @@ export async function speak(
 
   try {
     const zai = await ZAI.create()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const audioResponse: any = await zai.audio.tts.create({ input: truncated })
+    const audioResponse = await zai.audio.tts.create({ input: truncated }) as unknown as Record<string, unknown>
 
-    const base64 = typeof audioResponse === 'string' ? audioResponse : ''
+    const base64 = typeof audioResponse === 'string' ? String(audioResponse) : ''
 
     // Estimate duration: ~150 words/min average speech rate
     const wordCount = truncated.split(/\s+/).length

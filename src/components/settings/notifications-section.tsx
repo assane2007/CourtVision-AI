@@ -19,10 +19,14 @@ interface UserSettings {
   [key: string]: unknown
 }
 
+interface SaveMutationProps {
+  isPending: boolean
+  mutate: (d: Partial<UserSettings>) => unknown
+}
+
 interface NotificationsSectionProps {
   settings: UserSettings
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  saveMutation: { isPending: boolean; mutate: (d: any) => any }
+  saveMutation: SaveMutationProps
 }
 
 export function NotificationsSection({ settings, saveMutation }: NotificationsSectionProps) {

@@ -63,8 +63,7 @@ export const POST = withAuth(async (req: NextRequest, session) => {
       AI_TIMEOUT_MS,
     )
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rawData = response as any
+    const rawData = response as Record<string, unknown>
     const title = stripHtml(String(rawData?.title || rawData?.data?.title || ''))
     let content = String(rawData?.content || rawData?.text || rawData?.markdown || rawData?.data?.html || rawData?.data?.content || '')
 

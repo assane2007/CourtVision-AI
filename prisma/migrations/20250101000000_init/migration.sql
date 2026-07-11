@@ -1,0 +1,3 @@
+-- This is a placeholder migration.
+-- Run `prisma migrate dev` or `prisma db push` with a live PostgreSQL connection to generate the actual SQL.
+-- The schema in schema.prisma defines 44 models that will be created.

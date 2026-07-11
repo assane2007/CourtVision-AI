@@ -1,5 +1,10 @@
 /**
- * Simple in-process task queue for async background processing.
+ * In-process task queue — fallback when Inngest is not configured.
+ *
+ * For production async processing, use Inngest (src/lib/inngest/).
+ * This in-memory queue is suitable for development only.
+ *
+ * To use: import { dispatchFormAnalysis } from '@/lib/inngest/dispatch'
  *
  * Features:
  * - Priority-based task execution

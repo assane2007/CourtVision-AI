@@ -10,7 +10,7 @@
  * - Provides a healthCheck() function for monitoring
  */
 
-import { PrismaClient } from '@prisma/client'
+import { Prisma, PrismaClient } from '@prisma/client'
 
 // ─── Configuration ──────────────────────────────────────────────────────────
 
@@ -63,11 +63,10 @@ function createPrismaClient(): PrismaClient {
   })
 
   // ─── Slow Query Logging ───────────────────────────────────────────────
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  client.$on('query', (e: any) => {
+  client.$on('query', (e: Prisma.QueryEvent) => {
     if (e?.duration > SLOW_QUERY_THRESHOLD_MS) {
       console.warn(
-        `[DB] Slow query (${e.duration}ms): ${(e.query as string)?.slice(0, 200)}${(e.query as string)?.length > 200 ? '...' : ''}`
+        `[DB] Slow query (${e.duration}ms): ${String(e.query ?? '').slice(0, 200)}${String(e.query ?? '').length > 200 ? '...' : ''}`
       )
     }
   })

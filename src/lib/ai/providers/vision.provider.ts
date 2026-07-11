@@ -76,17 +76,18 @@ export async function analyzeImage(request: VisionRequest): Promise<VisionRespon
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
-      const response = await zai.chat.completions.createVision({
+      const baseArgs = {
         model,
         messages: [
           { role: 'system', content: systemContent },
           { role: 'user', content: userContent },
         ],
-        thinking: { type: 'disabled' },
-        ...(responseFormat === 'json_object' ? { response_format: { type: 'json_object' } } : {}),
-        // @ts-expect-error — signal may not be in the SDK types but works at runtime
-        signal: controller.signal,
-      })
+        thinking: { type: 'disabled' as const },
+        ...(responseFormat === 'json_object' ? { response_format: { type: 'json_object' as const } } : {}),
+      }
+      // signal and response_format are not in the SDK types but are supported at runtime
+      const argsWithExtras = { ...baseArgs, signal: controller.signal } as Parameters<typeof zai.chat.completions.createVision>[0]
+      const response = await zai.chat.completions.createVision(argsWithExtras)
 
       clearTimeout(timeoutId)
 

@@ -56,8 +56,7 @@ export const POST = withAuth(async (req: NextRequest, session) => {
       AI_TIMEOUT_MS,
     )
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rawData = response as any
+    const rawData = response as Record<string, unknown>
     const rawResults = Array.isArray(rawData?.results)
       ? rawData.results
       : Array.isArray(rawData)

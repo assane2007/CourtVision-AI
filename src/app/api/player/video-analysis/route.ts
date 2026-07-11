@@ -41,9 +41,8 @@ export async function POST(req: NextRequest) {
           recommendations: parsed.recommendations,
           durationSec: parsed.durationSec,
         }),
-        date: parsed.date,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any,
+        date: new Date(parsed.date),
+      },
     });
 
     return NextResponse.json(

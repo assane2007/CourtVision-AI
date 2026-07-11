@@ -2,17 +2,16 @@
  * Social repository — data access layer for Friendship, Team, Post, and Message models.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { db } from '@/lib/db'
 import { Prisma } from '@prisma/client'
-import { BaseRepository } from './base.repository'
-import type { FriendData } from '@/lib/types/service.types'
+import { BaseRepository, type PrismaModelDelegate } from './base.repository'
+import type { FriendData, FeedPostData } from '@/lib/types/service.types'
 
 // ── Friendship Repository ───────────────────────────────────────────────────────
 
-export class SocialRepository extends BaseRepository<'Friendship', any> {
+export class SocialRepository extends BaseRepository<'Friendship', Prisma.Friendship> {
   constructor() {
-    super(db.friendship as any, 'Friendship')
+    super(db.friendship as unknown as PrismaModelDelegate<Prisma.Friendship>, 'Friendship')
   }
 
   /**
@@ -118,9 +117,9 @@ export class SocialRepository extends BaseRepository<'Friendship', any> {
 
 // ── Team Repository ─────────────────────────────────────────────────────────────
 
-export class TeamRepository extends BaseRepository<'Team', any> {
+export class TeamRepository extends BaseRepository<'Team', Prisma.Team> {
   constructor() {
-    super(db.team as any, 'Team')
+    super(db.team as unknown as PrismaModelDelegate<Prisma.Team>, 'Team')
   }
 
   /**
@@ -164,9 +163,9 @@ export class TeamRepository extends BaseRepository<'Team', any> {
 
 // ── Feed / Post Repository ─────────────────────────────────────────────────────
 
-export class FeedRepository extends BaseRepository<'FeedPost', any> {
+export class FeedRepository extends BaseRepository<'FeedPost', Prisma.FeedPost> {
   constructor() {
-    super(db.feedPost as any, 'FeedPost')
+    super(db.feedPost as unknown as PrismaModelDelegate<Prisma.FeedPost>, 'FeedPost')
   }
 
   /**
@@ -215,7 +214,7 @@ export class FeedRepository extends BaseRepository<'FeedPost', any> {
     const pagePosts = hasMore ? posts.slice(0, limit) : posts
     const nextCursor = hasMore ? pagePosts[pagePosts.length - 1].id : null
 
-    const data: FeedPostData[] = pagePosts.map((p: any) => ({
+    const data: FeedPostData[] = pagePosts.map((p) => ({
       id: p.id,
       content: p.content,
       mediaUrl: p.imageUrls,

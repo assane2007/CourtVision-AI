@@ -15,6 +15,7 @@
 
 import { getDb } from '@/lib/database'
 import { POOL_CONFIG } from '@/lib/database'
+import { Prisma } from '@prisma/client'
 
 // ── Types ───────────────────────────────────────────────────────────────────────
 
@@ -79,8 +80,7 @@ class PoolMonitor {
     try {
       const db = getDb()
 
-      // @ts-expect-error - Prisma event types
-      db.$on('query', (e: { duration: number }) => {
+      db.$on('query', (e: Prisma.QueryEvent) => {
         this.onQueryStart()
         // Use setTimeout(0) to simulate the async lifecycle
         // (query event fires after query completes in Prisma)

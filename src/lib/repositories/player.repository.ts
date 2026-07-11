@@ -3,15 +3,13 @@
  * Extends BaseRepository with player-specific queries.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { db } from '@/lib/db'
-import { BaseRepository } from './base.repository'
+import { BaseRepository, type PrismaModelDelegate } from './base.repository'
 import type { PlayerProfileData } from '@/lib/types/service.types'
 
 export class PlayerRepository extends BaseRepository<'Player', PlayerProfileData> {
   constructor() {
-    // Use a type-assertion since the base class uses a simplified delegate type
-    super(db.player as any, 'Player')
+    super(db.player as unknown as PrismaModelDelegate<PlayerProfileData>, 'Player')
   }
 
   /**

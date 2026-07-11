@@ -2,8 +2,6 @@
  * Video service — business logic for video upload, annotations, highlights, and exports.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { db } from '@/lib/db'
 import { videoRepository, annotationRepository, videoExportRepository } from '@/lib/repositories/video.repository'
 import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
@@ -127,7 +125,7 @@ export async function addAnnotation(
 ): Promise<AnnotationData> {
   // Verify ownership
   const video = await videoRepository.findOptionalById(videoId)
-  if (!video || (video as any).playerId !== playerId) {
+  if (!video || !('playerId' in video) || (video as Record<string, unknown>).playerId !== playerId) {
     throw new AppError(ErrorCode.VIDEO_NOT_FOUND, 'Vidéo introuvable')
   }
 
@@ -152,7 +150,7 @@ export async function addAnnotation(
  */
 export async function getAnnotations(videoId: string, playerId: string): Promise<AnnotationData[]> {
   const video = await videoRepository.findOptionalById(videoId)
-  if (!video || (video as any).playerId !== playerId) {
+  if (!video || !('playerId' in video) || (video as Record<string, unknown>).playerId !== playerId) {
     throw new AppError(ErrorCode.VIDEO_NOT_FOUND, 'Vidéo introuvable')
   }
 
@@ -239,7 +237,7 @@ export async function createExport(
   options?: Record<string, unknown>,
 ) {
   const video = await videoRepository.findOptionalById(videoId)
-  if (!video || (video as any).playerId !== playerId) {
+  if (!video || !('playerId' in video) || (video as Record<string, unknown>).playerId !== playerId) {
     throw new AppError(ErrorCode.VIDEO_NOT_FOUND, 'Vidéo introuvable')
   }
 
@@ -255,7 +253,7 @@ export async function createExport(
  */
 export async function getExports(videoId: string, playerId: string) {
   const video = await videoRepository.findOptionalById(videoId)
-  if (!video || (video as any).playerId !== playerId) {
+  if (!video || !('playerId' in video) || (video as Record<string, unknown>).playerId !== playerId) {
     throw new AppError(ErrorCode.VIDEO_NOT_FOUND, 'Vidéo introuvable')
   }
 

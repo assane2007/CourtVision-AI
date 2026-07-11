@@ -251,10 +251,10 @@ export async function safeUpsert<T>(
   _uniqueField: string,
   _args: Record<string, unknown>,
 ): Promise<T> {
-  return (await db.$transaction(async (tx) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (tx as any).$executeRawUnsafe('') // placeholder — actual implementation per model
-  })) as T
+  return (await db.$transaction(async (_tx) => {
+    // placeholder — actual implementation per model
+    return null as unknown as T
+  }))
 }
 
 // ── Query Cursor for Large Datasets ─────────────────────────────────────────────
