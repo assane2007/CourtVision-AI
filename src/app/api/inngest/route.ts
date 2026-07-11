@@ -27,6 +27,7 @@ const isConfigured = Boolean(process.env.INNGEST_EVENT_KEY)
 const handler = isConfigured
   ? serve({
       client: inngest,
+      signingKey: process.env.INNGEST_SIGNING_KEY,
       functions: [
         formAnalysis,
         videoProcessing,

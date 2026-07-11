@@ -2,12 +2,19 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  poweredByHeader: false,
+  compress: true,
   // Allow preview panel cross-origin requests
   allowedDevOrigins: ['https://*.space-z.ai', 'http://*.space-z.ai'],
   typescript: {
     ignoreBuildErrors: false,
   },
   reactStrictMode: true,
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256],
+  },
   async rewrites() {
     return [
       { source: '/api/training/sessions/:path*', destination: '/api/sessions/:path*' },
