@@ -150,6 +150,7 @@ function BentoStatCard({ icon: Icon, value, label, color, accentColor, delay = 0
   color: string; accentColor: string; delay?: number; large?: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
+  const IconComponent = Icon as React.ElementType;
   return (
     <motion.div
       initial={{ opacity: 0, y: 20, scale: 0.9 }}
@@ -177,7 +178,7 @@ function BentoStatCard({ icon: Icon, value, label, color, accentColor, delay = 0
 
       <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
         style={{ background: `${accentColor}20`, border: `1px solid ${accentColor}30` }}>
-        <Icon className="h-5 w-5" style={{ color: accentColor }} />
+        <IconComponent className="h-5 w-5" style={{ color: accentColor }} />
       </div>
 
       <div className="relative z-10">
@@ -319,6 +320,7 @@ function SessionRow({ session, index }: { session: Session; index: number }) {
 function QuickAction({ icon: Icon, label, color, delay, onClick }: {
   icon: React.ElementType; label: string; color: string; delay: number; onClick: () => void;
 }) {
+  const IconComponent = Icon as React.ElementType;
   return (
     <motion.button
       initial={{ opacity: 0, y: 16, scale: 0.85 }}
@@ -340,7 +342,7 @@ function QuickAction({ icon: Icon, label, color, delay, onClick }: {
         className="w-11 h-11 rounded-xl flex items-center justify-center relative z-10"
         style={{ background: `${color}18`, border: `1px solid ${color}28` }}
       >
-        <Icon className="h-5 w-5" style={{ color }} />
+        <IconComponent className="h-5 w-5" style={{ color }} />
       </motion.div>
       <span className="text-xs font-bold text-foreground relative z-10 px-1 text-center leading-tight">{label}</span>
     </motion.button>
@@ -364,30 +366,34 @@ export default function HomeScreen() {
   const userInitial = userName.charAt(0).toUpperCase();
 
   const { data: playerXp, isLoading: playerXpLoading } = useQuery({
-    queryKey: ['player-xp'],
+    queryKey: ['player-xp', user?.id],
     queryFn: () => apiFetch<FullPlayerData>('/api/player'),
     staleTime: 1000 * 60 * 2,
+    enabled: !!user?.id,
     select: (data: FullPlayerData): PlayerXpData => ({ xp: data.xp ?? 0, xpLevel: data.xpLevel ?? 1 }),
   });
 
   const levelInfo = playerXp ? getLevelInfo(playerXp.xp) : null;
 
   const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useQuery<StatsResponse>({
-    queryKey: ['stats'],
+    queryKey: ['stats', user?.id],
     queryFn: () => apiFetch('/api/stats'),
     staleTime: 1000 * 60 * 2,
+    enabled: !!user?.id,
   });
 
   const { data: recommendations, isLoading: recsLoading } = useQuery<RecommendationDrill[]>({
-    queryKey: ['recommendations'],
+    queryKey: ['recommendations', user?.id],
     queryFn: () => apiFetch('/api/recommendations'),
     staleTime: 1000 * 60 * 5,
+    enabled: !!user?.id,
   });
 
   const { data: sessionsData, isLoading: sessionsLoading } = useQuery<{ sessions: Session[] }>({
-    queryKey: ['sessions'],
+    queryKey: ['sessions', user?.id],
     queryFn: () => apiFetch<{ sessions: Session[] }>('/api/sessions'),
     staleTime: 1000 * 60 * 2,
+    enabled: !!user?.id,
   });
 
   const sessions = sessionsData?.sessions;

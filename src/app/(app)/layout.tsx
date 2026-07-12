@@ -2,11 +2,11 @@ import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  // Check auth server-side
+  // Use getUser() — validates session with Supabase server (not just local cookie)
   try {
     const supabase = await createSupabaseServerClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) redirect('/')
+    const { data: { user }, error } = await supabase.auth.getUser()
+    if (error || !user) redirect('/')
   } catch {
     redirect('/')
   }

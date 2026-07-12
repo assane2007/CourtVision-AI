@@ -42,6 +42,7 @@ import { CATEGORY_META, getCategoryLabel } from '@/lib/constants';
 import { apiFetch, formatLocaleDate, getDrillName } from '@/lib/utils';
 import { containerVariants, itemVariants } from '@/lib/animations';
 import { useTranslation } from '@/components/providers/language-provider';
+import { useAuth } from '@/components/providers/supabase-auth-provider';
 
 // ── Day name mapping ────────────────────────────────────────────────
 const DAY_NAMES_FR = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
@@ -114,11 +115,13 @@ interface StatsResponse {
 export function StatsScreen() {
   const navigate = useAppStore(s => s.navigate)
   const { t, td, language } = useTranslation()
+  const { user } = useAuth()
 
   // ── Fetch stats ─────────────────────────────────────────────────
   const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useQuery<StatsResponse>({
-    queryKey: ['stats'],
+    queryKey: ['stats', user?.id],
     queryFn: () => apiFetch<StatsResponse>('/api/stats'),
+    enabled: !!user?.id,
   })
 
   // ── Fetch recent sessions with pagination ───────────────────────
@@ -128,8 +131,9 @@ export function StatsScreen() {
     total?: number
     hasMore?: boolean
   }>({
-    queryKey: ['sessions', 'page', sessionPage],
+    queryKey: ['sessions', user?.id, 'page', sessionPage],
     queryFn: () => apiFetch(`/api/sessions?page=${sessionPage}&limit=20`),
+    enabled: !!user?.id,
   })
 
   const allSessions: SessionEntry[] = sessionsData?.sessions ?? []
@@ -176,7 +180,7 @@ export function StatsScreen() {
   return (
     <div className="min-h-screen bg-background pb-24">
       <PullToRefresh
-        queryKeys={[['stats'], ['sessions']]}
+        queryKeys={[['stats', user?.id], ['sessions', user?.id]]}
       >
       <motion.div
         variants={containerVariants}
