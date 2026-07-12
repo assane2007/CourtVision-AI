@@ -68,6 +68,7 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
     const supabase = createClient()
 
     if (!supabase) {
+      queueMicrotask(() => setLoading(false))
       return
     }
 

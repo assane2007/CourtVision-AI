@@ -78,23 +78,88 @@ const MIME_EXTENSIONS: Record<string, string> = {
 
 // ── Virus Scan Placeholder ───────────────────────────────────────────────────
 
+/** Magic byte signatures for common file types */
+const MAGIC_BYTES: Record<string, { offset: number; bytes: number[] }[]> = {
+  'image/png': [{ offset: 0, bytes: [0x89, 0x50, 0x4E, 0x47] }],
+  'image/jpeg': [{ offset: 0, bytes: [0xFF, 0xD8, 0xFF] }],
+  'image/webp': [{ offset: 0, bytes: [0x52, 0x49, 0x46, 0x46] }], // RIFF
+  'image/gif': [{ offset: 0, bytes: [0x47, 0x49, 0x46, 0x38] }], // GIF8
+  'video/mp4': [{ offset: 4, bytes: [0x66, 0x74, 0x79, 0x70] }],  // ftyp at offset 4
+  'video/webm': [{ offset: 0, bytes: [0x1A, 0x45, 0xDF, 0xA3] }],
+  'video/quicktime': [{ offset: 4, bytes: [0x66, 0x74, 0x79, 0x70] }], // ftyp at offset 4
+}
+
+/** Extension to MIME type mapping for validation */
+const EXTENSION_TO_MIME: Record<string, string> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.mov': 'video/quicktime',
+}
+
 /**
- * Placeholder for future ClamAV / virus scanning integration.
+ * Basic file validation that checks magic bytes against the declared MIME type.
  *
- * In production, this should:
- * 1. Stream the file to a temporary location
- * 2. Submit it to ClamAV daemon (clamd) via TCP or Unix socket
- * 3. Return true if clean, false if infected
+ * IMPORTANT: A real production implementation should use ClamAV or a similar
+ * antivirus scanner to detect malware in uploaded files. This function only
+ * validates that the file content matches its declared type via magic bytes.
  *
- * @returns Always returns true (no scanning in current implementation)
+ * @param filePath - Path to the file on disk (for future ClamAV integration)
+ * @param file - The uploaded file (File/Blob) for magic byte and extension checks
+ * @param maxSize - Maximum allowed file size in bytes
+ * @param allowedMimeTypes - List of allowed MIME types
+ * @returns true if the file passes basic validation checks, false otherwise
  */
-async function scanForViruses(_filePath: string): Promise<boolean> {
-  // TODO: Integrate ClamAV when available
+async function scanForViruses(
+  _filePath: string,
+  file?: File | Blob & { name?: string },
+  maxSize?: number,
+  allowedMimeTypes?: string[],
+): Promise<boolean> {
+  // TODO: Integrate ClamAV when available for actual malware detection.
   // Example with clamav.js:
   //   const clamav = require('clamav.js')
   //   const scanner = clamav.createScanner('localhost', 3310)
   //   const result = await scanner.scanFile(filePath)
   //   return result.isClean
+
+  if (!file) return true
+
+  const fileName = 'name' in file ? (file.name || '') : ''
+  const mimeType = file.type || ''
+  const sizeBytes = file.size || 0
+
+  // Check file size against maxSize
+  if (maxSize && sizeBytes > maxSize) {
+    return false
+  }
+
+  // Check file extension against allowed types
+  if (allowedMimeTypes && allowedMimeTypes.length > 0 && fileName) {
+    const ext = path.extname(fileName).toLowerCase()
+    const expectedMime = EXTENSION_TO_MIME[ext]
+    if (expectedMime && !allowedMimeTypes.includes(expectedMime)) {
+      return false
+    }
+  }
+
+  // Check magic bytes for common file types
+  const signatures = MAGIC_BYTES[mimeType]
+  if (signatures && file.size > 0) {
+    const arrayBuffer = file instanceof File ? await file.slice(0, 12).arrayBuffer() : await file.slice(0, 12).arrayBuffer()
+    const header = new Uint8Array(arrayBuffer)
+    const matchesSignature = signatures.some(sig => {
+      if (header.length < sig.offset + sig.bytes.length) return false
+      return sig.bytes.every((byte, i) => header[sig.offset + i] === byte)
+    })
+    if (!matchesSignature) {
+      return false
+    }
+  }
 
   return true
 }
@@ -189,7 +254,7 @@ export async function validateUpload(
   // ── Virus scan (placeholder) ───────────────────────────────────────────────
 
   // In a real implementation, we'd save to a temp path first, scan, then move
-  const isClean = await scanForViruses(storagePath)
+  const isClean = await scanForViruses(storagePath, file, effectiveMaxSize, allowedMimeTypes)
   if (!isClean) {
     logger.error('Upload rejected: virus detected', 'upload-security', {
       fileName,

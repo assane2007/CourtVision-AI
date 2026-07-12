@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { WorkoutDrillResult } from '@/stores/app'
 import { getGaugeColor, getGaugeTrackColor, getStarCount } from './scoring'
+import { useTranslation } from '@/components/providers/language-provider'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -48,11 +49,11 @@ function getGradeEmoji(score: number): string {
   return '📈'
 }
 
-function getGradeLabel(score: number): string {
-  if (score > 80) return 'EXCELLENT'
-  if (score > 60) return 'TRÈS BIEN'
-  if (score > 40) return 'BIEN'
-  return 'À AMÉLIORER'
+function getGradeLabel(score: number, td: (fr: string, en: string) => string): string {
+  if (score > 80) return td('EXCELLENT', 'EXCELLENT')
+  if (score > 60) return td('TRÈS BIEN', 'VERY GOOD')
+  if (score > 40) return td('BIEN', 'GOOD')
+  return td('À AMÉLIORER', 'NEEDS WORK')
 }
 
 function getGradeColor(score: number): string {
@@ -172,6 +173,7 @@ function CelebrationBurst() {
 // ─── Drill Step Card ───────────────────────────────────────────────────────────
 
 function DrillStepCard({ drill, progress }: { drill: WorkoutDrillResult; progress: number }) {
+  const { td } = useTranslation()
   const displayScore = Math.round(drill.score * Math.min(1, progress))
   const displayReps = Math.round(drill.reps * Math.min(1, progress))
 
@@ -235,7 +237,7 @@ function DrillStepCard({ drill, progress }: { drill: WorkoutDrillResult; progres
           <Target className="h-4 w-4 text-orange-400 mb-1" />
           <p className="text-2xl font-black text-white tabular-nums">{displayReps}</p>
           <p className="text-[10px] text-white/40 uppercase tracking-wider">
-            Répétitions
+            {td('Répétitions', 'Repetitions')}
           </p>
         </div>
         {drill.targetReps > 0 && (
@@ -246,7 +248,7 @@ function DrillStepCard({ drill, progress }: { drill: WorkoutDrillResult; progres
             <div className="h-4 mb-1" /> {/* spacer for alignment */}
             <p className="text-2xl font-black text-white/50 tabular-nums">{drill.targetReps}</p>
             <p className="text-[10px] text-white/40 uppercase tracking-wider">
-              Objectif
+              {td('Objectif', 'Target')}
             </p>
           </div>
         )}
@@ -260,7 +262,7 @@ function DrillStepCard({ drill, progress }: { drill: WorkoutDrillResult; progres
           transition={{ delay: 0.5, type: 'spring', stiffness: 300 }}
         >
           <Badge className="mt-3 text-xs px-3 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/30">
-            🏅 Nouveau record personnel
+            {td('🏅 Nouveau record personnel', '🏅 New personal best')}
           </Badge>
         </motion.div>
       )}
@@ -271,6 +273,7 @@ function DrillStepCard({ drill, progress }: { drill: WorkoutDrillResult; progres
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export function ScoreReplay({ drills, totalScore, totalReps, totalDurationSec }: ScoreReplayProps) {
+  const { td } = useTranslation()
   const [isPlaying, setIsPlaying] = useState(true)
   const [speed, setSpeed] = useState<Speed>(1)
   const [phase, setPhase] = useState<ReplayPhase>('intro')
@@ -408,7 +411,7 @@ export function ScoreReplay({ drills, totalScore, totalReps, totalDurationSec }:
   if (drills.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[400px] text-white/40 text-sm">
-        Aucune donnée de mouvement enregistrée
+        {td('Aucune donnée de mouvement enregistrée', 'No movement data recorded')}
       </div>
     )
   }
@@ -442,7 +445,7 @@ export function ScoreReplay({ drills, totalScore, totalReps, totalDurationSec }:
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
               >
-                Rejouer l&apos;entraînement
+                {td("Rejouer l'entraînement", 'Replay workout')}
               </motion.p>
               <motion.p
                 className="text-sm text-white/40 mt-1"
@@ -450,7 +453,7 @@ export function ScoreReplay({ drills, totalScore, totalReps, totalDurationSec }:
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}
               >
-                {drills.length} exercice{drills.length > 1 ? 's' : ''} · {formatDurationShort(totalDurationSec)}
+                {drills.length} {td('exercice', 'drill')}{drills.length > 1 ? 's' : ''} · {formatDurationShort(totalDurationSec)}
               </motion.p>
               <motion.div
                 className="mt-6 flex items-center gap-2"
@@ -459,7 +462,7 @@ export function ScoreReplay({ drills, totalScore, totalReps, totalDurationSec }:
                 transition={{ delay: 0.8 }}
               >
                 <Sparkles className="h-4 w-4 text-orange-400" />
-                <span className="text-xs text-white/30">Préparation...</span>
+                <span className="text-xs text-white/30">{td('Préparation...', 'Preparing...')}</span>
               </motion.div>
             </motion.div>
           )}
@@ -503,7 +506,7 @@ export function ScoreReplay({ drills, totalScore, totalReps, totalDurationSec }:
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
               >
-                {getGradeLabel(totalScore)}
+                {getGradeLabel(totalScore, td)}
               </motion.p>
 
               {/* Final score gauge */}
@@ -526,12 +529,12 @@ export function ScoreReplay({ drills, totalScore, totalReps, totalDurationSec }:
                 <div className="bg-white/5 rounded-xl px-5 py-3 border border-white/10">
                   <Target className="h-4 w-4 text-orange-400 mx-auto mb-1" />
                   <p className="text-xl font-black text-white tabular-nums">{totalReps}</p>
-                  <p className="text-[10px] text-white/40 uppercase tracking-wider">Répétitions</p>
+                  <p className="text-[10px] text-white/40 uppercase tracking-wider">{td('Répétitions', 'Repetitions')}</p>
                 </div>
                 <div className="bg-white/5 rounded-xl px-5 py-3 border border-white/10">
                   <Clock className="h-4 w-4 text-orange-400 mx-auto mb-1" />
                   <p className="text-xl font-black text-white tabular-nums">{formatDurationShort(totalDurationSec)}</p>
-                  <p className="text-[10px] text-white/40 uppercase tracking-wider">Durée</p>
+                  <p className="text-[10px] text-white/40 uppercase tracking-wider">{td('Durée', 'Duration')}</p>
                 </div>
               </motion.div>
 
@@ -606,7 +609,7 @@ export function ScoreReplay({ drills, totalScore, totalReps, totalDurationSec }:
               className="h-8 w-8 text-white/40 hover:text-white hover:bg-white/10 disabled:opacity-20"
               onClick={() => goToDrill(-1)}
               disabled={currentDrillIndex === 0 || phase === 'intro'}
-              aria-label="Exercice précédent"
+              aria-label={td('Exercice précédent', 'Previous exercise')}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -616,7 +619,7 @@ export function ScoreReplay({ drills, totalScore, totalReps, totalDurationSec }:
               className="h-8 w-8 text-white/40 hover:text-white hover:bg-white/10 disabled:opacity-20"
               onClick={() => goToDrill(1)}
               disabled={currentDrillIndex >= drills.length - 1 || phase !== 'drill'}
-              aria-label="Exercice suivant"
+              aria-label={td('Exercice suivant', 'Next exercise')}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -628,7 +631,7 @@ export function ScoreReplay({ drills, totalScore, totalReps, totalDurationSec }:
             size="icon"
             className="h-10 w-10 rounded-full bg-white/10 text-white hover:bg-white/20 hover:text-white"
             onClick={togglePlayPause}
-            aria-label={isPlaying ? 'Pause' : 'Lecture'}
+            aria-label={isPlaying ? td('Pause', 'Pause') : td('Lecture', 'Play')}
           >
             {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
           </Button>
@@ -640,7 +643,7 @@ export function ScoreReplay({ drills, totalScore, totalReps, totalDurationSec }:
               size="sm"
               className="h-8 px-2.5 text-[11px] font-bold text-white/40 hover:text-white hover:bg-white/10"
               onClick={cycleSpeed}
-              aria-label="Vitesse"
+              aria-label={td('Vitesse', 'Speed')}
             >
               {SPEED_OPTIONS.find(s => s.value === speed)?.label}
             </Button>
@@ -649,7 +652,7 @@ export function ScoreReplay({ drills, totalScore, totalReps, totalDurationSec }:
               size="icon"
               className="h-8 w-8 text-white/40 hover:text-white hover:bg-white/10"
               onClick={handleRestart}
-              aria-label="Recommencer"
+              aria-label={td('Recommencer', 'Restart')}
             >
               <RotateCcw className="h-3.5 w-3.5" />
             </Button>

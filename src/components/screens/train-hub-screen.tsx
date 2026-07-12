@@ -97,9 +97,9 @@ const difficultyDotColor: Record<string, string> = {
 }
 
 const DIFFICULTY_LABELS: Record<string, string> = {
-  beginner: 'Débutant',
-  intermediate: 'Intermédiaire',
-  advanced: 'Avancé',
+  beginner: td('Débutant', 'Beginner'),
+  intermediate: td('Intermédiaire', 'Intermediate'),
+  advanced: td('Avancé', 'Advanced'),
 }
 
 // ─── Accent normalization for fuzzy search ─────────────────────────────
@@ -683,7 +683,7 @@ export default function TrainHubScreen() {
         </div>
 
         {/* Category pills */}
-        <div className="max-w-4xl lg:max-w-6xl mx-auto px-4 pb-3">
+        <div className="max-w-4xl lg:max-w-6xl mx-auto px-4 pb-3" role="group" aria-label={td('Filtrer par catégorie', 'Filter by category')}>
           <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-1 px-1">
             {CATEGORIES_LIST.map((cat) => {
               const isActive = activeCategory === cat.key
@@ -874,7 +874,7 @@ export default function TrainHubScreen() {
                           </span>
                           <span className="inline-flex items-center gap-1">
                             <Target className="h-3 w-3" />
-                            {drill.targetReps} reps
+                            {drill.targetReps} {td('reps', 'reps')}
                           </span>
                         </div>
                       </CardContent>

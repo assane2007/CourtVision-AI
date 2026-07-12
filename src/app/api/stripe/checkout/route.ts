@@ -43,11 +43,9 @@ export const POST = withAuth(async (req, session) => {
     return NextResponse.json({ error: 'Plan invalide' }, { status: 400 })
   }
 
-  // If Stripe is not configured, return a demo URL
+  // If Stripe is not configured, return a proper error
   if (!stripe) {
-    return NextResponse.json({
-      url: `${process.env.NEXTAUTH_URL || ''}/?demo_checkout=1&plan=${priceId}`,
-    })
+    return NextResponse.json({ error: 'Payments are not configured' }, { status: 503 })
   }
 
   // Fetch player from DB

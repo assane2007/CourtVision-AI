@@ -117,6 +117,31 @@ type OwnershipHandler = (
 ) => Promise<NextResponse>
 
 /**
+ * Maps resource types to the URL param names used in their API routes,
+ * and to route path patterns for ID extraction from the URL pathname.
+ */
+const RESOURCE_PARAM_MAP: Record<ResourceType, string[]> = {
+  session: ['id', 'sessionId'],
+  video: ['id', 'videoId'],
+  plan: ['id', 'planId'],
+  team: ['id', 'teamId'],
+  post: ['id', 'postId'],
+  challenge: ['id', 'challengeId'],
+  message: ['id', 'messageId'],
+}
+
+/** Route patterns: maps resource type to the API route prefix used for path extraction */
+const RESOURCE_ROUTE_PREFIXES: Record<ResourceType, string[]> = {
+  session: ['/api/sessions/'],
+  video: ['/api/videos/'],
+  plan: ['/api/plans/'],
+  team: ['/api/teams/'],
+  post: ['/api/posts/', '/api/feed/'],
+  challenge: ['/api/challenges/'],
+  message: ['/api/messages/'],
+}
+
+/**
  * Wraps a route handler with ownership verification.
  * Expects the resource ID to be available in the URL or request context.
  *
@@ -136,24 +161,48 @@ export function requireOwnership(
     try {
       const auth = await requireAuth()
 
-      // Extract resource ID from URL or params
       let resourceId: string | undefined
 
-      // Try to extract from dynamic route params
+      // 1. Try to extract from dynamic route params (context.params.id)
       if (context && 'params' in context) {
-        const params = await (context as { params: Promise<{ id: string }> }).params
-        resourceId = params.id
+        const params = await (context as { params: Promise<Record<string, string>> }).params
+        // Check for the resource-specific param names first, then generic 'id'
+        const paramNames = RESOURCE_PARAM_MAP[resourceType]
+        for (const paramName of paramNames) {
+          if (params[paramName]) {
+            resourceId = params[paramName]
+            break
+          }
+        }
       }
 
-      // Try to extract from URL path segments
+      // 2. Try to extract from URL search params (query string)
       if (!resourceId) {
         const url = new URL(req.url)
-        const segments = url.pathname.split('/')
-        // Find the ID segment (typically the last segment before /route)
-        for (let i = segments.length - 1; i >= 0; i--) {
-          if (segments[i] && segments[i].length > 5) {
-            resourceId = segments[i]
+        const paramNames = RESOURCE_PARAM_MAP[resourceType]
+        for (const paramName of paramNames) {
+          const value = url.searchParams.get(paramName)
+          if (value) {
+            resourceId = value
             break
+          }
+        }
+      }
+
+      // 3. Try to extract from the URL pathname using route-specific patterns
+      if (!resourceId) {
+        const url = new URL(req.url)
+        const prefixes = RESOURCE_ROUTE_PREFIXES[resourceType]
+        for (const prefix of prefixes) {
+          const idx = url.pathname.indexOf(prefix)
+          if (idx !== -1) {
+            const after = url.pathname.slice(idx + prefix.length)
+            // The ID is the next path segment (up to the next '/' or end of string)
+            const match = after.match(/^([^/]+)/)
+            if (match) {
+              resourceId = match[1]
+              break
+            }
           }
         }
       }

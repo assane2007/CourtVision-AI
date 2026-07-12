@@ -33,7 +33,7 @@ export async function generateWorkout(
   const lang: Lang = (playerLang === 'en' ? 'en' : 'fr')
 
   // 1. Check rate limit
-  const rateResult = checkAndTrack(playerId, 'workout_gen', tier)
+  const rateResult = await checkAndTrack(playerId, 'workout_gen', tier)
   if (!rateResult.allowed) {
     throw new AppError(
       ErrorCode.RATE_LIMITED,

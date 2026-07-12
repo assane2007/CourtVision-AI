@@ -253,7 +253,7 @@ export default function VideoLibraryScreen() {
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
-              <Card>
+              <Card role="group" aria-label={td('Filtres vidéo', 'Video filters')}>
                 <CardContent className="p-3 space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div>

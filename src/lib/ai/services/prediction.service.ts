@@ -47,7 +47,7 @@ export async function predictProgression(
   }
 
   // 2. Check rate limit (each prediction counts as one use)
-  const rateResult = checkAndTrack(playerId, 'predictions', tier)
+  const rateResult = await checkAndTrack(playerId, 'predictions', tier)
   if (!rateResult.allowed) {
     throw new AppError(
       ErrorCode.RATE_LIMITED,

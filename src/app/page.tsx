@@ -1,6 +1,6 @@
 'use client'
 
-import { Component, type ReactNode, useSyncExternalStore, useEffect } from 'react'
+import { Component, type ReactNode, useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -64,9 +64,12 @@ const PrivacyScreen = dynamic(() => import('@/components/screens/privacy-screen'
 
 // ── Error Boundary ────────────────────────────────────────────────────────────
 
-class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
-  state = { hasError: false }
-  static getDerivedStateFromError() { return { hasError: true } }
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
+  state = { hasError: false, error: null as Error | null }
+  static getDerivedStateFromError(error: Error) { return { hasError: true, error } }
+  componentDidCatch(error: Error) {
+    console.error('[ErrorBoundary]', error)
+  }
   render() {
     if (this.state.hasError) {
       return (
@@ -74,9 +77,10 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
           <div className="text-center space-y-4 max-w-sm">
             <div className="text-5xl" aria-hidden="true">😵</div>
             <h1 className="text-xl font-bold">Une erreur est survenue</h1>
+            <pre className="text-xs text-red-500 bg-red-50 dark:bg-red-950 p-2 rounded overflow-auto max-h-40 text-left">{this.state.error?.message}</pre>
             <p className="text-sm text-muted-foreground">Quelque chose s&apos;est mal passé. Veuillez rafraîchir la page.</p>
             <button
-              onClick={() => { this.setState({ hasError: false }); window.location.reload() }}
+              onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload() }}
               className="min-h-[44px] px-6 py-2.5 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors"
             >
               Rafraîchir
@@ -144,7 +148,11 @@ export default function Home() {
   const navigate = useAppStore(s => s.navigate)
   const selectDrill = useAppStore(s => s.selectDrill)
   const router = useRouter()
-  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    // Use queueMicrotask to avoid synchronous setState in effect
+    queueMicrotask(() => setMounted(true))
+  }, [])
 
   // Deep linking: read URL params and handle callbacks
   useEffect(() => {

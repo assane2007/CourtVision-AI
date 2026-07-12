@@ -40,6 +40,9 @@ interface WizardData {
   position: BballPosition | null
   level: ExperienceLevel | null
   goals: WizardGoal[]
+  age: number
+  heightCm: number
+  weightKg: number
 }
 
 const STORAGE_KEY = 'cv-onboarding'
@@ -50,6 +53,9 @@ const defaultData: WizardData = {
   position: null,
   level: null,
   goals: [],
+  age: 18,
+  heightCm: 175,
+  weightKg: 70,
 }
 
 function loadData(): WizardData {
@@ -117,7 +123,7 @@ const goalOptions: GoalOption[] = [
 
 // ─── Animation ───────────────────────────────────────────────────────────────
 
-const TOTAL_STEPS = 4
+const TOTAL_STEPS = 7
 
 const slideVariants: Variants = {
   enter: (dir: number) => ({ x: dir > 0 ? 280 : -280, opacity: 0, scale: 0.96 }),
@@ -163,7 +169,7 @@ export default function OnboardingScreen() {
   const canProceed = (): boolean => {
     switch (data.step) {
       case 1: return data.name.trim().length > 0 && data.position !== null && data.level !== null
-      case 2: return data.goals.length > 0
+      case 5: return data.goals.length > 0
       default: return true
     }
   }
@@ -173,7 +179,7 @@ export default function OnboardingScreen() {
       if (!data.name.trim()) { setNameError(true); return false }
       setNameError(false)
     }
-    if (data.step === 2 && data.goals.length === 0) {
+    if (data.step === 5 && data.goals.length === 0) {
       setGoalsError(true)
       return false
     }
@@ -207,11 +213,35 @@ export default function OnboardingScreen() {
 
   // ── Submit ─────────────────────────────────────────────────────────────────
 
+  // Generate skill values based on experience level with ±5 variance
+  const generateSkills = (level: ExperienceLevel) => {
+    const baseRange: Record<ExperienceLevel, [number, number]> = {
+      beginner: [20, 30],
+      intermediate: [35, 50],
+      advanced: [55, 70],
+      pro: [75, 90],
+    }
+    const [lo, hi] = baseRange[level]
+    // Deterministic pseudo-random variance based on player name hash
+    const hash = data.name.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
+    const v = (i: number) => ((hash * (i + 7) * 31) % 11) - 5 // -5 to +5
+    const clamp = (n: number) => Math.max(0, Math.min(100, n))
+    const randInRange = (i: number) => clamp(lo + Math.floor(((hash * (i + 3) * 17) % (hi - lo + 1))))
+    return {
+      shooting: clamp(randInRange(0) + (data.goals.includes('shooting') ? 10 : 0) + v(0)),
+      handling: clamp(randInRange(1) + v(1)),
+      finishing: clamp(randInRange(2) + v(2)),
+      defense: clamp(randInRange(3) + v(3)),
+      iq: clamp(randInRange(4) + (data.goals.includes('game_understanding') ? 10 : 0) + v(4)),
+    }
+  }
+
   const handleComplete = async () => {
     if (!data.position || !data.level || data.goals.length === 0) return
     setIsSubmitting(true)
 
     const levelMap: Record<string, number> = { beginner: 0, intermediate: 2, advanced: 4, pro: 6 }
+    const skills = generateSkills(data.level, data.goals)
 
     try {
       await apiFetch('/api/player/onboard', {
@@ -220,16 +250,12 @@ export default function OnboardingScreen() {
         body: JSON.stringify({
           name: data.name.trim() || user?.name || user?.email?.split('@')[0] || 'Player',
           email: user?.email || '',
-          age: 20,
+          age: data.age,
           position: data.position,
-          heightCm: 180,
-          weightKg: 75,
+          heightCm: data.heightCm,
+          weightKg: data.weightKg,
           yearsExp: levelMap[data.level] ?? 0,
-          shooting: data.goals.includes('shooting') ? 50 : 30,
-          handling: 40,
-          finishing: 35,
-          defense: 40,
-          iq: data.goals.includes('game_understanding') ? 50 : 35,
+          ...skills,
         }),
       })
     } catch {
@@ -245,7 +271,7 @@ export default function OnboardingScreen() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && data.step < 3) {
+      if (e.key === 'Enter' && data.step < 6) {
         e.preventDefault()
         goNext()
       }
@@ -349,7 +375,7 @@ export default function OnboardingScreen() {
 
           <div className="flex items-center gap-2">
             {/* Skip — visible on steps 0-2 */}
-            {data.step < 3 && (
+            {data.step < 6 && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -360,7 +386,7 @@ export default function OnboardingScreen() {
               </Button>
             )}
 
-            {data.step < 3 && (
+            {data.step < 6 && (
               <Button
                 size="lg"
                 onClick={goNext}
@@ -372,7 +398,7 @@ export default function OnboardingScreen() {
               </Button>
             )}
 
-            {data.step === 3 && (
+            {data.step === 6 && (
               <Button
                 size="lg"
                 onClick={handleComplete}
@@ -413,8 +439,11 @@ function renderStep(
   switch (data.step) {
     case 0: return <StepWelcome t={t} />
     case 1: return <StepProfile data={data} update={update} t={t} nameRef={nameRef} nameError={nameError} setNameError={setNameError} />
-    case 2: return <StepGoals data={data} update={update} t={t} goalsError={goalsError} setGoalsError={setGoalsError} />
-    case 3: return <StepSummary data={data} t={t} posLabel={posLabel} isSubmitting={isSubmitting} />
+    case 2: return <StepAge data={data} update={update} t={t} />
+    case 3: return <StepHeight data={data} update={update} t={t} />
+    case 4: return <StepWeight data={data} update={update} t={t} />
+    case 5: return <StepGoals data={data} update={update} t={t} goalsError={goalsError} setGoalsError={setGoalsError} />
+    case 6: return <StepSummary data={data} t={t} posLabel={posLabel} isSubmitting={isSubmitting} />
   }
 }
 
@@ -574,7 +603,112 @@ function StepProfile({
   )
 }
 
-// ─── Step 2: Goals ────────────────────────────────────────────────────────────
+// ─── Step 2: Age ──────────────────────────────────────────────────────────────
+
+function StepAge({
+  data, update,
+}: {
+  data: WizardData
+  update: (p: Partial<WizardData>) => void
+}) {
+  const { td } = useTranslation()
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold tracking-tight text-foreground">{td('Quel âge as-tu ?', 'How old are you?')}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{td('Pour personnaliser ton programme', 'To personalize your program')}</p>
+      </div>
+      <div className="flex flex-col items-center gap-6 py-4">
+        <span className="text-5xl font-black text-orange-500 tabular-nums">{data.age}</span>
+        <input
+          type="range"
+          min={10}
+          max={60}
+          value={data.age}
+          onChange={(e) => update({ age: Number(e.target.value) })}
+          className="w-full max-w-xs accent-orange-500 h-2"
+          aria-label={td('Âge', 'Age')}
+        />
+        <div className="flex justify-between w-full max-w-xs text-xs text-muted-foreground">
+          <span>10</span>
+          <span>60</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Step 3: Height ───────────────────────────────────────────────────────────
+
+function StepHeight({
+  data, update,
+}: {
+  data: WizardData
+  update: (p: Partial<WizardData>) => void
+}) {
+  const { td } = useTranslation()
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold tracking-tight text-foreground">{td('Quelle est ta taille ?', 'What is your height?')}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{td('En centimètres', 'In centimeters')}</p>
+      </div>
+      <div className="flex flex-col items-center gap-6 py-4">
+        <span className="text-5xl font-black text-orange-500 tabular-nums">{data.heightCm}<span className="text-2xl text-muted-foreground ml-1">cm</span></span>
+        <input
+          type="range"
+          min={120}
+          max={220}
+          value={data.heightCm}
+          onChange={(e) => update({ heightCm: Number(e.target.value) })}
+          className="w-full max-w-xs accent-orange-500 h-2"
+          aria-label={td('Taille', 'Height')}
+        />
+        <div className="flex justify-between w-full max-w-xs text-xs text-muted-foreground">
+          <span>120 cm</span>
+          <span>220 cm</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Step 4: Weight ───────────────────────────────────────────────────────────
+
+function StepWeight({
+  data, update,
+}: {
+  data: WizardData
+  update: (p: Partial<WizardData>) => void
+}) {
+  const { td } = useTranslation()
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold tracking-tight text-foreground">{td('Quel est ton poids ?', 'What is your weight?')}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{td('En kilogrammes', 'In kilograms')}</p>
+      </div>
+      <div className="flex flex-col items-center gap-6 py-4">
+        <span className="text-5xl font-black text-orange-500 tabular-nums">{data.weightKg}<span className="text-2xl text-muted-foreground ml-1">kg</span></span>
+        <input
+          type="range"
+          min={30}
+          max={150}
+          value={data.weightKg}
+          onChange={(e) => update({ weightKg: Number(e.target.value) })}
+          className="w-full max-w-xs accent-orange-500 h-2"
+          aria-label={td('Poids', 'Weight')}
+        />
+        <div className="flex justify-between w-full max-w-xs text-xs text-muted-foreground">
+          <span>30 kg</span>
+          <span>150 kg</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Step 5: Goals ────────────────────────────────────────────────────────────
 
 function StepGoals({
   data, update, t, goalsError, setGoalsError,
@@ -629,7 +763,7 @@ function StepGoals({
   )
 }
 
-// ─── Step 3: Summary ─────────────────────────────────────────────────────────
+// ─── Step 6: Summary ─────────────────────────────────────────────────────────
 
 function StepSummary({
   data, t, posLabel, isSubmitting,

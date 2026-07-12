@@ -195,7 +195,7 @@ export default function AuthScreen() {
   const floatingBalls = useMemo(() => floatingBasketballs, [])
 
   return (
-    <div className="dark min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3d0f] dark:from-background dark:via-background dark:to-background p-4">
+    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3d0f] dark:from-background dark:via-background dark:to-background p-4">
       {/* ── Basketball court lines SVG background ──────────────── */}
       <div className="absolute inset-0 pointer-events-none z-0">
         <CourtLinesSVG />
@@ -242,11 +242,11 @@ export default function AuthScreen() {
           {/* ── Logo / Header ─────────────────────────────────────── */}
           <CardHeader className="flex flex-col items-center gap-3 pt-8 pb-2 px-6">
             <div className="flex items-center justify-center size-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/25">
-              <Dribbble className="size-7 dark:text-white text-foreground" strokeWidth={1.8} />
+              <Dribbble className="size-7 text-foreground" strokeWidth={1.8} />
             </div>
             <div className="text-center space-y-1">
               <h1 className="text-2xl font-bold tracking-tight">
-                <span className="dark:text-white text-foreground">🏀 CourtVision </span>
+                <span className="text-foreground">🏀 CourtVision </span>
                 <span className="bg-gradient-to-r from-orange-400 to-amber-300 bg-clip-text text-transparent">
                   AI
                 </span>

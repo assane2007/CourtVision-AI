@@ -43,6 +43,7 @@ export async function analyzeVideoFrames(
 
   // Analyze each frame
   const formScores: VideoFrameAnalysis[] = []
+  const shots: ShotDetection[] = []
   let totalTokens = 0
   let totalCost = 0
 
@@ -69,6 +70,10 @@ export async function analyzeVideoFrames(
         feedback: string
         issues: string[]
         phase: string
+        shotDetected?: boolean
+        shotType?: string
+        shotConfidence?: number
+        playerPosition?: { x: number; y: number }
       }>(result.text, {
         formScore: 50,
         feedback: lang === 'fr' ? 'Analyse incomplète' : 'Incomplete analysis',
@@ -82,6 +87,22 @@ export async function analyzeVideoFrames(
         feedback: String(parsed.feedback ?? '').slice(0, 200),
         issues: Array.isArray(parsed.issues) ? parsed.issues.map(String).slice(0, 3) : [],
       })
+
+      // Extract shot detection from the frame response if the drill involves shooting
+      if (parsed.shotDetected && parsed.shotType) {
+        const validTypes = ['made', 'missed', 'airball', 'bank']
+        const shotType = validTypes.includes(parsed.shotType) ? parsed.shotType : 'missed'
+        const pos = parsed.playerPosition
+
+        shots.push({
+          type: shotType as ShotDetection['type'],
+          x: clamp(pos?.x ?? 0.5, 0, 1),
+          y: clamp(pos?.y ?? 0.5, 0, 1),
+          confidence: clamp(parsed.shotConfidence ?? 0.5, 0, 1),
+          timestampMs: frame.timestampMs,
+          formScore: clamp(parsed.formScore ?? 50, 0, 100),
+        })
+      }
 
       const meta = result.metadata as Record<string, unknown> | undefined
       const tokenUsage = meta?.tokenUsage as { totalTokens: number; estimatedCostUsd: number } | undefined
@@ -116,7 +137,7 @@ export async function analyzeVideoFrames(
   )
 
   return {
-    shots: [], // Shots are detected separately via detectShotsInFrame
+    shots,
     formScores,
     overallFormScore,
     overallFeedback,

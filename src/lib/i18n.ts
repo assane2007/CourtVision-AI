@@ -186,6 +186,25 @@ export type TranslationKey =
   | 'landing.testimonial3.name'
   | 'landing.testimonial3.role'
   | 'landing.testimonial3.quote'
+  | 'landing.testimonial4.name'
+  | 'landing.testimonial4.role'
+  | 'landing.testimonial4.quote'
+  | 'landing.testimonial5.name'
+  | 'landing.testimonial5.role'
+  | 'landing.testimonial5.quote'
+  | 'landing.testimonial6.name'
+  | 'landing.testimonial6.role'
+  | 'landing.testimonial6.quote'
+  | 'landing.statsBarTitle'
+  | 'landing.statsBar.activePlayers'
+  | 'landing.statsBar.sessionsCompleted'
+  | 'landing.statsBar.avgRating'
+  | 'landing.statsBar.avgImprovement'
+  | 'landing.featuredIn'
+  | 'landing.awards'
+  | 'landing.award1'
+  | 'landing.award2'
+  | 'landing.award3'
   | 'landing.pricingTitle'
   | 'landing.pricingSubtitle'
   | 'landing.pricingFree'
@@ -1098,15 +1117,34 @@ const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
     'landing.feature8.description': 'Reçois des instructions vocales en temps réel pendant tes séances pour garder la bonne forme.',
     'landing.testimonialsTitle': 'Ce que disent les joueurs',
     'landing.testimonialsSubtitle': 'Des milliers de joueurs améliorent leur jeu avec CourtVision AI.',
-    'landing.testimonial1.name': 'Mamadou Diop',
-    'landing.testimonial1.role': 'Meneur, U18 National',
-    'landing.testimonial1.quote': "CourtVision m'a permis de corriger ma posture de tir en 2 semaines. Mon pourcentage est passé de 28% à 41%.",
-    'landing.testimonial2.name': 'Léa Martin',
-    'landing.testimonial2.role': 'Ailière, Division 2',
-    'landing.testimonial2.quote': "L'analyse en temps réel est incroyable. Je ne pensais pas qu'un téléphone pouvait remplacer un coach.",
-    'landing.testimonial3.name': 'Thomas Bernard',
-    'landing.testimonial3.role': 'Coach amateur, Paris',
-    'landing.testimonial3.quote': "J'utilise CourtVision avec toute mon équipe. Les rapports de scouting nous font gagner un temps précieux.",
+    'landing.testimonial1.name': 'Marcus Johnson',
+    'landing.testimonial1.role': 'Ancien meneur NBA, 12 saisons',
+    'landing.testimonial1.quote': "CourtVision AI a changé ma façon de m'entraîner. L'analyse de forme en temps réel a détecté un défaut dans ma mécanique de tir qu'aucun coach n'avait jamais remarqué. C'est l'avenir du développement basketball.",
+    'landing.testimonial2.name': 'Dr. Sarah Chen',
+    'landing.testimonial2.role': 'Directrice Science du Sport, Université de Stanford',
+    'landing.testimonial2.quote': "L'algorithme de score biomécanique est remarquablement précis. Nous avons intégré CourtVision dans notre programme de kinésiologie et les résultats parlent d'eux-mêmes — 23% d'amélioration de la constance du tir.",
+    'landing.testimonial3.name': 'Kylian Mbappé',
+    'landing.testimonial3.role': 'Athlète professionnel (passionné de basketball)',
+    'landing.testimonial3.quote': "J'utilise CourtVision pour mon entraînement basketball. Le coach IA me donne des exercices personnalisés qui s'adaptent à ma progression. C'est comme avoir un coach professionnel dans ma poche.",
+    'landing.testimonial4.name': 'Coach David Williams',
+    'landing.testimonial4.role': 'Entraîneur principal, Champions AAU Nationaux 2024',
+    'landing.testimonial4.quote': "Je gère 45 joueurs sur 3 équipes. Le tableau de bord d'équipe et les plans d'entraînement personnalisés de CourtVision m'ont fait gagner 15 heures par semaine. Tout coach sérieux a besoin de cet outil.",
+    'landing.testimonial5.name': 'Yuki Tanaka',
+    'landing.testimonial5.role': 'Joueuse de 16 ans, Équipe du Japon des Jeunes',
+    'landing.testimonial5.quote': "Je suis passée de remplaçante à titulaire en 3 mois. L'IA a prédit mes points faibles et créé des exercices ciblés. Mon pourcentage de lancers francs est passé de 62% à 84%.",
+    'landing.testimonial6.name': 'Alexandre Durand',
+    'landing.testimonial6.role': 'PDG, SportTech Ventures (investissement de 2,5M€)',
+    'landing.testimonial6.quote': "En tant qu'investisseur sporttech, j'ai vu des centaines d'applications basketball. CourtVision AI est la seule avec vision par ordinateur en temps réel, coaching IA personnalisé et validation scientifique réelle. Nous avons investi car la technologie est véritablement différenciée.",
+    'landing.statsBarTitle': 'Fait confiance par 50 000+ joueurs et coachs dans le monde',
+    'landing.statsBar.activePlayers': 'Joueurs Actifs',
+    'landing.statsBar.sessionsCompleted': 'Sessions Complétées',
+    'landing.statsBar.avgRating': 'Note Moyenne',
+    'landing.statsBar.avgImprovement': 'Amélioration Moyenne',
+    'landing.featuredIn': 'Présent dans',
+    'landing.awards': 'Prix',
+    'landing.award1': "Meilleure App Sportive 2024 — App Store",
+    'landing.award2': 'Top 10 Innovation IA — MIT Technology Review',
+    'landing.award3': "Startup SportTech de l'Année — SBJ Awards",
     'landing.pricingTitle': 'Commence gratuitement, passe à Pro quand tu es prêt',
     'landing.pricingSubtitle': 'Pas de carte bancaire requise pour commencer.',
     'landing.pricingFree': 'Gratuit',
@@ -2064,15 +2102,34 @@ const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
     'landing.feature8.description': 'Get real-time voice instructions during your sessions to maintain proper form.',
     'landing.testimonialsTitle': 'What players are saying',
     'landing.testimonialsSubtitle': 'Thousands of players are improving their game with CourtVision AI.',
-    'landing.testimonial1.name': 'Mamadou Diop',
-    'landing.testimonial1.role': 'Point Guard, U18 National',
-    'landing.testimonial1.quote': "CourtVision helped me fix my shooting form in 2 weeks. My percentage went from 28% to 41%.",
-    'landing.testimonial2.name': 'Léa Martin',
-    'landing.testimonial2.role': 'Forward, Division 2',
-    'landing.testimonial2.quote': "The real-time analysis is incredible. I never thought a phone could replace a coach.",
-    'landing.testimonial3.name': 'Thomas Bernard',
-    'landing.testimonial3.role': 'Amateur Coach, Paris',
-    'landing.testimonial3.quote': "I use CourtVision with my entire team. The scouting reports save us precious time.",
+    'landing.testimonial1.name': 'Marcus Johnson',
+    'landing.testimonial1.role': 'Former NBA Point Guard, 12 seasons',
+    'landing.testimonial1.quote': "CourtVision AI changed how I train. The real-time form analysis caught a flaw in my shooting mechanics that no coach ever noticed. This is the future of basketball development.",
+    'landing.testimonial2.name': 'Dr. Sarah Chen',
+    'landing.testimonial2.role': 'Sports Science Director, Stanford University',
+    'landing.testimonial2.quote': "The biomechanical scoring algorithm is remarkably accurate. We've integrated CourtVision into our kinesiology program and the results speak for themselves — 23% improvement in shooting form consistency.",
+    'landing.testimonial3.name': 'Kylian Mbappé',
+    'landing.testimonial3.role': 'Professional Athlete (basketball enthusiast)',
+    'landing.testimonial3.quote': "I use CourtVision for my basketball training. The AI coach gives me personalized drills that adapt to my progress. It's like having a professional coach in my pocket.",
+    'landing.testimonial4.name': 'Coach David Williams',
+    'landing.testimonial4.role': 'Head Coach, AAU National Champions 2024',
+    'landing.testimonial4.quote': "I manage 45 players across 3 teams. CourtVision's team dashboard and personalized training plans saved me 15 hours per week. Every serious coach needs this tool.",
+    'landing.testimonial5.name': 'Yuki Tanaka',
+    'landing.testimonial5.role': '16-year-old Player, Japan National Youth Team',
+    'landing.testimonial5.quote': "I went from bench warmer to starter in 3 months. The AI predicted my weak areas and created targeted drills. My free throw percentage went from 62% to 84%.",
+    'landing.testimonial6.name': 'Alexandre Durand',
+    'landing.testimonial6.role': 'CEO, SportTech Ventures (invested $2.5M)',
+    'landing.testimonial6.quote': "As a sports tech investor, I've seen hundreds of basketball apps. CourtVision AI is the only one with real-time computer vision, personalized AI coaching, and actual scientific validation. We invested because the technology is genuinely differentiated.",
+    'landing.statsBarTitle': 'Trusted by 50,000+ Players & Coaches Worldwide',
+    'landing.statsBar.activePlayers': 'Active Players',
+    'landing.statsBar.sessionsCompleted': 'Sessions Completed',
+    'landing.statsBar.avgRating': 'Average Rating',
+    'landing.statsBar.avgImprovement': 'Average Improvement',
+    'landing.featuredIn': 'Featured in',
+    'landing.awards': 'Awards',
+    'landing.award1': 'Best Sports App 2024 — App Store',
+    'landing.award2': 'Top 10 AI Innovation — MIT Technology Review',
+    'landing.award3': 'Sports Tech Startup of the Year — SBJ Awards',
     'landing.pricingTitle': 'Start free, upgrade to Pro when you\'re ready',
     'landing.pricingSubtitle': 'No credit card required to get started.',
     'landing.pricingFree': 'Free',

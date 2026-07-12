@@ -7,6 +7,7 @@ import { Pause, Play, Square, Loader2, Sparkles, Timer } from 'lucide-react'
 import type { WorkoutPhase, AIFormCheckResult } from './types'
 import { REST_OPTIONS } from './types'
 import { getScoreColor } from './scoring'
+import { useTranslation } from '@/components/providers/language-provider'
 
 // ─── Pre-Workout Config (sets & rest) ────────────────────────────────────────
 
@@ -29,12 +30,13 @@ export function PreWorkoutConfig({
   onSetRestDuration,
   onEnsureAudioInit,
 }: PreWorkoutConfigProps) {
+  const { td } = useTranslation()
   if (phase !== 'countdown' && phase !== 'loading' && !showReady) return null
 
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">Séries:</span>
+        <span className="text-xs text-muted-foreground">{td('Séries:', 'Sets:')}</span>
         {([1, 2, 3, 4, 5] as const).map((n) => (
           <button
             key={n}
@@ -55,7 +57,7 @@ export function PreWorkoutConfig({
       </div>
       <div className="flex items-center gap-2">
         <Timer className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-xs text-muted-foreground">Repos:</span>
+        <span className="text-xs text-muted-foreground">{td('Repos:', 'Rest:')}</span>
         {REST_OPTIONS.map((opt) => (
           <button
             key={opt}
@@ -86,6 +88,7 @@ interface AIFeedbackProps {
 }
 
 export function AIFeedback({ aiResult, aiError, phase }: AIFeedbackProps) {
+  const { td } = useTranslation()
   if ((phase !== 'active' && phase !== 'paused') || (!aiResult && !aiError)) return null
 
   return (
@@ -101,7 +104,7 @@ export function AIFeedback({ aiResult, aiError, phase }: AIFeedbackProps) {
         <div className="flex items-center gap-1.5">
           <Sparkles className="h-3.5 w-3.5 text-orange-400" />
           <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
-            Vérification IA
+            {td('Vérification IA', 'AI Check')}
           </span>
           {aiResult && (
             <span
@@ -190,6 +193,7 @@ interface AICheckButtonProps {
 }
 
 export function AICheckButton({ phase, aiLoading, aiCooldownRemaining, onCheck }: AICheckButtonProps) {
+  const { td } = useTranslation()
   if (phase !== 'active' && phase !== 'paused') return null
 
   return (
@@ -200,7 +204,7 @@ export function AICheckButton({ phase, aiLoading, aiCooldownRemaining, onCheck }
         onClick={onCheck}
         disabled={aiLoading || aiCooldownRemaining > 0 || phase === 'paused'}
         className="gap-1.5 border-orange-500/30 text-orange-400 hover:bg-orange-500/10 hover:text-orange-300 disabled:opacity-50 disabled:hover:bg-transparent rounded-full px-4"
-        aria-label="Vérification IA du geste"
+        aria-label={td('Vérification IA du geste', 'AI form check')}
       >
         {aiLoading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -208,11 +212,11 @@ export function AICheckButton({ phase, aiLoading, aiCooldownRemaining, onCheck }
           <Sparkles className="h-4 w-4" />
         )}
         {aiLoading ? (
-          'Analyse en cours...'
+          td('Analyse en cours...', 'Analyzing...')
         ) : aiCooldownRemaining > 0 ? (
-          <span className="tabular-nums">Réessayer dans {aiCooldownRemaining}s</span>
+          <span className="tabular-nums">{td('Réessayer dans', 'Retry in')} {aiCooldownRemaining}s</span>
         ) : (
-          'Vérification IA'
+          td('Vérification IA', 'AI Check')
         )}
       </Button>
     </div>
@@ -227,12 +231,13 @@ interface ProgressBarProps {
 }
 
 export function ProgressBar({ phase, progressPercent }: ProgressBarProps) {
+  const { td } = useTranslation()
   if (phase !== 'active' && phase !== 'paused') return null
 
   return (
     <div className="space-y-1.5">
       <div className="flex justify-between items-center text-xs text-muted-foreground">
-        <span>Progression</span>
+        <span>{td('Progression', 'Progress')}</span>
         <span className="tabular-nums">
           {Math.round(progressPercent)}%
         </span>
@@ -259,6 +264,7 @@ interface WorkoutControlsProps {
 }
 
 export function WorkoutControls({ phase, onPause, onResume, onStop }: WorkoutControlsProps) {
+  const { td } = useTranslation()
   return (
     <div className="flex items-center justify-center gap-4">
       {/* Stop button */}
@@ -268,7 +274,7 @@ export function WorkoutControls({ phase, onPause, onResume, onStop }: WorkoutCon
           size="icon"
           onClick={onStop}
           className="h-12 w-12 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/30 hover:text-red-300 transition-colors"
-          aria-label="Arrêter l'entraînement"
+          aria-label={td("Arrêter l'entraînement", 'Stop workout')}
         >
           <Square className="h-5 w-5" />
         </Button>
@@ -281,7 +287,7 @@ export function WorkoutControls({ phase, onPause, onResume, onStop }: WorkoutCon
           size="icon"
           onClick={onPause}
           className="h-14 w-14 rounded-full bg-primary/10 text-foreground hover:bg-primary/20 transition-colors border border-border"
-          aria-label="Pause"
+          aria-label={td('Pause', 'Pause')}
         >
           <Pause className="h-6 w-6" />
         </Button>
@@ -293,7 +299,7 @@ export function WorkoutControls({ phase, onPause, onResume, onStop }: WorkoutCon
           size="icon"
           onClick={onResume}
           className="h-14 w-14 rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/30"
-          aria-label="Reprendre"
+          aria-label={td('Reprendre', 'Resume')}
         >
           <Play className="h-6 w-6 ml-0.5" />
         </Button>
@@ -303,14 +309,14 @@ export function WorkoutControls({ phase, onPause, onResume, onStop }: WorkoutCon
       {phase === 'active' && (
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-          <span>EN DIRECT</span>
+          <span>{td('EN DIRECT', 'LIVE')}</span>
         </div>
       )}
 
       {phase === 'paused' && (
         <div className="flex items-center gap-1.5 text-xs text-amber-400/70">
           <Pause className="h-3 w-3" />
-          <span>PAUSE</span>
+          <span>{td('PAUSE', 'PAUSE')}</span>
         </div>
       )}
     </div>

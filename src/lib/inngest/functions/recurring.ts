@@ -10,6 +10,7 @@
 
 import { inngest } from '@/lib/inngest/client'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/monitoring/logger'
 
 // ── Weekly Player Report ──────────────────────────────────────────────────────
 
@@ -36,7 +37,7 @@ export const weeklyPlayerReport = inngest.createFunction(
     })
 
     if (activePlayers.length === 0) {
-      console.warn('[inngest:cron] No active players found for weekly report')
+      logger.info('No active players found for weekly report', 'inngest:cron')
       return { triggered: 0 }
     }
 
@@ -50,8 +51,10 @@ export const weeklyPlayerReport = inngest.createFunction(
       await Promise.allSettled(promises)
     })
 
-    console.warn(
-      `[inngest:cron] Triggered weekly insight refresh for ${activePlayers.length} active players`,
+    logger.info(
+      'Triggered weekly insight refresh',
+      'inngest:cron',
+      { playerCount: activePlayers.length },
     )
 
     return { triggered: activePlayers.length }
@@ -84,8 +87,10 @@ export const staleSessionCleanup = inngest.createFunction(
       return result.count
     })
 
-    console.warn(
-      `[inngest:cron] Marked ${abandonedCount} stale session(s) as ended`,
+    logger.info(
+      'Marked stale sessions as ended',
+      'inngest:cron',
+      { abandonedCount },
     )
 
     return { abandonedSessions: abandonedCount }

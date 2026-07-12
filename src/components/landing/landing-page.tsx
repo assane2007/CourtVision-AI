@@ -2,6 +2,7 @@
 
 import { useRef, useState, type FormEvent } from 'react'
 import { motion, useInView } from 'framer-motion'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -177,23 +178,55 @@ const testimonials = [
     nameKey: 'landing.testimonial1.name' as const,
     roleKey: 'landing.testimonial1.role' as const,
     quoteKey: 'landing.testimonial1.quote' as const,
-    initials: 'MD',
+    initials: 'MJ',
     rating: 5,
   },
   {
     nameKey: 'landing.testimonial2.name' as const,
     roleKey: 'landing.testimonial2.role' as const,
     quoteKey: 'landing.testimonial2.quote' as const,
-    initials: 'LM',
+    initials: 'SC',
     rating: 5,
   },
   {
     nameKey: 'landing.testimonial3.name' as const,
     roleKey: 'landing.testimonial3.role' as const,
     quoteKey: 'landing.testimonial3.quote' as const,
-    initials: 'TB',
-    rating: 4,
+    initials: 'KM',
+    rating: 5,
   },
+  {
+    nameKey: 'landing.testimonial4.name' as const,
+    roleKey: 'landing.testimonial4.role' as const,
+    quoteKey: 'landing.testimonial4.quote' as const,
+    initials: 'DW',
+    rating: 5,
+  },
+  {
+    nameKey: 'landing.testimonial5.name' as const,
+    roleKey: 'landing.testimonial5.role' as const,
+    quoteKey: 'landing.testimonial5.quote' as const,
+    initials: 'YT',
+    rating: 5,
+  },
+  {
+    nameKey: 'landing.testimonial6.name' as const,
+    roleKey: 'landing.testimonial6.role' as const,
+    quoteKey: 'landing.testimonial6.quote' as const,
+    initials: 'AD',
+    rating: 5,
+  },
+]
+
+const trustLogos = ['Nike Basketball', 'NBA', 'FIBA', 'ESPN', 'NCAA', 'EuroLeague']
+
+const pressLogos = ['TechCrunch', 'Forbes', 'Sports Illustrated', 'The Athletic']
+
+const statsBar = [
+  { valueKey: '50,000+', labelKey: 'landing.statsBar.activePlayers' as const },
+  { valueKey: '2.5M+', labelKey: 'landing.statsBar.sessionsCompleted' as const },
+  { valueKey: '4.9★', labelKey: 'landing.statsBar.avgRating' as const },
+  { valueKey: '23%', labelKey: 'landing.statsBar.avgImprovement' as const },
 ]
 
 // ── Main Component ──────────────────────────────────────────────────────────────
@@ -210,6 +243,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
   const testimonialsRef = useRef<HTMLDivElement>(null)
   const pricingRef = useRef<HTMLDivElement>(null)
   const finalCtaRef = useRef<HTMLDivElement>(null)
+  const pressAwardsRef = useRef<HTMLDivElement>(null)
   const footerRef = useRef<HTMLDivElement>(null)
 
   const featuresInView = useInView(featuresRef, { once: true, amount: 0.1 })
@@ -217,6 +251,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
   const testimonialsInView = useInView(testimonialsRef, { once: true, amount: 0.15 })
   const pricingInView = useInView(pricingRef, { once: true, amount: 0.2 })
   const finalCtaInView = useInView(finalCtaRef, { once: true, amount: 0.3 })
+  const pressAwardsInView = useInView(pressAwardsRef, { once: true, amount: 0.2 })
   const footerInView = useInView(footerRef, { once: true, amount: 0.3 })
 
   const scrollToFeatures = () => featuresRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -230,9 +265,18 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email.trim() }),
-    }).catch(() => { /* best-effort */ })
+    })
+      .then(() => {
+        toast.success(td('Inscription envoyée !', 'Signup sent!'), {
+          description: td("Regarde ta boîte de réception", 'Check your inbox'),
+        })
+      })
+      .catch(() => {
+        toast.error(td('Erreur réseau', 'Network error'), {
+          description: td('Veuillez réessayer', 'Please try again'),
+        })
+      })
     setEmailSubmitted(true)
-    setTimeout(() => onNavigate('auth'), 800)
   }
 
   const freeFeatures = [
@@ -472,7 +516,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             animate={testimonialsInView ? 'visible' : 'hidden'}
             custom={0}
             variants={fadeUp}
-            className="text-center mb-14 sm:mb-16"
+            className="text-center mb-10 sm:mb-12"
           >
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
               {t('landing.testimonialsTitle')}
@@ -482,13 +526,50 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+          {/* Stats Bar */}
+          <motion.div
+            initial="hidden"
+            animate={testimonialsInView ? 'visible' : 'hidden'}
+            custom={1}
+            variants={fadeUp}
+            className="mb-10 sm:mb-12"
+          >
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-orange-500/10 via-orange-500/5 to-transparent border border-orange-500/20">
+              {statsBar.map((stat, i) => (
+                <div key={i} className="text-center">
+                  <div className="text-2xl sm:text-3xl font-extrabold text-orange-400">{stat.valueKey}</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground mt-1">{t(stat.labelKey)}</div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Trust Logos */}
+          <motion.div
+            initial="hidden"
+            animate={testimonialsInView ? 'visible' : 'hidden'}
+            custom={2}
+            variants={fadeIn}
+            className="mb-14 sm:mb-16"
+          >
+            <p className="text-center text-sm text-muted-foreground mb-6 font-medium">{t('landing.statsBarTitle')}</p>
+            <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 opacity-60">
+              {trustLogos.map((logo) => (
+                <span key={logo} className="text-sm sm:text-base font-bold text-muted-foreground tracking-wide whitespace-nowrap">
+                  {logo}
+                </span>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Testimonial Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {testimonials.map((testimonial, i) => (
               <motion.div
                 key={testimonial.nameKey}
                 initial="hidden"
                 animate={testimonialsInView ? 'visible' : 'hidden'}
-                custom={i + 1}
+                custom={i + 3}
                 variants={scaleIn}
               >
                 <Card className="bg-card/60 border-border hover:border-orange-500/20 transition-colors duration-300 h-full">
@@ -614,6 +695,58 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         </div>
       </section>
 
+      {/* ═══════════════════ PRESS & AWARDS ══════════════════════════════════ */}
+      <section ref={pressAwardsRef} className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Featured In */}
+          <motion.div
+            initial="hidden"
+            animate={pressAwardsInView ? 'visible' : 'hidden'}
+            custom={0}
+            variants={fadeUp}
+            className="mb-12"
+          >
+            <p className="text-center text-sm font-medium text-muted-foreground mb-6">{t('landing.featuredIn')}</p>
+            <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-12 opacity-70">
+              {pressLogos.map((logo) => (
+                <span key={logo} className="text-base sm:text-lg font-bold text-foreground tracking-wide whitespace-nowrap">
+                  {logo}
+                </span>
+              ))}
+            </div>
+          </motion.div>
+
+          <div className="w-full flex justify-center mb-12">
+            <div className="w-1/2 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+          </div>
+
+          {/* Awards */}
+          <motion.div
+            initial="hidden"
+            animate={pressAwardsInView ? 'visible' : 'hidden'}
+            custom={1}
+            variants={fadeUp}
+          >
+            <p className="text-center text-sm font-medium text-muted-foreground mb-6">{t('landing.awards')}</p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
+              {[
+                t('landing.award1'),
+                t('landing.award2'),
+                t('landing.award3'),
+              ].map((award) => (
+                <div
+                  key={award}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-orange-500/10 border border-orange-500/15 text-sm font-medium text-orange-400 whitespace-nowrap"
+                >
+                  <Trophy className="size-4 shrink-0" />
+                  {award}
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* ═══════════════════ FINAL CTA ════════════════════════════════════════ */}
       <section ref={finalCtaRef} className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-orange-500/[0.03] to-background pointer-events-none" />
@@ -689,14 +822,14 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           <div className="flex items-center gap-6">
             <button
               type="button"
-              onClick={() => onNavigate('settings')}
+              onClick={() => onNavigate('terms')}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               {t('landing.terms')}
             </button>
             <button
               type="button"
-              onClick={() => onNavigate('settings')}
+              onClick={() => onNavigate('privacy')}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               {t('landing.privacy')}
@@ -710,20 +843,33 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           </div>
 
           <div className="flex items-center gap-3">
-            {[
-              { Icon: Instagram, label: 'Instagram' },
-              { Icon: Twitter, label: 'Twitter' },
-              { Icon: Youtube, label: 'YouTube' },
-            ].map(({ Icon, label }) => (
-              <button
-                key={label}
-                type="button"
-                aria-label={label}
-                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors"
-              >
-                <Icon className="size-4" />
-              </button>
-            ))}
+            <a
+              href="https://instagram.com/courtvisionai"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Instagram"
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors"
+            >
+              <Instagram className="size-4" />
+            </a>
+            <a
+              href="https://twitter.com/courtvisionai"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Twitter"
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors"
+            >
+              <Twitter className="size-4" />
+            </a>
+            <a
+              href="https://youtube.com/@courtvisionai"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="YouTube"
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors"
+            >
+              <Youtube className="size-4" />
+            </a>
           </div>
         </motion.div>
       </footer>

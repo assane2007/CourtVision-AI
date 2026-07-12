@@ -6,6 +6,7 @@
  */
 
 import { Resend } from 'resend'
+import { sanitizeHtml } from '@/lib/security/sanitization'
 
 // ── Singleton client ──────────────────────────────────────────────────────────
 
@@ -55,10 +56,23 @@ export async function sendEmail(options: {
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://courtvision.ai'
 
+/**
+ * Escape a string for safe interpolation in HTML content.
+ * Converts &, <, >, ", ' into their HTML entity equivalents.
+ */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 function emailShell(title: string, bodyHtml: string): string {
   return `<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title></head>
 <body style="margin:0;padding:0;background:#f4f4f5;font-family:system-ui,-apple-system,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px;">
     <tr><td align="center">
@@ -97,11 +111,12 @@ export interface EmailTemplateResult {
 
 export const emailTemplates = {
   welcome(name: string): EmailTemplateResult {
+    const safeName = escapeHtml(name)
     return {
       subject: 'Bienvenue sur CourtVision AI ! 🏀',
       html: emailShell(
         'Bienvenue',
-        `<p style="font-size:16px;color:#27272a;">Salut <strong>${name}</strong>,</p>
+        `<p style="font-size:16px;color:#27272a;">Salut <strong>${safeName}</strong>,</p>
 <p style="font-size:16px;color:#27272a;">Bienvenue sur <strong>CourtVision AI</strong> ! Ton compte a été créé avec succès.</p>
 <p style="font-size:16px;color:#27272a;">Commence par uploader une vidéo de ton tir pour obtenir un diagnostic IA personnalisé.</p>
 <table cellpadding="0" cellspacing="0" style="margin-top:24px;">
@@ -116,11 +131,12 @@ export const emailTemplates = {
   },
 
   passwordReset(name: string, resetUrl: string): EmailTemplateResult {
+    const safeName = escapeHtml(name)
     return {
       subject: 'Réinitialisation de ton mot de passe',
       html: emailShell(
         'Réinitialisation du mot de passe',
-        `<p style="font-size:16px;color:#27272a;">Salut <strong>${name}</strong>,</p>
+        `<p style="font-size:16px;color:#27272a;">Salut <strong>${safeName}</strong>,</p>
 <p style="font-size:16px;color:#27272a;">Tu as demandé la réinitialisation de ton mot de passe. Clique sur le bouton ci-dessous pour en définir un nouveau :</p>
 <table cellpadding="0" cellspacing="0" style="margin-top:24px;">
   <tr>
@@ -135,14 +151,17 @@ export const emailTemplates = {
   },
 
   weeklyReport(name: string, stats: string): EmailTemplateResult {
+    const safeName = escapeHtml(name)
+    // stats is raw HTML from AI — sanitize it with DOMPurify
+    const safeStats = sanitizeHtml(stats)
     return {
       subject: 'Ta semaine sur CourtVision AI 📊',
       html: emailShell(
         'Rapport hebdomadaire',
-        `<p style="font-size:16px;color:#27272a;">Salut <strong>${name}</strong>,</p>
+        `<p style="font-size:16px;color:#27272a;">Salut <strong>${safeName}</strong>,</p>
 <p style="font-size:16px;color:#27272a;">Voici ton résumé hebdomadaire :</p>
 <div style="margin-top:16px;padding:20px;background:#f4f4f5;border-radius:8px;font-size:14px;color:#27272a;line-height:1.7;">
-  ${stats}
+  ${safeStats}
 </div>
 <table cellpadding="0" cellspacing="0" style="margin-top:24px;">
   <tr>
@@ -156,11 +175,12 @@ export const emailTemplates = {
   },
 
   emailVerification(name: string, verifyUrl: string): EmailTemplateResult {
+    const safeName = escapeHtml(name)
     return {
       subject: 'Confirme ton adresse email',
       html: emailShell(
         'Vérification d\'email',
-        `<p style="font-size:16px;color:#27272a;">Salut <strong>${name}</strong>,</p>
+        `<p style="font-size:16px;color:#27272a;">Salut <strong>${safeName}</strong>,</p>
 <p style="font-size:16px;color:#27272a;">Confirme ton adresse email en cliquant sur le bouton ci-dessous :</p>
 <table cellpadding="0" cellspacing="0" style="margin-top:24px;">
   <tr>

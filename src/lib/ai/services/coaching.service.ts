@@ -43,7 +43,7 @@ export async function coachReply(
   }
 
   // 2. Check rate limit
-  const rateResult = checkAndTrack(playerId, 'coaching', tier)
+  const rateResult = await checkAndTrack(playerId, 'coaching', tier)
   if (!rateResult.allowed) {
     throw new AppError(
       ErrorCode.RATE_LIMITED,

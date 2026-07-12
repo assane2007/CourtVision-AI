@@ -115,21 +115,21 @@ export const aiPipeline = {
   /**
    * Get quota information for a player across all AI operation types.
    */
-  getQuota(playerId: string, tier: SubscriptionTier = 'free'): Record<AiOperationType, AiQuota> {
+  async getQuota(playerId: string, tier: SubscriptionTier = 'free'): Promise<Record<AiOperationType, AiQuota>> {
     return getQuotaFromLimiter(playerId, tier)
   },
 
   /**
    * Check if a player has quota remaining for a specific AI operation.
    */
-  checkQuota(playerId: string, type: AiOperationType, tier: SubscriptionTier = 'free'): boolean {
+  async checkQuota(playerId: string, type: AiOperationType, tier: SubscriptionTier = 'free'): Promise<boolean> {
     return checkQuota(playerId, type, tier)
   },
 
   /**
    * Track AI usage (called internally by services, exposed for manual tracking).
    */
-  trackUsage(playerId: string, type: AiOperationType, tokens: number = 0): void {
-    trackUsage(playerId, type, tokens)
+  async trackUsage(playerId: string, type: AiOperationType, tokens: number = 0): Promise<void> {
+    await trackUsage(playerId, type, tokens)
   },
 }

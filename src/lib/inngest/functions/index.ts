@@ -14,6 +14,7 @@ import {
   processExportGeneration,
   processInsightRefresh,
 } from '@/lib/queue/processors'
+import { logger } from '@/lib/monitoring/logger'
 
 // ── Shared retry configuration ────────────────────────────────────────────────
 
@@ -48,15 +49,19 @@ export const videoProcessing = inngest.createFunction(
         })
       })
 
-      console.warn(
-        `[inngest:video] Completed video processing for videoId=${videoId}, playerId=${playerId}`,
+      logger.info(
+        `Completed video processing`,
+        'inngest:video',
+        { videoId, playerId },
       )
 
       return { success: true, videoId, result }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      console.error(
-        `[inngest:video] Failed video processing for videoId=${videoId}: ${message}`,
+      logger.error(
+        `Failed video processing: ${message}`,
+        'inngest:video',
+        { videoId, playerId },
       )
       throw error
     }
@@ -89,15 +94,19 @@ export const formAnalysis = inngest.createFunction(
         })
       })
 
-      console.warn(
-        `[inngest:form] Completed form analysis for videoId=${videoId}, playerId=${playerId}, score=${result.score}`,
+      logger.info(
+        'Completed form analysis',
+        'inngest:form',
+        { videoId, playerId, score: result.score },
       )
 
       return { success: true, videoId, score: result.score }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      console.error(
-        `[inngest:form] Failed form analysis for videoId=${videoId}: ${message}`,
+      logger.error(
+        `Failed form analysis: ${message}`,
+        'inngest:form',
+        { videoId, playerId },
       )
       throw error
     }
@@ -131,15 +140,19 @@ export const notificationSend = inngest.createFunction(
         })
       })
 
-      console.warn(
-        `[inngest:notification] Sent ${type} notification to playerId=${playerId}: "${title}"`,
+      logger.info(
+        'Sent notification',
+        'inngest:notification',
+        { playerId, type, title },
       )
 
       return { success: true, playerId, type }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      console.error(
-        `[inngest:notification] Failed to send ${type} notification to playerId=${playerId}: ${message}`,
+      logger.error(
+        `Failed to send ${type} notification: ${message}`,
+        'inngest:notification',
+        { playerId, type },
       )
       throw error
     }
@@ -173,15 +186,19 @@ export const exportGeneration = inngest.createFunction(
         })
       })
 
-      console.warn(
-        `[inngest:export] Generated ${format} export (quality=${quality}) for videoId=${videoId}, exportId=${result.exportId}`,
+      logger.info(
+        'Generated export',
+        'inngest:export',
+        { videoId, exportId: result.exportId, format, quality },
       )
 
       return { success: true, videoId, exportId: result.exportId, format }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      console.error(
-        `[inngest:export] Failed export generation for videoId=${videoId}: ${message}`,
+      logger.error(
+        `Failed export generation: ${message}`,
+        'inngest:export',
+        { videoId, format },
       )
       throw error
     }
@@ -213,15 +230,19 @@ export const insightRefresh = inngest.createFunction(
         })
       })
 
-      console.warn(
-        `[inngest:insight] Refreshed insights for playerId=${playerId} (force=${force ?? false})`,
+      logger.info(
+        'Refreshed insights',
+        'inngest:insight',
+        { playerId, force: force ?? false },
       )
 
       return { success: true, playerId }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      console.error(
-        `[inngest:insight] Failed insight refresh for playerId=${playerId}: ${message}`,
+      logger.error(
+        `Failed insight refresh: ${message}`,
+        'inngest:insight',
+        { playerId },
       )
       throw error
     }
@@ -254,15 +275,19 @@ export const playerWelcome = inngest.createFunction(
         })
       })
 
-      console.warn(
-        `[inngest:welcome] Sent welcome notification to playerId=${playerId} (${email})`,
+      logger.info(
+        'Sent welcome notification',
+        'inngest:welcome',
+        { playerId, email },
       )
 
       return { success: true, playerId }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      console.error(
-        `[inngest:welcome] Failed welcome flow for playerId=${playerId}: ${message}`,
+      logger.error(
+        `Failed welcome flow: ${message}`,
+        'inngest:welcome',
+        { playerId },
       )
       throw error
     }

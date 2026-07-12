@@ -149,14 +149,76 @@ ${options?.responseFormat === 'json_object' ? 'Réponds UNIQUEMENT en JSON valid
     timeoutMs: options?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
   })
 
+  // Derive confidence from the VLM response content.
+  // Heuristic: longer, more detailed responses indicate the model found
+  // meaningful visual features to describe → higher confidence.
+  // Short/generic responses suggest uncertainty or lack of clear content → lower confidence.
+  const confidence = deriveConfidence(response.content)
+
   return {
     text: response.content,
-    confidence: 0.85, // VLM confidence is implicit
+    confidence,
     metadata: {
       tokenUsage: response.tokenUsage,
       source: 'video_frame',
     },
   }
+}
+
+// ── Confidence Derivation ───────────────────────────────────────────────────────
+
+/**
+ * Derive a confidence score from the VLM response content.
+ *
+ * Strategy:
+ * 1. If the response contains a JSON "confidence" field, use it (clamped 0–1).
+ * 2. Otherwise, use a heuristic based on response length and specificity:
+ *    - Very short (< 50 chars) or empty → 0.5 (generic / uncertain)
+ *    - Short (50–150 chars) → 0.6 (some detail but limited)
+ *    - Medium (150–400 chars) → 0.75 (reasonable detail)
+ *    - Long (400+ chars) → 0.85+ (detailed analysis, up to 0.95)
+ *    - Bonus: if the response contains basketball-specific keywords, add up to 0.05
+ */
+function deriveConfidence(content: string): number {
+  // Try to extract an explicit confidence field from JSON responses
+  try {
+    const jsonMatch = content.match(/\{[\s\S]*\}/)
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0])
+      if (typeof parsed.confidence === 'number' && Number.isFinite(parsed.confidence)) {
+        return Math.max(0, Math.min(1, parsed.confidence))
+      }
+    }
+  } catch {
+    // Not valid JSON or no confidence field — fall through to heuristic
+  }
+
+  // Heuristic based on length
+  const len = content.trim().length
+  let confidence: number
+
+  if (len === 0) {
+    confidence = 0.5
+  } else if (len < 50) {
+    confidence = 0.55
+  } else if (len < 150) {
+    // Map 50–149 → 0.6–0.7
+    confidence = 0.6 + ((len - 50) / 100) * 0.1
+  } else if (len < 400) {
+    // Map 150–399 → 0.7–0.85
+    confidence = 0.7 + ((len - 150) / 250) * 0.15
+  } else {
+    // Map 400+ → 0.85–0.92 (diminishing returns for very long responses)
+    confidence = 0.85 + Math.min(0.07, ((len - 400) / 600) * 0.07)
+  }
+
+  // Small bonus for basketball-specific keywords (indicates domain relevance)
+  const basketballKeywords = /\b(elbow|knee|alignment|follow.?through|release|arc|spin|posture|stance|hip|shoulder|dribble|pivot|screen)\b/i
+  if (basketballKeywords.test(content)) {
+    confidence = Math.min(0.95, confidence + 0.03)
+  }
+
+  return Math.max(0, Math.min(1, confidence))
 }
 
 // ── Error Classification ────────────────────────────────────────────────────────

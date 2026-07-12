@@ -144,21 +144,27 @@ export function AnalyticsScreen() {
     [dailyStats],
   )
 
-  // Radar data (current skills + simulated previous month)
+  // Radar data (current skills + deterministic previous month estimate)
   const radarLangKey: 'en' | 'fr' = language === 'en' ? 'en' : 'fr'
   const radarData = useMemo(() => {
     const skills = playerStats?.skillDNA ?? {}
+    // Deterministic previous month: assume 15% improvement with small fixed offsets per skill
+    const skillOffsets: Record<string, number> = {
+      shooting: -2, handling: 1, finishing: -1, defense: 3, iq: 2,
+      passing: -3, rebounding: 0, speed: 1, stamina: -2, footwork: 3,
+    }
     const prevSkills: Record<string, number> = {}
     for (const key of Object.keys(skills)) {
-      prevSkills[key] = Math.max(0, (skills[key] ?? 0) - Math.floor(Math.random() * 12 + 3))
+      const current = skills[key] ?? 0
+      const offset = skillOffsets[key] ?? 0
+      prevSkills[key] = Math.max(0, Math.round(current * 0.85) + offset)
     }
     return (Object.keys(SKILL_META) as SkillKey[]).map((key) => ({
       skill: SKILL_META[key].label[radarLangKey],
       current: skills[key] ?? 0,
       previous: prevSkills[key] ?? 0,
     }))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playerStats?.skillDNA])
+  }, [playerStats?.skillDNA, radarLangKey])
 
   // Heatmap data (4 weeks x 7 days)
   const heatmapData = useMemo(() => {

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Plus, SkipForward, Timer } from 'lucide-react'
 import type { WorkoutPhase } from './types'
 import { REST_OPTIONS, overlayVariants, countPulse, countPulseReduced } from './types'
+import { useTranslation } from '@/components/providers/language-provider'
 
 // ─── Ready Overlay (PRÊT?) ───────────────────────────────────────────────────
 
@@ -14,6 +15,7 @@ interface ReadyOverlayProps {
 }
 
 export function ReadyOverlay({ show, prefersReducedMotion }: ReadyOverlayProps) {
+  const { td } = useTranslation()
   return (
     <AnimatePresence>
       {show && (
@@ -31,7 +33,7 @@ export function ReadyOverlay({ show, prefersReducedMotion }: ReadyOverlayProps) 
             className="text-center"
           >
             <p className="text-6xl font-black text-white drop-shadow-2xl tracking-tight">
-              PRÊT?
+              {td('PRÊT ?', 'READY ?')}
             </p>
           </motion.div>
         </motion.div>
@@ -115,6 +117,7 @@ export function RestOverlay({
   onSkipRest,
   onSetRestDuration,
 }: RestOverlayProps) {
+  const { td } = useTranslation()
   return (
     <AnimatePresence>
       {phase === 'rest' && (
@@ -132,10 +135,10 @@ export function RestOverlay({
               transition={{ duration: 0.3 }}
             >
               <p className="text-white/60 text-sm font-medium uppercase tracking-widest">
-                Pause Repos
+                {td('Pause Repos', 'Rest Break')}
               </p>
               <p className="text-white/40 text-xs mt-1">
-                Série {currentSet}/{totalSets} terminée
+                {td(`Série ${currentSet}/${totalSets} terminée`, `Set ${currentSet}/${totalSets} complete`)}
               </p>
             </motion.div>
 
@@ -151,7 +154,7 @@ export function RestOverlay({
                 >
                   {restRemaining}
                 </motion.p>
-                <p className="text-white/40 text-xs text-center mt-1">secondes</p>
+                <p className="text-white/40 text-xs text-center mt-1">{td('secondes', 'seconds')}</p>
               </div>
             </div>
 
@@ -170,17 +173,17 @@ export function RestOverlay({
                 size="sm"
                 onClick={onSkipRest}
                 className="gap-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-full px-4"
-                aria-label="Passer le repos"
+                aria-label={td('Passer le repos', 'Skip rest')}
               >
                 <SkipForward className="h-4 w-4" />
-                Passer
+                {td('Passer', 'Skip')}
               </Button>
             </div>
 
             {/* Rest duration selector */}
             <div className="flex items-center justify-center gap-2">
               <Timer className="h-3 w-3 text-white/40" />
-              <span className="text-white/40 text-[11px]">Durée repos:</span>
+              <span className="text-white/40 text-[11px]">{td('Durée repos:', 'Rest duration:')}</span>
               {REST_OPTIONS.map((opt) => (
                 <button
                   key={opt}
@@ -221,6 +224,7 @@ export function PlanNextOverlay({
   prefersReducedMotion,
   getNextDrill,
 }: PlanNextOverlayProps) {
+  const { td } = useTranslation()
   const nextDrill = phase === 'plan-next' ? getNextDrill() : null
 
   return (
@@ -236,7 +240,7 @@ export function PlanNextOverlay({
           <div className="text-center space-y-4">
             {/* Progress indicator */}
             <p className="text-white/50 text-sm font-medium uppercase tracking-widest">
-              Exercice {planCurrentIndex + 1} / {planDrillQueueLength}
+              {td(`Exercice ${planCurrentIndex + 1} / ${planDrillQueueLength}`, `Exercise ${planCurrentIndex + 1} / ${planDrillQueueLength}`)}
             </p>
             <div className="w-full max-w-[200px] mx-auto h-1.5 bg-white/10 rounded-full overflow-hidden">
               <div
@@ -251,7 +255,7 @@ export function PlanNextOverlay({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <p className="text-white/40 text-xs uppercase tracking-[0.3em] mb-2">Suivant</p>
+              <p className="text-white/40 text-xs uppercase tracking-[0.3em] mb-2">{td('Suivant', 'Up Next')}</p>
               <div className="flex items-center justify-center gap-3">
                 {nextDrill ? (
                   <>

@@ -7,6 +7,25 @@
  */
 
 import { logger } from '@/lib/logger'
+import createDOMPurify from 'dompurify'
+import { JSDOM } from 'jsdom'
+
+// ── DOMPurify setup (server-side via jsdom) ──────────────────────────────────
+
+const jsdomWindow = new JSDOM('').window
+const DOMPurify = createDOMPurify(jsdomWindow as unknown as Window)
+
+const DOMPURIFY_CONFIG = {
+  ALLOWED_TAGS: [
+    'p', 'br', 'strong', 'em', 'b', 'i',
+    'ul', 'ol', 'li', 'a',
+    'span', 'div',
+    'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    'blockquote', 'pre', 'code',
+  ] as string[],
+  ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'id'] as string[],
+  FORCE_BODY: true,
+}
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -15,18 +34,6 @@ const MAX_STRING_LENGTH = 10_000
 
 /** Maximum string length for long-form content (bios, descriptions) */
 const MAX_LONG_STRING_LENGTH = 100_000
-
-/** Tags allowed in HTML sanitization */
-const ALLOWED_TAGS = new Set([
-  'p', 'br', 'strong', 'em', 'u', 'b', 'i',
-  'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-  'ul', 'ol', 'li', 'a',
-  'blockquote', 'pre', 'code',
-  'span', 'div',
-])
-
-/** Attributes allowed on elements (simple allowlist) */
-const ALLOWED_ATTRS = new Set(['href', 'target', 'rel', 'class', 'id'])
 
 /** Null byte pattern */
 const NULL_BYTE_RE = /\0/g
@@ -195,60 +202,22 @@ export function sanitizeFilename(name: string): string {
 // ── HTML Sanitization ────────────────────────────────────────────────────────
 
 /**
- * Minimal HTML sanitizer that strips all tags except a safe allowlist.
+ * Sanitize HTML content using DOMPurify with a strict allowlist.
  *
- * This is NOT a full HTML sanitizer — for rich HTML content, use a library
- * like DOMPurify. This is intended for simple cases like sanitizing
- * user-generated text that might contain accidental HTML.
+ * Only safe formatting tags and attributes are preserved.
+ * All script tags, event handlers, and dangerous URLs are stripped.
  */
 export function sanitizeHtml(content: string): string {
   if (!content || typeof content !== 'string') return ''
 
-  // Remove null bytes
-  let safe = content.replace(NULL_BYTE_RE, '').replace(CONTROL_CHARS_RE, '')
+  const sanitized = DOMPurify.sanitize(content, DOMPURIFY_CONFIG)
 
-  // Strip script tags and their contents
-  safe = safe.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-
-  // Strip style tags and their contents
-  safe = safe.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-
-  // Strip event handler attributes from all remaining tags
-  safe = safe.replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-
-  // Strip javascript: URLs
-  safe = safe.replace(/href\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, 'href="#"')
-  safe = safe.replace(/src\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, '')
-
-  // Strip all tags that aren't in the allowlist
-  safe = safe.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g, (match, tagName) => {
-    const tag = tagName.toLowerCase()
-    if (ALLOWED_TAGS.has(tag)) {
-      // Clean up the tag — remove any attributes not in the allowlist
-      return match.replace(/\s+([a-zA-Z-]+)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/g, (attrMatch, attrName) => {
-        if (ALLOWED_ATTRS.has(attrName.toLowerCase())) {
-          // For href, ensure it doesn't contain javascript:
-          if (attrName.toLowerCase() === 'href' && /javascript:/i.test(attrMatch)) {
-            return ' href="#"'
-          }
-          return attrMatch
-        }
-        return ''
-      })
-    }
-    // Tag not in allowlist — remove it entirely (keep content)
-    return ''
-  })
-
-  // Trim
-  safe = safe.trim()
-
-  // Limit length
-  if (safe.length > MAX_LONG_STRING_LENGTH) {
-    safe = safe.slice(0, MAX_LONG_STRING_LENGTH)
+  // Enforce length limit
+  if (sanitized.length > MAX_LONG_STRING_LENGTH) {
+    return sanitized.slice(0, MAX_LONG_STRING_LENGTH)
   }
 
-  return safe
+  return sanitized
 }
 
 /**

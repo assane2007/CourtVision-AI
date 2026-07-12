@@ -64,7 +64,7 @@ export function ScoreGauge({ score, size = 80 }: { score: number; size?: number 
         className="fill-foreground/40"
         style={{ fontSize: '8px', fontWeight: 600 }}
       >
-        SCORE
+        {t('workout.score')}
       </text>
     </svg>
   )

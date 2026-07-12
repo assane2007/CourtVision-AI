@@ -47,10 +47,36 @@ export async function transcribe(
 
     const durationSec = (Date.now() - startTime) / 1000
 
+    // Derive ASR confidence from the transcription result.
+    // Heuristic based on transcription completeness:
+    // - Empty or very short (< 5 chars) → low confidence (0.7), likely noise/silence
+    // - Short (5–20 chars) → moderate-low (0.75)
+    // - Medium (20–100 chars) → moderate (0.82)
+    // - Long (100+ chars) → high (0.88–0.93), indicating clear speech was captured
+    // If the ASR response itself provides a confidence field, use it (clamped 0–1).
+    let confidence = 0.9
+    const rawConfidence = transcription?.confidence
+    if (typeof rawConfidence === 'number' && Number.isFinite(rawConfidence)) {
+      confidence = Math.max(0, Math.min(1, rawConfidence))
+    } else {
+      const textLen = text.trim().length
+      if (textLen === 0) {
+        confidence = 0.7
+      } else if (textLen < 5) {
+        confidence = 0.75
+      } else if (textLen < 20) {
+        confidence = 0.78
+      } else if (textLen < 100) {
+        confidence = 0.82 + ((textLen - 20) / 80) * 0.06
+      } else {
+        confidence = 0.88 + Math.min(0.05, ((textLen - 100) / 400) * 0.05)
+      }
+    }
+
     const result: TranscriptResult = {
       text: String(text).slice(0, 2000),
       language: language ?? detectLanguage(text),
-      confidence: 0.9,
+      confidence,
       durationSec: Math.round(durationSec * 10) / 10,
     }
 

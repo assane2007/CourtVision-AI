@@ -127,6 +127,7 @@ const noBallCategories = ['defense', 'shifty', 'speed_change', 'agility', 'footw
 
 /**
  * Build a prompt for analyzing a video frame in context of a basketball drill.
+ * For shooting drills, also requests shot detection data in the same response.
  */
 export function getVideoFramePrompt(params: {
   timestampMs: number
@@ -144,13 +145,24 @@ export function getVideoFramePrompt(params: {
     unknown: { fr: 'phase indéterminée', en: 'unknown phase' },
   }
 
-  return isFR
-    ? `Frame vidéo à ${timestampMs}ms. Phase: ${phaseLabels[phase].fr}. Exercice: ${drillType}.
+  // For shooting-related drills, include shot detection fields in the response schema
+  const isShootingDrill = ['shooting', 'finishing'].includes(drillType.toLowerCase())
+
+  if (isFR) {
+    const shotFields = isShootingDrill
+      ? `\nSi un tir est visible dans cette frame, ajoute: "shotDetected": true, "shotType": "made/missed/airball/bank", "shotConfidence": 0-1, "playerPosition": {"x": 0-1, "y": 0-1}\nSinon: "shotDetected": false`
+      : ''
+    return `Frame vidéo à ${timestampMs}ms. Phase: ${phaseLabels[phase].fr}. Exercice: ${drillType}.
 Évalue la posture et le geste à cette frame. Réponds en JSON:
-{"formScore": 0-100, "feedback": "1-2 phrases", "issues": [], "phase": "${phase}"}`
-    : `Video frame at ${timestampMs}ms. Phase: ${phaseLabels[phase].en}. Drill: ${drillType}.
+{"formScore": 0-100, "feedback": "1-2 phrases", "issues": [], "phase": "${phase}"${shotFields ? `,${shotFields}` : ''}}`
+  }
+
+  const shotFields = isShootingDrill
+    ? `\nIf a shot is visible in this frame, also include: "shotDetected": true, "shotType": "made/missed/airball/bank", "shotConfidence": 0-1, "playerPosition": {"x": 0-1, "y": 0-1}\nOtherwise: "shotDetected": false`
+    : ''
+  return `Video frame at ${timestampMs}ms. Phase: ${phaseLabels[phase].en}. Drill: ${drillType}.
 Evaluate posture and form at this frame. Respond in JSON:
-{"formScore": 0-100, "feedback": "1-2 sentences", "issues": [], "phase": "${phase}"}`
+{"formScore": 0-100, "feedback": "1-2 sentences", "issues": [], "phase": "${phase}"${shotFields ? `,${shotFields}` : ''}}`
 }
 
 // ── Shot Detection Prompt ──────────────────────────────────────────────────────

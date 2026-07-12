@@ -740,14 +740,16 @@ export default function CameraWorkoutScreen() {
     try {
       const video = videoRef.current
       const captureCanvas = document.createElement('canvas')
-      captureCanvas.width = 640
-      captureCanvas.height = 480
+      const captureWidth = Math.min(640, window.innerWidth)
+      const captureHeight = Math.floor(captureWidth * 3 / 4)
+      captureCanvas.width = captureWidth
+      captureCanvas.height = captureHeight
       const captureCtx = captureCanvas.getContext('2d')
       if (!captureCtx) throw new Error('Canvas context unavailable')
 
-      captureCtx.translate(640, 0)
+      captureCtx.translate(captureWidth, 0)
       captureCtx.scale(-1, 1)
-      captureCtx.drawImage(video, 0, 0, 640, 480)
+      captureCtx.drawImage(video, 0, 0, captureWidth, captureHeight)
       captureCanvasRef.current = captureCanvas
 
       const imageBase64 = captureCanvas.toDataURL('image/jpeg', 0.8)

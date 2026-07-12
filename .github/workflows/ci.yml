@@ -7,8 +7,10 @@ on:
     branches: [main]
 
 jobs:
-  lint-and-typecheck:
+  lint:
+    name: 🔍 Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -16,13 +18,38 @@ jobs:
           bun-version: latest
       - run: bun install --frozen-lockfile
       - run: bun run lint
-      - name: TypeScript check
-        run: bunx tsc --noEmit --pretty 2>&1 || true
-        # Uses || true because there may be pre-existing type errors we don't want to block on yet
+
+  typecheck:
+    name: 🔎 Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bunx prisma generate
+      - run: bunx tsc --noEmit
+
+  test:
+    name: 🧪 Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bunx prisma generate
+      - run: bun run test
 
   build:
-    needs: lint-and-typecheck
+    name: 📦 Build
+    needs: [lint, typecheck, test]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       SKIP_ENV_VALIDATION: "1"
       NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co

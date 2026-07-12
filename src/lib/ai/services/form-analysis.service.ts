@@ -35,7 +35,7 @@ export async function analyzeForm(
   validateFormRequest(imageBase64, drillName, category)
 
   // 2. Check rate limit
-  const rateResult = checkAndTrack(playerId, 'form_check', tier)
+  const rateResult = await checkAndTrack(playerId, 'form_check', tier)
   if (!rateResult.allowed) {
     throw new AppError(
       ErrorCode.RATE_LIMITED,
@@ -167,7 +167,7 @@ function parseAndValidateFormResult(
 
   if (!parsed) return fallback
 
-  const score = clamp(Number(parsed.score) || 50, 0, 100)
+  const score = clamp(Number(parsed.score) ?? 50, 0, 100)
   const feedback = String(parsed.feedback || fallback.feedback).slice(0, 200)
   const issues = Array.isArray(parsed.issues)
     ? (parsed.issues as unknown[]).map(String).slice(0, 5)
@@ -179,11 +179,11 @@ function parseAndValidateFormResult(
   // Parse category scores if available
   const rawCategories = parsed.categories as Record<string, unknown> | undefined
   const categories: FormAnalysisCategoryScore = {
-    elbow: clamp(Number(rawCategories?.elbow) || 50, 0, 100),
-    knee: clamp(Number(rawCategories?.knee) || 50, 0, 100),
-    alignment: clamp(Number(rawCategories?.alignment) || 50, 0, 100),
-    balance: clamp(Number(rawCategories?.balance) || 50, 0, 100),
-    trunk: clamp(Number(rawCategories?.trunk) || 50, 0, 100),
+    elbow: clamp(Number(rawCategories?.elbow) ?? 50, 0, 100),
+    knee: clamp(Number(rawCategories?.knee) ?? 50, 0, 100),
+    alignment: clamp(Number(rawCategories?.alignment) ?? 50, 0, 100),
+    balance: clamp(Number(rawCategories?.balance) ?? 50, 0, 100),
+    trunk: clamp(Number(rawCategories?.trunk) ?? 50, 0, 100),
   }
 
   // Generate a follow-up recommendation based on the lowest category

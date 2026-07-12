@@ -19,11 +19,9 @@ export const POST = withAuth(async (request, session) => {
       return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 })
     }
 
-    // If Stripe is not configured, return a demo URL
+    // If Stripe is not configured, return a proper error
     if (!stripe) {
-      return NextResponse.json({
-        url: `${process.env.NEXTAUTH_URL || ''}/?demo_portal=1`,
-      })
+      return NextResponse.json({ error: 'Payments are not configured' }, { status: 503 })
     }
 
     // Fetch player
