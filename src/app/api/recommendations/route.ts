@@ -163,7 +163,7 @@ export const POST = withAuth(async (req, session) => {
     // Build data summary for LLM
     const sessionSummary = recentSessions.map(s => {
       const avg = s.drills.length > 0 ? Math.round(s.drills.reduce((a, d) => a + d.score, 0) / s.drills.length) : 0
-      const cats = s.drills.map(d => d.drill.category)
+      let cats = s.drills.map(d => d.drill.category)
       return `Session ${s.createdAt.toISOString().split('T')[0]}: ${s.drills.length} exercices, moy=${avg}, cats=[${cats.join(',')}]`
     }).join('\n')
 

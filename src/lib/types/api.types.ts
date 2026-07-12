@@ -53,7 +53,7 @@ export const ErrorCode = {
   FILE_TOO_LARGE: 'FILE_TOO_LARGE',
 } as const
 
-export type ErrorCode = typeof ErrorCode[keyof typeof ErrorCode]
+
 
 // ── HTTP Status Code Mapping ────────────────────────────────────────────────────
 

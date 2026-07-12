@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence, type Variants } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import type { Variants } from 'framer-motion';
 import {
   Crosshair,
   Dumbbell,
@@ -240,7 +241,7 @@ export default function OnboardingScreen() {
     setIsSubmitting(true)
 
     const levelMap: Record<string, number> = { beginner: 0, intermediate: 2, advanced: 4, pro: 6 }
-    const skills = generateSkills(data.level, data.goals)
+    const skills = generateSkills(data.level)
 
     try {
       await apiFetch('/api/player/onboard', {

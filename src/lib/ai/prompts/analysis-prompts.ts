@@ -98,6 +98,9 @@ ${evalRules}
 ${isFR ? 'Analyse cette image et donne ton évaluation JSON.' : 'Analyze this image and give your JSON evaluation.'}`
 }
 
+const needsBallCategories = ['shooting', 'ball_handling', 'finishing', 'pocket_ball']
+const noBallCategories = ['defense', 'shifty', 'speed_change', 'agility', 'footwork', 'conditioning']
+
 function getFormEvalRulesFR(_category: string): string {
   const baseRules = `RÈGLES D'ÉVALUATION IMPORTANTES:
 1. Vérifie d'ABORD si une balle de basketball est visible dans l'image. 2. Si AUCUNE balle n'est visible ET que l'exercice nécessite une balle (${needsBallCategories.join(', ')}), le score MAXIMUM est 20 et tu DOIS le mentionner dans "issues".
@@ -116,9 +119,6 @@ function getFormEvalRulesEN(_category: string): string {
 4. If the player is stationary, sitting, or not doing the drill, the score should be 0-15.
 5. NEVER assume there is a ball if you can't clearly see it. 6. Don't invent details you can't see in the image.`
 }
-
-const needsBallCategories = ['shooting', 'ball_handling', 'finishing', 'pocket_ball']
-const noBallCategories = ['defense', 'shifty', 'speed_change', 'agility', 'footwork', 'conditioning']
 
 // ── Video Frame Analysis Prompt ─────────────────────────────────────────────────
 

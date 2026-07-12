@@ -34,7 +34,7 @@ export async function POST(req: Request) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
         const playerId = session.metadata?.playerId
-        const tier = session.metadata?.tier || 'pro'
+        let tier = session.metadata?.tier || 'pro'
 
         if (playerId) {
           await db.player.update({

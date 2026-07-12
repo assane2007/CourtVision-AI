@@ -69,7 +69,7 @@ function getEncryptionKey(): Buffer {
  * @returns Base64-encoded encrypted string
  */
 export function encrypt(plaintext: string, customKey?: string): string {
-  const key = customKey ? Buffer.from(customKey, 'hex') : getEncryptionKey()
+  let key = customKey ? Buffer.from(customKey, 'hex') : getEncryptionKey()
   const iv = crypto.randomBytes(IV_LENGTH)
 
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv)
@@ -93,13 +93,13 @@ export function encrypt(plaintext: string, customKey?: string): string {
  */
 export function decrypt(ciphertext: string, customKey?: string): string | null {
   try {
-    const key = customKey ? Buffer.from(customKey, 'hex') : getEncryptionKey()
+    let key = customKey ? Buffer.from(customKey, 'hex') : getEncryptionKey()
     const combined = Buffer.from(ciphertext, 'base64')
 
     // Extract iv, authTag, and encrypted data
     const iv = combined.subarray(0, IV_LENGTH)
     const authTag = combined.subarray(IV_LENGTH, IV_LENGTH + AUTH_TAG_LENGTH)
-    const encrypted = combined.subarray(IV_LENGTH + AUTH_TAG_LENGTH)
+    let encrypted = combined.subarray(IV_LENGTH + AUTH_TAG_LENGTH)
 
     const decipher = crypto.createDecipheriv(ALGORITHM, key, iv)
     decipher.setAuthTag(authTag)

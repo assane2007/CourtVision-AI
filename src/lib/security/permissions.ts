@@ -15,7 +15,7 @@ export const Permission = {
   DELETE: 'delete',
   ADMIN: 'admin',
 } as const
-export type Permission = typeof Permission[keyof typeof Permission]
+
 
 export const ResourceType = {
   PLAYER_PROFILE: 'player_profile',
@@ -32,7 +32,7 @@ export const ResourceType = {
   LEADERBOARD: 'leaderboard',
   SCOUTING_REPORT: 'scouting_report',
 } as const
-export type ResourceType = typeof ResourceType[keyof typeof ResourceType]
+
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

@@ -99,13 +99,14 @@ function TabIcon({
   color: string;
   focused: boolean;
 }) {
+  const IconComponent = Icon;
   return (
     <View
       className={`items-center justify-center rounded-xl px-3 py-1.5 transition-all ${
         focused ? 'bg-orange-500/10' : ''
       }`}
     >
-      <Icon
+      <IconComponent
         size={TAB_ICON_SIZE}
         color={color}
         strokeWidth={focused ? 2.5 : 1.8}

@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { ZodSchema, ZodError } from 'zod';
+import { ZodError, ZodSchema } from 'zod';
 import { ErrorCode, type ErrorDetail } from '@/lib/types/api.types';
 
 // ── Validation Result ───────────────────────────────────────────────────────────
@@ -60,7 +60,7 @@ export function getFirstZodMessage(error: ZodError): string {
  * // result.data is typed
  */
 export async function validateBody<T>(
-  schema: ZodSchema<T>,
+  schema: ZodSchema,
   req: NextRequest | Request,
 ): Promise<ValidateResult<T>> {
   let body: unknown
@@ -118,7 +118,7 @@ export async function validateBody<T>(
  * if (!result.success) return result.response
  */
 export function validateQuery<T>(
-  schema: ZodSchema<T>,
+  schema: ZodSchema,
   req: NextRequest | Request,
 ): ValidateResult<T> {
   const url = new URL(req.url)

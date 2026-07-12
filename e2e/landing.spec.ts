@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from 'playwright/test';
  test.describe('Landing Page', () => {
   test('page loads with 200 status', async ({ page }) => {
     const response = await page.goto('/')

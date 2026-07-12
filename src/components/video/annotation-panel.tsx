@@ -104,17 +104,20 @@ export function AnnotationPanel({
                     { tool: 'arrow' as const, icon: ChevronRight, label: td('Flèche', 'Arrow') },
                     { tool: 'circle' as const, icon: CircleDot, label: td('Cercle', 'Circle') },
                     { tool: 'text' as const, icon: Type, label: td('Texte', 'Text') },
-                  ]).map(({ tool, icon: Icon, label }) => (
-                    <Button
-                      key={tool}
-                      size="sm"
-                      variant={annotationTool === tool ? 'default' : 'outline'}
-                      className="h-8 px-2.5 text-xs shrink-0 gap-1"
-                      onClick={() => setAnnotationTool(tool)}
-                    >
-                      {Icon && <Icon className="h-3.5 w-3.5" />} {label}
-                    </Button>
-                  ))}
+                  ]).map(({ tool, icon: IconComponent, label }) => {
+                    const Icon = IconComponent as React.ElementType;
+                    return (
+                      <Button
+                        key={tool}
+                        size="sm"
+                        variant={annotationTool === tool ? 'default' : 'outline'}
+                        className="h-8 px-2.5 text-xs shrink-0 gap-1"
+                        onClick={() => setAnnotationTool(tool)}
+                      >
+                        {Icon && <Icon className="h-3.5 w-3.5" />} {label}
+                      </Button>
+                    );
+                  })}
                 </div>
 
                 {/* Color picker */}

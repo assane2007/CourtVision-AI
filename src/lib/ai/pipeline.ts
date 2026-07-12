@@ -34,7 +34,7 @@ export type {
   Lang,
 } from './types'
 
-export { AiError } from './types'
+export type { AiError } from './types'
 
 // Re-export providers for direct use if needed
 export { analyzeImage, analyzeVideoFrame } from './providers/vision.provider'

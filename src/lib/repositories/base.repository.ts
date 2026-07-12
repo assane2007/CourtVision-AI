@@ -151,7 +151,7 @@ export class BaseRepository<TModel extends string, TRecord> {
     }
 
     let items: TRecord[] = await this.delegate.findMany(
-      queryArgs as Parameters<typeof this.delegate.findMany>[0],
+      queryArgs as any,
     )
 
     // Handle cursor pagination extra-item detection
@@ -207,9 +207,7 @@ export class BaseRepository<TModel extends string, TRecord> {
     if (options?.include) args.include = options.include
     if (options?.select) args.select = options.select
 
-    return this.delegate.findUnique(
-      args as Parameters<typeof this.delegate.findUnique>[0],
-    )
+    return this.delegate.findUnique(args as any)
   }
 
   // ── Find First ─────────────────────────────────────────────────────────────
@@ -230,9 +228,7 @@ export class BaseRepository<TModel extends string, TRecord> {
     if (options?.select) args.select = options.select
     if (options?.orderBy) args.orderBy = options.orderBy
 
-    return this.delegate.findFirst(
-      args as Parameters<typeof this.delegate.findFirst>[0],
-    )
+    return this.delegate.findFirst(args as any)
   }
 
   // ── Create ─────────────────────────────────────────────────────────────────
@@ -249,9 +245,7 @@ export class BaseRepository<TModel extends string, TRecord> {
       if (options?.include) args.include = options.include
       if (options?.select) args.select = options.select
 
-      return await this.delegate.create(
-        args as Parameters<typeof this.delegate.create>[0],
-      )
+      return await this.delegate.create(args as any)
     } catch (error) {
       logger.error(`Failed to create ${this.modelName}`, this.loggerContext, {
         error: error instanceof Error ? error.message : String(error),
@@ -279,9 +273,7 @@ export class BaseRepository<TModel extends string, TRecord> {
       if (options?.include) args.include = options.include
       if (options?.select) args.select = options.select
 
-      return await this.delegate.update(
-        args as Parameters<typeof this.delegate.update>[0],
-      )
+      return await this.delegate.update(args as any)
     } catch (error) {
       logger.error(`Failed to update ${this.modelName}`, this.loggerContext, {
         id,
@@ -301,9 +293,7 @@ export class BaseRepository<TModel extends string, TRecord> {
     await this.findById(id)
 
     try {
-      return await this.delegate.delete({
-        where: { id },
-      } as Parameters<typeof this.delegate.delete>[0])
+      return await this.delegate.delete({ where: { id } } as any)
     } catch (error) {
       logger.error(`Failed to delete ${this.modelName}`, this.loggerContext, {
         id,
@@ -319,9 +309,7 @@ export class BaseRepository<TModel extends string, TRecord> {
    * Count records matching a where clause.
    */
   async count(where?: any): Promise<number> {
-    return this.delegate.count({
-      where,
-    } as Parameters<typeof this.delegate.count>[0])
+    return this.delegate.count({ where } as any)
   }
 
   // ── Exists ─────────────────────────────────────────────────────────────────
