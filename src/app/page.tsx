@@ -195,7 +195,7 @@ export default function Home() {
       const screen = screenMap[type]
       if (screen) {
         selectDrill(id || '')
-        navigate(screen as Screen, id || '')
+        navigate(screen as unknown as Screen, id || '')
       }
       window.history.replaceState({}, '', '/')
     } else if (drillId) {

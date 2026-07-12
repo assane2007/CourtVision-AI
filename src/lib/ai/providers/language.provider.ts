@@ -143,7 +143,7 @@ export async function chatStream(
     maxTokens,
     model = DEFAULT_MODEL,
     responseFormat,
-    _timeoutMs = 60_000, // reserved for AbortController timeout
+    timeoutMs: _timeoutMs = 60_000, // reserved for AbortController timeout
   } = options ?? {}
 
   const trimmedMessages = trimMessagesToFitWindow(messages, model, maxTokens ?? 1024)

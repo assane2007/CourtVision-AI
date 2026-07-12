@@ -12,6 +12,7 @@ import { useTranslation } from '@/components/providers/language-provider'
 // ─── ScoreGauge ──────────────────────────────────────────────────────────────
 
 export function ScoreGauge({ score, size = 80 }: { score: number; size?: number }) {
+  const { t } = useTranslation()
   const strokeWidth = 6
   const radius = (size - strokeWidth) / 2
   const center = size / 2

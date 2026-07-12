@@ -13,7 +13,8 @@ import { JSDOM } from 'jsdom'
 // ── DOMPurify setup (server-side via jsdom) ──────────────────────────────────
 
 const jsdomWindow = new JSDOM('').window
-const DOMPurify = createDOMPurify(jsdomWindow as unknown as Window)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const DOMPurify = createDOMPurify(jsdomWindow as any)
 
 const DOMPURIFY_CONFIG = {
   ALLOWED_TAGS: [

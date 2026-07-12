@@ -46,7 +46,7 @@ export async function logAudit(entry: AuditLogEntry): Promise<void> {
       data: {
         playerId: entry.playerId,
         action: entry.action,
-        resource: entry.resource ?? null,
+        resource: entry.resource ?? '',
         resourceId: entry.resourceId ?? null,
         metadata: entry.metadata ?? {},
         ipAddress: entry.ipAddress ?? null,

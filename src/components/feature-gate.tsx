@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { useFeatureFlag, type FeatureFlag, FEATURE_LABELS } from '@/hooks/use-feature-flag'
+import { useFeatureFlag } from '@/hooks/use-feature-flag'
+import { type FeatureFlag, FEATURE_LABELS } from '@/lib/feature-flags'
 import { useTranslation } from '@/components/providers/language-provider'
 import { useAppStore } from '@/stores/app'
 import {

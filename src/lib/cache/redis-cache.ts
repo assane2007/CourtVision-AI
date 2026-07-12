@@ -101,7 +101,7 @@ export class RedisCache implements CacheAdapter, CacheAdapterWithTags {
       if (this.client.status === 'ready') return true
       if (this.client.status === 'end') return false
       await this.client.connect()
-      return this.client.status === 'ready'
+      return (this.client.status as string) === 'ready'
     } catch {
       return false
     }

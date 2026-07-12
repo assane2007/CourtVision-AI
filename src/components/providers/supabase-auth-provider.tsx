@@ -95,7 +95,7 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
           // go through this path instead.
           if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
             const name = newSession.user.user_metadata?.name || newSession.user.email?.split('@')[0] || null
-            syncPlayerToDb(newSession.user.id, newSession.user.email, name)
+            syncPlayerToDb(newSession.user.id, newSession.user.email ?? null, name)
           }
         } else {
           setSession(null)
@@ -122,7 +122,7 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
       })
 
       if (!error && data.user) {
-        await syncPlayerToDb(data.user.id, data.user.email, name)
+        await syncPlayerToDb(data.user.id, data.user.email ?? null, name)
       }
 
       return { error: error?.message || null }
@@ -143,7 +143,7 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
 
       if (!error && data.user) {
         const name = data.user.user_metadata?.name || data.user.email?.split('@')[0] || null
-        await syncPlayerToDb(data.user.id, data.user.email, name)
+        await syncPlayerToDb(data.user.id, data.user.email ?? null, name)
       }
 
       return { error: error?.message || null }

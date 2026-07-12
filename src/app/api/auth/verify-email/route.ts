@@ -73,7 +73,6 @@ export async function POST(_request: NextRequest) {
     await sendEmail({
       to: player.email,
       ...emailContent,
-      template: 'verification',
     })
 
     return NextResponse.json({

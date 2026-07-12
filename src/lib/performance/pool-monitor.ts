@@ -80,7 +80,8 @@ class PoolMonitor {
     try {
       const db = getDb()
 
-      db.$on('query', (e: Prisma.QueryEvent) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(db as any).$on('query', (e: Prisma.QueryEvent) => {
         this.onQueryStart()
         // Use setTimeout(0) to simulate the async lifecycle
         // (query event fires after query completes in Prisma)

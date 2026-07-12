@@ -29,7 +29,8 @@ export function useSupabaseRealtime(
   options: RealtimeOptions = {},
 ) {
   const { filter, onInsert, onUpdate, onDelete, enabled = true } = options
-  const channelRef = useRef<ReturnType<ReturnType<typeof import('@/lib/supabase/client').createClient>['channel']> | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const channelRef = useRef<any>(null)
 
   const cleanup = useCallback(() => {
     if (channelRef.current) {
