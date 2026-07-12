@@ -926,3 +926,30 @@ Stage Summary:
 - 4 new API route test files
 - Proper mocking patterns for database
 - Tests cover happy paths and edge cases
+
+---
+Task ID: Batch 2
+Agent: Main + 4 Subagents
+Task: World-class batch 2 — landing, onboarding, analytics, animations, dark mode, docs, settings
+
+Work Log:
+- Lint: Fixed all 4 pre-existing warnings → 0 errors, 0 warnings
+- Dark mode: Polished 14 screens (home, stats, pricing, video-library, achievements, records, plans, challenge-detail, live-workout, scouting, drill-detail, ai-tools, admin)
+- Middleware: Migrated to proxy.ts (Next.js 16 convention), eliminated deprecation warning
+- Landing page: Complete rebuild — 7 sections, gradient hero, animated SVG, testimonials, pricing teaser, footer
+- Onboarding: 4-step wizard with step indicator, progress bar, localStorage persistence, API integration
+- Analytics: New screen with 6 sections — overview cards, AreaChart, RadarChart, heatmap, timeline, AI insights
+- Animations: 10 new variants in animations.ts, applied to 5 screens (home, ai-tools, feed, leaderboard, achievements)
+- OpenAPI: GET /api/docs with 30+ endpoints, 17 tag groups, full schemas
+- Settings: Complete rewrite with 8 sections, immediate save, toast feedback
+- API tests: 4 new route test files (health, drills, achievements, leaderboard)
+- Analytics screen added to SPA registry and Screen type
+- Pushed to GitHub: commit b4e1315
+
+Stage Summary:
+- Score improvement: ~78/100 → ~88/100 estimated
+- 122 files changed, +4876/-791 lines
+- 0 lint errors, 0 warnings
+- All 42 screens registered in SPA (including new analytics)
+- World-class: landing page, onboarding, analytics dashboard
+- Remaining: native mobile (out of scope), Prisma migrations (needs DB URL)
