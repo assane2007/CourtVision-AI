@@ -4,19 +4,19 @@
  * Uses the vision provider to analyze individual frames from video recordings.
  */
 
-import { db } from '@/lib/db'
-import { logger } from '@/lib/logger'
-import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
-import { analyzeVideoFrame } from '../providers/vision.provider'
-import { getShotDetectionPrompt, getVideoFramePrompt } from '../prompts/analysis-prompts'
-import { parseJsonResponse, clamp } from '../utils'
+import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
+import { AppError, ErrorCode } from '@/lib/middleware/error-handler';
+import { analyzeVideoFrame } from '../providers/vision.provider';
+import { getShotDetectionPrompt, getVideoFramePrompt } from '../prompts/analysis-prompts';
+import { parseJsonResponse, clamp } from '../utils';
 import type {
   VideoAnalysisResult,
   ShotDetection,
   VideoFrameAnalysis,
   SubscriptionTier,
   Lang,
-} from '../types'
+} from '../types';
 
 // ── Frame Extraction & Analysis ───────────────────────────────────────────────
 
@@ -266,3 +266,10 @@ function buildOverallFeedback(
   }
   return `Sequence needs work (average score ${overallScore}/100). Focus on consistency. Best moment: ${best.timestampMs}ms.`
 }
+function videoAnalysisService(...args: any[]): any {
+  // eslint-disable-next-line no-console
+  console.warn('Placeholder: videoAnalysisService is not implemented yet.', args);
+  return null;
+}
+
+export default videoAnalysisService;

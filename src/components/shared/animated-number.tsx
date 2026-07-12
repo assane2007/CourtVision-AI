@@ -1,8 +1,7 @@
-'use client'
-
-import { useEffect, useRef, useState, useId, useMemo } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
-import { cn } from '@/lib/utils'
+'use client';
+import { useEffect, useRef, useState, useId, useMemo } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 export interface AnimatedNumberProps {
   /** Target value to animate towards */

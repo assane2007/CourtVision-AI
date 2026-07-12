@@ -1,6 +1,6 @@
-import * as Sentry from '@sentry/nextjs'
-import { NextRequest, NextResponse } from 'next/server'
-import { withAdmin } from '@/lib/with-auth'
+import * as Sentry from '@sentry/nextjs';
+import { NextRequest, NextResponse } from 'next/server';
+import { withAdmin } from '@/lib/with-auth';
 
 export const GET = withAdmin(async (_req: NextRequest, _session) => {
   const transactionId = Math.random().toString(36).substring(2, 10)

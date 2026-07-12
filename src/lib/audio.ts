@@ -93,11 +93,9 @@ export function playSound(type: SoundType): void {
       case 'rep-ding':
         playDing(engine)
         break
-      case 'half-warning':
-        playBeep(engine, 660, 0.15, 'triangle', 0.5)
+      case 'half-warning': playBeep(engine, 660, 0.15,'triangle', 0.5)
         break
-      case 'time-up':
-        playBeep(engine, 880, 0.15, 'sine', 0.6)
+      case 'time-up': playBeep(engine, 880, 0.15,'sine', 0.6)
         setTimeout(() => playBeep(engine, 1047, 0.25, 'sine', 0.7), 200)
         break
       case 'rest-pulse':

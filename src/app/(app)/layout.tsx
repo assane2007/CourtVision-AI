@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // Check auth server-side

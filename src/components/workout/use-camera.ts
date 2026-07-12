@@ -1,6 +1,5 @@
-'use client'
-
-import { useState, useRef, useCallback, type RefObject } from 'react'
+'use client';
+import { useState, useRef, useCallback, type RefObject } from 'react';
 
 export interface UseCameraReturn {
   streamRef: React.RefObject<MediaStream | null>
@@ -68,13 +67,9 @@ export function useCamera(videoRef: RefObject<HTMLVideoElement | null>): UseCame
         return
       }
       const msg =
-        err instanceof DOMException && err.name === 'NotAllowedError'
-          ? 'Caméra non autorisée. Veuillez autoriser l\'accès à la caméra dans les paramètres de votre navigateur.'
-          : err instanceof DOMException && err.name === 'NotFoundError'
-            ? 'Aucune caméra détectée sur cet appareil.'
-            : err instanceof DOMException && err.name === 'NotReadableError'
-              ? 'La caméra est déjà utilisée par une autre application.'
-              : 'Impossible d\'accéder à la caméra. Vérifiez que votre appareil dispose d\'une caméra.'
+        err instanceof DOMException && err.name === 'NotAllowedError' ?'Caméra non autorisée. Veuillez autoriser l\'accès à la caméra dans les paramètres de votre navigateur.'
+          : err instanceof DOMException && err.name === 'NotFoundError' ?'Aucune caméra détectée sur cet appareil.'
+            : err instanceof DOMException && err.name === 'NotReadableError' ?'La caméra est déjà utilisée par une autre application.' :'Impossible d\'accéder à la caméra. Vérifiez que votre appareil dispose d\'une caméra.'
       setCameraError(msg)
       throw new Error(msg)
     }

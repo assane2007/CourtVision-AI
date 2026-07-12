@@ -2,11 +2,11 @@
  * Typed dispatch helpers for Inngest events.
  *
  * Usage:
- *   import { dispatchVideoProcessing } from '@/lib/inngest/dispatch'
+ *   import { dispatchVideoProcessing } from '@/lib/inngest/dispatch';
  *   await dispatchVideoProcessing(videoId, playerId)
  */
 
-import { inngest } from './client'
+import { inngest } from './client';
 
 export async function dispatchVideoProcessing(
   videoId: string,

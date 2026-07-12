@@ -9,7 +9,7 @@
  * - Creates Sentry span for the request
  *
  * Usage:
- *   import { traceRequest } from '@/lib/monitoring/request-tracer'
+ *   import { traceRequest } from '@/lib/monitoring/request-tracer';
  *   export async function GET(req: NextRequest) {
  *     return traceRequest(req, async (traceInfo) => {
  *       // ... your handler
@@ -18,11 +18,11 @@
  *   }
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import * as Sentry from '@sentry/nextjs'
-import { requestContextStorage, logger } from './logger'
-import { trackApiCall } from './performance'
-import { recordSuccess, recordFailure } from './alerts'
+import { NextRequest, NextResponse } from 'next/server';
+ import * as Sentry from'@sentry/nextjs';
+import { requestContextStorage, logger } from './logger';
+import { trackApiCall } from './performance';
+import { recordSuccess, recordFailure } from './alerts';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 

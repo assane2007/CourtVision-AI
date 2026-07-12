@@ -1,10 +1,9 @@
-'use client'
-
-import { useState, useCallback } from 'react'
-import { useFeatureFlag } from '@/hooks/use-feature-flag'
-import { type FeatureFlag, FEATURE_LABELS } from '@/lib/feature-flags'
-import { useTranslation } from '@/components/providers/language-provider'
-import { useAppStore } from '@/stores/app'
+'use client';
+import { useState, useCallback } from 'react';
+import { useFeatureFlag } from '@/hooks/use-feature-flag';
+import { type FeatureFlag, FEATURE_LABELS } from '@/lib/feature-flags';
+import { useTranslation } from '@/components/providers/language-provider';
+import { useAppStore } from '@/stores/app';
 import {
   Dialog,
   DialogContent,
@@ -12,9 +11,9 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Crown, Check } from 'lucide-react'
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Crown, Check } from 'lucide-react';
 
 interface FeatureGateProps {
   flag: FeatureFlag

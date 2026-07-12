@@ -2,11 +2,11 @@
  * Video service — business logic for video upload, annotations, highlights, and exports.
  */
 
-import { db } from '@/lib/db'
-import { videoRepository, annotationRepository, videoExportRepository } from '@/lib/repositories/video.repository'
-import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
-import { logger } from '@/lib/logger'
-import type { VideoData, AnnotationData } from '@/lib/types/service.types'
+import { db } from '@/lib/db';
+import { videoRepository, annotationRepository, videoExportRepository } from '@/lib/repositories/video.repository';
+import { AppError, ErrorCode } from '@/lib/middleware/error-handler';
+import { logger } from '@/lib/logger';
+import type { VideoData, AnnotationData } from '@/lib/types/service.types';
 
 // ── Video CRUD ─────────────────────────────────────────────────────────────────
 

@@ -1,6 +1,5 @@
-import { test, expect } from '@playwright/test'
-
-test.describe('Authentication Screen', () => {
+import { test, expect } from '@playwright/test';
+ test.describe('Authentication Screen', () => {
   test('shows auth-related content after navigating', async ({ page }) => {
     await page.goto('/')
     await page.waitForLoadState('domcontentloaded')

@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { trackError } from '@/lib/monitoring'
-import { z } from 'zod'
+import { NextResponse } from 'next/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { trackError } from '@/lib/monitoring';
+import { z } from 'zod';
 
 const updatePasswordSchema = z.object({
   newPassword: z.string()

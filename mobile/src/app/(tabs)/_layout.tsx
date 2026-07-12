@@ -1,10 +1,11 @@
+import React from 'react';
 import { Tabs } from 'expo-router';
-import { View, Platform } from 'react-native';
+import { View } from 'react-native';
 import { Home, Dumbbell, BarChart3, MessageCircle, User } from 'lucide-react-native';
 import { useAppStore } from '@/stores/app';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import * as Haptics from 'expo-haptics';
+
 
 const TAB_ICON_SIZE = 22;
 

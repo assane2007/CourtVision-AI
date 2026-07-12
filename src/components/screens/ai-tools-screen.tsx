@@ -1,8 +1,7 @@
-'use client'
-
-import { useState, useRef, useCallback, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { cardHover, fadeUpProps } from '@/lib/animations'
+'use client';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cardHover, fadeUpProps } from '@/lib/animations';
 import {
   ArrowLeft,
   MessageCircle,
@@ -20,27 +19,27 @@ import {
   Music,
   Globe,
   RefreshCw,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Slider } from '@/components/ui/slider'
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Slider } from '@/components/ui/slider';
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useAppStore } from '@/stores/app'
-import { apiFetch } from '@/lib/utils'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { toast } from 'sonner'
-import { useTranslation } from '@/components/providers/language-provider'
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAppStore } from '@/stores/app';
+import { apiFetch } from '@/lib/utils';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { toast } from 'sonner';
+import { useTranslation } from '@/components/providers/language-provider';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -556,8 +555,7 @@ function ASRTab() {
             relative cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-all
             ${
               isDragging
-                ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30'
-                : 'border-muted-foreground/25 hover:border-orange-400 hover:bg-muted/30'
+                ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30' :'border-muted-foreground/25 hover:border-orange-400 hover:bg-muted/30'
             }
           `}
         >
@@ -774,8 +772,7 @@ function ImageGenTab() {
                 rounded-lg border-2 p-3 text-center transition-all
                 ${
                   size === s.value
-                    ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30'
-                    : 'border-muted hover:border-orange-300'
+                    ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30' :'border-muted hover:border-orange-300'
                 }
               `}
             >

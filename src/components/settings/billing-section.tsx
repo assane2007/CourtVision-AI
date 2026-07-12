@@ -1,11 +1,10 @@
-'use client'
-
-import { Flame } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { CardContent } from '@/components/ui/card'
-import { useAppStore } from '@/stores/app'
-import { useTranslation } from '@/components/providers/language-provider'
+'use client';
+import { Flame } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { CardContent } from '@/components/ui/card';
+import { useAppStore } from '@/stores/app';
+import { useTranslation } from '@/components/providers/language-provider';
 
 interface BillingSectionProps {
   subscriptionStatus: string

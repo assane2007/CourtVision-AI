@@ -1,13 +1,12 @@
-'use client'
-
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Play, Pause, RotateCcw, ChevronLeft, ChevronRight, Sparkles, Trophy, Clock, Target } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import type { WorkoutDrillResult } from '@/stores/app'
-import { getGaugeColor, getGaugeTrackColor, getStarCount } from './scoring'
-import { useTranslation } from '@/components/providers/language-provider'
+'use client';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Play, Pause, RotateCcw, ChevronLeft, ChevronRight, Sparkles, Trophy, Clock, Target } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import type { WorkoutDrillResult } from '@/stores/app';
+import { getGaugeColor, getGaugeTrackColor, getStarCount } from './scoring';
+import { useTranslation } from '@/components/providers/language-provider';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -555,8 +554,7 @@ export function ScoreReplay({ drills, totalScore, totalReps, totalDurationSec }:
                     <Trophy
                       className={`h-5 w-5 ${
                         i < getStarCount(totalScore)
-                          ? 'fill-amber-400 text-amber-400'
-                          : 'text-white/15'
+                          ? 'fill-amber-400 text-amber-400' :'text-white/15'
                       }`}
                     />
                   </motion.div>

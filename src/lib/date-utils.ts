@@ -1,8 +1,7 @@
-import type { AppLanguage } from '@/lib/i18n'
+import type { AppLanguage } from '@/lib/i18n';
 
 /**
- * Format a date using the user's preferred locale.
- * Falls back to 'fr-FR' if locale is not supported.
+ * Format a date using the user's preferred locale. * Falls back to'fr-FR' if locale is not supported.
  */
 export function formatDate(date: Date | string, lang: AppLanguage = 'fr', options?: Intl.DateTimeFormatOptions): string {
   const locale = lang === 'en' ? 'en-US' : 'fr-FR'

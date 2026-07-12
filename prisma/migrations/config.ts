@@ -13,10 +13,10 @@
  *   diff           — Show schema differences between SQLite and PostgreSQL
  */
 
-import { execSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
-import { resolve, dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { execSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const projectRoot = resolve(__dirname, '../..')
@@ -177,12 +177,9 @@ function printUsage() {
 const command = process.argv[2]?.toLowerCase()
 
 switch (command) {
-  case 'generate:sqlite':
-    generateClient('sqlite')
+  case 'generate:sqlite': generateClient('sqlite')
     break
-  case 'generate:pg':
-  case 'generate:postgres':
-    generateClient('postgres')
+  case 'generate:pg': case'generate:postgres': generateClient('postgres')
     break
   case 'validate':
     validateSchemas()

@@ -1,8 +1,7 @@
-'use client'
-
-import { useState, useMemo, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
+'use client';
+import { useState, useMemo, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Search,
@@ -23,26 +22,26 @@ import {
   Loader2,
   X,
   ChevronDown,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/components/ui/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -52,13 +51,13 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
   AlertDialogAction,
-} from '@/components/ui/alert-dialog'
-import { useNavigation } from '@/stores/navigation'
-import { apiFetch, cn, formatLocaleDate } from '@/lib/utils'
-import { toast } from 'sonner'
-import { containerVariants, itemVariants } from '@/lib/animations'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { useTranslation } from '@/components/providers/language-provider'
+} from '@/components/ui/alert-dialog';
+import { useNavigation } from '@/stores/navigation';
+import { apiFetch, cn, formatLocaleDate } from '@/lib/utils';
+import { toast } from 'sonner';
+import { containerVariants, itemVariants } from '@/lib/animations';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { useTranslation } from '@/components/providers/language-provider';
 
 interface VideoItem {
   id: string
@@ -368,9 +367,7 @@ export default function VideoLibraryScreen() {
         {!isLoading && !isError && allVideos.length > 0 && (
           <motion.div
             className={cn(
-              viewMode === 'grid'
-                ? 'grid grid-cols-2 sm:grid-cols-3 gap-3'
-                : 'flex flex-col gap-3'
+              viewMode === 'grid' ?'grid grid-cols-2 sm:grid-cols-3 gap-3' :'flex flex-col gap-3'
             )}
             variants={containerVariants}
             initial="hidden"

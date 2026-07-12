@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
-import ZAI from 'z-ai-web-dev-sdk'
-import { withAuth } from '@/lib/with-auth'
-import { rateLimit } from '@/lib/rate-limit'
-import { stripHtml } from '@/lib/security/sanitization'
+import { NextRequest, NextResponse } from 'next/server';
+ import ZAI from'z-ai-web-dev-sdk';
+import { withAuth } from '@/lib/with-auth';
+import { rateLimit } from '@/lib/rate-limit';
+import { stripHtml } from '@/lib/security/sanitization';
 
 const DEFAULT_NUM = 5
 const MAX_NUM = 10

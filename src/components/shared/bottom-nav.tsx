@@ -1,11 +1,10 @@
-'use client'
-
-import { motion } from 'framer-motion'
-import { Home, Dumbbell, BarChart3, User, MessageCircle } from 'lucide-react'
-import { useAppStore, type Screen } from '@/stores/app'
-import { hapticLight } from '@/lib/haptics'
-import { useTranslation } from '@/components/providers/language-provider'
-import type { TranslationKey } from '@/lib/i18n'
+'use client';
+import { motion } from 'framer-motion';
+import { Home, Dumbbell, BarChart3, User, MessageCircle } from 'lucide-react';
+import { useAppStore, type Screen } from '@/stores/app';
+import { hapticLight } from '@/lib/haptics';
+import { useTranslation } from '@/components/providers/language-provider';
+import type { TranslationKey } from '@/lib/i18n';
 
 const tabs: { icon: typeof Home; labelKey: TranslationKey; screen: Screen }[] = [
   { icon: Home, labelKey: 'nav.home', screen: 'home' },
@@ -34,8 +33,7 @@ export function BottomNav() {
               onClick={() => { hapticLight(); navigate(tab.screen) }}
               className={`flex flex-col items-center justify-center gap-0.5 rounded-xl min-h-[44px] min-w-[44px] px-1.5 py-1.5 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 isActive
-                  ? 'text-orange-500'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'text-orange-500' :'text-muted-foreground hover:text-foreground'
               }`}
               aria-current={isActive ? 'page' : undefined}
             >

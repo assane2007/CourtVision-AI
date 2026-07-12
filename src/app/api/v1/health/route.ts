@@ -8,10 +8,10 @@
  * are automatically accessible under /api/v1/.
  */
 
-import { NextRequest } from 'next/server'
-import { NextResponse } from 'next/server'
-import { runHealthChecks, type HealthCheckResult } from '@/lib/monitoring/health'
-import { evaluateAlerts } from '@/lib/monitoring/alerts'
+import { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import { runHealthChecks, type HealthCheckResult } from '@/lib/monitoring/health';
+import { evaluateAlerts } from '@/lib/monitoring/alerts';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl

@@ -1,17 +1,16 @@
-'use client'
-
-import { useQuery } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
-import { Trophy, ArrowLeft, Lock, Medal, RefreshCw } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useAppStore } from '@/stores/app'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { SwipeToGoBack } from '@/components/shared/swipe-back'
-import { apiFetch, cn, formatLocaleDate } from '@/lib/utils'
-import { staggerContainer, fadeInScale, cardHover } from '@/lib/animations'
-import { useTranslation } from '@/components/providers/language-provider'
+'use client';
+import { useQuery } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
+import { Trophy, ArrowLeft, Lock, Medal, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAppStore } from '@/stores/app';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { SwipeToGoBack } from '@/components/shared/swipe-back';
+import { apiFetch, cn, formatLocaleDate } from '@/lib/utils';
+import { staggerContainer, fadeInScale, cardHover } from '@/lib/animations';
+import { useTranslation } from '@/components/providers/language-provider';
 
 interface Achievement {
   type: string

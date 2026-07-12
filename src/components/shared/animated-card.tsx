@@ -1,10 +1,11 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
-import { Card } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
-import { hapticMedium } from '@/lib/haptics'
+import React, { useCallback } from 'react';
+import * as React from'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { hapticMedium } from '@/lib/haptics';
 
 export interface AnimatedCardProps extends React.ComponentProps<typeof Card> {
   /** Disable animations entirely (overrides reduced-motion preference) */

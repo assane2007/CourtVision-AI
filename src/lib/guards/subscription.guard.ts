@@ -9,13 +9,13 @@
  *   await checkSubscription(auth.playerId, 'elite')
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { toErrorResponse, AppError, ErrorCode } from '@/lib/middleware/error-handler'
-import { requireAuth } from './auth.guard'
-import type { AuthContext } from '@/lib/types/service.types'
-import type { SubscriptionTier } from '@/lib/types/api.types'
-import { logger } from '@/lib/logger'
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { toErrorResponse, AppError, ErrorCode } from '@/lib/middleware/error-handler';
+import { requireAuth } from './auth.guard';
+import type { AuthContext } from '@/lib/types/service.types';
+import type { SubscriptionTier } from '@/lib/types/api.types';
+import { logger } from '@/lib/logger';
 
 type RouteContext = { params: Promise<Record<string, string>> }
 

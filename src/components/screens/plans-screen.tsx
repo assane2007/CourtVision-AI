@@ -1,16 +1,15 @@
-'use client'
-
-import { useState, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useAppStore, type PlanDrillQueueItem } from '@/stores/app'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { CreatePlanDialog } from '@/components/dialogs/create-plan-dialog'
-import { apiFetch, formatDuration, getDrillName } from '@/lib/utils'
+'use client';
+import { useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAppStore, type PlanDrillQueueItem } from '@/stores/app';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { CreatePlanDialog } from '@/components/dialogs/create-plan-dialog';
+import { apiFetch, formatDuration, getDrillName } from '@/lib/utils';
 import {
   ClipboardList,
   Plus,
@@ -21,9 +20,9 @@ import {
   Target,
   Dumbbell,
   RefreshCw,
-} from 'lucide-react'
-import { toast } from 'sonner'
-import { useTranslation } from '@/components/providers/language-provider'
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { useTranslation } from '@/components/providers/language-provider';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,7 +32,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+} from '@/components/ui/alert-dialog';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

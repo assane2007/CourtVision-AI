@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { trackError } from '@/lib/monitoring'
-import crypto from 'crypto'
-import { withAuth } from '@/lib/with-auth'
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { trackError } from '@/lib/monitoring';
+ import crypto from'crypto';
+import { withAuth } from '@/lib/with-auth';
 
 // POST /api/videos/[id]/share — Share a video (generate link, share to feed, share to friends)
 export const POST = withAuth(async (request, session, { params }) => {

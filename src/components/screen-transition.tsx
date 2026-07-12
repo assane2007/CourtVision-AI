@@ -1,7 +1,6 @@
-'use client'
-
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { type ReactNode } from 'react'
+'use client';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { type ReactNode } from 'react';
 
 // ─── Page transition variants ──────────────────────────────────────────────────
 

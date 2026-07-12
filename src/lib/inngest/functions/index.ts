@@ -6,15 +6,15 @@
  * idempotency where possible.
  */
 
-import { inngest } from '@/lib/inngest/client'
+import { inngest } from '@/lib/inngest/client';
 import {
   processVideoAnalysis,
   processFormAnalysis,
   processNotificationSend,
   processExportGeneration,
   processInsightRefresh,
-} from '@/lib/queue/processors'
-import { logger } from '@/lib/monitoring/logger'
+} from '@/lib/queue/processors';
+import { logger } from '@/lib/monitoring/logger';
 
 // ── Shared retry configuration ────────────────────────────────────────────────
 

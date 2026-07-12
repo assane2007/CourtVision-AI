@@ -5,7 +5,7 @@
  * function degrades gracefully (logs a warning, returns failure).
  */
 
-import webpush from 'web-push'
+import webpush from 'web-push';
 
 // ── VAPID configuration ───────────────────────────────────────────────────────
 
@@ -116,9 +116,7 @@ export async function sendPushToPlayer(options: {
     } else {
       failed++
       const errMsg =
-        r.status === 'fulfilled'
-          ? r.value.error ?? 'Unknown'
-          : r.reason?.message ?? 'Unknown'
+        r.status === 'fulfilled' ? r.value.error ??'Unknown' : r.reason?.message ??'Unknown'
       errors.push(errMsg)
     }
   }

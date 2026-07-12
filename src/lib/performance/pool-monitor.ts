@@ -13,9 +13,9 @@
  * Server-only module.
  */
 
-import { getDb } from '@/lib/database'
-import { POOL_CONFIG } from '@/lib/database'
-import { Prisma } from '@prisma/client'
+import { getDb } from '@/lib/database';
+import { POOL_CONFIG } from '@/lib/database';
+import { Prisma } from '../inngest/client';
 
 // ── Types ───────────────────────────────────────────────────────────────────────
 
@@ -220,7 +220,7 @@ if (!globalForPool.courtvisionPoolMonitor) {
  * Attach to /api/health for monitoring.
  *
  * @example
- * import { poolMonitor } from '@/lib/performance/pool-monitor'
+ * import { poolMonitor } from '@/lib/performance/pool-monitor';
  *
  * // In /api/health:
  * const poolInfo = poolMonitor.getHealthInfo()

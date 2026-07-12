@@ -1,7 +1,6 @@
-'use client'
-
-import { type RefObject } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+'use client';
+import { type RefObject } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   PenTool,
   Eye,
@@ -11,17 +10,17 @@ import {
   Type,
   Check,
   Trash2,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { cn } from '@/lib/utils'
-import { formatTimeMs, ANNOTATION_COLORS } from '@/components/video/video-types'
-import type { Annotation, AnnotationTool, AnnotationColor } from '@/components/video/video-types'
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
+import { formatTimeMs, ANNOTATION_COLORS } from '@/components/video/video-types';
+import type { Annotation, AnnotationTool, AnnotationColor } from '@/components/video/video-types';
 
 interface AnnotationPanelProps {
   videoRef: RefObject<HTMLVideoElement | null>
@@ -113,7 +112,7 @@ export function AnnotationPanel({
                       className="h-8 px-2.5 text-xs shrink-0 gap-1"
                       onClick={() => setAnnotationTool(tool)}
                     >
-                      <Icon className="h-3.5 w-3.5" /> {label}
+                      {Icon && <Icon className="h-3.5 w-3.5" />} {label}
                     </Button>
                   ))}
                 </div>
@@ -172,8 +171,7 @@ export function AnnotationPanel({
                 className={cn(
                   'cursor-pointer transition-colors',
                   visibleAnnotationIds.includes(ann.id)
-                    ? 'ring-2 ring-orange-500'
-                    : 'hover:bg-muted/50'
+                    ? 'ring-2 ring-orange-500' :'hover:bg-muted/50'
                 )}
                 onClick={() => {
                   if (videoRef.current) videoRef.current.currentTime = ann.timestampMs / 1000

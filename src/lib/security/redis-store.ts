@@ -9,9 +9,9 @@
  * near-zero when REDIS_URL is not set.
  */
 
-import Redis from 'ioredis'
-import { logger } from '@/lib/logger'
-import type { Store } from './rate-limiter'
+import Redis from 'ioredis';
+import { logger } from '@/lib/logger';
+import type { Store } from './rate-limiter';
 
 export class RedisStore implements Store {
   private redis: Redis

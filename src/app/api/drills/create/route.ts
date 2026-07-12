@@ -1,10 +1,10 @@
-import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { createDrillSchema, getZodErrorMessage } from '@/lib/validations'
-import { rateLimit } from '@/lib/rate-limit'
-import { cacheInvalidatePattern } from '@/lib/cache'
-import { trackError } from '@/lib/monitoring'
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { createDrillSchema, getZodErrorMessage } from '@/lib/validations';
+import { rateLimit } from '@/lib/rate-limit';
+import { cacheInvalidatePattern } from '@/lib/cache';
+import { trackError } from '@/lib/monitoring';
 
 // POST /api/drills/create — Create a custom drill owned by the current user
 export async function POST(req: NextRequest) {

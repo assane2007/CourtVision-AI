@@ -1,4 +1,4 @@
-import { db } from '@/lib/db'
+import { db } from '@/lib/db';
 
 type AuditAction = 'login' | 'logout' | 'signup' | 'password_reset' | 'profile_update' | 'data_delete' | 'admin_action' | 'payment' | 'subscription_change' | 'settings_update'
 

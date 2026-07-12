@@ -3,9 +3,9 @@
  * Core types and interfaces for all AI operations in the basketball training platform.
  */
 
-import type { SubscriptionTier } from '@/lib/types/api.types'
+import type { SubscriptionTier } from '@/lib/types/api.types';
 export type { SubscriptionTier }
-import type { SkillKey } from '@/lib/player/iq-engine'
+import type { SkillKey } from '@/lib/player/iq-engine';
 export type { SkillKey }
 
 // ── Language ─────────────────────────────────────────────────────────────────────
@@ -165,10 +165,7 @@ export interface VideoAnalysisResult {
 
 export type AiOperationType =
   | 'form_check'
-  | 'coaching'
-  | 'predictions'
-  | 'workout_gen'
-  | 'voice'
+  | 'coaching' |'predictions' |'workout_gen' |'voice'
 
 export interface AiQuota {
   total: number

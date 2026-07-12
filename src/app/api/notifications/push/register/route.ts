@@ -1,8 +1,8 @@
-import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { trackError } from '@/lib/monitoring'
-import { pushRegisterSchema, getZodErrorMessage } from '@/lib/validations'
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { trackError } from '@/lib/monitoring';
+import { pushRegisterSchema, getZodErrorMessage } from '@/lib/validations';
 
 // POST /api/notifications/push/register
 export async function POST(request: Request) {

@@ -1,12 +1,11 @@
-'use client'
-
-import { useRef, useState, useEffect, useCallback } from 'react'
-import { motion } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { getCategoryMeta } from '@/lib/constants'
-import { cn } from '@/lib/utils'
-import { useTranslation } from '@/components/providers/language-provider'
+'use client';
+import { useRef, useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { getCategoryMeta } from '@/lib/constants';
+import { cn } from '@/lib/utils';
+import { useTranslation } from '@/components/providers/language-provider';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -208,8 +207,7 @@ export function QuickStartCarousel({ drills, onSelect }: QuickStartCarouselProps
                 className={cn(
                   'h-1.5 rounded-full transition-all duration-300',
                   i === activeIndex
-                    ? 'w-4 bg-orange-500'
-                    : 'w-1.5 bg-muted-foreground/30',
+                    ? 'w-4 bg-orange-500' :'w-1.5 bg-muted-foreground/30',
                 )}
                 aria-label={`Go to item ${i + 1}`}
               />

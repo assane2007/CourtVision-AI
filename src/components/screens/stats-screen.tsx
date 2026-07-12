@@ -1,8 +1,7 @@
-'use client'
-
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { useQuery } from '@tanstack/react-query'
+'use client';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
   Flame,
   RefreshCw,
@@ -14,10 +13,10 @@ import {
   Dumbbell,
   ChevronRight,
   ChevronDown,
-} from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -25,7 +24,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@/components/ui/table';
 import {
   BarChart,
   Bar,
@@ -34,15 +33,15 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
-} from 'recharts'
-import { useAppStore } from '@/stores/app'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { PullToRefresh } from '@/components/shared/pull-to-refresh'
-import { AnimatedNumber } from '@/components/shared/animated-number'
-import { CATEGORY_META, getCategoryLabel } from '@/lib/constants'
-import { apiFetch, formatLocaleDate, getDrillName } from '@/lib/utils'
-import { containerVariants, itemVariants } from '@/lib/animations'
-import { useTranslation } from '@/components/providers/language-provider'
+} from 'recharts';
+import { useAppStore } from '@/stores/app';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { PullToRefresh } from '@/components/shared/pull-to-refresh';
+import { AnimatedNumber } from '@/components/shared/animated-number';
+import { CATEGORY_META, getCategoryLabel } from '@/lib/constants';
+import { apiFetch, formatLocaleDate, getDrillName } from '@/lib/utils';
+import { containerVariants, itemVariants } from '@/lib/animations';
+import { useTranslation } from '@/components/providers/language-provider';
 
 // ── Day name mapping ────────────────────────────────────────────────
 const DAY_NAMES_FR = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
@@ -315,8 +314,7 @@ export function StatsScreen() {
                       cat.avgScore >= 70
                         ? 'text-emerald-600 dark:text-emerald-400'
                         : cat.avgScore >= 40
-                          ? 'text-amber-600 dark:text-amber-400'
-                          : 'text-red-500 dark:text-red-400'
+                          ? 'text-amber-600 dark:text-amber-400' :'text-red-500 dark:text-red-400'
                     return (
                       <motion.div
                         key={cat.category}
@@ -407,8 +405,7 @@ export function StatsScreen() {
                                   session.totalScore >= 7
                                     ? 'text-emerald-600 dark:text-emerald-400'
                                     : session.totalScore >= 4
-                                      ? 'text-amber-600 dark:text-amber-400'
-                                      : 'text-red-500 dark:text-red-400'
+                                      ? 'text-amber-600 dark:text-amber-400' :'text-red-500 dark:text-red-400'
                                 }>
                                   {session.totalScore.toFixed(1)}
                                 </span>

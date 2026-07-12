@@ -1,7 +1,6 @@
-'use client'
-
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { motion, AnimatePresence, type Variants } from 'framer-motion'
+'use client';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import {
   Crosshair,
   Dumbbell,
@@ -15,18 +14,18 @@ import {
   Brain,
   Flame,
   CheckCircle2,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
-import { Checkbox } from '@/components/ui/checkbox'
-import { useAppStore } from '@/stores/app'
-import { useAuth } from '@/components/providers/supabase-auth-provider'
-import { useTranslation } from '@/components/providers/language-provider'
-import { apiFetch } from '@/lib/utils'
-import { toast } from 'sonner'
-import type { TranslationKey } from '@/lib/i18n'
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useAppStore } from '@/stores/app';
+import { useAuth } from '@/components/providers/supabase-auth-provider';
+import { useTranslation } from '@/components/providers/language-provider';
+import { apiFetch } from '@/lib/utils';
+import { toast } from 'sonner';
+import type { TranslationKey } from '@/lib/i18n';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -317,8 +316,7 @@ export default function OnboardingScreen() {
                     i < data.step
                       ? 'bg-orange-500 text-white cursor-pointer'
                       : i === data.step
-                        ? 'bg-orange-500/15 text-orange-500 ring-2 ring-orange-500'
-                        : 'bg-muted text-muted-foreground'
+                        ? 'bg-orange-500/15 text-orange-500 ring-2 ring-orange-500' :'bg-muted text-muted-foreground'
                   }`}
                   whileHover={i < data.step ? { scale: 1.1 } : {}}
                   whileTap={i < data.step ? { scale: 0.95 } : {}}

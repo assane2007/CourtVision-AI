@@ -8,13 +8,13 @@
  *   an `endedAt` timestamp that have been idle for 24+ hours as abandoned.
  */
 
-import { inngest } from '@/lib/inngest/client'
-import { db } from '@/lib/db'
-import { logger } from '@/lib/monitoring/logger'
+import { inngest } from '@/lib/inngest/client';
+import { db } from '@/lib/db';
+import { logger } from '@/lib/monitoring/logger';
 
 // ── Weekly Player Report ──────────────────────────────────────────────────────
 
-export const weeklyPlayerReport = inngest.createFunction(
+export const weeklyPlayerReport = inngest?.createFunction(
   {
     id: 'weekly-player-report',
     name: 'Weekly Player Report',
@@ -23,10 +23,10 @@ export const weeklyPlayerReport = inngest.createFunction(
   { cron: '0 9 * * 1' },
   async ({ step }) => {
     const sevenDaysAgo = new Date()
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    sevenDaysAgo?.setDate(sevenDaysAgo?.getDate() - 7)
 
-    const activePlayers = await step.run('fetch-active-players', async () => {
-      const players = await db.player.findMany({
+    const activePlayers = await step?.run('fetch-active-players', async () => {
+      const players = await db?.player?.findMany({
         where: {
           lastActivityDate: { gte: sevenDaysAgo },
           accountDeleted: false,
@@ -36,34 +36,34 @@ export const weeklyPlayerReport = inngest.createFunction(
       return players
     })
 
-    if (activePlayers.length === 0) {
-      logger.info('No active players found for weekly report', 'inngest:cron')
+    if (activePlayers?.length === 0) {
+      logger?.info('No active players found for weekly report', 'inngest:cron')
       return { triggered: 0 }
     }
 
-    await step.run('trigger-insight-refreshes', async () => {
-      const promises = activePlayers.map((player) =>
-        inngest.send({
+    await step?.run('trigger-insight-refreshes', async () => {
+      const promises = activePlayers?.map((player) =>
+        inngest?.send({
           name: 'insight.refresh.requested',
-          data: { playerId: player.id, force: true },
+          data: { playerId: player?.id, force: true },
         }),
       )
       await Promise.allSettled(promises)
     })
 
-    logger.info(
+    logger?.info(
       'Triggered weekly insight refresh',
       'inngest:cron',
-      { playerCount: activePlayers.length },
+      { playerCount: activePlayers?.length },
     )
 
-    return { triggered: activePlayers.length }
+    return { triggered: activePlayers?.length };
   },
 )
 
 // ── Stale Session Cleanup ─────────────────────────────────────────────────────
 
-export const staleSessionCleanup = inngest.createFunction(
+export const staleSessionCleanup = inngest?.createFunction(
   {
     id: 'stale-session-cleanup',
     name: 'Stale Session Cleanup',
@@ -72,10 +72,10 @@ export const staleSessionCleanup = inngest.createFunction(
   { cron: '0 3 * * *' },
   async ({ step }) => {
     const twentyFourHoursAgo = new Date()
-    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24)
+    twentyFourHoursAgo?.setHours(twentyFourHoursAgo?.getHours() - 24)
 
-    const abandonedCount = await step.run('mark-stale-sessions', async () => {
-      const result = await db.workoutSession.updateMany({
+    const abandonedCount = await step?.run('mark-stale-sessions', async () => {
+      const result = await db?.workoutSession?.updateMany({
         where: {
           endedAt: null,
           startedAt: { lte: twentyFourHoursAgo },
@@ -84,10 +84,10 @@ export const staleSessionCleanup = inngest.createFunction(
           endedAt: new Date(),
         },
       })
-      return result.count
+      return result?.count;
     })
 
-    logger.info(
+    logger?.info(
       'Marked stale sessions as ended',
       'inngest:cron',
       { abandonedCount },

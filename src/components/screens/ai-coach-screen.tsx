@@ -1,16 +1,15 @@
-'use client'
-
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { useAuth } from '@/components/providers/supabase-auth-provider'
-import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, ArrowUp, Trash2, Bot, RefreshCw, Sparkles } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { useAppStore } from '@/stores/app'
-import { apiFetch } from '@/lib/utils'
-import { useTranslation } from '@/components/providers/language-provider'
-import type { TranslationKey } from '@/lib/i18n'
-import { BottomNav } from '@/components/shared/bottom-nav'
+'use client';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useAuth } from '@/components/providers/supabase-auth-provider';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, ArrowUp, Trash2, Bot, RefreshCw, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useAppStore } from '@/stores/app';
+import { apiFetch } from '@/lib/utils';
+import { useTranslation } from '@/components/providers/language-provider';
+import type { TranslationKey } from '@/lib/i18n';
+import { BottomNav } from '@/components/shared/bottom-nav';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+} from '@/components/ui/alert-dialog';
 
 // ---------------------------------------------------------------------------
 // Types

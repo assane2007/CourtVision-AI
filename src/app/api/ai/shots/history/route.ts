@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { trackError } from '@/lib/monitoring'
-import { withAuth } from '@/lib/with-auth'
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { trackError } from '@/lib/monitoring';
+import { withAuth } from '@/lib/with-auth';
 
 // GET /api/ai/shots/history — Shot detection history with analytics
 export const GET = withAuth(async (req: NextRequest, session) => {

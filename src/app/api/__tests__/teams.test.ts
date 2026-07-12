@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { GET, POST } from '../teams/route'
-import { GET as GET_BY_ID, PATCH, DELETE } from '../teams/[id]/route'
-import { createMockRequest } from './api-test-utils'
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { GET, POST } from '../teams/route';
+import { GET as GET_BY_ID, PATCH, DELETE } from '../teams/[id]/route';
+import { createMockRequest } from './api-test-utils';
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 

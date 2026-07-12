@@ -1,8 +1,7 @@
-'use client'
-
-import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import type { User, Session } from '@supabase/supabase-js'
+'use client';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import type { User, Session } from '@supabase/supabase-js';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

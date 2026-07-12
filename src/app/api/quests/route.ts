@@ -1,8 +1,8 @@
-import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { rateLimit } from '@/lib/rate-limit'
-import { trackError } from '@/lib/monitoring'
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
+import { trackError } from '@/lib/monitoring';
 
 export async function GET() {
   try {

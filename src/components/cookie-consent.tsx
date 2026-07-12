@@ -1,10 +1,9 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Button } from '@/components/ui/button'
-import { Shield } from 'lucide-react'
-import { useTranslation } from '@/components/providers/language-provider'
+'use client';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Shield } from 'lucide-react';
+import { useTranslation } from '@/components/providers/language-provider';
 
 const CONSENT_KEY = 'courtvision-cookie-consent'
 
@@ -35,7 +34,7 @@ export function CookieConsent() {
   const handleMoreInfo = async () => {
     try {
       const res = await fetch('/api/privacy')
-      const html = await res.text()
+      const html = await res?.text()
       const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
       const url = URL.createObjectURL(blob)
       window.open(url, '_blank')
@@ -73,7 +72,7 @@ export function CookieConsent() {
                 <input
                   type="checkbox"
                   checked={analyticsChecked}
-                  onChange={(e) => setAnalyticsChecked(e.target.checked)}
+                  onChange={(e) => setAnalyticsChecked(e?.target?.checked)}
                   disabled
                   className="h-3.5 w-3.5 rounded border-muted-foreground/30 text-orange-500 focus:ring-orange-500/30"
                 />
@@ -110,5 +109,5 @@ export function CookieConsent() {
         </motion.div>
       )}
     </AnimatePresence>
-  )
+  );
 }

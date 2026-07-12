@@ -3,11 +3,11 @@
  * Verifies the player has the 'admin' role.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { toErrorResponse } from '@/lib/middleware/error-handler'
-import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
-import { requireAuth } from './auth.guard'
-import type { AuthContext } from '@/lib/types/service.types'
+import { NextRequest, NextResponse } from 'next/server';
+import { toErrorResponse } from '@/lib/middleware/error-handler';
+import { AppError, ErrorCode } from '@/lib/middleware/error-handler';
+import { requireAuth } from './auth.guard';
+import type { AuthContext } from '@/lib/types/service.types';
 
 type RouteContext = { params: Promise<Record<string, string>> }
 

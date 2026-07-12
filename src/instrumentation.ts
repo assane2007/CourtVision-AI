@@ -1,4 +1,4 @@
-import * as Sentry from '@sentry/nextjs'
+import * as Sentry from '@sentry/nextjs';
 
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
@@ -15,4 +15,4 @@ export async function register() {
 
 // Automatically captures all unhandled server-side request errors
 // Requires @sentry/nextjs >= 8.28.0
-export const onRequestError = Sentry.captureRequestError
+export const onRequestError = Sentry?.captureRequestError

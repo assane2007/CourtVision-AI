@@ -1,9 +1,8 @@
-'use client'
-
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Play, Pause, RotateCcw } from 'lucide-react'
-import { cn } from '@/lib/utils'
+'use client';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Play, Pause, RotateCcw } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // ── Types ────────────────────────────────────────────────────────────
 interface Props {
@@ -247,8 +246,7 @@ export function DrillDemoAnimation({ category, className }: Props) {
 
             {/* Progress track */}
             <div
-              className="flex-1 h-1 bg-white/20 rounded-full cursor-pointer relative overflow-hidden
-                         group-hover/controls:h-1.5 transition-all duration-200"
+              className="flex-1 h-1 bg-white/20 rounded-full cursor-pointer relative overflow-hidden group-hover/controls:h-1.5 transition-all duration-200"
               onClick={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect()
                 const pct = ((e.clientX - rect.left) / rect.width) * 100

@@ -1,6 +1,5 @@
-'use client'
-
-import { motion, AnimatePresence } from 'framer-motion'
+'use client';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Play,
   Pause,
@@ -11,14 +10,14 @@ import {
   PenTool,
   ChevronLeft,
   ChevronRight,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Slider } from '@/components/ui/slider'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
-import { SPEED_OPTIONS, formatTime } from '@/components/video/video-types'
-import type { Highlight } from '@/components/video/video-types'
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { SPEED_OPTIONS, formatTime } from '@/components/video/video-types';
+import type { Highlight } from '@/components/video/video-types';
 
 interface VideoControlsProps {
   isPlaying: boolean

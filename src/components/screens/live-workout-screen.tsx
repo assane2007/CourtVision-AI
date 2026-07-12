@@ -1,27 +1,26 @@
-'use client'
-
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
+'use client';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
 import {
   ArrowLeft, Radio, Trophy, Loader2, Play, Square,
   ChevronDown, Crown,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
-} from '@/components/ui/dialog'
-import { useNavigation } from '@/stores/navigation'
-import { SwipeToGoBack } from '@/components/shared/swipe-back'
-import { apiFetch } from '@/lib/utils'
-import { containerVariants, itemVariants } from '@/lib/animations'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { useTranslation } from '@/components/providers/language-provider'
-import { toast } from 'sonner'
+} from '@/components/ui/dialog';
+import { useNavigation } from '@/stores/navigation';
+import { SwipeToGoBack } from '@/components/shared/swipe-back';
+import { apiFetch } from '@/lib/utils';
+import { containerVariants, itemVariants } from '@/lib/animations';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { useTranslation } from '@/components/providers/language-provider';
+import { toast } from 'sonner';
 
 interface LiveSessionItem {
   id: string; title: string; status: string; maxViewers: number; viewerCount: number

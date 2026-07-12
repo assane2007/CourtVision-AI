@@ -9,13 +9,9 @@
 import { Landmark, Joints, isVertical, getLandmark, midpoint, distance, LM } from "./landmarks";
 
 export type ExerciseId =
-  | "squat" | "lunge" | "pushup" | "high_knees"
-  | "calf_raises" | "plank" | "wall_sit" | "burpee"
-  | "jumping_jacks" | "shoulder_taps"
+  | "squat" | "lunge" | "pushup" | "high_knees" |"calf_raises"| "plank" | "wall_sit" | "burpee" |"jumping_jacks" | "shoulder_taps"
   // Basketball-specific exercises
-  | "defensive_slide" | "stance_hold" | "speed_change"
-  | "pocket_dribble" | "lateral_quick" | "jumping_lunge"
-  | "sprint_stance";
+  | "defensive_slide" | "stance_hold" | "speed_change" |"pocket_dribble"| "lateral_quick" | "jumping_lunge" |"sprint_stance";
 
 export interface FormFeedback {
   type: "good" | "warning" | "error";

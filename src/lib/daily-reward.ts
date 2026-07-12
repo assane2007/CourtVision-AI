@@ -1,5 +1,5 @@
-import { db } from '@/lib/db'
-import { awardXp } from '@/lib/award-xp'
+import { db } from '@/lib/db';
+import { awardXp } from '@/lib/award-xp';
 
 export async function claimDailyLoginReward(playerId: string): Promise<{ awarded: boolean; xp: number }> {
   const today = new Date().toISOString().split('T')[0]

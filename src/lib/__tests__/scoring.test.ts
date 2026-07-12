@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vitest';
 import {
   computeScore,
   analyzeForm,
@@ -7,8 +7,8 @@ import {
   getScoreColor,
   getGaugeColor,
   getStarCount,
-} from '@/components/workout/scoring'
-import type { ScoreDetail, Landmark, RepTracker } from '@/components/workout/types'
+} from '@/components/workout/scoring';
+import type { ScoreDetail, Landmark, RepTracker } from '@/components/workout/types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

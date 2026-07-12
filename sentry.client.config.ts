@@ -1,6 +1,6 @@
-import * as Sentry from '@sentry/nextjs'
+import * as Sentry from '@sentry/nextjs';
 
-Sentry.init({
+Sentry?.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
   tracesSampleRate: process.env.NODE_ENV === 'production' ? 1.0 : 0.1,
@@ -26,15 +26,15 @@ Sentry.init({
   ],
 
   integrations: [
-    Sentry.browserTracingIntegration(),
-    Sentry.replayIntegration({
+    Sentry?.browserTracingIntegration(),
+    Sentry?.replayIntegration({
       maskAllText: true,
       blockAllMedia: true,
     }),
   ],
 
   beforeBreadcrumb(breadcrumb) {
-    if (breadcrumb.category === 'console' && breadcrumb.level !== 'error') {
+    if (breadcrumb?.category === 'console' && breadcrumb?.level !== 'error') {
       return null
     }
     return breadcrumb

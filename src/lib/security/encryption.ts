@@ -10,10 +10,10 @@
  * Auto-generates a key on first run if missing (dev only).
  */
 
-import crypto from 'node:crypto'
-import bcrypt from 'bcryptjs'
-import { config } from '@/lib/config'
-import { logger } from '@/lib/logger'
+import crypto from 'node:crypto';
+ import bcrypt from'bcryptjs';
+import { config } from '@/lib/config';
+import { logger } from '@/lib/logger';
 
 // ── Key Management ───────────────────────────────────────────────────────────
 
@@ -32,17 +32,14 @@ function getEncryptionKey(): Buffer {
   if (!key) {
     if (config.env.isProd) {
       throw new Error(
-        'FATAL: ENCRYPTION_KEY is not set. Generate one with:\n' +
-        '  node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+        'FATAL: ENCRYPTION_KEY is not set. Generate one with:\n' + '  node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
       )
     }
     // Dev mode: generate a random key (changes on every server restart)
     key = crypto.randomBytes(32).toString('hex')
     console.warn(
       '[ENCRYPTION] ⚠  Auto-generated a random ENCRYPTION_KEY for this session.\n' +
-      '  This key will change EVERY TIME the server restarts.\n' +
-      '  Data encrypted with this key (e.g., 2FA secrets) will become unreadable after restart.\n' +
-      '  Set ENCRYPTION_KEY env var to a stable value for persistent encryption.'
+      '  This key will change EVERY TIME the server restarts.\n'+ '  Data encrypted with this key (e.g., 2FA secrets) will become unreadable after restart.\n'+ '  Set ENCRYPTION_KEY env var to a stable value for persistent encryption.'
     )
   }
 

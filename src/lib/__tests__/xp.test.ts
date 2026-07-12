@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vitest';
 import {
   getLevelFromXp,
   getLevelInfo,
@@ -9,7 +9,7 @@ import {
   getTotalXp,
   getLevelColor,
   getLevelBgColor,
-} from '@/lib/xp'
+} from '@/lib/xp';
 
 // ─── getLevelFromXp ───────────────────────────────────────────────────────────
 

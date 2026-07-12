@@ -11,8 +11,8 @@
  * - Log batching (flush every 5s or 100 entries)
  */
 
-import * as Sentry from '@sentry/nextjs'
-import { config } from '@/lib/config'
+import * as Sentry from '@sentry/nextjs';
+import { config } from '@/lib/config';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -112,8 +112,7 @@ function writeLog(entry: LogEntry) {
     case 'warn':
       console.warn(formatted)
       break
-    case 'error':
-    case 'fatal':
+    case 'error': case'fatal':
       console.error(formatted)
       break
   }
@@ -140,7 +139,7 @@ function getSentryTraceId(): string | undefined {
 
 // ─── Async Local Storage for request context ────────────────────────────────
 
-import { AsyncLocalStorage } from 'node:async_hooks'
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 interface RequestContext {
   requestId?: string

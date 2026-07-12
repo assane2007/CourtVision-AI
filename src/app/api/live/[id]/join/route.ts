@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { trackError } from '@/lib/monitoring'
-import { rateLimit } from '@/lib/rate-limit'
-import { withAuth } from '@/lib/with-auth'
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { trackError } from '@/lib/monitoring';
+import { rateLimit } from '@/lib/rate-limit';
+import { withAuth } from '@/lib/with-auth';
 
 export const POST = withAuth(async (request, session, { params }) => {
   try {

@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { trackError } from '@/lib/monitoring'
-import { withAuth } from '@/lib/with-auth'
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { trackError } from '@/lib/monitoring';
+import { withAuth } from '@/lib/with-auth';
 
 // GET /api/videos/compare — Get two videos for side-by-side comparison
 // Query params: videoA, videoB (video IDs)

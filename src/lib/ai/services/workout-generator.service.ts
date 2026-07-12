@@ -4,20 +4,20 @@
  * Orchestrates: data gathering → drill filtering → prompt building → LLM call → DB storage.
  */
 
-import { db } from '@/lib/db'
-import { logger } from '@/lib/logger'
-import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
-import { checkAndTrack } from '../rate-limiter'
-import { chat } from '../providers/language.provider'
-import { getWorkoutSystemPrompt, getWorkoutUserPrompt } from '../prompts/workout-prompts'
-import { parseJsonResponse, clamp } from '../utils'
+import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
+import { AppError, ErrorCode } from '@/lib/middleware/error-handler';
+import { checkAndTrack } from '../rate-limiter';
+import { chat } from '../providers/language.provider';
+import { getWorkoutSystemPrompt, getWorkoutUserPrompt } from '../prompts/workout-prompts';
+import { parseJsonResponse, clamp } from '../utils';
 import type {
   GeneratedWorkout,
   GeneratedWorkoutDrill,
   WorkoutPreferences,
   SubscriptionTier,
   Lang,
-} from '../types'
+} from '../types';
 
 // ── Main Workout Generation Pipeline ──────────────────────────────────────────
 
@@ -285,3 +285,10 @@ function sanitizeAndBuildWorkout(
     expectedOutcome: String(parsed.expectedOutcome || '').slice(0, 300),
   }
 }
+function workoutGeneratorService(...args: any[]): any {
+  // eslint-disable-next-line no-console
+  console.warn('Placeholder: workoutGeneratorService is not implemented yet.', args);
+  return null;
+}
+
+export default workoutGeneratorService;

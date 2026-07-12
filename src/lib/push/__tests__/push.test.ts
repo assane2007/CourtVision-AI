@@ -1,6 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-
-vi.mock('web-push', () => ({
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+ vi.mock('web-push', () => ({
   default: { setVapidDetails: vi.fn(), sendNotification: vi.fn() },
 }))
 

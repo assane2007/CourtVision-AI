@@ -5,10 +5,10 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { useColorScheme, View, ActivityIndicator, Text } from 'react-native';
+import { View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAppStore } from '@/stores/app';
-import { i18n } from '@/i18n';
+import { i18n } from '../../../src/lib/i18n';
 
 SplashScreen.preventAutoHideAsync();
 

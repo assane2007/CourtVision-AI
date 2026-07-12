@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server'
-import { withAuth } from '@/lib/with-auth'
-import { db } from '@/lib/db'
-import { toggleFavoriteSchema, getZodErrorMessage } from '@/lib/validations'
-import { rateLimit } from '@/lib/rate-limit'
-import { cacheInvalidatePattern } from '@/lib/cache'
-import { trackError } from '@/lib/monitoring'
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/with-auth';
+import { db } from '@/lib/db';
+import { toggleFavoriteSchema, getZodErrorMessage } from '@/lib/validations';
+import { rateLimit } from '@/lib/rate-limit';
+import { cacheInvalidatePattern } from '@/lib/cache';
+import { trackError } from '@/lib/monitoring';
 
 // POST /api/drills/favorite — Toggle favorite on/off
 export const POST = withAuth(async (req, session) => {

@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
-import ZAI from 'z-ai-web-dev-sdk'
-import { withAuth } from '@/lib/with-auth'
-import { rateLimit } from '@/lib/rate-limit'
-import { stripHtml } from '@/lib/security/sanitization'
+import { NextRequest, NextResponse } from 'next/server';
+ import ZAI from'z-ai-web-dev-sdk';
+import { withAuth } from '@/lib/with-auth';
+import { rateLimit } from '@/lib/rate-limit';
+import { stripHtml } from '@/lib/security/sanitization';
 
 const SUPPORTED_FORMATS = ['audio/wav', 'audio/mpeg', 'audio/mp3', 'audio/x-m4a', 'audio/mp4', 'audio/ogg']
 const SUPPORTED_EXTENSIONS = ['wav', 'mp3', 'm4a', 'ogg']

@@ -1,8 +1,7 @@
-'use client'
-
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Separator } from '@/components/ui/separator'
+'use client';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
 
 export function SettingsSkeleton() {
   return (
@@ -28,7 +27,6 @@ export function SettingsSkeleton() {
           <Skeleton className="h-11 w-full rounded-md" />
         </CardContent>
       </Card>
-
       {/* Appearance */}
       <Card>
         <CardHeader className="pb-2">
@@ -38,7 +36,7 @@ export function SettingsSkeleton() {
           </div>
         </CardHeader>
         <CardContent className="pt-0 space-y-4">
-          {[1, 2].map((i) => (
+          {[1, 2]?.map((i) => (
             <div key={i} className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Skeleton className="h-4 w-4 rounded" />
@@ -49,7 +47,6 @@ export function SettingsSkeleton() {
           ))}
         </CardContent>
       </Card>
-
       {/* Notifications */}
       <Card>
         <CardHeader className="pb-2">
@@ -59,7 +56,7 @@ export function SettingsSkeleton() {
           </div>
         </CardHeader>
         <CardContent className="pt-0 space-y-4">
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3, 4]?.map((i) => (
             <div key={i}>
               {i > 1 && <Separator className="my-4" />}
               <div className="flex items-center justify-between">
@@ -76,7 +73,6 @@ export function SettingsSkeleton() {
           ))}
         </CardContent>
       </Card>
-
       {/* Privacy */}
       <Card>
         <CardHeader className="pb-2">
@@ -91,7 +87,7 @@ export function SettingsSkeleton() {
             <Skeleton className="h-9 w-[140px] rounded-md" />
           </div>
           <Separator />
-          {[1, 2].map((i) => (
+          {[1, 2]?.map((i) => (
             <div key={i}>
               {i > 1 && <Separator className="my-4" />}
               <div className="flex items-center justify-between">
@@ -105,7 +101,6 @@ export function SettingsSkeleton() {
           ))}
         </CardContent>
       </Card>
-
       {/* Training */}
       <Card>
         <CardHeader className="pb-2">
@@ -130,7 +125,6 @@ export function SettingsSkeleton() {
           </div>
         </CardContent>
       </Card>
-
       {/* Data & Storage */}
       <Card>
         <CardHeader className="pb-2">
@@ -148,7 +142,6 @@ export function SettingsSkeleton() {
           </div>
         </CardContent>
       </Card>
-
       {/* Danger Zone */}
       <Card className="border-red-500/50">
         <CardHeader className="pb-2">
@@ -163,7 +156,6 @@ export function SettingsSkeleton() {
           <Skeleton className="h-11 w-full rounded-md" />
         </CardContent>
       </Card>
-
       {/* Info */}
       <Card>
         <CardContent className="pt-0 space-y-2">
@@ -172,5 +164,5 @@ export function SettingsSkeleton() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

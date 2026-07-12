@@ -1,23 +1,22 @@
-'use client'
-
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
+'use client';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
 import {
   ArrowLeft, UserPlus, UserCheck, MessageCircle,
   MapPin,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { useNavigation } from '@/stores/navigation'
-import { useAppStore } from '@/stores/app'
-import { SwipeToGoBack } from '@/components/shared/swipe-back'
-import { apiFetch } from '@/lib/utils'
-import { containerVariants, itemVariants } from '@/lib/animations'
-import { useTranslation } from '@/components/providers/language-provider'
-import { toast } from 'sonner'
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useNavigation } from '@/stores/navigation';
+import { useAppStore } from '@/stores/app';
+import { SwipeToGoBack } from '@/components/shared/swipe-back';
+import { apiFetch } from '@/lib/utils';
+import { containerVariants, itemVariants } from '@/lib/animations';
+import { useTranslation } from '@/components/providers/language-provider';
+import { toast } from 'sonner';
 
 interface PlayerProfile {
   id: string; name: string; bio: string; avatar: string | null; coverPhoto: string | null

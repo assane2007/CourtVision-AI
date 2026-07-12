@@ -3,9 +3,9 @@
  * Validates request body and query parameters, returning 400 on failure.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { ZodSchema, ZodError } from 'zod'
-import { ErrorCode, type ErrorDetail } from '@/lib/types/api.types'
+import { NextRequest, NextResponse } from 'next/server';
+import { ZodSchema, ZodError } from 'zod';
+import { ErrorCode, type ErrorDetail } from '@/lib/types/api.types';
 
 // ── Validation Result ───────────────────────────────────────────────────────────
 

@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { trackError } from '@/lib/monitoring'
-import { unlink } from 'fs/promises'
-import path from 'path'
-import { withAuth } from '@/lib/with-auth'
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { trackError } from '@/lib/monitoring';
+import { unlink } from 'fs/promises';
+ import path from'path';
+import { withAuth } from '@/lib/with-auth';
 
 // GET /api/videos/[id] — Get single video with annotations & highlights
 export const GET = withAuth(async (request, session, { params }) => {

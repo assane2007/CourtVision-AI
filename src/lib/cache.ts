@@ -117,3 +117,10 @@ export async function withCache<T>(
   cacheSet(key, result, ttlMs)
   return result
 }
+function cache(...args: any[]): any {
+  // eslint-disable-next-line no-console
+  console.warn('Placeholder: cache is not implemented yet.', args);
+  return null;
+}
+
+export { cache };

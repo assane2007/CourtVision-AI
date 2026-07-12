@@ -4,13 +4,13 @@
  * Handles language detection, format conversion, and error classification.
  */
 
-import ZAI from 'z-ai-web-dev-sdk'
-import { logger } from '@/lib/logger'
+import ZAI from 'z-ai-web-dev-sdk';
+import { logger } from '@/lib/logger';
 import {
   type TranscriptResult,
   type AudioBuffer,
   AiError,
-} from '../types'
+} from '../types';
 
 const MAX_AUDIO_BASE64_LENGTH = 10_000_000
 const MAX_TTS_INPUT_LENGTH = 500

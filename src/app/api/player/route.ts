@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { updateProfileSchema, getZodErrorMessage } from '@/lib/validations'
-import { rateLimit } from '@/lib/rate-limit'
-import { trackError } from '@/lib/monitoring'
-import { withAuth } from '@/lib/with-auth'
-
-// GET /api/player — Get current user's profile, or another player's public profile via ?id=xxx
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { updateProfileSchema, getZodErrorMessage } from '@/lib/validations';
+import { rateLimit } from '@/lib/rate-limit';
+import { trackError } from '@/lib/monitoring';
+import { withAuth } from '@/lib/with-auth';
+ // GET /api/player — Get current user's profile, or another player's public profile via ?id=xxx
 export const GET = withAuth(async (request, session) => {
   try {
 

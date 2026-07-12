@@ -5,8 +5,8 @@
  * enhanced versions for the unified AI pipeline.
  */
 
-import type { CoachingContext, Lang, SkillKey } from '../types'
-import { SKILL_META } from '@/lib/player/iq-engine'
+import type { CoachingContext, Lang, SkillKey } from '../types';
+import { SKILL_META } from '@/lib/player/iq-engine';
 
 // ── Base Coach System Prompt ───────────────────────────────────────────────────
 

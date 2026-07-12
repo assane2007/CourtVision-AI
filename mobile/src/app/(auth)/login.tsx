@@ -1,15 +1,12 @@
 import { useState } from 'react';
-import {
-  View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView,
-  Platform, Alert, ScrollView, ActivityIndicator,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,  } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Globe } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useAppStore } from '@/stores/app';
-import { authService } from '@/services';
-import { useAuthStore } from '@/stores/auth-store';
+import { authService } from '../../../../src/services';
+import { useAuthStore } from '../../stores/auth-store';
 
 export default function LoginScreen() {
   const { t, i18n } = useTranslation();

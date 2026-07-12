@@ -1,7 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { calculateStreak } from '@/lib/streak'
-
-describe('calculateStreak', () => {
+import { describe, it, expect } from 'vitest';
+import { calculateStreak } from '@/lib/streak';
+ describe('calculateStreak', () => {
   it('returns 0 for empty input', () => {
     const result = calculateStreak([])
     expect(result.current).toBe(0)

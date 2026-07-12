@@ -1,10 +1,9 @@
-'use client'
-
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useAuth } from '@/components/providers/supabase-auth-provider'
-import { motion, AnimatePresence } from 'framer-motion'
-import { toast } from 'sonner'
+'use client';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/components/providers/supabase-auth-provider';
+import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   Camera,
   Clock,
@@ -20,25 +19,25 @@ import {
   Brain,
   Target,
   Zap,
-} from 'lucide-react'
-import { ThemeToggle } from '@/components/shared/theme-toggle'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useAppStore } from '@/stores/app'
-import { cn, apiFetch, formatLocaleDate } from '@/lib/utils'
-import { containerVariants, itemVariants, staggerContainer, fadeInScale, cardHover } from '@/lib/animations'
-import { getLevelInfo, getLevelColor, getLevelBgColor } from '@/lib/xp'
-import { useTranslation } from '@/components/providers/language-provider'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { PullToRefresh } from '@/components/shared/pull-to-refresh'
+} from 'lucide-react';
+import { ThemeToggle } from '@/components/shared/theme-toggle';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAppStore } from '@/stores/app';
+import { cn, apiFetch, formatLocaleDate } from '@/lib/utils';
+import { containerVariants, itemVariants, staggerContainer, fadeInScale, cardHover } from '@/lib/animations';
+import { getLevelInfo, getLevelColor, getLevelBgColor } from '@/lib/xp';
+import { useTranslation } from '@/components/providers/language-provider';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { PullToRefresh } from '@/components/shared/pull-to-refresh';
 
 // New home components
-import { StreakCalendar } from '@/components/home/streak-calendar'
-import { WeeklyChallenge } from '@/components/home/weekly-challenge'
-import { ProgressRings } from '@/components/home/progress-rings'
-import { QuickStartCarousel } from '@/components/home/quick-start-carousel'
-import { MotivationalQuote } from '@/components/home/motivational-quote'
-import { EmptyRecommendations, EmptyActivity } from '@/components/home/empty-states'
+import { StreakCalendar } from '@/components/home/streak-calendar';
+import { WeeklyChallenge } from '@/components/home/weekly-challenge';
+import { ProgressRings } from '@/components/home/progress-rings';
+import { QuickStartCarousel } from '@/components/home/quick-start-carousel';
+import { MotivationalQuote } from '@/components/home/motivational-quote';
+import { EmptyRecommendations, EmptyActivity } from '@/components/home/empty-states';
 
 // ---------------------------------------------------------------------------
 // Types (derived from API / Prisma responses)
@@ -266,8 +265,7 @@ function SessionItem({ session }: { session: Session }) {
     session.totalScore > 80
       ? 'border-l-emerald-500'
       : session.totalScore > 50
-        ? 'border-l-amber-500'
-        : 'border-l-red-500'
+        ? 'border-l-amber-500' :'border-l-red-500'
 
   return (
     <motion.div
@@ -291,8 +289,7 @@ function SessionItem({ session }: { session: Session }) {
             session.totalScore > 80
               ? 'text-emerald-600 dark:text-emerald-400'
               : session.totalScore > 50
-                ? 'text-amber-600 dark:text-amber-400'
-                : 'text-red-600 dark:text-red-400',
+                ? 'text-amber-600 dark:text-amber-400' :'text-red-600 dark:text-red-400',
           )}
         >
           {Math.round(session.totalScore)}

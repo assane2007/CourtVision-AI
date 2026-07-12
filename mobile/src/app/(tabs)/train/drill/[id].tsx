@@ -5,8 +5,8 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft, Clock, Star, Play, Heart, Share2, Trophy } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useAppStore } from '@/stores/app';
-import { drillService } from '@/services/drill.service';
-import { CATEGORY_META } from '@/constants';
+import { drillService } from '../../../../services/drill.service';
+import { CATEGORY_META } from '../../../../../../src/lib/constants';
 
 export default function DrillDetailScreen() {
   const { t } = useTranslation();

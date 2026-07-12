@@ -1,13 +1,12 @@
-'use client'
-
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
-import { useAppStore } from '@/stores/app'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { toast } from 'sonner'
+'use client';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { useAppStore } from '@/stores/app';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 import {
   ArrowLeft,
   Camera,
@@ -15,17 +14,17 @@ import {
   AlertTriangle,
   Volume2,
   VolumeX,
-} from 'lucide-react'
-import { apiFetch, getDrillName } from '@/lib/utils'
-import { useTranslation } from '@/components/providers/language-provider'
-import type { TranslationKey } from '@/lib/i18n'
+} from 'lucide-react';
+import { apiFetch, getDrillName } from '@/lib/utils';
+import { useTranslation } from '@/components/providers/language-provider';
+import type { TranslationKey } from '@/lib/i18n';
 import {
   initAudio,
   toggleMute as toggleAudioMute,
   setMuted as setAudioMuted,
   playSound,
   destroyAudio,
-} from '@/lib/audio'
+} from '@/lib/audio';
 
 // ─── Module Imports ─────────────────────────────────────────────────────────
 
@@ -36,7 +35,7 @@ import type {
   ScoreDetail,
   AIFormCheckResult,
   Landmark,
-} from '@/components/workout/types'
+} from '@/components/workout/types';
 import {
   COUNTDOWN_SECONDS,
   COUNTDOWN_READY_MS,
@@ -45,30 +44,30 @@ import {
   DEFAULT_REST_SEC,
   FEEDBACK_MESSAGES,
   overlayVariants,
-} from '@/components/workout/types'
+} from '@/components/workout/types';
 import {
   createRepTracker,
   computeScore,
   analyzeForm,
   detectRep,
   drawSkeleton,
-} from '@/components/workout/scoring'
-import { useMediaPipe } from '@/components/workout/use-media-pipe'
-import { useCamera } from '@/components/workout/use-camera'
-import { PoseCanvas } from '@/components/workout/pose-canvas'
+} from '@/components/workout/scoring';
+import { useMediaPipe } from '@/components/workout/use-media-pipe';
+import { useCamera } from '@/components/workout/use-camera';
+import { PoseCanvas } from '@/components/workout/pose-canvas';
 import {
   CircularTimer,
   ActiveOverlay,
   CompletionOverlay,
-} from '@/components/workout/score-display'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { BottomPanel } from '@/components/workout/control-bar'
+} from '@/components/workout/score-display';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { BottomPanel } from '@/components/workout/control-bar';
 import {
   ReadyOverlay,
   CountdownOverlay,
   RestOverlay,
   PlanNextOverlay,
-} from '@/components/workout/countdown-overlay'
+} from '@/components/workout/countdown-overlay';
 
 // ─── Component ───────────────────────────────────────────────────────────────
 

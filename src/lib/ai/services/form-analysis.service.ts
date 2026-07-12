@@ -4,20 +4,20 @@
  * Orchestrates: validation → prompt building → VLM call → parsing → DB storage → stat update.
  */
 
-import { db } from '@/lib/db'
-import { logger } from '@/lib/logger'
-import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
-import { checkAndTrack } from '../rate-limiter'
-import { analyzeImage } from '../providers/vision.provider'
-import { getFormAnalysisSystemPrompt, getDrillAnalysisUserPrompt } from '../prompts/analysis-prompts'
-import { parseJsonResponse, clamp, estimateCost } from '../utils'
+import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
+import { AppError, ErrorCode } from '@/lib/middleware/error-handler';
+import { checkAndTrack } from '../rate-limiter';
+import { analyzeImage } from '../providers/vision.provider';
+import { getFormAnalysisSystemPrompt, getDrillAnalysisUserPrompt } from '../prompts/analysis-prompts';
+import { parseJsonResponse, clamp, estimateCost } from '../utils';
 import type {
   FormAnalysisRequest,
   FormAnalysisResult,
   FormAnalysisCategoryScore,
   SubscriptionTier,
-} from '../types'
-import { AiError } from '../types'
+} from '../types';
+import { AiError } from '../types';
 
 // ── Main Pipeline ──────────────────────────────────────────────────────────────
 
@@ -39,8 +39,7 @@ export async function analyzeForm(
   if (!rateResult.allowed) {
     throw new AppError(
       ErrorCode.RATE_LIMITED,
-      lang === 'fr'
-        ? `Trop d'analyses de forme. Réessayez dans ${Math.ceil(rateResult.retryAfterMs / 60000)} min.`
+      lang === 'fr' ? `Trop d'analyses de forme. Réessayez dans ${Math.ceil(rateResult.retryAfterMs / 60000)} min.`
         : `Too many form analyses. Try again in ${Math.ceil(rateResult.retryAfterMs / 60000)} min.`,
     )
   }
@@ -209,3 +208,10 @@ function parseAndValidateFormResult(
     recommendation,
   }
 }
+function formAnalysisService(...args: any[]): any {
+  // eslint-disable-next-line no-console
+  console.warn('Placeholder: formAnalysisService is not implemented yet.', args);
+  return null;
+}
+
+export default formAnalysisService;

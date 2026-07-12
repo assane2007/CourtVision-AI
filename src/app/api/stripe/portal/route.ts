@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { rateLimit } from '@/lib/rate-limit'
-import { trackError } from '@/lib/monitoring'
-import Stripe from 'stripe'
-import { withAuth } from '@/lib/with-auth'
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
+import { trackError } from '@/lib/monitoring';
+ import Stripe from'stripe';
+import { withAuth } from '@/lib/with-auth';
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-06-24.dahlia' })

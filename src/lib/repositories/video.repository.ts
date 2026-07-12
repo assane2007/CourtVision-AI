@@ -2,10 +2,10 @@
  * Video repository — data access layer for Video, VideoAnnotation, and VideoExport models.
  */
 
-import { Prisma } from '@prisma/client'
-import { db } from '@/lib/db'
-import { BaseRepository, type PrismaModelDelegate } from './base.repository'
-import type { VideoData } from '@/lib/types/service.types'
+import { Prisma } from '../inngest/client';
+import { db } from '@/lib/db';
+import { BaseRepository, type PrismaModelDelegate } from './base.repository';
+import type { VideoData } from '@/lib/types/service.types';
 
 export class VideoRepository extends BaseRepository<'Video', Prisma.Video> {
   constructor() {

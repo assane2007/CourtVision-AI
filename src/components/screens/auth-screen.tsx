@@ -1,17 +1,16 @@
-'use client'
+'use client';
+import { useState, useMemo, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Dribbble } from 'lucide-react';
 
-import { useState, useMemo, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Dribbble } from 'lucide-react'
-
-import { useAppStore } from '@/stores/app'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { useTranslation } from '@/components/providers/language-provider'
-import { LoginForm } from '@/components/auth/login-form'
-import { SignupForm } from '@/components/auth/signup-form'
-import { ResetPasswordForm } from '@/components/auth/reset-password-form'
-import { SetPasswordDialog } from '@/components/auth/set-password-dialog'
+import { useAppStore } from '@/stores/app';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { useTranslation } from '@/components/providers/language-provider';
+import { LoginForm } from '@/components/auth/login-form';
+import { SignupForm } from '@/components/auth/signup-form';
+import { ResetPasswordForm } from '@/components/auth/reset-password-form';
+import { SetPasswordDialog } from '@/components/auth/set-password-dialog';
 
 /* ── Floating basketball config ──────────────────────────────────── */
 const floatingBasketballs = [

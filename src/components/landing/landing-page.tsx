@@ -1,13 +1,12 @@
-'use client'
-
-import { useRef, useState, type FormEvent } from 'react'
-import { motion, useInView } from 'framer-motion'
-import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+'use client';
+import { useRef, useState, type FormEvent } from 'react';
+import { motion, useInView } from 'framer-motion';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Camera,
   Brain,
@@ -27,9 +26,9 @@ import {
   Instagram,
   Twitter,
   Youtube,
-} from 'lucide-react'
-import type { Screen } from '@/stores/app'
-import { useTranslation } from '@/components/providers/language-provider'
+} from 'lucide-react';
+import type { Screen } from '@/stores/app';
+import { useTranslation } from '@/components/providers/language-provider';
 
 // ── Props ───────────────────────────────────────────────────────────────────────
 

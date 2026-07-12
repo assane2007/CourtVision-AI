@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/server'
-import { rateLimit } from '@/lib/rate-limit'
-import { trackError } from '@/lib/monitoring'
-import { resetPasswordSchema, getZodErrorMessage } from '@/lib/validations'
+import { NextResponse } from 'next/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { rateLimit } from '@/lib/rate-limit';
+import { trackError } from '@/lib/monitoring';
+import { resetPasswordSchema, getZodErrorMessage } from '@/lib/validations';
 
 // POST /api/auth/reset-password
 export async function POST(request: Request) {

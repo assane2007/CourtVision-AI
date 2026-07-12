@@ -1,9 +1,9 @@
-import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
-import { trackError } from '@/lib/monitoring'
-import { sendEmail, getEmailTemplate } from '@/lib/email'
-import { rateLimit } from '@/lib/rate-limit'
-import { db } from '@/lib/db'
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { NextResponse } from 'next/server';
+import { trackError } from '@/lib/monitoring';
+import { sendEmail, getEmailTemplate } from '@/lib/email';
+import { rateLimit } from '@/lib/rate-limit';
+import { db } from '@/lib/db';
 
 const ALLOWED_TEMPLATES = ['reset_password', 'email_verification', 'invitation', 'weekly_report', 'achievement_unlocked']
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/

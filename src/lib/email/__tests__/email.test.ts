@@ -1,6 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-
-describe('email service', () => {
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+ describe('email service', () => {
   beforeEach(() => {
     vi.resetModules()
     // Ensure RESEND_API_KEY is not set

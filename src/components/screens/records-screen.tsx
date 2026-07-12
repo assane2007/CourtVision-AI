@@ -1,8 +1,7 @@
-'use client'
-
-import { useState, useMemo, useRef } from 'react'
-import { motion } from 'framer-motion'
-import { useQuery } from '@tanstack/react-query'
+'use client';
+import { useState, useMemo, useRef } from 'react';
+import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
   Trophy,
   RefreshCw,
@@ -13,18 +12,18 @@ import {
   Flame,
   TrendingUp,
   Clock,
-} from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useAppStore } from '@/stores/app'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { CATEGORIES_LIST, CATEGORY_META, getCategoryMeta } from '@/lib/constants'
-import { apiFetch, formatDuration, formatLocaleDate } from '@/lib/utils'
-import { containerVariants, itemVariants } from '@/lib/animations'
-import { useTranslation } from '@/components/providers/language-provider'
+} from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAppStore } from '@/stores/app';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { CATEGORIES_LIST, CATEGORY_META, getCategoryMeta } from '@/lib/constants';
+import { apiFetch, formatDuration, formatLocaleDate } from '@/lib/utils';
+import { containerVariants, itemVariants } from '@/lib/animations';
+import { useTranslation } from '@/components/providers/language-provider';
 
 interface DrillRecord {
   drillId: string
@@ -147,8 +146,7 @@ function TrendIndicator({ scores }: { scores: number[] }) {
     <span
       className={`inline-flex items-center gap-0.5 text-xs font-medium ${
         improved
-          ? 'text-emerald-600 dark:text-emerald-400'
-          : 'text-red-500 dark:text-red-400'
+          ? 'text-emerald-600 dark:text-emerald-400' :'text-red-500 dark:text-red-400'
       }`}
     >
       {improved ? '↑' : '↓'}{' '}
@@ -478,8 +476,7 @@ export function RecordsScreen() {
                 onClick={() => setActiveCategory(cat.key)}
                 className={`shrink-0 px-3.5 py-2.5 rounded-full text-xs font-medium transition-colors border min-h-[44px] flex items-center ${
                   activeCategory === cat.key
-                    ? 'bg-orange-500 text-white border-orange-500'
-                    : 'bg-muted/50 text-muted-foreground border-transparent hover:bg-muted'
+                    ? 'bg-orange-500 text-white border-orange-500' :'bg-muted/50 text-muted-foreground border-transparent hover:bg-muted'
                 }`}
               >
                 <span className="mr-1">{cat.icon}</span>

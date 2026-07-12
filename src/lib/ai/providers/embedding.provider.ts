@@ -13,8 +13,8 @@
  * Server-only module.
  */
 
-import ZAI from 'z-ai-web-dev-sdk'
-import { logger } from '@/lib/logger'
+import ZAI from 'z-ai-web-dev-sdk';
+import { logger } from '@/lib/logger';
 
 const VECTOR_DIM = 64
 const MAX_INPUT_CHARS = 2000
@@ -82,8 +82,7 @@ export async function generateEmbedding(text: string): Promise<number[] | null> 
       const isRetryable = err instanceof Error && (
         err.message.toLowerCase().includes('timeout') ||
         err.message.toLowerCase().includes('abort') ||
-        err.name === 'AbortError' ||
-        err.message.toLowerCase().includes('rate limit') ||
+        err.name === 'AbortError'|| err.message.toLowerCase().includes('rate limit') ||
         err.message.toLowerCase().includes('500')
       )
 

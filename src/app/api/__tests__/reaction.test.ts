@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { GET, POST } from '../reaction/route'
-import { createMockRequest } from './api-test-utils'
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { GET, POST } from '../reaction/route';
+import { createMockRequest } from './api-test-utils';
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 

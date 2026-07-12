@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test'
+import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
@@ -13,8 +13,8 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [
-    { name: 'Mobile Chrome', use: { ...devices['Pixel 7'] } },
-    { name: 'Desktop Chrome', use: { ...devices['Desktop Chrome'] } },
+    { name: 'Mobile Chrome', use: { ...devices?.['Pixel 7'] } },
+    { name: 'Desktop Chrome', use: { ...devices?.['Desktop Chrome'] } },
   ],
   webServer: {
     command: 'bun run dev',

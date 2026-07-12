@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vitest';
 import {
   t,
   translations,
@@ -8,9 +8,8 @@ import {
   detectBrowserLanguage,
   SUPPORTED_LANGUAGES,
   type TranslationKey,
-} from '@/lib/i18n'
-
-describe('t() — server-side translation function', () => {
+} from '@/lib/i18n';
+ describe('t() — server-side translation function', () => {
   it('returns French translation by default', () => {
     expect(t('nav.home')).toBe('Accueil')
   })

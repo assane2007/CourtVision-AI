@@ -8,7 +8,7 @@ import {
   LANDMARK_COLOR,
   LANDMARK_RADIUS,
   CONNECTION_WIDTH,
-} from './types'
+} from './types';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -221,8 +221,7 @@ export function detectRep(
     Math.abs(current - last)
 
   switch (category) {
-    case 'pocket_ball':
-    case 'ball_handling': {
+    case 'pocket_ball': case'ball_handling': {
       const wristY = (landmarks[15].y + landmarks[16].y) / 2
       const velocity = computeVelocity(wristY, t.lastWristY)
       t.velocityHistory.push(velocity)

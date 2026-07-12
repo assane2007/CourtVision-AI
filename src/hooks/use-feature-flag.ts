@@ -1,11 +1,10 @@
-'use client'
-
-import { useState, useEffect, useCallback } from 'react'
+'use client';
+import { useState, useEffect, useCallback } from 'react';
 import {
   type FeatureFlag,
   FEATURE_DEFAULTS,
   isFeatureEnabledClient,
-} from '@/lib/feature-flags'
+} from '@/lib/feature-flags';
 
 /**
  * In-memory cache of flags fetched from the API.

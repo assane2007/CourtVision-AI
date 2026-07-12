@@ -2,23 +2,15 @@
  * Notification service — in-app notifications and push notifications.
  */
 
-import { db } from '@/lib/db'
-import { Prisma } from '@prisma/client'
-import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
-import { logger } from '@/lib/logger'
+import { db } from '@/lib/db';
+import { Prisma } from '../inngest/client';
+import { AppError, ErrorCode } from '@/lib/middleware/error-handler';
+import { logger } from '@/lib/logger';
 
 // ── Notification Types ──────────────────────────────────────────────────────────
 
 export type NotificationType =
-  | 'achievement'
-  | 'streak'
-  | 'friend_request'
-  | 'friend_accept'
-  | 'team_invite'
-  | 'level_up'
-  | 'session_reminder'
-  | 'weekly_report'
-  | 'system'
+  | 'achievement' |'streak' |'friend_request' |'friend_accept' |'team_invite' |'level_up' |'session_reminder' |'weekly_report' |'system'
 
 export interface NotificationPayload {
   type: NotificationType

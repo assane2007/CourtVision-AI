@@ -4,7 +4,7 @@
  * Server-only module.
  */
 
-import { cache } from '.'
+import { cache } from '.';
 
 // ── Cached Get ──────────────────────────────────────────────────────────────────
 

@@ -4,15 +4,15 @@
  * Handles retry logic, token tracking, error classification, and timeouts.
  */
 
-import ZAI from 'z-ai-web-dev-sdk'
-import { logger } from '@/lib/logger'
+import ZAI from 'z-ai-web-dev-sdk';
+import { logger } from '@/lib/logger';
 import {
   type VisionRequest,
   type VisionResponse,
   type AnalysisResult,
   AiError,
-} from '../types'
-import { preprocessImage, getBackoffDelay, sleep, buildTokenUsage, estimateTokens } from '../utils'
+} from '../types';
+import { preprocessImage, getBackoffDelay, sleep, buildTokenUsage, estimateTokens } from '../utils';
 
 const DEFAULT_MODEL = 'gpt-4o'
 const DEFAULT_TIMEOUT_MS = 30_000
@@ -153,7 +153,7 @@ ${options?.responseFormat === 'json_object' ? 'Réponds UNIQUEMENT en JSON valid
   // Heuristic: longer, more detailed responses indicate the model found
   // meaningful visual features to describe → higher confidence.
   // Short/generic responses suggest uncertainty or lack of clear content → lower confidence.
-  const confidence = deriveConfidence(response.content)
+  let confidence = deriveConfidence(response.content)
 
   return {
     text: response.content,

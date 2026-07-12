@@ -1,12 +1,11 @@
-import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { rateLimit } from '@/lib/rate-limit'
-import { withCache } from '@/lib/cache'
-import { trackError } from '@/lib/monitoring'
-import { Prisma } from '@prisma/client'
-
-// GET /api/drills — List drills with cursor-based pagination (seed + user's own custom)
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
+import { withCache } from '@/lib/cache';
+import { trackError } from '@/lib/monitoring';
+import { Prisma } from '../../../lib/inngest/client';
+ // GET /api/drills — List drills with cursor-based pagination (seed + user's own custom)
 // Query params: ?cursor=xxx&limit=20&category=shooting&difficulty=beginner&search=dribble&favoritesOnly=true
 export async function GET(req: NextRequest) {
   try {

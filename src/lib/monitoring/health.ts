@@ -9,9 +9,9 @@
  *   // result.checks: { database: {...}, memory: {...}, disk: {...}, uptime: {...}, lastCron: {...} }
  */
 
-import os from 'node:os'
-import { healthCheck as dbHealthCheck } from '@/lib/database'
-import { logger } from './logger'
+import os from 'node:os';
+import { healthCheck as dbHealthCheck } from '@/lib/database';
+import { logger } from './logger';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 

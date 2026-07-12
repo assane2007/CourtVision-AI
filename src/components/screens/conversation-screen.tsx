@@ -1,18 +1,17 @@
-'use client'
-
-import { useState, useRef, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
-import { ArrowLeft, Send, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { useNavigation } from '@/stores/navigation'
-import { useAppStore } from '@/stores/app'
-import { SwipeToGoBack } from '@/components/shared/swipe-back'
-import { apiFetch } from '@/lib/utils'
-import { useTranslation } from '@/components/providers/language-provider'
-import { toast } from 'sonner'
+'use client';
+import { useState, useRef, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
+import { ArrowLeft, Send, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useNavigation } from '@/stores/navigation';
+import { useAppStore } from '@/stores/app';
+import { SwipeToGoBack } from '@/components/shared/swipe-back';
+import { apiFetch } from '@/lib/utils';
+import { useTranslation } from '@/components/providers/language-provider';
+import { toast } from 'sonner';
 
 interface MessageItem {
   id: string; content: string; type: string; metadata: Record<string, unknown>
@@ -123,8 +122,7 @@ export default function ConversationScreen() {
               >
                 <div className={`max-w-[75%] px-3.5 py-2.5 rounded-2xl ${
                   msg.isOwn
-                    ? 'bg-orange-500 text-white rounded-br-md'
-                    : 'bg-card border border-border/50 rounded-bl-md'
+                    ? 'bg-orange-500 text-white rounded-br-md' :'bg-card border border-border/50 rounded-bl-md'
                 }`}>
                   {msg.type === 'workout' && msg.metadata?.workout ? (
                     <div className="text-center">

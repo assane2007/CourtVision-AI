@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server'
-import { withAuth } from '@/lib/with-auth'
-import { db } from '@/lib/db'
-import { rateLimit } from '@/lib/rate-limit'
-import { getAchievementXp, getLevelFromXp } from '@/lib/xp'
-import { calculateStreak } from '@/lib/streak'
-import { trackError } from '@/lib/monitoring'
-import { withCache } from '@/lib/cache'
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/with-auth';
+import { db } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
+import { getAchievementXp, getLevelFromXp } from '@/lib/xp';
+import { calculateStreak } from '@/lib/streak';
+import { trackError } from '@/lib/monitoring';
+import { withCache } from '@/lib/cache';
 
 const ACHIEVEMENTS = [
   // Existing

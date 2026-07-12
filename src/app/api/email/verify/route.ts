@@ -1,10 +1,10 @@
-import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { trackError } from '@/lib/monitoring'
-import { sendEmail, getEmailTemplate } from '@/lib/email'
-import { rateLimit } from '@/lib/rate-limit'
-import crypto from 'crypto'
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { trackError } from '@/lib/monitoring';
+import { sendEmail, getEmailTemplate } from '@/lib/email';
+import { rateLimit } from '@/lib/rate-limit';
+ import crypto from'crypto';
 
 // POST /api/email/verify
 // Send a new email verification token

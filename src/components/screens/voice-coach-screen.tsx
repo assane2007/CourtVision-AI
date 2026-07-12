@@ -1,18 +1,17 @@
-'use client'
-
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+'use client';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Mic, MicOff, Send, Volume2,
   Bot, Clock,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useNavigation } from '@/stores/navigation'
-import { useTranslation } from '@/components/providers/language-provider'
-import { apiFetch } from '@/lib/utils'
-import { BottomNav } from '@/components/shared/bottom-nav'
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useNavigation } from '@/stores/navigation';
+import { useTranslation } from '@/components/providers/language-provider';
+import { apiFetch } from '@/lib/utils';
+import { BottomNav } from '@/components/shared/bottom-nav';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

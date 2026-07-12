@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vitest';
 import {
   calcWorkoutXP,
   calcWorkoutSkillGains,
@@ -8,8 +8,8 @@ import {
   applySkillGains,
   checkNewAchievements,
   calcTotalXP,
-} from '@/lib/player/xp-engine'
-import type { Player } from '@prisma/client'
+} from '@/lib/player/xp-engine';
+import type { Player } from '@/generated/prisma/client';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

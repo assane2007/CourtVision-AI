@@ -8,12 +8,12 @@
  *   await verifyOwnership(auth.playerId, 'video', videoId)
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { toErrorResponse, AppError, ErrorCode } from '@/lib/middleware/error-handler'
-import { requireAuth } from './auth.guard'
-import type { AuthContext, ResourceType } from '@/lib/types/service.types'
-import { logger } from '@/lib/logger'
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { toErrorResponse, AppError, ErrorCode } from '@/lib/middleware/error-handler';
+import { requireAuth } from './auth.guard';
+import type { AuthContext, ResourceType } from '@/lib/types/service.types';
+import { logger } from '@/lib/logger';
 
 // ── Resource → Model Mapping ───────────────────────────────────────────────────
 

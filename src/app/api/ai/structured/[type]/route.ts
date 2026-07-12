@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { rateLimit } from '@/lib/rate-limit'
-import { trackError } from '@/lib/monitoring'
-import ZAI from 'z-ai-web-dev-sdk'
-import { sanitize } from '@/lib/sanitize'
-import { withAuth } from '@/lib/with-auth'
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
+import { trackError } from '@/lib/monitoring';
+ import ZAI from'z-ai-web-dev-sdk';
+import { sanitize } from '@/lib/sanitize';
+import { withAuth } from '@/lib/with-auth';
 
 const VALID_TYPES = ['form_analysis', 'workout_plan', 'weakness_report'] as const
 type StructuredType = (typeof VALID_TYPES)[number]

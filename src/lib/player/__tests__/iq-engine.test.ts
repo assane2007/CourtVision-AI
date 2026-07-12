@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vitest';
 import {
   SKILL_KEYS,
   SKILL_META,
@@ -11,7 +11,7 @@ import {
   levelFromXP,
   projectFutureSelf,
   type SkillDNA,
-} from '@/lib/player/iq-engine'
+} from '@/lib/player/iq-engine';
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 

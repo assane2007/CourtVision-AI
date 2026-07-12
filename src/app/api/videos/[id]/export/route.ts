@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { trackError } from '@/lib/monitoring'
-import { withAuth } from '@/lib/with-auth'
-import { processExportGeneration } from '@/lib/queue/processors'
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { trackError } from '@/lib/monitoring';
+import { withAuth } from '@/lib/with-auth';
+import { processExportGeneration } from '@/lib/queue/processors';
 
 const VALID_EXPORT_TYPES = ['gif', 'mp4', 'webm', 'json', 'csv']
 const VALID_QUALITIES = ['low', 'medium', 'high']

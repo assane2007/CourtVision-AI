@@ -1,7 +1,6 @@
-'use client'
-
-import { motion } from 'framer-motion'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+'use client';
+import { motion } from 'framer-motion';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Camera,
@@ -12,21 +11,21 @@ import {
   ChevronRight,
   ListOrdered,
   RefreshCw,
-} from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useAppStore } from '@/stores/app'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { SwipeToGoBack } from '@/components/shared/swipe-back'
-import { DIFFICULTY_CONFIG } from '@/lib/constants'
-import { DrillDemoAnimation } from '@/components/drill-demo-animation'
-import { apiFetch, getDrillName } from '@/lib/utils'
-import { containerVariants, itemVariants } from '@/lib/animations'
-import { toast } from 'sonner'
-import { useTranslation } from '@/components/providers/language-provider'
+} from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAppStore } from '@/stores/app';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { SwipeToGoBack } from '@/components/shared/swipe-back';
+import { DIFFICULTY_CONFIG } from '@/lib/constants';
+import { DrillDemoAnimation } from '@/components/drill-demo-animation';
+import { apiFetch, getDrillName } from '@/lib/utils';
+import { containerVariants, itemVariants } from '@/lib/animations';
+import { toast } from 'sonner';
+import { useTranslation } from '@/components/providers/language-provider';
 
 // ── Component ───────────────────────────────────────────────────────
 export function DrillDetailScreen() {
@@ -175,8 +174,7 @@ export function DrillDetailScreen() {
               <Heart
                 className={`h-5 w-5 transition-colors ${
                   isFavorited
-                    ? 'fill-red-500 text-red-500'
-                    : 'text-muted-foreground'
+                    ? 'fill-red-500 text-red-500' :'text-muted-foreground'
                 }`}
               />
             </Button>

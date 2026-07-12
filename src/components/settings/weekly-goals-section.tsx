@@ -1,11 +1,10 @@
-'use client'
-
-import { CardContent } from '@/components/ui/card'
-import { Slider } from '@/components/ui/slider'
-import { Progress } from '@/components/ui/progress'
-import { Separator } from '@/components/ui/separator'
-import { Label } from '@/components/ui/label'
-import { useTranslation } from '@/components/providers/language-provider'
+'use client';
+import { CardContent } from '@/components/ui/card';
+import { Slider } from '@/components/ui/slider';
+import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
+import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/components/providers/language-provider';
 
 interface UserSettings {
   weeklyGoalSessions: number

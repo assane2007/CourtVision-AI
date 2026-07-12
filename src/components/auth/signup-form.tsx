@@ -1,14 +1,13 @@
-'use client'
-
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Loader2, Eye, EyeOff } from 'lucide-react'
-import { useAuth } from '@/components/providers/supabase-auth-provider'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import { useTranslation } from '@/components/providers/language-provider'
+'use client';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '@/components/providers/supabase-auth-provider';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { useTranslation } from '@/components/providers/language-provider';
 
 interface SignupFormProps {
   onSuccess: () => void

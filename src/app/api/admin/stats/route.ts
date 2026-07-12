@@ -11,9 +11,9 @@
  * - System health metrics
  */
 
-import { NextResponse } from 'next/server'
-import { withAdminGuard } from '@/lib/guards/admin.guard'
-import { db } from '@/lib/db'
+import { NextResponse } from 'next/server';
+import { withAdminGuard } from '@/lib/guards/admin.guard';
+import { db } from '@/lib/db';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

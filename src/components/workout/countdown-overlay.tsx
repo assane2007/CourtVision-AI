@@ -1,11 +1,10 @@
-'use client'
-
-import { motion, AnimatePresence } from 'framer-motion'
-import { Button } from '@/components/ui/button'
-import { Plus, SkipForward, Timer } from 'lucide-react'
-import type { WorkoutPhase } from './types'
-import { REST_OPTIONS, overlayVariants, countPulse, countPulseReduced } from './types'
-import { useTranslation } from '@/components/providers/language-provider'
+'use client';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Plus, SkipForward, Timer } from 'lucide-react';
+import type { WorkoutPhase } from './types';
+import { REST_OPTIONS, overlayVariants, countPulse, countPulseReduced } from './types';
+import { useTranslation } from '@/components/providers/language-provider';
 
 // ─── Ready Overlay (PRÊT?) ───────────────────────────────────────────────────
 
@@ -190,8 +189,7 @@ export function RestOverlay({
                   onClick={() => onSetRestDuration(opt)}
                   className={`text-[11px] px-2 py-0.5 rounded-full transition-colors ${
                     restDuration === opt
-                      ? 'bg-orange-500/30 text-orange-400 border border-orange-500/40'
-                      : 'text-white/40 hover:text-white/60 border border-white/10'
+                      ? 'bg-orange-500/30 text-orange-400 border border-orange-500/40' :'text-white/40 hover:text-white/60 border border-white/10'
                   }`}
                 >
                   {opt}s

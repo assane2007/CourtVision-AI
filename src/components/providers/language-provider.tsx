@@ -1,5 +1,4 @@
-'use client'
-
+'use client';
 import {
   createContext,
   useContext,
@@ -8,13 +7,13 @@ import {
   useCallback,
   useRef,
   type ReactNode,
-} from 'react'
+} from 'react';
 import {
   translations,
   detectBrowserLanguage,
   type AppLanguage,
   type TranslationKey,
-} from '@/lib/i18n'
+} from '@/lib/i18n';
 
 // ── Context shape ────────────────────────────────────────────────────────────
 interface LanguageContextValue {

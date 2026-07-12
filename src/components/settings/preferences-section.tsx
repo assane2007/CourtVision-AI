@@ -1,18 +1,17 @@
-'use client'
-
-import { Timer, Volume2, Vibrate, Languages } from 'lucide-react'
-import { CardContent } from '@/components/ui/card'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
+'use client';
+import { Timer, Volume2, Vibrate, Languages } from 'lucide-react';
+import { CardContent } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { useTranslation } from '@/components/providers/language-provider'
+} from '@/components/ui/select';
+import { useTranslation } from '@/components/providers/language-provider';
 
 interface UserSettings {
   weeklyGoalSessions: number

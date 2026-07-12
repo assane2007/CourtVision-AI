@@ -1,31 +1,30 @@
-'use client'
-
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
+'use client';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
 import {
   ArrowLeft, Target, Plus, Users, Loader2, Zap,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Progress } from '@/components/ui/progress'
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Progress } from '@/components/ui/progress';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
-} from '@/components/ui/dialog'
+} from '@/components/ui/dialog';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
-import { useNavigation } from '@/stores/navigation'
-import { SwipeToGoBack } from '@/components/shared/swipe-back'
-import { apiFetch } from '@/lib/utils'
-import { containerVariants, itemVariants } from '@/lib/animations'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { useTranslation } from '@/components/providers/language-provider'
-import { toast } from 'sonner'
+} from '@/components/ui/select';
+import { useNavigation } from '@/stores/navigation';
+import { SwipeToGoBack } from '@/components/shared/swipe-back';
+import { apiFetch } from '@/lib/utils';
+import { containerVariants, itemVariants } from '@/lib/animations';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { useTranslation } from '@/components/providers/language-provider';
+import { toast } from 'sonner';
 
 interface Challenge {
   id: string; title: string; description: string; type: string; targetValue: number

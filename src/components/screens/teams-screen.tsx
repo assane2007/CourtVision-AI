@@ -1,27 +1,26 @@
-'use client'
-
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
+'use client';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
 import {
   ArrowLeft, Plus, Users, ChevronRight, Loader2,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
-} from '@/components/ui/dialog'
-import { useNavigation } from '@/stores/navigation'
-import { SwipeToGoBack } from '@/components/shared/swipe-back'
-import { apiFetch } from '@/lib/utils'
-import { containerVariants, itemVariants } from '@/lib/animations'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { useTranslation } from '@/components/providers/language-provider'
-import { toast } from 'sonner'
+} from '@/components/ui/dialog';
+import { useNavigation } from '@/stores/navigation';
+import { SwipeToGoBack } from '@/components/shared/swipe-back';
+import { apiFetch } from '@/lib/utils';
+import { containerVariants, itemVariants } from '@/lib/animations';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { useTranslation } from '@/components/providers/language-provider';
+import { toast } from 'sonner';
 
 interface Team {
   id: string; name: string; description: string | null; logo: string | null

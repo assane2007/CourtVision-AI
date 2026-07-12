@@ -6,9 +6,9 @@ import { useRouter } from 'expo-router';
 import { Search, ChevronRight, Clock, Star } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useAppStore } from '@/stores/app';
-import { drillService } from '@/services/drill.service';
-import { CATEGORIES_LIST, CATEGORY_META } from '@/constants';
-import { cn } from '@/utils/cn';
+import { drillService } from '../../../services/drill.service';
+import { CATEGORIES_LIST, CATEGORY_META } from '../../../../../src/lib/constants';
+import { cn } from '../../../utils/cn';
 
 function DifficultyBadge({ difficulty }: { difficulty: string }) {
   const colors: Record<string, string> = {
@@ -68,8 +68,7 @@ export default function TrainScreen() {
             className={cn(
               'px-4 py-2 rounded-full border items-center',
               selectedCategory === cat.key
-                ? 'border-orange-500 bg-orange-500'
-                : 'border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900'
+                ? 'border-orange-500 bg-orange-500' :'border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900'
             )}
           >
             <Text className={cn(

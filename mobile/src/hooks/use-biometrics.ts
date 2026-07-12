@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import * as LocalAuthentication from 'expo-local-authentication';
-import { Platform } from 'react-native';
+
 
 export function useBiometrics() {
   const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);

@@ -6,8 +6,8 @@
  * - withSecurityHeaders(handler) → wraps a route handler to add headers
  */
 
-import { NextResponse } from 'next/server'
-import { config } from '@/lib/config'
+import { NextResponse } from 'next/server';
+import { config } from '@/lib/config';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -24,9 +24,7 @@ export function securityHeaders(): Record<string, string> {
     'X-Content-Type-Options': 'nosniff',
 
     // Prevent clickjacking
-    'X-Frame-Options': 'SAMEORIGIN',
-
-    // Legacy XSS protection (older browsers)
+// Legacy XSS protection (older browsers)
     'X-XSS-Protection': '1; mode=block',
 
     // Control referrer information
@@ -44,8 +42,7 @@ export function securityHeaders(): Record<string, string> {
 
     // API versioning
     'X-API-Version': 'v1',
-    'X-API-Deprecated': 'false',
-  }
+    'X-API-Deprecated': 'false'}
 
   // HSTS — only in production with HTTPS
   if (config.env.isProd) {
@@ -64,8 +61,7 @@ export function securityHeaders(): Record<string, string> {
       "media-src 'self' blob:",
       "frame-ancestors 'self'",
       "base-uri 'self'",
-      "form-action 'self'",
-    ].join('; ')
+      "form-action 'self'"].join('; ')
   }
 
   return headers
@@ -117,8 +113,7 @@ export function withSecurityHeaders(handler: HandlerFn): HandlerFn {
       const origin = req.headers.get('origin') || undefined
       const headers = {
         ...securityHeaders(),
-        ...corsHeaders(origin),
-      }
+        ...corsHeaders(origin)}
       return new NextResponse(null, { status: 204, headers })
     }
 
@@ -142,7 +137,6 @@ export function withSecurityHeaders(handler: HandlerFn): HandlerFn {
     return new NextResponse(response.body, {
       status: response.status,
       statusText: response.statusText,
-      headers: newHeaders,
-    })
+      headers: newHeaders})
   }
 }

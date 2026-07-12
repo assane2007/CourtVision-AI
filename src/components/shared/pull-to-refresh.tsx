@@ -1,5 +1,4 @@
-'use client'
-
+'use client';
 import {
   useRef,
   useState,
@@ -7,11 +6,11 @@ import {
   useEffect,
   type ReactNode,
   type TouchEvent as ReactTouchEvent,
-} from 'react'
-import { useQueryClient } from '@tanstack/react-query'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
-import { hapticSuccess } from '@/lib/haptics'
-import { cn } from '@/lib/utils'
+} from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { hapticSuccess } from '@/lib/haptics';
+import { cn } from '@/lib/utils';
 
 export interface PullToRefreshProps {
   /** Unique query key prefix to invalidate on refresh */

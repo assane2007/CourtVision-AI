@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { DELETE, PATCH } from '../account/route'
-import { createMockRequest } from './api-test-utils'
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { DELETE, PATCH } from '../account/route';
+import { createMockRequest } from './api-test-utils';
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 

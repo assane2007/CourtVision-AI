@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { createSessionSchema, getZodErrorMessage } from '@/lib/validations'
-import { rateLimit } from '@/lib/rate-limit'
-import { cacheInvalidatePattern } from '@/lib/cache'
-import { trackError } from '@/lib/monitoring'
-import { awardXp } from '@/lib/award-xp'
-import { calculateWorkoutXp, calculateStreakXp } from '@/lib/xp'
-import { calculateStreak } from '@/lib/streak'
-import { withAuth } from '@/lib/with-auth'
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { createSessionSchema, getZodErrorMessage } from '@/lib/validations';
+import { rateLimit } from '@/lib/rate-limit';
+import { cacheInvalidatePattern } from '@/lib/cache';
+import { trackError } from '@/lib/monitoring';
+import { awardXp } from '@/lib/award-xp';
+import { calculateWorkoutXp, calculateStreakXp } from '@/lib/xp';
+import { calculateStreak } from '@/lib/streak';
+import { withAuth } from '@/lib/with-auth';
 
 // POST /api/sessions — Create a new workout session with drill results
 // XP is awarded SERVER-SIDE based on validated drill scores.

@@ -1,6 +1,5 @@
-import { test, expect } from '@playwright/test'
-
-test.describe('API Health', () => {
+import { test, expect } from '@playwright/test';
+ test.describe('API Health', () => {
   test('GET /api/health returns 200 with status', async ({ request }) => {
     const res = await request.get('/api/health')
     expect(res.status()).toBe(200)

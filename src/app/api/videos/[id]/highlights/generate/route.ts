@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import ZAI from 'z-ai-web-dev-sdk'
-import { trackError } from '@/lib/monitoring'
-import { withAuth } from '@/lib/with-auth'
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+ import ZAI from'z-ai-web-dev-sdk';
+import { trackError } from '@/lib/monitoring';
+import { withAuth } from '@/lib/with-auth';
 
 // POST /api/videos/[id]/highlights/generate — AI-powered highlight generation
 // Uses z-ai-web-dev-sdk LLM to analyze video metadata and session data

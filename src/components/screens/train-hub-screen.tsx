@@ -1,12 +1,11 @@
-'use client'
-
-import { useState, useMemo, useCallback } from 'react'
-import { useAppStore } from '@/stores/app'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+'use client';
+import { useState, useMemo, useCallback } from 'react';
+import { useAppStore } from '@/stores/app';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -15,25 +14,25 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Separator } from '@/components/ui/separator'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { apiFetch, getDrillName } from '@/lib/utils'
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { apiFetch, getDrillName } from '@/lib/utils';
 import {
   CATEGORIES_LIST,
   DIFFICULTIES,
   DIFFICULTY_BADGE_MAP,
   getCategoryLabel,
-} from '@/lib/constants'
+} from '@/lib/constants';
 import {
   Search,
   Heart,
@@ -44,9 +43,9 @@ import {
   RefreshCw,
   Loader2,
   X,
-} from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useTranslation } from '@/components/providers/language-provider'
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from '@/components/providers/language-provider';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -609,8 +608,7 @@ export default function TrainHubScreen() {
             size="icon"
             className={`h-10 w-10 rounded-full shrink-0 transition-colors ${
               showFavoritesOnly
-                ? 'bg-orange-500 hover:bg-orange-600 border-orange-500 text-white'
-                : ''
+                ? 'bg-orange-500 hover:bg-orange-600 border-orange-500 text-white' :''
             }`}
             onClick={() => setShowFavoritesOnly((v) => !v)}
             aria-label={t('train.filterFavorites')}
@@ -687,7 +685,7 @@ export default function TrainHubScreen() {
           <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-1 px-1">
             {CATEGORIES_LIST.map((cat) => {
               const isActive = activeCategory === cat.key
-              const count =
+              let count =
                 cat.key === 'all'
                   ? drills.length
                   : drillCountsByCategory[cat.key] ?? 0
@@ -822,8 +820,7 @@ export default function TrainHubScreen() {
                         <Heart
                           className={`h-4 w-4 transition-colors duration-200 ${
                             isFav
-                              ? 'fill-orange-500 text-orange-500'
-                              : 'text-muted-foreground'
+                              ? 'fill-orange-500 text-orange-500' :'text-muted-foreground'
                           }`}
                         />
                       </button>

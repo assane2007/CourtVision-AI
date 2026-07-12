@@ -1,18 +1,17 @@
-'use client'
-
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { toast } from 'sonner'
-import { Check, X, Crown, Zap, Star, ArrowLeft, Loader2, CreditCard, Quote } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { useAppStore } from '@/stores/app'
-import { containerVariants, itemVariants } from '@/lib/animations'
-import { cn } from '@/lib/utils'
-import { useTranslation } from '@/components/providers/language-provider'
-import type { TranslationKey } from '@/lib/i18n'
+'use client';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { toast } from 'sonner';
+import { Check, X, Crown, Zap, Star, ArrowLeft, Loader2, CreditCard, Quote } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { useAppStore } from '@/stores/app';
+import { containerVariants, itemVariants } from '@/lib/animations';
+import { cn } from '@/lib/utils';
+import { useTranslation } from '@/components/providers/language-provider';
+import type { TranslationKey } from '@/lib/i18n';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 

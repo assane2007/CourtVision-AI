@@ -3,20 +3,20 @@
  * Orchestrates session creation, XP awarding, and streak management.
  */
 
-import { db } from '@/lib/db'
-import { sessionRepository, drillRepository, trainingPlanRepository } from '@/lib/repositories/training.repository'
-import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
-import { awardXp } from '@/lib/award-xp'
-import { calculateWorkoutXp, calculateStreakXp } from '@/lib/xp'
-import { calculateStreak } from '@/lib/streak'
-import { cacheInvalidatePattern } from '@/lib/cache'
-import { logger } from '@/lib/logger'
+import { db } from '@/lib/db';
+import { sessionRepository, drillRepository, trainingPlanRepository } from '@/lib/repositories/training.repository';
+import { AppError, ErrorCode } from '@/lib/middleware/error-handler';
+import { awardXp } from '@/lib/award-xp';
+import { calculateWorkoutXp, calculateStreakXp } from '@/lib/xp';
+import { calculateStreak } from '@/lib/streak';
+import { cacheInvalidatePattern } from '@/lib/cache';
+import { logger } from '@/lib/logger';
 import type {
   CreateSessionInput,
   SessionData,
   CreateSessionResult,
   DrillFilters,
-} from '@/lib/types/service.types'
+} from '@/lib/types/service.types';
 
 // ── Session CRUD ────────────────────────────────────────────────────────────────
 

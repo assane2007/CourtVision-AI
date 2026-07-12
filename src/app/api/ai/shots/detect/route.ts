@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { rateLimit } from '@/lib/rate-limit'
-import { trackError } from '@/lib/monitoring'
-import { withAuth } from '@/lib/with-auth'
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
+import { trackError } from '@/lib/monitoring';
+import { withAuth } from '@/lib/with-auth';
 
 // POST /api/ai/shots/detect — Save a detected shot
 export const POST = withAuth(async (req: NextRequest, session) => {

@@ -3,7 +3,7 @@
  * All navigation state lives in useAppStore. This module provides convenience
  * selectors for components that only need navigation state.
  */
-import { useAppStore, type Screen } from '@/stores/app'
+import { useAppStore, type Screen } from '@/stores/app';
 
 // Re-export the Screen type
 export type { Screen }

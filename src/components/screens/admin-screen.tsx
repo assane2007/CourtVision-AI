@@ -1,8 +1,7 @@
-'use client'
-
-import { useState, useCallback, useRef } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
+'use client';
+import { useState, useCallback, useRef } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
 import {
   Users,
   Activity,
@@ -22,11 +21,11 @@ import {
   Eye,
   Shield,
   Zap,
-} from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Skeleton } from '@/components/ui/skeleton'
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -34,17 +33,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
-import { ScrollArea } from '@/components/ui/scroll-area'
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@/components/ui/dialog';
 
 import {
   LineChart,
@@ -60,10 +59,10 @@ import {
   ResponsiveContainer,
   CartesianGrid,
   Legend
-} from 'recharts'
-import { useAppStore } from '@/stores/app'
-import { apiFetch, formatLocaleDate } from '@/lib/utils'
-import { useTranslation } from '@/components/providers/language-provider'
+} from 'recharts';
+import { useAppStore } from '@/stores/app';
+import { apiFetch, formatLocaleDate } from '@/lib/utils';
+import { useTranslation } from '@/components/providers/language-provider';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -672,16 +671,11 @@ export function AdminScreen() {
                             <TableCell>
                               <Badge
                                 variant={
-                                  s.plan === 'pro' || s.plan === 'elite'
-                                    ? 'default'
-                                    : 'secondary'
+                                  s.plan === 'pro' || s.plan === 'elite' ?'default' :'secondary'
                                 }
                               >
-                                {s.plan === 'pro'
-                                  ? td('admin.pro')
-                                  : s.plan === 'elite'
-                                    ? 'Elite'
-                                    : td('admin.free')}
+                                {s.plan === 'pro' ? td('admin.pro')
+                                  : s.plan === 'elite' ?'Elite' : td('admin.free')}
                               </Badge>
                             </TableCell>
                           </TableRow>
@@ -880,9 +874,7 @@ export function AdminScreen() {
                         <p className="text-muted-foreground text-xs">{td('Plan', 'Plan')}</p>
                         <Badge
                           variant={
-                            selectedPlayer.subscriptionStatus !== 'free'
-                              ? 'default'
-                              : 'secondary'
+                            selectedPlayer.subscriptionStatus !== 'free' ?'default' :'secondary'
                           }
                         >
                           {selectedPlayer.subscriptionStatus}
@@ -939,8 +931,7 @@ export function AdminScreen() {
                         disabled={toggleSubscription.isPending}
                       >
                         <Crown className="h-4 w-4 mr-2" />
-                        {selectedPlayer.subscriptionStatus === 'free'
-                          ? td('Grant Pro', 'Accorder Pro')
+                        {selectedPlayer.subscriptionStatus === 'free' ? td('Grant Pro', 'Accorder Pro')
                           : td('Revoke Pro', 'Révoquer Pro')}
                       </Button>
                       <Button
@@ -951,8 +942,7 @@ export function AdminScreen() {
                         disabled={toggleRole.isPending}
                       >
                         <Shield className="h-4 w-4 mr-2" />
-                        {selectedPlayer.role === 'admin'
-                          ? td('Remove Admin', 'Retirer Admin')
+                        {selectedPlayer.role === 'admin' ? td('Remove Admin', 'Retirer Admin')
                           : td('Make Admin', 'Rendre Admin')}
                       </Button>
                     </div>

@@ -11,8 +11,8 @@
  * Server-only module.
  */
 
-import { config } from '@/lib/config'
-import { Prisma } from '@prisma/client'
+import { config } from '@/lib/config';
+import { Prisma } from '../inngest/client';
 
 // ── Configuration ──────────────────────────────────────────────────────────────
 
@@ -33,7 +33,7 @@ interface QueryRecord {
  * Usage in an API route:
  *
  * @example
- * import { RequestQueryTracker } from '@/lib/performance/query-logger'
+ * import { RequestQueryTracker } from '@/lib/performance/query-logger';
  *
  * export async function GET(req: NextRequest) {
  *   const tracker = RequestQueryTracker.start()
@@ -176,8 +176,8 @@ export function logQueryEvent(query: string, duration: number): void {
  * Install Prisma query logging on a Prisma client instance.
  *
  * @example
- * import { installQueryLogger } from '@/lib/performance/query-logger'
- * import { getDb } from '@/lib/database'
+ * import { installQueryLogger } from '@/lib/performance/query-logger';
+ * import { getDb } from '@/lib/database';
  *
  * const db = getDb()
  * installQueryLogger(db)

@@ -1,10 +1,9 @@
-'use client'
-
-import { Flame, Swords, Trophy, MessageSquare, Users, Radio } from 'lucide-react'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
-import { useTranslation } from '@/components/providers/language-provider'
+'use client';
+import { Flame, Swords, Trophy, MessageSquare, Users, Radio } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { useTranslation } from '@/components/providers/language-provider';
 
 interface UserSettings {
   weeklyGoalSessions: number
@@ -139,8 +138,8 @@ export function NotificationsSection({ settings, saveMutation }: NotificationsSe
         </div>
         <Switch
           id="notif-live"
-          checked={true}
-          disabled={true}
+          checked
+          disabled
           className="data-[state=checked]:bg-orange-500 opacity-50"
         />
       </div>

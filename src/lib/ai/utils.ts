@@ -3,8 +3,8 @@
  * Image preprocessing, token counting, response parsing, and cost estimation.
  */
 
-import type { ChatMessage, TokenUsage } from './types'
-import { logger } from '@/lib/logger'
+import type { ChatMessage, TokenUsage } from './types';
+import { logger } from '@/lib/logger';
 
 // ── Token Estimation ────────────────────────────────────────────────────────────
 

@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
 
 type TierRequirement = 'pro' | 'elite'
 

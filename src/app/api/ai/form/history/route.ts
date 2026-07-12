@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { trackError } from '@/lib/monitoring'
-import { withAuth } from '@/lib/with-auth'
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { trackError } from '@/lib/monitoring';
+import { withAuth } from '@/lib/with-auth';
 
 // GET /api/ai/form/history — Form analysis history with trends
 export const GET = withAuth(async (req: NextRequest, session) => {

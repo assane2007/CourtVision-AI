@@ -5,15 +5,15 @@
  * Also handles quota management and usage tracking.
  */
 
-import type { SubscriptionTier, AiQuota, AiOperationType } from './types'
-import { getQuota as getQuotaFromLimiter, checkQuota, trackUsage } from './rate-limiter'
+import type { SubscriptionTier, AiQuota, AiOperationType } from './types';
+import { getQuota as getQuotaFromLimiter, checkQuota, trackUsage } from './rate-limiter';
 
 // Service imports
-import * as formAnalysisService from './services/form-analysis.service'
-import * as coachingService from './services/coaching.service'
-import * as predictionService from './services/prediction.service'
-import * as workoutGeneratorService from './services/workout-generator.service'
-import * as videoAnalysisService from './services/video-analysis.service'
+import * as formAnalysisService from './services/form-analysis.service';
+import * as coachingService from './services/coaching.service';
+import * as predictionService from './services/prediction.service';
+import * as workoutGeneratorService from './services/workout-generator.service';
+import * as videoAnalysisService from './services/video-analysis.service';
 
 // Re-export types for convenience
 export type {

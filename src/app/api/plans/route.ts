@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { createPlanSchema, getZodErrorMessage } from '@/lib/validations'
-import { rateLimit } from '@/lib/rate-limit'
-import { trackError } from '@/lib/monitoring'
-import { withAuth } from '@/lib/with-auth'
-
-// GET /api/plans — List user's training plans
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { createPlanSchema, getZodErrorMessage } from '@/lib/validations';
+import { rateLimit } from '@/lib/rate-limit';
+import { trackError } from '@/lib/monitoring';
+import { withAuth } from '@/lib/with-auth';
+ // GET /api/plans — List user's training plans
 export const GET = withAuth(async (request, session) => {
   try {
 

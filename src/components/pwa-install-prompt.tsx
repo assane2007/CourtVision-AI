@@ -1,10 +1,9 @@
-'use client'
-
-import { useEffect, useState, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Download, X, Smartphone } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { useTranslation } from '@/components/providers/language-provider'
+'use client';
+import { useEffect, useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Download, X, Smartphone } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/components/providers/language-provider';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>

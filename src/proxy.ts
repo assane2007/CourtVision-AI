@@ -1,8 +1,7 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-import { updateSession } from '@/lib/supabase/middleware'
-
-// ── Routes that DON'T require authentication ─────────────────────────────────
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { updateSession } from '@/lib/supabase/middleware';
+ // ── Routes that DON'T require authentication ─────────────────────────────────
 
 const PUBLIC_PATHS = [
   '/api/health',

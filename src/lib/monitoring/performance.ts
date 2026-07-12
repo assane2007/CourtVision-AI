@@ -9,7 +9,7 @@
  * Exposes stats via getPerformanceStats() for the monitoring API.
  */
 
-import { logger } from './logger'
+import { logger } from './logger';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 

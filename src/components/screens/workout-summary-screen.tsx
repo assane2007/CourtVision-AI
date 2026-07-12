@@ -1,21 +1,20 @@
-'use client'
-
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
-import { useAppStore, type WorkoutResult, type WorkoutDrillResult } from '@/stores/app'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Clock, Target, Flame, Trophy, RotateCcw, Home, Share2, Star, Crown, Play } from 'lucide-react'
-import { toast } from 'sonner'
-import { useQuery } from '@tanstack/react-query'
-import { CATEGORY_META } from '@/lib/constants'
-import { apiFetch, getDrillName } from '@/lib/utils'
-import { useTranslation } from '@/components/providers/language-provider'
-import type { TranslationKey } from '@/lib/i18n'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { ScoreReplay } from '@/components/workout/score-replay'
+'use client';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { useAppStore, type WorkoutResult, type WorkoutDrillResult } from '@/stores/app';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Clock, Target, Flame, Trophy, RotateCcw, Home, Share2, Star, Crown, Play } from 'lucide-react';
+import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
+import { CATEGORY_META } from '@/lib/constants';
+import { apiFetch, getDrillName } from '@/lib/utils';
+import { useTranslation } from '@/components/providers/language-provider';
+import type { TranslationKey } from '@/lib/i18n';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { ScoreReplay } from '@/components/workout/score-replay';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -642,8 +641,7 @@ export default function WorkoutSummaryScreen() {
                   <Star
                     className={`h-6 w-6 ${
                       i < Math.ceil(workoutResult.totalScore / 20)
-                        ? 'fill-amber-400 text-amber-400'
-                        : 'text-white/15'
+                        ? 'fill-amber-400 text-amber-400' :'text-white/15'
                     }`}
                   />
                 </motion.div>

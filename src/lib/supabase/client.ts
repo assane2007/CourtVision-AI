@@ -1,5 +1,4 @@
-'use client'
-
+'use client';
 /**
  * Supabase browser client.
  *
@@ -9,8 +8,8 @@
  * If Supabase is not configured, returns null instead of crashing.
  */
 
-import { createBrowserClient } from '@supabase/ssr'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 let _cachedClient: SupabaseClient | null = null
 

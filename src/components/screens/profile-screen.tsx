@@ -1,9 +1,8 @@
-'use client'
-
-import { useState, useMemo, useRef, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useAuth } from '@/components/providers/supabase-auth-provider'
+'use client';
+import { useState, useMemo, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/components/providers/supabase-auth-provider';
 import {
   Pencil,
   X,
@@ -23,14 +22,14 @@ import {
   Trash2,
   Loader2,
   Camera,
-} from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Progress } from '@/components/ui/progress'
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Progress } from '@/components/ui/progress';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -40,23 +39,23 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
   AlertDialogAction,
-} from '@/components/ui/alert-dialog'
+} from '@/components/ui/alert-dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { useAppStore } from '@/stores/app'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { cn, apiFetch, formatLocaleDate } from '@/lib/utils'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { containerVariants, itemVariants } from '@/lib/animations'
-import { getLevelInfo, getLevelColor, getLevelBgColor } from '@/lib/xp'
-import { toast } from 'sonner'
-import { useTranslation } from '@/components/providers/language-provider'
-import type { TranslationKey } from '@/lib/i18n'
+} from '@/components/ui/select';
+import { useAppStore } from '@/stores/app';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { cn, apiFetch, formatLocaleDate } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { containerVariants, itemVariants } from '@/lib/animations';
+import { getLevelInfo, getLevelColor, getLevelBgColor } from '@/lib/xp';
+import { toast } from 'sonner';
+import { useTranslation } from '@/components/providers/language-provider';
+import type { TranslationKey } from '@/lib/i18n';
 
 interface PlayerData {
   id?: string

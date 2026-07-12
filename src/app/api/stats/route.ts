@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server'
-import { withAuth } from '@/lib/with-auth'
-import { db } from '@/lib/db'
-import { withCache } from '@/lib/cache'
-import { rateLimit } from '@/lib/rate-limit'
-import { calculateStreak } from '@/lib/streak'
-import { trackError } from '@/lib/monitoring'
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/with-auth';
+import { db } from '@/lib/db';
+import { withCache } from '@/lib/cache';
+import { rateLimit } from '@/lib/rate-limit';
+import { calculateStreak } from '@/lib/streak';
+import { trackError } from '@/lib/monitoring';
 
 // GET /api/stats — Comprehensive player stats with optimized queries
 // Query params: ?days=7 (default 7, max 30) — controls dailyStats range

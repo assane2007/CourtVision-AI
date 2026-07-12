@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, Crown, Medal, Trophy } from 'lucide-react-native';
+import { ChevronLeft, Crown } from 'lucide-react-native';
 import { useAppStore } from '@/stores/app';
-import { socialService } from '@/services/social.service';
+
 
 const MOCK_LEADERBOARD = [
   { rank: 1, name: 'Alex MVP', score: 9850, level: 24 },

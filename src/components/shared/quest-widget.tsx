@@ -1,12 +1,11 @@
-'use client'
-
-import { useQuery } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
-import { CheckCircle2, Circle, Target, Dumbbell, Star, Flame } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Skeleton } from '@/components/ui/skeleton'
-import { apiFetch, cn } from '@/lib/utils'
+'use client';
+import { useQuery } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
+import { CheckCircle2, Circle, Target, Dumbbell, Star, Flame } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
+import { apiFetch, cn } from '@/lib/utils';
 
 // ── Types ───────────────────────────────────────────────────────────
 interface Quest {
@@ -52,8 +51,7 @@ function QuestRow({ quest, index }: { quest: Quest; index: number }) {
       className={cn(
         'flex items-center gap-3 p-3 rounded-xl transition-colors',
         quest.completed
-          ? 'bg-orange-500/5 opacity-70'
-          : 'bg-muted/30 hover:bg-muted/50'
+          ? 'bg-orange-500/5 opacity-70' :'bg-muted/30 hover:bg-muted/50'
       )}
     >
       {/* Icon / Check */}
@@ -61,8 +59,7 @@ function QuestRow({ quest, index }: { quest: Quest; index: number }) {
         className={cn(
           'w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors',
           quest.completed
-            ? 'bg-emerald-500/15 text-emerald-500 dark:text-emerald-400'
-            : 'bg-orange-500/10 text-orange-500 dark:text-orange-400'
+            ? 'bg-emerald-500/15 text-emerald-500 dark:text-emerald-400' :'bg-orange-500/10 text-orange-500 dark:text-orange-400'
         )}
       >
         {quest.completed ? (
@@ -93,8 +90,7 @@ function QuestRow({ quest, index }: { quest: Quest; index: number }) {
               className={cn(
                 'h-full rounded-full',
                 quest.completed
-                  ? 'bg-emerald-500 dark:bg-emerald-400'
-                  : 'bg-gradient-to-r from-orange-500 to-amber-500'
+                  ? 'bg-emerald-500 dark:bg-emerald-400' :'bg-gradient-to-r from-orange-500 to-amber-500'
               )}
             />
           </div>
@@ -110,8 +106,7 @@ function QuestRow({ quest, index }: { quest: Quest; index: number }) {
         className={cn(
           'text-[10px] px-1.5 py-0 shrink-0 font-medium border-0',
           quest.completed
-            ? 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400'
-            : 'bg-orange-500/10 text-orange-500 dark:text-orange-400'
+            ? 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400' :'bg-orange-500/10 text-orange-500 dark:text-orange-400'
         )}
       >
         +{quest.xpReward} XP

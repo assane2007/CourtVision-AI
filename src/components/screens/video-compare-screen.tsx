@@ -1,8 +1,7 @@
-'use client'
-
-import { useState, useRef, useCallback } from 'react'
-import { motion } from 'framer-motion'
-import { useQuery } from '@tanstack/react-query'
+'use client';
+import { useState, useRef, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Play,
@@ -18,24 +17,25 @@ import {
   Search,
   AlertCircle,
   ChevronRight,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import { Slider } from '@/components/ui/slider'
-import { Switch } from '@/components/ui/switch'
-import { Skeleton } from '@/components/ui/skeleton'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+  type LucideIcon,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
-import { useNavigation } from '@/stores/navigation'
-import { apiFetch, cn } from '@/lib/utils'
-import { toast } from 'sonner'
-import { containerVariants, itemVariants } from '@/lib/animations'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { useTranslation } from '@/components/providers/language-provider'
+import { useNavigation } from '@/stores/navigation';
+import { apiFetch, cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { containerVariants, itemVariants } from '@/lib/animations';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { useTranslation } from '@/components/providers/language-provider';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -330,7 +330,7 @@ export default function VideoCompareScreen() {
                 { mode: 'split' as const, icon: Columns2, label: td('Écran divisé', 'Split Screen'), desc: td('Côte à côte', 'Side by side') },
                 { mode: 'overlay' as const, icon: Layers, label: td('Superposé', 'Overlay'), desc: td('Semi-transparent', 'Semi-transparent') },
                 { mode: 'mirror' as const, icon: FlipHorizontal2, label: td('Miroir', 'Mirror'), desc: td('Retourné', 'Flipped') },
-              ]).map(({ mode, icon: Icon, label, desc }) => (
+              ] as { mode: CompareMode; icon: LucideIcon; label: string; desc: string }[]).map(({ mode, icon: Icon, label, desc }) => (
                 <Card
                   key={mode}
                   className={cn(

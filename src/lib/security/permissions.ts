@@ -8,29 +8,31 @@
 
 // ── Enums ────────────────────────────────────────────────────────────────────
 
-export enum Permission {
-  READ = 'read',
-  CREATE = 'create',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  ADMIN = 'admin',
-}
+export const Permission = {
+  READ: 'read',
+  CREATE: 'create',
+  UPDATE: 'update',
+  DELETE: 'delete',
+  ADMIN: 'admin',
+} as const
+export type Permission = typeof Permission[keyof typeof Permission]
 
-export enum ResourceType {
-  PLAYER_PROFILE = 'player_profile',
-  WORKOUT = 'workout',
-  VIDEO = 'video',
-  TEAM = 'team',
-  CHALLENGE = 'challenge',
-  FEED_POST = 'feed_post',
-  COMMENT = 'comment',
-  MESSAGE = 'message',
-  DRILL = 'drill',
-  TRAINING_PLAN = 'training_plan',
-  ACHIEVEMENT = 'achievement',
-  LEADERBOARD = 'leaderboard',
-  SCOUTING_REPORT = 'scouting_report',
-}
+export const ResourceType = {
+  PLAYER_PROFILE: 'player_profile',
+  WORKOUT: 'workout',
+  VIDEO: 'video',
+  TEAM: 'team',
+  CHALLENGE: 'challenge',
+  FEED_POST: 'feed_post',
+  COMMENT: 'comment',
+  MESSAGE: 'message',
+  DRILL: 'drill',
+  TRAINING_PLAN: 'training_plan',
+  ACHIEVEMENT: 'achievement',
+  LEADERBOARD: 'leaderboard',
+  SCOUTING_REPORT: 'scouting_report',
+} as const
+export type ResourceType = typeof ResourceType[keyof typeof ResourceType]
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

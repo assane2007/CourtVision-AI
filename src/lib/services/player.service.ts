@@ -3,14 +3,14 @@
  * Uses PlayerRepository for data access. All methods are server-only.
  */
 
-import { db } from '@/lib/db'
-import { playerRepository } from '@/lib/repositories/player.repository'
-import { sessionRepository } from '@/lib/repositories/training.repository'
-import { socialRepository } from '@/lib/repositories/social.repository'
-import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
-import { levelFromXP } from '@/lib/player/iq-engine'
-import type { SkillKey } from '@/lib/player/iq-engine'
-import { logger } from '@/lib/logger'
+import { db } from '@/lib/db';
+import { playerRepository } from '@/lib/repositories/player.repository';
+import { sessionRepository } from '@/lib/repositories/training.repository';
+import { socialRepository } from '@/lib/repositories/social.repository';
+import { AppError, ErrorCode } from '@/lib/middleware/error-handler';
+import { levelFromXP } from '@/lib/player/iq-engine';
+import type { SkillKey } from '@/lib/player/iq-engine';
+import { logger } from '@/lib/logger';
 import type {
   PlayerProfileData,
   PlayerStatsData,
@@ -18,9 +18,9 @@ import type {
   LeaderboardResult,
   RecentActivity,
   Timeframe,
-} from '@/lib/types/service.types'
-import type { PlayerPosition } from '@/lib/types/api.types'
-import { VALID_POSITIONS, VALID_LEVELS, VALID_GOALS } from '@/lib/validations'
+} from '@/lib/types/service.types';
+import type { PlayerPosition } from '@/lib/types/api.types';
+import { VALID_POSITIONS, VALID_LEVELS, VALID_GOALS } from '@/lib/validations';
 
 // ── Profile ─────────────────────────────────────────────────────────────────────
 
@@ -327,7 +327,7 @@ export async function getPlayerLeaderboard(
 
   // Friends section
   const friendIds = await socialRepository.getAcceptedFriendIds(playerId)
-  const friends = await buildFriendsLeaderboard(
+  let friends = await buildFriendsLeaderboard(
     friendIds,
     playerId,
     currentPlayerRanked,

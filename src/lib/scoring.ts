@@ -3,7 +3,7 @@
  * for testability. Contains no React, DOM, or side-effect dependencies.
  */
 
-import type { DrillCategory } from '@/lib/types'
+import type { DrillCategory } from '@/lib/types';
 
 export interface Landmark {
   x: number;

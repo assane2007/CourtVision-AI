@@ -1,13 +1,12 @@
-'use client'
-
-import { motion, AnimatePresence } from 'framer-motion'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Pause, Play, Square, Loader2, Sparkles, Timer } from 'lucide-react'
-import type { WorkoutPhase, AIFormCheckResult } from './types'
-import { REST_OPTIONS } from './types'
-import { getScoreColor } from './scoring'
-import { useTranslation } from '@/components/providers/language-provider'
+'use client';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Pause, Play, Square, Loader2, Sparkles, Timer } from 'lucide-react';
+import type { WorkoutPhase, AIFormCheckResult } from './types';
+import { REST_OPTIONS } from './types';
+import { getScoreColor } from './scoring';
+import { useTranslation } from '@/components/providers/language-provider';
 
 // ─── Pre-Workout Config (sets & rest) ────────────────────────────────────────
 
@@ -47,8 +46,7 @@ export function PreWorkoutConfig({
             disabled={phase !== 'countdown' && phase !== 'loading' && !showReady}
             className={`text-xs w-7 h-7 rounded-full transition-colors ${
               totalSets === n
-                ? 'bg-orange-500 text-white font-bold'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                ? 'bg-orange-500 text-white font-bold' :'bg-muted text-muted-foreground hover:bg-muted/80'
             } disabled:opacity-50`}
           >
             {n}
@@ -67,8 +65,7 @@ export function PreWorkoutConfig({
             }}
             className={`text-[11px] px-2 py-0.5 rounded-full transition-colors ${
               restDuration === opt
-                ? 'bg-orange-500/20 text-orange-500 font-semibold border border-orange-500/30'
-                : 'text-muted-foreground border border-border hover:bg-muted'
+                ? 'bg-orange-500/20 text-orange-500 font-semibold border border-orange-500/30' :'text-muted-foreground border border-border hover:bg-muted'
             }`}
           >
             {opt}s

@@ -19,13 +19,10 @@ set -euo pipefail
 #   - ENCRYPTION_KEY  (required in prod, 64 hex chars)
 # ═══════════════════════════════════════════════════════════════════
 
-echo "══════════════════════════════════════════════════════"
-echo "  CourtVision AI — Production Startup"
-echo "══════════════════════════════════════════════════════"
+echo "══════════════════════════════════════════════════════" echo"  CourtVision AI — Production Startup" echo"══════════════════════════════════════════════════════"
 
 # ─── Step 1: Validate Configuration ──────────────────────────
-echo ""
-echo "[1/5] Validating configuration..."
+echo "" echo"[1/5] Validating configuration..."
 
 # Use Node.js to run the config module and check for fatal errors
 VALIDATION_OUTPUT=$(node -e "
@@ -47,23 +44,19 @@ echo "  $VALIDATION_OUTPUT"
 
 # Check critical env vars directly (fallback for standalone mode)
 : "${DATABASE_URL:?FATAL: DATABASE_URL is not set}"
-: "${NEXTAUTH_SECRET:?FATAL: NEXTAUTH_SECRET is not set}"
-: "${NEXTAUTH_URL:?FATAL: NEXTAUTH_URL is not set}"
+: "${NEXTAUTH_SECRET:?FATAL: NEXTAUTH_SECRET is not set}" :"${NEXTAUTH_URL:?FATAL: NEXTAUTH_URL is not set}"
 
 if [ "${#NEXTAUTH_SECRET}" -lt 32 ]; then
-  echo "FATAL: NEXTAUTH_SECRET must be at least 32 characters."
-  echo "  Generate one: openssl rand -base64 48"
+  echo "FATAL: NEXTAUTH_SECRET must be at least 32 characters." echo"  Generate one: openssl rand -base64 48"
   exit 1
 fi
 
 echo "  ✓ Critical environment variables present"
 
 # ─── Step 2: Database Setup ──────────────────────────────────
-echo ""
-echo "[2/5] Setting up database..."
+echo "" echo"[2/5] Setting up database..."
 
-if echo "$DATABASE_URL" | grep -q "^postgres"; then
-  echo "  Detected PostgreSQL — running migrations..."
+if echo "$DATABASE_URL"| grep -q "^postgres"; then echo"  Detected PostgreSQL — running migrations..."
   npx prisma migrate deploy --schema=prisma/schema.postgres.prisma
   echo "  ✓ Migrations complete"
 else
@@ -73,18 +66,15 @@ else
 fi
 
 # ─── Step 3: Generate Prisma Client ──────────────────────────
-echo ""
-echo "[3/5] Generating Prisma client..."
+echo "" echo"[3/5] Generating Prisma client..."
 npx prisma generate
 echo "  ✓ Prisma client ready"
 
 # ─── Step 4: Health Check ────────────────────────────────────
-echo ""
-echo "[4/5] Verifying database connectivity..."
+echo "" echo"[4/5] Verifying database connectivity..."
 if echo "$DATABASE_URL" | grep -q "^postgres"; then
   # PostgreSQL health check
-  if npx prisma db execute --stdin <<< "SELECT 1" > /dev/null 2>&1; then
-    echo "  ✓ Database connection OK"
+  if npx prisma db execute --stdin <<< "SELECT 1" > /dev/null 2>&1; then echo"  ✓ Database connection OK"
   else
     echo "  ✗ WARNING: Database connection issue detected"
   fi
@@ -93,11 +83,7 @@ else
 fi
 
 # ─── Step 5: Start Server ────────────────────────────────────
-echo ""
-echo "[5/5] Starting CourtVision AI server..."
-echo "  NODE_ENV=${NODE_ENV:-production}"
-echo "  DATABASE=$(echo "$DATABASE_URL" | sed 's/:[^:@]*@/:***@/g' | head -c 60)"
-echo "  URL=$NEXTAUTH_URL"
-echo ""
+echo "" echo"[5/5] Starting CourtVision AI server..." echo"  NODE_ENV=${NODE_ENV:-production}" echo"  DATABASE=$(echo "$DATABASE_URL" | sed 's/:[^:@]*@/:***@/g' | head -c 60)"
+echo "  URL=$NEXTAUTH_URL" echo""
 
 exec node .next/standalone/server.js

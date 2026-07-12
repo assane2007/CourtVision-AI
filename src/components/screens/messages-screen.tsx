@@ -1,23 +1,22 @@
-'use client'
-
-import { useState, useRef, useCallback, useEffect } from 'react'
-import { useQuery, useMutation } from '@tanstack/react-query'
-import { motion, AnimatePresence } from 'framer-motion'
+'use client';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Loader2, X, Pencil, MessageCircle, Search,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useNavigation } from '@/stores/navigation'
-import { useAppStore } from '@/stores/app'
-import { SwipeToGoBack } from '@/components/shared/swipe-back'
-import { apiFetch } from '@/lib/utils'
-import { containerVariants, itemVariants } from '@/lib/animations'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { useTranslation } from '@/components/providers/language-provider'
-import { toast } from 'sonner'
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useNavigation } from '@/stores/navigation';
+import { useAppStore } from '@/stores/app';
+import { SwipeToGoBack } from '@/components/shared/swipe-back';
+import { apiFetch } from '@/lib/utils';
+import { containerVariants, itemVariants } from '@/lib/animations';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { useTranslation } from '@/components/providers/language-provider';
+import { toast } from 'sonner';
 
 interface ConversationItem {
   id: string; type: string; name: string; avatar: string | null

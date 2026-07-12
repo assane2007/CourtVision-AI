@@ -1,12 +1,13 @@
-'use client'
+'use client';
+import { Component, type ReactNode, useState, useEffect } from 'react';
+ import dynamic from'next/dynamic';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { useTranslation } from '@/components/providers/language-provider';
+import { useAuth } from '@/components/providers/supabase-auth-provider';
+import { useAppStore } from '@/stores/app';
+import { LoadingSpinner } from '@/components/screen-transition';
 
-import { Component, type ReactNode, useState, useEffect } from 'react'
-import dynamic from 'next/dynamic'
-import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
-import { useTranslation } from '@/components/providers/language-provider'
-import { useAuth } from '@/components/providers/supabase-auth-provider'
-import { useAppStore } from '@/stores/app'
 
 // ── Core screens (preloaded for fast initial render) ──────────────────────────
 

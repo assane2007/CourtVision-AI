@@ -1,5 +1,4 @@
-'use client'
-
+'use client';
 interface PoseCanvasProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>
 }

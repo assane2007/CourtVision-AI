@@ -1,13 +1,12 @@
-'use client'
-
-import { ArrowLeft } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { useAppStore } from '@/stores/app'
-import { motion } from 'framer-motion'
-import { useTranslation } from '@/components/providers/language-provider'
+'use client';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAppStore } from '@/stores/app';
+import { motion } from 'framer-motion';
+import { useTranslation } from '@/components/providers/language-provider';
 
 export function PrivacyScreen() {
-  const goBack = useAppStore((s) => s.goBack)
+  const goBack = useAppStore((s) => s?.goBack)
   const { td } = useTranslation()
 
   return (
@@ -27,7 +26,6 @@ export function PrivacyScreen() {
           <h1 className="text-lg font-bold">{td('Politique de Confidentialité', 'Privacy Policy')}</h1>
         </div>
       </header>
-
       <motion.main
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -192,7 +190,7 @@ export function PrivacyScreen() {
         </article>
       </motion.main>
     </div>
-  )
+  );
 }
 
 export default PrivacyScreen

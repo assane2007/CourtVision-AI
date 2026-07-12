@@ -5,10 +5,10 @@
  * Includes a placeholder for future ClamAV virus scanning integration.
  */
 
-import crypto from 'node:crypto'
-import path from 'node:path'
-import { logger } from '@/lib/logger'
-import { sanitizeFilename } from './sanitization'
+import crypto from 'node:crypto';
+ import path from'node:path';
+import { logger } from '@/lib/logger';
+import { sanitizeFilename } from './sanitization';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

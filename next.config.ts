@@ -7,14 +7,12 @@ const nextConfig: NextConfig = {
   // Allow preview panel cross-origin requests
   allowedDevOrigins: ['https://*.space-z.ai', 'http://*.space-z.ai'],
   typescript: {
-    ignoreBuildErrors: false,
-  },
+    ignoreBuildErrors: false},
   reactStrictMode: true,
   images: {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256],
-  },
+    imageSizes: [16, 32, 48, 64, 96, 128, 256]},
   async rewrites() {
     return [
       { source: '/api/training/sessions/:path*', destination: '/api/sessions/:path*' },
@@ -22,8 +20,7 @@ const nextConfig: NextConfig = {
       { source: '/api/training/plans/:path*', destination: '/api/plans/:path*' },
       { source: '/api/social/friends/:path*', destination: '/api/friends/:path*' },
       { source: '/api/social/feed/:path*', destination: '/api/feed/:path*' },
-      { source: '/api/v1/:path*', destination: '/api/:path*' },
-    ]
+      { source: '/api/v1/:path*', destination: '/api/:path*' }]
   },
   async headers() {
     return [
@@ -41,21 +38,15 @@ const nextConfig: NextConfig = {
               "font-src 'self' https://fonts.gstatic.com",
               "frame-ancestors 'self'" + (process.env.NODE_ENV === 'development' ? " https://*.space-z.ai http://*.space-z.ai" : ""),
               "media-src 'self' blob: https://*.supabase.co",
-              "worker-src 'self' blob:",
-            ].join('; '),
-          },
+              "worker-src 'self' blob:"].join('; ')},
           { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'camera=(self), microphone=(self), geolocation=(self)' },
           { key: 'X-DNS-Prefetch-Control', value: 'on' },
           { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
-          { key: 'X-XSS-Protection', value: '0' },
-        ],
-      },
-    ]
-  },
-}
+          { key: 'X-XSS-Protection', value: '0' }]}]
+  }}
 
 // Sentry is only active in production (SENTRY_DSN set on Vercel)
 // In dev, withSentryConfig causes process instability in sandboxed environments
@@ -70,8 +61,7 @@ if (process.env.SENTRY_DSN) {
     authToken: process.env.SENTRY_AUTH_TOKEN,
     widenClientFileUpload: true,
     tunnelRoute: '/monitoring',
-    silent: !process.env.CI,
-  })
+    silent: !process.env.CI})
 }
 
 export default finalConfig

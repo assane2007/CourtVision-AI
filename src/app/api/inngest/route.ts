@@ -7,8 +7,8 @@
  * instance.
  */
 
-import { serve } from 'inngest/next'
-import { inngest } from '@/lib/inngest/client'
+import { serve } from 'inngest/next';
+import { inngest } from '@/lib/inngest/client';
 import {
   formAnalysis,
   videoProcessing,
@@ -16,11 +16,11 @@ import {
   exportGeneration,
   insightRefresh,
   playerWelcome,
-} from '@/lib/inngest/functions'
+} from '@/lib/inngest/functions';
 import {
   weeklyPlayerReport,
   staleSessionCleanup,
-} from '@/lib/inngest/functions/recurring'
+} from '@/lib/inngest/functions/recurring';
 
 const isConfigured = Boolean(process.env.INNGEST_EVENT_KEY)
 

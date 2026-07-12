@@ -1,13 +1,12 @@
-'use client'
-
-import { useQuery, useMutation } from '@tanstack/react-query'
-import { toast } from 'sonner'
-import { Monitor, Clock, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useTranslation } from '@/components/providers/language-provider'
-import { apiFetch } from '@/lib/utils'
+'use client';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { Monitor, Clock, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from '@/components/providers/language-provider';
+import { apiFetch } from '@/lib/utils';
 
 export function DevicesSection() {
   const { t } = useTranslation()

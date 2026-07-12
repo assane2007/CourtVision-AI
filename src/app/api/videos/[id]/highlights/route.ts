@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { trackError } from '@/lib/monitoring'
-import { withAuth } from '@/lib/with-auth'
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { trackError } from '@/lib/monitoring';
+import { withAuth } from '@/lib/with-auth';
 
 // GET /api/videos/[id]/highlights — List highlights for a video
 export const GET = withAuth(async (request, session, { params }) => {
@@ -9,11 +9,11 @@ export const GET = withAuth(async (request, session, { params }) => {
 
     const { id: videoId } = await params
 
-    const video = await db.video.findFirst({
+    const video = await db?.video?.findFirst({
       where: {
         id: videoId,
         OR: [
-          { playerId: session.user.id },
+          { playerId: session?.user?.id },
           { isPublic: true },
         ],
       },
@@ -21,18 +21,18 @@ export const GET = withAuth(async (request, session, { params }) => {
     })
 
     if (!video) {
-      return NextResponse.json({ error: 'Vidéo introuvable' }, { status: 404 })
+      return NextResponse?.json({ error: 'Vidéo introuvable' }, { status: 404 });
     }
 
-    const highlights = await db.videoHighlight.findMany({
+    const highlights = await db?.videoHighlight?.findMany({
       where: { videoId },
       orderBy: { startMs: 'asc' },
     })
 
-    return NextResponse.json({ highlights })
+    return NextResponse?.json({ highlights });
   } catch (error) {
     trackError('[GET /api/videos/[id]/highlights]', error)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse?.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 })
 
@@ -41,36 +41,36 @@ export const POST = withAuth(async (request, session, { params }) => {
   try {
 
     const { id: videoId } = await params
-    const body = await request.json()
+    const body = await request?.json()
 
     const { title, startMs, endMs, type, score } = body
 
-    if (!title || typeof title !== 'string' || title.trim().length < 1) {
-      return NextResponse.json({ error: 'Titre requis' }, { status: 400 })
+    if (!title || typeof title !== 'string' || title?.trim()?.length < 1) {
+      return NextResponse?.json({ error: 'Titre requis' }, { status: 400 });
     }
 
     if (typeof startMs !== 'number' || startMs < 0) {
-      return NextResponse.json({ error: 'Temps de début invalide' }, { status: 400 })
+      return NextResponse?.json({ error: 'Temps de début invalide' }, { status: 400 });
     }
 
     if (typeof endMs !== 'number' || endMs <= startMs) {
-      return NextResponse.json({ error: 'Temps de fin doit être supérieur au début' }, { status: 400 })
+      return NextResponse?.json({ error: 'Temps de fin doit être supérieur au début' }, { status: 400 });
     }
 
     // Verify video ownership
-    const video = await db.video.findUnique({
+    const video = await db?.video?.findUnique({
       where: { id: videoId },
       select: { playerId: true },
     })
 
-    if (!video || video.playerId !== session.user.id) {
-      return NextResponse.json({ error: 'Vidéo introuvable' }, { status: 404 })
+    if (!video || video?.playerId !== session?.user?.id) {
+      return NextResponse?.json({ error: 'Vidéo introuvable' }, { status: 404 });
     }
 
-    const highlight = await db.videoHighlight.create({
+    const highlight = await db?.videoHighlight?.create({
       data: {
         videoId,
-        title: title.trim().slice(0, 200),
+        title: title?.trim()?.slice(0, 200),
         startMs: Math.round(startMs),
         endMs: Math.round(endMs),
         type: type === 'auto' ? 'auto' : 'manual',
@@ -78,9 +78,9 @@ export const POST = withAuth(async (request, session, { params }) => {
       },
     })
 
-    return NextResponse.json({ highlight }, { status: 201 })
+    return NextResponse?.json({ highlight }, { status: 201 });
   } catch (error) {
     trackError('[POST /api/videos/[id]/highlights]', error)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse?.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 })

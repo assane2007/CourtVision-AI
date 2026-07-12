@@ -3,9 +3,9 @@
  * Extends BaseRepository with player-specific queries.
  */
 
-import { db } from '@/lib/db'
-import { BaseRepository, type PrismaModelDelegate } from './base.repository'
-import type { PlayerProfileData } from '@/lib/types/service.types'
+import { db } from '@/lib/db';
+import { BaseRepository, type PrismaModelDelegate } from './base.repository';
+import type { PlayerProfileData } from '@/lib/types/service.types';
 
 export class PlayerRepository extends BaseRepository<'Player', PlayerProfileData> {
   constructor() {
