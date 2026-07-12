@@ -38,20 +38,6 @@ export const POST = withAuth(async (request, session, { params }) => {
       const updatedPost = await db.feedPost.findUnique({ where: { id: postId }, select: { likesCount: true } })
       const accurateCount = Math.max(0, updatedPost?.likesCount ?? 0)
 
-      // Notify post owner
-      if (post.playerId !== playerId) {
-        await db.notification.create({
-          data: {
-            playerId: post.playerId,
-            type: 'like',
-            title: 'Like retiré',
-            body: `${session.user.name} a retiré son like`,
-            data: JSON.stringify({ postId, likerId: playerId }),
-            isRead: true,
-          },
-        })
-      }
-
       return NextResponse.json({ liked: false, likesCount: accurateCount })
     } else {
       // Like — atomic transaction

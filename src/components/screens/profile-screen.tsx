@@ -429,7 +429,7 @@ export function ProfileScreen() {
                   <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
                     <Calendar className="h-3.5 w-3.5" />
                     <span>
-                      Membre depuis{' '}
+                      {td('Membre depuis', 'Member since')}{' '}
                       {formatLocaleDate(player.createdAt, language, {
                         month: 'long',
                         year: 'numeric',
@@ -456,11 +456,11 @@ export function ProfileScreen() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-base flex items-center gap-2">
-                      Mon ADN de Joueur
+                      {td('Mon ADN de Joueur', 'My Player DNA')}
                       <Sparkles className="h-4 w-4 text-orange-500" />
                     </h3>
                     <p className="text-sm text-muted-foreground mt-0.5">
-                      Rapport de scout IA
+                      {td('Rapport de scout IA', 'AI Scout Report')}
                     </p>
                   </div>
                   <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0" />
@@ -488,7 +488,7 @@ export function ProfileScreen() {
                       </div>
                       <div>
                         <p className={cn('text-2xl font-extrabold', getLevelColor(levelInfo.currentLevel))}>
-                          {levelInfo.isMaxLevel ? 'NIVEAU MAX' : `Niveau ${levelInfo.currentLevel}`}
+                          {levelInfo.isMaxLevel ? td('NIVEAU MAX', 'MAX LEVEL') : `Niveau ${levelInfo.currentLevel}`}
                         </p>
                         <p className="text-sm font-medium text-muted-foreground">
                           {levelInfo.levelTitle}
@@ -501,7 +501,7 @@ export function ProfileScreen() {
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-muted-foreground">XP</span>
                         {levelInfo.isMaxLevel ? (
-                          <span className="font-semibold text-orange-500">NIVEAU MAX ATTEINT</span>
+                          <span className="font-semibold text-orange-500">{td('NIVEAU MAX ATTEINT', 'MAX LEVEL REACHED')}</span>
                         ) : (
                           <span className="tabular-nums text-muted-foreground">
                             <span className="font-semibold text-orange-600 dark:text-orange-400">
@@ -518,7 +518,7 @@ export function ProfileScreen() {
                       />
                       {!levelInfo.isMaxLevel && (
                         <p className="text-[11px] text-muted-foreground">
-                          {levelInfo.xpNeededForNextLevel! - levelInfo.xpInCurrentLevel} XP restant avant le niveau {levelInfo.currentLevel + 1}
+                          {td('{remaining} XP restant avant le niveau {level}', '{remaining} XP remaining to next level {level}').replace('{remaining}', String(levelInfo.xpNeededForNextLevel! - levelInfo.xpInCurrentLevel)).replace('{level}', String(levelInfo.currentLevel + 1))}
                         </p>
                       )}
                       <p className="text-[11px] text-muted-foreground">

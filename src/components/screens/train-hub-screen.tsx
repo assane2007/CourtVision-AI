@@ -27,7 +27,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { BottomNav } from '@/components/shared/bottom-nav'
-import { apiFetch } from '@/lib/utils'
+import { apiFetch, getDrillName } from '@/lib/utils'
 import {
   CATEGORIES_LIST,
   DIFFICULTIES,
@@ -115,7 +115,7 @@ function normalize(s: string): string {
 export default function TrainHubScreen() {
   const navigate = useAppStore((s) => s.navigate)
   const selectDrill = useAppStore((s) => s.selectDrill)
-  const { t, tc, td } = useTranslation()
+  const { t, tc, td, language } = useTranslation()
 
   const queryClient = useQueryClient()
 
@@ -799,7 +799,7 @@ export default function TrainHubScreen() {
                     <Card
                       role="button"
                       tabIndex={0}
-                      aria-label={drill.nameFr}
+                      aria-label={getDrillName(drill, language)}
                       onKeyDown={(e: React.KeyboardEvent) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault()
@@ -844,7 +844,7 @@ export default function TrainHubScreen() {
 
                         {/* Name */}
                         <h3 className="font-semibold text-foreground text-sm leading-snug pr-8 line-clamp-2">
-                          {drill.nameFr}
+                          {getDrillName(drill, language)}
                         </h3>
 
                         {/* Badges */}

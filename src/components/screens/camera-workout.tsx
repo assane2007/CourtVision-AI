@@ -16,7 +16,7 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react'
-import { apiFetch } from '@/lib/utils'
+import { apiFetch, getDrillName } from '@/lib/utils'
 import { useTranslation } from '@/components/providers/language-provider'
 import type { TranslationKey } from '@/lib/i18n'
 import {
@@ -73,7 +73,7 @@ import {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function CameraWorkoutScreen() {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const selectedDrillId = useAppStore(s => s.selectedDrillId)
   const goBack = useAppStore(s => s.goBack)
   const navigate = useAppStore(s => s.navigate)
@@ -759,7 +759,7 @@ export default function CameraWorkoutScreen() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           imageBase64,
-          drillName: drill?.nameFr ?? drill?.name ?? 'Exercice',
+          drillName: getDrillName(drill ?? {}, language) || 'Exercice',
           category: drill?.category ?? 'ball_handling',
           drillInstructions: drill?.instructionsFr ?? drill?.instructions ?? '',
         }),
@@ -797,7 +797,7 @@ export default function CameraWorkoutScreen() {
         })
       }, 1000)
     }
-  }, [aiLoading, aiCooldownRemaining, phase, drill, t])
+  }, [aiLoading, aiCooldownRemaining, phase, drill, t, language])
 
   // ── Derived values ────────────────────────────────────────────────────
   const progressPercent = totalDuration > 0
@@ -865,7 +865,7 @@ export default function CameraWorkoutScreen() {
         <div className="flex items-center gap-2">
           {drill && <span className="text-sm">{drill.icon}</span>}
           <h1 className="text-white text-sm font-medium truncate max-w-[140px]">
-            {drill?.nameFr ?? 'Exercice'}
+            {getDrillName(drill ?? {}, language) || 'Exercice'}
           </h1>
           {totalSets > 1 && (
             <Badge variant="outline" className="text-[10px] text-orange-400 border-orange-500/30 bg-orange-500/10 px-1.5 py-0">

@@ -373,7 +373,7 @@ export function SettingsScreen() {
                 <Select value={String(settings.defaultTrainingDuration || 30)} onValueChange={(v) => patch({ defaultTrainingDuration: parseInt(v) })} disabled={saveMutation.isPending}>
                   <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {[15, 30, 45, 60].map((m) => <SelectItem key={m} value={String(m)}>{m} min</SelectItem>)}
+                    {[15, 30, 45, 60].map((m) => <SelectItem key={m} value={String(m)}>{m} {td('min', 'min')}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

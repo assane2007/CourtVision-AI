@@ -63,6 +63,14 @@ export const PATCH = withAuth(async (request: NextRequest, session) => {
     const body = await request.json()
     const { notificationId, markAll } = body
 
+    if (markAll !== undefined && typeof markAll !== 'boolean') {
+      return NextResponse.json({ error: 'markAll must be a boolean' }, { status: 400 })
+    }
+
+    if (notificationId !== undefined && typeof notificationId !== 'string') {
+      return NextResponse.json({ error: 'notificationId must be a string' }, { status: 400 })
+    }
+
     if (markAll) {
       await db.notification.updateMany({
         where: { playerId: session.user.id, isRead: false },

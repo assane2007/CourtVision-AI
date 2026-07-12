@@ -8,9 +8,11 @@ export function cn(...inputs: ClassValue[]) {
 export async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, options)
   if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: 'Erreur réseau' }))
-    throw new Error(body.error || `Erreur ${res.status}`)
+    const body = await res.json().catch(() => ({ error: 'Network error' }))
+    throw new Error(body.error || `Error ${res.status}`)
   }
+  // Handle 204 No Content
+  if (res.status === 204) return undefined as T
   return res.json()
 }
 
@@ -20,8 +22,17 @@ export async function apiFetch<T>(url: string, options?: RequestInit): Promise<T
  */
 export { formatDate as formatLocaleDate } from '@/lib/date-utils'
 
+/**
+ * Get the localized drill name based on current language.
+ * Drill objects have both `name` (English) and `nameFr` (French).
+ */
+export function getDrillName(drill: { name?: string; nameFr?: string }, language: 'fr' | 'en' = 'fr'): string {
+  if (language === 'en' && drill.name) return drill.name
+  return drill.nameFr || drill.name || ''
+}
+
 export function formatDuration(ms: number): string {
-  if (!ms) return '—'
+  if (!ms || ms < 0) return '—'
   const sec = Math.floor(ms / 1000)
   const min = Math.floor(sec / 60)
   const s = sec % 60

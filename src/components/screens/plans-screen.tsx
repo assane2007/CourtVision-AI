@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { BottomNav } from '@/components/shared/bottom-nav'
 import { CreatePlanDialog } from '@/components/dialogs/create-plan-dialog'
-import { apiFetch, formatDuration } from '@/lib/utils'
+import { apiFetch, formatDuration, getDrillName } from '@/lib/utils'
 import {
   ClipboardList,
   Plus,
@@ -45,6 +45,7 @@ interface PlanDrill {
   restSec: number
   drill: {
     id: string
+    name?: string
     nameFr: string
     icon: string
     category: string
@@ -85,7 +86,7 @@ export default function PlansScreen() {
   const selectDrill = useAppStore(s => s.selectDrill)
   const startPlanExecution = useAppStore(s => s.startPlanExecution)
   const queryClient = useQueryClient()
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
 
   const [createOpen, setCreateOpen] = useState(false)
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null)
@@ -278,7 +279,7 @@ export default function PlansScreen() {
                               className="text-xs px-2 py-0.5 font-normal"
                             >
                               <span className="mr-1">{pd.drill.icon}</span>
-                              {pd.drill.nameFr}
+                              {pd.drill ? getDrillName(pd.drill, language) : ''}
                             </Badge>
                           ))}
                           {plan.drills.length > 5 && (

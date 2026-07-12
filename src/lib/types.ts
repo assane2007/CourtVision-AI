@@ -3,7 +3,7 @@ export interface Drill {
   name: string;
   nameFr: string;
   category: DrillCategory;
-  difficulty: "facile" | "moyen" | "difficile";
+  difficulty: "beginner" | "intermediate" | "advanced";
   duration: number;
   targetReps: number;
   instructionsFr: string[];
@@ -20,7 +20,7 @@ export type DrillCategory =
   | "shooting"
   | "footwork"
   | "conditioning"
-  | "passing";
+  | "finishing";
 
 export interface Plan {
   id: string;

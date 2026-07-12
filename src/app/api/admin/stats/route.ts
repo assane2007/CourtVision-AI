@@ -251,7 +251,7 @@ export const GET = withAdminGuard(async () => {
     return NextResponse.json(stats)
   } catch (error) {
     console.error('[admin/stats] DB error, falling back to mock data:', error)
-    return NextResponse.json(generateMockStats())
+    return NextResponse.json({ ...generateMockStats(), isMock: true })
   }
 })
 

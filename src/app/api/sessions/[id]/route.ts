@@ -71,13 +71,15 @@ export const PATCH = withAuth(async (request, session, { params }) => {
       )
     }
 
+    const shouldEndSession = body.endSession === true || parsed.data.totalScore !== undefined
+
     const updated = await db.workoutSession.update({
       where: { id },
       data: {
         ...(parsed.data.totalScore !== undefined && { totalScore: parsed.data.totalScore }),
         ...(parsed.data.totalReps !== undefined && { totalReps: parsed.data.totalReps }),
         ...(parsed.data.notes !== undefined && { notes: parsed.data.notes }),
-        endedAt: new Date(),
+        ...(shouldEndSession ? { endedAt: new Date() } : {}),
       },
     })
 

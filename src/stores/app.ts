@@ -103,7 +103,7 @@ interface AppState {
 
 // ── Store ─────────────────────────────────────────────────────────────────────
 
-export const useAppStore = create<AppState & AppActions>((set) => ({
+export const useAppStore = create<AppState & AppActions>((set, get) => ({
   currentScreen: 'landing',
   selectedDrillId: null,
   selectedConversationId: null,

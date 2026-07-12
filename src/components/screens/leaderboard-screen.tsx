@@ -96,8 +96,8 @@ export function LeaderboardScreen() {
 
   const isFriendsTab = tab === 'friends'
   const displayList = isFriendsTab ? (data?.friends ?? []) : (data?.leaderboard ?? [])
-  const top3 = isFriendsTab ? displayList.slice(0, 3) : data?.leaderboard.slice(0, 3) ?? []
-  const rest = isFriendsTab ? displayList.slice(3) : data?.leaderboard.slice(3) ?? []
+  const top3 = displayList.slice(0, 3)
+  const rest = displayList.slice(3)
 
   return (
     <SwipeToGoBack className="min-h-screen bg-background">

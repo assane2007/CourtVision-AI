@@ -221,8 +221,8 @@ export default function FriendsScreen() {
                 <motion.div key={item.id} variants={itemVariants}>
                   <div
                     className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card"
-                    onClick={() => isSearchResult && navigate('profile-other')}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (isSearchResult) navigate('profile-other') } }}
+                    onClick={() => isSearchResult && navigate('profile-other', item.id)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (isSearchResult) navigate('profile-other', item.id) } }}
                     role={isSearchResult ? 'button' : undefined}
                     tabIndex={isSearchResult ? 0 : undefined}
                   >

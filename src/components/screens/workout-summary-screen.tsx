@@ -10,7 +10,7 @@ import { Clock, Target, Flame, Trophy, RotateCcw, Home, Share2, Star, Crown, Pla
 import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { CATEGORY_META } from '@/lib/constants'
-import { apiFetch } from '@/lib/utils'
+import { apiFetch, getDrillName } from '@/lib/utils'
 import { useTranslation } from '@/components/providers/language-provider'
 import type { TranslationKey } from '@/lib/i18n'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -354,7 +354,7 @@ function DrillScoreChart({ drills, t }: { drills: WorkoutDrillResult[]; t: (key:
 // ─── Drill Breakdown Card ─────────────────────────────────────────────────────
 
 function DrillBreakdownCard({ drill, delay }: { drill: WorkoutDrillResult; delay: number }) {
-  const { td } = useTranslation()
+  const { td, language } = useTranslation()
   const prefersReducedMotion = useReducedMotion()
   const catMeta = CATEGORY_META[drill.drillCategory]
   const icon = catMeta?.icon ?? drill.drillIcon
@@ -372,7 +372,7 @@ function DrillBreakdownCard({ drill, delay }: { drill: WorkoutDrillResult; delay
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-1">
-              <p className="text-sm font-medium text-white truncate pr-2">{drill.drillNameFr}</p>
+              <p className="text-sm font-medium text-white truncate pr-2">{getDrillName({ name: drill.drillName, nameFr: drill.drillNameFr }, language)}</p>
               <div className="flex items-center gap-1.5 shrink-0">
                 {drill.isPersonalBest && (
                   <Badge className="text-[9px] px-1.5 py-0 bg-amber-500/20 text-amber-400 border-amber-500/30 h-4">
@@ -404,7 +404,7 @@ function DrillBreakdownCard({ drill, delay }: { drill: WorkoutDrillResult; delay
 
 // ─── Share Function ───────────────────────────────────────────────────────────
 
-async function shareWorkout(result: WorkoutResult, t: (key: TranslationKey) => string) {
+async function shareWorkout(result: WorkoutResult, t: (key: TranslationKey) => string, td: (fr: string, en: string) => string, language: 'fr' | 'en') {
   const sessionId = result.sessionId
   let text: string
 
@@ -434,7 +434,7 @@ async function shareWorkout(result: WorkoutResult, t: (key: TranslationKey) => s
       `🏀 CourtVision AI`,
       `Score: ${result.totalScore}%`,
       `Reps: ${result.totalReps}`,
-      `Exercice: ${bestDrill?.drillNameFr ?? 'N/A'}`,
+      `${td('Exercice:', 'Exercise:')} ${getDrillName({ name: bestDrill?.drillName, nameFr: bestDrill?.drillNameFr }, language) ?? 'N/A'}`,
     ].join('\n')
   }
 
@@ -503,7 +503,7 @@ function PRBanner({ drillNames }: { drillNames: string[] }) {
 }
 
 export default function WorkoutSummaryScreen() {
-  const { t, td } = useTranslation()
+  const { t, td, language } = useTranslation()
   const workoutResult = useAppStore(s => s.workoutResult)
   const navigate = useAppStore(s => s.navigate)
   const setWorkoutResult = useAppStore(s => s.setWorkoutResult)
@@ -542,8 +542,8 @@ export default function WorkoutSummaryScreen() {
   }, [setWorkoutResult, navigate])
 
   const handleShare = useCallback(() => {
-    if (workoutResult) shareWorkout(workoutResult, t)
-  }, [workoutResult, t])
+    if (workoutResult) shareWorkout(workoutResult, t, td, language)
+  }, [workoutResult, t, td, language])
 
   // ── PR Detection: fetch existing records and compare ──────────────
   const { data: recordsData } = useQuery<RecordsResponse>({
@@ -560,11 +560,11 @@ export default function WorkoutSummaryScreen() {
       const prev = prMap.get(drill.drillId)
       // If no previous record, it's a new record; if score > previous, it's a PR
       if (prev === undefined || drill.score > prev) {
-        names.push(drill.drillNameFr)
+        names.push(getDrillName({ name: drill.drillName, nameFr: drill.drillNameFr }, language))
       }
     }
     return names
-  }, [recordsData, workoutResult])
+  }, [recordsData, workoutResult, language])
 
   // Safety: redirect if no result
   useEffect(() => {
@@ -677,7 +677,7 @@ export default function WorkoutSummaryScreen() {
               <StatsCard
                 icon={<Trophy className="h-5 w-5 text-amber-400" />}
                 label={t('summary.bestExercise')}
-                value={bestDrill.drillNameFr}
+                value={getDrillName({ name: bestDrill.drillName, nameFr: bestDrill.drillNameFr }, language)}
                 subValue={`${t('workout.score')}: ${bestDrill.score} — ${bestDrill.reps} ${t('common.reps')}`}
                 delay={drills.length > 1 ? 0.65 : 0.5}
               />

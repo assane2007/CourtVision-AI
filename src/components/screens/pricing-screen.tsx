@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
-import { Check, X, Crown, Zap, Star, ArrowLeft, Loader2, CreditCard } from 'lucide-react'
+import { Check, X, Crown, Zap, Star, ArrowLeft, Loader2, CreditCard, Quote } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -101,7 +101,7 @@ function getTiers(t: (key: TranslationKey, params?: Record<string, string>) => s
 // ── Component ──────────────────────────────────────────────────────────────
 
 export default function PricingScreen() {
-  const { t } = useTranslation()
+  const { t, td } = useTranslation()
   const goBack = useAppStore((s) => s.goBack)
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
   const [annualBilling, setAnnualBilling] = useState(false)
@@ -259,7 +259,7 @@ export default function PricingScreen() {
                           <span className="text-4xl font-bold tracking-tight">{tier.annualPrice}€</span>
                           <span className="text-muted-foreground text-sm ml-1">{t('pricing.perYear')}</span>
                           <p className="text-xs text-muted-foreground mt-1">
-                            soit {tier.price}€ {t('pricing.perMonth')}
+                            {td('soit', 'i.e.')} {tier.price}€ {t('pricing.perMonth')}
                           </p>
                         </>
                       ) : (
@@ -333,6 +333,38 @@ export default function PricingScreen() {
                 </Card>
               </motion.div>
             ))}
+          </motion.div>
+
+          {/* Player Reviews */}
+          <motion.div variants={itemVariants} className="space-y-4 pt-2">
+            <p className="text-center text-sm font-medium text-muted-foreground">{t('pricing.reviewsTitle')}</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {(['pricing.review1', 'pricing.review2', 'pricing.review3'] as const).map((reviewKey, i) => (
+                <motion.div
+                  key={reviewKey}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.3 + i * 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
+                >
+                  <div className="rounded-xl border border-border bg-card/60 p-4 flex gap-3 h-full">
+                    <Quote className="size-5 text-orange-400/60 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-muted-foreground leading-relaxed italic">
+                        &ldquo;{t(reviewKey)}&rdquo;
+                      </p>
+                      <p className="text-xs text-foreground/70 mt-2 font-medium">
+                        {t(`${reviewKey}.author` as TranslationKey)}
+                      </p>
+                      <div className="flex gap-0.5 mt-1.5">
+                        {Array.from({ length: 5 }).map((_, j) => (
+                          <Star key={j} className="size-3 fill-orange-400 text-orange-400" />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </motion.div>
 
           {/* Cancel link for already subscribed users */}

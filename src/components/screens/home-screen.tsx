@@ -204,6 +204,7 @@ function XpGainPopup({
   leveledUp: boolean
   onDone: () => void
 }) {
+  const { td } = useTranslation()
   useEffect(() => {
     const timer = setTimeout(onDone, 2500)
     return () => clearTimeout(timer)
@@ -227,7 +228,7 @@ function XpGainPopup({
           <div className="flex items-center gap-2">
             <Sparkles className="h-6 w-6 text-white" />
             <span className="text-xl font-extrabold text-white tracking-wide">
-              NIVEAU SUP&Eacute;RIEUR !
+              {td('NIVEAU SUPÉRIEUR !', 'LEVEL UP!')}
             </span>
             <Sparkles className="h-6 w-6 text-white" />
           </div>

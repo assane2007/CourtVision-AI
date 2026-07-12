@@ -143,7 +143,7 @@ export default function AICoachScreen() {
         if (!cancelledRef.current) {
           const errMsg: ChatMessage = {
             role: 'assistant',
-            content: 'Désolé, une erreur est survenue. Réessayez.',
+            content: td('Désolé, une erreur est survenue. Réessayez.', 'Sorry, an error occurred. Please try again.'),
             createdAt: new Date().toISOString(),
           }
           setMessages((prev) => [...prev, errMsg])
@@ -153,7 +153,7 @@ export default function AICoachScreen() {
         inputRef.current?.focus()
       }
     },
-    [isLoading, messages],
+    [isLoading, messages, td],
   )
 
   // ── Handle submit ────────────────────────────────────────────────────

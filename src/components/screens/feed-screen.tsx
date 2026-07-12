@@ -287,7 +287,7 @@ export default function FeedScreen() {
                   >
                     {/* Header */}
                     <div className="flex items-center gap-3 mb-3">
-                      <Avatar className="h-10 w-10 cursor-pointer" onClick={() => navigate('profile-other')} aria-label={td('Voir le profil', 'View profile')}>
+                      <Avatar className="h-10 w-10 cursor-pointer" onClick={() => navigate('profile-other', post.player.id)} aria-label={td('Voir le profil', 'View profile')}>
                         <AvatarImage src={post.player.avatar || undefined} />
                         <AvatarFallback className="text-xs font-bold">{post.player.name.charAt(0).toUpperCase()}</AvatarFallback>
                       </Avatar>
@@ -323,7 +323,7 @@ export default function FeedScreen() {
                       <div className="grid grid-cols-2 gap-2 mb-3 rounded-lg overflow-hidden">
                         {post.imageUrls.slice(0, 4).map((url, i) => (
                           <div key={i} className={`${post.imageUrls.length === 1 ? 'col-span-2' : ''} aspect-square bg-muted`}>
-                            <img src={url} alt={post.content?.substring(0, 100) || 'Photo de publication'} className="w-full h-full object-cover" />
+                            <img src={url} alt={post.content?.substring(0, 100) || td('Photo de publication', 'Post photo')} className="w-full h-full object-cover" />
                           </div>
                         ))}
                       </div>
@@ -335,7 +335,7 @@ export default function FeedScreen() {
                         <Heart className={`h-4 w-4 ${post.isLiked ? 'fill-current' : ''}`} />
                         {post.likesCount > 0 && <span>{post.likesCount}</span>}
                       </button>
-                      <button onClick={() => navigate('post-detail')} aria-label={td('Commentaire', 'Comment')} className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors min-h-[44px]">
+                      <button onClick={() => navigate('post-detail', post.id)} aria-label={td('Commentaire', 'Comment')} className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors min-h-[44px]">
                         <MessageCircle className="h-4 w-4" />
                         {post.commentsCount > 0 && <span>{post.commentsCount}</span>}
                       </button>

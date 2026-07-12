@@ -1,23 +1,16 @@
 import { NextResponse } from 'next/server'
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 /**
  * GET /api/auth/supabase/session
  *
  * Returns the current Supabase auth session (if any).
+ * Uses the server-side Supabase client which reads cookies from the request,
+ * so the session is properly resolved from the user's auth token.
  */
 export async function GET() {
   try {
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-      return NextResponse.json({ session: null })
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { createClient } = require('@supabase/supabase-js')
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-
+    const supabase = await createSupabaseServerClient()
     const { data: { session } } = await supabase.auth.getSession()
 
     return NextResponse.json({
@@ -34,7 +27,8 @@ export async function GET() {
           }
         : null,
     })
-  } catch {
+  } catch (error) {
+    console.error('[auth/supabase/session] Error:', error)
     return NextResponse.json({ session: null })
   }
 }

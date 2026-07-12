@@ -185,47 +185,61 @@ const testimonials = [
     nameKey: 'landing.testimonial2.name' as const,
     roleKey: 'landing.testimonial2.role' as const,
     quoteKey: 'landing.testimonial2.quote' as const,
-    initials: 'SC',
+    initials: 'AW',
     rating: 5,
   },
   {
     nameKey: 'landing.testimonial3.name' as const,
     roleKey: 'landing.testimonial3.role' as const,
     quoteKey: 'landing.testimonial3.quote' as const,
-    initials: 'KM',
+    initials: 'LM',
     rating: 5,
   },
   {
     nameKey: 'landing.testimonial4.name' as const,
     roleKey: 'landing.testimonial4.role' as const,
     quoteKey: 'landing.testimonial4.quote' as const,
-    initials: 'DW',
+    initials: 'KT',
     rating: 5,
   },
   {
     nameKey: 'landing.testimonial5.name' as const,
     roleKey: 'landing.testimonial5.role' as const,
     quoteKey: 'landing.testimonial5.quote' as const,
-    initials: 'YT',
+    initials: 'SO',
     rating: 5,
   },
   {
     nameKey: 'landing.testimonial6.name' as const,
     roleKey: 'landing.testimonial6.role' as const,
     quoteKey: 'landing.testimonial6.quote' as const,
-    initials: 'AD',
+    initials: 'DC',
+    rating: 5,
+  },
+  {
+    nameKey: 'landing.testimonial7.name' as const,
+    roleKey: 'landing.testimonial7.role' as const,
+    quoteKey: 'landing.testimonial7.quote' as const,
+    initials: 'MD',
+    rating: 5,
+  },
+  {
+    nameKey: 'landing.testimonial8.name' as const,
+    roleKey: 'landing.testimonial8.role' as const,
+    quoteKey: 'landing.testimonial8.quote' as const,
+    initials: 'JR',
     rating: 5,
   },
 ]
 
-const trustLogos = ['Nike Basketball', 'NBA', 'FIBA', 'ESPN', 'NCAA', 'EuroLeague']
+const trustLogos = ['Nike Basketball', 'NBA', 'FIBA', 'Spalding']
 
-const pressLogos = ['TechCrunch', 'Forbes', 'Sports Illustrated', 'The Athletic']
+const pressLogos = ['TechCrunch', 'ESPN', 'The Athletic']
 
 const statsBar = [
   { valueKey: '50,000+', labelKey: 'landing.statsBar.activePlayers' as const },
+  { valueKey: '4.9★', labelKey: 'landing.statsBar.avgRating' as const, subLabelKey: 'landing.statsBar.reviewsCount' as const },
   { valueKey: '2.5M+', labelKey: 'landing.statsBar.sessionsCompleted' as const },
-  { valueKey: '4.9★', labelKey: 'landing.statsBar.avgRating' as const },
   { valueKey: '23%', labelKey: 'landing.statsBar.avgImprovement' as const },
 ]
 
@@ -539,6 +553,9 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                 <div key={i} className="text-center">
                   <div className="text-2xl sm:text-3xl font-extrabold text-orange-400">{stat.valueKey}</div>
                   <div className="text-xs sm:text-sm text-muted-foreground mt-1">{t(stat.labelKey)}</div>
+                  {'subLabelKey' in stat && (
+                    <div className="text-xs text-muted-foreground/70 mt-0.5">{t((stat as { subLabelKey: 'landing.statsBar.reviewsCount' }).subLabelKey)}</div>
+                  )}
                 </div>
               ))}
             </div>

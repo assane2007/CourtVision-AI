@@ -40,7 +40,7 @@ import { BottomNav } from '@/components/shared/bottom-nav'
 import { PullToRefresh } from '@/components/shared/pull-to-refresh'
 import { AnimatedNumber } from '@/components/shared/animated-number'
 import { CATEGORY_META, getCategoryLabel } from '@/lib/constants'
-import { apiFetch, formatLocaleDate } from '@/lib/utils'
+import { apiFetch, formatLocaleDate, getDrillName } from '@/lib/utils'
 import { containerVariants, itemVariants } from '@/lib/animations'
 import { useTranslation } from '@/components/providers/language-provider'
 
@@ -97,7 +97,7 @@ interface SessionEntry {
   totalScore: number
   totalReps: number
   totalDrills: number
-  drills: Array<{ drill: { nameFr: string } }>
+  drills: Array<{ drill: { name?: string; nameFr: string } }>
 }
 
 // ── Component ───────────────────────────────────────────────────────
@@ -393,7 +393,7 @@ export function StatsScreen() {
                           })
                           const drillNames = session.drills
                             ?.slice(0, 2)
-                            .map((d) => d.drill.nameFr)
+                            .map((d) => getDrillName(d.drill, language))
                             .join(', ') ?? '—'
                           const extra = session.drills?.length > 2 ? ` +${session.drills.length - 2}` : ''
                           return (

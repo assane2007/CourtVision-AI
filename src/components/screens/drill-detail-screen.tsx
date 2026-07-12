@@ -23,14 +23,14 @@ import { BottomNav } from '@/components/shared/bottom-nav'
 import { SwipeToGoBack } from '@/components/shared/swipe-back'
 import { DIFFICULTY_CONFIG } from '@/lib/constants'
 import { DrillDemoAnimation } from '@/components/drill-demo-animation'
-import { apiFetch } from '@/lib/utils'
+import { apiFetch, getDrillName } from '@/lib/utils'
 import { containerVariants, itemVariants } from '@/lib/animations'
 import { toast } from 'sonner'
 import { useTranslation } from '@/components/providers/language-provider'
 
 // ── Component ───────────────────────────────────────────────────────
 export function DrillDetailScreen() {
-  const { t, tc, td } = useTranslation()
+  const { t, tc, td, language } = useTranslation()
   const selectedDrillId = useAppStore(s => s.selectedDrillId)
   const goBack = useAppStore(s => s.goBack)
   const navigate = useAppStore(s => s.navigate)
@@ -160,7 +160,7 @@ export function DrillDetailScreen() {
             <div className="flex items-center gap-2 mx-auto">
               <span className="text-xl">{drill.icon}</span>
               <h1 className="text-base font-semibold truncate max-w-[200px]">
-                {drill.nameFr}
+                {getDrillName(drill, language)}
               </h1>
             </div>
 
@@ -198,7 +198,7 @@ export function DrillDetailScreen() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h2 className="text-xl font-bold leading-tight mb-2">
-                      {drill.nameFr}
+                      {getDrillName(drill, language)}
                     </h2>
                     <div className="flex flex-wrap gap-2">
                       <Badge variant="outline" className="text-xs font-medium">

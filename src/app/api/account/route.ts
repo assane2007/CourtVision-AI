@@ -24,7 +24,12 @@ export async function DELETE(request: Request) {
       )
     }
 
-    const body = await request.json()
+    let body: { password?: string; hardDelete?: boolean }
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    }
     const { password, hardDelete } = body
 
     // Verify password
@@ -114,7 +119,12 @@ export async function PATCH(request: Request) {
     }
 
     const playerId = user.id
-    const body = await request.json()
+    let body: { action?: string }
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    }
     const { action } = body
 
     if (action !== 'reactivate') {
