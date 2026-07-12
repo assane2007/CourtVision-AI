@@ -24,9 +24,9 @@ export const Decimal = runtime.Decimal
 
 
 export const NullTypes = {
-  DbNull: runtime.NullTypes.DbNull as (new (secret: never) => typeof runtime.DbNull),
-  JsonNull: runtime.NullTypes.JsonNull as (new (secret: never) => typeof runtime.JsonNull),
-  AnyNull: runtime.NullTypes.AnyNull as (new (secret: never) => typeof runtime.AnyNull),
+  DbNull: runtime.NullTypes.DbNull as (new (_secret: never) => typeof runtime.NullTypes.DbNull),
+  JsonNull: runtime.NullTypes.JsonNull as (new (_secret: never) => typeof runtime.NullTypes.JsonNull),
+  AnyNull: runtime.NullTypes.AnyNull as (new (_secret: never) => typeof runtime.NullTypes.AnyNull),
 }
 /**
  * Helper for filtering JSON entries that have `null` on the database (empty on the db)

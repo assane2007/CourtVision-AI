@@ -5242,32 +5242,10 @@ export type PrismaAction =
 export type TransactionClient = Omit<DefaultPrismaClient, runtime.ITXClientDenyList>
 
 
-/**
- * Prisma Client JS version: 7.8.0
- * Query Engine version: 3c6e192761c0362d496ed980de936e2f3cebcd3a
- */
-export const prismaVersion: PrismaVersion = {
-  client: "7.8.0",
-  engine: "3c6e192761c0362d496ed980de936e2f3cebcd3a"
+function Prisma(...args: any[]): any {
+  // eslint-disable-next-line no-console
+  console.warn('Placeholder: Prisma is not implemented yet.', args);
+  return null;
 }
 
-/**
- * Utility Types
- */
-
-export type Bytes = runtime.Bytes
-export type JsonObject = runtime.JsonObject
-export type JsonArray = runtime.JsonArray
-export type JsonValue = runtime.JsonValue
-export type InputJsonObject = runtime.InputJsonObject
-export type InputJsonArray = runtime.InputJsonArray
-export type InputJsonValue = runtime.InputJsonValue
-
-
-export const NullTypes = {
-  DbNull: runtime.NullTypes.DbNull as (new (secret: never) => typeof runtime.NullTypes.DbNull),
-  JsonNull: runtime.NullTypes.JsonNull as (new (secret: never) => typeof runtime.NullTypes.JsonNull),
-  AnyNull: runtime.NullTypes.AnyNull as (new (secret: never) => typeof runtime.NullTypes.AnyNull),
-}
-
-// ... rest of code ...
+export default Prisma;
