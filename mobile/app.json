@@ -1,0 +1,94 @@
+{
+  "expo": {
+    "name": "CourtVision AI",
+    "slug": "courtvision-ai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.courtvision.ai",
+      "buildNumber": "1",
+      "infoPlist": {
+        "CFBundleAllowMixedLocalizations": true,
+        "NSCameraUsageDescription": "CourtVision AI needs camera access to analyze your basketball form in real-time.",
+        "NSMicrophoneUsageDescription": "CourtVision AI needs microphone access for voice coaching features.",
+        "NSPhotoLibraryUsageDescription": "CourtVision AI needs photo library access to save and share your workout highlights.",
+        "UIBackgroundModes": ["fetch", "remote-notification"],
+        "NSFaceIDUsageDescription": "CourtVision AI uses Face ID to securely access your account."
+      },
+      "configPlugins": ["expo-camera"]
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#000000"
+      },
+      "package": "com.courtvision.ai",
+      "versionCode": 1,
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "USE_BIOMETRIC",
+        "POST_NOTIFICATIONS",
+        "VIBRATE",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ],
+      "configPlugins": ["expo-camera"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-asset",
+        {
+          "assets": ["./assets/fonts"]
+        }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Inter-Bold.ttf",
+            "./assets/fonts/Inter-Medium.ttf",
+            "./assets/fonts/Inter-Regular.ttf",
+            "./assets/fonts/Inter-SemiBold.ttf"
+          ]
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#f97316",
+          "defaultChannel": "courtvision-workouts"
+        }
+      ]
+    ],
+    "scheme": "courtvision",
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "apiBaseUrl": "https://courtvision-ai.vercel.app"
+    },
+    "newArchEnabled": true,
+    "updates": {
+      "url": "https://u.expo.dev/your-project-id",
+      "requestHeaders": {
+        "expo-channel-name": "main"
+      }
+    }
+  }
+}
