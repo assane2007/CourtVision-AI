@@ -9,8 +9,7 @@
  * 🟢 You can import this file directly.
  */
 import type * as runtime from "@prisma/client/runtime/client";
-import type * as $Enums from "../enums"
-import type * as Prisma from "../internal/prismaNamespace";
+ import type * as $Enums from"../enums" import type * as Prisma from"../internal/prismaNamespace";
 
 /**
  * Model Player
@@ -24935,8 +24934,7 @@ export interface PlayerDelegate<ExtArgs extends runtime.Types.Extensions.Interna
               ? never
               : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
           }[OrderFields]
-      : 'Error: If you provide "take", you also need to provide "orderBy"'
-    : 'skip' extends Prisma.Keys<T>
+      : 'Error: If you provide "take", you also need to provide "orderBy"' :'skip' extends Prisma.Keys<T>
     ? 'orderBy' extends Prisma.Keys<T>
       ? ByValid extends Prisma.True
         ? {}

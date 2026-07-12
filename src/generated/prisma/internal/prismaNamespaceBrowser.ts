@@ -103,7 +103,7 @@ export const ModelName = {
   FeatureFlag: 'FeatureFlag'
 } as const
 
-export type ModelName = (typeof ModelName)[keyof typeof ModelName]
+
 
 /*
  * Enums
@@ -116,7 +116,7 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
   Serializable: 'Serializable'
 } as const)
 
-export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
+
 
 
 export const PlayerScalarFieldEnum = {
@@ -187,7 +187,7 @@ export const PlayerScalarFieldEnum = {
   isOnboarded: 'isOnboarded'
 } as const
 
-export type PlayerScalarFieldEnum = (typeof PlayerScalarFieldEnum)[keyof typeof PlayerScalarFieldEnum]
+
 
 
 export const DrillScalarFieldEnum = {
@@ -209,7 +209,7 @@ export const DrillScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type DrillScalarFieldEnum = (typeof DrillScalarFieldEnum)[keyof typeof DrillScalarFieldEnum]
+
 
 
 export const WorkoutSessionScalarFieldEnum = {
@@ -230,7 +230,7 @@ export const WorkoutSessionScalarFieldEnum = {
   updatedAt: 'updatedAt'
 } as const
 
-export type WorkoutSessionScalarFieldEnum = (typeof WorkoutSessionScalarFieldEnum)[keyof typeof WorkoutSessionScalarFieldEnum]
+
 
 
 export const WorkoutSessionDrillScalarFieldEnum = {
@@ -244,7 +244,7 @@ export const WorkoutSessionDrillScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type WorkoutSessionDrillScalarFieldEnum = (typeof WorkoutSessionDrillScalarFieldEnum)[keyof typeof WorkoutSessionDrillScalarFieldEnum]
+
 
 
 export const DrillFavoriteScalarFieldEnum = {
@@ -254,7 +254,7 @@ export const DrillFavoriteScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type DrillFavoriteScalarFieldEnum = (typeof DrillFavoriteScalarFieldEnum)[keyof typeof DrillFavoriteScalarFieldEnum]
+
 
 
 export const TrainingPlanScalarFieldEnum = {
@@ -268,7 +268,7 @@ export const TrainingPlanScalarFieldEnum = {
   updatedAt: 'updatedAt'
 } as const
 
-export type TrainingPlanScalarFieldEnum = (typeof TrainingPlanScalarFieldEnum)[keyof typeof TrainingPlanScalarFieldEnum]
+
 
 
 export const TrainingPlanDrillScalarFieldEnum = {
@@ -282,7 +282,7 @@ export const TrainingPlanDrillScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type TrainingPlanDrillScalarFieldEnum = (typeof TrainingPlanDrillScalarFieldEnum)[keyof typeof TrainingPlanDrillScalarFieldEnum]
+
 
 
 export const AchievementScalarFieldEnum = {
@@ -295,7 +295,7 @@ export const AchievementScalarFieldEnum = {
   unlockedAt: 'unlockedAt'
 } as const
 
-export type AchievementScalarFieldEnum = (typeof AchievementScalarFieldEnum)[keyof typeof AchievementScalarFieldEnum]
+
 
 
 export const ReactionScoreScalarFieldEnum = {
@@ -307,7 +307,7 @@ export const ReactionScoreScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type ReactionScoreScalarFieldEnum = (typeof ReactionScoreScalarFieldEnum)[keyof typeof ReactionScoreScalarFieldEnum]
+
 
 
 export const AIChatMessageScalarFieldEnum = {
@@ -318,7 +318,7 @@ export const AIChatMessageScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type AIChatMessageScalarFieldEnum = (typeof AIChatMessageScalarFieldEnum)[keyof typeof AIChatMessageScalarFieldEnum]
+
 
 
 export const XpLogScalarFieldEnum = {
@@ -330,7 +330,7 @@ export const XpLogScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type XpLogScalarFieldEnum = (typeof XpLogScalarFieldEnum)[keyof typeof XpLogScalarFieldEnum]
+
 
 
 export const FriendshipScalarFieldEnum = {
@@ -342,7 +342,7 @@ export const FriendshipScalarFieldEnum = {
   updatedAt: 'updatedAt'
 } as const
 
-export type FriendshipScalarFieldEnum = (typeof FriendshipScalarFieldEnum)[keyof typeof FriendshipScalarFieldEnum]
+
 
 
 export const TeamScalarFieldEnum = {
@@ -358,7 +358,7 @@ export const TeamScalarFieldEnum = {
   ownerId: 'ownerId'
 } as const
 
-export type TeamScalarFieldEnum = (typeof TeamScalarFieldEnum)[keyof typeof TeamScalarFieldEnum]
+
 
 
 export const TeamMemberScalarFieldEnum = {
@@ -369,7 +369,7 @@ export const TeamMemberScalarFieldEnum = {
   joinedAt: 'joinedAt'
 } as const
 
-export type TeamMemberScalarFieldEnum = (typeof TeamMemberScalarFieldEnum)[keyof typeof TeamMemberScalarFieldEnum]
+
 
 
 export const ChallengeScalarFieldEnum = {
@@ -387,7 +387,7 @@ export const ChallengeScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type ChallengeScalarFieldEnum = (typeof ChallengeScalarFieldEnum)[keyof typeof ChallengeScalarFieldEnum]
+
 
 
 export const ChallengeParticipantScalarFieldEnum = {
@@ -401,7 +401,7 @@ export const ChallengeParticipantScalarFieldEnum = {
   joinedAt: 'joinedAt'
 } as const
 
-export type ChallengeParticipantScalarFieldEnum = (typeof ChallengeParticipantScalarFieldEnum)[keyof typeof ChallengeParticipantScalarFieldEnum]
+
 
 
 export const TeamChallengeScalarFieldEnum = {
@@ -411,7 +411,7 @@ export const TeamChallengeScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type TeamChallengeScalarFieldEnum = (typeof TeamChallengeScalarFieldEnum)[keyof typeof TeamChallengeScalarFieldEnum]
+
 
 
 export const FeedPostScalarFieldEnum = {
@@ -427,7 +427,7 @@ export const FeedPostScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type FeedPostScalarFieldEnum = (typeof FeedPostScalarFieldEnum)[keyof typeof FeedPostScalarFieldEnum]
+
 
 
 export const FeedPostLikeScalarFieldEnum = {
@@ -437,7 +437,7 @@ export const FeedPostLikeScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type FeedPostLikeScalarFieldEnum = (typeof FeedPostLikeScalarFieldEnum)[keyof typeof FeedPostLikeScalarFieldEnum]
+
 
 
 export const CommentScalarFieldEnum = {
@@ -450,7 +450,7 @@ export const CommentScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type CommentScalarFieldEnum = (typeof CommentScalarFieldEnum)[keyof typeof CommentScalarFieldEnum]
+
 
 
 export const CommentReplyScalarFieldEnum = {
@@ -461,7 +461,7 @@ export const CommentReplyScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type CommentReplyScalarFieldEnum = (typeof CommentReplyScalarFieldEnum)[keyof typeof CommentReplyScalarFieldEnum]
+
 
 
 export const ConversationScalarFieldEnum = {
@@ -473,7 +473,7 @@ export const ConversationScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type ConversationScalarFieldEnum = (typeof ConversationScalarFieldEnum)[keyof typeof ConversationScalarFieldEnum]
+
 
 
 export const ConversationMemberScalarFieldEnum = {
@@ -484,7 +484,7 @@ export const ConversationMemberScalarFieldEnum = {
   joinedAt: 'joinedAt'
 } as const
 
-export type ConversationMemberScalarFieldEnum = (typeof ConversationMemberScalarFieldEnum)[keyof typeof ConversationMemberScalarFieldEnum]
+
 
 
 export const MessageScalarFieldEnum = {
@@ -499,7 +499,7 @@ export const MessageScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type MessageScalarFieldEnum = (typeof MessageScalarFieldEnum)[keyof typeof MessageScalarFieldEnum]
+
 
 
 export const FollowScalarFieldEnum = {
@@ -509,7 +509,7 @@ export const FollowScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type FollowScalarFieldEnum = (typeof FollowScalarFieldEnum)[keyof typeof FollowScalarFieldEnum]
+
 
 
 export const LiveSessionScalarFieldEnum = {
@@ -524,7 +524,7 @@ export const LiveSessionScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type LiveSessionScalarFieldEnum = (typeof LiveSessionScalarFieldEnum)[keyof typeof LiveSessionScalarFieldEnum]
+
 
 
 export const LiveParticipantScalarFieldEnum = {
@@ -536,7 +536,7 @@ export const LiveParticipantScalarFieldEnum = {
   reps: 'reps'
 } as const
 
-export type LiveParticipantScalarFieldEnum = (typeof LiveParticipantScalarFieldEnum)[keyof typeof LiveParticipantScalarFieldEnum]
+
 
 
 export const NotificationScalarFieldEnum = {
@@ -551,7 +551,7 @@ export const NotificationScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type NotificationScalarFieldEnum = (typeof NotificationScalarFieldEnum)[keyof typeof NotificationScalarFieldEnum]
+
 
 
 export const VideoScalarFieldEnum = {
@@ -572,7 +572,7 @@ export const VideoScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type VideoScalarFieldEnum = (typeof VideoScalarFieldEnum)[keyof typeof VideoScalarFieldEnum]
+
 
 
 export const VideoAnnotationScalarFieldEnum = {
@@ -586,7 +586,7 @@ export const VideoAnnotationScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type VideoAnnotationScalarFieldEnum = (typeof VideoAnnotationScalarFieldEnum)[keyof typeof VideoAnnotationScalarFieldEnum]
+
 
 
 export const VideoHighlightScalarFieldEnum = {
@@ -600,7 +600,7 @@ export const VideoHighlightScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type VideoHighlightScalarFieldEnum = (typeof VideoHighlightScalarFieldEnum)[keyof typeof VideoHighlightScalarFieldEnum]
+
 
 
 export const VideoExportScalarFieldEnum = {
@@ -616,7 +616,7 @@ export const VideoExportScalarFieldEnum = {
   completedAt: 'completedAt'
 } as const
 
-export type VideoExportScalarFieldEnum = (typeof VideoExportScalarFieldEnum)[keyof typeof VideoExportScalarFieldEnum]
+
 
 
 export const SessionCommentScalarFieldEnum = {
@@ -628,7 +628,7 @@ export const SessionCommentScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type SessionCommentScalarFieldEnum = (typeof SessionCommentScalarFieldEnum)[keyof typeof SessionCommentScalarFieldEnum]
+
 
 
 export const PoseDataScalarFieldEnum = {
@@ -642,7 +642,7 @@ export const PoseDataScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type PoseDataScalarFieldEnum = (typeof PoseDataScalarFieldEnum)[keyof typeof PoseDataScalarFieldEnum]
+
 
 
 export const ShotDetectionScalarFieldEnum = {
@@ -659,7 +659,7 @@ export const ShotDetectionScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type ShotDetectionScalarFieldEnum = (typeof ShotDetectionScalarFieldEnum)[keyof typeof ShotDetectionScalarFieldEnum]
+
 
 
 export const FormAnalysisScalarFieldEnum = {
@@ -681,7 +681,7 @@ export const FormAnalysisScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type FormAnalysisScalarFieldEnum = (typeof FormAnalysisScalarFieldEnum)[keyof typeof FormAnalysisScalarFieldEnum]
+
 
 
 export const PlayerInsightScalarFieldEnum = {
@@ -696,7 +696,7 @@ export const PlayerInsightScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type PlayerInsightScalarFieldEnum = (typeof PlayerInsightScalarFieldEnum)[keyof typeof PlayerInsightScalarFieldEnum]
+
 
 
 export const PlayerDocumentScalarFieldEnum = {
@@ -709,7 +709,7 @@ export const PlayerDocumentScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type PlayerDocumentScalarFieldEnum = (typeof PlayerDocumentScalarFieldEnum)[keyof typeof PlayerDocumentScalarFieldEnum]
+
 
 
 export const VoiceSessionScalarFieldEnum = {
@@ -723,7 +723,7 @@ export const VoiceSessionScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type VoiceSessionScalarFieldEnum = (typeof VoiceSessionScalarFieldEnum)[keyof typeof VoiceSessionScalarFieldEnum]
+
 
 
 export const PredictionScalarFieldEnum = {
@@ -738,7 +738,7 @@ export const PredictionScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type PredictionScalarFieldEnum = (typeof PredictionScalarFieldEnum)[keyof typeof PredictionScalarFieldEnum]
+
 
 
 export const GeneratedWorkoutScalarFieldEnum = {
@@ -755,7 +755,7 @@ export const GeneratedWorkoutScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type GeneratedWorkoutScalarFieldEnum = (typeof GeneratedWorkoutScalarFieldEnum)[keyof typeof GeneratedWorkoutScalarFieldEnum]
+
 
 
 export const EmailVerificationTokenScalarFieldEnum = {
@@ -767,7 +767,7 @@ export const EmailVerificationTokenScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type EmailVerificationTokenScalarFieldEnum = (typeof EmailVerificationTokenScalarFieldEnum)[keyof typeof EmailVerificationTokenScalarFieldEnum]
+
 
 
 export const TwoFactorBackupCodeScalarFieldEnum = {
@@ -779,7 +779,7 @@ export const TwoFactorBackupCodeScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type TwoFactorBackupCodeScalarFieldEnum = (typeof TwoFactorBackupCodeScalarFieldEnum)[keyof typeof TwoFactorBackupCodeScalarFieldEnum]
+
 
 
 export const DeviceScalarFieldEnum = {
@@ -794,7 +794,7 @@ export const DeviceScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type DeviceScalarFieldEnum = (typeof DeviceScalarFieldEnum)[keyof typeof DeviceScalarFieldEnum]
+
 
 
 export const PushSubscriptionScalarFieldEnum = {
@@ -807,7 +807,7 @@ export const PushSubscriptionScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type PushSubscriptionScalarFieldEnum = (typeof PushSubscriptionScalarFieldEnum)[keyof typeof PushSubscriptionScalarFieldEnum]
+
 
 
 export const DailyLoginScalarFieldEnum = {
@@ -818,7 +818,7 @@ export const DailyLoginScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type DailyLoginScalarFieldEnum = (typeof DailyLoginScalarFieldEnum)[keyof typeof DailyLoginScalarFieldEnum]
+
 
 
 export const OfflineActionScalarFieldEnum = {
@@ -832,7 +832,7 @@ export const OfflineActionScalarFieldEnum = {
   syncedAt: 'syncedAt'
 } as const
 
-export type OfflineActionScalarFieldEnum = (typeof OfflineActionScalarFieldEnum)[keyof typeof OfflineActionScalarFieldEnum]
+
 
 
 export const RefreshTokenScalarFieldEnum = {
@@ -846,7 +846,7 @@ export const RefreshTokenScalarFieldEnum = {
   userAgent: 'userAgent'
 } as const
 
-export type RefreshTokenScalarFieldEnum = (typeof RefreshTokenScalarFieldEnum)[keyof typeof RefreshTokenScalarFieldEnum]
+
 
 
 export const AuditLogScalarFieldEnum = {
@@ -861,7 +861,7 @@ export const AuditLogScalarFieldEnum = {
   timestamp: 'timestamp'
 } as const
 
-export type AuditLogScalarFieldEnum = (typeof AuditLogScalarFieldEnum)[keyof typeof AuditLogScalarFieldEnum]
+
 
 
 export const FeatureFlagScalarFieldEnum = {
@@ -871,7 +871,7 @@ export const FeatureFlagScalarFieldEnum = {
   updatedAt: 'updatedAt'
 } as const
 
-export type FeatureFlagScalarFieldEnum = (typeof FeatureFlagScalarFieldEnum)[keyof typeof FeatureFlagScalarFieldEnum]
+
 
 
 export const SortOrder = {
@@ -879,7 +879,7 @@ export const SortOrder = {
   desc: 'desc'
 } as const
 
-export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
 
 
 export const QueryMode = {
@@ -887,7 +887,7 @@ export const QueryMode = {
   insensitive: 'insensitive'
 } as const
 
-export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
 
 
 export const NullsOrder = {
@@ -895,7 +895,7 @@ export const NullsOrder = {
   last: 'last'
 } as const
 
-export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
 
 
 function Prisma(...args: any[]): any {

@@ -1,6 +1,6 @@
 'use client';
 import { Component, type ReactNode, useState, useEffect } from 'react';
- import dynamic from'next/dynamic';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useTranslation } from '@/components/providers/language-provider';
@@ -11,10 +11,6 @@ import { LoadingSpinner } from '@/components/screen-transition';
 
 // ── Core screens (preloaded for fast initial render) ──────────────────────────
 
-const LoadingSpinner = dynamic(
-  () => import('@/components/screen-transition').then(m => ({ default: m.LoadingSpinner })),
-  { ssr: false },
-)
 const LandingPage = dynamic(() => import('@/components/landing/landing-page'), { ssr: false })
 const AuthScreen = dynamic(() => import('@/components/screens/auth-screen'), { ssr: false })
 const OnboardingScreen = dynamic(() => import('@/components/screens/onboarding-screen'), { ssr: false })

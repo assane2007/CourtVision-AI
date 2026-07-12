@@ -34,11 +34,6 @@ function injectTokenFromHeader(request: NextRequest): void {
 }
 
 // ── Main Middleware ───────────────────────────────────────────────────────────
-// NOTE: Next.js 16 renamed this convention to "proxy" (src/proxy.ts).
-// This file is kept for compatibility. The function name "middleware" is
-// deprecated but still functional — it will print a one-time warning at startup.
-// When the sandbox allows file deletion, migrate to src/proxy.ts exclusively.
-
 export async function middleware(request: NextRequest) {
   const startTime = performance.now()
 
