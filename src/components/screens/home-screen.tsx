@@ -19,6 +19,7 @@ interface DailyStat { date: string; sessions: number; reps: number; score: numbe
 interface StatsResponse {
   totalSessions: number; totalReps: number; avgScore: number; weekSessions: number;
   dailyStats: DailyStat[]; currentStreak: number; bestStreak: number; achievementCount: number;
+  weeklyTrainingHours: number; drillsCompleted: number;
 }
 interface RecommendationDrill {
   id: string; name: string; nameFr: string; category: string; difficulty: string;
@@ -315,8 +316,8 @@ function SessionRow({ session, index }: { session: Session; index: number }) {
 }
 
 // ── Quick Action Button ───────────────────────────────────────────────────
-function QuickAction({ icon: Icon, label, screen, color, delay, onClick }: {
-  icon: React.ElementType; label: string; screen: string; color: string; delay: number; onClick: () => void;
+function QuickAction({ icon: Icon, label, color, delay, onClick }: {
+  icon: React.ElementType; label: string; color: string; delay: number; onClick: () => void;
 }) {
   return (
     <motion.button
@@ -685,8 +686,8 @@ export default function HomeScreen() {
             className="grid grid-cols-2 gap-3 mb-5"
           >
             <BentoStatCard icon={Flame} value={stats.currentStreak} label={td('Jours consécutifs', 'Day streak')} color="bg-orange-500" accentColor="#f97316" delay={0.06} />
-            <BentoStatCard icon={Activity} value={stats.weekSessions} label={td('Sessions semaine', 'Week sessions')} color="bg-amber-500" accentColor="#f59e0b" delay={0.1} />
-            <BentoStatCard icon={Target} value={`${Math.round(stats.avgScore)}%`} label={td('Score moyen', 'Avg score')} color="bg-red-500" accentColor="#ef4444" delay={0.14} />
+            <BentoStatCard icon={Activity} value={`${stats.weeklyTrainingHours}h`} label={td('Heures semaine', 'Weekly hours')} color="bg-amber-500" accentColor="#f59e0b" delay={0.1} />
+            <BentoStatCard icon={Target} value={stats.drillsCompleted} label={td('Exercices maîtrisés', 'Drills completed')} color="bg-red-500" accentColor="#ef4444" delay={0.14} />
             <BentoStatCard icon={Trophy} value={stats.achievementCount} label={td('Succès débloqués', 'Achievements')} color="bg-orange-600" accentColor="#ea580c" delay={0.18} />
           </motion.div>
         ) : null}
@@ -698,9 +699,9 @@ export default function HomeScreen() {
           transition={{ delay: 0.28 }}
           className="grid grid-cols-3 gap-3 mb-7"
         >
-          <QuickAction icon={Camera} label={td('Caméra IA', 'AI Camera')} screen="camera-workout" color="#f97316" delay={0.3} onClick={() => navigate('camera-workout')} />
-          <QuickAction icon={TrendingUp} label={td('Stats', 'Stats')} screen="stats" color="#f59e0b" delay={0.34} onClick={() => navigate('stats')} />
-          <QuickAction icon={Trophy} label={td('Classement', 'Leaderboard')} screen="leaderboard" color="#ef4444" delay={0.38} onClick={() => navigate('leaderboard')} />
+          <QuickAction icon={Camera} label={td('Caméra IA', 'AI Camera')} color="#f97316" delay={0.3} onClick={() => navigate('camera-workout')} />
+          <QuickAction icon={TrendingUp} label={td('Stats', 'Stats')} color="#f59e0b" delay={0.34} onClick={() => navigate('stats')} />
+          <QuickAction icon={Trophy} label={td('Classement', 'Leaderboard')} color="#ef4444" delay={0.38} onClick={() => navigate('leaderboard')} />
         </motion.div>
 
         {/* ── Recommended Drills ───────────────────────────────────────── */}

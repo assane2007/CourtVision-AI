@@ -35,6 +35,8 @@ export const GET = withAuth(async (request, session) => {
         allSessions,
         sessionDrills,
         achievementCount,
+        weekDurationResult,
+        uniqueDrillsResult,
       ] = await Promise.all([
         // Total session count
         db.workoutSession.count({ where: { playerId } }),
@@ -81,6 +83,19 @@ export const GET = withAuth(async (request, session) => {
 
         // Achievement count
         db.achievement.count({ where: { playerId } }),
+
+        // Weekly training duration in seconds
+        db.workoutSession.aggregate({
+          where: { playerId, startedAt: { gte: oneWeekAgo } },
+          _sum: { totalDurationSec: true },
+        }),
+
+        // Unique drills completed (distinct drillId)
+        db.workoutSessionDrill.findMany({
+          where: { session: { playerId } },
+          select: { drillId: true },
+          distinct: ['drillId'],
+        }),
       ])
 
       // ── Build daily stats (last N days based on query param) ────────────
@@ -149,6 +164,8 @@ export const GET = withAuth(async (request, session) => {
         currentStreak,
         bestStreak,
         achievementCount,
+        weeklyTrainingHours: Math.round(((weekDurationResult._sum.totalDurationSec ?? 0) / 3600) * 10) / 10,
+        drillsCompleted: uniqueDrillsResult.length,
       }
     })
 
