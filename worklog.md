@@ -953,3 +953,35 @@ Stage Summary:
 - All 42 screens registered in SPA (including new analytics)
 - World-class: landing page, onboarding, analytics dashboard
 - Remaining: native mobile (out of scope), Prisma migrations (needs DB URL)
+
+---
+Task ID: 15
+Agent: Main
+Task: Create native mobile app (React Native + Expo) for CourtVision AI
+
+Work Log:
+- Created complete React Native Expo project in `/mobile/` directory (50 files)
+- Configured Expo Router with file-based routing: `(auth)` group for login/signup/onboarding, `(tabs)` group for 5 main tabs
+- Built 14+ screens: Login, Signup, 4-step Onboarding, Home Dashboard, Training Hub, Drill Detail, Camera Workout, Stats, AI Coach Chat, Messages, Profile, Achievements, Leaderboard, Settings, Notifications
+- Created API service layer (6 modules) connecting to existing Next.js backend: auth, player, drill, ai, social services
+- Created Zustand stores: app store (auth, nav, theme, player stats), auth store, workout store (timer, plan execution)
+- Added native feature hooks: usePushNotifications, useBiometrics (Face ID/Touch ID), useCameraWorkout, useHaptics
+- Implemented i18n with react-i18next (FR/EN) — 200+ translation keys matching web app
+- Dark mode: CSS variables + Zustand state + manual/system toggle
+- NativeWind (Tailwind CSS) for React Native styling
+- EAS Build config with dev/preview/production profiles
+- Camera workout screen with native expo-camera, rep counter, score display, timer
+- Haptic feedback on every interaction (light, medium, heavy, success, warning, error)
+- Push notification setup with notification channels (Android) and categories (iOS)
+- Biometric authentication hook for secure login
+- API client with auth interceptor, 401 auto-logout
+- Comprehensive README.md with architecture, setup, and deployment docs
+- TypeScript strict mode with type declarations for native modules
+
+Stage Summary:
+- 50 files created in `/mobile/` directory
+- Full Expo Router navigation with auth flow and tab bar
+- All screens connect to existing 119+ API routes
+- Native camera, haptics, push notifications, biometrics integrated
+- Ready for `bun install && eas build` to compile for iOS/Android
+- App bundle ID: com.courtvision.ai (both platforms)
