@@ -99,7 +99,7 @@ describe('queue processors', () => {
     })
 
     it('returns empty result when video file cannot be read', async () => {
-      const { isFfmpegAvailable, existsSync } = await import('@/lib/video/frame-extractor')
+      const { isFfmpegAvailable } = await import('@/lib/video/frame-extractor')
       vi.mocked(isFfmpegAvailable).mockReturnValue(true)
       mockVideoFindUnique.mockResolvedValue({ url: '/uploads/missing.mp4', playerId: 'p1' })
 

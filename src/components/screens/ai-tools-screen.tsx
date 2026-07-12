@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { cardHover, fadeUpProps } from '@/lib/animations'
 import {
   ArrowLeft,
   MessageCircle,
@@ -75,6 +76,8 @@ const IMAGE_SIZES = [
 
 // ── Animation Variants ────────────────────────────────────────────────────────
 
+// Local fade-up shorthand for tab content (uses shared variants above)
+// Re-exported as local variant with initial/animate keys for stagger compatibility
 const fadeUp = {
   initial: { opacity: 0, y: 16 },
   animate: { opacity: 1, y: 0 },
@@ -82,6 +85,7 @@ const fadeUp = {
   transition: { duration: 0.3, ease: 'easeOut' as const },
 }
 
+// Local stagger with initial/animate keys to match fadeUp variant labels
 const stagger = {
   animate: { transition: { staggerChildren: 0.06 } },
 }
@@ -164,8 +168,7 @@ export default function AIToolsScreen() {
           {/* ── Tab Triggers ─────────────────────────────────────── */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25 }}
+            animate={{ opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' as const } }}
           >
             <TabsList className="w-full h-auto flex-wrap gap-1 bg-muted/60 p-1">
               {TABS.map((tab) => (
@@ -186,7 +189,7 @@ export default function AIToolsScreen() {
           <TabsContent value="chat">
             <motion.div
               className="flex flex-col items-center justify-center py-20 gap-4 text-center"
-              {...fadeUp}
+              {...fadeUpProps}
             >
               <div className="h-16 w-16 rounded-2xl bg-orange-100 dark:bg-orange-950 flex items-center justify-center">
                 <MessageCircle className="h-8 w-8 text-orange-500" />
@@ -853,6 +856,7 @@ function ImageGenTab() {
             animate="animate"
             exit="exit"
           >
+            <motion.div {...cardHover}>
             <Card>
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
@@ -873,6 +877,7 @@ function ImageGenTab() {
                 </p>
               </CardContent>
             </Card>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1024,7 +1029,7 @@ function WebSearchTab() {
           </motion.p>
           {results.map((r, i) => (
             <motion.div key={i} variants={fadeUp}>
-              <Card className="group hover:shadow-md transition-shadow">
+              <Card className="group hover:shadow-md dark:hover:shadow-black/20 transition-shadow">
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="text-sm font-semibold leading-snug line-clamp-2">

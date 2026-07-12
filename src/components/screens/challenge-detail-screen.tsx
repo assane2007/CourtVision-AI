@@ -159,8 +159,8 @@ export default function ChallengeDetailScreen() {
                       }`}>
                         <div className="w-8 text-center">
                           {i === 0 ? <Medal className="h-5 w-5 text-amber-500 mx-auto" /> :
-                           i === 1 ? <Medal className="h-5 w-5 text-gray-400 mx-auto" /> :
-                           i === 2 ? <Medal className="h-5 w-5 text-orange-700 mx-auto" /> :
+                           i === 1 ? <Medal className="h-5 w-5 text-gray-400 dark:text-gray-500 mx-auto" /> :
+                           i === 2 ? <Medal className="h-5 w-5 text-orange-700 dark:text-orange-400 mx-auto" /> :
                            <span className="text-sm font-bold text-muted-foreground">{entry.rank}</span>}
                         </div>
                         <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-sm font-bold shrink-0">

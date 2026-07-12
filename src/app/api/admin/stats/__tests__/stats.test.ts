@@ -20,7 +20,7 @@ vi.mock('@/lib/middleware/error-handler', () => ({
   AppError: class extends Error {
     statusCode: number
     code: string
-    constructor(code: string, message: string, details?: unknown) {
+    constructor(code: string, message: string, _details?: unknown) {
       super(message)
       this.code = code
       // Map well-known codes to status codes

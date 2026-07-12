@@ -8,7 +8,7 @@
  *   - cursor: pagination cursor (ID of the last record)
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { withAdminGuard } from '@/lib/guards/admin.guard'
 import { db } from '@/lib/db'
 

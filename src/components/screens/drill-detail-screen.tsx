@@ -256,7 +256,7 @@ export function DrillDetailScreen() {
           {/* ── Instructions Section ─────────────────────────────── */}
           {instructions.length > 0 && (
             <motion.div variants={itemVariants}>
-              <Card className="border-0 dark:border-border/50 shadow-md">
+              <Card className="border-0 dark:border-border/50 shadow-md dark:shadow-black/20">
                 <CardContent className="p-5 space-y-4">
                   <div className="flex items-center gap-2">
                     <ListOrdered className="h-5 w-5 text-orange-500" />

@@ -485,13 +485,13 @@ export function ScoutingScreen() {
           >
             {/* ── Section 1: Player Identity Card ───────────────────── */}
             <motion.div variants={itemVariants}>
-              <Card className="border-0 shadow-lg overflow-hidden">
+              <Card className="border-0 shadow-lg dark:shadow-black/20 overflow-hidden">
                 <div className="h-1.5 bg-gradient-to-r from-orange-400 via-amber-500 to-orange-500" />
                 <CardContent className="p-6">
                   <div className="flex items-center gap-5">
                     {/* Avatar with level badge */}
                     <div className="relative flex-shrink-0">
-                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg dark:shadow-black/20">
                         {initials}
                       </div>
                       <div
@@ -575,7 +575,7 @@ export function ScoutingScreen() {
             <div className="contents">
             {/* ── Section 2: Radar Chart — ADN Basketteur ──────────── */}
             <motion.div variants={itemVariants}>
-              <Card className="border-0 shadow-lg">
+              <Card className="border-0 shadow-lg dark:shadow-black/20">
                 <CardHeader className="pb-2 pt-5 px-5">
                   <CardTitle className="text-base font-bold flex items-center gap-2">
                     <Target className="h-5 w-5 text-orange-500" />
@@ -619,7 +619,7 @@ export function ScoutingScreen() {
                 <div className="flex flex-col items-center gap-2">
                   <div
                     className={cn(
-                      'flex h-24 w-24 items-center justify-center rounded-full ring-4 shadow-xl',
+                      'flex h-24 w-24 items-center justify-center rounded-full ring-4 shadow-xl dark:shadow-black/20',
                       gradeColor.bg,
                       gradeColor.ring,
                     )}
@@ -644,7 +644,7 @@ export function ScoutingScreen() {
             {/* ── Section 4: AI Scouting Text Analysis ─────────────── */}
             {scoutingText && (
               <motion.div variants={itemVariants} className="space-y-4">
-                <Card className="border-0 shadow-lg">
+                <Card className="border-0 shadow-lg dark:shadow-black/20">
                   <CardHeader className="pb-2 pt-5 px-5">
                     <CardTitle className="text-base font-bold flex items-center gap-2">
                       <Sparkles className="h-5 w-5 text-orange-500" />
@@ -702,7 +702,7 @@ export function ScoutingScreen() {
 
             {/* ── Section 5: Category Breakdown Cards ───────────────── */}
             <motion.div variants={itemVariants}>
-              <Card className="border-0 shadow-lg">
+              <Card className="border-0 shadow-lg dark:shadow-black/20">
                 <CardHeader className="pb-2 pt-5 px-5">
                   <CardTitle className="text-base font-bold">
                     {td('Détail par Catégorie', 'Category Breakdown')}
@@ -720,7 +720,7 @@ export function ScoutingScreen() {
 
             {/* ── Section 6: Comparison ─────────────────────────────── */}
             <motion.div variants={itemVariants}>
-              <Card className="border-0 shadow-lg">
+              <Card className="border-0 shadow-lg dark:shadow-black/20">
                 <CardContent className="p-5">
                   <h3 className="text-sm font-bold mb-3">
                     {td('Comparaison au niveau', 'Comparison at level')} {data.player.level}
@@ -864,7 +864,7 @@ function LoadingSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
       {/* Identity card skeleton */}
-      <Card className="border-0 shadow-lg">
+      <Card className="border-0 shadow-lg dark:shadow-black/20">
         <div className="h-1.5 bg-muted" />
         <CardContent className="p-6">
           <div className="flex items-center gap-5">
@@ -879,7 +879,7 @@ function LoadingSkeleton() {
       </Card>
 
       {/* Radar chart skeleton */}
-      <Card className="border-0 shadow-lg">
+      <Card className="border-0 shadow-lg dark:shadow-black/20">
         <CardHeader className="pb-2 pt-5 px-5">
           <Skeleton className="h-5 w-36" />
         </CardHeader>
@@ -898,7 +898,7 @@ function LoadingSkeleton() {
       </div>
 
       {/* Text analysis skeleton */}
-      <Card className="border-0 shadow-lg">
+      <Card className="border-0 shadow-lg dark:shadow-black/20">
         <CardHeader className="pb-2 pt-5 px-5">
           <Skeleton className="h-5 w-36" />
         </CardHeader>
@@ -914,7 +914,7 @@ function LoadingSkeleton() {
       </Card>
 
       {/* Category breakdown skeleton */}
-      <Card className="border-0 shadow-lg">
+      <Card className="border-0 shadow-lg dark:shadow-black/20">
         <CardHeader className="pb-2 pt-5 px-5">
           <Skeleton className="h-5 w-40" />
         </CardHeader>

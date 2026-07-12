@@ -434,7 +434,7 @@ export function AdminScreen() {
             ? Array.from({ length: 6 }).map((_, i) => <StatCardSkeleton key={i} />)
             : statCards.map((card) => (
                 <motion.div key={card.label} variants={fadeIn}>
-                  <Card className="hover:shadow-md transition-shadow">
+                  <Card className="hover:shadow-md dark:hover:shadow-black/20 transition-shadow">
                     <CardContent className="p-4">
                       <div className="flex items-center gap-2 text-muted-foreground mb-1">
                         <card.icon className={`h-4 w-4 ${card.color}`} />

@@ -18,7 +18,7 @@ import {
 import { useNavigation } from '@/stores/navigation'
 import { SwipeToGoBack } from '@/components/shared/swipe-back'
 import { apiFetch } from '@/lib/utils'
-import { containerVariants, itemVariants } from '@/lib/animations'
+import { staggerContainer, fadeInScale, cardHover } from '@/lib/animations'
 import { BottomNav } from '@/components/shared/bottom-nav'
 import { useTranslation } from '@/components/providers/language-provider'
 import { toast } from 'sonner'
@@ -276,12 +276,15 @@ export default function FeedScreen() {
             <p className="text-xs text-muted-foreground">{td('Soyez le premier à publier!', 'Be the first to post!')}</p>
           </div>
         ) : (
-          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
+          <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-4">
             {allPosts.map(post => {
               const TypeIcon = TYPE_ICONS[post.type] || Trophy
               return (
-                <motion.div key={post.id} variants={itemVariants}>
-                  <div className="p-4 rounded-xl border border-border/50 bg-card">
+                <motion.div key={post.id} variants={fadeInScale}>
+                  <motion.div
+                    {...cardHover}
+                    className="p-4 rounded-xl border border-border/50 bg-card"
+                  >
                     {/* Header */}
                     <div className="flex items-center gap-3 mb-3">
                       <Avatar className="h-10 w-10 cursor-pointer" onClick={() => navigate('profile-other')} aria-label={td('Voir le profil', 'View profile')}>
@@ -340,7 +343,7 @@ export default function FeedScreen() {
                         <Share2 className="h-4 w-4" />
                       </button>
                     </div>
-                  </div>
+                  </motion.div>
                 </motion.div>
               )
             })}

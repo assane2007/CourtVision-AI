@@ -1,397 +1,736 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import {
-  Target,
-  Shield,
-  Dumbbell,
   Crosshair,
-  Hand,
-  Activity,
-  ArrowLeft,
-  ChevronRight,
-  Zap,
-  User,
+  Dumbbell,
   Trophy,
-  Star,
-  CircleDot,
+  PartyPopper,
+  ChevronRight,
+  ArrowLeft,
+  Volleyball,
+  User,
+  Target,
+  Brain,
+  Flame,
+  CheckCircle2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useAppStore } from '@/stores/app'
+import { useAuth } from '@/components/providers/supabase-auth-provider'
+import { useTranslation } from '@/components/providers/language-provider'
 import { apiFetch } from '@/lib/utils'
 import { toast } from 'sonner'
-import { useTranslation } from '@/components/providers/language-provider'
 import type { TranslationKey } from '@/lib/i18n'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type Position = 'guard' | 'forward' | 'center' | 'all_around'
-type Level = 'beginner' | 'intermediate' | 'advanced' | 'elite'
-type Goal = 'shooting' | 'ball_handling' | 'defense' | 'conditioning' | 'general'
+type BballPosition = 'PG' | 'SG' | 'SF' | 'PF' | 'C'
+type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced' | 'pro'
+type WizardGoal = 'shooting' | 'conditioning' | 'game_understanding' | 'match_prep'
 
-interface OptionCard<T extends string> {
-  value: T
-  titleKey: TranslationKey
+interface WizardData {
+  step: number
+  name: string
+  position: BballPosition | null
+  level: ExperienceLevel | null
+  goals: WizardGoal[]
+}
+
+const STORAGE_KEY = 'cv-onboarding'
+
+const defaultData: WizardData = {
+  step: 0,
+  name: '',
+  position: null,
+  level: null,
+  goals: [],
+}
+
+function loadData(): WizardData {
+  if (typeof window === 'undefined') return { ...defaultData }
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (raw) return { ...defaultData, ...JSON.parse(raw) }
+  } catch { /* ignore */ }
+  return { ...defaultData }
+}
+
+function saveData(data: WizardData) {
+  if (typeof window === 'undefined') return
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)) } catch { /* ignore */ }
+}
+
+function clearData() {
+  if (typeof window === 'undefined') return
+  try { localStorage.removeItem(STORAGE_KEY) } catch { /* ignore */ }
+}
+
+// ─── Options data ────────────────────────────────────────────────────────────
+
+interface PosOption {
+  value: BballPosition
+  key: TranslationKey
+  icon: React.ReactNode
+  color: string
+}
+
+const positionOptions: PosOption[] = [
+  { value: 'PG', key: 'onboarding.posPG', icon: <Target className="h-5 w-5" />, color: 'text-orange-400' },
+  { value: 'SG', key: 'onboarding.posSG', icon: <Crosshair className="h-5 w-5" />, color: 'text-red-400' },
+  { value: 'SF', key: 'onboarding.posSF', icon: <User className="h-5 w-5" />, color: 'text-emerald-400' },
+  { value: 'PF', key: 'onboarding.posPF', icon: <Dumbbell className="h-5 w-5" />, color: 'text-amber-400' },
+  { value: 'C', key: 'onboarding.posC', icon: <Trophy className="h-5 w-5" />, color: 'text-violet-400' },
+]
+
+interface LevelOption {
+  value: ExperienceLevel
+  key: TranslationKey
+  descKey: TranslationKey
+}
+
+const levelOptions: LevelOption[] = [
+  { value: 'beginner', key: 'difficulty.beginner', descKey: 'onboarding.lvlBeginnerDesc' },
+  { value: 'intermediate', key: 'difficulty.intermediate', descKey: 'onboarding.lvlIntermediateDesc' },
+  { value: 'advanced', key: 'difficulty.advanced', descKey: 'onboarding.lvlAdvancedDesc' },
+  { value: 'pro', key: 'onboarding.lvlPro', descKey: 'onboarding.lvlEliteDesc' },
+]
+
+interface GoalOption {
+  value: WizardGoal
+  key: TranslationKey
   descKey: TranslationKey
   icon: React.ReactNode
 }
 
-// ─── Data ────────────────────────────────────────────────────────────────────
-
-const positionOptions: OptionCard<Position>[] = [
-  { value: 'guard', titleKey: 'position.guard', descKey: 'onboarding.posGuardDesc', icon: <Target className="h-6 w-6" /> },
-  { value: 'forward', titleKey: 'position.forward', descKey: 'onboarding.posForwardDesc', icon: <Zap className="h-6 w-6" /> },
-  { value: 'center', titleKey: 'position.center', descKey: 'onboarding.posCenterDesc', icon: <Shield className="h-6 w-6" /> },
-  { value: 'all_around', titleKey: 'position.all_around', descKey: 'onboarding.posAllAroundDesc', icon: <Star className="h-6 w-6" /> },
+const goalOptions: GoalOption[] = [
+  { value: 'shooting', key: 'onboarding.goalImproveShooting', descKey: 'onboarding.goalImproveShootingDesc', icon: <Crosshair className="h-5 w-5" /> },
+  { value: 'conditioning', key: 'onboarding.goalGetInShape', descKey: 'onboarding.goalGetInShapeDesc', icon: <Dumbbell className="h-5 w-5" /> },
+  { value: 'game_understanding', key: 'onboarding.goalUnderstandGame', descKey: 'onboarding.goalUnderstandGameDesc', icon: <Brain className="h-5 w-5" /> },
+  { value: 'match_prep', key: 'onboarding.goalMatchPrep', descKey: 'onboarding.goalMatchPrepDesc', icon: <Flame className="h-5 w-5" /> },
 ]
 
-const levelOptions: OptionCard<Level>[] = [
-  { value: 'beginner', titleKey: 'difficulty.beginner', descKey: 'onboarding.lvlBeginnerDesc', icon: <CircleDot className="h-6 w-6" /> },
-  { value: 'intermediate', titleKey: 'difficulty.intermediate', descKey: 'onboarding.lvlIntermediateDesc', icon: <Activity className="h-6 w-6" /> },
-  { value: 'advanced', titleKey: 'difficulty.advanced', descKey: 'onboarding.lvlAdvancedDesc', icon: <Trophy className="h-6 w-6" /> },
-  { value: 'elite', titleKey: 'difficulty.elite', descKey: 'onboarding.lvlEliteDesc', icon: <Star className="h-6 w-6" /> },
-]
+// ─── Animation ───────────────────────────────────────────────────────────────
 
-const goalOptions: OptionCard<Goal>[] = [
-  { value: 'shooting', titleKey: 'profile.goalShooting', descKey: 'onboarding.goalShootingDesc', icon: <Crosshair className="h-6 w-6" /> },
-  { value: 'ball_handling', titleKey: 'profile.goalBallHandling', descKey: 'onboarding.goalBallHandlingDesc', icon: <Hand className="h-6 w-6" /> },
-  { value: 'defense', titleKey: 'profile.goalDefense', descKey: 'onboarding.goalDefenseDesc', icon: <Shield className="h-6 w-6" /> },
-  { value: 'conditioning', titleKey: 'profile.goalConditioning', descKey: 'onboarding.goalConditioningDesc', icon: <Dumbbell className="h-6 w-6" /> },
-  { value: 'general', titleKey: 'profile.goalGeneral', descKey: 'onboarding.goalGeneralDesc', icon: <User className="h-6 w-6" /> },
-]
-
-// ─── Step metadata ───────────────────────────────────────────────────────────
-
-const stepTitleKeys: TranslationKey[] = [
-  'onboarding.positionQuestion',
-  'onboarding.levelQuestion',
-  'onboarding.goalQuestion',
-]
-
-const stepSubtitleKeys: TranslationKey[] = [
-  'onboarding.positionDesc',
-  'onboarding.levelDesc',
-  'onboarding.goalDesc',
-]
-
-// ─── Animation variants ──────────────────────────────────────────────────────
+const TOTAL_STEPS = 4
 
 const slideVariants: Variants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? 300 : -300,
-    opacity: 0,
-    scale: 0.95,
-    filter: 'blur(4px)',
-  }),
-  center: {
-    x: 0,
-    opacity: 1,
-    scale: 1,
-    filter: 'blur(0px)',
-  },
-  exit: (direction: number) => ({
-    x: direction > 0 ? -300 : 300,
-    opacity: 0,
-    scale: 0.95,
-    filter: 'blur(4px)',
-  }),
+  enter: (dir: number) => ({ x: dir > 0 ? 280 : -280, opacity: 0, scale: 0.96 }),
+  center: { x: 0, opacity: 1, scale: 1 },
+  exit: (dir: number) => ({ x: dir > 0 ? -280 : 280, opacity: 0, scale: 0.96 }),
 }
 
-const dotVariants: Variants = {
-  inactive: {
-    scale: 1,
-    backgroundColor: 'hsl(var(--muted-foreground))',
-  },
-  active: {
-    scale: 1.3,
-    backgroundColor: '#f97316',
-  },
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.07, duration: 0.35 } }),
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function OnboardingScreen() {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const navigate = useAppStore((s) => s.navigate)
-  const [step, setStep] = useState(0)
+  const nameRef = useRef<HTMLInputElement>(null)
+
+  const [data, setData] = useState<WizardData>(loadData)
   const [direction, setDirection] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [nameError, setNameError] = useState(false)
+  const [goalsError, setGoalsError] = useState(false)
 
-  const [position, setPosition] = useState<Position | null>(null)
-  const [level, setLevel] = useState<Level | null>(null)
-  const [goal, setGoal] = useState<Goal | null>(null)
+  // Persist on every change
+  const update = useCallback((patch: Partial<WizardData>) => {
+    setData((prev) => {
+      const next = { ...prev, ...patch }
+      saveData(next)
+      return next
+    })
+  }, [])
 
-  const canProceed = () => {
-    if (step === 0) return position !== null
-    if (step === 1) return level !== null
-    if (step === 2) return goal !== null
-    return false
+  // Restore step on reload
+  useEffect(() => {
+    nameRef.current?.focus()
+  }, [data.step])
+
+  // ── Validation ─────────────────────────────────────────────────────────────
+
+  const canProceed = (): boolean => {
+    switch (data.step) {
+      case 1: return data.name.trim().length > 0 && data.position !== null && data.level !== null
+      case 2: return data.goals.length > 0
+      default: return true
+    }
   }
 
+  const validateStep = (): boolean => {
+    if (data.step === 1) {
+      if (!data.name.trim()) { setNameError(true); return false }
+      setNameError(false)
+    }
+    if (data.step === 2 && data.goals.length === 0) {
+      setGoalsError(true)
+      return false
+    }
+    setGoalsError(false)
+    return true
+  }
+
+  // ── Navigation ─────────────────────────────────────────────────────────────
+
   const goNext = () => {
-    if (step < 2) {
+    if (!validateStep()) return
+    if (data.step < TOTAL_STEPS - 1) {
       setDirection(1)
-      setStep((s) => s + 1)
+      update({ step: data.step + 1 })
     }
   }
 
   const goBack = () => {
-    if (step > 0) {
+    if (data.step > 0) {
       setDirection(-1)
-      setStep((s) => s - 1)
+      setNameError(false)
+      setGoalsError(false)
+      update({ step: data.step - 1 })
     }
   }
 
+  const skip = () => {
+    clearData()
+    navigate('home')
+  }
+
+  // ── Submit ─────────────────────────────────────────────────────────────────
+
   const handleComplete = async () => {
-    if (!position || !level || !goal) return
+    if (!data.position || !data.level || data.goals.length === 0) return
     setIsSubmitting(true)
 
+    const levelMap: Record<string, number> = { beginner: 0, intermediate: 2, advanced: 4, pro: 6 }
+
     try {
-      await apiFetch('/api/player', {
-        method: 'PATCH',
+      await apiFetch('/api/player/onboard', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          position,
-          level,
-          goals: goal,
-          onboarding: true,
+          name: data.name.trim() || user?.name || user?.email?.split('@')[0] || 'Player',
+          email: user?.email || '',
+          age: 20,
+          position: data.position,
+          heightCm: 180,
+          weightKg: 75,
+          yearsExp: levelMap[data.level] ?? 0,
+          shooting: data.goals.includes('shooting') ? 50 : 30,
+          handling: 40,
+          finishing: 35,
+          defense: 40,
+          iq: data.goals.includes('game_understanding') ? 50 : 35,
         }),
       })
     } catch {
-      // Notify user that preferences weren't saved, but still proceed
       toast.error(t('onboarding.saveError'))
     } finally {
+      clearData()
       setIsSubmitting(false)
       navigate('home')
     }
   }
 
-  const renderCard = <T extends string>(option: OptionCard<T>, selected: T | null, onSelect: (v: T) => void) => {
-    const isSelected = selected === option.value
-    return (
-      <motion.button
-        key={option.value}
-        type="button"
-        role="radio"
-        aria-checked={isSelected}
-        tabIndex={0}
-        aria-label={t(option.titleKey)}
-        onClick={() => onSelect(option.value)}
-        whileHover={{ scale: 1.03, y: -2 }}
-        whileTap={{ scale: 0.97 }}
-        className={`
-          relative flex flex-col items-center gap-3 rounded-2xl border p-5 text-center
-          transition-colors duration-200 cursor-pointer select-none w-full
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500
-          ${
-            isSelected
-              ? 'border-orange-500 bg-orange-500/10 shadow-lg shadow-orange-500/10'
-              : 'border-border bg-muted hover:bg-muted/80'
-          }
-        `}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        {/* Selected ring glow */}
-        {isSelected && (
-          <motion.div
-            layoutId="selected-ring"
-            className="absolute inset-0 rounded-2xl border-2 border-orange-500 pointer-events-none"
-            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-          />
-        )}
+  // ── Keyboard nav ───────────────────────────────────────────────────────────
 
-        {/* Icon container */}
-        <div
-          className={`
-            flex h-12 w-12 items-center justify-center rounded-xl transition-colors duration-200
-            ${
-              isSelected
-                ? 'bg-orange-500/20 text-orange-400'
-                : 'bg-muted/80 text-muted-foreground'
-            }
-          `}
-        >
-          {option.icon}
-        </div>
-
-        {/* Title */}
-        <h3 className="text-sm font-semibold transition-colors duration-200 text-foreground">
-          {t(option.titleKey)}
-        </h3>
-
-        {/* Description */}
-        <p className="text-xs leading-relaxed text-muted-foreground">{t(option.descKey)}</p>
-      </motion.button>
-    )
-  }
-
-  const renderStep = () => {
-    switch (step) {
-      case 0:
-        return (
-          <div role="radiogroup" aria-label={t('onboarding.ariaPosition')} className="grid grid-cols-2 gap-3 sm:gap-4">
-            {positionOptions.map((opt) => renderCard(opt, position, setPosition))}
-          </div>
-        )
-      case 1:
-        return (
-          <div role="radiogroup" aria-label={t('onboarding.ariaLevel')} className="grid grid-cols-2 gap-3 sm:gap-4">
-            {levelOptions.map((opt) => renderCard(opt, level, setLevel))}
-          </div>
-        )
-      case 2:
-        return (
-          <div role="radiogroup" aria-label={t('onboarding.ariaGoal')} className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
-            {goalOptions.map((opt) => renderCard(opt, goal, setGoal))}
-          </div>
-        )
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && data.step < 3) {
+        e.preventDefault()
+        goNext()
+      }
     }
-  }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.step, data.name, data.position, data.level, data.goals])
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  const progressPct = ((data.step + 1) / TOTAL_STEPS) * 100
+  const posLabel = positionOptions.find((p) => p.value === data.position)
+
+  // ─── RENDER ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-y-auto bg-background px-4 py-10">
+    <div className="fixed inset-0 z-50 flex flex-col items-center overflow-y-auto bg-background px-4 py-8 sm:py-12">
       {/* Ambient glow */}
       <div className="pointer-events-none absolute left-1/2 top-1/3 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-500/5 blur-[120px]" />
-      {/* Basketball court background */}
-      <svg className="pointer-events-none absolute inset-0 w-full h-full text-border opacity-[0.15]" viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice">
-        <rect x="20" y="20" width="360" height="760" rx="12" fill="none" stroke="currentColor" strokeWidth="2"/>
-        <circle cx="200" cy="400" r="60" fill="none" stroke="currentColor" strokeWidth="1.5"/>
-        <line x1="20" y1="400" x2="380" y2="400" stroke="currentColor" strokeWidth="1"/>
-        <rect x="130" y="20" width="140" height="90" fill="none" stroke="currentColor" strokeWidth="1.5"/>
-        <circle cx="200" cy="110" r="8" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+      {/* Court background */}
+      <svg className="pointer-events-none absolute inset-0 h-full w-full text-border opacity-[0.12]" viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice">
+        <rect x="20" y="20" width="360" height="760" rx="12" fill="none" stroke="currentColor" strokeWidth="2" />
+        <circle cx="200" cy="400" r="60" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        <line x1="20" y1="400" x2="380" y2="400" stroke="currentColor" strokeWidth="1" />
+        <rect x="130" y="20" width="140" height="90" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        <circle cx="200" cy="110" r="8" fill="none" stroke="currentColor" strokeWidth="1.5" />
       </svg>
 
-      <div className="relative z-10 flex w-full max-w-md flex-col items-center gap-8">
-        {/* Progress bar + dots */}
-        <div className="w-full space-y-2">
-          <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
-            <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-400"
-              animate={{ width: `${((step + 1) / 3) * 100}%` }}
-              transition={{ duration: 0.4, ease: 'easeOut' as const }}
-            />
+      <div className="relative z-10 flex w-full max-w-md flex-col items-center gap-6 sm:gap-8">
+        {/* ── Step indicator (dots with numbers) ──────────────────────────── */}
+        <div className="w-full space-y-3">
+          <div className="flex items-center justify-center gap-2">
+            {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <motion.button
+                  type="button"
+                  onClick={() => {
+                    if (i < data.step) { setDirection(-1); update({ step: i }) }
+                  }}
+                  aria-label={`${t('onboarding.step')} ${i + 1}`}
+                  className={`relative flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold transition-colors duration-200 min-h-[44px] min-w-[44px] ${
+                    i < data.step
+                      ? 'bg-orange-500 text-white cursor-pointer'
+                      : i === data.step
+                        ? 'bg-orange-500/15 text-orange-500 ring-2 ring-orange-500'
+                        : 'bg-muted text-muted-foreground'
+                  }`}
+                  whileHover={i < data.step ? { scale: 1.1 } : {}}
+                  whileTap={i < data.step ? { scale: 0.95 } : {}}
+                >
+                  {i < data.step ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
+                </motion.button>
+                {i < TOTAL_STEPS - 1 && (
+                  <div className={`h-0.5 w-4 sm:w-8 rounded-full transition-colors duration-300 ${i < data.step ? 'bg-orange-500' : 'bg-muted'}`} />
+                )}
+              </div>
+            ))}
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-widest">
-              {`${t('onboarding.step')} ${step + 1}/3`}
-            </span>
-            <div className="flex items-center gap-2">
-              {[0, 1, 2].map((i) => (
-                <motion.div
-                  key={i}
-                  variants={dotVariants}
-                  animate={i === step ? 'active' : 'inactive'}
-                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  className="h-2 w-2 rounded-full"
-                />
-              ))}
-            </div>
-          </div>
+          {/* Progress bar */}
+          <Progress value={progressPct} className="h-1.5 [&>[data-slot=progress-indicator]]:bg-gradient-to-r [&>[data-slot=progress-indicator]]:from-orange-500 [&>[data-slot=progress-indicator]]:to-amber-400" />
+          <p className="text-center text-[10px] text-muted-foreground uppercase tracking-widest">
+            {t('onboarding.step')} {data.step + 1}/{TOTAL_STEPS}
+          </p>
         </div>
 
-        {/* Step header */}
-        <AnimatePresence mode="wait" custom={direction}>
-          <motion.div
-            key={step}
-            custom={direction}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.25 }}
-            className="text-center"
-          >
-            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              {t(stepTitleKeys[step])}
-            </h1>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              {t(stepSubtitleKeys[step])}
-            </p>
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Step content with slide transition */}
-        <div className="relative w-full min-h-[260px] sm:min-h-[280px]">
+        {/* ── Step content ────────────────────────────────────────────────── */}
+        <div className="relative w-full min-h-[320px] sm:min-h-[360px]">
           <AnimatePresence mode="wait" custom={direction} initial={false}>
             <motion.div
-              key={step}
+              key={data.step}
               custom={direction}
               variants={slideVariants}
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{
-                x: { type: 'spring', stiffness: 300, damping: 30 },
-                opacity: { duration: 0.2 },
-                scale: { duration: 0.2 },
-                filter: { duration: 0.2 },
-              }}
-              className="absolute inset-0"
+              transition={{ x: { type: 'spring', stiffness: 300, damping: 30 }, opacity: { duration: 0.2 }, scale: { duration: 0.2 } }}
+              className="absolute inset-0 flex flex-col"
             >
-              {renderStep()}
+              {renderStep(data, update, t, nameRef, nameError, setNameError, goalsError, setGoalsError, posLabel, isSubmitting)}
             </motion.div>
           </AnimatePresence>
         </div>
 
-        {/* Navigation */}
-        <div className="flex w-full items-center justify-between gap-4">
-          {/* Back button (hidden on step 0) */}
-          <AnimatePresence>
-            {step > 0 && (
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
+        {/* ── Navigation buttons ──────────────────────────────────────────── */}
+        <div className="flex w-full items-center justify-between gap-3">
+          <div className="flex-1">
+            {data.step > 0 && data.step < 3 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={goBack}
+                className="text-muted-foreground hover:text-foreground hover:bg-muted min-h-[44px]"
+                aria-label={t('action.back')}
               >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={goBack}
-                  className="text-muted-foreground hover:text-foreground hover:bg-muted"
-                  aria-label={t('action.back')}
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('action.back')}</span>
-                </Button>
-              </motion.div>
+                <ArrowLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('action.back')}</span>
+              </Button>
             )}
-          </AnimatePresence>
+          </div>
 
-          {/* Spacer to push the next button right when back is hidden */}
-          {step === 0 && <div />}
+          <div className="flex items-center gap-2">
+            {/* Skip — visible on steps 0-2 */}
+            {data.step < 3 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={skip}
+                className="text-muted-foreground hover:text-foreground hover:bg-muted min-h-[44px]"
+              >
+                {t('onboarding.skip')}
+              </Button>
+            )}
 
-          {/* Next / Start button */}
-          <motion.div
-            whileHover={canProceed() ? { scale: 1.03 } : {}}
-            whileTap={canProceed() ? { scale: 0.97 } : {}}
-          >
-            <Button
-              size="lg"
-              onClick={step < 2 ? goNext : handleComplete}
-              disabled={!canProceed() || isSubmitting}
-              className="ml-auto"
-            >
-              {isSubmitting ? (
-                <motion.div
-                  className="h-4 w-4 rounded-full border-2 border-muted-foreground border-t-foreground"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
-                />
-              ) : step < 2 ? (
-                <>
-                  {t('onboarding.next')}
-                  <ChevronRight className="h-4 w-4" />
-                </>
-              ) : (
-                t('action.start')
-              )}
-            </Button>
-          </motion.div>
+            {data.step < 3 && (
+              <Button
+                size="lg"
+                onClick={goNext}
+                disabled={!canProceed()}
+                className="min-h-[44px] bg-orange-500 text-white hover:bg-orange-600"
+              >
+                {t('onboarding.next')}
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            )}
+
+            {data.step === 3 && (
+              <Button
+                size="lg"
+                onClick={handleComplete}
+                disabled={isSubmitting}
+                className="min-h-[44px] bg-orange-500 text-white hover:bg-orange-600"
+              >
+                {isSubmitting ? (
+                  <motion.div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white" animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }} />
+                ) : (
+                  <>
+                    {t('onboarding.goToDashboard')}
+                    <ChevronRight className="h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ─── Step renderers ───────────────────────────────────────────────────────────
+
+function renderStep(
+  data: WizardData,
+  update: (p: Partial<WizardData>) => void,
+  t: (k: TranslationKey) => string,
+  nameRef: React.RefObject<HTMLInputElement | null>,
+  nameError: boolean,
+  setNameError: (v: boolean) => void,
+  goalsError: boolean,
+  setGoalsError: (v: boolean) => void,
+  posLabel: PosOption | undefined,
+  isSubmitting: boolean,
+) {
+  switch (data.step) {
+    case 0: return <StepWelcome t={t} />
+    case 1: return <StepProfile data={data} update={update} t={t} nameRef={nameRef} nameError={nameError} setNameError={setNameError} />
+    case 2: return <StepGoals data={data} update={update} t={t} goalsError={goalsError} setGoalsError={setGoalsError} />
+    case 3: return <StepSummary data={data} t={t} posLabel={posLabel} isSubmitting={isSubmitting} />
+  }
+}
+
+// ─── Step 0: Welcome ─────────────────────────────────────────────────────────
+
+function StepWelcome({ t }: { t: (k: TranslationKey) => string }) {
+  const features = [
+    { icon: <Target className="h-6 w-6 text-orange-400" />, title: t('profile.goalShooting'), desc: t('onboarding.goalImproveShootingDesc') },
+    { icon: <Dumbbell className="h-6 w-6 text-emerald-400" />, title: t('onboarding.goalGetInShape'), desc: t('onboarding.goalGetInShapeDesc') },
+    { icon: <Brain className="h-6 w-6 text-violet-400" />, title: t('onboarding.goalUnderstandGame'), desc: t('onboarding.goalUnderstandGameDesc') },
+  ]
+
+  return (
+    <div className="flex flex-col items-center gap-6 text-center">
+      <motion.div
+        initial={{ scale: 0, rotate: -180 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+        className="flex h-20 w-20 items-center justify-center rounded-2xl bg-orange-500/10 shadow-lg shadow-orange-500/10"
+      >
+        <Volleyball className="h-10 w-10 text-orange-500" />
+      </motion.div>
+
+      <motion.h1
+        custom={0}
+        variants={fadeUp}
+        initial="hidden"
+        animate="visible"
+        className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
+      >
+        {t('onboarding.welcome')}
+      </motion.h1>
+      <motion.p custom={1} variants={fadeUp} initial="hidden" animate="visible" className="max-w-xs text-sm leading-relaxed text-muted-foreground">
+        {t('onboarding.welcomeDesc')}
+      </motion.p>
+
+      <div className="mt-2 w-full space-y-3">
+        {features.map((f, i) => (
+          <motion.div
+            key={i}
+            custom={i + 2}
+            variants={fadeUp}
+            initial="hidden"
+            animate="visible"
+          >
+            <Card className="border-border/50 bg-muted/30 backdrop-blur-sm">
+              <CardContent className="flex items-center gap-4 p-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-background">
+                  {f.icon}
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-semibold text-foreground">{f.title}</p>
+                  <p className="text-xs text-muted-foreground">{f.desc}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Step 1: Profile ──────────────────────────────────────────────────────────
+
+function StepProfile({
+  data, update, t, nameRef, nameError, setNameError,
+}: {
+  data: WizardData
+  update: (p: Partial<WizardData>) => void
+  t: (k: TranslationKey) => string
+  nameRef: React.RefObject<HTMLInputElement | null>
+  nameError: boolean
+  setNameError: (v: boolean) => void
+}) {
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Header */}
+      <div className="text-center">
+        <h2 className="text-2xl font-bold tracking-tight text-foreground">{t('onboarding.profileTitle')}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{t('onboarding.profileDesc')}</p>
+      </div>
+
+      {/* Name */}
+      <div className="space-y-2">
+        <label htmlFor="onb-name" className="text-sm font-medium text-foreground">{t('onboarding.nameLabel')}</label>
+        <Input
+          ref={nameRef}
+          id="onb-name"
+          type="text"
+          value={data.name}
+          onChange={(e) => { update({ name: e.target.value }); if (e.target.value.trim()) setNameError(false) }}
+          placeholder={t('onboarding.namePlaceholder')}
+          aria-invalid={nameError}
+          className={`min-h-[44px] ${nameError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+        />
+        {nameError && <p className="text-xs text-red-500">{t('onboarding.nameRequired')}</p>}
+      </div>
+
+      {/* Position select */}
+      <div className="space-y-2">
+        <p className="text-sm font-medium text-foreground">{t('onboarding.positionSummary')}</p>
+        <div className="grid grid-cols-5 gap-2">
+          {positionOptions.map((opt) => {
+            const active = data.position === opt.value
+            return (
+              <motion.button
+                key={opt.value}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                aria-label={t(opt.key)}
+                onClick={() => update({ position: opt.value })}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                className={`flex flex-col items-center gap-1.5 rounded-xl border p-2.5 text-center transition-colors duration-200 cursor-pointer min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${
+                  active ? 'border-orange-500 bg-orange-500/10 shadow-md shadow-orange-500/10' : 'border-border bg-muted hover:bg-muted/80'
+                }`}
+              >
+                <span className={active ? 'text-orange-400' : 'text-muted-foreground'}>{opt.icon}</span>
+                <span className={`text-[10px] font-semibold leading-tight ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  {opt.value}
+                </span>
+              </motion.button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Experience level */}
+      <div className="space-y-2">
+        <p className="text-sm font-medium text-foreground">{t('onboarding.levelSummary')}</p>
+        <div className="grid grid-cols-2 gap-2">
+          {levelOptions.map((opt) => {
+            const active = data.level === opt.value
+            return (
+              <motion.button
+                key={opt.value}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => update({ level: opt.value })}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                className={`rounded-xl border p-3 text-left transition-colors duration-200 cursor-pointer min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${
+                  active ? 'border-orange-500 bg-orange-500/10' : 'border-border bg-muted hover:bg-muted/80'
+                }`}
+              >
+                <p className={`text-sm font-semibold ${active ? 'text-foreground' : 'text-muted-foreground'}`}>{t(opt.key)}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{t(opt.descKey)}</p>
+              </motion.button>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Step 2: Goals ────────────────────────────────────────────────────────────
+
+function StepGoals({
+  data, update, t, goalsError, setGoalsError,
+}: {
+  data: WizardData
+  update: (p: Partial<WizardData>) => void
+  t: (k: TranslationKey) => string
+  goalsError: boolean
+  setGoalsError: (v: boolean) => void
+}) {
+  const toggle = (g: WizardGoal) => {
+    update({ goals: data.goals.includes(g) ? data.goals.filter((x) => x !== g) : [...data.goals, g] })
+    if (!data.goals.includes(g) || data.goals.length > 1) setGoalsError(false)
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold tracking-tight text-foreground">{t('onboarding.goalsTitle')}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{t('onboarding.goalsDesc')}</p>
+      </div>
+
+      <div className="space-y-3">
+        {goalOptions.map((opt) => {
+          const checked = data.goals.includes(opt.value)
+          return (
+            <motion.button
+              key={opt.value}
+              type="button"
+              onClick={() => toggle(opt.value)}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              className={`flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors duration-200 cursor-pointer min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${
+                checked ? 'border-orange-500 bg-orange-500/10' : 'border-border bg-muted hover:bg-muted/80'
+              }`}
+            >
+              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors ${checked ? 'bg-orange-500/20 text-orange-400' : 'bg-background text-muted-foreground'}`}>
+                {opt.icon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm font-semibold ${checked ? 'text-foreground' : 'text-muted-foreground'}`}>{t(opt.key)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t(opt.descKey)}</p>
+              </div>
+              <Checkbox checked={checked} onCheckedChange={() => toggle(opt.value)} aria-label={t(opt.key)} className="pointer-events-none" />
+            </motion.button>
+          )
+        })}
+      </div>
+
+      {goalsError && <p className="text-center text-xs text-red-500">{t('onboarding.goalsMin')}</p>}
+    </div>
+  )
+}
+
+// ─── Step 3: Summary ─────────────────────────────────────────────────────────
+
+function StepSummary({
+  data, t, posLabel, isSubmitting,
+}: {
+  data: WizardData
+  t: (k: TranslationKey) => string
+  posLabel: PosOption | undefined
+  isSubmitting: boolean
+}) {
+  const lvl = levelOptions.find((l) => l.value === data.level)
+
+  return (
+    <div className="flex flex-col items-center gap-6 text-center">
+      {/* Celebration animation */}
+      {!isSubmitting && (
+        <motion.div
+          initial={{ scale: 0, rotate: -90 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 12 }}
+          className="relative"
+        >
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-orange-500/10 shadow-lg shadow-orange-500/10">
+            <PartyPopper className="h-10 w-10 text-orange-500" />
+          </div>
+          {/* Sparkles */}
+          {[...Array(6)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute h-2 w-2 rounded-full bg-orange-400"
+              initial={{ scale: 0, x: 0, y: 0 }}
+              animate={{
+                scale: [0, 1, 0],
+                x: Math.cos((i * Math.PI) / 3) * 50,
+                y: Math.sin((i * Math.PI) / 3) * 50,
+              }}
+              transition={{ duration: 1, delay: 0.3 + i * 0.1, ease: 'easeOut' }}
+            />
+          ))}
+        </motion.div>
+      )}
+
+      <motion.h2
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
+      >
+        {t('onboarding.summaryTitle')}
+      </motion.h2>
+      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-sm text-muted-foreground">
+        {t('onboarding.summaryDesc')}
+      </motion.p>
+
+      {/* Summary card */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        className="w-full"
+      >
+        <Card className="border-border/50 bg-muted/30 backdrop-blur-sm">
+          <CardContent className="space-y-4 p-5">
+            {/* Name */}
+            <SummaryRow label={t('onboarding.nameSummary')} value={data.name.trim() || '—'} />
+            {/* Position */}
+            <SummaryRow
+              label={t('onboarding.positionSummary')}
+              value={posLabel ? t(posLabel.key) : '—'}
+            />
+            {/* Level */}
+            <SummaryRow
+              label={t('onboarding.levelSummary')}
+              value={lvl ? t(lvl.key) : '—'}
+            />
+            {/* Goals */}
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">{t('onboarding.goalsSummary')}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {goalOptions
+                  .filter((g) => data.goals.includes(g.value))
+                  .map((g) => (
+                    <span key={g.value} className="inline-flex items-center gap-1 rounded-full bg-orange-500/10 px-2.5 py-1 text-xs font-medium text-orange-500">
+                      {t(g.key)}
+                    </span>
+                  ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
+  )
+}
+
+// ─── Summary row helper ──────────────────────────────────────────────────────
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <span className="text-sm font-semibold text-foreground">{value}</span>
     </div>
   )
 }

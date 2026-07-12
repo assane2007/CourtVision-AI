@@ -246,7 +246,7 @@ export default function PlansScreen() {
                           )}
                         </div>
                         {plan.isPublic && (
-                          <Badge variant="outline" className="text-[10px] shrink-0 bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                          <Badge variant="outline" className="text-[10px] shrink-0 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
                             {t('plans.publicBadge')}
                           </Badge>
                         )}
@@ -337,7 +337,7 @@ export default function PlansScreen() {
         >
           <Button
             onClick={() => { setDialogKey((k) => k + 1); setCreateOpen(true) }}
-            className="h-14 w-14 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/30"
+            className="h-14 w-14 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-lg dark:shadow-black/20 shadow-orange-500/30"
             size="icon"
             aria-label={t('plans.createPlanAria')}
           >

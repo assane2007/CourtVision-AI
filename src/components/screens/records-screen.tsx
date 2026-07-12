@@ -167,7 +167,7 @@ function RecordCard({ record, index: _index }: { record: DrillRecord; index: num
 
   return (
     <motion.div variants={itemVariants}>
-      <Card className="border-0 dark:border-border/50 shadow-md overflow-hidden">
+      <Card className="border-0 dark:border-border/50 shadow-md dark:shadow-black/20 overflow-hidden">
         <CardContent className="p-4">
           {/* Top row: icon + name + category + PR badge */}
           <div className="flex items-start gap-3 mb-3">
@@ -278,7 +278,7 @@ function EmptyState() {
       </p>
       <Button
         onClick={() => navigate('train-hub')}
-        className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold px-6 shadow-lg shadow-orange-500/25 rounded-full"
+        className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold px-6 shadow-lg dark:shadow-black/20 shadow-orange-500/25 rounded-full"
       >
         <Dumbbell className="h-4 w-4 mr-2" />
         {td("Commencer l'entraînement", 'Start training')}

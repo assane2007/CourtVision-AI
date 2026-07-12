@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useAppStore } from '@/stores/app'
 import { SwipeToGoBack } from '@/components/shared/swipe-back'
 import { apiFetch } from '@/lib/utils'
-import { containerVariants, itemVariants } from '@/lib/animations'
+import { staggerContainer, slideInLeft, cardHover } from '@/lib/animations'
 import { BottomNav } from '@/components/shared/bottom-nav'
 import { useTranslation } from '@/components/providers/language-provider'
 import type { TranslationKey } from '@/lib/i18n'
@@ -161,14 +161,14 @@ export function LeaderboardScreen() {
           </div>
         ) : (
           <motion.div
-            variants={containerVariants}
+            variants={staggerContainer}
             initial="hidden"
             animate="visible"
             className="space-y-6"
           >
             {/* ─── Podium for Top 3 ─── */}
             {top3.length > 0 && (
-              <motion.div variants={itemVariants} className="relative">
+              <motion.div variants={slideInLeft} className="relative">
                 {/* Podium display: 2nd | 1st | 3rd */}
                 <div className="flex items-end justify-center gap-3 pt-4 pb-6">
                   {/* 2nd place */}
@@ -249,7 +249,7 @@ export function LeaderboardScreen() {
 
             {/* ─── Current player rank card ─── */}
             {data?.playerRank && data.playerRank > 3 && (
-              <motion.div variants={itemVariants}>
+              <motion.div variants={slideInLeft}>
                 <div className="rounded-xl border-2 border-orange-500/40 bg-orange-500/5 p-4 flex items-center gap-3">
                   <div className="text-2xl font-black text-orange-500 w-10 text-center">
                     #{data.playerRank}
@@ -271,10 +271,11 @@ export function LeaderboardScreen() {
 
             {/* ─── Scrollable list for ranks 4-20 ─── */}
             {rest.length > 0 && (
-              <motion.div variants={itemVariants} className="space-y-2">
+              <motion.div variants={slideInLeft} className="space-y-2">
                 {rest.map((entry) => (
-                  <div
+                  <motion.div
                     key={entry.rank}
+                    {...cardHover}
                     className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${
                       entry.isCurrentUser
                         ? 'border-orange-500/40 bg-orange-500/5'
@@ -325,7 +326,7 @@ export function LeaderboardScreen() {
                       </div>
                       <div className="text-[10px] text-muted-foreground">XP</div>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
               </motion.div>
             )}

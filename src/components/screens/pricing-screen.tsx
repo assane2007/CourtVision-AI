@@ -198,7 +198,7 @@ export default function PricingScreen() {
             </button>
             <span className={cn('text-sm font-medium', annualBilling && 'text-foreground', !annualBilling && 'text-muted-foreground')}>
               {t('pricing.annual')}
-              <span className="ml-1.5 inline-flex items-center rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-600">
+              <span className="ml-1.5 inline-flex items-center rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                 -17%
               </span>
             </span>
@@ -317,7 +317,7 @@ export default function PricingScreen() {
                     ) : (
                       <Button
                         variant="outline"
-                        className="w-full border-amber-500/50 text-amber-600 hover:bg-amber-500/10 font-semibold"
+                        className="w-full border-amber-500/50 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 font-semibold"
                         onClick={() => handleSubscribe(tier.id)}
                         disabled={loadingPlan !== null}
                       >

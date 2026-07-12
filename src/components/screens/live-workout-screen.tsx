@@ -145,7 +145,7 @@ export default function LiveWorkoutScreen() {
                 {session.rankings.map((entry, i) => (
                   <motion.div key={entry.playerId} variants={itemVariants}>
                     <div className={`flex items-center gap-3 p-3 rounded-xl border ${i === 0 ? 'border-amber-500/50 bg-amber-500/5' : entry.isCurrentPlayer ? 'border-orange-500/50 bg-orange-500/5' : 'border-border/50 bg-card'}`}>
-                      <span className={`text-lg font-black w-8 text-center ${i === 0 ? 'text-amber-500' : i === 1 ? 'text-gray-400' : i === 2 ? 'text-orange-700' : 'text-muted-foreground'}`}>
+                      <span className={`text-lg font-black w-8 text-center ${i === 0 ? 'text-amber-500' : i === 1 ? 'text-gray-400 dark:text-gray-500' : i === 2 ? 'text-orange-700 dark:text-orange-400' : 'text-muted-foreground'}`}>
                         {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : entry.rank}
                       </span>
                       <Avatar className="h-9 w-9">

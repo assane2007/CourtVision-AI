@@ -58,6 +58,7 @@ const NotificationsScreen = dynamic(() => import('@/components/screens/notificat
 const PricingScreen = dynamic(() => import('@/components/screens/pricing-screen'), { ssr: false })
 const LiveWorkoutScreen = dynamic(() => import('@/components/screens/live-workout-screen'), { ssr: false })
 const AdminScreen = dynamic(() => import('@/components/screens/admin-screen'), { ssr: false })
+const AnalyticsScreen = dynamic(() => import('@/components/screens/analytics-screen'), { ssr: false })
 const TermsScreen = dynamic(() => import('@/components/screens/terms-screen'), { ssr: false })
 const PrivacyScreen = dynamic(() => import('@/components/screens/privacy-screen'), { ssr: false })
 
@@ -129,6 +130,7 @@ const SCREEN_MAP: Record<string, React.ComponentType> = {
   'pricing': PricingScreen,
   'live-workout': LiveWorkoutScreen,
   'admin': AdminScreen,
+  'analytics': AnalyticsScreen,
   'terms': TermsScreen,
   'privacy': PrivacyScreen,
 }

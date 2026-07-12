@@ -26,7 +26,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppStore } from '@/stores/app'
 import { cn, apiFetch, formatLocaleDate } from '@/lib/utils'
-import { containerVariants, itemVariants } from '@/lib/animations'
+import { containerVariants, itemVariants, staggerContainer, fadeInScale, cardHover } from '@/lib/animations'
 import { getLevelInfo, getLevelColor, getLevelBgColor } from '@/lib/xp'
 import { useTranslation } from '@/components/providers/language-provider'
 import { BottomNav } from '@/components/shared/bottom-nav'
@@ -288,10 +288,10 @@ function SessionItem({ session }: { session: Session }) {
         <span
           className={cn(
             session.totalScore > 80
-              ? 'text-emerald-600'
+              ? 'text-emerald-600 dark:text-emerald-400'
               : session.totalScore > 50
-                ? 'text-amber-600'
-                : 'text-red-600',
+                ? 'text-amber-600 dark:text-amber-400'
+                : 'text-red-600 dark:text-red-400',
           )}
         >
           {Math.round(session.totalScore)}
@@ -733,14 +733,13 @@ export default function HomeScreen() {
         {/* ---------------------------------------------------------------- */}
         <motion.div variants={itemVariants}>
           <motion.div
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
+            {...cardHover}
             onClick={() => navigate('leaderboard')}
             role="button"
             tabIndex={0}
             aria-label={td('Classement', 'Leaderboard')}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('leaderboard') } }}
-            className="relative overflow-hidden rounded-2xl p-4 cursor-pointer shadow-lg bg-card border border-border"
+            className="relative overflow-hidden rounded-2xl p-4 cursor-pointer shadow-lg dark:shadow-black/20 bg-card border border-border"
           >
             <div className="flex items-center gap-4">
               <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10">
@@ -763,7 +762,7 @@ export default function HomeScreen() {
             <Sparkles className="h-4 w-4 text-orange-500" />
             {td('Explorer', 'Explore')}
           </h2>
-          <div className="grid grid-cols-3 gap-2.5">
+          <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="grid grid-cols-3 gap-2.5">
             {[
               { icon: Users, label: td('Amis', 'Friends'), screen: 'friends' as const, color: 'bg-sky-500/10 text-sky-500' },
               { icon: Trophy, label: td('Défis', 'Challenges'), screen: 'challenges' as const, color: 'bg-amber-500/10 text-amber-500' },
@@ -777,8 +776,8 @@ export default function HomeScreen() {
             ].map((feature) => (
               <motion.button
                 key={feature.screen}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
+                variants={fadeInScale}
+                {...cardHover}
                 onClick={() => navigate(feature.screen)}
                 className="flex flex-col items-center gap-2 rounded-2xl border bg-card p-3 transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
@@ -788,7 +787,7 @@ export default function HomeScreen() {
                 <span className="text-[11px] font-medium text-foreground truncate w-full text-center">{feature.label}</span>
               </motion.button>
             ))}
-          </div>
+          </motion.div>
         </motion.section>
 
         {/* ---------------------------------------------------------------- */}
@@ -796,14 +795,13 @@ export default function HomeScreen() {
         {/* ---------------------------------------------------------------- */}
         <motion.div variants={itemVariants}>
           <motion.div
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
+            {...cardHover}
             onClick={() => navigate('reaction-trainer')}
             role="button"
             tabIndex={0}
             aria-label={td('Traineur de Réaction', 'Reaction Trainer')}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('reaction-trainer') } }}
-            className="relative overflow-hidden rounded-2xl p-4 cursor-pointer shadow-lg"
+            className="relative overflow-hidden rounded-2xl p-4 cursor-pointer shadow-lg dark:shadow-black/20"
             style={{
               background: 'linear-gradient(135deg, #f97316 0%, #f59e0b 50%, #f97316 100%)',
             }}
@@ -883,15 +881,12 @@ export default function HomeScreen() {
         {/* CTA: Start Training                                             */}
         {/* ---------------------------------------------------------------- */}
         <motion.div variants={itemVariants} className="pb-4">
-          <motion.div
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-          >
+          <motion.div {...cardHover}>
             <Button
               onClick={() => navigate('train-hub')}
               className={cn(
-                'w-full py-6 text-base font-semibold rounded-2xl shadow-lg shadow-orange-500/25 transition-all',
-                'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 hover:shadow-xl hover:shadow-orange-500/30',
+                'w-full py-6 text-base font-semibold rounded-2xl shadow-lg dark:shadow-black/20 shadow-orange-500/25 transition-all',
+                'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 hover:shadow-xl dark:hover:shadow-black/30 hover:shadow-orange-500/30',
                 !stats?.weekSessions && 'animate-pulse',
               )}
             >

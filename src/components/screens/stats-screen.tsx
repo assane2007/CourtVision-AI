@@ -66,7 +66,7 @@ function CustomTooltip({
 }) {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-popover border border-border rounded-lg px-3 py-2 shadow-lg text-sm">
+    <div className="bg-popover border border-border rounded-lg px-3 py-2 shadow-lg dark:shadow-black/20 text-sm">
       <p className="font-semibold mb-1">{label}</p>
       {payload.map((p, i) => (
         <p key={i} className="text-muted-foreground">
@@ -231,7 +231,7 @@ export function StatsScreen() {
           {/* ── Records Link Card ──────────────────────────────────── */}
           <motion.div variants={itemVariants}>
             <Card
-              className="border-0 shadow-md cursor-pointer group hover:shadow-lg transition-shadow"
+              className="border-0 shadow-md dark:shadow-black/20 cursor-pointer group hover:shadow-lg dark:hover:shadow-black/30 transition-shadow"
               onClick={() => navigate('records')}
             >
               <CardContent className="p-4 flex items-center gap-4">
@@ -251,7 +251,7 @@ export function StatsScreen() {
 
           {/* ── Weekly Activity Chart ─────────────────────────────── */}
           <motion.div variants={itemVariants}>
-            <Card className="border-0 dark:border-border/50 shadow-md">
+            <Card className="border-0 dark:border-border/50 shadow-md dark:shadow-black/20">
               <CardHeader className="pb-2 px-5 pt-5">
                 <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
                   <BarChart3 className="h-4 w-4 text-orange-500" />
@@ -300,7 +300,7 @@ export function StatsScreen() {
           {/* ── Category Performance ──────────────────────────────── */}
           {categories.length > 0 && (
             <motion.div variants={itemVariants}>
-              <Card className="border-0 dark:border-border/50 shadow-md">
+              <Card className="border-0 dark:border-border/50 shadow-md dark:shadow-black/20">
                 <CardHeader className="pb-2 px-5 pt-5">
                   <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
                     <Trophy className="h-4 w-4 text-orange-500" />
@@ -359,7 +359,7 @@ export function StatsScreen() {
           {/* ── Recent Sessions Table ─────────────────────────────── */}
           {allSessions.length > 0 && (
             <motion.div variants={itemVariants}>
-              <Card className="border-0 dark:border-border/50 shadow-md">
+              <Card className="border-0 dark:border-border/50 shadow-md dark:shadow-black/20">
                 <CardHeader className="pb-2 px-5 pt-5">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
@@ -484,7 +484,7 @@ export function StatsScreen() {
               </p>
               <Button
                 onClick={() => navigate('train-hub')}
-                className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold px-6 shadow-lg shadow-orange-500/25 rounded-full"
+                className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold px-6 shadow-lg dark:shadow-black/20 shadow-orange-500/25 rounded-full"
               >
                 <Dumbbell className="h-4 w-4 mr-2" />
                 {td("Commencer l'entraînement", 'Start workout')}

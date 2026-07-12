@@ -169,6 +169,33 @@ export type TranslationKey =
   | 'landing.stat2'
   | 'landing.stat3'
   | 'landing.stat4'
+  | 'landing.socialProof'
+  | 'landing.demo'
+  | 'landing.feature7.title'
+  | 'landing.feature7.description'
+  | 'landing.feature8.title'
+  | 'landing.feature8.description'
+  | 'landing.testimonialsTitle'
+  | 'landing.testimonialsSubtitle'
+  | 'landing.testimonial1.name'
+  | 'landing.testimonial1.role'
+  | 'landing.testimonial1.quote'
+  | 'landing.testimonial2.name'
+  | 'landing.testimonial2.role'
+  | 'landing.testimonial2.quote'
+  | 'landing.testimonial3.name'
+  | 'landing.testimonial3.role'
+  | 'landing.testimonial3.quote'
+  | 'landing.pricingTitle'
+  | 'landing.pricingSubtitle'
+  | 'landing.pricingFree'
+  | 'landing.pricingPro'
+  | 'landing.pricingCta'
+  | 'landing.finalCtaTitle'
+  | 'landing.finalCtaSubtitle'
+  | 'landing.finalCtaPlaceholder'
+  | 'landing.finalCtaButton'
+  | 'landing.terms'
   // Difficulty
   | 'difficulty.beginner'
   | 'difficulty.intermediate'
@@ -423,6 +450,38 @@ export type TranslationKey =
   | 'onboarding.lvlElite'
   | 'onboarding.goalConditioning'
   | 'onboarding.goalGeneral'
+  | 'onboarding.welcome'
+  | 'onboarding.welcomeDesc'
+  | 'onboarding.skip'
+  | 'onboarding.profileTitle'
+  | 'onboarding.profileDesc'
+  | 'onboarding.nameLabel'
+  | 'onboarding.namePlaceholder'
+  | 'onboarding.nameRequired'
+  | 'onboarding.goalsTitle'
+  | 'onboarding.goalsDesc'
+  | 'onboarding.goalsMin'
+  | 'onboarding.summaryTitle'
+  | 'onboarding.summaryDesc'
+  | 'onboarding.goToDashboard'
+  | 'onboarding.nameSummary'
+  | 'onboarding.positionSummary'
+  | 'onboarding.levelSummary'
+  | 'onboarding.goalsSummary'
+  | 'onboarding.posPG'
+  | 'onboarding.posSG'
+  | 'onboarding.posSF'
+  | 'onboarding.posPF'
+  | 'onboarding.posC'
+  | 'onboarding.lvlPro'
+  | 'onboarding.goalImproveShooting'
+  | 'onboarding.goalImproveShootingDesc'
+  | 'onboarding.goalGetInShape'
+  | 'onboarding.goalGetInShapeDesc'
+  | 'onboarding.goalUnderstandGame'
+  | 'onboarding.goalUnderstandGameDesc'
+  | 'onboarding.goalMatchPrep'
+  | 'onboarding.goalMatchPrepDesc'
   // Drill Detail
   | 'drill.errorLoading'
   | 'drill.notFound'
@@ -1031,6 +1090,33 @@ const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
     'landing.stat2': 'Catégories',
     'landing.stat3': 'Analyse temps réel',
     'landing.stat4': 'Gratuit',
+    'landing.socialProof': 'Rejoint par 10 000+ joueurs',
+    'landing.demo': 'Voir la démo',
+    'landing.feature7.title': 'Plans d\'Entraînement',
+    'landing.feature7.description': 'Des programmes personnalisés créés par l\'IA pour cibler tes faiblesses et maximiser ta progression.',
+    'landing.feature8.title': 'Coach Vocal IA',
+    'landing.feature8.description': 'Reçois des instructions vocales en temps réel pendant tes séances pour garder la bonne forme.',
+    'landing.testimonialsTitle': 'Ce que disent les joueurs',
+    'landing.testimonialsSubtitle': 'Des milliers de joueurs améliorent leur jeu avec CourtVision AI.',
+    'landing.testimonial1.name': 'Mamadou Diop',
+    'landing.testimonial1.role': 'Meneur, U18 National',
+    'landing.testimonial1.quote': "CourtVision m'a permis de corriger ma posture de tir en 2 semaines. Mon pourcentage est passé de 28% à 41%.",
+    'landing.testimonial2.name': 'Léa Martin',
+    'landing.testimonial2.role': 'Ailière, Division 2',
+    'landing.testimonial2.quote': "L'analyse en temps réel est incroyable. Je ne pensais pas qu'un téléphone pouvait remplacer un coach.",
+    'landing.testimonial3.name': 'Thomas Bernard',
+    'landing.testimonial3.role': 'Coach amateur, Paris',
+    'landing.testimonial3.quote': "J'utilise CourtVision avec toute mon équipe. Les rapports de scouting nous font gagner un temps précieux.",
+    'landing.pricingTitle': 'Commence gratuitement, passe à Pro quand tu es prêt',
+    'landing.pricingSubtitle': 'Pas de carte bancaire requise pour commencer.',
+    'landing.pricingFree': 'Gratuit',
+    'landing.pricingPro': 'Pro',
+    'landing.pricingCta': 'Voir les offres',
+    'landing.finalCtaTitle': 'Prêt à transformer ton jeu ?',
+    'landing.finalCtaSubtitle': 'Rejoins 10 000+ joueurs qui s\'améliorent chaque jour avec l\'IA.',
+    'landing.finalCtaPlaceholder': 'Ton adresse email',
+    'landing.finalCtaButton': 'Commencer maintenant',
+    'landing.terms': 'Conditions d\'utilisation',
 
     // Difficulty
     'difficulty.beginner': 'Débutant',
@@ -1301,6 +1387,38 @@ const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
     'onboarding.lvlElite': 'Élite',
     'onboarding.goalConditioning': 'Condition Physique',
     'onboarding.goalGeneral': 'Global',
+    'onboarding.welcome': 'Bienvenue !',
+    'onboarding.welcomeDesc': "CourtVision est ton coach de basket personnel. Crée ton profil en quelques étapes pour commencer.",
+    'onboarding.skip': 'Passer',
+    'onboarding.profileTitle': 'Ton profil',
+    'onboarding.profileDesc': "Dis-nous en plus sur toi pour personnaliser ton expérience",
+    'onboarding.nameLabel': 'Nom',
+    'onboarding.namePlaceholder': 'Ton prénom...',
+    'onboarding.nameRequired': 'Le nom est requis',
+    'onboarding.goalsTitle': 'Tes objectifs',
+    'onboarding.goalsDesc': 'Sélectionne tes objectifs de progression',
+    'onboarding.goalsMin': 'Sélectionne au moins un objectif',
+    'onboarding.summaryTitle': "C'est parti !",
+    'onboarding.summaryDesc': 'Voici le résumé de ton profil. Tu pourras le modifier à tout moment.',
+    'onboarding.goToDashboard': 'Accéder au tableau de bord',
+    'onboarding.nameSummary': 'Nom',
+    'onboarding.positionSummary': 'Poste',
+    'onboarding.levelSummary': 'Niveau',
+    'onboarding.goalsSummary': 'Objectifs',
+    'onboarding.posPG': 'Meneur (PG)',
+    'onboarding.posSG': 'Arrière (SG)',
+    'onboarding.posSF': 'Ailier (SF)',
+    'onboarding.posPF': 'Ailier Fort (PF)',
+    'onboarding.posC': 'Pivot (C)',
+    'onboarding.lvlPro': 'Pro',
+    'onboarding.goalImproveShooting': 'Améliorer mon tir',
+    'onboarding.goalImproveShootingDesc': 'Précision et routine de tir',
+    'onboarding.goalGetInShape': 'Gagner en condition',
+    'onboarding.goalGetInShapeDesc': 'Endurance, explosivité et agilité',
+    'onboarding.goalUnderstandGame': 'Comprendre le jeu',
+    'onboarding.goalUnderstandGameDesc': "Lecture du jeu et prise de décision",
+    'onboarding.goalMatchPrep': 'Me préparer pour les matchs',
+    'onboarding.goalMatchPrepDesc': 'Programmes spécifiques avant compétition',
 
     // Drill Detail
     'drill.errorLoading': "Erreur lors du chargement de l'exercice",
@@ -1938,6 +2056,33 @@ const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
     'landing.stat2': 'Categories',
     'landing.stat3': 'Real-time analysis',
     'landing.stat4': 'Free',
+    'landing.socialProof': 'Joined by 10,000+ players',
+    'landing.demo': 'See the demo',
+    'landing.feature7.title': 'Workout Plans',
+    'landing.feature7.description': 'Personalized programs created by AI to target your weaknesses and maximize your progression.',
+    'landing.feature8.title': 'AI Voice Coach',
+    'landing.feature8.description': 'Get real-time voice instructions during your sessions to maintain proper form.',
+    'landing.testimonialsTitle': 'What players are saying',
+    'landing.testimonialsSubtitle': 'Thousands of players are improving their game with CourtVision AI.',
+    'landing.testimonial1.name': 'Mamadou Diop',
+    'landing.testimonial1.role': 'Point Guard, U18 National',
+    'landing.testimonial1.quote': "CourtVision helped me fix my shooting form in 2 weeks. My percentage went from 28% to 41%.",
+    'landing.testimonial2.name': 'Léa Martin',
+    'landing.testimonial2.role': 'Forward, Division 2',
+    'landing.testimonial2.quote': "The real-time analysis is incredible. I never thought a phone could replace a coach.",
+    'landing.testimonial3.name': 'Thomas Bernard',
+    'landing.testimonial3.role': 'Amateur Coach, Paris',
+    'landing.testimonial3.quote': "I use CourtVision with my entire team. The scouting reports save us precious time.",
+    'landing.pricingTitle': 'Start free, upgrade to Pro when you\'re ready',
+    'landing.pricingSubtitle': 'No credit card required to get started.',
+    'landing.pricingFree': 'Free',
+    'landing.pricingPro': 'Pro',
+    'landing.pricingCta': 'See plans',
+    'landing.finalCtaTitle': 'Ready to transform your game?',
+    'landing.finalCtaSubtitle': 'Join 10,000+ players improving every day with AI.',
+    'landing.finalCtaPlaceholder': 'Your email address',
+    'landing.finalCtaButton': 'Get started now',
+    'landing.terms': 'Terms of Service',
 
     // Difficulty
     'difficulty.beginner': 'Beginner',
@@ -2208,6 +2353,38 @@ const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
     'onboarding.lvlElite': 'Elite',
     'onboarding.goalConditioning': 'Conditioning',
     'onboarding.goalGeneral': 'General',
+    'onboarding.welcome': 'Welcome!',
+    'onboarding.welcomeDesc': 'CourtVision is your personal basketball coach. Create your profile in a few steps to get started.',
+    'onboarding.skip': 'Skip',
+    'onboarding.profileTitle': 'Your profile',
+    'onboarding.profileDesc': 'Tell us more about you to personalize your experience',
+    'onboarding.nameLabel': 'Name',
+    'onboarding.namePlaceholder': 'Your first name...',
+    'onboarding.nameRequired': 'Name is required',
+    'onboarding.goalsTitle': 'Your goals',
+    'onboarding.goalsDesc': 'Select your training goals',
+    'onboarding.goalsMin': 'Select at least one goal',
+    'onboarding.summaryTitle': "Let's go!",
+    'onboarding.summaryDesc': "Here's a summary of your profile. You can modify it anytime.",
+    'onboarding.goToDashboard': 'Go to dashboard',
+    'onboarding.nameSummary': 'Name',
+    'onboarding.positionSummary': 'Position',
+    'onboarding.levelSummary': 'Level',
+    'onboarding.goalsSummary': 'Goals',
+    'onboarding.posPG': 'Point Guard (PG)',
+    'onboarding.posSG': 'Shooting Guard (SG)',
+    'onboarding.posSF': 'Small Forward (SF)',
+    'onboarding.posPF': 'Power Forward (PF)',
+    'onboarding.posC': 'Center (C)',
+    'onboarding.lvlPro': 'Pro',
+    'onboarding.goalImproveShooting': 'Improve my shooting',
+    'onboarding.goalImproveShootingDesc': 'Shooting accuracy and routine',
+    'onboarding.goalGetInShape': 'Get in shape',
+    'onboarding.goalGetInShapeDesc': 'Endurance, explosiveness and agility',
+    'onboarding.goalUnderstandGame': 'Understand the game',
+    'onboarding.goalUnderstandGameDesc': 'Court reading and decision making',
+    'onboarding.goalMatchPrep': 'Prepare for games',
+    'onboarding.goalMatchPrepDesc': 'Specific pre-competition programs',
 
     // Drill Detail
     'drill.errorLoading': 'Error loading exercise',

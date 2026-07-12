@@ -10,7 +10,7 @@ import { useAppStore } from '@/stores/app'
 import { BottomNav } from '@/components/shared/bottom-nav'
 import { SwipeToGoBack } from '@/components/shared/swipe-back'
 import { apiFetch, cn, formatLocaleDate } from '@/lib/utils'
-import { containerVariants, itemVariants } from '@/lib/animations'
+import { staggerContainer, fadeInScale, cardHover } from '@/lib/animations'
 import { useTranslation } from '@/components/providers/language-provider'
 
 interface Achievement {
@@ -119,7 +119,7 @@ export function AchievementsScreen() {
           >
             <span className="text-2xl">🎉</span>
             <div>
-              <p className="font-semibold text-green-400 text-sm">{t('achievements.newUnlocks')}</p>
+              <p className="font-semibold text-green-400 dark:text-green-300 text-sm">{t('achievements.newUnlocks')}</p>
               <p className="text-xs text-muted-foreground">
                 {t('achievements.newUnlocksDesc').replace('{count}', String(data.newUnlocks.length))}
               </p>
@@ -163,14 +163,14 @@ export function AchievementsScreen() {
             </p>
             <Button
               onClick={() => navigate('train-hub')}
-              className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold px-6 shadow-lg shadow-orange-500/25 rounded-full"
+              className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold px-6 shadow-lg dark:shadow-black/20 shadow-orange-500/25 rounded-full"
             >
               {t('empty.startTraining')}
             </Button>
           </motion.div>
         ) : (
           <motion.div
-            variants={containerVariants}
+            variants={staggerContainer}
             initial="hidden"
             animate="visible"
             className="grid grid-cols-2 md:grid-cols-3 gap-3"
@@ -178,7 +178,8 @@ export function AchievementsScreen() {
             {achievements.map((achievement) => (
               <motion.div
                 key={achievement.type}
-                variants={itemVariants}
+                variants={fadeInScale}
+                {...cardHover}
                 className={cn(
                   'relative rounded-2xl border p-4 flex flex-col items-center text-center gap-2 transition-all',
                   achievement.unlocked
@@ -186,9 +187,19 @@ export function AchievementsScreen() {
                     : 'bg-muted/30 dark:bg-muted/20 border-border/50 opacity-60 dark:opacity-40'
                 )}
               >
-                {/* Glow effect for unlocked */}
+                {/* Golden glow effect for rare/unlocked achievements */}
                 {achievement.unlocked && (
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-orange-500/5 to-transparent pointer-events-none" />
+                  <motion.div
+                    className="absolute inset-0 rounded-2xl pointer-events-none"
+                    animate={{
+                      boxShadow: [
+                        '0 0 15px rgba(249,115,22,0.0)',
+                        '0 0 25px rgba(249,115,22,0.15)',
+                        '0 0 15px rgba(249,115,22,0.0)',
+                      ],
+                    }}
+                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' as const }}
+                  />
                 )}
 
                 <div

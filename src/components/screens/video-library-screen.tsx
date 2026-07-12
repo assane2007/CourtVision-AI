@@ -534,7 +534,7 @@ export default function VideoLibraryScreen() {
         <div className="fixed bottom-20 right-4 z-30 md:right-8">
           <Button
             size="icon"
-            className="h-12 w-12 rounded-full shadow-lg"
+            className="h-12 w-12 rounded-full shadow-lg dark:shadow-black/20"
             onClick={() => navigate('video-upload')}
           >
             <Upload className="h-5 w-5" />
