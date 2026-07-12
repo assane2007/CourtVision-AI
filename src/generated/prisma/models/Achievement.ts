@@ -8,9 +8,9 @@
  *
  * 🟢 You can import this file directly.
  */
-import type * as runtime from "@prisma/client/runtime/client"
+import type * as runtime from "@prisma/client/runtime/client";
 import type * as $Enums from "../enums"
-import type * as Prisma from "../internal/prismaNamespace"
+import type * as Prisma from "../internal/prismaNamespace";
 
 /**
  * Model Achievement

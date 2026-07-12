@@ -11,8 +11,8 @@
  * Please import the `PrismaClient` class from the `client.ts` file instead.
  */
 
-import * as runtime from "@prisma/client/runtime/client"
-import type * as Prisma from "./prismaNamespace"
+import * as runtime from "@prisma/client/runtime/client";
+import type * as Prisma from "./prismaNamespace";
 
 
 const config: runtime.GetPrismaClientConfig = {

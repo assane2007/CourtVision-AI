@@ -4,7 +4,6 @@ import { useAppStore } from '@/stores/app';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle, DialogTrigger,
@@ -18,7 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import { BottomNav } from '@/components/shared/bottom-nav';
 import { apiFetch, getDrillName } from '@/lib/utils';
 import { CATEGORIES_LIST, DIFFICULTIES, getCategoryLabel } from '@/lib/constants';
-import { Search, Heart, Clock, Target, Filter, Plus, RefreshCw, Loader2, X, Zap,  } from 'lucide-react';
+import { Search, Heart, Clock, Target, Filter, Plus, RefreshCw, Loader2, X, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '@/components/providers/language-provider';
 
@@ -28,16 +27,10 @@ interface Drill {
   durationSec: number; targetReps: number; icon: string;
 }
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 16, scale: 0.97 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } },
-  exit: { opacity: 0, scale: 0.95, transition: { duration: 0.15 } },
-};
-
-const difficultyConfig: Record<string, { color: string; glow: string; label: string }> = {
-  beginner: { color: '#22c55e', glow: 'rgba(34,197,94,0.3)', label: 'Débutant' },
-  intermediate: { color: '#f97316', glow: 'rgba(249,115,22,0.3)', label: 'Intermédiaire' },
-  advanced: { color: '#ef4444', glow: 'rgba(239,68,68,0.3)', label: 'Avancé' },
+const difficultyConfig: Record<string, { color: string; glow: string; label: string; bg: string }> = {
+  beginner:     { color: '#22c55e', glow: 'rgba(34,197,94,0.35)',   label: 'Débutant',      bg: 'rgba(34,197,94,0.08)' },
+  intermediate: { color: '#f97316', glow: 'rgba(249,115,22,0.35)',  label: 'Intermédiaire', bg: 'rgba(249,115,22,0.08)' },
+  advanced:     { color: '#ef4444', glow: 'rgba(239,68,68,0.35)',   label: 'Avancé',        bg: 'rgba(239,68,68,0.08)' },
 };
 
 function normalize(s: string): string {
@@ -53,19 +46,29 @@ function DrillCard({
   language: string; td: (fr: string, en?: string) => string; tc: (key: string) => string;
 }) {
   const diff = difficultyConfig[drill.difficulty] ?? difficultyConfig.beginner;
+  const [hovered, setHovered] = useState(false);
 
   return (
     <motion.div
-      variants={cardVariants}
       layout
-      exit="exit"
-      whileHover={{ y: -3, scale: 1.01 }}
-      whileTap={{ scale: 0.98 }}
+      initial={{ opacity: 0, y: 20, scale: 0.94 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.92, transition: { duration: 0.15 } }}
+      transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+      whileHover={{ y: -5, scale: 1.02 }}
+      whileTap={{ scale: 0.97 }}
+      onHoverStart={() => setHovered(true)}
+      onHoverEnd={() => setHovered(false)}
       className="relative rounded-2xl overflow-hidden cursor-pointer group"
       style={{
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
+        background: hovered
+          ? `linear-gradient(145deg, ${diff.bg}, rgba(255,255,255,0.04))`
+          : 'rgba(255,255,255,0.03)',
+        border: `1px solid ${hovered ? diff.color + '35' : 'rgba(255,255,255,0.07)'}`,
+        boxShadow: hovered
+          ? `0 12px 40px rgba(0,0,0,0.3), 0 0 0 1px ${diff.color}20`
+          : '0 4px 16px rgba(0,0,0,0.2)',
+        transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
       }}
       onClick={onCardClick}
       role="button"
@@ -73,61 +76,91 @@ function DrillCard({
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onCardClick(); } }}
       aria-label={getDrillName(drill, language)}
     >
-      {/* Hover glow */}
+      {/* Difficulty accent line — animated on hover */}
       <motion.div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-        style={{ background: `linear-gradient(135deg, ${diff.color}08, transparent)` }}
+        className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl"
+        animate={{ opacity: hovered ? 1 : 0.6, scaleX: hovered ? 1 : 0.7 }}
+        style={{
+          background: `linear-gradient(90deg, ${diff.color}, ${diff.color}40)`,
+          boxShadow: hovered ? `0 0 12px ${diff.glow}` : 'none',
+          transformOrigin: 'left',
+          transition: 'all 0.3s ease',
+        }}
       />
 
-      {/* Difficulty accent line */}
-      <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl"
-        style={{ background: diff.color, boxShadow: `0 0 8px ${diff.glow}` }} />
+      {/* Glow blob */}
+      <motion.div
+        className="absolute -bottom-8 -right-8 w-28 h-28 rounded-full pointer-events-none"
+        animate={{ opacity: hovered ? 0.12 : 0.04, scale: hovered ? 1.2 : 1 }}
+        style={{ background: diff.color, transition: 'all 0.4s ease' }}
+      />
 
       {/* Favorite button */}
-      <button
+      <motion.button
+        whileHover={{ scale: 1.15 }}
+        whileTap={{ scale: 0.9 }}
         onClick={onToggleFav}
-        className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-xl transition-all"
-        style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)' }}
+        className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-xl"
+        style={{
+          background: isFav ? `${diff.color}20` : 'rgba(0,0,0,0.35)',
+          backdropFilter: 'blur(8px)',
+          border: isFav ? `1px solid ${diff.color}40` : '1px solid rgba(255,255,255,0.08)',
+        }}
         aria-label={isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}
       >
-        <Heart className={`h-3.5 w-3.5 transition-colors ${isFav ? 'fill-orange-500 text-orange-500' : 'text-white/50'}`} />
-      </button>
+        <Heart className={`h-3.5 w-3.5 transition-all duration-200 ${isFav ? 'fill-orange-500 text-orange-500 scale-110' : 'text-white/40'}`} />
+      </motion.button>
 
       <div className="p-4 pb-5">
         {/* Icon */}
         <motion.div
-          whileHover={{ scale: 1.1, rotate: -5 }}
+          animate={{ rotate: hovered ? -8 : 0, scale: hovered ? 1.12 : 1 }}
           transition={{ type: 'spring', stiffness: 400, damping: 17 }}
           className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl mb-3"
-          style={{ background: `${diff.color}15`, border: `1px solid ${diff.color}25` }}
+          style={{
+            background: `${diff.color}12`,
+            border: `1px solid ${diff.color}20`,
+            boxShadow: hovered ? `0 4px 20px ${diff.glow}` : 'none',
+          }}
         >
           {drill.icon}
         </motion.div>
 
-        <h3 className="font-bold text-sm text-foreground leading-snug pr-8 line-clamp-2 mb-2">
+        <h3 className="font-black text-sm text-foreground leading-snug pr-8 line-clamp-2 mb-2.5">
           {getDrillName(drill, language)}
         </h3>
 
         <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full"
             style={{ color: diff.color, background: `${diff.color}15`, border: `1px solid ${diff.color}25` }}>
             {diff.label}
           </span>
-          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full text-muted-foreground"
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-muted-foreground"
             style={{ background: 'rgba(255,255,255,0.05)' }}>
             {tc(drill.category)}
           </span>
         </div>
 
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <Clock className="h-3 w-3" />{drill.durationSec}s
+          <span className="flex items-center gap-1.5">
+            <Clock className="h-3 w-3" style={{ color: diff.color }} />{drill.durationSec}s
           </span>
-          <span className="flex items-center gap-1">
-            <Target className="h-3 w-3" />{drill.targetReps} reps
+          <span className="flex items-center gap-1.5">
+            <Target className="h-3 w-3" style={{ color: diff.color }} />{drill.targetReps} reps
           </span>
         </div>
       </div>
+
+      {/* Hover CTA */}
+      <motion.div
+        animate={{ opacity: hovered ? 1 : 0, y: hovered ? 0 : 4 }}
+        transition={{ duration: 0.2 }}
+        className="absolute bottom-3 right-3 flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black text-white"
+        style={{ background: `linear-gradient(135deg, ${diff.color}, ${diff.color}cc)`, boxShadow: `0 4px 12px ${diff.glow}` }}
+      >
+        <Zap className="h-2.5 w-2.5 fill-white" />
+        {td('Go', 'Go')}
+      </motion.div>
     </motion.div>
   );
 }
@@ -278,25 +311,46 @@ export default function TrainHubScreen() {
 
   return (
     <div className="relative min-h-screen flex flex-col bg-background">
-      {/* Background orbs */}
+      {/* Background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full opacity-10"
-          style={{ background: 'radial-gradient(circle, #f97316, transparent)' }} />
-        <div className="absolute bottom-20 -right-20 w-60 h-60 rounded-full opacity-8"
-          style={{ background: 'radial-gradient(circle, #ea580c, transparent)' }} />
+        <motion.div
+          animate={{ x: [0, 30, 0], y: [0, -20, 0], scale: [1, 1.15, 1] }}
+          transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute -top-32 -left-32 w-80 h-80 rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(249,115,22,0.1) 0%, transparent 65%)' }}
+        />
+        <motion.div
+          animate={{ x: [0, -20, 0], y: [0, 30, 0], scale: [1, 1.2, 1] }}
+          transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut', delay: 5 }}
+          className="absolute bottom-20 -right-20 w-72 h-72 rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(234,88,12,0.08) 0%, transparent 65%)' }}
+        />
+        {/* Grid lines */}
+        <div className="absolute inset-0 opacity-[0.02]" style={{
+          backgroundImage: 'linear-gradient(rgba(249,115,22,1) 1px, transparent 1px), linear-gradient(90deg, rgba(249,115,22,1) 1px, transparent 1px)',
+          backgroundSize: '60px 60px',
+        }} />
       </div>
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 backdrop-blur-xl" style={{ background: 'rgba(var(--background-rgb, 13,10,0),0.85)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <header className="sticky top-0 z-30 backdrop-blur-2xl" style={{
+        background: 'rgba(9,5,0,0.88)',
+        borderBottom: '1px solid rgba(249,115,22,0.1)',
+        boxShadow: '0 4px 32px rgba(0,0,0,0.4)',
+      }}>
         <div className="max-w-4xl lg:max-w-6xl mx-auto px-4 pt-5 pb-3">
           <div className="flex items-center justify-between gap-3 mb-4">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500 mb-0.5">
+              <p className="text-[10px] font-black uppercase tracking-[0.25em] text-orange-500 mb-0.5">
                 {td('Centre d\'Entraînement', 'Training Center')}
               </p>
               <h1 className="text-2xl font-black tracking-tight text-foreground">
                 {td('Maîtrise chaque', 'Master every')}{' '}
-                <span style={{ background: 'linear-gradient(90deg, #f97316, #f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                <span style={{
+                  background: 'linear-gradient(90deg, #f97316, #f59e0b)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}>
                   {td('exercice', 'drill')}
                 </span>
               </h1>
@@ -305,13 +359,22 @@ export default function TrainHubScreen() {
             <Dialog open={createOpen} onOpenChange={handleCreateOpenChange}>
               <DialogTrigger asChild>
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-white"
-                  style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)', boxShadow: '0 4px 16px rgba(249,115,22,0.4)' }}
+                  whileHover={{ scale: 1.06, y: -1 }}
+                  whileTap={{ scale: 0.94 }}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-black text-white relative overflow-hidden"
+                  style={{
+                    background: 'linear-gradient(135deg, #f97316, #ea580c)',
+                    boxShadow: '0 4px 20px rgba(249,115,22,0.45)',
+                  }}
                 >
-                  <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('train.createExercise')}</span>
+                  <motion.div
+                    className="absolute inset-0"
+                    animate={{ x: ['-100%', '100%'] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: 'linear', repeatDelay: 4 }}
+                    style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)' }}
+                  />
+                  <Plus className="h-4 w-4 relative z-10" />
+                  <span className="hidden sm:inline relative z-10">{t('train.createExercise')}</span>
                 </motion.button>
               </DialogTrigger>
 
@@ -416,8 +479,8 @@ export default function TrainHubScreen() {
               />
             </div>
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
               onClick={() => setShowFavoritesOnly(v => !v)}
               className="w-10 h-10 flex items-center justify-center rounded-xl transition-all"
               style={{
@@ -427,27 +490,34 @@ export default function TrainHubScreen() {
               }}
               aria-label={t('train.filterFavorites')}
             >
-              <Heart className={`h-4 w-4 ${showFavoritesOnly ? 'fill-white text-white' : 'text-muted-foreground'}`} />
+              <Heart className={`h-4 w-4 transition-all ${showFavoritesOnly ? 'fill-white text-white scale-110' : 'text-muted-foreground'}`} />
             </motion.button>
-            {activeFilterCount > 0 && (
-              <motion.button
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={clearAllFilters}
-                className="w-10 h-10 flex items-center justify-center rounded-xl text-muted-foreground"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
-              >
-                <X className="h-4 w-4" />
-              </motion.button>
-            )}
+            <AnimatePresence>
+              {activeFilterCount > 0 && (
+                <motion.button
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={clearAllFilters}
+                  className="w-10 h-10 flex items-center justify-center rounded-xl text-muted-foreground relative"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                >
+                  <X className="h-4 w-4" />
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-black text-white flex items-center justify-center"
+                    style={{ background: '#f97316' }}>
+                    {activeFilterCount}
+                  </span>
+                </motion.button>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Difficulty pills */}
           <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1 mb-2">
             <button
               onClick={() => setSelectedDifficulty('')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all"
               style={{
                 background: !selectedDifficulty ? 'rgba(249,115,22,0.15)' : 'rgba(255,255,255,0.04)',
                 border: !selectedDifficulty ? '1px solid rgba(249,115,22,0.4)' : '1px solid rgba(255,255,255,0.07)',
@@ -463,14 +533,20 @@ export default function TrainHubScreen() {
                 <button
                   key={diff.key}
                   onClick={() => setSelectedDifficulty(prev => prev === diff.key ? '' : diff.key)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all"
                   style={{
                     background: isActive ? `${cfg?.color}20` : 'rgba(255,255,255,0.04)',
                     border: isActive ? `1px solid ${cfg?.color}50` : '1px solid rgba(255,255,255,0.07)',
                     color: isActive ? cfg?.color : undefined,
+                    boxShadow: isActive ? `0 0 12px ${cfg?.glow}` : 'none',
                   }}
                 >
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: cfg?.color }} />
+                  <motion.span
+                    animate={{ scale: isActive ? [1, 1.4, 1] : 1 }}
+                    transition={{ duration: 0.4 }}
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ background: cfg?.color }}
+                  />
                   {td(diff.key)}
                 </button>
               );
@@ -483,24 +559,26 @@ export default function TrainHubScreen() {
               const isActive = activeCategory === cat.key;
               let count = cat.key === 'all' ? drills.length : drillCountsByCategory[cat.key] ?? 0;
               return (
-                <button
+                <motion.button
                   key={cat.key}
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.96 }}
                   onClick={() => setActiveCategory(cat.key)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all"
                   style={{
                     background: isActive ? 'linear-gradient(135deg, #f97316, #ea580c)' : 'rgba(255,255,255,0.04)',
                     border: isActive ? 'none' : '1px solid rgba(255,255,255,0.07)',
                     color: isActive ? 'white' : undefined,
-                    boxShadow: isActive ? '0 4px 12px rgba(249,115,22,0.35)' : 'none',
+                    boxShadow: isActive ? '0 4px 16px rgba(249,115,22,0.4)' : 'none',
                   }}
                 >
                   <span className="text-sm leading-none">{cat.icon}</span>
                   <span>{tc(cat.key)}</span>
-                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold"
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black"
                     style={{ background: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)' }}>
                     {count}
                   </span>
-                </button>
+                </motion.button>
               );
             })}
           </div>
@@ -509,36 +587,56 @@ export default function TrainHubScreen() {
 
       {/* ── Main Content ─────────────────────────────────────────────────── */}
       <main className="relative z-10 flex-1 max-w-4xl lg:max-w-6xl w-full mx-auto px-4 py-4 pb-28">
-        <p className="text-xs text-muted-foreground mb-4 font-medium">
-          {td(`${filteredDrills.length} exercice${filteredDrills.length !== 1 ? 's' : ''} trouvé${filteredDrills.length !== 1 ? 's' : ''}`,
-            `${filteredDrills.length} drill${filteredDrills.length !== 1 ? 's' : ''} found`)}
-        </p>
+        <motion.p
+          key={filteredDrills.length}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-xs text-muted-foreground mb-4 font-semibold"
+        >
+          {td(
+            `${filteredDrills.length} exercice${filteredDrills.length !== 1 ? 's' : ''} trouvé${filteredDrills.length !== 1 ? 's' : ''}`,
+            `${filteredDrills.length} drill${filteredDrills.length !== 1 ? 's' : ''} found`
+          )}
+        </motion.p>
 
         {isLoading && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-44 rounded-2xl animate-pulse" style={{ background: 'rgba(255,255,255,0.04)' }} />
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.06 }}
+                className="h-48 rounded-2xl"
+                style={{ background: 'rgba(255,255,255,0.04)', animation: 'pulse 2s infinite' }}
+              />
             ))}
           </div>
         )}
 
         {!isLoading && filteredDrills.length === 0 && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center py-20 text-center"
+            initial={{ opacity: 0, y: 24, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            className="flex flex-col items-center justify-center py-24 text-center"
           >
-            <div className="text-5xl mb-4">🔍</div>
-            <h3 className="text-lg font-bold text-foreground">{td('Aucun exercice trouvé', 'No drills found')}</h3>
-            <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+            <motion.div
+              animate={{ y: [0, -8, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              className="text-6xl mb-5"
+            >
+              🔍
+            </motion.div>
+            <h3 className="text-lg font-black text-foreground">{td('Aucun exercice trouvé', 'No drills found')}</h3>
+            <p className="text-sm text-muted-foreground mt-1.5 max-w-xs">
               {td('Essayez de modifier vos filtres', 'Try adjusting your filters')}
             </p>
             <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.96 }}
               onClick={clearAllFilters}
-              className="mt-4 px-5 py-2 rounded-xl text-sm font-bold text-white"
-              style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)' }}
+              className="mt-5 px-6 py-2.5 rounded-xl text-sm font-black text-white"
+              style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)', boxShadow: '0 4px 20px rgba(249,115,22,0.4)' }}
             >
               {t('train.resetFilters')}
             </motion.button>
@@ -550,7 +648,7 @@ export default function TrainHubScreen() {
             key={`${activeCategory}-${selectedDifficulty}-${search}`}
             initial="hidden"
             animate="visible"
-            variants={{ hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.04 } } }}
+            variants={{ hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.05 } } }}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
           >
             <AnimatePresence mode="popLayout">
@@ -571,16 +669,23 @@ export default function TrainHubScreen() {
         )}
 
         {!isLoading && filteredDrills.length > 0 && nextCursor && (
-          <div className="flex justify-center pt-8">
+          <div className="flex justify-center pt-10">
             <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
+              whileHover={{ scale: 1.04, y: -2 }}
+              whileTap={{ scale: 0.96 }}
               onClick={loadMore}
               disabled={isLoadingMore}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold"
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+              className="flex items-center gap-2.5 px-7 py-3 rounded-xl text-sm font-black relative overflow-hidden"
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+              }}
             >
-              {isLoadingMore ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4 text-orange-500" />}
+              {isLoadingMore
+                ? <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+                : <Zap className="h-4 w-4 text-orange-500 fill-orange-500" />
+              }
               {t('action.loadMore')}
             </motion.button>
           </div>

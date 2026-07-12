@@ -15,9 +15,9 @@
  * model files in the `model` directory!
  */
 
-import * as runtime from "@prisma/client/runtime/client"
-import type * as Prisma from "../models"
-import { type PrismaClient } from "./class"
+import * as runtime from "@prisma/client/runtime/client";
+import type * as Prisma from "../models";
+import { type PrismaClient } from "./class";
 
 export type * from '../models'
 
@@ -5262,3 +5262,11 @@ export type PrismaAction =
  */
 export type TransactionClient = Omit<DefaultPrismaClient, runtime.ITXClientDenyList>
 
+
+function Prisma(...args: any[]): any {
+  // eslint-disable-next-line no-console
+  console.warn('Placeholder: Prisma is not implemented yet.', args);
+  return null;
+}
+
+export default Prisma;

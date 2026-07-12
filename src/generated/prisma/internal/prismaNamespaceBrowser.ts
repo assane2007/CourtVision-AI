@@ -15,7 +15,7 @@
  * model files in the `model` directory!
  */
 
-import * as runtime from "@prisma/client/runtime/index-browser"
+import * as runtime from "@prisma/client/runtime/index-browser";
 
 export type * from '../models'
 export type * from './prismaNamespace'
@@ -897,3 +897,11 @@ export const NullsOrder = {
 
 export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 
+
+function Prisma(...args: any[]): any {
+  // eslint-disable-next-line no-console
+  console.warn('Placeholder: Prisma is not implemented yet.', args);
+  return null;
+}
+
+export default Prisma;
