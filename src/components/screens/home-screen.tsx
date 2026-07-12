@@ -6,914 +6,594 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   Camera,
-  Clock,
   ChevronRight,
-  MessageCircle,
-  RefreshCw,
   Shield,
   Sparkles,
   Trophy,
-  Users,
-  Video,
-  Mic,
-  Brain,
-  Target,
   Zap,
+  Flame,
+  Target,
+  TrendingUp,
+  Play,
+  Star,
+  Activity,
+  RefreshCw,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAppStore } from '@/stores/app';
 import { cn, apiFetch, formatLocaleDate } from '@/lib/utils';
-import { containerVariants, itemVariants, staggerContainer, fadeInScale, cardHover } from '@/lib/animations';
-import { getLevelInfo, getLevelColor, getLevelBgColor } from '@/lib/xp';
+import { getLevelInfo } from '@/lib/xp';
 import { useTranslation } from '@/components/providers/language-provider';
 import { BottomNav } from '@/components/shared/bottom-nav';
 import { PullToRefresh } from '@/components/shared/pull-to-refresh';
 
-// New home components
-import { StreakCalendar } from '@/components/home/streak-calendar';
-import { WeeklyChallenge } from '@/components/home/weekly-challenge';
-import { ProgressRings } from '@/components/home/progress-rings';
-import { QuickStartCarousel } from '@/components/home/quick-start-carousel';
-import { MotivationalQuote } from '@/components/home/motivational-quote';
-import { EmptyRecommendations, EmptyActivity } from '@/components/home/empty-states';
-
-// ---------------------------------------------------------------------------
-// Types (derived from API / Prisma responses)
-// ---------------------------------------------------------------------------
-interface DailyStat {
-  date: string
-  sessions: number
-  reps: number
-  score: number
-}
-
+interface DailyStat { date: string; sessions: number; reps: number; score: number }
 interface StatsResponse {
-  totalSessions: number
-  totalReps: number
-  avgScore: number
-  weekSessions: number
-  dailyStats: DailyStat[]
-  currentStreak: number
-  bestStreak: number
-  achievementCount: number
+  totalSessions: number; totalReps: number; avgScore: number; weekSessions: number;
+  dailyStats: DailyStat[]; currentStreak: number; bestStreak: number; achievementCount: number;
 }
-
 interface RecommendationDrill {
-  id: string
-  name: string
-  nameFr: string
-  category: string
-  difficulty: string
-  icon: string
-  reasonFr: string
-  bestScore?: number
+  id: string; name: string; nameFr: string; category: string; difficulty: string;
+  icon: string; reasonFr: string; bestScore?: number;
 }
-
-interface SessionDrill {
-  drill: { id: string; nameFr: string; icon: string }
-  score: number
-  reps: number
-}
-
+interface SessionDrill { drill: { id: string; nameFr: string; icon: string }; score: number; reps: number }
 interface Session {
-  id: string
-  startedAt: string
-  totalScore: number
-  totalReps: number
-  totalDrills: number
-  drills: SessionDrill[]
+  id: string; startedAt: string; totalScore: number; totalReps: number;
+  totalDrills: number; drills: SessionDrill[];
 }
+interface PlayerXpData { xp: number; xpLevel: number }
+interface FullPlayerData { xp?: number; xpLevel?: number; [key: string]: unknown }
 
-interface PlayerXpData {
-  xp: number
-  xpLevel: number
-}
-
-interface FullPlayerData {
-  xp?: number
-  xpLevel?: number
-  [key: string]: unknown
-}
-
-// ---------------------------------------------------------------------------
-// Skeleton placeholders
-// ---------------------------------------------------------------------------
-function RingsSkeleton() {
+// ── Animated background orbs ──────────────────────────────────────────────
+function CourtOrbs() {
   return (
-    <div className="flex items-center justify-around rounded-2xl border bg-card p-5">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="flex flex-col items-center gap-1">
-          <Skeleton className="h-[88px] w-[88px] rounded-full" />
-          <Skeleton className="h-3 w-16" />
-        </div>
-      ))}
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+      <motion.div
+        animate={{ x: [0, 30, 0], y: [0, -20, 0], scale: [1, 1.1, 1] }}
+        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute -top-32 -right-32 w-96 h-96 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(249,115,22,0.15) 0%, transparent 70%)' }}
+      />
+      <motion.div
+        animate={{ x: [0, -20, 0], y: [0, 30, 0], scale: [1, 1.15, 1] }}
+        transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
+        className="absolute -bottom-40 -left-20 w-80 h-80 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(234,88,12,0.12) 0%, transparent 70%)' }}
+      />
+      <motion.div
+        animate={{ x: [0, 15, 0], y: [0, -15, 0] }}
+        transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut', delay: 6 }}
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(251,146,60,0.06) 0%, transparent 70%)' }}
+      />
     </div>
-  )
+  );
 }
 
-function CalendarSkeleton() {
-  return (
-    <div className="rounded-2xl border bg-card">
-      <div className="p-5 pb-3 pt-5">
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-8 w-8 rounded-lg" />
-          <Skeleton className="h-4 w-32" />
-        </div>
-      </div>
-      <div className="px-5 pb-4">
-        <div className="grid grid-cols-7 gap-1.5">
-          {Array.from({ length: 28 }).map((_, i) => (
-            <Skeleton key={i} className="aspect-square w-full max-w-[32px] rounded-[4px]" />
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function ChallengeSkeleton() {
-  return (
-    <div className="rounded-2xl border bg-card p-5">
-      <div className="flex items-center gap-2 mb-3">
-        <Skeleton className="h-8 w-8 rounded-lg" />
-        <Skeleton className="h-4 w-28" />
-      </div>
-      <Skeleton className="h-3 w-full mb-2" />
-      <Skeleton className="h-3 w-48 mb-3" />
-      <Skeleton className="h-2.5 w-full rounded-full" />
-    </div>
-  )
-}
-
-function CarouselSkeleton() {
-  return (
-    <div>
-      <div className="mb-3 flex items-center gap-2">
-        <Skeleton className="h-5 w-5 rounded" />
-        <Skeleton className="h-5 w-36" />
-      </div>
-      <div className="flex gap-3 overflow-hidden">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-[180px] w-[240px] flex-shrink-0 rounded-2xl bg-muted/50" />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function SessionsSkeleton() {
-  return (
-    <div className="space-y-2">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <div
-          key={i}
-          className="flex items-center justify-between rounded-xl border px-4 py-3"
-        >
-          <div className="space-y-1">
-            <Skeleton className="h-4 w-28" />
-            <Skeleton className="h-3 w-36" />
-          </div>
-          <Skeleton className="h-5 w-12" />
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function LevelBadgeSkeleton() {
-  return (
-    <div className="mt-2 flex flex-col gap-1.5">
-      <Skeleton className="h-6 w-36 rounded-full" />
-      <Skeleton className="h-1.5 w-full rounded-full" />
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// XP Gain Popup
-// ---------------------------------------------------------------------------
-function XpGainPopup({
-  xpGained,
-  leveledUp,
-  onDone,
-}: {
-  xpGained: number
-  leveledUp: boolean
-  onDone: () => void
-}) {
-  const { td } = useTranslation()
-  useEffect(() => {
-    const timer = setTimeout(onDone, 2500)
-    return () => clearTimeout(timer)
-  }, [onDone])
-
+// ── XP Gain Popup ─────────────────────────────────────────────────────────
+function XpGainPopup({ xpGained, leveledUp, onDone }: { xpGained: number; leveledUp: boolean; onDone: () => void }) {
+  const { td } = useTranslation();
+  useEffect(() => { const t = setTimeout(onDone, 2800); return () => clearTimeout(t); }, [onDone]);
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.9 }}
+      initial={{ opacity: 0, y: 40, scale: 0.8 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -30, scale: 0.95 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="fixed inset-x-0 top-20 z-50 flex flex-col items-center pointer-events-none"
+      exit={{ opacity: 0, y: -40, scale: 0.9 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+      className="fixed inset-x-0 top-16 z-50 flex flex-col items-center pointer-events-none gap-2"
     >
       {leveledUp && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2, duration: 0.4, type: 'spring' }}
-          className="mb-2 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 px-6 py-3 shadow-2xl shadow-orange-500/40"
+          initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
+          animate={{ opacity: 1, scale: 1, rotate: 0 }}
+          transition={{ delay: 0.15, type: 'spring', stiffness: 500 }}
+          className="px-6 py-3 rounded-2xl shadow-2xl"
+          style={{ background: 'linear-gradient(135deg, #f97316, #ea580c, #f59e0b)', boxShadow: '0 0 40px rgba(249,115,22,0.6)' }}
         >
           <div className="flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-white" />
-            <span className="text-xl font-extrabold text-white tracking-wide">
+            <Sparkles className="h-5 w-5 text-white" />
+            <span className="text-lg font-black text-white tracking-widest uppercase">
               {td('NIVEAU SUPÉRIEUR !', 'LEVEL UP!')}
             </span>
-            <Sparkles className="h-6 w-6 text-white" />
+            <Sparkles className="h-5 w-5 text-white" />
           </div>
         </motion.div>
       )}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.4 }}
-        className="flex items-center gap-2 rounded-xl bg-orange-500/90 px-5 py-2.5 shadow-xl shadow-orange-500/30 backdrop-blur-sm"
+        transition={{ delay: 0.1 }}
+        className="flex items-center gap-2 px-5 py-2.5 rounded-xl backdrop-blur-xl"
+        style={{ background: 'rgba(249,115,22,0.9)', boxShadow: '0 0 30px rgba(249,115,22,0.5)' }}
       >
-        <Sparkles className="h-5 w-5 text-white" />
-        <span className="text-lg font-bold text-white">
-          +{xpGained} XP
-        </span>
+        <Zap className="h-5 w-5 text-white fill-white" />
+        <span className="text-lg font-black text-white">+{xpGained} XP</span>
       </motion.div>
     </motion.div>
-  )
+  );
 }
 
-// ---------------------------------------------------------------------------
-// Session list item
-// ---------------------------------------------------------------------------
-function SessionItem({ session }: { session: Session }) {
-  const { t, language } = useTranslation()
-  const date = new Date(session.startedAt)
-  const formattedDate = formatLocaleDate(date, language, {
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+// ── Stat Tile ─────────────────────────────────────────────────────────────
+function StatTile({ icon: Icon, value, label, color, delay = 0 }: {
+  icon: React.ElementType; value: string | number; label: string; color: string; delay?: number;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.85 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay, type: 'spring', stiffness: 300, damping: 22 }}
+      className="relative overflow-hidden rounded-2xl p-4 flex flex-col gap-2"
+      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
+    >
+      <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center', color)}>
+        <Icon className="h-4.5 w-4.5 text-white" />
+      </div>
+      <div>
+        <p className="text-2xl font-black tabular-nums text-foreground">{value}</p>
+        <p className="text-xs text-muted-foreground font-medium mt-0.5">{label}</p>
+      </div>
+      <div className="absolute -bottom-4 -right-4 w-16 h-16 rounded-full opacity-10"
+        style={{ background: color.includes('orange') ? '#f97316' : color.includes('amber') ? '#f59e0b' : '#ef4444' }} />
+    </motion.div>
+  );
+}
 
-  const borderColor =
-    session.totalScore > 80
-      ? 'border-l-emerald-500'
-      : session.totalScore > 50
-        ? 'border-l-amber-500' :'border-l-red-500'
+// ── Drill Recommendation Card ─────────────────────────────────────────────
+function DrillCard({ drill, index, onClick }: { drill: RecommendationDrill; index: number; onClick: () => void }) {
+  const diffColor = drill.difficulty === 'beginner' ? '#22c55e' : drill.difficulty === 'intermediate' ? '#f97316' : '#ef4444';
+  return (
+    <motion.button
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.05 * index, type: 'spring', stiffness: 280, damping: 22 }}
+      whileHover={{ scale: 1.02, y: -2 }}
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      className="relative flex-shrink-0 w-52 rounded-2xl p-4 text-left overflow-hidden group"
+      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+    >
+      <motion.div
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        style={{ background: 'linear-gradient(135deg, rgba(249,115,22,0.08), transparent)' }}
+      />
+      <div className="text-3xl mb-3">{drill.icon}</div>
+      <div className="flex items-center gap-1.5 mb-1">
+        <div className="w-1.5 h-1.5 rounded-full" style={{ background: diffColor }} />
+        <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: diffColor }}>
+          {drill.difficulty}
+        </span>
+      </div>
+      <p className="text-sm font-bold text-foreground leading-tight line-clamp-2">{drill.nameFr}</p>
+      {drill.bestScore != null && (
+        <div className="mt-2 flex items-center gap-1">
+          <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
+          <span className="text-xs text-muted-foreground">{Math.round(drill.bestScore)}%</span>
+        </div>
+      )}
+      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Play className="h-4 w-4 text-orange-400 fill-orange-400" />
+      </div>
+    </motion.button>
+  );
+}
+
+// ── Session Row ───────────────────────────────────────────────────────────
+function SessionRow({ session, index }: { session: Session; index: number }) {
+  const { language } = useTranslation();
+  const date = new Date(session.startedAt);
+  const formattedDate = formatLocaleDate(date, language, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const score = Math.round(session.totalScore);
+  const scoreColor = score > 80 ? '#22c55e' : score > 50 ? '#f97316' : '#ef4444';
 
   return (
     <motion.div
-      variants={itemVariants}
-      className={cn(
-        'flex items-center justify-between gap-3 rounded-xl border border-l-4 bg-gradient-to-r from-card/60 to-transparent px-4 py-3',
-        borderColor,
-      )}
+      initial={{ opacity: 0, x: -16 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.06 * index, type: 'spring', stiffness: 280, damping: 24 }}
+      className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 group"
+      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
     >
-      <div className="min-w-0 flex-1 space-y-0.5">
-        <p className="truncate text-sm font-medium">{formattedDate}</p>
-        <p className="text-xs text-muted-foreground">
-          {session.totalDrills} {t('home.exercises')}{session.totalDrills > 1 ? 's' : ''} &middot;{' '}
-          {session.totalReps} {t('home.reps')}
-        </p>
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        <div className="w-2 h-8 rounded-full flex-shrink-0" style={{ background: scoreColor, boxShadow: `0 0 8px ${scoreColor}60` }} />
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground truncate">{formattedDate}</p>
+          <p className="text-xs text-muted-foreground">
+            {session.totalDrills} exercice{session.totalDrills > 1 ? 's' : ''} · {session.totalReps} reps
+          </p>
+        </div>
       </div>
-
-      <div className="flex items-center gap-1.5 text-sm font-semibold tabular-nums">
-        <span
-          className={cn(
-            session.totalScore > 80
-              ? 'text-emerald-600 dark:text-emerald-400'
-              : session.totalScore > 50
-                ? 'text-amber-600 dark:text-amber-400' :'text-red-600 dark:text-red-400',
-          )}
-        >
-          {Math.round(session.totalScore)}
-        </span>
-        <span className="text-xs font-normal text-muted-foreground">{t('home.points')}</span>
+      <div className="flex items-center gap-1 flex-shrink-0">
+        <span className="text-lg font-black tabular-nums" style={{ color: scoreColor }}>{score}</span>
+        <span className="text-xs text-muted-foreground">pts</span>
       </div>
     </motion.div>
-  )
+  );
 }
 
-// ---------------------------------------------------------------------------
-// Main component
-// ---------------------------------------------------------------------------
+// ── Main Component ────────────────────────────────────────────────────────
 export default function HomeScreen() {
-  const { user } = useAuth()
-  const navigate = useAppStore(s => s.navigate)
-  const selectDrill = useAppStore(s => s.selectDrill)
-  const workoutResult = useAppStore(s => s.workoutResult)
-  const xpAwarded = useAppStore(s => s.xpAwarded)
-  const clearWorkoutState = useAppStore(s => s.clearWorkoutState)
-  const setWorkoutResult = useAppStore(s => s.setWorkoutResult)
-  const queryClient = useQueryClient()
-  const hasAwardedRef = useRef(false)
-  const { t, td, language } = useTranslation()
+  const { user } = useAuth();
+  const navigate = useAppStore(s => s.navigate);
+  const selectDrill = useAppStore(s => s.selectDrill);
+  const workoutResult = useAppStore(s => s.workoutResult);
+  const xpAwarded = useAppStore(s => s.xpAwarded);
+  const clearWorkoutState = useAppStore(s => s.clearWorkoutState);
+  const setWorkoutResult = useAppStore(s => s.setWorkoutResult);
+  const queryClient = useQueryClient();
+  const hasAwardedRef = useRef(false);
+  const { t, td, language } = useTranslation();
 
-  const userName = user?.name ?? td('Joueur', 'Player')
-  const userInitial = userName.charAt(0).toUpperCase()
+  const userName = user?.name ?? td('Joueur', 'Player');
+  const userInitial = userName.charAt(0).toUpperCase();
 
-  // ---- Data fetching ----
-  const { data: playerXp, isLoading: playerXpLoading, isError: playerXpError } = useQuery({
+  const { data: playerXp, isLoading: playerXpLoading } = useQuery({
     queryKey: ['player-xp'],
     queryFn: () => apiFetch<FullPlayerData>('/api/player'),
     staleTime: 1000 * 60 * 2,
-    select: (data: FullPlayerData): PlayerXpData => ({
-      xp: data.xp ?? 0,
-      xpLevel: data.xpLevel ?? 1,
-    }),
-  })
+    select: (data: FullPlayerData): PlayerXpData => ({ xp: data.xp ?? 0, xpLevel: data.xpLevel ?? 1 }),
+  });
 
-  const levelInfo = playerXp ? getLevelInfo(playerXp.xp) : null
+  const levelInfo = playerXp ? getLevelInfo(playerXp.xp) : null;
 
   const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useQuery<StatsResponse>({
     queryKey: ['stats'],
     queryFn: () => apiFetch('/api/stats'),
     staleTime: 1000 * 60 * 2,
-  })
+  });
 
-  // 28-day stats for streak calendar
-  const { data: calendarStats, isLoading: calendarLoading, isError: calendarError } = useQuery<{
-    dailyStats: DailyStat[]
-  }>({
-    queryKey: ['stats', 'calendar'],
-    queryFn: () => apiFetch('/api/stats?days=28'),
-    staleTime: 1000 * 60 * 5,
-  })
-
-  const { data: recommendations, isLoading: recsLoading, isError: recsError } = useQuery<
-    RecommendationDrill[]
-  >({
+  const { data: recommendations, isLoading: recsLoading } = useQuery<RecommendationDrill[]>({
     queryKey: ['recommendations'],
     queryFn: () => apiFetch('/api/recommendations'),
     staleTime: 1000 * 60 * 5,
-  })
+  });
 
-  const { data: sessionsData, isLoading: sessionsLoading, isError: sessionsError } = useQuery<{
-    sessions: Session[]
-  }>({
+  const { data: sessionsData, isLoading: sessionsLoading } = useQuery<{ sessions: Session[] }>({
     queryKey: ['sessions'],
     queryFn: () => apiFetch<{ sessions: Session[] }>('/api/sessions'),
     staleTime: 1000 * 60 * 2,
-  })
+  });
 
-  const sessions = sessionsData?.sessions
+  const sessions = sessionsData?.sessions;
 
-  // ---- XP Popup (server-awarded, read from store) ----
-  // XP is now awarded server-side in POST /api/sessions.
-  // camera-workout stores the result in xpAwarded via setXpAwarded().
-  const [xpPopup, setXpPopup] = useState<{
-    xpGained: number
-    leveledUp: boolean
-  } | null>(null)
+  const [xpPopup, setXpPopup] = useState<{ xpGained: number; leveledUp: boolean } | null>(null);
 
   useEffect(() => {
     if (xpAwarded && !hasAwardedRef.current) {
-      hasAwardedRef.current = true
-      // Use microtask to avoid synchronous setState lint error
+      hasAwardedRef.current = true;
       queueMicrotask(() => {
-        setXpPopup({ xpGained: xpAwarded.xpGained, leveledUp: xpAwarded.leveledUp })
-        queryClient.invalidateQueries({ queryKey: ['player-xp'] })
-        clearWorkoutState()
-        const announcer = document.getElementById('live-announcer')
-        if (announcer) {
-          announcer.textContent = xpAwarded.leveledUp
-            ? td(`+${xpAwarded.xpGained} XP ! Niveau supérieur !`, `+${xpAwarded.xpGained} XP! Level up!`)
-            : td(`+${xpAwarded.xpGained} XP gagnés`, `+${xpAwarded.xpGained} XP gained`)
-        }
-      })
+        setXpPopup({ xpGained: xpAwarded.xpGained, leveledUp: xpAwarded.leveledUp });
+        queryClient.invalidateQueries({ queryKey: ['player-xp'] });
+        clearWorkoutState();
+      });
     }
-  }, [xpAwarded, clearWorkoutState, queryClient, td])
+  }, [xpAwarded, clearWorkoutState, queryClient]);
 
-  // ---- Daily login reward ----
-  const dailyRewardClaimed = useRef(false)
+  const dailyRewardClaimed = useRef(false);
   useEffect(() => {
-    if (dailyRewardClaimed.current || !user?.id) return
-    dailyRewardClaimed.current = true
+    if (dailyRewardClaimed.current || !user?.id) return;
+    dailyRewardClaimed.current = true;
     fetch('/api/daily-reward', { method: 'POST' })
-      .then((res) => res.json())
+      .then(r => r.json())
       .then((data: { awarded: boolean; xp: number }) => {
         if (data.awarded) {
-          toast.success(
-            `🎁 ${td('Récompense quotidienne', 'Daily reward')} +${data.xp} XP!`,
-            { duration: 3000 },
-          )
-          queryClient.invalidateQueries({ queryKey: ['player-xp'] })
+          toast.success(`🎁 ${td('Récompense quotidienne', 'Daily reward')} +${data.xp} XP!`, { duration: 3000 });
+          queryClient.invalidateQueries({ queryKey: ['player-xp'] });
         }
-      })
-      .catch(() => { /* silent — not critical */ })
-  }, [user?.id, queryClient, td])
+      }).catch(() => {});
+  }, [user?.id, queryClient, td]);
 
-  // Clear stale workout result without XP (e.g. if session save failed)
   useEffect(() => {
     if (workoutResult && !xpAwarded) {
-      const timer = setTimeout(() => {
-        setWorkoutResult(null)
-      }, 2000)
-      return () => clearTimeout(timer)
+      const timer = setTimeout(() => setWorkoutResult(null), 2000);
+      return () => clearTimeout(timer);
     }
-  }, [workoutResult, xpAwarded, setWorkoutResult])
+  }, [workoutResult, xpAwarded, setWorkoutResult]);
 
-  const dismissXpPopup = useCallback(() => {
-    setXpPopup(null)
-  }, [])
+  const dismissXpPopup = useCallback(() => setXpPopup(null), []);
 
-  // Filter sessions to only this week (Monday–Sunday)
-  const now = new Date()
-  const dayOfWeek = now.getDay()
-  const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1
-  const startOfWeek = new Date(now)
-  startOfWeek.setDate(now.getDate() - mondayOffset)
-  startOfWeek.setHours(0, 0, 0, 0)
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - mondayOffset);
+  startOfWeek.setHours(0, 0, 0, 0);
 
-  const weekSessions = sessions?.filter((s) => {
-    const d = new Date(s.startedAt)
-    return d >= startOfWeek
-  }) ?? []
+  const weekSessions = sessions?.filter(s => new Date(s.startedAt) >= startOfWeek) ?? [];
+  const recentSessions = sessions?.slice(0, 5) ?? [];
 
-  // Count total drills this week (for challenges)
-  const totalDrillsThisWeek = weekSessions.reduce((acc, s) => acc + s.totalDrills, 0)
-
-  // Count high-score drills (>= 80%)
-  const highScoreDrillsCount = weekSessions
-    ? weekSessions.reduce(
-        (acc, s) =>
-          acc +
-          s.drills.filter((d: SessionDrill) => d.score >= 80).length,
-        0,
-      )
-    : 0
-
-  // Count perfect-score drills (>= 90%)
-  const perfectScoreDrillsCount = weekSessions
-    ? weekSessions.reduce(
-        (acc, s) =>
-          acc +
-          s.drills.filter((d: SessionDrill) => d.score >= 90).length,
-        0,
-      )
-    : 0
-
-  // Compute best scores per drill for the carousel
   const drillBestScores = sessions
     ? sessions.reduce<Record<string, number>>((acc, s) => {
         for (const d of s.drills) {
-          const prev = acc[d.drill.id]
-          if (prev == null || d.score > prev) {
-            acc[d.drill.id] = d.score
-          }
+          const prev = acc[d.drill.id];
+          if (prev == null || d.score > prev) acc[d.drill.id] = d.score;
         }
-        return acc
+        return acc;
       }, {})
-    : {}
+    : {};
 
-  const recentSessions = sessions?.slice(0, 5) ?? []
+  const enrichedRecs = (recommendations ?? []).map(r => ({ ...r, bestScore: drillBestScores[r.id] ?? undefined }));
 
-  // ---- Derived data ----
-  const weeklyGoal = 5 // Default weekly goal
-  const weeklyGoalProgress = stats
-    ? Math.min((stats.weekSessions / weeklyGoal) * 100, 100)
-    : 0
-
-  const enrichedRecommendations = (recommendations ?? []).map((r) => ({
-    ...r,
-    bestScore: drillBestScores[r.id] ?? undefined,
-  }))
-
-  // ---- Handlers ----
-  const handleSelectDrill = (drillId: string) => {
-    selectDrill(drillId)
-    navigate('drill-detail')
-  }
+  const handleSelectDrill = (drillId: string) => { selectDrill(drillId); navigate('drill-detail'); };
 
   if (statsError) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 py-20 px-4">
+      <div className="flex flex-col items-center justify-center gap-4 py-20 px-4 min-h-screen">
         <p className="text-sm text-muted-foreground">{t('error.loadFailed')}</p>
         <Button variant="outline" size="sm" onClick={() => refetchStats()}>
-          <RefreshCw className="h-4 w-4 mr-2" aria-hidden="true" />
-          {t('action.retry')}
+          <RefreshCw className="h-4 w-4 mr-2" />{t('action.retry')}
         </Button>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* XP Gain Popup */}
+    <div className="relative min-h-screen bg-background overflow-x-hidden">
+      <CourtOrbs />
+
       <AnimatePresence>
-        {xpPopup && (
-          <XpGainPopup
-            xpGained={xpPopup.xpGained}
-            leveledUp={xpPopup.leveledUp}
-            onDone={dismissXpPopup}
-          />
-        )}
+        {xpPopup && <XpGainPopup xpGained={xpPopup.xpGained} leveledUp={xpPopup.leveledUp} onDone={dismissXpPopup} />}
       </AnimatePresence>
 
       <PullToRefresh
-        queryKeys={[['stats'], ['sessions'], ['recommendations'], ['stats', 'calendar'], ['player-xp']]}
-        className="mx-auto max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl px-4 pb-24 pt-6"
+        queryKeys={[['stats'], ['sessions'], ['recommendations'], ['player-xp']]}
+        className="relative z-10 mx-auto max-w-lg md:max-w-2xl lg:max-w-4xl px-4 pb-28 pt-6"
       >
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        {/* ---------------------------------------------------------------- */}
-        {/* Header                                                          */}
-        {/* ---------------------------------------------------------------- */}
+        {/* ── Header ─────────────────────────────────────────────────── */}
         <motion.header
-          variants={itemVariants}
-          className="mb-4 flex items-center justify-between"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="mb-6 flex items-center justify-between"
         >
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold tracking-tight">{userName}</h1>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              Pr&ecirc;t pour l&apos;entra&icirc;nement ?
-            </p>
-            {/* Level Badge */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-500 mb-1"
+            >
+              CourtVision AI
+            </motion.p>
+            <h1 className="text-2xl font-black tracking-tight text-foreground">
+              {td('Bonjour', 'Hey')}, {userName} 👋
+            </h1>
             {playerXpLoading ? (
-              <LevelBadgeSkeleton />
-            ) : playerXpError ? null : levelInfo ? (
-              <div className="mt-2 flex flex-col gap-1" aria-live="polite">
-                <div
-                  className={cn(
-                    'inline-flex items-center gap-1.5 self-start rounded-full border px-2.5 py-1',
-                    getLevelBgColor(levelInfo.currentLevel),
-                  )}
-                >
-                  <Shield className={cn('h-3.5 w-3.5', getLevelColor(levelInfo.currentLevel))} />
-                  <span className={cn('text-xs font-semibold', getLevelColor(levelInfo.currentLevel))}>
-                    Niveau {levelInfo.currentLevel} &mdash; {levelInfo.levelTitle}
-                  </span>
+              <Skeleton className="h-5 w-40 mt-2 rounded-full" />
+            ) : levelInfo ? (
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mt-2 flex items-center gap-2"
+              >
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+                  style={{ background: 'rgba(249,115,22,0.12)', border: '1px solid rgba(249,115,22,0.25)' }}>
+                  <Shield className="h-3 w-3 text-orange-500" />
+                  <span className="text-xs font-bold text-orange-500">Niv. {levelInfo.currentLevel}</span>
                 </div>
                 {!levelInfo.isMaxLevel && (
-                  <div className="flex items-center gap-2">
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-orange-500/20">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-500 transition-all duration-500"
-                        style={{ width: `${levelInfo.progress * 100}%` }}
+                  <div className="flex items-center gap-1.5 flex-1 max-w-[140px]">
+                    <div className="h-1.5 flex-1 rounded-full overflow-hidden" style={{ background: 'rgba(249,115,22,0.15)' }}>
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${levelInfo.progress * 100}%` }}
+                        transition={{ delay: 0.4, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                        className="h-full rounded-full"
+                        style={{ background: 'linear-gradient(90deg, #f97316, #f59e0b)' }}
                       />
                     </div>
-                    <span className="text-[10px] tabular-nums text-muted-foreground">
+                    <span className="text-[10px] text-muted-foreground tabular-nums">
                       {levelInfo.xpInCurrentLevel}/{levelInfo.xpNeededForNextLevel}
                     </span>
                   </div>
                 )}
-              </div>
+              </motion.div>
             ) : null}
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
             <ThemeToggle />
-            <button
-              type="button"
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => navigate('profile')}
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-xs font-bold text-white shadow-md transition-shadow hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="w-11 h-11 rounded-2xl flex items-center justify-center text-sm font-black text-white shadow-lg"
+              style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)', boxShadow: '0 4px 20px rgba(249,115,22,0.4)' }}
               aria-label={t('home.viewProfile')}
             >
               {userInitial}
-            </button>
+            </motion.button>
           </div>
         </motion.header>
 
-        {/* ---------------------------------------------------------------- */}
-        {/* Basketball Court Mini Banner                                     */}
-        {/* ---------------------------------------------------------------- */}
+        {/* ── Hero CTA Banner ─────────────────────────────────────────── */}
         <motion.div
-          variants={itemVariants}
-          className="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500 via-orange-600 to-amber-600 p-5 text-white"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="relative mb-5 overflow-hidden rounded-3xl p-6"
+          style={{
+            background: 'linear-gradient(135deg, #1a0a00 0%, #2d1200 40%, #1a0a00 100%)',
+            border: '1px solid rgba(249,115,22,0.3)',
+            boxShadow: '0 0 60px rgba(249,115,22,0.15), inset 0 1px 0 rgba(255,255,255,0.05)',
+          }}
         >
-          {/* Court lines SVG background */}
-          <svg
-            className="absolute inset-0 h-full w-full opacity-10"
-            viewBox="0 0 400 200"
-            preserveAspectRatio="xMidYMid slice"
-            aria-hidden="true"
-          >
-            <rect
-              x="5"
-              y="5"
-              width="390"
-              height="190"
-              rx="12"
-              fill="none"
-              stroke="white"
-              strokeWidth="2"
-            />
-            <circle
-              cx="200"
-              cy="100"
-              r="40"
-              fill="none"
-              stroke="white"
-              strokeWidth="1.5"
-            />
-            <line
-              x1="200"
-              y1="5"
-              x2="200"
-              y2="60"
-              stroke="white"
-              strokeWidth="1.5"
-            />
-            <rect
-              x="140"
-              y="5"
-              width="120"
-              height="50"
-              fill="none"
-              stroke="white"
-              strokeWidth="1.5"
-            />
-            <circle
-              cx="200"
-              cy="55"
-              r="8"
-              fill="none"
-              stroke="white"
-              strokeWidth="1.5"
-            />
-            <path
-              d="M 60 5 Q 60 100 140 100"
-              fill="none"
-              stroke="white"
-              strokeWidth="1.5"
-            />
-            <path
-              d="M 340 5 Q 340 100 260 100"
-              fill="none"
-              stroke="white"
-              strokeWidth="1.5"
-            />
+          {/* Court lines */}
+          <svg className="absolute inset-0 w-full h-full opacity-[0.07]" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <circle cx="200" cy="100" r="60" fill="none" stroke="#f97316" strokeWidth="2" />
+            <line x1="200" y1="0" x2="200" y2="200" stroke="#f97316" strokeWidth="1.5" />
+            <rect x="0" y="0" width="400" height="200" fill="none" stroke="#f97316" strokeWidth="2" />
+            <rect x="0" y="50" width="80" height="100" fill="none" stroke="#f97316" strokeWidth="1.5" />
+            <rect x="320" y="50" width="80" height="100" fill="none" stroke="#f97316" strokeWidth="1.5" />
+            <circle cx="40" cy="100" r="20" fill="none" stroke="#f97316" strokeWidth="1.5" />
+            <circle cx="360" cy="100" r="20" fill="none" stroke="#f97316" strokeWidth="1.5" />
           </svg>
 
-          <div className="relative z-10">
-            <div className="mb-2 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-orange-100">
-                  {language === 'en' ? 'Today' : t('home.today')}
-                </p>
-                <p className="text-xl font-bold">
-                  {formatLocaleDate(new Date(), language, {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                  })}
-                </p>
-              </div>
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
-                <span className="text-3xl">🏀</span>
-              </div>
+          {/* Glow orb */}
+          <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-30"
+            style={{ background: 'radial-gradient(circle, #f97316, transparent)' }} />
+
+          <div className="relative z-10 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-400 mb-2">
+                {td('Prêt à dominer ?', 'Ready to dominate?')}
+              </p>
+              <h2 className="text-2xl font-black text-white leading-tight mb-1">
+                {td('Lance ton', 'Start your')}<br />
+                <span style={{ background: 'linear-gradient(90deg, #f97316, #f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                  {td('entraînement', 'training')}
+                </span>
+              </h2>
+              <p className="text-xs text-orange-200/60">
+                {weekSessions.length} {td('session(s) cette semaine', 'session(s) this week')}
+              </p>
             </div>
-            <p className="text-sm text-orange-100">
-              {stats?.weekSessions && stats.weekSessions > 0
-                ? td(
-                    `${stats.weekSessions} séance${stats.weekSessions > 1 ? 's' : ''} cette semaine — continuez !`,
-                    `${stats.weekSessions} session${stats.weekSessions > 1 ? 's' : ''} this week — keep going!`
-                  )
-                : t('home.noSessionsWeek')}
-            </p>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate('train-hub')}
+              className="flex-shrink-0 flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm text-white"
+              style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)', boxShadow: '0 4px 24px rgba(249,115,22,0.5)' }}
+            >
+              <Play className="h-4 w-4 fill-white" />
+              {td('Démarrer', 'Start')}
+            </motion.button>
           </div>
         </motion.div>
 
-        {/* ---------------------------------------------------------------- */}
-        {/* Progress Rings                                                  */}
-        {/* ---------------------------------------------------------------- */}
-        <section aria-label={t('nav.stats')} className="mb-6">
-          {statsLoading ? (
-            <RingsSkeleton />
-          ) : (
-            <ProgressRings
-              weeklyGoalProgress={weeklyGoalProgress}
-              avgScore={stats?.avgScore ?? 0}
-              currentStreak={stats?.currentStreak ?? 0}
-            />
-          )}
-        </section>
-
-        {/* ---------------------------------------------------------------- */}
-        {/* Streak Calendar                                                 */}
-        {/* ---------------------------------------------------------------- */}
-        <section aria-label={t('home.calendarSection')} className="mb-5">
-          {calendarError ? null : calendarLoading ? (
-            <CalendarSkeleton />
-          ) : (
-            <StreakCalendar dailyStats={calendarStats?.dailyStats ?? []} />
-          )}
-        </section>
-
-        {/* ---------------------------------------------------------------- */}
-        {/* Weekly Challenge                                                */}
-        {/* ---------------------------------------------------------------- */}
-        <section aria-label={t('home.weeklyChallengeSection')} className="mb-5">
-          {statsLoading ? (
-            <ChallengeSkeleton />
-          ) : (
-            <WeeklyChallenge
-              weekSessions={stats?.weekSessions ?? 0}
-              currentStreak={stats?.currentStreak ?? 0}
-              totalDrillsThisWeek={totalDrillsThisWeek}
-              highScoreDrillsCount={highScoreDrillsCount}
-              perfectScoreDrillsCount={perfectScoreDrillsCount}
-            />
-          )}
-        </section>
-
-        {/* ---------------------------------------------------------------- */}
-        {/* Leaderboard (Classement)                                         */}
-        {/* ---------------------------------------------------------------- */}
-        <motion.div variants={itemVariants}>
+        {/* ── Stats Bento Grid ─────────────────────────────────────────── */}
+        {statsLoading ? (
+          <div className="grid grid-cols-2 gap-3 mb-5">
+            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 rounded-2xl" />)}
+          </div>
+        ) : stats ? (
           <motion.div
-            {...cardHover}
-            onClick={() => navigate('leaderboard')}
-            role="button"
-            tabIndex={0}
-            aria-label={td('Classement', 'Leaderboard')}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('leaderboard') } }}
-            className="relative overflow-hidden rounded-2xl p-4 cursor-pointer shadow-lg dark:shadow-black/20 bg-card border border-border"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="grid grid-cols-2 gap-3 mb-5"
           >
-            <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10">
-                <Trophy className="h-7 w-7 text-amber-500" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-base font-bold">{t('home.leaderboard')}</h3>
-                <p className="text-sm text-muted-foreground truncate">{t('home.leaderboardDesc')}</p>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
-            </div>
+            <StatTile icon={Flame} value={stats.currentStreak} label={td('Jours consécutifs', 'Day streak')} color="bg-orange-500" delay={0.05} />
+            <StatTile icon={Activity} value={stats.weekSessions} label={td('Sessions semaine', 'Week sessions')} color="bg-amber-500" delay={0.1} />
+            <StatTile icon={Target} value={`${Math.round(stats.avgScore)}%`} label={td('Score moyen', 'Avg score')} color="bg-red-500" delay={0.15} />
+            <StatTile icon={Trophy} value={stats.achievementCount} label={td('Succès débloqués', 'Achievements')} color="bg-orange-600" delay={0.2} />
           </motion.div>
+        ) : null}
+
+        {/* ── Quick Actions ─────────────────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25, duration: 0.5 }}
+          className="grid grid-cols-3 gap-3 mb-6"
+        >
+          {[
+            { icon: Camera, label: td('Caméra IA', 'AI Camera'), screen: 'camera-workout' as const, color: '#f97316' },
+            { icon: TrendingUp, label: td('Stats', 'Stats'), screen: 'stats' as const, color: '#f59e0b' },
+            { icon: Trophy, label: td('Classement', 'Leaderboard'), screen: 'leaderboard' as const, color: '#ef4444' },
+          ].map((item, i) => (
+            <motion.button
+              key={item.screen}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 + i * 0.05, type: 'spring', stiffness: 300 }}
+              whileHover={{ scale: 1.04, y: -2 }}
+              whileTap={{ scale: 0.96 }}
+              onClick={() => navigate(item.screen)}
+              className="flex flex-col items-center gap-2 py-4 rounded-2xl"
+              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
+            >
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{ background: `${item.color}20`, border: `1px solid ${item.color}30` }}>
+                <item.icon className="h-5 w-5" style={{ color: item.color }} />
+              </div>
+              <span className="text-xs font-semibold text-foreground">{item.label}</span>
+            </motion.button>
+          ))}
         </motion.div>
 
-        {/* ---------------------------------------------------------------- */}
-        {/* Feature Hub — Quick Access to All Features                       */}
-        {/* ---------------------------------------------------------------- */}
-        <motion.section variants={itemVariants} className="mb-5">
-          <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-orange-500" />
-            {td('Explorer', 'Explore')}
-          </h2>
-          <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="grid grid-cols-3 gap-2.5">
-            {[
-              { icon: Users, label: td('Amis', 'Friends'), screen: 'friends' as const, color: 'bg-sky-500/10 text-sky-500' },
-              { icon: Trophy, label: td('Défis', 'Challenges'), screen: 'challenges' as const, color: 'bg-amber-500/10 text-amber-500' },
-              { icon: Users, label: td('Équipes', 'Teams'), screen: 'teams' as const, color: 'bg-emerald-500/10 text-emerald-500' },
-              { icon: Video, label: td('Vidéos', 'Videos'), screen: 'video-library' as const, color: 'bg-rose-500/10 text-rose-500' },
-              { icon: Mic, label: td('Voice Coach', 'Voice Coach'), screen: 'voice-coach' as const, color: 'bg-violet-500/10 text-violet-500' },
-              { icon: Brain, label: td('IA Insights', 'AI Insights'), screen: 'ai-insights' as const, color: 'bg-cyan-500/10 text-cyan-500' },
-              { icon: Target, label: td('Prédictions', 'Predictions'), screen: 'predictions' as const, color: 'bg-pink-500/10 text-pink-500' },
-              { icon: Sparkles, label: td('IA Workout', 'AI Workout'), screen: 'ai-workout-gen' as const, color: 'bg-orange-500/10 text-orange-500' },
-              { icon: MessageCircle, label: td('Messages', 'Messages'), screen: 'messages' as const, color: 'bg-teal-500/10 text-teal-500' },
-            ].map((feature) => (
-              <motion.button
-                key={feature.screen}
-                variants={fadeInScale}
-                {...cardHover}
-                onClick={() => navigate(feature.screen)}
-                className="flex flex-col items-center gap-2 rounded-2xl border bg-card p-3 transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl', feature.color)}>
-                  <feature.icon className="h-5 w-5" />
-                </div>
-                <span className="text-[11px] font-medium text-foreground truncate w-full text-center">{feature.label}</span>
-              </motion.button>
-            ))}
-          </motion.div>
-        </motion.section>
-
-        {/* ---------------------------------------------------------------- */}
-        {/* Reaction Trainer (Cognitive Training)                           */}
-        {/* ---------------------------------------------------------------- */}
-        <motion.div variants={itemVariants}>
-          <motion.div
-            {...cardHover}
-            onClick={() => navigate('reaction-trainer')}
-            role="button"
-            tabIndex={0}
-            aria-label={td('Traineur de Réaction', 'Reaction Trainer')}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('reaction-trainer') } }}
-            className="relative overflow-hidden rounded-2xl p-4 cursor-pointer shadow-lg dark:shadow-black/20"
-            style={{
-              background: 'linear-gradient(135deg, #f97316 0%, #f59e0b 50%, #f97316 100%)',
-            }}
+        {/* ── Recommended Drills ───────────────────────────────────────── */}
+        {(recsLoading || (enrichedRecs.length > 0)) && (
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="mb-6"
           >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.15),transparent_60%)]" />
-            <div className="relative flex items-center gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
-                <Zap className="h-7 w-7 text-white" />
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-5 rounded-full" style={{ background: 'linear-gradient(180deg, #f97316, #f59e0b)' }} />
+                <h2 className="text-base font-black text-foreground">{td('Exercices recommandés', 'Recommended drills')}</h2>
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-base font-bold text-white">{t('home.cognitiveTraining')}</h3>
-                <p className="text-sm text-orange-100 truncate">{t('home.cognitiveTrainingDesc')}</p>
-              </div>
-              <ChevronRight className="h-5 w-5 text-white/70 shrink-0" />
+              <button onClick={() => navigate('train-hub')} className="flex items-center gap-1 text-xs font-semibold text-orange-500">
+                {td('Voir tout', 'See all')} <ChevronRight className="h-3.5 w-3.5" />
+              </button>
             </div>
-          </motion.div>
-        </motion.div>
+            {recsLoading ? (
+              <div className="flex gap-3 overflow-hidden">
+                {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-40 w-52 flex-shrink-0 rounded-2xl" />)}
+              </div>
+            ) : (
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4">
+                {enrichedRecs.slice(0, 6).map((drill, i) => (
+                  <DrillCard key={drill.id} drill={drill} index={i} onClick={() => handleSelectDrill(drill.id)} />
+                ))}
+              </div>
+            )}
+          </motion.section>
+        )}
 
-        {/* ---------------------------------------------------------------- */}
-        {/* Motivational Quote                                              */}
-        {/* ---------------------------------------------------------------- */}
-        <section className="mb-6">
-          <MotivationalQuote />
-        </section>
-
-        {/* ---------------------------------------------------------------- */}
-        {/* AI Recommendations (Quick Start Carousel)                       */}
-        {/* ---------------------------------------------------------------- */}
-        <section aria-label={t('home.recommendationsAI')} className="mb-8">
-          {recsError ? null : recsLoading ? (
-            <CarouselSkeleton />
-          ) : enrichedRecommendations.length > 0 ? (
-            <QuickStartCarousel
-              drills={enrichedRecommendations.slice(0, 6)}
-              onSelect={handleSelectDrill}
-            />
-          ) : (
-            <EmptyRecommendations onStart={() => navigate('train-hub')} />
-          )}
-        </section>
-
-        {/* ---------------------------------------------------------------- */}
-        {/* Recent Activity                                                 */}
-        {/* ---------------------------------------------------------------- */}
-        <section aria-label={t('home.recentActivity')} className="mb-8">
-          <motion.div
-            variants={itemVariants}
-            className="mb-3 flex items-center gap-2"
-          >
-            <Clock className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-lg font-semibold tracking-tight">
-              {t('home.recentActivity')}
-            </h2>
-          </motion.div>
-
+        {/* ── Recent Sessions ──────────────────────────────────────────── */}
+        <motion.section
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-5 rounded-full" style={{ background: 'linear-gradient(180deg, #f97316, #f59e0b)' }} />
+              <h2 className="text-base font-black text-foreground">{td('Sessions récentes', 'Recent sessions')}</h2>
+            </div>
+          </div>
           {sessionsLoading ? (
-            <SessionsSkeleton />
-          ) : sessionsError ? (
-            <p className="text-sm text-muted-foreground text-center py-4">{t('home.loadSessionsError')}</p>
+            <div className="space-y-2">
+              {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}
+            </div>
           ) : recentSessions.length > 0 ? (
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="space-y-2"
-            >
-              {recentSessions.map((s) => (
-                <SessionItem key={s.id} session={s} />
+            <div className="space-y-2">
+              {recentSessions.map((session, i) => (
+                <SessionRow key={session.id} session={session} index={i} />
               ))}
-            </motion.div>
+            </div>
           ) : (
-            <EmptyActivity />
-          )}
-        </section>
-
-        {/* ---------------------------------------------------------------- */}
-        {/* CTA: Start Training                                             */}
-        {/* ---------------------------------------------------------------- */}
-        <motion.div variants={itemVariants} className="pb-4">
-          <motion.div {...cardHover}>
-            <Button
-              onClick={() => navigate('train-hub')}
-              className={cn(
-                'w-full py-6 text-base font-semibold rounded-2xl shadow-lg dark:shadow-black/20 shadow-orange-500/25 transition-all',
-                'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 hover:shadow-xl dark:hover:shadow-black/30 hover:shadow-orange-500/30',
-                !stats?.weekSessions && 'animate-pulse',
-              )}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center gap-3 py-10 rounded-2xl"
+              style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.08)' }}
             >
-              <Camera className="h-5 w-5" />
-              D&eacute;marrer l&apos;Entra&icirc;nement
-              <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
-          </motion.div>
-        </motion.div>
-      </motion.div>
+              <div className="text-4xl">🏀</div>
+              <p className="text-sm text-muted-foreground text-center">
+                {td('Aucune session pour l\'instant.', 'No sessions yet.')}<br />
+                <span className="text-orange-500 font-semibold">{td('Lance ton premier entraînement !', 'Start your first workout!')}</span>
+              </p>
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => navigate('train-hub')}
+                className="px-5 py-2.5 rounded-xl text-sm font-bold text-white"
+                style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)' }}
+              >
+                {td('Commencer', 'Get started')}
+              </motion.button>
+            </motion.div>
+          )}
+        </motion.section>
       </PullToRefresh>
 
       <BottomNav />
-
-      {/* ── FAB: AI Coach ─────────────────────────────────────────── */}
-      <motion.button
-        whileHover={{ scale: 1.08 }}
-        whileTap={{ scale: 0.92 }}
-        onClick={() => navigate('ai-coach')}
-        className="fixed bottom-20 right-4 z-40 h-14 w-14 rounded-full bg-orange-500 text-white shadow-lg shadow-orange-500/30 flex items-center justify-center"
-        aria-label={td('Coach IA', 'AI Coach')}
-      >
-        <motion.div
-          animate={{ scale: [1, 1.12, 1] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          <MessageCircle className="h-6 w-6" />
-        </motion.div>
-      </motion.button>
     </div>
-  )
+  );
 }
