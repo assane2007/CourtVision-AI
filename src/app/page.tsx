@@ -62,6 +62,7 @@ const AdminScreen = dynamic(() => import('@/components/screens/admin-screen'), {
 const AnalyticsScreen = dynamic(() => import('@/components/screens/analytics-screen'), { ssr: false })
 const TermsScreen = dynamic(() => import('@/components/screens/terms-screen'), { ssr: false })
 const PrivacyScreen = dynamic(() => import('@/components/screens/privacy-screen'), { ssr: false })
+const UserDashboardScreen = dynamic(() => import('@/components/screens/user-dashboard-screen').then(m => ({ default: m.UserDashboardScreen })), { ssr: false })
 
 // ── Error Boundary ────────────────────────────────────────────────────────────
 
@@ -138,6 +139,7 @@ const SCREEN_MAP: Record<string, React.ComponentType> = {
   'analytics': AnalyticsScreen,
   'terms': TermsScreen,
   'privacy': PrivacyScreen,
+  'dashboard': UserDashboardScreen,
 }
 
 // ── Main Page Component ───────────────────────────────────────────────────────

@@ -22,6 +22,7 @@ import {
   Trash2,
   Loader2,
   Camera,
+  LayoutDashboard,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -749,6 +750,31 @@ export function ProfileScreen() {
                     <p className="text-[11px] text-muted-foreground">{t('stats.averageScore')}</p>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* ── My Dashboard ─────────────────────────────────────── */}
+          <motion.div variants={itemVariants}>
+            <Card className="border-0 dark:border-border/50 shadow-md overflow-hidden">
+              <CardContent className="p-0">
+                <button
+                  onClick={() => navigate('dashboard')}
+                  className="w-full flex items-center gap-3 px-5 py-4 hover:bg-muted/50 transition-colors text-left group"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-orange-500/10 flex items-center justify-center flex-shrink-0">
+                    <LayoutDashboard className="h-4 w-4 text-orange-500" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium group-hover:text-orange-600 transition-colors">
+                      {td('Mon Tableau de Bord', 'My Dashboard')}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {td('Stats, succès, historique & réglages', 'Stats, achievements, history & settings')}
+                    </p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </button>
               </CardContent>
             </Card>
           </motion.div>
