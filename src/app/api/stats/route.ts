@@ -70,6 +70,7 @@ export const GET = withAuth(async (request, session) => {
             totalReps: true,
             totalScore: true,
             totalDrills: true,
+            totalDurationSec: true,
           },
           orderBy: { startedAt: 'asc' },
         }),
@@ -100,7 +101,7 @@ export const GET = withAuth(async (request, session) => {
 
       // ── Build daily stats (last N days based on query param) ────────────
 
-      const dailyMap = new Map<string, { sessions: number; reps: number; score: number }>()
+      const dailyMap = new Map<string, { sessions: number; reps: number; score: number; durationSec: number }>()
 
       // Initialize last N days
       for (let i = days - 1; i >= 0; i--) {
@@ -108,7 +109,7 @@ export const GET = withAuth(async (request, session) => {
         day.setDate(day.getDate() - i)
         day.setHours(0, 0, 0, 0)
         const key = day.toISOString().split('T')[0]
-        dailyMap.set(key, { sessions: 0, reps: 0, score: 0 })
+        dailyMap.set(key, { sessions: 0, reps: 0, score: 0, durationSec: 0 })
       }
 
       // Populate from fetched sessions
@@ -119,6 +120,7 @@ export const GET = withAuth(async (request, session) => {
           day.sessions++
           day.reps += ses.totalReps
           day.score += ses.totalScore
+          day.durationSec += ses.totalDurationSec ?? 0
         }
       }
 
@@ -127,6 +129,7 @@ export const GET = withAuth(async (request, session) => {
         sessions: data.sessions,
         reps: data.reps,
         score: data.sessions > 0 ? Math.round((data.score / data.sessions) * 10) / 10 : 0,
+        durationMin: Math.round((data.durationSec / 60) * 10) / 10,
       }))
 
       // ── Category performance ───────────────────────────────────────────
