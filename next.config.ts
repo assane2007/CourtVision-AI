@@ -26,6 +26,7 @@ const nextConfig: NextConfig = {
         child_process: false,
         'pg-native': false,
         util: false,
+        'util/types': false,
         pg: false,
       }
     }
