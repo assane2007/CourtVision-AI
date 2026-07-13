@@ -26,8 +26,12 @@ const nextConfig: NextConfig = {
         child_process: false,
         'pg-native': false,
         util: false,
-        'util/types': false,
         pg: false,
+      }
+      // Use alias for subpath modules like 'util/types' which fallback doesn't handle
+      config.resolve.alias = {
+        ...(config.resolve.alias ?? {}),
+        'util/types': false,
       }
     }
     return config
