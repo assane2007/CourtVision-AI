@@ -25,6 +25,8 @@ const nextConfig: NextConfig = {
         dns: false,
         child_process: false,
         'pg-native': false,
+        util: false,
+        pg: false,
       }
     }
     return config

@@ -5242,10 +5242,11 @@ export type PrismaAction =
 export type TransactionClient = Omit<DefaultPrismaClient, runtime.ITXClientDenyList>
 
 
-function Prisma(...args: any[]): any {
-  // eslint-disable-next-line no-console
-  console.warn('Placeholder: Prisma is not implemented yet.', args);
-  return null;
+/**
+ * Prisma Client JS version: 7.8.0
+ * Query Engine version: 3c6e192761c0362d496ed980de936e2f3cebcd3a
+ */
+export const prismaVersion: PrismaVersion = {
+  client: "7.8.0",
+  engine: "3c6e192761c0362d496ed980de936e2f3cebcd3a"
 }
-
-export default Prisma;
