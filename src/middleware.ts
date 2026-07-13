@@ -15,6 +15,45 @@ const PUBLIC_PATHS = [
   '/monitoring',
 ]
 
+// ── App routes that require authentication (redirect to / if not authed) ─────
+const PROTECTED_APP_PATHS = [
+  '/home',
+  '/dashboard',
+  '/settings',
+  '/notifications',
+  '/live',
+  '/records',
+  '/quests',
+  '/admin',
+  '/pricing',
+  '/profile',
+  '/messages',
+  '/videos',
+  '/teams',
+  '/ai',
+  '/scouting',
+  '/stats',
+  '/feed',
+  '/achievements',
+  '/leaderboard',
+  '/ai-insights',
+  '/reaction',
+  '/recommendations',
+  '/train',
+  '/challenges',
+  '/daily-reward',
+  '/referral',
+  '/ai-coach',
+  '/friends',
+  '/ai-tools',
+]
+
+// ── Admin-only routes ─────────────────────────────────────────────────────────
+const ADMIN_PATHS = [
+  '/admin',
+  '/api/admin',
+]
+
 // ── Inject Supabase token from x-sb-token header ─────────────────────────────
 // Required for Safari/iframe environments where third-party cookies are blocked.
 function getProjectRef(): string {
@@ -57,13 +96,13 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  // ── Allow public routes ───────────────────────────────────────────────────
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+  // ── Allow static files and Next.js internals ─────────────────────────────
+  if (pathname.startsWith('/_next') || pathname.startsWith('/favicon')) {
     return supabaseResponse
   }
 
-  // Allow static files and Next.js internals
-  if (pathname.startsWith('/_next') || pathname.startsWith('/favicon')) {
+  // ── Allow public routes ───────────────────────────────────────────────────
+  if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
     return supabaseResponse
   }
 
@@ -83,6 +122,18 @@ export async function middleware(request: NextRequest) {
         )
       }
     }
+    return supabaseResponse
+  }
+
+  // ── For protected app routes, redirect unauthenticated users to home ──────
+  const isProtectedAppPath = PROTECTED_APP_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(p + '/')
+  )
+
+  if (isProtectedAppPath && !user) {
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = '/'
+    return NextResponse.redirect(redirectUrl)
   }
 
   return supabaseResponse

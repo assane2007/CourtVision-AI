@@ -44,6 +44,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { usePermissions } from '@/hooks/use-permissions';
 
 import {
   LineChart,
@@ -180,6 +181,7 @@ export function AdminScreen() {
   const { td } = useTranslation()
   const { goBack } = useAppStore()
   const queryClient = useQueryClient()
+  const { isAdmin, loading: permLoading } = usePermissions()
   const [unauthorized, setUnauthorized] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerRow | null>(null)
@@ -307,16 +309,34 @@ export function AdminScreen() {
     queryClient.invalidateQueries({ queryKey: ['admin-feature-flags'] })
   }, [queryClient])
 
-  // ── Unauthorized state ─────────────────────────────────────────────────────
-
-  if (unauthorized || (isError && !stats)) {
+  // ── Role gate: block non-admins immediately ───────────────────────────────
+  if (permLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 p-4">
-        <ShieldX className="h-16 w-16 text-destructive" />
-        <h2 className="text-2xl font-bold">{td('admin.unauthorized')}</h2>
-        <p className="text-muted-foreground text-center max-w-sm">
-          {td('admin.unauthorizedDesc')}
-        </p>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="size-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground">Vérification des permissions...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAdmin || unauthorized) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-center space-y-4 max-w-sm">
+          <div className="flex items-center justify-center size-16 rounded-2xl bg-red-500/10 mx-auto">
+            <ShieldX className="size-8 text-red-500" />
+          </div>
+          <h1 className="text-xl font-bold">Accès refusé</h1>
+          <p className="text-sm text-muted-foreground">
+            Vous n&apos;avez pas les permissions nécessaires pour accéder à cette section.
+          </p>
+          <Button onClick={goBack} variant="outline" className="gap-2">
+            <ChevronLeft className="size-4" />
+            Retour
+          </Button>
+        </div>
       </div>
     )
   }
