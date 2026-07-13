@@ -27,6 +27,34 @@ const nextConfig: NextConfig = {
         'pg-native': false,
         util: false,
         pg: false,
+        async_hooks: false,
+        'node:async_hooks': false,
+        'node:fs': false,
+        'node:path': false,
+        'node:os': false,
+        'node:crypto': false,
+        'node:stream': false,
+        'node:buffer': false,
+        'node:util': false,
+        'node:events': false,
+        'node:net': false,
+        'node:tls': false,
+        'node:dns': false,
+        'node:child_process': false,
+        'node:http': false,
+        'node:https': false,
+        'node:zlib': false,
+        'node:url': false,
+        'node:querystring': false,
+        'node:string_decoder': false,
+        'node:assert': false,
+        'node:perf_hooks': false,
+        'node:worker_threads': false,
+        'node:vm': false,
+        'node:module': false,
+        'node:process': false,
+        'node:timers': false,
+        'node:readline': false,
       }
       // Use alias for subpath modules like 'util/types' which fallback doesn't handle
       config.resolve.alias = {
@@ -34,6 +62,21 @@ const nextConfig: NextConfig = {
         'util/types': false,
       }
     }
+
+    // Handle node: protocol URIs for both server and client
+    config.plugins = config.plugins ?? []
+
+    // Add NormalModuleReplacementPlugin to handle node: scheme
+    const webpack = require('webpack')
+    config.plugins.push(
+      new webpack.NormalModuleReplacementPlugin(
+        /^node:/,
+        (resource: { request: string }) => {
+          resource.request = resource.request.replace(/^node:/, '')
+        }
+      )
+    )
+
     return config
   },
   async rewrites() {
