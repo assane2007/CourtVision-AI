@@ -1,30 +1,153 @@
-'use client'
-
+'use client';
 /**
  * Supabase browser client.
  *
  * Uses the anon (publishable) key — safe for client-side code.
- * Only has access to rows allowed by Row Level Security (RLS).
- *
- * If Supabase is not configured, returns null instead of crashing.
+ * Includes robust cookie handling for Safari/iframe environments.
+ * Patches fetch to send x-sb-token header so middleware can inject
+ * the session cookie even when third-party cookies are blocked.
  */
 
-import { createBrowserClient } from '@supabase/ssr'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
-let _cachedClient: SupabaseClient | null = null
+const PFX = 'sb_';
+
+// ── Cookie availability detection (cached) ───────────────────────────────────
+const canUseCookies = (() => {
+  let cache: boolean | null = null;
+  return () => {
+    if (typeof document === 'undefined') return false;
+    if (cache !== null) return cache;
+    const k = '__sb_test__';
+    document.cookie = `${k}=1; Path=/; SameSite=None; Secure; Partitioned`;
+    cache = document.cookie.includes(k);
+    document.cookie = `${k}=; Path=/; Max-Age=0; SameSite=None; Secure`;
+    return cache;
+  };
+})();
+
+// ── Cookie / localStorage helpers ────────────────────────────────────────────
+const fromCookies = () =>
+  typeof document === 'undefined'
+    ? []
+    : document.cookie
+        .split(';')
+        .filter(Boolean)
+        .map((c) => {
+          const idx = c.trim().indexOf('=');
+          const name = idx === -1 ? c.trim() : c.trim().slice(0, idx);
+          const value = idx === -1 ? '' : decodeURIComponent(c.trim().slice(idx + 1));
+          return { name: name.trim(), value };
+        })
+        .filter((c) => c.name);
+
+const fromStorage = () => {
+  try {
+    return Object.keys(localStorage)
+      .filter((k) => k.startsWith(PFX))
+      .map((k) => ({ name: k.slice(PFX.length), value: localStorage.getItem(k) || '' }));
+  } catch {
+    return [];
+  }
+};
+
+const setCookie = (name: string, value: string, options?: Record<string, unknown>) => {
+  if (typeof document === 'undefined') return;
+  let s = `${name}=${encodeURIComponent(value)}; Path=${(options?.path as string) || '/'}; SameSite=None; Secure; Partitioned`;
+  if (options?.maxAge) s += `; Max-Age=${options.maxAge}`;
+  if (options?.domain) s += `; Domain=${options.domain}`;
+  if (options?.expires) s += `; Expires=${new Date(options.expires as string).toUTCString()}`;
+  document.cookie = s;
+};
+
+const deleteCookie = (name: string) => {
+  if (typeof document === 'undefined') return;
+  const host = typeof window !== 'undefined' ? window.location.hostname : '';
+  const domains = ['', host, host ? `.${host}` : ''].filter(Boolean);
+  const variants = [
+    'Path=/; SameSite=Lax',
+    'Path=/; SameSite=None; Secure',
+    'Path=/; SameSite=None; Secure; Partitioned',
+  ];
+  variants.forEach((attrs) => {
+    document.cookie = `${name}=; Max-Age=0; ${attrs}`;
+    domains.forEach((domain) => {
+      document.cookie = `${name}=; Max-Age=0; Domain=${domain}; ${attrs}`;
+    });
+  });
+};
+
+// ── Token getter (for fetch patch) ───────────────────────────────────────────
+const getToken = () =>
+  (canUseCookies() ? fromCookies() : fromStorage()).find((c) =>
+    c.name.includes('auth-token'),
+  )?.value ?? null;
+
+// ── Patch fetch once — sends token as x-sb-token header ──────────────────────
+// Required for Safari/iframe where cookies may be blocked on navigation
+if (typeof window !== 'undefined' && !(window as Record<string, unknown>).__sb_patched__) {
+  (window as Record<string, unknown>).__sb_patched__ = true;
+  const orig = window.fetch.bind(window);
+  window.fetch = (input, init) => {
+    const token = getToken();
+    const url =
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.href
+          : (input as Request).url;
+    if (token && (url.startsWith('/') || url.startsWith(window.location.origin))) {
+      init = {
+        ...(init || {}),
+        headers: { ...(init?.headers || {}), 'x-sb-token': token },
+      };
+    }
+    return orig(input, init);
+  };
+}
+
+// ── Singleton client ──────────────────────────────────────────────────────────
+let _cachedClient: SupabaseClient | null = null;
 
 export function createClient(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !key) {
-    console.warn('[Supabase] NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY not set. Auth is disabled.')
-    return null
+    console.warn(
+      '[Supabase] NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY not set. Auth is disabled.',
+    );
+    return null;
   }
 
-  if (!_cachedClient) {
-    _cachedClient = createBrowserClient(url, key)
-  }
-  return _cachedClient
+  if (_cachedClient) return _cachedClient;
+
+  _cachedClient = createBrowserClient(url, key, {
+    cookies: {
+      getAll: () => (canUseCookies() ? fromCookies() : fromStorage()),
+
+      setAll(cookiesToSet) {
+        if (typeof document === 'undefined') return;
+        if (canUseCookies()) {
+          // Chrome / Firefox — use cookies only
+          cookiesToSet.forEach(({ name, value, options }) =>
+            value ? setCookie(name, value, options as Record<string, unknown>) : deleteCookie(name),
+          );
+        } else {
+          // Safari iframe — use localStorage + best-effort cookie
+          cookiesToSet.forEach(({ name, value, options }) => {
+            try {
+              value
+                ? localStorage.setItem(`${PFX}${name}`, value)
+                : localStorage.removeItem(`${PFX}${name}`);
+            } catch {}
+            if (value) setCookie(name, value, options as Record<string, unknown>);
+          });
+        }
+      },
+    },
+  });
+
+  return _cachedClient;
 }

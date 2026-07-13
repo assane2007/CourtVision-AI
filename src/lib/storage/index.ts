@@ -9,10 +9,10 @@
  * Server-only module.
  */
 
-import { LocalStorage } from './local-storage'
-import { S3Storage } from './s3-storage'
-import { SupabaseStorage } from './supabase-storage'
-import type { StorageService } from './types'
+import { LocalStorage } from './local-storage';
+import { S3Storage } from './s3-storage';
+import { SupabaseStorage } from './supabase-storage';
+import type { StorageService } from './types';
 
 // ── Singleton ──────────────────────────────────────────────────────────────────
 
@@ -70,13 +70,7 @@ export const storage = _storage
 
 // ── Re-exports ──────────────────────────────────────────────────────────────────
 
-export type { StorageService, StorageFile, UploadOptions } from './types'
-export {
-  ALLOWED_IMAGE_TYPES,
-  ALLOWED_VIDEO_TYPES,
-  ALLOWED_DOCUMENT_TYPES,
-  MAX_FILE_SIZE_BYTES,
-} from './types'
+export type { StorageService } from './types'
 export { LocalStorage } from './local-storage'
 export { S3Storage } from './s3-storage'
 export { SupabaseStorage } from './supabase-storage'

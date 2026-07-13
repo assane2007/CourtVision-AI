@@ -16,12 +16,12 @@
  * }
  */
 
-import { Prisma } from '@prisma/client'
-import { db } from '@/lib/db'
-import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
-import { parsePagination, createPaginationMeta, trimExtraItem } from '@/lib/middleware/pagination'
-import type { PaginatedResult } from '@/lib/types/service.types'
-import { logger } from '@/lib/logger'
+import { Prisma } from '@prisma/client';
+import { db } from '@/lib/db';
+import { AppError, ErrorCode } from '@/lib/middleware/error-handler';
+import { parsePagination, createPaginationMeta, trimExtraItem } from '@/lib/middleware/pagination';
+import type { PaginatedResult } from '@/lib/types/service.types';
+import { logger } from '@/lib/logger';
 
 // ── Prisma Delegate Type ────────────────────────────────────────────────────────
 
@@ -30,42 +30,42 @@ import { logger } from '@/lib/logger'
  * Covers the CRUD methods we use in the base repository.
  */
 export interface PrismaModelDelegate<T> {
-  findMany(args: Prisma.FindManyArgs): Promise<T[]>
-  findFirst(args: Prisma.FindFirstArgs): Promise<T | null>
-  findUnique(args: Prisma.FindUniqueArgs): Promise<T | null>
-  create(args: Prisma.CreateArgs): Promise<T>
-  update(args: Prisma.UpdateArgs): Promise<T>
-  delete(args: Prisma.DeleteArgs): Promise<T>
-  count(args: Prisma.CountArgs): Promise<number>
+  findMany(args?: any): Promise<T[]>
+  findFirst(args?: any): Promise<T | null>
+  findUnique(args?: any): Promise<T | null>
+  create(args: any): Promise<T>
+  update(args: any): Promise<T>
+  delete(args: any): Promise<T>
+  count(args?: any): Promise<number>
 }
 
 // We need to use the actual Prisma types for proper type safety
 // These re-exports allow us to use Prisma's own types in generics
 type FindManyArgs<T = never> = T extends never
-  ? Prisma.FindManyArgs
-  : Prisma.FindManyArgs & { select?: unknown; include?: unknown }
+  ? any
+  : any & { select?: unknown; include?: unknown }
 
 type FindFirstArgs<T = never> = T extends never
-  ? Prisma.FindFirstArgs
-  : Prisma.FindFirstArgs & { select?: unknown; include?: unknown }
+  ? any
+  : any & { select?: unknown; include?: unknown }
 
 type FindUniqueArgs<T = never> = T extends never
-  ? Prisma.FindUniqueArgs
-  : Prisma.FindUniqueArgs & { select?: unknown; include?: unknown }
+  ? any
+  : any & { select?: unknown; include?: unknown }
 
 type CreateArgs<T = never> = T extends never
-  ? Prisma.CreateArgs
-  : Prisma.CreateArgs & { select?: unknown; include?: unknown }
+  ? any
+  : any & { select?: unknown; include?: unknown }
 
 type UpdateArgs<T = never> = T extends never
-  ? Prisma.UpdateArgs
-  : Prisma.UpdateArgs & { select?: unknown; include?: unknown }
+  ? any
+  : any & { select?: unknown; include?: unknown }
 
 type DeleteArgs<T = never> = T extends never
-  ? Prisma.DeleteArgs
-  : Prisma.DeleteArgs & { select?: unknown; include?: unknown }
+  ? any
+  : any & { select?: unknown; include?: unknown }
 
-type CountArgs = Prisma.CountArgs
+type CountArgs = any
 
 // ── Base Repository ─────────────────────────────────────────────────────────────
 
@@ -73,31 +73,15 @@ type CountArgs = Prisma.CountArgs
  * Type-safe where input for a specific model.
  */
 export type ModelWhereInput<TModel extends string> =
-  TModel extends 'Player' ? Prisma.PlayerWhereInput :
-  TModel extends 'WorkoutSession' ? Prisma.WorkoutSessionWhereInput :
-  TModel extends 'Drill' ? Prisma.DrillWhereInput :
-  TModel extends 'TrainingPlan' ? Prisma.TrainingPlanWhereInput :
-  TModel extends 'Video' ? Prisma.VideoWhereInput :
-  TModel extends 'Friendship' ? Prisma.FriendshipWhereInput :
-  TModel extends 'Team' ? Prisma.TeamWhereInput :
-  TModel extends 'Post' ? Prisma.PostWhereInput :
-  TModel extends 'Achievement' ? Prisma.AchievementWhereInput :
-  Prisma.WhereInput
+  TModel extends 'Player' ? Prisma.PlayerWhereInput : TModel extends'WorkoutSession'? Prisma.WorkoutSessionWhereInput : TModel extends'Drill'? Prisma.DrillWhereInput : TModel extends'TrainingPlan'? Prisma.TrainingPlanWhereInput : TModel extends'Video'? Prisma.VideoWhereInput : TModel extends'Friendship'? Prisma.FriendshipWhereInput : TModel extends'Team'? Prisma.TeamWhereInput : TModel extends'Post'? Prisma.PostWhereInput : TModel extends'Achievement' ? Prisma.AchievementWhereInput :
+  any
 
 /**
  * Type-safe order-by input for a specific model.
  */
 export type ModelOrderByInput<TModel extends string> =
-  TModel extends 'Player' ? Prisma.PlayerOrderByWithRelationInput :
-  TModel extends 'WorkoutSession' ? Prisma.WorkoutSessionOrderByWithRelationInput :
-  TModel extends 'Drill' ? Prisma.DrillOrderByWithRelationInput :
-  TModel extends 'TrainingPlan' ? Prisma.TrainingPlanOrderByWithRelationInput :
-  TModel extends 'Video' ? Prisma.VideoOrderByWithRelationInput :
-  TModel extends 'Friendship' ? Prisma.FriendshipOrderByWithRelationInput :
-  TModel extends 'Team' ? Prisma.TeamOrderByWithRelationInput :
-  TModel extends 'Post' ? Prisma.PostOrderByWithRelationInput :
-  TModel extends 'Achievement' ? Prisma.AchievementOrderByWithRelationInput :
-  Prisma.OrderByWithRelationInput
+  TModel extends 'Player' ? Prisma.PlayerOrderByWithRelationInput : TModel extends'WorkoutSession'? Prisma.WorkoutSessionOrderByWithRelationInput : TModel extends'Drill'? Prisma.DrillOrderByWithRelationInput : TModel extends'TrainingPlan'? Prisma.TrainingPlanOrderByWithRelationInput : TModel extends'Video'? Prisma.VideoOrderByWithRelationInput : TModel extends'Friendship'? Prisma.FriendshipOrderByWithRelationInput : TModel extends'Team'? Prisma.TeamOrderByWithRelationInput : TModel extends'Post'? Prisma.PostOrderByWithRelationInput : TModel extends'Achievement' ? Prisma.AchievementOrderByWithRelationInput :
+  any
 
 export class BaseRepository<TModel extends string, TRecord> {
   protected delegate: PrismaModelDelegate<TRecord>
@@ -129,8 +113,8 @@ export class BaseRepository<TModel extends string, TRecord> {
    * @param params.limit - Alias for take (from URL params)
    */
   async findAll(params: {
-    where?: Prisma.WhereInput
-    orderBy?: Prisma.OrderByWithRelationInput
+    where?: any
+    orderBy?: any
     take?: number
     skip?: number
     cursor?: string
@@ -167,7 +151,7 @@ export class BaseRepository<TModel extends string, TRecord> {
     }
 
     let items: TRecord[] = await this.delegate.findMany(
-      queryArgs as Parameters<typeof this.delegate.findMany>[0],
+      queryArgs as any,
     )
 
     // Handle cursor pagination extra-item detection
@@ -223,9 +207,7 @@ export class BaseRepository<TModel extends string, TRecord> {
     if (options?.include) args.include = options.include
     if (options?.select) args.select = options.select
 
-    return this.delegate.findUnique(
-      args as Parameters<typeof this.delegate.findUnique>[0],
-    )
+    return this.delegate.findUnique(args as any)
   }
 
   // ── Find First ─────────────────────────────────────────────────────────────
@@ -234,11 +216,11 @@ export class BaseRepository<TModel extends string, TRecord> {
    * Find the first record matching a where clause.
    */
   async findFirst(
-    where: Prisma.WhereInput,
+    where: any,
     options?: {
       include?: Record<string, unknown>
       select?: Record<string, unknown>
-      orderBy?: Prisma.OrderByWithRelationInput
+      orderBy?: any
     },
   ): Promise<TRecord | null> {
     const args: Record<string, unknown> = { where }
@@ -246,9 +228,7 @@ export class BaseRepository<TModel extends string, TRecord> {
     if (options?.select) args.select = options.select
     if (options?.orderBy) args.orderBy = options.orderBy
 
-    return this.delegate.findFirst(
-      args as Parameters<typeof this.delegate.findFirst>[0],
-    )
+    return this.delegate.findFirst(args as any)
   }
 
   // ── Create ─────────────────────────────────────────────────────────────────
@@ -265,9 +245,7 @@ export class BaseRepository<TModel extends string, TRecord> {
       if (options?.include) args.include = options.include
       if (options?.select) args.select = options.select
 
-      return await this.delegate.create(
-        args as Parameters<typeof this.delegate.create>[0],
-      )
+      return await this.delegate.create(args as any)
     } catch (error) {
       logger.error(`Failed to create ${this.modelName}`, this.loggerContext, {
         error: error instanceof Error ? error.message : String(error),
@@ -295,9 +273,7 @@ export class BaseRepository<TModel extends string, TRecord> {
       if (options?.include) args.include = options.include
       if (options?.select) args.select = options.select
 
-      return await this.delegate.update(
-        args as Parameters<typeof this.delegate.update>[0],
-      )
+      return await this.delegate.update(args as any)
     } catch (error) {
       logger.error(`Failed to update ${this.modelName}`, this.loggerContext, {
         id,
@@ -317,9 +293,7 @@ export class BaseRepository<TModel extends string, TRecord> {
     await this.findById(id)
 
     try {
-      return await this.delegate.delete({
-        where: { id },
-      } as Parameters<typeof this.delegate.delete>[0])
+      return await this.delegate.delete({ where: { id } } as any)
     } catch (error) {
       logger.error(`Failed to delete ${this.modelName}`, this.loggerContext, {
         id,
@@ -334,10 +308,8 @@ export class BaseRepository<TModel extends string, TRecord> {
   /**
    * Count records matching a where clause.
    */
-  async count(where?: Prisma.WhereInput): Promise<number> {
-    return this.delegate.count({
-      where,
-    } as Parameters<typeof this.delegate.count>[0])
+  async count(where?: any): Promise<number> {
+    return this.delegate.count({ where } as any)
   }
 
   // ── Exists ─────────────────────────────────────────────────────────────────

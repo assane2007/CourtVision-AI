@@ -12,7 +12,7 @@ function makeLandmarks(overrides?: Partial<Record<number, Partial<Landmark>>>): 
 
   if (overrides) {
     for (const [idx, vals] of Object.entries(overrides)) {
-      const i = Number(idx);
+      let i = Number(idx);
       if (lm[i] && vals) {
         Object.assign(lm[i], vals);
       }

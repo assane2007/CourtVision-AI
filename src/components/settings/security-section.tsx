@@ -1,13 +1,12 @@
-'use client'
-
-import { useState } from 'react'
-import { toast } from 'sonner'
-import { CheckCircle2, Lock, Copy, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
-import { Separator } from '@/components/ui/separator'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
+'use client';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { CheckCircle2, Lock, Copy, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -15,8 +14,8 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog'
-import { useTranslation } from '@/components/providers/language-provider'
+} from '@/components/ui/dialog';
+import { useTranslation } from '@/components/providers/language-provider';
 
 export function SecuritySection() {
   const { t, td } = useTranslation()

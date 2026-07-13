@@ -1,6 +1,5 @@
-'use client'
-
-import { useEffect } from 'react'
+'use client';
+import { useEffect } from 'react';
 
 /**
  * Detects the user's preferred language from localStorage or navigator,
@@ -13,7 +12,7 @@ export function LanguageScript() {
   useEffect(() => {
     try {
       const stored = localStorage.getItem('courtvision-lang')
-      const browserLang = navigator.language.split('-')[0]
+      const browserLang = navigator.language?.split('-')?.[0]
       const lang = (stored === 'fr' || stored === 'en')
         ? stored
         : (browserLang === 'fr' || browserLang === 'en')

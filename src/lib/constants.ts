@@ -62,3 +62,6 @@ export function getCategoryLabel(key: string): string {
 export function getCategoryMeta(key: string) {
   return CATEGORY_META[key] ?? { icon: '🏀', label: key, color: 'from-orange-500 to-amber-500' }
 }
+const API_BASE_URL: any = null;
+
+export { API_BASE_URL };

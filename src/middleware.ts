@@ -1,0 +1,146 @@
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { updateSession } from '@/lib/supabase/middleware';
+
+// ── Routes that DON'T require authentication ─────────────────────────────────
+const PUBLIC_PATHS = [
+  '/api/health',
+  '/api/privacy',
+  '/api/auth',
+  '/api/drills',
+  '/manifest.json',
+  '/icon-',
+  '/sw.js',
+  '/',
+  '/monitoring',
+]
+
+// ── App routes that require authentication (redirect to / if not authed) ─────
+const PROTECTED_APP_PATHS = [
+  '/home',
+  '/dashboard',
+  '/settings',
+  '/notifications',
+  '/live',
+  '/records',
+  '/quests',
+  '/admin',
+  '/pricing',
+  '/profile',
+  '/messages',
+  '/videos',
+  '/teams',
+  '/ai',
+  '/scouting',
+  '/stats',
+  '/feed',
+  '/achievements',
+  '/leaderboard',
+  '/ai-insights',
+  '/reaction',
+  '/recommendations',
+  '/train',
+  '/challenges',
+  '/daily-reward',
+  '/referral',
+  '/ai-coach',
+  '/friends',
+  '/ai-tools',
+]
+
+// ── Admin-only routes ─────────────────────────────────────────────────────────
+const ADMIN_PATHS = [
+  '/admin',
+  '/api/admin',
+]
+
+// ── Inject Supabase token from x-sb-token header ─────────────────────────────
+// Required for Safari/iframe environments where third-party cookies are blocked.
+function getProjectRef(): string {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+  return url.match(/https:\/\/([^.]+)\./)?.[1] ?? ''
+}
+
+function injectTokenFromHeader(request: NextRequest): void {
+  const token = request.headers.get('x-sb-token')
+  if (!token) return
+  const hasCookie = request.cookies.getAll().some((c) => c.name.includes('auth-token'))
+  if (hasCookie) return
+  const ref = getProjectRef()
+  if (ref) {
+    request.cookies.set(`sb-${ref}-auth-token`, token)
+  }
+}
+
+// ── Main Middleware ───────────────────────────────────────────────────────────
+export async function middleware(request: NextRequest) {
+  const startTime = performance.now()
+
+  // ── 1. Request ID for distributed tracing ────────────────────────────────
+  const incomingId = request.headers.get('x-request-id')
+  const requestId =
+    incomingId && incomingId.length <= 128
+      ? incomingId
+      : `req-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+
+  // ── 2. Inject token from header (Safari/iframe support) ───────────────────
+  injectTokenFromHeader(request)
+
+  // ── 3. Refresh Supabase auth session ──────────────────────────────────────
+  const { supabaseResponse, user } = await updateSession(request)
+
+  // ── 4. Performance headers ────────────────────────────────────────────────
+  supabaseResponse.headers.set('X-Request-ID', requestId)
+  const durationMs = Math.round(performance.now() - startTime)
+  supabaseResponse.headers.set('X-Response-Time', `${durationMs}ms`)
+
+  const { pathname } = request.nextUrl
+
+  // ── Allow static files and Next.js internals ─────────────────────────────
+  if (pathname.startsWith('/_next') || pathname.startsWith('/favicon')) {
+    return supabaseResponse
+  }
+
+  // ── Allow public routes ───────────────────────────────────────────────────
+  if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
+    return supabaseResponse
+  }
+
+  // ── For API routes (except public ones), check for Supabase session ───────
+  if (pathname.startsWith('/api/')) {
+    if (!user) {
+      const authHeader = request.headers.get('authorization')
+      if (!authHeader?.startsWith('Bearer ')) {
+        return new NextResponse(
+          JSON.stringify({ error: 'Unauthorized' }),
+          {
+            status: 401,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+        )
+      }
+    }
+    return supabaseResponse
+  }
+
+  // ── For protected app routes, redirect unauthenticated users to home ──────
+  const isProtectedAppPath = PROTECTED_APP_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(p + '/')
+  )
+
+  if (isProtectedAppPath && !user) {
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = '/'
+    return NextResponse.redirect(redirectUrl)
+  }
+
+  return supabaseResponse
+}
+
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon\\.ico|sitemap\\.xml|robots\\.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|eot)$).*)',
+  ],
+}

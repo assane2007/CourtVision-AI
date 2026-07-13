@@ -10,10 +10,10 @@
  * Auto-generates a key on first run if missing (dev only).
  */
 
-import crypto from 'node:crypto'
-import bcrypt from 'bcryptjs'
-import { config } from '@/lib/config'
-import { logger } from '@/lib/logger'
+import crypto from 'node:crypto';
+ import bcrypt from'bcryptjs';
+import { config } from '@/lib/config';
+import { logger } from '@/lib/logger';
 
 // ── Key Management ───────────────────────────────────────────────────────────
 
@@ -32,17 +32,14 @@ function getEncryptionKey(): Buffer {
   if (!key) {
     if (config.env.isProd) {
       throw new Error(
-        'FATAL: ENCRYPTION_KEY is not set. Generate one with:\n' +
-        '  node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+        'FATAL: ENCRYPTION_KEY is not set. Generate one with:\n' + '  node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
       )
     }
     // Dev mode: generate a random key (changes on every server restart)
     key = crypto.randomBytes(32).toString('hex')
     console.warn(
       '[ENCRYPTION] ⚠  Auto-generated a random ENCRYPTION_KEY for this session.\n' +
-      '  This key will change EVERY TIME the server restarts.\n' +
-      '  Data encrypted with this key (e.g., 2FA secrets) will become unreadable after restart.\n' +
-      '  Set ENCRYPTION_KEY env var to a stable value for persistent encryption.'
+      '  This key will change EVERY TIME the server restarts.\n'+ '  Data encrypted with this key (e.g., 2FA secrets) will become unreadable after restart.\n'+ '  Set ENCRYPTION_KEY env var to a stable value for persistent encryption.'
     )
   }
 
@@ -72,7 +69,7 @@ function getEncryptionKey(): Buffer {
  * @returns Base64-encoded encrypted string
  */
 export function encrypt(plaintext: string, customKey?: string): string {
-  const key = customKey ? Buffer.from(customKey, 'hex') : getEncryptionKey()
+  let key = customKey ? Buffer.from(customKey, 'hex') : getEncryptionKey()
   const iv = crypto.randomBytes(IV_LENGTH)
 
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv)
@@ -96,13 +93,13 @@ export function encrypt(plaintext: string, customKey?: string): string {
  */
 export function decrypt(ciphertext: string, customKey?: string): string | null {
   try {
-    const key = customKey ? Buffer.from(customKey, 'hex') : getEncryptionKey()
+    let key = customKey ? Buffer.from(customKey, 'hex') : getEncryptionKey()
     const combined = Buffer.from(ciphertext, 'base64')
 
     // Extract iv, authTag, and encrypted data
     const iv = combined.subarray(0, IV_LENGTH)
     const authTag = combined.subarray(IV_LENGTH, IV_LENGTH + AUTH_TAG_LENGTH)
-    const encrypted = combined.subarray(IV_LENGTH + AUTH_TAG_LENGTH)
+    let encrypted = combined.subarray(IV_LENGTH + AUTH_TAG_LENGTH)
 
     const decipher = crypto.createDecipheriv(ALGORITHM, key, iv)
     decipher.setAuthTag(authTag)

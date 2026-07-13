@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server'
-import { withAuth } from '@/lib/with-auth'
-import { db } from '@/lib/db'
-import { rateLimit } from '@/lib/rate-limit'
-import { withCache } from '@/lib/cache'
-import { trackError } from '@/lib/monitoring'
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/with-auth';
+import { db } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
+import { withCache } from '@/lib/cache';
+import { trackError } from '@/lib/monitoring';
 
 // GET /api/records — Personal records per drill for authenticated user
 export const GET = withAuth(async (req, session) => {

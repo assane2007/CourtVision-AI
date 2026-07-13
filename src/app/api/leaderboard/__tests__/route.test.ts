@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockPlayerFindMany = vi.fn()
 const mockPlayerCount = vi.fn(() => Promise.resolve(10))

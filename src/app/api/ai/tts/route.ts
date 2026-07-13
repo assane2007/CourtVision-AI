@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import ZAI from 'z-ai-web-dev-sdk'
-import { withAuth } from '@/lib/with-auth'
-import { rateLimit } from '@/lib/rate-limit'
+import { NextRequest, NextResponse } from 'next/server';
+ import ZAI from'z-ai-web-dev-sdk';
+import { withAuth } from '@/lib/with-auth';
+import { rateLimit } from '@/lib/rate-limit';
 
 const MAX_TEXT_LENGTH = 1024
 const DEFAULT_VOICE = 'tongtong'

@@ -1,27 +1,26 @@
-'use client'
-
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
+'use client';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
 import {
   ArrowLeft, Heart, MessageCircle, Share2, Plus, Loader2,
   Trophy, Dumbbell, Video, Award, ImagePlus, X,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
-} from '@/components/ui/dialog'
-import { useNavigation } from '@/stores/navigation'
-import { SwipeToGoBack } from '@/components/shared/swipe-back'
-import { apiFetch } from '@/lib/utils'
-import { staggerContainer, fadeInScale, cardHover } from '@/lib/animations'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { useTranslation } from '@/components/providers/language-provider'
-import { toast } from 'sonner'
+} from '@/components/ui/dialog';
+import { useNavigation } from '@/stores/navigation';
+import { SwipeToGoBack } from '@/components/shared/swipe-back';
+import { apiFetch } from '@/lib/utils';
+import { staggerContainer, fadeInScale, cardHover } from '@/lib/animations';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { useTranslation } from '@/components/providers/language-provider';
+import { toast } from 'sonner';
 
 interface PostPlayer {
   id: string; name: string; avatar: string | null; xpLevel: number

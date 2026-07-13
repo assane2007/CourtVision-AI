@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { trackError } from '@/lib/monitoring'
-import Stripe from 'stripe'
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { trackError } from '@/lib/monitoring';
+ import Stripe from'stripe';
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-06-24.dahlia' })
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
         const playerId = session.metadata?.playerId
-        const tier = session.metadata?.tier || 'pro'
+        let tier = session.metadata?.tier || 'pro'
 
         if (playerId) {
           await db.player.update({

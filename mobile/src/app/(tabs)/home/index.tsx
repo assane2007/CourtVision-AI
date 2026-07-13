@@ -2,12 +2,12 @@ import { View, ScrollView, Text, TouchableOpacity, RefreshControl } from 'react-
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
-import { Flame, Trophy, TrendingUp, ChevronRight, Zap, Calendar, Star } from 'lucide-react-native';
+import { Flame, TrendingUp, Calendar, Star } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useAppStore } from '@/stores/app';
 import { playerService } from '@/services';
-import { formatXp } from '@/utils/formatters';
-import { cn } from '@/utils/cn';
+import { formatXp } from '../../../utils/formatters';
+
 
 export default function HomeScreen() {
   const { t } = useTranslation();

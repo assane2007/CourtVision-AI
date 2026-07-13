@@ -6,11 +6,11 @@
  * via Object.freeze().
  *
  * Usage:
- *   import { config, validateConfig } from '@/lib/config'
+ *   import { config, validateConfig } from '@/lib/config';
  *   if (config.stripe.isEnabled) { ... }
  */
 
-import { randomBytes } from 'node:crypto'
+import { randomBytes } from 'node:crypto';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -146,11 +146,9 @@ const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || undefine
 const supabaseJwksUrl = process.env.SUPABASE_JWKS_URL || undefined
 const supabaseIsEnabled = !!(supabaseUrl && supabaseAnonKey)
 
-const storageProvider: 'local' | 's3' | 'supabase' = supabaseServiceRoleKey
-  ? 'supabase'
+const storageProvider: 'local' | 's3' | 'supabase' = supabaseServiceRoleKey ?'supabase'
   : s3Bucket
-    ? 's3'
-    : 'local'
+    ? 's3' :'local'
 
 // Security — Encryption key
 let encryptionKey: string
@@ -172,9 +170,7 @@ if (process.env.ENCRYPTION_KEY) {
   } else {
     console.warn(
       '[CONFIG] ⚠  Auto-generated ENCRYPTION_KEY for this session.\n' +
-      '  WARNING: This key changes on EVERY server restart.\n' +
-      '  Encrypted data (2FA secrets, etc.) will be lost after restart.\n' +
-      '  Set ENCRYPTION_KEY env var for persistent data. Do NOT use in production.'
+      '  WARNING: This key changes on EVERY server restart.\n'+ '  Encrypted data (2FA secrets, etc.) will be lost after restart.\n'+ '  Set ENCRYPTION_KEY env var for persistent data. Do NOT use in production.'
     )
   }
 }
@@ -291,8 +287,8 @@ function deepFreeze<T>(obj: T): Readonly<T> {
  * Typed, frozen, and organized by domain. Import and use directly:
  *
  * @example
- *   import { config } from '@/lib/config'
- *   console.log(config.database.provider) // 'sqlite' | 'postgresql'
+ *   import { config } from '@/lib/config';
+ *   console.log(config.database.provider) //'sqlite' | 'postgresql'
  *   console.log(config.stripe.isEnabled)  // true | false
  */
 export const config: Readonly<AppConfig> = deepFreeze(rawConfig)

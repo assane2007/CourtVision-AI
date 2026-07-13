@@ -1,12 +1,11 @@
-'use client'
-
-import { useState, useMemo, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Trophy, PartyPopper, Check } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
-import { cn } from '@/lib/utils'
-import { useTranslation } from '@/components/providers/language-provider'
+'use client';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Trophy, PartyPopper, Check } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
+import { useTranslation } from '@/components/providers/language-provider';
 
 // ---------------------------------------------------------------------------
 // Challenge definitions (rotate by ISO week number)
@@ -196,8 +195,7 @@ export function WeeklyChallenge({
       <Card className={cn(
         'relative overflow-hidden border-2 transition-colors',
         completed
-          ? 'border-orange-400 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/20'
-          : 'border-orange-500/20',
+          ? 'border-orange-400 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/20' :'border-orange-500/20',
       )}>
         {showConfetti && <ConfettiBurst key={confettiKey} show />}
 

@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/server'
-import { trackError } from '@/lib/monitoring'
-import { signupSchema, getZodErrorMessage } from '@/lib/validations'
+import { NextRequest, NextResponse } from 'next/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { trackError } from '@/lib/monitoring';
+import { signupSchema, getZodErrorMessage } from '@/lib/validations';
 
 export async function POST(req: NextRequest) {
   try {

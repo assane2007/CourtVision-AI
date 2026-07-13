@@ -3,9 +3,9 @@
  * Covers: AIChatMessage, FormAnalysis, Prediction, VoiceSession, GeneratedWorkout.
  */
 
-import { Prisma } from '@prisma/client'
-import { db } from '@/lib/db'
-import { BaseRepository, type PrismaModelDelegate } from './base.repository'
+import { Prisma } from '../inngest/client';
+import { db } from '@/lib/db';
+import { BaseRepository, type PrismaModelDelegate } from './base.repository';
 
 // ── AI Chat Repository ──────────────────────────────────────────────────────────
 

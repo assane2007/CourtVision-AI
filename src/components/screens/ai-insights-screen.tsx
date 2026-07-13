@@ -1,21 +1,20 @@
-'use client'
-
-import { useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+'use client';
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Brain, TrendingUp, TrendingDown, Minus, Target,
   AlertTriangle, CheckCircle2, Lightbulb, Activity, RefreshCw,
   Trophy, ChevronRight, Mic, Dumbbell,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useNavigation } from '@/stores/navigation'
-import { useTranslation } from '@/components/providers/language-provider'
-import { apiFetch } from '@/lib/utils'
-import { BottomNav } from '@/components/shared/bottom-nav'
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useNavigation } from '@/stores/navigation';
+import { useTranslation } from '@/components/providers/language-provider';
+import { apiFetch } from '@/lib/utils';
+import { BottomNav } from '@/components/shared/bottom-nav';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

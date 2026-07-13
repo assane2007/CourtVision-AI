@@ -2,11 +2,11 @@
  * Social service — business logic for friends, teams, feed, and messaging.
  */
 
-import { db } from '@/lib/db'
-import { socialRepository, teamRepository, feedRepository } from '@/lib/repositories/social.repository'
-import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
-import { logger } from '@/lib/logger'
-import type { FriendData } from '@/lib/types/service.types'
+import { db } from '@/lib/db';
+import { socialRepository, teamRepository, feedRepository } from '@/lib/repositories/social.repository';
+import { AppError, ErrorCode } from '@/lib/middleware/error-handler';
+import { logger } from '@/lib/logger';
+import type { FriendData } from '@/lib/types/service.types';
 
 // ── Friends ────────────────────────────────────────────────────────────────────
 

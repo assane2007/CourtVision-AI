@@ -1,8 +1,7 @@
-'use client'
-
-import { useMemo } from 'react'
-import { motion } from 'framer-motion'
-import { useQuery } from '@tanstack/react-query'
+'use client';
+import { useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
   Clock,
   CheckCircle2,
@@ -17,7 +16,7 @@ import {
   AlertTriangle,
   Lightbulb,
   RefreshCw,
-} from 'lucide-react'
+} from 'lucide-react';
 import {
   AreaChart,
   Area,
@@ -29,17 +28,17 @@ import {
   Legend,
   ResponsiveContainer,
   Tooltip,
-} from 'recharts'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { PullToRefresh } from '@/components/shared/pull-to-refresh'
-import { apiFetch, formatLocaleDate } from '@/lib/utils'
-import { containerVariants, itemVariants } from '@/lib/animations'
-import { useTranslation } from '@/components/providers/language-provider'
-import { SKILL_META, type SkillKey } from '@/lib/player/iq-engine'
+} from 'recharts';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { PullToRefresh } from '@/components/shared/pull-to-refresh';
+import { apiFetch, formatLocaleDate } from '@/lib/utils';
+import { containerVariants, itemVariants } from '@/lib/animations';
+import { useTranslation } from '@/components/providers/language-provider';
+import { SKILL_META, type SkillKey } from '@/lib/player/iq-engine';
 
 // ── Types ───────────────────────────────────────────────────────────
 interface StatsResponse {

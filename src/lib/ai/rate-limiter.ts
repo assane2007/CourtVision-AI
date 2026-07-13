@@ -8,11 +8,11 @@
  * Values: integer count, TTL: 1 hour (3600s).
  */
 
-import type { AiOperationType, AiQuota, SubscriptionTier } from './types'
-import { AI_RATE_LIMITS, AI_TIER_MULTIPLIERS } from './types'
-import { logger } from '@/lib/logger'
-import { RedisCache } from '@/lib/cache/redis-cache'
-import { config } from '@/lib/config'
+import type { AiOperationType, AiQuota, SubscriptionTier } from './types';
+import { AI_RATE_LIMITS, AI_TIER_MULTIPLIERS } from './types';
+import { logger } from '@/lib/logger';
+import { RedisCache } from '@/lib/cache/redis-cache';
+import { config } from '@/lib/config';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 

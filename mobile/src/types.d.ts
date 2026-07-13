@@ -10,15 +10,16 @@ declare module 'nativewind' {
 }
 
 declare module '@react-native-async-storage/async-storage' {
-  export default class AsyncStorage {
-    static getItem(key: string): Promise<string | null>;
-    static setItem(key: string, value: string): Promise<void>;
-    static removeItem(key: string): Promise<void>;
-    static clear(): Promise<void>;
-    static multiGet(keys: string[]): Promise<[string, string | null][]>;
-    static multiSet(kvp: [string, string][]): Promise<void>;
-    static multiRemove(keys: string[]): Promise<void>;
+  interface AsyncStorageStatic {
+    getItem(key: string): Promise<string | null>;
+    setItem(key: string, value: string): Promise<void>;
+    removeItem(key: string): Promise<void>;
+    clear(): Promise<void>;
+    multiGet(keys: string[]): Promise<[string, string | null][]>;
+    multiSet(kvp: [string, string][]): Promise<void>;
+    multiRemove(keys: string[]): Promise<void>;
   }
+  export default AsyncStorageStatic;
 }
 
 declare module 'expo-local-authentication' {

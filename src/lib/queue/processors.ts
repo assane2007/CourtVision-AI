@@ -21,20 +21,20 @@ import type {
   VideoAnalysisResult,
   FormAnalysisResult,
   ExportResult,
-} from './types'
+} from './types';
 
-import { aiPipeline } from '@/lib/ai/pipeline'
-import { db } from '@/lib/db'
-import { sendEmail } from '@/lib/email'
-import { sendPushToPlayer, type PushSubscription } from '@/lib/push'
+import { aiPipeline } from '@/lib/ai/pipeline';
+import { db } from '@/lib/db';
+import { sendEmail } from '@/lib/email';
+import { sendPushToPlayer, type PushSubscription } from '@/lib/push';
 import {
   extractFramesFromVideo,
   isFfmpegAvailable,
   type ExtractedFrame,
-} from '@/lib/video/frame-extractor'
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
-import { join, parse } from 'node:path'
-import { randomUUID } from 'node:crypto'
+} from '@/lib/video/frame-extractor';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { join, parse } from 'node:path';
+import { randomUUID } from 'node:crypto';
 
 // ── Video Processing ────────────────────────────────────────────────────────────
 

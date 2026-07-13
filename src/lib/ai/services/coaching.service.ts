@@ -4,11 +4,11 @@
  * Orchestrates: context loading → history loading → prompt building → LLM call → DB storage.
  */
 
-import { db } from '@/lib/db'
-import { logger } from '@/lib/logger'
-import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
-import { checkAndTrack } from '../rate-limiter'
-import { chat, trimHistory } from '../providers/language.provider'
+import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
+import { AppError, ErrorCode } from '@/lib/middleware/error-handler';
+import { checkAndTrack } from '../rate-limiter';
+import { chat, trimHistory } from '../providers/language.provider';
 import {
   getCoachSystemPrompt,
   getPositionalPrompt,
@@ -16,9 +16,9 @@ import {
   getMotivationalPrompt,
   SECURITY_GUARD_FR,
   SECURITY_GUARD_EN,
-} from '../prompts/coaching-prompts'
-import { classifyArchetype, detectWeaknesses, type SkillKey } from '@/lib/player/iq-engine'
-import type { CoachingContext, CoachingResult, ChatMessage, SubscriptionTier, Lang } from '../types'
+} from '../prompts/coaching-prompts';
+import { classifyArchetype, detectWeaknesses, type SkillKey } from '@/lib/player/iq-engine';
+import type { CoachingContext, CoachingResult, ChatMessage, SubscriptionTier, Lang } from '../types';
 
 // ── Main Coaching Pipeline ─────────────────────────────────────────────────────
 
@@ -262,3 +262,10 @@ function buildCoachingContext(
     lang,
   }
 }
+function coachingService(...args: any[]): any {
+  // eslint-disable-next-line no-console
+  console.warn('Placeholder: coachingService is not implemented yet.', args);
+  return null;
+}
+
+export default coachingService;

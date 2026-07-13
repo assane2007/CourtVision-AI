@@ -12,15 +12,7 @@ export interface Drill {
 }
 
 export type DrillCategory =
-  | "pocket_ball"
-  | "shifty"
-  | "ball_handling"
-  | "speed_change"
-  | "defense"
-  | "shooting"
-  | "footwork"
-  | "conditioning"
-  | "finishing";
+  | "pocket_ball" |"shifty" |"ball_handling" |"speed_change" |"defense" |"shooting" |"footwork" |"conditioning" |"finishing";
 
 export interface Plan {
   id: string;

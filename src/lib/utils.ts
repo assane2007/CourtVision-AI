@@ -1,5 +1,6 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx } from "clsx";
+import type { ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -20,7 +21,10 @@ export async function apiFetch<T>(url: string, options?: RequestInit): Promise<T
  * Format a date using the user's locale.
  * Re-exported from date-utils.ts for backward compatibility.
  */
-export { formatDate as formatLocaleDate } from '@/lib/date-utils'
+export function formatLocaleDate(date: Date | string | number, options?: Intl.DateTimeFormatOptions): string {
+  const d = new Date(date)
+  return d.toLocaleDateString(undefined, options)
+}
 
 /**
  * Get the localized drill name based on current language.

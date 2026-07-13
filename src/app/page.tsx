@@ -1,19 +1,16 @@
-'use client'
+'use client';
+import { Component, type ReactNode, useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { useTranslation } from '@/components/providers/language-provider';
+import { useAuth } from '@/components/providers/supabase-auth-provider';
+import { useAppStore } from '@/stores/app';
+import { LoadingSpinner } from '@/components/screen-transition';
 
-import { Component, type ReactNode, useState, useEffect } from 'react'
-import dynamic from 'next/dynamic'
-import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
-import { useTranslation } from '@/components/providers/language-provider'
-import { useAuth } from '@/components/providers/supabase-auth-provider'
-import { useAppStore } from '@/stores/app'
 
 // ── Core screens (preloaded for fast initial render) ──────────────────────────
 
-const LoadingSpinner = dynamic(
-  () => import('@/components/screen-transition').then(m => ({ default: m.LoadingSpinner })),
-  { ssr: false },
-)
 const LandingPage = dynamic(() => import('@/components/landing/landing-page'), { ssr: false })
 const AuthScreen = dynamic(() => import('@/components/screens/auth-screen'), { ssr: false })
 const OnboardingScreen = dynamic(() => import('@/components/screens/onboarding-screen'), { ssr: false })
@@ -61,6 +58,7 @@ const AdminScreen = dynamic(() => import('@/components/screens/admin-screen'), {
 const AnalyticsScreen = dynamic(() => import('@/components/screens/analytics-screen'), { ssr: false })
 const TermsScreen = dynamic(() => import('@/components/screens/terms-screen'), { ssr: false })
 const PrivacyScreen = dynamic(() => import('@/components/screens/privacy-screen'), { ssr: false })
+const UserDashboardScreen = dynamic(() => import('@/components/screens/user-dashboard-screen').then(m => ({ default: m.UserDashboardScreen })), { ssr: false })
 
 // ── Error Boundary ────────────────────────────────────────────────────────────
 
@@ -137,6 +135,7 @@ const SCREEN_MAP: Record<string, React.ComponentType> = {
   'analytics': AnalyticsScreen,
   'terms': TermsScreen,
   'privacy': PrivacyScreen,
+  'dashboard': UserDashboardScreen,
 }
 
 // ── Main Page Component ───────────────────────────────────────────────────────

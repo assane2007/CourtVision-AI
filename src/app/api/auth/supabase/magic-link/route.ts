@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server'
-import { rateLimit } from '@/lib/rate-limit'
+import { NextResponse } from 'next/server';
+import { rateLimit } from '@/lib/rate-limit';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY

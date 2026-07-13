@@ -3,15 +3,8 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type Screen =
-  | 'landing' | 'auth' | 'onboarding' | 'home' | 'plans' | 'train-hub' | 'drill-detail'
-  | 'camera-workout' | 'workout-summary' | 'stats' | 'records' | 'profile' | 'achievements'
-  | 'settings' | 'scouting' | 'reaction-trainer' | 'ai-coach' | 'leaderboard' | 'pricing'
-  | 'friends' | 'teams' | 'team-detail' | 'challenges' | 'challenge-detail'
-  | 'feed' | 'post-detail' | 'messages' | 'conversation' | 'profile-other'
-  | 'live-workout' | 'notifications'
-  | 'video-library' | 'video-player' | 'video-upload' | 'video-compare'
-  | 'ai-insights' | 'voice-coach' | 'predictions' | 'ai-workout-gen' | 'ai-tools'
-  | 'terms' | 'privacy' | 'admin' | 'analytics';
+  | 'landing' | 'auth' | 'onboarding' | 'home' | 'plans' | 'train-hub' | 'drill-detail' |'camera-workout'| 'workout-summary' | 'stats' | 'records' | 'profile' | 'achievements' |'settings'| 'scouting' | 'reaction-trainer' | 'ai-coach' | 'leaderboard' | 'pricing' |'friends'| 'teams' | 'team-detail' | 'challenges' | 'challenge-detail' |'feed'| 'post-detail' | 'messages' | 'conversation' | 'profile-other' |'live-workout' | 'notifications'
+  | 'video-library'| 'video-player' | 'video-upload' | 'video-compare' |'ai-insights'| 'voice-coach' | 'predictions' | 'ai-workout-gen' | 'ai-tools' |'terms' | 'privacy' | 'admin' | 'analytics';
 
 export interface WorkoutDrillResult {
   drillId: string;

@@ -1,6 +1,6 @@
-import * as Sentry from '@sentry/nextjs'
+import * as Sentry from '@sentry/nextjs';
 
-Sentry.init({
+Sentry?.init({
   dsn: process.env.SENTRY_DSN,
 
   dataCollection: {
@@ -24,7 +24,7 @@ Sentry.init({
   enabled: process.env.NEXT_PUBLIC_SENTRY_ENABLED !== 'false',
 
   integrations: [
-    Sentry.prismaIntegration(),
+    Sentry?.prismaIntegration(),
   ],
 
   // Ignore non-critical errors

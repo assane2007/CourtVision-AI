@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance, type AxiosError } from 'axios';
-import { API_BASE_URL } from '@/constants';
+import { API_BASE_URL } from '../../../src/lib/constants';
 import { useAppStore } from '@/stores/app';
 
 const apiClient: AxiosInstance = axios.create({

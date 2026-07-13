@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ── Mock @sentry/nextjs so we can verify it's called when available ─────────
 const mockCaptureException = vi.fn()

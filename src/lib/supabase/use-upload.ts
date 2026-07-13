@@ -1,5 +1,4 @@
-'use client'
-
+'use client';
 /**
  * React hook for file uploads to Supabase Storage.
  *
@@ -13,7 +12,7 @@
  * const result = await upload(file, { folder: 'avatars', public: true })
  */
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef } from 'react';
 
 interface UploadOptions {
   /** Storage folder (e.g., 'videos', 'avatars', 'thumbnails') */

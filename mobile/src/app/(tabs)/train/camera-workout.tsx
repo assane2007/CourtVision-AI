@@ -1,13 +1,13 @@
-import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ChevronLeft, Play, Pause, Square, RotateCcw, Zap, Clock, Target } from 'lucide-react-native';
+import { ChevronLeft, Play, Pause, Square, Zap, Target } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '@/stores/app';
-import { useWorkoutStore } from '@/stores/workout-store';
-import { formatDuration } from '@/utils/formatters';
-import { cn } from '@/utils/cn';
+
+import { formatDuration } from '../../../utils/formatters';
+
 
 export default function CameraWorkoutScreen() {
   const router = useRouter();

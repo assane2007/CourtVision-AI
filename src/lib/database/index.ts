@@ -2,7 +2,7 @@
  * Database Module
  *
  * Central database client with connection pooling, slow query logging,
- * and health check utilities. Works with both SQLite (dev) and PostgreSQL (prod).
+ * and health check utilities. Works with PostgreSQL via PrismaPg driver adapter.
  *
  * - Uses the same singleton pattern as the original db.ts for hot-reload safety
  * - Adds connection pool configuration for PostgreSQL
@@ -10,7 +10,8 @@
  * - Provides a healthCheck() function for monitoring
  */
 
-import { Prisma, PrismaClient } from '@prisma/client'
+import { Prisma, PrismaClient } from '../inngest/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 
 // ─── Configuration ──────────────────────────────────────────────────────────
 
@@ -33,33 +34,24 @@ const globalForPrisma = globalThis as unknown as {
  * Create a configured Prisma client with logging and pool settings.
  */
 function createPrismaClient(): PrismaClient {
-  const isPostgres =
-    process.env.DATABASE_URL?.startsWith('postgresql://') ||
-    process.env.DATABASE_URL?.startsWith('postgres://')
-
   const logLevels: Array<'query' | 'info' | 'warn' | 'error'> = []
 
   if (process.env.NODE_ENV === 'development') {
     logLevels.push('warn', 'error')
   } else {
-    // In production, only log errors
     logLevels.push('error')
   }
 
+  const adapter = new PrismaPg({
+    connectionString: process.env.DATABASE_URL ?? '',
+  })
+
   const client = new PrismaClient({
+    adapter,
     log: logLevels.map((level) => ({
       emit: 'event' as const,
       level,
     })),
-    ...(isPostgres
-      ? {
-          datasources: {
-            db: {
-              url: process.env.DATABASE_URL,
-            },
-          },
-        }
-      : {}),
   })
 
   // ─── Slow Query Logging ───────────────────────────────────────────────
@@ -102,30 +94,26 @@ export async function healthCheck(): Promise<{
   }
 }> {
   const db = getDb()
-  const isPostgres =
-    process.env.DATABASE_URL?.startsWith('postgresql://') ||
-    process.env.DATABASE_URL?.startsWith('postgres://')
 
   const start = performance.now()
 
   try {
-    // Run a lightweight query to test connectivity
     await db.$queryRaw`SELECT 1`
     const latencyMs = Math.round(performance.now() - start)
 
     return {
       status: latencyMs > 1000 ? 'unhealthy' : 'healthy',
       latencyMs,
-      provider: isPostgres ? 'postgresql' : 'sqlite',
-      ...(isPostgres ? { poolInfo: { connectionLimit: POOL_CONFIG.connection_limit, poolTimeout: POOL_CONFIG.pool_timeout } } : {}),
+      provider: 'postgresql',
+      poolInfo: { connectionLimit: POOL_CONFIG.connection_limit, poolTimeout: POOL_CONFIG.pool_timeout },
     }
   } catch {
     const latencyMs = Math.round(performance.now() - start)
     return {
       status: 'unhealthy',
       latencyMs,
-      provider: isPostgres ? 'postgresql' : 'sqlite',
-      ...(isPostgres ? { poolInfo: { connectionLimit: POOL_CONFIG.connection_limit, poolTimeout: POOL_CONFIG.pool_timeout } } : {}),
+      provider: 'postgresql',
+      poolInfo: { connectionLimit: POOL_CONFIG.connection_limit, poolTimeout: POOL_CONFIG.pool_timeout },
     }
   }
 }

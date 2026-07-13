@@ -5,12 +5,7 @@ import { playSound } from "@/lib/audio";
 
 /* ─── Types ─── */
 export type WorkoutPhase =
-  | "idle"
-  | "countdown"
-  | "active"
-  | "rest"
-  | "paused"
-  | "finished";
+  | "idle" |"countdown" |"active" |"rest" |"paused" |"finished";
 
 /* ─── Constants ─── */
 const CD_SECONDS = 3;

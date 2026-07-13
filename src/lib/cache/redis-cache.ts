@@ -14,10 +14,10 @@
  * Server-only module.
  */
 
-import Redis from 'ioredis'
-import { config } from '@/lib/config'
-import { MemoryCache } from './memory-cache'
-import type { CacheAdapter, CacheAdapterWithTags, CacheStats, RedisConfig } from './types'
+import Redis from 'ioredis';
+import { config } from '@/lib/config';
+import { MemoryCache } from './memory-cache';
+import type { CacheAdapter, CacheAdapterWithTags, CacheStats, RedisConfig } from './types';
 
 // ── Configuration ──────────────────────────────────────────────────────────────
 

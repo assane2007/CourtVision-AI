@@ -12,8 +12,8 @@
  * - consecutive_failures > 3 → critical
  */
 
-import { getPerformanceStats, type PerformanceStats } from './performance'
-import { logger } from './logger'
+import { getPerformanceStats, type PerformanceStats } from './performance';
+import { logger } from './logger';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 

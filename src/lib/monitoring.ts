@@ -6,7 +6,7 @@
  * and support stats export/import for debugging.
  */
 
-import { logger } from './monitoring/logger'
+import { logger } from './monitoring/logger';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 

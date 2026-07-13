@@ -1,8 +1,7 @@
-'use client'
-
-import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import type { User, Session } from '@supabase/supabase-js'
+'use client';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import type { User, Session } from '@supabase/supabase-js';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -19,6 +18,8 @@ interface AuthContextValue {
   loading: boolean
   isAuthenticated: boolean
   supabaseReady: boolean
+  role: string | null
+  isAdmin: boolean
   signUp: (email: string, password: string, name: string) => Promise<{ error: string | null }>
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
@@ -61,6 +62,7 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(() => !createClient())
+  const [role, setRole] = useState<string | null>(null)
   const mountedRef = useRef(true)
 
   useEffect(() => {
@@ -78,6 +80,7 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
       if (currentSession?.user) {
         setSession(currentSession)
         setUser(mapUser(currentSession.user))
+        fetchRole(currentSession.user.id)
       }
       setLoading(false)
     })
@@ -96,10 +99,12 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
           if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
             const name = newSession.user.user_metadata?.name || newSession.user.email?.split('@')[0] || null
             syncPlayerToDb(newSession.user.id, newSession.user.email ?? null, name)
+            fetchRole(newSession.user.id)
           }
         } else {
           setSession(null)
           setUser(null)
+          setRole(null)
         }
       },
     )
@@ -107,6 +112,24 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
     return () => {
       mountedRef.current = false
       subscription.unsubscribe()
+    }
+  }, [])
+
+  // Fetch player role from DB after auth state is known
+  const fetchRole = useCallback(async (userId: string) => {
+    const supabase = createClient()
+    if (!supabase) return
+    try {
+      const { data } = await supabase
+        .from('Player')
+        .select('role')
+        .eq('id', userId)
+        .single()
+      if (mountedRef.current && data) {
+        setRole(data.role ?? 'user')
+      }
+    } catch {
+      if (mountedRef.current) setRole('user')
     }
   }, [])
 
@@ -144,13 +167,14 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
       if (!error && data.user) {
         const name = data.user.user_metadata?.name || data.user.email?.split('@')[0] || null
         await syncPlayerToDb(data.user.id, data.user.email ?? null, name)
+        await fetchRole(data.user.id)
       }
 
       return { error: error?.message || null }
     } catch {
       return { error: 'Login failed' }
     }
-  }, [])
+  }, [fetchRole])
 
   const signOut = useCallback(async () => {
     const supabase = createClient()
@@ -165,6 +189,8 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
     loading,
     isAuthenticated: !!user,
     supabaseReady: !!createClient(),
+    role,
+    isAdmin: role === 'admin',
     signUp,
     signIn,
     signOut,

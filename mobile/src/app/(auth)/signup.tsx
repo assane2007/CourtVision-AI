@@ -9,12 +9,12 @@ import { Mail, Lock, Eye, EyeOff, ArrowRight, User } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useAppStore } from '@/stores/app';
 import { authService } from '@/services';
-import { useAuthStore } from '@/stores/auth-store';
+import { useAuthStore } from '../../stores/auth-store';
 
 export default function SignupScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const setAuthenticated = useAppStore((s) => s.setAuthenticated);
+  const setAuthenticated = useAppStore((s) => s?.setAuthenticated);
   const { isLoading, error, setLoading, setError } = useAuthStore();
 
   const [name, setName] = useState('');
@@ -25,11 +25,11 @@ export default function SignupScreen() {
 
   async function handleSignup() {
     setError(null);
-    if (!name.trim() || !email.trim() || !password.trim()) {
+    if (!name?.trim() || !email?.trim() || !password?.trim()) {
       setError('All fields are required');
       return;
     }
-    if (password.length < 8) {
+    if (password?.length < 8) {
       setError(t('auth.weakPassword'));
       return;
     }
@@ -40,11 +40,11 @@ export default function SignupScreen() {
 
     setLoading(true);
     try {
-      const result = await authService.signup(email, password, name);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setAuthenticated(result.user, result.session.access_token);
+      const result = await authService?.signup(email, password, name);
+      Haptics?.notificationAsync(Haptics?.NotificationFeedbackType?.Success);
+      setAuthenticated(result?.user, result?.session?.access_token);
     } catch (err) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Haptics?.notificationAsync(Haptics?.NotificationFeedbackType?.Error);
       setError(t('auth.invalidCredentials'));
     } finally {
       setLoading(false);
@@ -53,12 +53,12 @@ export default function SignupScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform?.OS === 'ios' ? 'padding' : 'height'}
       className="flex-1 bg-white dark:bg-neutral-950"
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
         <View className="px-6 pt-16">
-          <TouchableOpacity onPress={() => router.back()} className="mb-8">
+          <TouchableOpacity onPress={() => router?.back()} className="mb-8">
             <Text className="text-orange-500 font-medium">{t('common.back')}</Text>
           </TouchableOpacity>
 
@@ -157,7 +157,7 @@ export default function SignupScreen() {
 
           <View className="flex-row justify-center mt-8 mb-4">
             <Text className="text-neutral-500 dark:text-neutral-400 text-sm">{t('auth.hasAccount')} </Text>
-            <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
+            <TouchableOpacity onPress={() => router?.push('/(auth)/login')}>
               <Text className="text-orange-500 font-semibold text-sm">{t('auth.login')}</Text>
             </TouchableOpacity>
           </View>

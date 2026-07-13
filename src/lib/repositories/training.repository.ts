@@ -3,10 +3,10 @@
  * Extends BaseRepository with training-specific queries.
  */
 
-import { db } from '@/lib/db'
-import { Prisma } from '@prisma/client'
-import { BaseRepository, type PrismaModelDelegate } from './base.repository'
-import type { DrillData, DrillFilters } from '@/lib/types/service.types'
+import { db } from '@/lib/db';
+import { Prisma } from '../inngest/client';
+import { BaseRepository, type PrismaModelDelegate } from './base.repository';
+import type { DrillData, DrillFilters } from '@/lib/types/service.types';
 
 // ── Workout Session Repository ──────────────────────────────────────────────────
 

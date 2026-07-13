@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { rateLimit } from '@/lib/rate-limit'
-import { trackError } from '@/lib/monitoring'
-import { withAuth } from '@/lib/with-auth'
-import { generateEmbedding } from '@/lib/ai/providers/embedding.provider'
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
+import { trackError } from '@/lib/monitoring';
+import { withAuth } from '@/lib/with-auth';
+import { generateEmbedding } from '@/lib/ai/providers/embedding.provider';
 
 // POST /api/ai/rag/sync — Sync player session data to PlayerDocument table for RAG context
 export const POST = withAuth(async (request, session) => {

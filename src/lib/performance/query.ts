@@ -4,8 +4,8 @@
  * Server-only module.
  */
 
-import { Prisma } from '@prisma/client'
-import { db } from '@/lib/db'
+import { Prisma } from '../inngest/client';
+import { db } from '@/lib/db';
 
 // ── Types ───────────────────────────────────────────────────────────────────────
 

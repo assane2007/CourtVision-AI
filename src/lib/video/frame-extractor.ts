@@ -6,11 +6,11 @@
  * Server-only module.
  */
 
-import { execSync, spawn } from 'node:child_process'
-import { existsSync, mkdirSync, rmSync, readFileSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { execSync, spawn } from 'node:child_process';
+import { existsSync, mkdirSync, rmSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { randomUUID } from 'node:crypto';
 
 export interface ExtractedFrame {
   index: number
@@ -66,9 +66,7 @@ export async function extractFramesFromVideo(
   if (!isFfmpegAvailable()) {
     console.warn(
       '[frame-extractor] ffmpeg is not available on this system. ' +
-        'Video frame extraction requires ffmpeg to be installed. ' +
-        'Install it via: apt-get install ffmpeg (Debian/Ubuntu), ' +
-        'brew install ffmpeg (macOS), or add it to your Docker image.',
+        'Video frame extraction requires ffmpeg to be installed. '+ 'Install it via: apt-get install ffmpeg (Debian/Ubuntu), '+ 'brew install ffmpeg (macOS), or add it to your Docker image.',
     )
     return []
   }
@@ -197,7 +195,6 @@ function getVideoDurationMs(videoPath: string): Promise<number> {
       // Fallback: try ffmpeg
       const ffmpeg = spawn('ffmpeg', ['-i', videoPath, '-f', 'null', '-'])
       let stderr = ''
-
       ffmpeg.stderr.on('data', (data: Buffer) => {
         stderr += data.toString()
       })
@@ -223,7 +220,6 @@ function getVideoDurationMs(videoPath: string): Promise<number> {
       // ffprobe not found, try ffmpeg fallback
       const ffmpeg = spawn('ffmpeg', ['-i', videoPath, '-f', 'null', '-'])
       let stderr = ''
-
       ffmpeg.stderr.on('data', (data: Buffer) => {
         stderr += data.toString()
       })

@@ -3,14 +3,14 @@
  * Provides AppError class, error-to-response transformation, and tryCatch wrapper.
  */
 
-import { NextResponse } from 'next/server'
-import { Prisma } from '@prisma/client'
-import { logger } from '@/lib/logger'
-import { ErrorCode, getErrorStatusCode, type ErrorDetail, type ApiErrorResponse } from '@/lib/types/api.types'
+import { NextResponse } from 'next/server';
+import { Prisma } from '../inngest/client';
+import { logger } from '@/lib/logger';
+import { ErrorCode, getErrorStatusCode, type ErrorDetail, type ApiErrorResponse } from '@/lib/types/api.types';
 
 // Re-export ErrorCode for convenience — many guards and services import it from here
 export { ErrorCode }
-import { trackError } from '@/lib/monitoring'
+import { trackError } from '@/lib/monitoring';
 
 // ── AppError ────────────────────────────────────────────────────────────────────
 

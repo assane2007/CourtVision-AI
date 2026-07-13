@@ -1,9 +1,10 @@
 /**
- * @deprecated Use `import { rateLimiter } from '@/lib/security/rate-limiter'` instead.
+ * @deprecated Use `import { rateLimiter } from '@/lib/security/rate-limiter';
+` instead.
  * This module will be removed in a future version.
  */
 
-import { Prisma } from '@prisma/client'
+import { Prisma } from './inngest/client';
 
 interface RateLimitEntry {
   count: number

@@ -5,8 +5,8 @@
  * functions degrade gracefully (log a warning, return failure).
  */
 
-import { Resend } from 'resend'
-import { sanitizeHtml } from '@/lib/security/sanitization'
+import { Resend } from 'resend';
+import { sanitizeHtml } from '@/lib/security/sanitization';
 
 // ── Singleton client ──────────────────────────────────────────────────────────
 
@@ -228,6 +228,6 @@ export function getEmailTemplate(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fn = emailTemplates[key] as (...args: any[]) => EmailTemplateResult
-  const args = TEMPLATE_PARAM_KEYS[key].map((k) => params[k] ?? '')
-  return fn(...args)
+  const fnArgs = TEMPLATE_PARAM_KEYS[key].map((k) => params[k] ?? '')
+  return fn(...fnArgs)
 }

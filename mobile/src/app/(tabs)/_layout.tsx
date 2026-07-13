@@ -1,10 +1,11 @@
+import React from 'react';
 import { Tabs } from 'expo-router';
-import { View, Platform } from 'react-native';
+import { View } from 'react-native';
 import { Home, Dumbbell, BarChart3, MessageCircle, User } from 'lucide-react-native';
 import { useAppStore } from '@/stores/app';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import * as Haptics from 'expo-haptics';
+
 
 const TAB_ICON_SIZE = 22;
 
@@ -98,13 +99,14 @@ function TabIcon({
   color: string;
   focused: boolean;
 }) {
+  const IconComponent = Icon;
   return (
     <View
       className={`items-center justify-center rounded-xl px-3 py-1.5 transition-all ${
         focused ? 'bg-orange-500/10' : ''
       }`}
     >
-      <Icon
+      <IconComponent
         size={TAB_ICON_SIZE}
         color={color}
         strokeWidth={focused ? 2.5 : 1.8}

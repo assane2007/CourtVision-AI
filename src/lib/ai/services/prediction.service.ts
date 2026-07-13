@@ -4,19 +4,19 @@
  * Orchestrates: data gathering → metric calculation → LLM analysis → DB storage.
  */
 
-import { db } from '@/lib/db'
-import { logger } from '@/lib/logger'
-import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
-import { checkAndTrack } from '../rate-limiter'
-import { chat } from '../providers/language.provider'
-import { getPredictionPrompt } from '../prompts/workout-prompts'
-import { parseJsonResponse, clamp } from '../utils'
+import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
+import { AppError, ErrorCode } from '@/lib/middleware/error-handler';
+import { checkAndTrack } from '../rate-limiter';
+import { chat } from '../providers/language.provider';
+import { getPredictionPrompt } from '../prompts/workout-prompts';
+import { parseJsonResponse, clamp } from '../utils';
 import type {
   PredictionResult,
   PredictionType,
   SubscriptionTier,
   Lang,
-} from '../types'
+} from '../types';
 
 // ── Main Prediction Pipeline ──────────────────────────────────────────────────
 
@@ -111,9 +111,7 @@ export async function predictProgression(
       const response = await chat([
         {
           role: 'system',
-          content: lang === 'fr'
-            ? 'Tu es un analyste de basketball expert. Réponds UNIQUEMENT en JSON valide.'
-            : 'You are an expert basketball analyst. Respond ONLY with valid JSON.',
+          content: lang === 'fr' ?'Tu es un analyste de basketball expert. Réponds UNIQUEMENT en JSON valide.' :'You are an expert basketball analyst. Respond ONLY with valid JSON.',
         },
         { role: 'user', content: prompt },
       ], {
@@ -302,3 +300,10 @@ function parseAndValidatePrediction(
     createdAt: new Date().toISOString(),
   }
 }
+function predictionService(...args: any[]): any {
+  // eslint-disable-next-line no-console
+  console.warn('Placeholder: predictionService is not implemented yet.', args);
+  return null;
+}
+
+export default predictionService;

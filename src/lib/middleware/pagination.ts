@@ -3,7 +3,7 @@
  * Provides a consistent interface for all paginated queries across the platform.
  */
 
-import type { PaginationMeta } from '@/lib/types/api.types'
+import type { PaginationMeta } from '@/lib/types/api.types';
 
 // ── Pagination Parameters ───────────────────────────────────────────────────────
 

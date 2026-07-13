@@ -1,8 +1,7 @@
-'use client'
-
-import { useState, useRef, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useMutation } from '@tanstack/react-query'
+'use client';
+import { useState, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useMutation } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Upload,
@@ -15,20 +14,20 @@ import {
   Eye,
   EyeOff,
   Sparkles,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
-import { Progress } from '@/components/ui/progress'
-import { Card, CardContent } from '@/components/ui/card'
-import { useNavigation } from '@/stores/navigation'
-import { apiFetch, cn } from '@/lib/utils'
-import { toast } from 'sonner'
-import { containerVariants, itemVariants } from '@/lib/animations'
-import { useTranslation } from '@/components/providers/language-provider'
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Progress } from '@/components/ui/progress';
+import { Card, CardContent } from '@/components/ui/card';
+import { useNavigation } from '@/stores/navigation';
+import { apiFetch, cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { containerVariants, itemVariants } from '@/lib/animations';
+import { useTranslation } from '@/components/providers/language-provider';
 
 const MAX_FILE_SIZE = 500 * 1024 * 1024 // 500 MB
 const ALLOWED_EXTENSIONS = ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.ogv']

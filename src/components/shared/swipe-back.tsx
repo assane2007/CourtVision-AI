@@ -1,5 +1,4 @@
-'use client'
-
+'use client';
 import {
   useRef,
   useState,
@@ -7,12 +6,12 @@ import {
   useEffect,
   type ReactNode,
   type TouchEvent as ReactTouchEvent,
-} from 'react'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
-import { ArrowLeft } from 'lucide-react'
-import { useAppStore } from '@/stores/app'
-import { hapticHeavy } from '@/lib/haptics'
-import { cn } from '@/lib/utils'
+} from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
+import { useAppStore } from '@/stores/app';
+import { hapticHeavy } from '@/lib/haptics';
+import { cn } from '@/lib/utils';
 
 export interface SwipeToGoBackProps {
   /** Minimum swipe distance in px to trigger go-back (default: 100) */

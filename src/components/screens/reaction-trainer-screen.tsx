@@ -1,8 +1,7 @@
-'use client'
-
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+'use client';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowUp,
   ArrowDown,
@@ -18,16 +17,16 @@ import {
   CheckCircle2,
   XCircle,
   Flame,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { SwipeToGoBack } from '@/components/shared/swipe-back'
-import { useAppStore } from '@/stores/app'
-import { apiFetch, formatLocaleDate } from '@/lib/utils'
-import { useTranslation } from '@/components/providers/language-provider'
-import type { TranslationKey } from '@/lib/i18n'
-import { BottomNav } from '@/components/shared/bottom-nav'
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { SwipeToGoBack } from '@/components/shared/swipe-back';
+import { useAppStore } from '@/stores/app';
+import { apiFetch, formatLocaleDate } from '@/lib/utils';
+import { useTranslation } from '@/components/providers/language-provider';
+import type { TranslationKey } from '@/lib/i18n';
+import { BottomNav } from '@/components/shared/bottom-nav';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -823,10 +822,7 @@ export default function ReactionTrainerScreen() {
                       onClick={handleColorTap}
                       className={`flex-1 w-full min-h-[200px] rounded-2xl flex flex-col items-center justify-center transition-colors duration-200 ${
                         activeAction
-                          ? actionColor === 'green'
-                            ? 'bg-green-500 cursor-pointer'
-                            : 'bg-red-500 cursor-pointer'
-                          : 'bg-zinc-800'
+                          ? actionColor === 'green' ?'bg-green-500 cursor-pointer' :'bg-red-500 cursor-pointer' :'bg-zinc-800'
                       }`}
                       disabled={!activeAction}
                     >
@@ -868,9 +864,7 @@ export default function ReactionTrainerScreen() {
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0 }}
                           className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${
-                            colorFeedback === 'correct'
-                              ? 'bg-green-500/20 text-green-400'
-                              : 'bg-red-500/20 text-red-400'
+                            colorFeedback === 'correct' ?'bg-green-500/20 text-green-400' :'bg-red-500/20 text-red-400'
                           }`}
                         >
                           {colorFeedback === 'correct' ? (
@@ -914,8 +908,7 @@ export default function ReactionTrainerScreen() {
                           shotClockCountdown > 2
                             ? 'bg-green-500 text-white'
                             : shotClockCountdown > 1
-                              ? 'bg-yellow-500 text-white'
-                              : 'bg-red-500 text-white'
+                              ? 'bg-yellow-500 text-white' :'bg-red-500 text-white'
                         }`}
                       >
                         {shotClockCountdown}
@@ -949,8 +942,7 @@ export default function ReactionTrainerScreen() {
                               : shotClockChosen === 0
                                 ? 'bg-red-500/50 text-white ring-2 ring-red-400'
                                 : 0 === currentScenario.correct
-                                  ? 'bg-green-500/30 text-green-400 ring-2 ring-green-400/50'
-                                  : 'bg-zinc-700 text-zinc-400'
+                                  ? 'bg-green-500/30 text-green-400 ring-2 ring-green-400/50' :'bg-zinc-700 text-zinc-400'
                         }`}
                       >
                         {td(currentScenario.choices[0], currentScenario.choicesEn![0])}
@@ -967,8 +959,7 @@ export default function ReactionTrainerScreen() {
                               : shotClockChosen === 1
                                 ? 'bg-red-500/50 text-white ring-2 ring-red-400'
                                 : 1 === currentScenario.correct
-                                  ? 'bg-green-500/30 text-green-400 ring-2 ring-green-400/50'
-                                  : 'bg-zinc-700 text-zinc-400'
+                                  ? 'bg-green-500/30 text-green-400 ring-2 ring-green-400/50' :'bg-zinc-700 text-zinc-400'
                         }`}
                       >
                         {td(currentScenario.choices[1], currentScenario.choicesEn![1])}
@@ -984,8 +975,7 @@ export default function ReactionTrainerScreen() {
                           exit={{ opacity: 0 }}
                           className={`text-center px-4 py-2 rounded-xl text-sm ${
                             shotClockChosen === currentScenario.correct
-                              ? 'bg-green-500/20 text-green-400'
-                              : 'bg-red-500/20 text-red-400'
+                              ? 'bg-green-500/20 text-green-400' :'bg-red-500/20 text-red-400'
                           }`}
                         >
                           <p className="font-semibold">

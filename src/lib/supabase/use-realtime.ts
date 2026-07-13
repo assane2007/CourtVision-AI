@@ -1,5 +1,4 @@
-'use client'
-
+'use client';
 /**
  * React hook for Supabase Realtime subscriptions.
  *
@@ -11,8 +10,8 @@
  * })
  */
 
-import { useEffect, useRef, useCallback } from 'react'
-import { createClient } from './client'
+import { useEffect, useRef, useCallback } from 'react';
+import { createClient } from './client';
 
 type EventType = 'INSERT' | 'UPDATE' | 'DELETE' | '*'
 

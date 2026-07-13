@@ -1,9 +1,8 @@
-'use client'
-
-import { motion } from 'framer-motion'
-import { Camera } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { useTranslation } from '@/components/providers/language-provider'
+'use client';
+import { motion } from 'framer-motion';
+import { Camera } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/components/providers/language-provider';
 
 // ---------------------------------------------------------------------------
 // Animated bouncing basketball SVG

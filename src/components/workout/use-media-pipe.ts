@@ -1,6 +1,5 @@
-'use client'
-
-import { useState, useEffect, useRef } from 'react'
+'use client';
+import { useState, useEffect, useRef } from 'react';
 
 // Load MediaPipe via script tag (Turbopack doesn't support dynamic URL imports)
 async function loadMediaPipe() {

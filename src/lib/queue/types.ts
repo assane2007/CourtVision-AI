@@ -6,11 +6,7 @@
 // ── Task Types ──────────────────────────────────────────────────────────────────
 
 export type TaskType =
-  | 'video_processing'
-  | 'form_analysis'
-  | 'notification_send'
-  | 'export_generate'
-  | 'insight_refresh'
+  | 'video_processing' |'form_analysis' |'notification_send' |'export_generate' |'insight_refresh'
 
 // ── Task Status ─────────────────────────────────────────────────────────────────
 

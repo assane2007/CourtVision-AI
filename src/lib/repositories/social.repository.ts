@@ -2,10 +2,10 @@
  * Social repository — data access layer for Friendship, Team, Post, and Message models.
  */
 
-import { db } from '@/lib/db'
-import { Prisma } from '@prisma/client'
-import { BaseRepository, type PrismaModelDelegate } from './base.repository'
-import type { FriendData, FeedPostData } from '@/lib/types/service.types'
+import { db } from '@/lib/db';
+import { Prisma } from '../inngest/client';
+import { BaseRepository, type PrismaModelDelegate } from './base.repository';
+import type { FriendData, FeedPostData } from '@/lib/types/service.types';
 
 // ── Friendship Repository ───────────────────────────────────────────────────────
 

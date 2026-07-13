@@ -11,9 +11,9 @@
  * Server-only module.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { cache } from '@/lib/cache/index'
-import { cacheKeyFromRequest, isNoCacheRequest, invalidateTags, invalidatePattern } from '@/lib/cache/helpers'
+import { NextRequest, NextResponse } from 'next/server';
+import { cache } from '@/lib/cache/index';
+import { cacheKeyFromRequest, isNoCacheRequest, invalidateTags, invalidatePattern } from '@/lib/cache/helpers';
 
 // ── Types ───────────────────────────────────────────────────────────────────────
 

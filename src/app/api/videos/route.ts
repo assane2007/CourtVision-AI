@@ -1,9 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { trackError } from '@/lib/monitoring'
-import { withAuth } from '@/lib/with-auth'
-
-// GET /api/videos — List user's videos with filters
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { trackError } from '@/lib/monitoring';
+import { withAuth } from '@/lib/with-auth';
+ // GET /api/videos — List user's videos with filters
 export const GET = withAuth(async (req: NextRequest, session) => {
   try {
 

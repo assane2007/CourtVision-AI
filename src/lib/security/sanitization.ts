@@ -6,9 +6,9 @@
  * - sanitizeHtml(content) → sanitized HTML (allows safe tags)
  */
 
-import { logger } from '@/lib/logger'
-import createDOMPurify from 'dompurify'
-import { JSDOM } from 'jsdom'
+import { logger } from '@/lib/logger';
+import createDOMPurify from 'dompurify';
+import { JSDOM } from 'jsdom';
 
 // ── DOMPurify setup (server-side via jsdom) ──────────────────────────────────
 
@@ -49,7 +49,7 @@ const CONTROL_CHARS_RE = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g
 const SUSPICIOUS_PATTERNS = [
   /<script[\s>]/i,
   /javascript:/i,
-  /on\w+\s*=/i,     // Event handlers like onclick=
+  /on\w+\s*=/i,     // Event handlers like onClick=
   /data:text\/html/i,
   /vbscript:/i,
   /expression\s*\(/i,

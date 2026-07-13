@@ -1,7 +1,6 @@
-'use client'
-
-import { useState, useEffect, useCallback } from 'react'
-import { apiFetch } from '@/lib/utils'
+'use client';
+import { useState, useEffect, useCallback } from 'react';
+import { apiFetch } from '@/lib/utils';
 
 // Dummy VAPID key for client-side infrastructure
 // In production, replace with a real VAPID public key from web-push

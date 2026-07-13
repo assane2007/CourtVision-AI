@@ -11,7 +11,7 @@
  * Server-only module.
  */
 
-import type { CacheAdapter, CacheAdapterWithTags, CacheStats } from './types'
+import type { CacheAdapter, CacheAdapterWithTags, CacheStats } from './types';
 
 // ── Configuration ──────────────────────────────────────────────────────────────
 

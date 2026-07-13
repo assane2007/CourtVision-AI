@@ -9,8 +9,8 @@
  * increment + TTL refresh are atomic.
  */
 
-import { config } from '@/lib/config'
-import { logger } from '@/lib/logger'
+import { config } from '@/lib/config';
+import { logger } from '@/lib/logger';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -107,7 +107,7 @@ class MemoryStore implements Store {
   }
 
   async get(key: string): Promise<number | undefined> {
-    const entry = this.entries.get(key)
+    let entry = this.entries.get(key)
     if (!entry || Date.now() >= entry.resetMs) return undefined
     return entry.count
   }
@@ -250,5 +250,5 @@ export class RateLimiter {
 
 // ── Singleton ────────────────────────────────────────────────────────────────
 
-const strategy: Strategy = config.redis.isEnabled ? 'redis' : 'memory'
-export const rateLimiter = new RateLimiter(strategy)
+const rateLimitStrategy: Strategy = config.redis.isEnabled ? 'redis' : 'memory'
+export const rateLimiter = new RateLimiter(rateLimitStrategy)

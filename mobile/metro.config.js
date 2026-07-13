@@ -4,7 +4,7 @@ const path = require('path');
 const config = getDefaultConfig(__dirname);
 
 config.resolver.alias = {
-  '@': path.resolve(__dirname, './src'),
+  '@': path?.resolve(__dirname, './src'),
 };
 
 config.resolver.sourceExts = ['ts', 'tsx', 'js', 'jsx', 'json', 'svg'];

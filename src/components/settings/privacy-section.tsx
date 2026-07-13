@@ -1,10 +1,9 @@
-'use client'
-
-import { Globe, Trophy, Eye } from 'lucide-react'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
-import { useTranslation } from '@/components/providers/language-provider'
+'use client';
+import { Globe, Trophy, Eye } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { useTranslation } from '@/components/providers/language-provider';
 
 interface PrivacySectionProps {
   saveMutation: {

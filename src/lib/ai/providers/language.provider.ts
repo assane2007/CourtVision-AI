@@ -4,14 +4,14 @@
  * Handles context window management, cost estimation, retry logic, and structured output.
  */
 
-import ZAI from 'z-ai-web-dev-sdk'
-import { logger } from '@/lib/logger'
+import ZAI from 'z-ai-web-dev-sdk';
+import { logger } from '@/lib/logger';
 import {
   type ChatMessage,
   type ChatOptions,
   type TokenUsage,
   AiError,
-} from '../types'
+} from '../types';
 import {
   estimateMessagesTokens,
   trimMessagesToFitWindow,
@@ -19,7 +19,7 @@ import {
   sleep,
   buildTokenUsage,
   parseJsonResponse,
-} from '../utils'
+} from '../utils';
 
 const DEFAULT_MODEL = 'gpt-4o-mini'
 const DEFAULT_TIMEOUT_MS = 25_000

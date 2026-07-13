@@ -1,8 +1,7 @@
-'use client'
-
-import { useState, useMemo } from 'react'
-import { motion } from 'framer-motion'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+'use client';
+import { useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Share2,
@@ -12,16 +11,16 @@ import {
   PenTool,
   FileOutput,
   Loader2,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useNavigation } from '@/stores/navigation'
-import { useTranslation } from '@/components/providers/language-provider'
-import { apiFetch } from '@/lib/utils'
-import { toast } from 'sonner'
-import { itemVariants } from '@/lib/animations'
-import { BottomNav } from '@/components/shared/bottom-nav'
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useNavigation } from '@/stores/navigation';
+import { useTranslation } from '@/components/providers/language-provider';
+import { apiFetch } from '@/lib/utils';
+import { toast } from 'sonner';
+import { itemVariants } from '@/lib/animations';
+import { BottomNav } from '@/components/shared/bottom-nav';
 
 // Video sub-components
 import {
@@ -32,15 +31,15 @@ import {
   type AnnotationTool,
   type AnnotationColor,
   type PlayerTab,
-} from '@/components/video/video-types'
-import { useVideoPlayer } from '@/components/video/use-video-player'
-import { VideoControlsOverlay, SpeedControlBar } from '@/components/video/video-controls'
-import { HighlightManager } from '@/components/video/highlight-manager'
-import { AnnotationPanel } from '@/components/video/annotation-panel'
-import { AnnotationCanvas } from '@/components/video/annotation-canvas'
-import { ExportManager } from '@/components/video/export-manager'
-import { SharePanel } from '@/components/video/share-panel'
-import { VideoInfoCard } from '@/components/video/video-info-card'
+} from '@/components/video/video-types';
+import { useVideoPlayer } from '@/components/video/use-video-player';
+import { VideoControlsOverlay, SpeedControlBar } from '@/components/video/video-controls';
+import { HighlightManager } from '@/components/video/highlight-manager';
+import { AnnotationPanel } from '@/components/video/annotation-panel';
+import { AnnotationCanvas } from '@/components/video/annotation-canvas';
+import { ExportManager } from '@/components/video/export-manager';
+import { SharePanel } from '@/components/video/share-panel';
+import { VideoInfoCard } from '@/components/video/video-info-card';
 
 // ── Component ────────────────────────────────────────────────────────────────
 

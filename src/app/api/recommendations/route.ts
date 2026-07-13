@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server'
-import { withAuth } from '@/lib/with-auth'
-import { db } from '@/lib/db'
-import { rateLimit } from '@/lib/rate-limit'
-import { cacheInvalidate } from '@/lib/cache'
-import { trackError } from '@/lib/monitoring'
-import ZAI from 'z-ai-web-dev-sdk'
-import { sanitize } from '@/lib/sanitize'
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/with-auth';
+import { db } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
+import { cacheInvalidate } from '@/lib/cache';
+import { trackError } from '@/lib/monitoring';
+ import ZAI from'z-ai-web-dev-sdk';
+import { sanitize } from '@/lib/sanitize';
 
 // GET /api/recommendations — Smart drill recommendations (rule-based)
 export const GET = withAuth(async (req, session) => {
@@ -163,7 +163,7 @@ export const POST = withAuth(async (req, session) => {
     // Build data summary for LLM
     const sessionSummary = recentSessions.map(s => {
       const avg = s.drills.length > 0 ? Math.round(s.drills.reduce((a, d) => a + d.score, 0) / s.drills.length) : 0
-      const cats = s.drills.map(d => d.drill.category)
+      let cats = s.drills.map(d => d.drill.category)
       return `Session ${s.createdAt.toISOString().split('T')[0]}: ${s.drills.length} exercices, moy=${avg}, cats=[${cats.join(',')}]`
     }).join('\n')
 

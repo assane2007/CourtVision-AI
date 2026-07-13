@@ -7,15 +7,15 @@
  * compatibility and delegates to the new DB-backed system.
  */
 
-import { NextResponse } from 'next/server'
-import { withAdminGuard } from '@/lib/guards/admin.guard'
+import { NextResponse } from 'next/server';
+import { withAdminGuard } from '@/lib/guards/admin.guard';
 import {
   ALL_FLAGS,
   FEATURE_DEFAULTS,
   FEATURE_LABELS,
   type FeatureFlag,
-} from '@/lib/feature-flags'
-import { db } from '@/lib/db'
+} from '@/lib/feature-flags';
+import { db } from '@/lib/db';
 
 // ── GET: Return all feature flags with current state ────────────────────────────
 

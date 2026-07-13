@@ -8,9 +8,9 @@
  * remove this file. See matching TODO in auth.guard.ts.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth, invalidateAuthCache } from '@/lib/guards/auth.guard'
-import type { AuthContext } from '@/lib/types/service.types'
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth, invalidateAuthCache } from '@/lib/guards/auth.guard';
+import type { AuthContext } from '@/lib/types/service.types';
 
 type RouteContext = { params: Promise<Record<string, string>> }
 

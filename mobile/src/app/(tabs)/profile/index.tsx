@@ -1,13 +1,10 @@
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
-import {
-  Settings, Award, Trophy, Users, CreditCard, Bell, Moon, Globe,
-  ChevronRight, LogOut, Shield, Info, Star, Crown,
-} from 'lucide-react-native';
+import { Settings, Award, Trophy, Users, Bell, Moon, Globe, ChevronRight, LogOut, Crown,  } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useAppStore } from '@/stores/app';
-import { playerService } from '@/services';
+
 
 export default function ProfileScreen() {
   const { t } = useTranslation();

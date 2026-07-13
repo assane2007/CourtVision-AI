@@ -1,6 +1,5 @@
-import { describe, it, expect, vi } from 'vitest'
-
-vi.mock('z-ai-web-dev-sdk', () => ({ default: { create: vi.fn() } }))
+import { describe, it, expect, vi } from 'vitest';
+ vi.mock('z-ai-web-dev-sdk', () => ({ default: { create: vi.fn() } }))
 vi.mock('@/lib/logger', () => ({ logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() } }))
 
 describe('createSSETransformStream', () => {

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeft, ChevronRight, Check, Camera, BarChart3, Sparkles } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Check } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useAppStore } from '@/stores/app';
 import { authService } from '@/services';
@@ -119,8 +119,7 @@ export default function OnboardingScreen() {
               activeOpacity={0.7}
               className={`flex-row items-center justify-between p-4 rounded-xl mb-3 border ${
                 selectedPosition === pos
-                  ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20'
-                  : 'border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900'
+                  ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20' :'border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900'
               }`}
             >
               <Text className="text-base font-medium text-neutral-900 dark:text-white">
@@ -175,8 +174,7 @@ export default function OnboardingScreen() {
               activeOpacity={0.7}
               className={`flex-row items-center justify-between p-4 rounded-xl mb-3 border ${
                 selectedGoals.includes(goal)
-                  ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20'
-                  : 'border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900'
+                  ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20' :'border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900'
               }`}
             >
               <Text className="text-base font-medium text-neutral-900 dark:text-white">
@@ -224,8 +222,7 @@ export default function OnboardingScreen() {
             activeOpacity={0.7}
             className={`flex-row items-center justify-between p-4 rounded-xl mb-3 border ${
               selectedExperience === exp
-                ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20'
-                : 'border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900'
+                ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20' :'border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900'
             }`}
           >
             <Text className="text-base font-medium text-neutral-900 dark:text-white flex-1">

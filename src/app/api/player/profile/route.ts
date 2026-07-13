@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getPlayer, requirePlayer } from "@/lib/player/db-helpers";

@@ -4,8 +4,8 @@
  * Used by the vision provider and form analysis service.
  */
 
-import type { Lang } from '../types'
-import { SECURITY_GUARD_FR, SECURITY_GUARD_EN } from './coaching-prompts'
+import type { Lang } from '../types';
+import { SECURITY_GUARD_FR, SECURITY_GUARD_EN } from './coaching-prompts';
 
 // ── Form Analysis System Prompt ────────────────────────────────────────────────
 
@@ -98,14 +98,15 @@ ${evalRules}
 ${isFR ? 'Analyse cette image et donne ton évaluation JSON.' : 'Analyze this image and give your JSON evaluation.'}`
 }
 
+const needsBallCategories = ['shooting', 'ball_handling', 'finishing', 'pocket_ball']
+const noBallCategories = ['defense', 'shifty', 'speed_change', 'agility', 'footwork', 'conditioning']
+
 function getFormEvalRulesFR(_category: string): string {
   const baseRules = `RÈGLES D'ÉVALUATION IMPORTANTES:
-1. Vérifie d'ABORD si une balle de basketball est visible dans l'image.
-2. Si AUCUNE balle n'est visible ET que l'exercice nécessite une balle (${needsBallCategories.join(', ')}), le score MAXIMUM est 20 et tu DOIS le mentionner dans "issues".
+1. Vérifie d'ABORD si une balle de basketball est visible dans l'image. 2. Si AUCUNE balle n'est visible ET que l'exercice nécessite une balle (${needsBallCategories.join(', ')}), le score MAXIMUM est 20 et tu DOIS le mentionner dans "issues".
 3. Si AUCUNE balle n'est visible ET que l'exercice ne nécessite PAS de balle (${noBallCategories.join(', ')}), évalue normalement la posture et le mouvement.
 4. Si le joueur est immobile, assis, ou ne fait pas l'exercice, le score doit être 0-15.
-5. Ne SUPPOSE JAMAIS qu'il y a une balle si tu ne la vois pas clairement.
-6. N'invente pas de détails que tu ne vois pas dans l'image.`
+5. Ne SUPPOSE JAMAIS qu'il y a une balle si tu ne la vois pas clairement. 6. N'invente pas de détails que tu ne vois pas dans l'image.`
 
   return baseRules
 }
@@ -116,12 +117,8 @@ function getFormEvalRulesEN(_category: string): string {
 2. If NO ball is visible AND the drill requires a ball (${needsBallCategories.join(', ')}), the MAXIMUM score is 20 and you MUST mention it in "issues".
 3. If NO ball is visible AND the drill does NOT require a ball (${noBallCategories.join(', ')}), evaluate posture and movement normally.
 4. If the player is stationary, sitting, or not doing the drill, the score should be 0-15.
-5. NEVER assume there is a ball if you can't clearly see it.
-6. Don't invent details you can't see in the image.`
+5. NEVER assume there is a ball if you can't clearly see it. 6. Don't invent details you can't see in the image.`
 }
-
-const needsBallCategories = ['shooting', 'ball_handling', 'finishing', 'pocket_ball']
-const noBallCategories = ['defense', 'shifty', 'speed_change', 'agility', 'footwork', 'conditioning']
 
 // ── Video Frame Analysis Prompt ─────────────────────────────────────────────────
 

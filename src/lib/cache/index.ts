@@ -7,10 +7,12 @@
  * Server-only module.
  */
 
-import { config } from '@/lib/config'
-import { MemoryCache } from './memory-cache'
-import { RedisCache } from './redis-cache'
-import type { CacheAdapter, CacheAdapterWithTags } from './types'
+import { config } from '@/lib/config';
+import { MemoryCache } from './memory-cache';
+import { RedisCache } from './redis-cache';
+import type { CacheAdapter, CacheAdapterWithTags } from './types';
+import { PlayerProfile } from '../../../mobile/src/services/player.service';
+
 
 // ── Adapter Selection ───────────────────────────────────────────────────────────
 
@@ -51,6 +53,6 @@ export const cache = _cache
 
 // ── Re-exports ──────────────────────────────────────────────────────────────────
 
-export type { CacheAdapter, CacheAdapterWithTags, CacheConfig, CacheStats, RedisConfig } from './types'
+export type { CacheAdapter, CacheAdapterWithTags } from './types'
 export { MemoryCache } from './memory-cache'
 export { RedisCache } from './redis-cache'

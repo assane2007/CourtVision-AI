@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { trackError } from '@/lib/monitoring'
-import { invalidateAuthCache } from '@/lib/guards/auth.guard'
-import crypto from 'crypto'
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { trackError } from '@/lib/monitoring';
+import { invalidateAuthCache } from '@/lib/guards/auth.guard';
+ import crypto from'crypto';
 
 function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex')

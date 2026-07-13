@@ -1,22 +1,21 @@
-'use client'
-
-import { type RefObject } from 'react'
-import { Loader2, Play, Sparkles, Star, Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
+'use client';
+import { type RefObject } from 'react';
+import { Loader2, Play, Sparkles, Star, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog'
-import { formatTimeMs } from '@/components/video/video-types'
-import type { Highlight } from '@/components/video/video-types'
+} from '@/components/ui/dialog';
+import { formatTimeMs } from '@/components/video/video-types';
+import type { Highlight } from '@/components/video/video-types';
 
 interface HighlightManagerProps {
   videoRef: RefObject<HTMLVideoElement | null>

@@ -4,7 +4,7 @@
  * For production async processing, use Inngest (src/lib/inngest/).
  * This in-memory queue is suitable for development only.
  *
- * To use: import { dispatchFormAnalysis } from '@/lib/inngest/dispatch'
+ * To use: import { dispatchFormAnalysis } from '@/lib/inngest/dispatch';
  *
  * Features:
  * - Priority-based task execution
@@ -16,13 +16,13 @@
  * Server-only module.
  */
 
-import { randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto';
 import type {
   Task,
   TaskType,
   TaskStatus,
   TaskQueueStats,
-} from './types'
+} from './types';
 import type {
   VideoProcessingPayload,
   FormAnalysisPayload,
@@ -32,10 +32,10 @@ import type {
   VideoAnalysisResult,
   FormAnalysisResult,
   ExportResult,
-} from './types'
+} from './types';
 import {
   processExportGeneration as realProcessExportGeneration,
-} from './processors'
+} from './processors';
 
 // ── Configuration ──────────────────────────────────────────────────────────────
 

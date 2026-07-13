@@ -1,31 +1,30 @@
-'use client'
-
-import { useState, useMemo, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Separator } from '@/components/ui/separator'
+'use client';
+import { useState, useMemo, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from '@/components/ui/sheet'
+} from '@/components/ui/sheet';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { apiFetch } from '@/lib/utils'
-import { getCategoryLabel, CATEGORIES_LIST } from '@/lib/constants'
+} from '@/components/ui/select';
+import { apiFetch } from '@/lib/utils';
+import { getCategoryLabel, CATEGORIES_LIST } from '@/lib/constants';
 import {
   ArrowLeft,
   ArrowRight,
@@ -34,8 +33,8 @@ import {
   Target,
   Search,
   X,
-} from 'lucide-react'
-import { toast } from 'sonner'
+} from 'lucide-react';
+import { toast } from 'sonner';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -396,8 +395,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan }: CreatePlanDia
                         onClick={() => setCategoryFilter(cat.key)}
                         className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${
                           categoryFilter === cat.key
-                            ? 'bg-orange-500 text-white'
-                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                            ? 'bg-orange-500 text-white' :'bg-muted text-muted-foreground hover:bg-muted/80'
                         }`}
                       >
                         <span>{cat.icon}</span>
@@ -426,8 +424,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan }: CreatePlanDia
                             onClick={() => toggleDrill(drill)}
                             className={`relative flex items-center gap-2 p-2.5 rounded-xl border text-left transition-colors ${
                               selected
-                                ? 'border-orange-500 bg-orange-500/10'
-                                : 'border-border hover:border-orange-500/40 hover:bg-muted/50'
+                                ? 'border-orange-500 bg-orange-500/10' :'border-border hover:border-orange-500/40 hover:bg-muted/50'
                             }`}
                           >
                             {selected && (

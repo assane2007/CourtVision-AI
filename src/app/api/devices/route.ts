@@ -1,8 +1,8 @@
-import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { trackError } from '@/lib/monitoring'
-import { registerDeviceSchema, getZodErrorMessage } from '@/lib/validations'
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { trackError } from '@/lib/monitoring';
+import { registerDeviceSchema, getZodErrorMessage } from '@/lib/validations';
 
 // GET /api/devices
 // List all devices for the current player

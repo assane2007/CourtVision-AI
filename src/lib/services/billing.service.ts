@@ -2,10 +2,10 @@
  * Billing service — subscription management and Stripe integration.
  */
 
-import { db } from '@/lib/db'
-import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
-import { logger } from '@/lib/logger'
-import type { SubscriptionTier } from '@/lib/types/api.types'
+import { db } from '@/lib/db';
+import { AppError, ErrorCode } from '@/lib/middleware/error-handler';
+import { logger } from '@/lib/logger';
+import type { SubscriptionTier } from '@/lib/types/api.types';
 
 // ── Plan Configuration ──────────────────────────────────────────────────────────
 

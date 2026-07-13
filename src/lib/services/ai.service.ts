@@ -5,12 +5,12 @@
  * Uses z-ai-web-dev-sdk for LLM/VLM calls (server-only).
  */
 
-import { db } from '@/lib/db'
-import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
-import { aiChatRepository } from '@/lib/repositories/ai.repository'
-import { logger } from '@/lib/logger'
-import { stripHtml } from '@/lib/security/sanitization'
-import type { FormCheckResult } from '@/lib/types/service.types'
+import { db } from '@/lib/db';
+import { AppError, ErrorCode } from '@/lib/middleware/error-handler';
+import { aiChatRepository } from '@/lib/repositories/ai.repository';
+import { logger } from '@/lib/logger';
+import { stripHtml } from '@/lib/security/sanitization';
+import type { FormCheckResult } from '@/lib/types/service.types';
 
 const AI_TIMEOUT_MS = 30_000
 

@@ -1,8 +1,7 @@
-'use client'
-
-import { useState, useCallback, useRef } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
+'use client';
+import { useState, useCallback, useRef } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
 import {
   Users,
   Activity,
@@ -22,11 +21,11 @@ import {
   Eye,
   Shield,
   Zap,
-} from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Skeleton } from '@/components/ui/skeleton'
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -34,17 +33,18 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
-import { ScrollArea } from '@/components/ui/scroll-area'
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@/components/ui/dialog';
+import { usePermissions } from '@/hooks/use-permissions';
 
 import {
   LineChart,
@@ -60,10 +60,10 @@ import {
   ResponsiveContainer,
   CartesianGrid,
   Legend
-} from 'recharts'
-import { useAppStore } from '@/stores/app'
-import { apiFetch, formatLocaleDate } from '@/lib/utils'
-import { useTranslation } from '@/components/providers/language-provider'
+} from 'recharts';
+import { useAppStore } from '@/stores/app';
+import { apiFetch, formatLocaleDate } from '@/lib/utils';
+import { useTranslation } from '@/components/providers/language-provider';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -181,6 +181,7 @@ export function AdminScreen() {
   const { td } = useTranslation()
   const { goBack } = useAppStore()
   const queryClient = useQueryClient()
+  const { isAdmin, loading: permLoading } = usePermissions()
   const [unauthorized, setUnauthorized] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerRow | null>(null)
@@ -308,16 +309,34 @@ export function AdminScreen() {
     queryClient.invalidateQueries({ queryKey: ['admin-feature-flags'] })
   }, [queryClient])
 
-  // ── Unauthorized state ─────────────────────────────────────────────────────
-
-  if (unauthorized || (isError && !stats)) {
+  // ── Role gate: block non-admins immediately ───────────────────────────────
+  if (permLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 p-4">
-        <ShieldX className="h-16 w-16 text-destructive" />
-        <h2 className="text-2xl font-bold">{td('admin.unauthorized')}</h2>
-        <p className="text-muted-foreground text-center max-w-sm">
-          {td('admin.unauthorizedDesc')}
-        </p>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="size-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground">Vérification des permissions...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAdmin || unauthorized) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-center space-y-4 max-w-sm">
+          <div className="flex items-center justify-center size-16 rounded-2xl bg-red-500/10 mx-auto">
+            <ShieldX className="size-8 text-red-500" />
+          </div>
+          <h1 className="text-xl font-bold">Accès refusé</h1>
+          <p className="text-sm text-muted-foreground">
+            Vous n&apos;avez pas les permissions nécessaires pour accéder à cette section.
+          </p>
+          <Button onClick={goBack} variant="outline" className="gap-2">
+            <ChevronLeft className="size-4" />
+            Retour
+          </Button>
+        </div>
       </div>
     )
   }
@@ -672,16 +691,11 @@ export function AdminScreen() {
                             <TableCell>
                               <Badge
                                 variant={
-                                  s.plan === 'pro' || s.plan === 'elite'
-                                    ? 'default'
-                                    : 'secondary'
+                                  s.plan === 'pro' || s.plan === 'elite' ?'default' :'secondary'
                                 }
                               >
-                                {s.plan === 'pro'
-                                  ? td('admin.pro')
-                                  : s.plan === 'elite'
-                                    ? 'Elite'
-                                    : td('admin.free')}
+                                {s.plan === 'pro' ? td('admin.pro')
+                                  : s.plan === 'elite' ?'Elite' : td('admin.free')}
                               </Badge>
                             </TableCell>
                           </TableRow>
@@ -880,9 +894,7 @@ export function AdminScreen() {
                         <p className="text-muted-foreground text-xs">{td('Plan', 'Plan')}</p>
                         <Badge
                           variant={
-                            selectedPlayer.subscriptionStatus !== 'free'
-                              ? 'default'
-                              : 'secondary'
+                            selectedPlayer.subscriptionStatus !== 'free' ?'default' :'secondary'
                           }
                         >
                           {selectedPlayer.subscriptionStatus}
@@ -939,8 +951,7 @@ export function AdminScreen() {
                         disabled={toggleSubscription.isPending}
                       >
                         <Crown className="h-4 w-4 mr-2" />
-                        {selectedPlayer.subscriptionStatus === 'free'
-                          ? td('Grant Pro', 'Accorder Pro')
+                        {selectedPlayer.subscriptionStatus === 'free' ? td('Grant Pro', 'Accorder Pro')
                           : td('Revoke Pro', 'Révoquer Pro')}
                       </Button>
                       <Button
@@ -951,8 +962,7 @@ export function AdminScreen() {
                         disabled={toggleRole.isPending}
                       >
                         <Shield className="h-4 w-4 mr-2" />
-                        {selectedPlayer.role === 'admin'
-                          ? td('Remove Admin', 'Retirer Admin')
+                        {selectedPlayer.role === 'admin' ? td('Remove Admin', 'Retirer Admin')
                           : td('Make Admin', 'Rendre Admin')}
                       </Button>
                     </div>

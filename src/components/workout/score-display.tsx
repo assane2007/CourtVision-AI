@@ -1,13 +1,12 @@
-'use client'
-
-import { motion, AnimatePresence } from 'framer-motion'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Star, Save, RotateCcw, ArrowLeft, Loader2, ShieldCheck, Pause } from 'lucide-react'
-import type { Drill, WorkoutPhase } from './types'
-import { getGaugeColor, getGaugeTrackColor, getStarCount, getScoreColor, getScoreBgColor, formatTime } from './scoring'
-import { useTranslation } from '@/components/providers/language-provider'
+'use client';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Star, Save, RotateCcw, ArrowLeft, Loader2, ShieldCheck, Pause } from 'lucide-react';
+import type { Drill, WorkoutPhase } from './types';
+import { getGaugeColor, getGaugeTrackColor, getStarCount, getScoreColor, getScoreBgColor, formatTime } from './scoring';
+import { useTranslation } from '@/components/providers/language-provider';
 
 // ─── ScoreGauge ──────────────────────────────────────────────────────────────
 
@@ -291,8 +290,7 @@ export function CompletionOverlay({
               key={i}
               className={`h-7 w-7 transition-colors ${
                 i < getStarCount(finalScore)
-                  ? 'fill-amber-400 text-amber-400'
-                  : 'text-muted-foreground/30'
+                  ? 'fill-amber-400 text-amber-400' :'text-muted-foreground/30'
               }`}
             />
           ))}
@@ -341,8 +339,7 @@ export function CompletionOverlay({
               finalScore >= 80
                 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                 : finalScore >= 50
-                  ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                  : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                  ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :'bg-red-500/20 text-red-400 border border-red-500/30'
             }`}
           >
             <ShieldCheck className="h-3.5 w-3.5 mr-1" />

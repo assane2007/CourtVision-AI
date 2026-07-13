@@ -6,21 +6,14 @@
  * respective modules for finer-grained reactivity.
  */
 
-import { create } from 'zustand'
-import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
+import { create } from 'zustand';
+import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type Screen =
-  | 'landing' | 'auth' | 'onboarding' | 'home' | 'plans' | 'train-hub' | 'drill-detail'
-  | 'camera-workout' | 'workout-summary' | 'stats' | 'records' | 'profile' | 'achievements'
-  | 'settings' | 'scouting' | 'reaction-trainer' | 'ai-coach' | 'leaderboard' | 'pricing'
-  | 'friends' | 'teams' | 'team-detail' | 'challenges' | 'challenge-detail'
-  | 'feed' | 'post-detail' | 'messages' | 'conversation' | 'profile-other'
-  | 'live-workout' | 'notifications'
-  | 'video-library' | 'video-player' | 'video-upload' | 'video-compare'
-  | 'ai-insights' | 'voice-coach' | 'predictions' | 'ai-workout-gen' | 'ai-tools'
-  | 'terms' | 'privacy' | 'admin' | 'analytics'
+  | 'landing' | 'auth' | 'onboarding' | 'home' | 'plans' | 'train-hub' | 'drill-detail' |'camera-workout'| 'workout-summary' | 'stats' | 'records' | 'profile' | 'achievements' |'settings'| 'scouting' | 'reaction-trainer' | 'ai-coach' | 'leaderboard' | 'pricing' |'friends'| 'teams' | 'team-detail' | 'challenges' | 'challenge-detail' |'feed'| 'post-detail' | 'messages' | 'conversation' | 'profile-other' |'live-workout' | 'notifications'
+  | 'video-library'| 'video-player' | 'video-upload' | 'video-compare' |'ai-insights'| 'voice-coach' | 'predictions' | 'ai-workout-gen' | 'ai-tools' |'terms' | 'privacy' | 'admin' | 'analytics' | 'dashboard'
 
 export interface WorkoutDrillResult {
   drillId: string
@@ -183,6 +176,3 @@ export const useAppStore = create<AppState & AppActions>((set, get) => ({
     planId: null,
   }),
 }))
-
-// ── Re-export sub-stores for new code ─────────────────────────────────────────
-export { useNavigation } from '@/stores/navigation'

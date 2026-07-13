@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { trackError } from '@/lib/monitoring'
-import { rateLimit } from '@/lib/rate-limit'
-import { withAuth } from '@/lib/with-auth'
-import { createLiveSessionSchema, getZodErrorMessage } from '@/lib/validations'
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { trackError } from '@/lib/monitoring';
+import { rateLimit } from '@/lib/rate-limit';
+import { withAuth } from '@/lib/with-auth';
+import { createLiveSessionSchema, getZodErrorMessage } from '@/lib/validations';
 
 export const GET = withAuth(async (request, session) => {
   try {

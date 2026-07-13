@@ -1,16 +1,15 @@
-'use client'
-
-import { toast } from 'sonner'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
-import { useTranslation } from '@/components/providers/language-provider'
+'use client';
+import { toast } from 'sonner';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/components/providers/language-provider';
 import {
   ALL_FLAGS,
   FEATURE_LABELS,
   isFeatureEnabledClient,
   setFeatureOverride,
   type FeatureFlag,
-} from '@/lib/feature-flags'
+} from '@/lib/feature-flags';
 
 export function DeveloperSection() {
   const { t } = useTranslation()

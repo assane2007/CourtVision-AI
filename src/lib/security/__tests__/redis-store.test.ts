@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock ioredis — constructor returns an object with the methods RedisStore uses
 const mockExec = vi.fn()

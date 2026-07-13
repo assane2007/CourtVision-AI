@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server'
-import { withAuth } from '@/lib/with-auth'
-import { db } from '@/lib/db'
-import { rateLimit } from '@/lib/rate-limit'
-import { reactionSchema, getZodErrorMessage } from '@/lib/validations'
-import { trackError } from '@/lib/monitoring'
-import { awardXp } from '@/lib/award-xp'
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/with-auth';
+import { db } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
+import { reactionSchema, getZodErrorMessage } from '@/lib/validations';
+import { trackError } from '@/lib/monitoring';
+import { awardXp } from '@/lib/award-xp';
 
 // ─── GET /api/reaction ─────────────────────────────────────────────────────────
 // Returns player's reaction history (last 20 sessions) + personal bests per type

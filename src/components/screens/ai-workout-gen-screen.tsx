@@ -1,20 +1,19 @@
-'use client'
-
-import { useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+'use client';
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Dumbbell, Clock, Zap, Plus, Trash2, CheckCircle2,
   ChevronDown, ChevronUp, RefreshCw, BookOpen, Timer, Target,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Slider } from '@/components/ui/slider'
-import { useNavigation } from '@/stores/navigation'
-import { useTranslation } from '@/components/providers/language-provider'
-import { apiFetch } from '@/lib/utils'
-import { BottomNav } from '@/components/shared/bottom-nav'
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Slider } from '@/components/ui/slider';
+import { useNavigation } from '@/stores/navigation';
+import { useTranslation } from '@/components/providers/language-provider';
+import { apiFetch } from '@/lib/utils';
+import { BottomNav } from '@/components/shared/bottom-nav';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -476,8 +475,7 @@ export default function AIWorkoutGenScreen() {
                             onClick={() => toggleFocusArea(area.id)}
                             className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border transition-colors min-h-[60px] ${
                               isSelected
-                                ? 'border-orange-500 bg-orange-500/10'
-                                : 'border-border hover:border-orange-300 dark:hover:border-orange-700'
+                                ? 'border-orange-500 bg-orange-500/10' :'border-border hover:border-orange-300 dark:hover:border-orange-700'
                             }`}
                           >
                             <span className="text-xl">{area.icon}</span>
@@ -502,8 +500,7 @@ export default function AIWorkoutGenScreen() {
                             onClick={() => toggleEquipment(eq.id)}
                             className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
                               isSelected
-                                ? 'border-orange-500 bg-orange-500/10 text-orange-600'
-                                : 'border-border hover:border-orange-300'
+                                ? 'border-orange-500 bg-orange-500/10 text-orange-600' :'border-border hover:border-orange-300'
                             }`}
                           >
                             {td(eq.label, EQUIP_EN[eq.id] ?? eq.label)}
@@ -525,8 +522,7 @@ export default function AIWorkoutGenScreen() {
                           onClick={() => setIntensity(opt.id)}
                           className={`flex-1 py-2.5 rounded-xl text-xs font-medium border transition-colors ${
                             intensity === opt.id
-                              ? 'border-orange-500 bg-orange-500/10 text-orange-600'
-                              : 'border-border hover:border-orange-300'
+                              ? 'border-orange-500 bg-orange-500/10 text-orange-600' :'border-border hover:border-orange-300'
                           }`}
                         >
                           {td(opt.label, INTENSITY_EN[opt.id] ?? opt.label)}

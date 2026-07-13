@@ -8,14 +8,7 @@ export interface Landmark {
 }
 
 export type WorkoutPhase =
-  | 'loading'
-  | 'countdown'
-  | 'active'
-  | 'paused'
-  | 'rest'
-  | 'completed'
-  | 'plan-next'
-  | 'error'
+  | 'loading' |'countdown' |'active' |'paused' |'rest' |'completed' |'plan-next' |'error'
 
 export interface Drill {
   id: string

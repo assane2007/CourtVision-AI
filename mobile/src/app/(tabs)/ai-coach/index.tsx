@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { Send, Bot, User, Mic, MicOff, Sparkles, Dumbbell, BarChart3, Brain } from 'lucide-react-native';
+import { Send, Bot, Mic, MicOff, Sparkles, Dumbbell, BarChart3, Brain } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useAppStore } from '@/stores/app';
-import { aiService, type ChatMessage } from '@/services/ai.service';
-import { cn } from '@/utils/cn';
+import { aiService, type ChatMessage } from '../../../services/ai.service';
+import { cn } from '../../../utils/cn';
 
 interface DisplayMessage {
   id: string;
@@ -143,9 +143,7 @@ export default function AiCoachScreen() {
             <View
               className={cn(
                 'px-4 py-3 rounded-2xl',
-                msg.role === 'user'
-                  ? 'bg-orange-500 rounded-br-md'
-                  : 'bg-neutral-100 dark:bg-neutral-900 rounded-bl-md border border-neutral-200 dark:border-neutral-800'
+                msg.role === 'user' ?'bg-orange-500 rounded-br-md' :'bg-neutral-100 dark:bg-neutral-900 rounded-bl-md border border-neutral-200 dark:border-neutral-800'
               )}
             >
               {msg.role === 'assistant' && (

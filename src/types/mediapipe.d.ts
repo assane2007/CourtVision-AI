@@ -1,3 +1,5 @@
+import { PoseLandmarker } from '@/types/mediapipe.d';
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare module 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/+esm' {
   export class PoseLandmarker {

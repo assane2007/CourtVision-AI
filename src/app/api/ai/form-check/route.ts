@@ -1,10 +1,10 @@
-import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { NextRequest, NextResponse } from 'next/server'
-import ZAI from 'z-ai-web-dev-sdk'
-import { formCheckSchema, getZodErrorMessage } from '@/lib/validations'
-import { rateLimit } from '@/lib/rate-limit'
-import { trackError } from '@/lib/monitoring'
-import { sanitize } from '@/lib/sanitize'
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { NextRequest, NextResponse } from 'next/server';
+ import ZAI from'z-ai-web-dev-sdk';
+import { formCheckSchema, getZodErrorMessage } from '@/lib/validations';
+import { rateLimit } from '@/lib/rate-limit';
+import { trackError } from '@/lib/monitoring';
+import { sanitize } from '@/lib/sanitize';
 
 // POST /api/ai/form-check — AI form verification during camera workout
 export async function POST(req: NextRequest) {
@@ -69,12 +69,10 @@ Catégorie: ${sanitize(category)}
 ${drillInstructions ? `Instructions: ${sanitize(drillInstructions)}` : ''}
 
 RÈGLES D'ÉVALUATION IMPORTANTES:
-1. Vérifie d'ABORD si une balle de basketball est visible dans l'image.
-2. Si AUCUNE balle n'est visible ET que l'exercice nécessite une balle (ball_handling, pocket_ball, shooting, finishing), le score MAXIMUM est 20 et tu DOIS le mentionner dans "issues".
+1. Vérifie d'ABORD si une balle de basketball est visible dans l'image. 2. Si AUCUNE balle n'est visible ET que l'exercice nécessite une balle (ball_handling, pocket_ball, shooting, finishing), le score MAXIMUM est 20 et tu DOIS le mentionner dans "issues".
 3. Si AUCUNE balle n'est visible ET que l'exercice ne nécessite PAS de balle (defense, shifty, speed_change, agility), évalue normalement la posture et le mouvement.
 4. Si le joueur est immobile, assis, ou ne fait pas l'exercice, le score doit être 0-15.
-5. Ne SUPPOSE JAMAIS qu'il y a une balle si tu ne la vois pas clairement.
-6. N'invente pas de détails que tu ne vois pas dans l'image.
+5. Ne SUPPOSE JAMAIS qu'il y a une balle si tu ne la vois pas clairement. 6. N'invente pas de détails que tu ne vois pas dans l'image.
 
 Réponds UNIQUEMENT en JSON valide (pas de markdown, pas de backticks):
 {

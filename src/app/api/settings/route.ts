@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server'
-import { withAuth } from '@/lib/with-auth'
-import { db } from '@/lib/db'
-import { rateLimit } from '@/lib/rate-limit'
-import { settingsPatchSchema, getZodErrorMessage } from '@/lib/validations'
-import { trackError } from '@/lib/monitoring'
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/with-auth';
+import { db } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
+import { settingsPatchSchema, getZodErrorMessage } from '@/lib/validations';
+import { trackError } from '@/lib/monitoring';
 
 // GET /api/settings — Get user preferences
 export const GET = withAuth(async (req, session) => {

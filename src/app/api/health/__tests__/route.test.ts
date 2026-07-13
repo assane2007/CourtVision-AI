@@ -1,6 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-
-vi.mock('@/lib/monitoring/health', () => ({
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+ vi.mock('@/lib/monitoring/health', () => ({
   runHealthChecks: vi.fn(),
 }))
 

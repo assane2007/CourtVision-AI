@@ -1,8 +1,7 @@
-'use client'
-
-import { useMemo } from 'react'
-import { motion } from 'framer-motion'
-import { useQuery } from '@tanstack/react-query'
+'use client';
+import { useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Sparkles,
@@ -18,20 +17,20 @@ import {
   Wind,
   Zap,
   Dumbbell,
-} from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useAppStore } from '@/stores/app'
-import { SwipeToGoBack } from '@/components/shared/swipe-back'
-import { apiFetch, formatLocaleDate } from '@/lib/utils'
-import { containerVariants, itemVariants } from '@/lib/animations'
-import { getLevelInfo, getLevelColor } from '@/lib/xp'
-import { cn } from '@/lib/utils'
-import { useTranslation } from '@/components/providers/language-provider'
-import type { TranslationKey } from '@/lib/i18n'
-import { BottomNav } from '@/components/shared/bottom-nav'
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAppStore } from '@/stores/app';
+import { SwipeToGoBack } from '@/components/shared/swipe-back';
+import { apiFetch, formatLocaleDate } from '@/lib/utils';
+import { containerVariants, itemVariants } from '@/lib/animations';
+import { getLevelInfo, getLevelColor } from '@/lib/xp';
+import { cn } from '@/lib/utils';
+import { useTranslation } from '@/components/providers/language-provider';
+import type { TranslationKey } from '@/lib/i18n';
+import { BottomNav } from '@/components/shared/bottom-nav';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -499,8 +498,7 @@ export function ScoutingScreen() {
                           'absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-background text-xs font-bold',
                           getLevelColor(data.player.level),
                           levelInfo
-                            ? 'bg-gradient-to-br from-orange-500/30 to-amber-500/30'
-                            : 'bg-muted',
+                            ? 'bg-gradient-to-br from-orange-500/30 to-amber-500/30' :'bg-muted',
                         )}
                       >
                         {data.player.level}
@@ -799,11 +797,8 @@ function CategoryCard({ category }: { category: ScoutingCategory }) {
         ? TrendingDown
         : Minus
   const trendColor =
-    category.trend === 'up'
-      ? 'text-emerald-500'
-      : category.trend === 'down'
-        ? 'text-red-500'
-        : 'text-muted-foreground'
+    category.trend === 'up' ?'text-emerald-500'
+      : category.trend === 'down' ?'text-red-500' :'text-muted-foreground'
 
   return (
     <div className={cn(

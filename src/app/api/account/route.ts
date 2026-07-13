@@ -1,9 +1,9 @@
-import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { rateLimit } from '@/lib/rate-limit'
-import { trackError } from '@/lib/monitoring'
-import bcrypt from 'bcryptjs'
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
+import { trackError } from '@/lib/monitoring';
+ import bcrypt from'bcryptjs';
 
 // DELETE /api/account — Soft delete (set accountDeleted=true, anonymize data)
 export async function DELETE(request: Request) {

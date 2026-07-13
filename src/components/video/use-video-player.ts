@@ -1,9 +1,8 @@
-'use client'
-
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { toast } from 'sonner'
-import { formatTime } from '@/components/video/video-types'
-import type { VideoData } from '@/components/video/video-types'
+'use client';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
+import { formatTime } from '@/components/video/video-types';
+import type { VideoData } from '@/components/video/video-types';
 
 interface UseVideoPlayerOptions {
   video: VideoData | undefined

@@ -1,8 +1,7 @@
-'use client'
-
-import { useEffect } from 'react'
-import { useAuth } from '@/components/providers/supabase-auth-provider'
-import { identifyUser } from '@/lib/analytics'
+'use client';
+import { useEffect } from 'react';
+import { useAuth } from '@/components/providers/supabase-auth-provider';
+import { identifyUser } from '@/lib/analytics';
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY
 

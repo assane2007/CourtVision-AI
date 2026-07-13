@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server'
-import { withAuth } from '@/lib/with-auth'
-import { db } from '@/lib/db'
-import { rateLimit } from '@/lib/rate-limit'
-import { awardXp } from '@/lib/award-xp'
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/with-auth';
+import { db } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
+import { awardXp } from '@/lib/award-xp';
 
 function generateReferralCode(name: string): string {
   const clean = name

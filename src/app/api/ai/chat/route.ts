@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { chatStream, createSSETransformStream } from '@/lib/ai/providers/language.provider'
-import { stripHtml } from '@/lib/security/sanitization'
-import { rateLimit } from '@/lib/rate-limit'
+import { NextRequest, NextResponse } from 'next/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { chatStream, createSSETransformStream } from '@/lib/ai/providers/language.provider';
+import { stripHtml } from '@/lib/security/sanitization';
+import { rateLimit } from '@/lib/rate-limit';
 
 const SYSTEM_PROMPT =
   'You are "CourtVision AI Coach", an expert basketball coach. Help users improve their game with specific drills, techniques, and strategies. Be encouraging and detailed.'

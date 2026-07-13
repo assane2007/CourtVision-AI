@@ -9,7 +9,7 @@ import type {
   PlayerPosition,
   SkillKey,
   SubscriptionTier,
-} from './api.types'
+} from './api.types';
 
 // ── Generic Query Parameters ────────────────────────────────────────────────────
 
@@ -318,13 +318,7 @@ export interface AuthContext {
 // ── Ownership Check Config ──────────────────────────────────────────────────────
 
 export type ResourceType =
-  | 'session'
-  | 'video'
-  | 'plan'
-  | 'team'
-  | 'post'
-  | 'challenge'
-  | 'message'
+  | 'session' |'video' |'plan' |'team' |'post' |'challenge' |'message'
 
 export interface OwnershipConfig {
   resourceType: ResourceType

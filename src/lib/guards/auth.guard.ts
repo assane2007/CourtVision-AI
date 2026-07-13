@@ -11,12 +11,12 @@
  * `withAuthGuard` directly, `with-auth.ts` can be removed.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { db } from '@/lib/db'
-import { toErrorResponse } from '@/lib/middleware/error-handler'
-import { AppError, ErrorCode } from '@/lib/middleware/error-handler'
-import type { AuthContext, AuthLevel } from '@/lib/types/service.types'
+import { NextRequest, NextResponse } from 'next/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { db } from '@/lib/db';
+import { toErrorResponse } from '@/lib/middleware/error-handler';
+import { AppError, ErrorCode } from '@/lib/middleware/error-handler';
+import type { AuthContext, AuthLevel } from '@/lib/types/service.types';
 
 type RouteContext = { params: Promise<Record<string, string>> }
 

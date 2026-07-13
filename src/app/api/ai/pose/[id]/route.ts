@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { trackError } from '@/lib/monitoring'
-import { withAuth } from '@/lib/with-auth'
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { trackError } from '@/lib/monitoring';
+import { withAuth } from '@/lib/with-auth';
 
 // GET /api/ai/pose/[id] — Get pose data by ID or list session poses
 export const GET = withAuth(async (request, session, { params }) => {

@@ -1,5 +1,4 @@
-'use client'
-
+'use client';
 /**
  * React hook for Supabase Auth — provides user state, sign-in, sign-out.
  *
@@ -7,8 +6,8 @@
  * const { user, signInWithMagicLink, signOut, loading } = useSupabaseAuth()
  */
 
-import { useState, useEffect, useCallback } from 'react'
-import { createClient } from './client'
+import { useState, useEffect, useCallback } from 'react';
+import { createClient } from './client';
 
 interface SupabaseUser {
   id: string

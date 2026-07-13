@@ -3,9 +3,9 @@
  * Other API routes (achievements, reaction, sessions) should import this
  * instead of making HTTP calls to /api/xp.
  */
-import { db } from '@/lib/db'
-import { getTotalXp, getLevelFromXp, type XpReward } from '@/lib/xp'
-import { trackError } from '@/lib/monitoring'
+import { db } from '@/lib/db';
+import { getTotalXp, getLevelFromXp, type XpReward } from '@/lib/xp';
+import { trackError } from '@/lib/monitoring';
 
 export interface AwardXpResult {
   xpGained: number

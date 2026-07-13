@@ -1,7 +1,7 @@
-import { useRef, useState, useCallback, useEffect } from 'react';
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
+import { useRef, useState, useEffect } from 'react';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
-import { useWorkoutStore } from '@/stores/workout-store';
+import { useWorkoutStore } from '../stores/workout-store';
 
 export function useCameraWorkout() {
   const [permission, requestPermission] = useCameraPermissions();

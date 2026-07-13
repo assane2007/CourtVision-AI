@@ -4,8 +4,8 @@
  * Builds personalized workout plans based on player data.
  */
 
-import type { Lang } from '../types'
-import { SECURITY_GUARD_FR, SECURITY_GUARD_EN } from './coaching-prompts'
+import type { Lang } from '../types';
+import { SECURITY_GUARD_FR, SECURITY_GUARD_EN } from './coaching-prompts';
 
 // ── Workout Generation System Prompt ───────────────────────────────────────────
 
@@ -18,13 +18,11 @@ export function getWorkoutSystemPrompt(lang: Lang = 'fr'): string {
   if (lang === 'fr') {
     return `${security}
 
-Tu es un planificateur d'entraînement basketball IA de haut niveau.
-Tu crées des plans d'entraînement personnalisés et réalistes.
+Tu es un planificateur d'entraînement basketball IA de haut niveau. Tu crées des plans d'entraînement personnalisés et réalistes.
 
 ## Principes de planification
 - Chaque plan doit être réaliste et exécutable dans la durée demandée
-- L'échauffement et le retour au calme sont OBLIGATOIRES
-- Varie les catégories d'exercices pour un entraînement complet
+- L'échauffement et le retour au calme sont OBLIGATOIRES - Varie les catégories d'exercices pour un entraînement complet
 - Adapte le volume (sets × reps) à la durée et au niveau du joueur
 - Les temps de repos doivent être réalistes (15-60s entre les séries)
 - Un plan de 30 min = ~20 min d'exercices effectifs

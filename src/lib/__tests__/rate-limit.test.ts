@@ -7,14 +7,14 @@ import { rateLimit } from "@/lib/rate-limit";
 describe("rateLimit", () => {
   it("returns success on first call", () => {
     const result = rateLimit("test:first-call");
-    expect(result.success).toBe(true);
-    expect(result.retryAfterMs).toBe(0);
+    expect(result?.success)?.toBe(true);
+    expect(result?.retryAfterMs)?.toBe(0);
   });
 
   it("allows multiple calls up to maxAttempts", () => {
     for (let i = 0; i < 9; i++) {
       const result = rateLimit("test:under-limit");
-      expect(result.success).toBe(true);
+      expect(result?.success)?.toBe(true);
     }
   });
 
@@ -25,8 +25,8 @@ describe("rateLimit", () => {
       rateLimit("test:exceeded", maxAttempts, windowMs);
     }
     const result = rateLimit("test:exceeded", maxAttempts, windowMs);
-    expect(result.success).toBe(false);
-    expect(result.retryAfterMs).toBeGreaterThan(0);
+    expect(result?.success)?.toBe(false);
+    expect(result?.retryAfterMs)?.toBeGreaterThan(0);
   });
 
   it("different keys are independent", () => {
@@ -36,22 +36,22 @@ describe("rateLimit", () => {
       rateLimit("test:indep-a", maxAttempts, 60_000);
     }
     const aResult = rateLimit("test:indep-a", maxAttempts, 60_000);
-    expect(aResult.success).toBe(false);
+    expect(aResult?.success)?.toBe(false);
 
     // Key B should still work
     const bResult = rateLimit("test:indep-b", maxAttempts, 60_000);
-    expect(bResult.success).toBe(true);
+    expect(bResult?.success)?.toBe(true);
   });
 
   it("returns retryAfterMs of 0 on success", () => {
     const result = rateLimit("test:retry-zero");
-    expect(result.retryAfterMs).toBe(0);
+    expect(result?.retryAfterMs)?.toBe(0);
   });
 
   it("uses custom maxAttempts and windowMs", () => {
     // Only 1 attempt allowed
     rateLimit("test:custom-params", 1, 60_000);
     const second = rateLimit("test:custom-params", 1, 60_000);
-    expect(second.success).toBe(false);
+    expect(second?.success)?.toBe(false);
   });
 });

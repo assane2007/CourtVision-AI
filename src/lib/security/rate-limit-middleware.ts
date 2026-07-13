@@ -17,9 +17,9 @@
  * ```
  */
 
-import { NextResponse } from 'next/server'
-import { rateLimiter, RATE_PRESETS } from './rate-limiter'
-import type { RateLimitConfig } from './rate-limiter'
+import { NextResponse } from 'next/server';
+import { rateLimiter, RATE_PRESETS } from './rate-limiter';
+import type { RateLimitConfig } from './rate-limiter';
 
 type RouteHandlerFn = (req: Request, context?: Record<string, unknown>) => Promise<NextResponse> | NextResponse
 

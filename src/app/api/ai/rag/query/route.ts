@@ -1,15 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { rateLimit } from '@/lib/rate-limit'
-import { trackError } from '@/lib/monitoring'
-import ZAI from 'z-ai-web-dev-sdk'
-import { sanitize } from '@/lib/sanitize'
-import { withAuth } from '@/lib/with-auth'
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
+import { trackError } from '@/lib/monitoring';
+ import ZAI from'z-ai-web-dev-sdk';
+import { sanitize } from '@/lib/sanitize';
+import { withAuth } from '@/lib/with-auth';
 import {
   generateEmbedding,
   cosineSimilarity,
   parseEmbedding,
-} from '@/lib/ai/providers/embedding.provider'
+} from '@/lib/ai/providers/embedding.provider';
 
 const TOP_K = 5 // Number of most similar documents to use as context
 

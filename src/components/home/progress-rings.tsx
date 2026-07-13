@@ -1,8 +1,7 @@
-'use client'
-
-import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
-import { useTranslation } from '@/components/providers/language-provider'
+'use client';
+import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { useTranslation } from '@/components/providers/language-provider';
 
 // ---------------------------------------------------------------------------
 // Animated circular progress ring with gradient stroke

@@ -1,9 +1,8 @@
-'use client'
-
-import { Loader2, MessageSquare, Link2, Trash2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import type { VideoData } from '@/components/video/video-types'
+'use client';
+import { Loader2, MessageSquare, Link2, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import type { VideoData } from '@/components/video/video-types';
 
 interface SharePanelProps {
   video: VideoData

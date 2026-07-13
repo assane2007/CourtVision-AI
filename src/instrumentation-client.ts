@@ -1,6 +1,6 @@
-import * as Sentry from '@sentry/nextjs'
+import * as Sentry from '@sentry/nextjs';
 
-Sentry.init({
+Sentry?.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
   dataCollection: {
@@ -33,8 +33,8 @@ Sentry.init({
   ],
 
   integrations: [
-    Sentry.browserTracingIntegration(),
-    Sentry.replayIntegration({
+    Sentry?.browserTracingIntegration(),
+    Sentry?.replayIntegration({
       maskAllText: true,
       blockAllMedia: true,
     }),
@@ -42,7 +42,7 @@ Sentry.init({
 
   // Filter out non-error breadcrumbs
   beforeBreadcrumb(breadcrumb) {
-    if (breadcrumb.category === 'console' && breadcrumb.level !== 'error') {
+    if (breadcrumb?.category === 'console' && breadcrumb?.level !== 'error') {
       return null
     }
     return breadcrumb
@@ -57,4 +57,4 @@ Sentry.init({
 })
 
 // Hook into App Router navigation transitions (App Router only)
-export const onRouterTransitionStart = Sentry.captureRouterTransitionStart
+export const onRouterTransitionStart = Sentry?.captureRouterTransitionStart

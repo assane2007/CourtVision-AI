@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { cn, formatDuration } from '@/lib/utils'
+import { describe, it, expect } from 'vitest';
+import { cn, formatDuration } from '@/lib/utils';
 
 // ─── cn ───────────────────────────────────────────────────────────────────────
 

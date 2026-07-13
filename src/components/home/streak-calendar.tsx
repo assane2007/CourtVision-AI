@@ -1,12 +1,11 @@
-'use client'
-
-import { useMemo } from 'react'
-import { motion } from 'framer-motion'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Flame } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { formatDate } from '@/lib/date-utils'
-import { useTranslation } from '@/components/providers/language-provider'
+'use client';
+import { useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Flame } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { formatDate } from '@/lib/date-utils';
+import { useTranslation } from '@/components/providers/language-provider';
 
 // ---------------------------------------------------------------------------
 // Types

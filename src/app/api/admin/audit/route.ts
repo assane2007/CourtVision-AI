@@ -8,20 +8,20 @@
  *   - cursor: pagination cursor (ID of the last record)
  */
 
-import { NextResponse } from 'next/server'
-import { withAdminGuard } from '@/lib/guards/admin.guard'
-import { db } from '@/lib/db'
+import { NextResponse } from 'next/server';
+import { withAdminGuard } from '@/lib/guards/admin.guard';
+import { db } from '@/lib/db';
 
 export const GET = withAdminGuard(async (req) => {
-  const { searchParams } = req.nextUrl
+  const { searchParams } = req?.nextUrl
 
-  const action = searchParams.get('action') || undefined
-  const limit = Math.min(Math.max(Number(searchParams.get('limit')) || 50, 1), 100)
-  const cursor = searchParams.get('cursor') || undefined
+  const action = searchParams?.get('action') || undefined
+  const limit = Math.min(Math.max(Number(searchParams?.get('limit')) || 50, 1), 100)
+  const cursor = searchParams?.get('cursor') || undefined
 
   const where = action ? { action } : {}
 
-  const logs = await db.auditLog.findMany({
+  const logs = await db?.auditLog?.findMany({
     where,
     take: limit + 1,
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
@@ -33,16 +33,16 @@ export const GET = withAdminGuard(async (req) => {
     },
   })
 
-  const hasMore = logs.length > limit
-  const data = hasMore ? logs.slice(0, limit) : logs
-  const nextCursor = hasMore ? data[data.length - 1].id : null
+  const hasMore = logs?.length > limit
+  const data = hasMore ? logs?.slice(0, limit) : logs
+  const nextCursor = hasMore ? data?.[data?.length - 1]?.id : null
 
-  return NextResponse.json({
+  return NextResponse?.json({
     data,
     pagination: {
       nextCursor,
       hasMore,
       limit,
     },
-  })
+  });
 })

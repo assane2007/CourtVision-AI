@@ -1,8 +1,7 @@
-'use client'
-
-import { useState, useRef, useEffect, useCallback, type RefObject } from 'react'
-import { cn } from '@/lib/utils'
-import type { VideoData, AnnotationTool, AnnotationColor } from '@/components/video/video-types'
+'use client';
+import { useState, useRef, useEffect, useCallback, type RefObject } from 'react';
+import { cn } from '@/lib/utils';
+import type { VideoData, AnnotationTool, AnnotationColor } from '@/components/video/video-types';
 
 interface AnnotationCanvasProps {
   videoRef: RefObject<HTMLVideoElement | null>

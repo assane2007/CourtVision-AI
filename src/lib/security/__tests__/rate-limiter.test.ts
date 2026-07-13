@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock config so Redis is never used — forces memory strategy
 vi.mock('@/lib/config', () => ({

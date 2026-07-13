@@ -1,8 +1,7 @@
-'use client'
-
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { useQuery } from '@tanstack/react-query'
+'use client';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
   Flame,
   RefreshCw,
@@ -14,10 +13,10 @@ import {
   Dumbbell,
   ChevronRight,
   ChevronDown,
-} from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -25,24 +24,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-} from 'recharts'
-import { useAppStore } from '@/stores/app'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { PullToRefresh } from '@/components/shared/pull-to-refresh'
-import { AnimatedNumber } from '@/components/shared/animated-number'
-import { CATEGORY_META, getCategoryLabel } from '@/lib/constants'
-import { apiFetch, formatLocaleDate, getDrillName } from '@/lib/utils'
-import { containerVariants, itemVariants } from '@/lib/animations'
-import { useTranslation } from '@/components/providers/language-provider'
+} from '@/components/ui/table';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line, AreaChart, Area, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,  } from 'recharts';
+import { useAppStore } from '@/stores/app';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { PullToRefresh } from '@/components/shared/pull-to-refresh';
+import { AnimatedNumber } from '@/components/shared/animated-number';
+import { CATEGORY_META, getCategoryLabel } from '@/lib/constants';
+import { apiFetch, formatLocaleDate, getDrillName } from '@/lib/utils';
+import { containerVariants, itemVariants } from '@/lib/animations';
+import { useTranslation } from '@/components/providers/language-provider';
+import { useAuth } from '@/components/providers/supabase-auth-provider';
 
 // ── Day name mapping ────────────────────────────────────────────────
 const DAY_NAMES_FR = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
@@ -83,6 +75,7 @@ interface DailyStat {
   sessions: number
   reps: number
   score: number
+  durationMin?: number
 }
 
 interface CategoryStat {
@@ -115,11 +108,13 @@ interface StatsResponse {
 export function StatsScreen() {
   const navigate = useAppStore(s => s.navigate)
   const { t, td, language } = useTranslation()
+  const { user } = useAuth()
 
   // ── Fetch stats ─────────────────────────────────────────────────
   const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useQuery<StatsResponse>({
-    queryKey: ['stats'],
+    queryKey: ['stats', user?.id],
     queryFn: () => apiFetch<StatsResponse>('/api/stats'),
+    enabled: !!user?.id,
   })
 
   // ── Fetch recent sessions with pagination ───────────────────────
@@ -129,8 +124,9 @@ export function StatsScreen() {
     total?: number
     hasMore?: boolean
   }>({
-    queryKey: ['sessions', 'page', sessionPage],
+    queryKey: ['sessions', user?.id, 'page', sessionPage],
     queryFn: () => apiFetch(`/api/sessions?page=${sessionPage}&limit=20`),
+    enabled: !!user?.id,
   })
 
   const allSessions: SessionEntry[] = sessionsData?.sessions ?? []
@@ -177,7 +173,7 @@ export function StatsScreen() {
   return (
     <div className="min-h-screen bg-background pb-24">
       <PullToRefresh
-        queryKeys={[['stats'], ['sessions']]}
+        queryKeys={[['stats', user?.id], ['sessions', user?.id]]}
       >
       <motion.div
         variants={containerVariants}
@@ -297,6 +293,213 @@ export function StatsScreen() {
             </Card>
           </motion.div>
 
+          {/* ── Weekly Training Hours Trend ───────────────────────── */}
+          <motion.div variants={itemVariants}>
+            <Card className="border-0 dark:border-border/50 shadow-md dark:shadow-black/20">
+              <CardHeader className="pb-2 px-5 pt-5">
+                <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-sky-500" />
+                  {td('Heures d\'entraînement', 'Training Hours Trend')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-3 pb-5">
+                <div className="h-52">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={dailyStats.map((d: DailyStat) => ({
+                        day: getDayLabel(d.date, language),
+                        hours: d.durationMin != null ? Math.round((d.durationMin / 60) * 100) / 100 : 0,
+                        minutes: d.durationMin ?? 0,
+                      }))}
+                      margin={{ top: 8, right: 4, left: -12, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                      <XAxis
+                        dataKey="day"
+                        tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                        axisLine={false}
+                        tickLine={false}
+                        unit={td('min', 'min')}
+                      />
+                      <Tooltip
+                        content={({ active, payload, label }) => {
+                          if (!active || !payload?.length) return null
+                          return (
+                            <div className="bg-popover border border-border rounded-lg px-3 py-2 shadow-lg dark:shadow-black/20 text-sm">
+                              <p className="font-semibold mb-1">{label}</p>
+                              <p className="text-muted-foreground">
+                                {td('Durée', 'Duration')} :{' '}
+                                <span className="font-medium text-foreground">
+                                  {payload[0]?.value} {td('min', 'min')}
+                                </span>
+                              </p>
+                            </div>
+                          )
+                        }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="minutes"
+                        name={td('Minutes', 'Minutes')}
+                        stroke="#0ea5e9"
+                        strokeWidth={2.5}
+                        dot={{ r: 4, fill: '#0ea5e9', strokeWidth: 0 }}
+                        activeDot={{ r: 6, fill: '#0ea5e9' }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* ── Drill Completion Rate Over Time ───────────────────── */}
+          <motion.div variants={itemVariants}>
+            <Card className="border-0 dark:border-border/50 shadow-md dark:shadow-black/20">
+              <CardHeader className="pb-2 px-5 pt-5">
+                <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-emerald-500" />
+                  {td('Exercices complétés', 'Drill Completion Rate')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-3 pb-5">
+                <div className="h-52">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={dailyStats.map((d: DailyStat) => ({
+                        day: getDayLabel(d.date, language),
+                        reps: d.reps,
+                        sessions: d.sessions,
+                      }))}
+                      margin={{ top: 8, right: 4, left: -12, bottom: 0 }}
+                    >
+                      <defs>
+                        <linearGradient id="drillGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                      <XAxis
+                        dataKey="day"
+                        tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        allowDecimals={false}
+                        tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <Tooltip
+                        content={({ active, payload, label }) => {
+                          if (!active || !payload?.length) return null
+                          return (
+                            <div className="bg-popover border border-border rounded-lg px-3 py-2 shadow-lg dark:shadow-black/20 text-sm">
+                              <p className="font-semibold mb-1">{label}</p>
+                              <p className="text-muted-foreground">
+                                {td('Répétitions', 'Reps')} :{' '}
+                                <span className="font-medium text-foreground">{payload[0]?.value}</span>
+                              </p>
+                              {payload[1] && (
+                                <p className="text-muted-foreground">
+                                  {td('Séances', 'Sessions')} :{' '}
+                                  <span className="font-medium text-foreground">{payload[1]?.value}</span>
+                                </p>
+                              )}
+                            </div>
+                          )
+                        }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="reps"
+                        name={td('Répétitions', 'Reps')}
+                        stroke="#10b981"
+                        strokeWidth={2.5}
+                        fill="url(#drillGradient)"
+                        dot={{ r: 3, fill: '#10b981', strokeWidth: 0 }}
+                        activeDot={{ r: 5, fill: '#10b981' }}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* ── Performance Metrics Radar ─────────────────────────── */}
+          {categories.length > 0 && (
+            <motion.div variants={itemVariants}>
+              <Card className="border-0 dark:border-border/50 shadow-md dark:shadow-black/20">
+                <CardHeader className="pb-2 px-5 pt-5">
+                  <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-violet-500" />
+                    {td('Métriques de performance', 'Performance Metrics')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-3 pb-5">
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart
+                        data={categories.map((cat: CategoryStat) => {
+                          const meta = CATEGORY_META[cat.category]
+                          return {
+                            subject: meta?.label ?? getCategoryLabel(cat.category) ?? cat.category,
+                            score: cat.avgScore,
+                            drills: cat.drills,
+                          }
+                        })}
+                        margin={{ top: 8, right: 24, left: 24, bottom: 8 }}
+                      >
+                        <PolarGrid stroke="hsl(var(--border))" />
+                        <PolarAngleAxis
+                          dataKey="subject"
+                          tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <PolarRadiusAxis
+                          angle={90}
+                          domain={[0, 100]}
+                          tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                          tickCount={4}
+                        />
+                        <Radar
+                          name={td('Score moyen', 'Avg Score')}
+                          dataKey="score"
+                          stroke="#8b5cf6"
+                          fill="#8b5cf6"
+                          fillOpacity={0.25}
+                          strokeWidth={2}
+                          dot={{ r: 3, fill: '#8b5cf6', strokeWidth: 0 }}
+                        />
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (!active || !payload?.length) return null
+                            return (
+                              <div className="bg-popover border border-border rounded-lg px-3 py-2 shadow-lg dark:shadow-black/20 text-sm">
+                                <p className="font-semibold mb-1">{payload[0]?.payload?.subject}</p>
+                                <p className="text-muted-foreground">
+                                  {td('Score', 'Score')} :{' '}
+                                  <span className="font-medium text-foreground">{payload[0]?.value}</span>
+                                </p>
+                              </div>
+                            )
+                          }}
+                        />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
           {/* ── Category Performance ──────────────────────────────── */}
           {categories.length > 0 && (
             <motion.div variants={itemVariants}>
@@ -315,8 +518,7 @@ export function StatsScreen() {
                       cat.avgScore >= 70
                         ? 'text-emerald-600 dark:text-emerald-400'
                         : cat.avgScore >= 40
-                          ? 'text-amber-600 dark:text-amber-400'
-                          : 'text-red-500 dark:text-red-400'
+                          ? 'text-amber-600 dark:text-amber-400' :'text-red-500 dark:text-red-400'
                     return (
                       <motion.div
                         key={cat.category}
@@ -407,8 +609,7 @@ export function StatsScreen() {
                                   session.totalScore >= 7
                                     ? 'text-emerald-600 dark:text-emerald-400'
                                     : session.totalScore >= 4
-                                      ? 'text-amber-600 dark:text-amber-400'
-                                      : 'text-red-500 dark:text-red-400'
+                                      ? 'text-amber-600 dark:text-amber-400' :'text-red-500 dark:text-red-400'
                                 }>
                                   {session.totalScore.toFixed(1)}
                                 </span>

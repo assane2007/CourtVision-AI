@@ -1,20 +1,19 @@
-'use client'
-
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
-import { ArrowLeft, Trophy, Users } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useAppStore } from '@/stores/app'
-import { SwipeToGoBack } from '@/components/shared/swipe-back'
-import { apiFetch } from '@/lib/utils'
-import { staggerContainer, slideInLeft, cardHover } from '@/lib/animations'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { useTranslation } from '@/components/providers/language-provider'
-import type { TranslationKey } from '@/lib/i18n'
-import { getLevelColor, getLevelBgColor } from '@/lib/xp'
+'use client';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
+import { ArrowLeft, Trophy, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAppStore } from '@/stores/app';
+import { SwipeToGoBack } from '@/components/shared/swipe-back';
+import { apiFetch } from '@/lib/utils';
+import { staggerContainer, slideInLeft, cardHover } from '@/lib/animations';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { useTranslation } from '@/components/providers/language-provider';
+import type { TranslationKey } from '@/lib/i18n';
+import { getLevelColor, getLevelBgColor } from '@/lib/xp';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -278,8 +277,7 @@ export function LeaderboardScreen() {
                     {...cardHover}
                     className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${
                       entry.isCurrentUser
-                        ? 'border-orange-500/40 bg-orange-500/5'
-                        : 'border-border/50 bg-card'
+                        ? 'border-orange-500/40 bg-orange-500/5' :'border-border/50 bg-card'
                     }`}
                   >
                     {/* Rank */}

@@ -1,35 +1,34 @@
-'use client'
-
-import { useState, useCallback } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
-import { useTheme } from 'next-themes'
-import { toast } from 'sonner'
+'use client';
+import { useState, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
+import { useTheme } from 'next-themes';
+import { toast } from 'sonner';
 import {
   ArrowLeft, User, Palette, Bell, Dumbbell,
   Database, FlaskConical, AlertTriangle, Loader2,
   Camera, Sun, Moon, Monitor, Volume2, RefreshCw,
   Download, Trash2, Pencil, Lock, Eye, Trophy, Info,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
-import { Slider } from '@/components/ui/slider'
-import { Input } from '@/components/ui/input'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import { useAppStore } from '@/stores/app'
-import { SwipeToGoBack } from '@/components/shared/swipe-back'
-import { BottomNav } from '@/components/shared/bottom-nav'
-import { useAuth } from '@/components/providers/supabase-auth-provider'
-import { useTranslation } from '@/components/providers/language-provider'
-import { apiFetch } from '@/lib/utils'
-import { containerVariants, itemVariants } from '@/lib/animations'
-import { DeveloperSection } from '@/components/settings/developer-section'
-import { SettingsSkeleton } from '@/components/settings/settings-skeleton'
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { useAppStore } from '@/stores/app';
+import { SwipeToGoBack } from '@/components/shared/swipe-back';
+import { BottomNav } from '@/components/shared/bottom-nav';
+import { useAuth } from '@/components/providers/supabase-auth-provider';
+import { useTranslation } from '@/components/providers/language-provider';
+import { apiFetch } from '@/lib/utils';
+import { containerVariants, itemVariants } from '@/lib/animations';
+import { DeveloperSection } from '@/components/settings/developer-section';
+import { SettingsSkeleton } from '@/components/settings/settings-skeleton';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 

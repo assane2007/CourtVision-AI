@@ -1,10 +1,9 @@
-'use client'
-
-import { Eye } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
-import { formatTime, formatFileSize } from '@/components/video/video-types'
-import { formatLocaleDate } from '@/lib/utils'
-import type { VideoData } from '@/components/video/video-types'
+'use client';
+import { Eye } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { formatTime, formatFileSize } from '@/components/video/video-types';
+import { formatLocaleDate } from '@/lib/utils';
+import type { VideoData } from '@/components/video/video-types';
 
 interface VideoInfoCardProps {
   video: VideoData

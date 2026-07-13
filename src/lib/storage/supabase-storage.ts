@@ -7,8 +7,8 @@
  * Server-only module.
  */
 
-import type { StorageService, StorageFile, UploadOptions } from './types'
-import { MAX_FILE_SIZE_BYTES } from './types'
+import type { StorageService, StorageFile, UploadOptions } from './types';
+import { MAX_FILE_SIZE_BYTES } from './types';
 
 export class SupabaseStorage implements StorageService {
   private client: ReturnType<typeof import('@supabase/supabase-js').createClient> | null = null

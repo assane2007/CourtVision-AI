@@ -1,15 +1,15 @@
-import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { rateLimit } from '@/lib/rate-limit'
-import { aiCoachSchema, getZodErrorMessage } from '@/lib/validations'
-import { CATEGORY_LABELS } from '@/lib/constants'
-import { formatShortDate } from '@/lib/date-utils'
-import { requireSubscription, subscriptionError } from '@/lib/require-subscription'
-import { trackError } from '@/lib/monitoring'
-import { sanitize } from '@/lib/sanitize'
-import { stripHtml } from '@/lib/security/sanitization'
-import { chatStream, createSSETransformStream } from '@/lib/ai/providers/language.provider'
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
+import { aiCoachSchema, getZodErrorMessage } from '@/lib/validations';
+import { CATEGORY_LABELS } from '@/lib/constants';
+import { formatShortDate } from '@/lib/date-utils';
+import { requireSubscription, subscriptionError } from '@/lib/require-subscription';
+import { trackError } from '@/lib/monitoring';
+import { sanitize } from '@/lib/sanitize';
+import { stripHtml } from '@/lib/security/sanitization';
+import { chatStream, createSSETransformStream } from '@/lib/ai/providers/language.provider';
 
 // GET /api/ai-coach — Fetch chat history
 export async function GET() {

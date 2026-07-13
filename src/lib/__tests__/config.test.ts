@@ -1,6 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-
-describe('config module', () => {
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+ describe('config module', () => {
   let config: typeof import('@/lib/config').config
   let validateConfig: typeof import('@/lib/config').validateConfig
 

@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server'
-import { NextRequest } from 'next/server'
-import { runHealthChecks, type HealthCheckResult } from '@/lib/monitoring/health'
-import { evaluateAlerts } from '@/lib/monitoring/alerts'
+import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { runHealthChecks, type HealthCheckResult } from '@/lib/monitoring/health';
+import { evaluateAlerts } from '@/lib/monitoring/alerts';
 
 // GET /api/health — Unauthenticated health check endpoint
 // Supports ?detailed=true for full diagnostics including alerts

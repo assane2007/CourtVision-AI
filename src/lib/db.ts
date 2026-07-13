@@ -1,5 +1,5 @@
-import { PrismaClient } from '@prisma/client'
-import { getDb } from './database'
+import { PrismaClient } from './inngest/client';
+import { getDb } from './database';
 
 /**
  * Lazy Prisma client proxy.
@@ -18,5 +18,3 @@ export const db = new Proxy({} as PrismaClient, {
     return value
   },
 })
-
-export { healthCheck, disconnect, POOL_CONFIG, SLOW_QUERY_THRESHOLD_MS } from './database'

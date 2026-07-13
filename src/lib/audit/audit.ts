@@ -6,24 +6,13 @@
  * so audit failures never break the caller.
  */
 
-import { db } from '@/lib/db'
-import { logger } from '@/lib/logger'
+import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 // ── Types ────────────────────────────────────────────────────────────────────────
 
 export type AuditAction =
-  | 'login'
-  | 'logout'
-  | 'signup'
-  | 'password_reset'
-  | 'email_verified'
-  | 'profile_update'
-  | 'data_export'
-  | 'data_delete'
-  | 'admin_action'
-  | 'subscription_change'
-  | 'role_change'
-  | 'settings_update'
+  | 'login' |'logout' |'signup' |'password_reset' |'email_verified' |'profile_update' |'data_export' |'data_delete' |'admin_action' |'subscription_change' |'role_change' |'settings_update'
 
 export interface AuditLogEntry {
   playerId: string

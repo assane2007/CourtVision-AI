@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
-import ZAI from 'z-ai-web-dev-sdk'
-import { withAuth } from '@/lib/with-auth'
-import { rateLimit } from '@/lib/rate-limit'
-import { stripHtml } from '@/lib/security/sanitization'
+import { NextRequest, NextResponse } from 'next/server';
+ import ZAI from'z-ai-web-dev-sdk';
+import { withAuth } from '@/lib/with-auth';
+import { rateLimit } from '@/lib/rate-limit';
+import { stripHtml } from '@/lib/security/sanitization';
 
 const SUPPORTED_SIZES = ['1024x1024', '1344x768', '768x1344', '1440x720'] as const
 type SupportedSize = (typeof SUPPORTED_SIZES)[number]
